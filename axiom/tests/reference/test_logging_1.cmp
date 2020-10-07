@@ -1,0 +1,26 @@
+always: expect PASS 1
+always: NRL_ALWAYS should be present (1)
+error: NRL_ERROR should be present (1)
+warning: NRL_WARNING should be present (1)
+info: NRL_INFO should be present (1)
+error: A short appname '01234'
+error: A 50 char appname truncated '012345678901234567890123456789012345678901234567'
+error: Variable width int 1
+error: Variable width int  2
+error: Variable width int    4
+error: Variable width int        8
+error: Variable width int               16
+error: Variable width int                               32
+error: Variable width int                                                               64
+error: Variable width int                                                                                                                              128
+error: Variable width int                                                                                                                                                                                                                                                              256
+error: Variable width int                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              512
+always: expect PASS 2
+info: New Relic X.Y.Z.W ("NAME" - "GITSHA") [daemon='daemon_location' Axiom Tests pid=-1 ppid=-1 uid=-1 euid=-1 gid=-1 egid=-1 backtrace=yes]
+info: New Relic X.Y.Z.W ("NAME" - "GITSHA") [daemon='daemon_location' Axiom Tests pid=-1 ppid=-1 uid=-1 euid=-1 gid=-1 egid=-1 backtrace=yes startup=init]
+info: New Relic X.Y.Z.W ("NAME" - "GITSHA") [daemon='daemon_location' Axiom Tests pid=-1 ppid=-1 uid=-1 euid=-1 gid=-1 egid=-1 backtrace=yes startup=agent]
+info: New Relic X.Y.Z.W ("NAME" - "GITSHA") [Axiom Tests pid=-1 ppid=-1 uid=-1 euid=-1 gid=-1 egid=-1 backtrace=yes startup=agent]
+always: NRL_ALWAYS should be present (2)
+error: NRL_ERROR should be present (2)
+warning: NRL_WARNING should be present (2)
+info: NRL_INFO should be present (2)

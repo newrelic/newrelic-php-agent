@@ -1,0 +1,194 @@
+;
+; Copyright 2020 New Relic Corporation. All rights reserved.
+; SPDX-License-Identifier: Apache-2.0
+;
+; This file contains the various private control knobs for the agent,
+; and is here to document things developers may find useful, but are
+; not essential for the agent.
+;
+; The flags described in this document are NOT described in documentation.
+
+[newrelic]
+
+; Setting: newrelic.feature_flag
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Enables experimental features within the PHP agent. These flags are
+;          used to allow testing of features that may be provided in future
+;          versions of the agent. Please note that we may be unable to provide
+;          support for experimental features.
+;
+;          Some flags may be made public, in which case they will also be
+;          listed in newrelic.ini.template.
+;
+;          Current flags:
+;
+;          - None.
+;
+;newrelic.feature_flag = ""
+
+; Setting: newrelic.special
+; Type   : list of members of enumeration
+; Scope  : system
+; Default: empty set
+; Info   : Set special boolean flags to control the agent.
+;          The value of this is a comma separated list of names
+;          taken from the following set; white space is ignored:
+;            no_sql_parsing
+;            show_sql_parsing  (leaves unobfuscated SQL in the agent log file)
+;            enable_path_translated
+;            no_background_jobs
+;            show_executes
+;            show_execute_params
+;            show_execute_stack
+;            show_execute_returns
+;            show_executes_untrimmed
+;            no_exception_handler
+;            no_signal_handler
+;            debug_autorum
+;            show_loaded_files
+;            debug_cat
+;            disable_laravel_queue
+;
+;newrelic.special = show_executes, show_execute_params, show_execute_stack, show_execute_returns, show_executes_untrimmed
+
+; Setting: newrelic.special.appinfo_timeout
+; Type   : integer (time in msec)
+; Scope  : system
+; Default: 100ms
+; Info   : Sets the timeout for APPINFO requests to the daemon.
+;
+;newrelic.special.appinfo_timeout = 100ms
+
+; Setting: newrelic.daemon.special.curl_verbose
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Enable logging (at the verbosedebug level) of all of curl's verbose
+;          logging. This behaviour is useful when debugging connection-related
+;          support issues, but does generate a frightful volume of log
+;          messages (minimally 4kB per app per minute, assuming no activity at
+;          all).
+;
+;newrelic.daemon.special.curl_verbose = false
+
+; Setting: newrelic.daemon.special.integration
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Enable special integration behavior for testing.
+;          The agent will retry some things, and the daemon will
+;          generate extra tagged log file messages containing the json
+;          it otherwise sends to the collector. This behavior is useful
+;          for doing system integration tests.
+;
+;newrelic.daemon.special.integration = false
+
+; Setting: newrelic.special.disable_instrumentation
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Disable instrumentation for internal functions.
+;          Instrumentation will be disabled for any internal function
+;          whose name is prefixed by any member of this comma-delimited
+;          list.
+;
+;newrelic.special.disable_instrumentation = ""
+
+; Setting: newrelic.special.expensive_node_min
+; Type   : integer (time in msec)
+; Scope  : system
+; Default: 2 * NR_TIME_DIVISOR_MS
+; Info   : Sets the threshold for expensive transactions.
+;
+;newrelic.special.expensive_node_min=0
+
+; Setting: newrelic.special.max_nesting_level
+; Type   : integer in the range -1 - 100000
+; Scope  : per-directory
+; Default: -1
+; Info   : The maximum depth of the PHP call stack, in frames.
+;          Any deeper levels of PHP calls will be treated as a fatal
+;          PHP internal error (PHP E_ERROR) and the PHP execution will
+;          exit with a process exit code of 255. No exception will be
+;          thrown, and the running PHP program will be unaware of the
+;          cause of its demise. A value of -1 or 0 will disable stack
+;          depth checking (new default as of Release 4.8).
+;
+;newrelic.special.max_nesting_level = -1
+
+; Setting: newrelic.special.enable_extension_instrumentation
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Enables extension instrumentation, which at present consists of
+;          timing each RSHUTDOWN function that runs and creating transaction
+;          trace nodes based on those times.
+;
+;newrelic.special.enable_extension_instrumentation = false
+
+; Setting: newrelic.special.max_span_events
+; Type   : unsigned integer
+; Scope  : per-directory
+; Default: 0 
+; Info   : The maximum number of span events added to the span event reservoir
+;          per transaction. A value of 0 will use the agent default.
+;
+;newrelic.special.max_span_events = 0
+
+; Setting: newrelic.browser_monitoring.debug
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Indicates whether the Javascript browser monitoring loader returned
+;          by the collector should include debug functionality. This setting
+;          will not take effect until the newrelic-daemon has been restarted.
+;
+;newrelic.browser_monitoring.debug = false
+
+; Setting: newrelic.browser_monitoring.loader
+; Type   : string
+; Scope  : per-directory
+; Default: "rum"
+; Info   : Indicates the type of Javascript browser monitoring loader that
+;          should be returned by the collector during connection. This setting
+;          will not take effect until the newrelic-daemon has been restarted.
+;
+;newrelic.browser_monitoring.loader = "rum"
+
+; Setting: newrelic.allow_raw_exception_messages
+; Info   : This setting was introduced as part of the LASP/Protocol 16 work.
+;          Before this flag, the only way to enable the stripping of exception
+;          and error messages was to enable high security mode.  Since the
+;          agent can now be told to turn this feature on or off, we needed a
+;          a way to have this behavior turned on/off.
+; newrelic.allow_raw_exception_messages = 1
+
+; Setting: newrelic.custom_parameters_enabled
+; Info   : Indicate if custom parameters will be sent to New Relic.
+;
+;          This setting provides a way to turn off custom attributes/parameters
+;          added by the end-user-programmer.  The attributes.include system,
+;          while powerful, only allows us to turn off specific
+;          named attributes.
+; newrelic.custom_parameters_enabled = 1
+
+; Setting: newrelic.infinite_tracing.span_events.agent_queue.size
+; Type   : integer
+; Scope  : per-directory
+; Default: 1000
+; Info   : Sets the maximum number of span events that can be batched together
+;          in the agent before being transmitted to the daemon when Infinite
+;          Tracing is enabled.
+;
+;newrelic.infinite_tracing.span_events.agent_queue.size=10000
+
+; Setting: newrelic.infinite_tracing.span_events.agent_queue.timeout
+; Type   : time specification string ("500ms", "1s750ms" etc)
+; Scope  : per-directory
+; Default: 1s
+; Info   : Sets the maximum amount of time that can pass before a span batch is
+;          sent to the daemon when Infinite Tracing is enabled.
+;
+;newrelic.infinite_tracing.span_events.agent_queue.timeout=1s

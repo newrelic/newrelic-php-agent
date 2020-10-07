@@ -1,0 +1,130 @@
+#
+# Empirically determined set of suppressions for httpd
+# This was determined running on linux, using a -g3 -O0 compiled version of httpd
+#
+# The ice is thin.
+#
+#
+{
+   <httpd 1>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:ap_init_rng
+}
+
+{
+   <httpd ap_read_config>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:ap_read_config
+}
+
+{
+   <httpd ap_process_config_tree>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:ap_process_config_tree
+}
+
+{
+   <httpd sapi-register_post_entry>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:sapi_register_post_entry
+}
+
+{
+   <httpd virtual_cwd_startup>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:virtual_cwd_startup
+}
+
+{
+   <httpd mime_post_config>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:mime_post_config
+}
+
+{
+   <httpd cgid_init>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:cgid_init
+}
+
+{
+   <httpd ssl_init_Module>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:ssl_init_Module
+}
+
+{
+   <httpd sort_hook>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:sort_hook
+}
+
+{
+   <httpd ap_create_per_dir_config>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:ap_create_per_dir_config
+}
+
+{
+   <httpd make_array_core>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:make_array_core
+   ...
+   fun:parse_log_sring
+}
+
+{
+  <httpd ap_setup_make_content_type>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:ap_setup_make_content_type
+  fun:core_post_config
+  fun:ap_run_post_config
+}
+
+{
+  <httpd startup_soap>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:zm_startup_soap
+}
+
+{
+  <httpd startup_mongo>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:zm_startup_mongo
+}
+
+{
+  <httpd startup_basic>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:zm_startup_basic
+}

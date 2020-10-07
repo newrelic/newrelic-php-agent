@@ -1,0 +1,17 @@
+# Suppressions for the PHP agent.
+# There should be very few entries in this file.
+
+# Initialization of thread local storage for errno/strerror?
+{
+   agent-osx-dlsym-leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_ZL29getPerThreadBufferFor_dlerrorm
+   fun:_ZL10dlerrorSetPKc
+   fun:dlsym
+   fun:dlsym
+   fun:nr_php_populate_apache_process_globals
+   fun:zm_startup_newrelic
+   ...
+}

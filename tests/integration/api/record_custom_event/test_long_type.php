@@ -1,0 +1,20 @@
+<?php
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+Tests newrelic_record_custom_event() with a long type name. We should just drop
+the event in this case.
+*/
+
+/*INI
+newrelic.custom_insights_events.enabled = 1
+*/
+
+/*EXPECT_CUSTOM_EVENTS
+null
+*/
+
+newrelic_record_custom_event("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", array("testKey"=>"testValue"));

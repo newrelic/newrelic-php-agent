@@ -1,0 +1,21 @@
+#
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# Defaults for the New Relic Proxy Daemon init script
+
+#
+# Over-ride cfgfile with your own location if it is not in
+# /etc/newrelic/newrelic.cfg or
+# /etc/newrelic.cfg or
+# /usr/local/etc/newrelic.cfg
+#
+cfgfile=
+
+#
+# Over-ride nrdaemon with the location of the New Relic daemon if it is not
+# in /usr/bin/newrelic-daemon or /usr/local/bin/newrelic-daemon
+#
+nrdaemon=
+

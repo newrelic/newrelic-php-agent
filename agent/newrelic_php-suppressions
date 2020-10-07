@@ -1,0 +1,14 @@
+#
+# This is a valgrind suppressions file,
+# It contains suppressions for the New Relic php plugin, eg our own code.
+#
+
+{
+  <dlsym leak on CentOS 5>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:dlsym
+  ...
+  fun:zm_startup_newrelic
+}
