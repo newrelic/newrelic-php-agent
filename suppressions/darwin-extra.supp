@@ -1,0 +1,181 @@
+# Additional suppressions for Darwin 15.x / Mac OS X 10.11 El Capitan
+#
+# These should be upstreamed into Valgrind itself. For that reason,
+# Valgrind's naming conventions are used.
+
+############################################
+## Leaks.  For other stuff see below.
+
+{
+   X-OSX1011:1-Leak
+   Memcheck:Leak
+   fun:realloc
+   ...
+   fun:dyld_register_image_state_change_handler
+   ...
+}
+
+{
+   X-OSX1011:2-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:__CFInitialize
+   ...
+}
+
+{
+   X-OSX1011:3-Leak
+   Memcheck:Leak
+   fun:malloc_zone_?alloc
+   ...
+   fun:__CFInitialize
+   ...
+}
+
+{
+   X-OSX1011:4-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:_NSInitializePlatform
+   ...
+}
+
+{
+   X-OSX1011:5-Leak
+   Memcheck:Leak
+   fun:malloc_zone_?alloc
+   ...
+   fun:_NSInitializePlatform
+   ...
+}
+
+{
+   X-OSX1011:6-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:____NSThreads_block_invoke
+   ...
+}
+
+{
+   X-OSX1011:7-Leak
+   Memcheck:Leak
+   fun:malloc_zone_?alloc
+   ...
+   fun:dispatch_once_f
+   ...
+   fun:call_load_methods
+   fun:load_images
+   ...
+}
+
+{
+   X-OSX1011:8-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:dispatch_once_f
+   ...
+   fun:call_load_methods
+   fun:load_images
+   ...
+}
+
+{
+   X-OSX1011:9-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:dispatch_once_f
+   ...
+}
+
+{
+   X-OSX1011:10-Leak
+   Memcheck:Leak
+   fun:malloc_zone_?alloc
+   ...
+   fun:dispatch_once_f
+   ...
+}
+
+{
+   X-OSX1011:11-Leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:?alloc
+   ...
+   fun:*printf
+   ...
+}
+
+{
+   X-OSX1011:12-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:si_addrinfo
+   ...
+}
+
+{
+   X-OSX1011:13-Leak
+   Memcheck:Leak
+   fun:malloc_zone_?alloc
+   ...
+   fun:si_addrinfo
+   ...
+}
+
+{
+   OSX1011:14-Leak
+   Memcheck:Leak
+   fun:?alloc
+   ...
+   fun:_os_object_init
+   fun:libdispatch_init
+   fun:libSystem_initializer
+   ...
+}
+
+
+############################################
+## Non-leak errors
+
+{
+   OSX1011:dyld-1
+   Memcheck:Cond
+   fun:bcmp
+   fun:*ImageLoader*
+   ...
+}
+
+{
+   OSX1011:dyld-2
+   Memcheck:Cond
+   fun:*ImageLoader*
+   ...
+}
+
+{
+   OSX1011:dyld-3
+   Memcheck:Value8
+   fun:bcmp
+   fun:*ImageLoader*
+   ...
+}
+
+{
+   OSX1011:ioctl-1
+   Memcheck:Param
+   ioctl(generic)
+   fun:__ioctl
+   fun:ioctl
+   ...
+   fun:si_addrinfo
+   fun:getaddrinfo
+   ...
+}

@@ -1,0 +1,27 @@
+<?xml version='1.0'?>
+<!--Copyright 2020 New Relic Corporation. All rights reserved.-->
+<!--SPDX-License-Identifier: Apache-2.0-->
+<!DOCTYPE service_bundle SYSTEM '/usr/share/lib/xml/dtd/service_bundle.dtd.1'>
+<service_bundle type='manifest' name='export'>
+  <service name='application/newrelic' type='service' version='0'>
+    <instance name='default' enabled='true'>
+      <method_context project=':default' resource_pool=':default' working_directory=':default'>
+        <method_credential group=':default' limit_privileges=':default' privileges=':default' supp_groups=':default' user='root'/>
+      </method_context>
+      <exec_method name='start' type='method' exec='/etc/init.d/newrelic-daemon start' timeout_seconds='120'>
+        <method_context/>
+      </exec_method>
+      <exec_method name='stop' type='method' exec='/etc/init.d/newrelic-daemon stop' timeout_seconds='120'>
+        <method_context/>
+      </exec_method>
+      <exec_method name='restart' type='method' exec='/etc/init.d/newrelic-daemon restart' timeout_seconds='120'>
+        <method_context/>
+      </exec_method>
+    </instance>
+    <template>
+      <common_name>
+        <loctext xml:lang='C'>New Relic</loctext>
+      </common_name>
+    </template>
+  </service>
+</service_bundle>

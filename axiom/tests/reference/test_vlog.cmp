@@ -1,0 +1,3 @@
+always: NRL_ALWAYS
+error: NRL_ERROR
+warning: NRL_WARNING

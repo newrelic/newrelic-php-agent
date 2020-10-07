@@ -1,0 +1,103 @@
+[
+  {
+    "comment":"1. Simple list of policies",
+    "agent_policies": {
+      "record_sql": {
+          "enabled": true, "supported": true
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true, "supported": true
+      },
+      "custom_events": {
+          "enabled": true, "supported": true
+      },
+      "request_parameters": {
+          "enabled": true, "supported": true
+      },
+      "custom_parameters": {
+          "enabled": true, "supported": true
+      }
+    },
+    "expected_pre_sha256":"allow_raw_exception_messagescustom_eventscustom_parametersrecord_sqlrequest_parameters",
+    "expected":"fa7584a8b22ef66013a630fd4f8b77a95504abb6e1e5a893fc608dedc979d1f2"
+  },
+
+  {
+    "comment":"2. Same policy list as #1, but order shuffled",
+    "agent_policies": {
+      "record_sql": {
+          "enabled": true, "supported": true
+      },
+      "custom_events": {
+          "enabled": true, "supported": true
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true, "supported": true
+      },
+      "custom_parameters": {
+          "enabled": true, "supported": true
+      },
+      "request_parameters": {
+          "enabled": true, "supported": true
+      }
+    },
+    "expected_pre_sha256":"allow_raw_exception_messagescustom_eventscustom_parametersrecord_sqlrequest_parameters",
+    "expected":"fa7584a8b22ef66013a630fd4f8b77a95504abb6e1e5a893fc608dedc979d1f2"
+  },
+
+  {
+    "comment":"3. Ensure unsupported policies are not listed",
+    "agent_policies": {
+      "record_sql": {
+          "enabled": true, "supported": true
+      },
+      "custom_events": {
+          "enabled": true, "supported": false
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true, "supported": true
+      },
+      "custom_parameters": {
+          "enabled": true, "supported": true
+      },
+      "request_parameters": {
+          "enabled": true, "supported": true
+      }
+    },
+    "expected_pre_sha256":"allow_raw_exception_messagescustom_parametersrecord_sqlrequest_parameters",
+    "expected":"daa5531ecb34fc341c514807a61f248fe42d0737698893d301160270589225ae"
+  },
+  {
+    "comment":"4. Does empty policy return an empty string?",
+    "agent_policies": {
+
+    },
+    "expected_pre_sha256":"",
+    "expected":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "comment":"5. Ensure enabled value does not change returned value",
+    "agent_policies": {
+      "record_sql": {
+          "enabled": false, "supported": true
+      },
+      "custom_events": {
+          "enabled": true, "supported": false
+      },
+      "allow_raw_exception_messages": {
+          "enabled": false, "supported": true
+      },
+      "custom_parameters": {
+          "enabled": true, "supported": true
+      },
+      "request_parameters": {
+          "enabled": false, "supported": true
+      }
+    },
+    "expected_pre_sha256":"allow_raw_exception_messagescustom_parametersrecord_sqlrequest_parameters",
+    "expected":"daa5531ecb34fc341c514807a61f248fe42d0737698893d301160270589225ae"
+  }
+]
+
+
+

@@ -1,0 +1,6 @@
+*.d
+test_*
+*.log
+*.out
+!test_*.c
+!test_*.h

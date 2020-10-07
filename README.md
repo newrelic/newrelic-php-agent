@@ -1,6 +1,6 @@
 [![Community Project header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Project.png)](https://opensource.newrelic.com/oss-category/#community-project)
 
-# [Name of Project] [build badges go here when available]
+# New Relic PHP Agent [build badges go here when available]
 
 >[Brief description - what is the project and value does it provide? How often should users expect to get releases? How is versioning set up? Where does this project want to go?]
 
@@ -10,6 +10,10 @@
 
 ## Getting Started
 >[Simple steps to start working with the software similar to a "Hello World"]
+
+For installation instructions, INI file settings,
+and API descriptions please see the FAQ at:
+  http://newrelic.com/docs/php/new-relic-for-php
 
 ## Usage
 >[**Optional** - Include more thorough instructions on how to use the software. This section might not be needed if the Getting Started section is enough. Remove this section if it's not needed.]

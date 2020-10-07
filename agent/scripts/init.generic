@@ -1,0 +1,261 @@
+#!/bin/sh
+#
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Start / stop the New Relic Proxy Daemon
+
+LANG=
+
+id=`id -u 2> /dev/null`
+if [ "$id" != "0" ]; then
+  if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+    echo "INFO: $0 should normally be run by root"
+  fi
+fi
+
+ulimit -n 2048 > /dev/null 2>&1
+
+NAME=newrelic-daemon
+DESC="New Relic Daemon"
+
+#
+# Override cfgfile with your own location if it is not in
+# /etc/newrelic/newrelic.cfg or /usr/local/etc/newrelic/newrelic.cfg
+#
+cfgfile=
+
+#
+# Override nrdaemon with the location of the New Relic daemon if it is not
+# in /usr/bin/newrelic-daemon or /usr/local/bin/newrelic-daemon
+#
+nrdaemon=
+
+if [ -z "${nrdaemon}" ]; then
+  if [ -x /usr/bin/newrelic-daemon ]; then
+    nrdaemon=/usr/bin/newrelic-daemon
+  elif [ -x /usr/local/bin/newrelic-daemon ]; then
+    nrdaemon=/usr/local/bin/newrelic-daemon
+  fi
+fi
+
+if [ -z "${cfgfile}" ]; then
+  if [ -f /etc/newrelic/newrelic.cfg ]; then
+    cfgfile=/etc/newrelic/newrelic.cfg
+  elif [ -f /usr/local/etc/newrelic.cfg ]; then
+    cfgfile=/usr/local/etc/newrelic.cfg
+  fi
+
+  if [ -z "${cfgfile}" ]; then
+    cfgfile=`echo "${nrdaemon}" | sed -e 's/newrelic-daemon/newrelic.cfg/' 2> /dev/null`
+  fi
+
+  [ -f "${cfgfile}" ] || cfgfile=
+fi
+
+pidfile=
+if [ -n "${cfgfile}" -a -f "${cfgfile}" ]; then
+  pidfile=`sed -n -e 's/^[ 	]*pidfile[ 	]*=[ 	]*//p' -e 's/[ 	]*$//' "${cfgfile}" 2> /dev/null`
+fi
+
+pidarg=
+if [ -z "${pidfile}" ]; then
+  if [ -d /var/run ]; then
+    pidfile=/var/run/newrelic-daemon.pid
+  elif [ -d /var/pid ]; then
+    pidfile=/var/pid/newrelic-daemon.pid
+  fi
+  if [ -n "${pidfile}" ]; then
+    pidarg=" --pidfile ${pidfile}"
+  fi
+fi
+
+cfgarg=
+if [ -n "${cfgfile}" -a -f "${cfgfile}" ]; then
+  cfgarg=" -c ${cfgfile}"
+fi
+
+nrdaemonopts="${cfgarg}${pidarg}"
+
+#
+# It's just cosmetic but let's figure how to suppress newlines in echo
+#
+if echo " \c" | grep -q 'c' > /dev/null 2>&1; then
+  en='-n'
+  ec=''
+else
+  en=''
+  ec='\c'
+fi
+
+#
+# Time to wait for the daemon to die, in seconds. If you set this too low the
+# daemon may not have enough time to flush pending data with the New Relic
+# servers, and the restart command may not work.
+#
+DODTIME=15
+
+# Check if the process is running 
+running()
+{
+  if [ -n "${pidfile}" -a -f "${pidfile}" ]; then
+    pid=`cat "${pidfile}" 2> /dev/null`
+    [ -z "${pid}" ] && return 1
+    kill -0 "${pid}" > /dev/null 2>&1 || return 1
+    return 0
+  else
+    maybepid=`ps -ef | grep '/newrelic-daemon ' | sed -e '/grep/d' | awk '{if ($3 == 1) {print $2;}}'`
+    if [ -z "${maybepid}" ]; then
+      return 1
+    else
+      return 0
+    fi
+  fi
+}
+
+start() {
+  if running ; then
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo "$DESC ($NAME) already running"
+    fi
+    exit 0
+  fi
+
+  if [ ! -f "${cfgfile}" ]; then
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      cat <<EOF
+INFO: newrelic.cfg not found - daemon must be launched by the agent.
+      If you want to start the daemon via this script then please copy the
+      file scripts/newrelic.cfg.template to /etc/newrelic/newrelic.cfg,
+      edit it to taste, and then re-run this script. For more information
+      please refer to https://newrelic.com/docs/php/new-relic-for-php.
+EOF
+    fi
+    exit 0
+  fi
+
+  if [ -z "${nrdaemon}" ]; then
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo "ERROR: no newrelic-daemon found"
+    fi
+    exit 6
+  fi
+
+  if [ ! -x "${nrdaemon}" ]; then
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo "ERROR: ${nrdaemon} not executable"
+    fi
+    exit 6
+  fi
+
+  if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+    echo ${en} "Starting $DESC ($NAME) ... ${ec}"
+  fi
+  RETVAL=0
+  "${nrdaemon}" ${nrdaemonopts} || RETVAL=1
+  sleep 1
+  if [ "x${RETVAL}" = "x0" ]; then
+    if running ; then
+      RETVAL=0
+    else
+      RETVAL=1
+    fi
+  fi
+
+  if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+    if [ "x${RETVAL}" = "x0" ]; then
+      echo "OK"
+    else
+      echo "FAILED"
+    fi
+  fi
+  return $RETVAL
+}
+
+stop() {
+  if running ; then
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo ${en} "Stopping $DESC ($NAME) ... ${ec}"
+    fi
+    for pid in `ps -ef | grep '/newrelic-daemon ' | sed -e '/grep/d' | awk '{if ($3 == 1) {print $2;}}'`; do
+      kill -15 $pid > /dev/null 2>&1
+    done
+    tleft=0
+    while test $tleft -lt $DODTIME; do
+      if running ; then
+        sleep 1
+        tleft=`expr $tleft + 1`
+      else
+        break
+      fi
+    done
+
+    for pid in `ps -ef | grep '/newrelic-daemon ' | sed -e '/grep/d' -e '/init.d/d' -e '/rc.d/d' | awk '{print $2;}'`; do
+      kill -9 $pid > /dev/null 2>&1
+    done
+
+    if running ; then
+      if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+        echo "FAILED"
+      fi
+      return 1
+    else
+      if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+        echo "OK"
+      fi
+      return 0
+    fi
+  else
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo "$DESC ($NAME) not running"
+    fi
+  fi
+
+  return 0
+}
+
+restart() {
+  stop || return 1
+  sleep 1
+  start || return 1
+  return 0
+}
+
+status() {
+  if running ; then
+    isnot="is"
+    RETVAL=0
+  else
+    isnot="is not"
+    RETVAL=1
+  fi
+
+  if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+    echo "$DESC ($NAME) ${isnot} running"
+  fi
+  exit $RETVAL
+}
+
+case "$1" in
+  start)
+    start || exit 1
+    ;;
+  stop)
+    stop || exit 1
+    ;;
+  restart)
+    restart || exit 1
+    ;;
+  status)
+    status
+    ;;
+  *)
+    if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+      echo "Usage: $0 {start|stop|status|restart}"
+    fi
+    exit 2
+    ;;
+esac
+
+exit 0
+

@@ -1,0 +1,87 @@
+<?php
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+Test that Cross Application Tracing works with guzzle 5.
+*/
+
+/*SKIPIF
+<?php
+require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
+
+if (version_compare(phpversion(), '5.4.0', '<')) {
+    die("skip: PHP >= 5.4.0 required\n");
+}
+
+if (!unpack_guzzle(5)) {
+    die("skip: guzzle 5 installation required\n");
+}
+*/
+
+/*EXPECT
+tracing endpoint reached
+tracing endpoint reached
+Customer-Header=found tracing endpoint reached
+*/
+
+/*EXPECT_RESPONSE_HEADERS
+X-NewRelic-App-Data=??
+X-NewRelic-App-Data=??
+X-NewRelic-App-Data=??
+*/
+
+/*EXPECT_METRICS
+[
+  "?? agent run id",
+  "?? timeframe start",
+  "?? timeframe stop",
+  [
+    [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                             [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalApp/127.0.0.1/432507#4741547/all"}, [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing"},
+                                                          [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing",
+      "scope":"OtherTransaction/php__FILE__"},            [3, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Guzzle 4-5/detected"},
+                                                          [1,    0,    0,    0,    0,    0]],
+    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
+                                                          [3,    0,    0,    0,    0,    0]]
+  ]
+]
+*/
+
+?>
+<?php
+require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
+require_guzzle(5);
+
+// create URL
+$url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
+
+//and now use guzzle 5 to make an http request
+use GuzzleHttp\Client;
+
+$client = new Client();
+$response = $client->get($url);
+echo $response->getBody();
+
+$response = $client->get($url, [
+    'headers' => [
+        'zip' => 'zap']]);
+echo $response->getBody();
+
+$response = $client->get($url, [
+    'headers' => [
+        'zip' => 'zap',
+        CUSTOMER_HEADER => 'zap']]);
+echo $response->getBody();
