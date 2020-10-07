@@ -1,0 +1,348 @@
+[
+    {
+        "expected_policy_match": true,
+        "comment": "match because only record_sql is required and exists on the agent side.",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": true
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 1
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 3
+                },
+                "custom_parameters": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 4
+                }
+            }
+        }
+    },
+    {
+        "expected_policy_match": false,
+        "comment": "no match because while policy names match, the agent marks agent_policies as not supported",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": false
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 1
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 3
+                },
+                "custom_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 4
+                }
+            }
+        }
+    },
+    {
+        "expected_policy_match": false,
+        "comment": "no match because the support agent_policies doesn't have live_instrumentation",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": true
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 1
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 3
+                },
+                "custom_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 4
+                },
+                "live_instrumentation": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 5
+                }
+            }
+        }
+    },
+    {
+        "expected_policy_match": true,
+        "comment": "matches because the support agent_policies doesn't have live_instrumentation, but live_instrumentation is not required",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": true
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 1
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 3
+                },
+                "custom_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 4
+                },
+                "live_instrumentation": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 5
+                }
+            }
+        }
+    },
+    {
+        "expected_policy_match": false,
+        "comment": "no match because preconnect was missing custom_parameters",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": true
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 1
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 3
+                },
+                "live_instrumentation": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 4
+                }
+            }
+        }
+    },
+    {
+        "expected_policy_match": false,
+        "comment": "no match because preconnect_reply data was missing required field for allow_raw_exception_messages",
+        "agent_policies": {
+            "record_sql": {
+                "enabled": false,
+                "supported": true
+            },
+            "allow_raw_exception_messages": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_events": {
+                "enabled": false,
+                "supported": true
+            },
+            "request_parameters": {
+                "enabled": false,
+                "supported": true
+            },
+            "custom_parameters": {
+                "enabled": false,
+                "supported": true
+            }
+        },
+        "preconnect_reply": {
+            "redirect_host": "collector-107.newrelic.com",
+            "security_policies": {
+                "record_sql": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 0
+
+                },
+                "allow_raw_exception_messages": {
+                    "enabled": false,
+                    "position": 0
+                },
+                "custom_events": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 2
+                },
+                "request_parameters": {
+                    "enabled": false,
+                    "required": true,
+                    "position": 3
+                },
+                "live_instrumentation": {
+                    "enabled": false,
+                    "required": false,
+                    "position": 4
+                }
+            }
+        }
+    }
+]

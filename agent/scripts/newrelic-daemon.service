@@ -1,0 +1,14 @@
+[Unit]
+Description=New Relic proxy daemon
+Documentation=https://docs.newrelic.com/docs/agents/php-agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/newrelic-daemon -f -c /etc/newrelic/newrelic.cfg
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=on-failure
+RestartPreventExitStatus=1
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+#
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+#!/sbin/openrc-run
+
+description="New Relic Daemon"
+command="${nrdaemon:-/usr/bin/newrelic-daemon}"
+command_args=
+pidfile=
+
+if [ -z "$cfgfile" ]; then
+  if [ -f /etc/newrelic/newrelic.cfg ]; then
+    command_args="$command_args -c /etc/newrelic/newrelic.cfg"
+  elif [ -f /usr/local/etc/newrelic/newrelic.cfg ]; then
+    command_args="$command_args -c /usr/local/etc/newrelic/newrelic.cfg"
+  fi
+else
+  command_args="$command_args -c $cfgfile"
+fi
+
+if [ -z "$pidfile" ]; then
+  if [ -n "$cfgfile" ] && [ -f "$cfgfile" ]; then
+    pidfile=$(sed -n -e 's/^[[:space]]*pidfile[[:space:]]*=[[:space:]]*//p' -e 's/[[:space:]]*$//' "$cfgfile" 2>/dev/null)
+  fi
+fi
+
+: "${pidfile:=/var/run/newrelic-daemon.pid}"
+
+if [ -n "$pidfile" ]; then
+  command_args="$command_args --pidfile $pidfile"
+fi
+
+depend() {
+  need net localmount
+}

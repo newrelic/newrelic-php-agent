@@ -1,0 +1,282 @@
+#
+# This is a valgrind suppressions file,
+# It contains suppressions for the New Relic PHP plugin, e.g. our own code.
+#
+# Note: This is a work in progress, and deliberately suppresses known leaks
+#       that occur in older versions of PHP (PHP5).
+#
+# See
+#   https://bugs.php.net/bugs-getting-valgrind-log.php
+#
+# You must compile the entire php stack with -g and probably with -O0 for these suppressions to work.
+#
+# You must set the environment up to make valgrind more useful in php, namely:
+#   export ZEND_DONT_UNLOAD_MODULES=1
+#   export USE_ZEND_ALLOC=0
+#
+
+{
+  <resolve path>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:php_resolve_path
+}
+
+{
+  <php 5.4 virtual file naming and caching>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:tsrm_realpath_r
+  fun:virtual_file_ex
+}
+
+{
+  <php 5.4 compilation malloc>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:phar_compile_file
+}
+
+{
+  <php 5.4 zend compilation realloc>
+  Memcheck:Leak
+  fun:realloc
+  ...
+  fun:phar_compile_file
+}
+
+{
+  <php 5.4 zend execution fails to free run_time_cache>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  fun:_safe_emalloc
+  fun:_ecalloc
+  fun:execute
+}
+
+{
+  <php 5.5.3 zend execution fails to free run_time_cache>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  fun:_safe_emalloc
+  fun:_ecalloc
+  ...
+  fun:zend_execute
+}
+
+{
+  <php 5.4 zend execution internals broad brush>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  ...
+  fun:ZEND_*
+  fun:execute
+}
+
+{
+  <php 5.5.3 zend execution internals broad brush>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  ...
+  fun:ZEND_*
+  fun:execute*
+}
+
+{
+  <php 5.4 zend execution internals broad brush malloc to realloc>
+  Memcheck:Leak
+  fun:malloc
+  fun:realloc
+  fun:_erealloc
+  ...
+  fun:ZEND_*
+  fun:execute*
+}
+
+{
+  <php 5.4 zend execution internals broad brush realloc directly>
+  Memcheck:Leak
+  fun:realloc
+  fun:_erealloc
+  ...
+  fun:ZEND_*
+  fun:execute*
+}
+
+{
+  <php 5.4 zend execution internals>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:_zend_hash_quick_add_or_update
+  ...
+  fun:execute
+}
+
+{
+  <php 5.4 php sockets mechanisms>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  fun:_estrdup
+  fun:php_socket_strerror
+}
+
+{
+  <php mysql engine>
+  Memcheck:Leak
+  fun:malloc
+  fun:my_malloc
+  fun:mysql_init
+}
+
+{
+  <php 5.4 strtr coming out of joomla>
+  Memcheck:Addr1
+  fun:php_strtr_hash
+  fun:php_strtr_array_do_repl
+  fun:php_strtr_array
+  fun:zif_strtr
+  fun:zend_do_fcall_common_helper_SPEC
+  fun:ZEND_DO_FCALL_SPEC_CONST_HANDLER
+}
+
+{
+  <php 5.5 memory leak in zend_parse_arg: see https://bugs.php.net/bug.php?id=65562 >
+  Memcheck:Leak
+  fun:malloc
+  fun:realloc
+  ...
+  fun:zend_parse_arg_impl
+  fun:zend_parse_arg
+  fun:zend_parse_va_args
+  fun:zend_parse_parameters_ex
+  fun:nr_codeigniter_name_the_wt
+}
+
+{
+  <php5.4 memory leak involving auto_globals>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:php_auto_globals_create_server
+  fun:zend_is_auto_global_quick
+}
+
+{
+  <php5.5 memory leak when creating an error>
+  Memcheck:Leak
+  fun:realloc
+  fun:_erealloc
+  fun:xbuf_format_converter
+  fun:vspprintf
+  fun:spprintf
+  fun:php_verror
+  fun:php_error_docref0
+}
+
+{
+  <php5.5.3 leak involving sapi handlers>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  fun:_safe_emalloc
+  fun:_ecalloc
+  fun:zend_execute
+  fun:zend_execute_scripts
+  fun:php_execute_script
+  fun:php_handler
+  fun:ap_run_handler
+  fun:ap_invoke_handler
+  fun:ap_process_async_request
+  fun:ap_process_request
+  fun:ap_process_http_sync_connection
+  fun:ap_process_http_connection
+  fun:ap_run_process_connection
+  fun:ap_process_connection
+}
+
+{
+  <php5.5.3 leak involving sapi handlers>
+  Memcheck:Leak
+  fun:malloc
+  fun:_emalloc
+  fun:ZEND_THROW_SPEC_VAR_HANDLER
+  fun:execute*
+  fun:zend_execute
+}
+
+{
+  <php5.5.3 leak>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:zif_parse_url
+  fun:zend_do_fcall_common_helper_SPEC
+}
+
+{
+  <various PHP 5.x leaks during module startup in SSL builds>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:SSL_*
+  ...
+  fun:zm_startup_*
+}
+
+{
+  <various PHP 5.x curl_global_init leaks>
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:curl_global_init
+  fun:zm_startup_curl
+  fun:zend_startup_module_ex
+  fun:zend_hash_apply
+  fun:zend_startup_modules
+  fun:php_module_startup
+  fun:php_cgi_startup
+  fun:main
+}
+
+{
+  <various PHP 5.x curl_global_init leaks>
+  Memcheck:Leak
+  fun:calloc
+  ...
+  fun:curl_global_init
+  fun:zm_startup_curl
+  fun:zend_startup_module_ex
+  fun:zend_hash_apply
+  fun:zend_startup_modules
+  fun:php_module_startup
+  fun:php_cgi_startup
+  fun:main
+}
+
+{
+   <PHP 5.x readline extension leak>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:dlsym
+   fun:zm_shutdown_cli_readline
+   fun:zm_shutdown_readline
+   fun:module_destructor
+   fun:i_zend_hash_bucket_delete
+   fun:zend_hash_bucket_delete
+   fun:zend_hash_graceful_reverse_destroy
+   fun:zend_destroy_modules
+   fun:zend_shutdown
+   fun:php_module_shutdown
+   fun:main
+}

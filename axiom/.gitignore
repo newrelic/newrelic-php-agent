@@ -1,0 +1,34 @@
+*.a
+*.d
+*.o
+.*.swp
+.deps/
+.libs/
+generated_*.c
+TAGS
+tags
+.gdb_history
+foo
+*.diff
+*.lo
+*.la
+FILES
+*.aux
+*.idx
+*.log
+*.pdf
+*.tex
+junk
+
+#
+# This directory is git clone'd as part of running the hudson tests
+# Perhaps eventually it should become a submodule of the php_agent.
+#
+php_test_tools
+diff.out
+
+# Auto-generated file for platform feature detection.
+nr_config.h
+
+# Generated Protobuf code.
+*.pb-c.[ch]

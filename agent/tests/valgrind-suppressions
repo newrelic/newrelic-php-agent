@@ -1,0 +1,108 @@
+{
+  <glib leaks caused by glibc>
+  Memcheck:Leak
+  ...
+  fun:g_*
+  ...
+  fun:_dl_init
+}
+
+{
+  <various ext/libxml MINIT leaks>
+  Memcheck:Leak
+  ...
+  fun:zm_startup_libxml
+}
+
+{
+  <various ext/readline MINIT leaks>
+  Memcheck:Leak
+  ...
+  fun:zm_startup_readline
+}
+
+{
+  <various ext/readline MSHUTDOWN leaks>
+  Memcheck:Leak
+  ...
+  fun:zm_shutdown_readline
+}
+
+{
+  <indirect dlsym linked caused by us at MINIT; can't be worked around>
+  Memcheck:Leak
+  ...
+  fun:dlsym
+  fun:nr_php_populate_apache_process_globals
+}
+
+{
+  <known PHP 5 leak: see the comment in nr_php_object_has_method() for more detail>
+  Memcheck:Leak
+  ...
+  fun:zend_std_get_method
+  fun:nr_php_object_has_method
+}
+
+{
+  <known PHP 7 ZTS leak from nr_php_object_has_method: zend_string_release() doesn't always free the string due to a refcount race condition>
+  Memcheck:Leak
+  ...
+  fun:zend_string_alloc
+  fun:zend_string_init
+  fun:nr_php_object_has_method
+}
+
+{
+  <known PHP 7 ZTS leak during RINIT: zend_string_release() doesn't always free the string due to a refcount race condition>
+  Memcheck:Leak
+  ...
+  fun:zend_string_alloc
+  fun:zend_string_init
+  ...
+  fun:zm_startup_core
+}
+
+{
+  <GD memory leak in PHP 5.6 ZTS on startup>
+  Memcheck:Leak
+  ...
+  fun:zm_startup_gd
+}
+
+{
+  <nrlamp: agent unit test eval invalid read>
+  Memcheck:Cond
+  ...
+  fun:tlib_php_request_eval
+}
+
+{
+  <nrlamp: agent unit test eval expr invalid read>
+  Memcheck:Cond
+  ...
+  fun:tlib_php_request_eval_expr
+}
+
+{
+  <nrlamp: PHP 5.3 leaks when generating an error while loading an extension>
+  Memcheck:Cond
+  ...
+  fun:zend_error
+  ...
+  fun:tlib_php_require_extension
+}
+
+{
+  <PHP 7.2 ZTS leak: https://bugs.php.net/bug.php?id=75683>
+  Memcheck:Leak
+  ...
+  fun:zend_register_functions
+}
+
+{
+  <PHP 7.3 complaining about uninitialized value in inline assembly>
+  Memcheck:Cond
+  ...
+  fun:zend_string_equal_val
+}

@@ -1,0 +1,124 @@
+//
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+//
+
+namespace protocol;
+
+//
+// How to Regenerate:
+//
+//   cd src/newrelic
+//   flatc -g protocol.fbs
+//   cd protocol
+//   go fmt
+//
+
+table App {
+  license:                     string;
+  app_name:                    string;
+  agent_language:              string;
+  agent_version:               string;
+  high_security:               bool;
+  redirect_collector:          string;
+  environment:                 string; // pre-computed json
+  settings:                    string; // pre-computed json
+  labels:                      string; // pre-computed json
+  display_host:                string; // added in the 5.1 PHP agent release
+  security_policy_token:       string; // added in the 8.1 PHP agent release
+  supported_security_policies: string; // added for PHP agent release 8.1
+  host:                        string; // added for PHP agent release 9.2
+  trace_observer_host:         string; // added for PHP agent release 9.11
+  trace_observer_port:         uint16; // added for PHP agent release 9.11
+  span_queue_size:             uint64; // added for PHP agent release 9.11
+}
+
+enum AppStatus : byte { Unknown = 0, Disconnected = 1, InvalidLicense = 2,
+                        Connected = 3, StillValid = 4 }
+
+table AppReply {
+  status:             AppStatus;
+  connect_reply:      string;   // raw json from the collector
+  security_policies:  string;   // added in the 8.1 PHP agent release; json
+                                // marshalled in the daemon
+  connect_timestamp:  uint64;   // added in the 8.2 PHP agent release; ignored
+                                // if the state is not Connected or StillValid
+  harvest_frequency:  uint16;   // added in PHP agent release 8.2; ignored if
+                                // the state is not Connected or StillValid
+  sampling_target:    uint16;   // added in PHP agent release 8.3; ignored if
+                                // the state is not Connected or StillValid
+}
+
+table Event {
+  data: string; // pre-computed json
+}
+
+table Error {
+  priority: int;
+  data:     string; // pre-computed json
+}
+
+struct MetricData {
+  count:       double;
+  total:       double;
+  exclusive:   double;
+  min:         double;
+  max:         double;
+  sum_squares: double;
+  scoped:      bool;
+  forced:      bool;
+}
+
+table Metric {
+  name:        string;
+  data:        MetricData;
+}
+
+table SlowSQL {
+  id:           uint;
+  count:        int;
+  total_micros: ulong;  // microseconds
+  min_micros:   ulong;  // microseconds
+  max_micros:   ulong;  // microseconds
+  metric:       string;
+  query:        string;
+  params:       string; // pre-computed json
+}
+
+table SpanBatch {
+  count: ulong;
+  encoded: [ubyte];
+}
+
+table Trace {
+  timestamp:     double; // milliseconds since the epoch
+  duration:      double; // milliseconds
+  guid:          string;
+  force_persist: bool;
+  data:          string; // pre-computed json
+}
+
+table Transaction {
+  name:                   string;
+  uri:                    string;
+  synthetics_resource_id: string;
+  pid:                    int;
+  txn_event:              Event;
+  metrics:                [Metric];
+  errors:                 [Error];
+  slow_sqls:              [SlowSQL];
+  custom_events:          [Event];
+  trace:                  Trace;
+  error_events:           [Event]; // added in the 5.1 PHP agent release
+  sampling_priority:      double;  // added in the 8.2 PHP agent release
+  span_events:            [Event];
+}
+
+union MessageBody { App, AppReply, Transaction, SpanBatch }
+
+table Message {
+  agent_run_id: string;
+  data:         MessageBody;
+}
+
+root_type Message;

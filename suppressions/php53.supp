@@ -1,0 +1,81 @@
+# Suppressions for PHP 5.3
+
+{
+   PHP-5.x-OSX
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:?alloc
+   ...
+   fun:getprotobyname
+   ...
+}
+
+#
+# Memory leaked by the compiler
+#
+
+{
+   php53-compile_file:1
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:*alloc
+   fun:_e*alloc
+   ...
+   fun:compile_file
+   ...
+}
+
+#
+# Memory leaked by the executor
+#
+
+{
+   php53-ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*alloc
+   fun:_e*alloc
+   fun:zend_do_fcall_common_helper_SPEC
+   fun:ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER
+   ...
+}
+
+{
+   php53-ZEND_NEW_SPEC_HANDLER
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*alloc
+   fun:_e*alloc
+   fun:ZEND_NEW_SPEC_HANDLER
+   ...
+}
+
+#
+# Memory leaked by the readline extension.
+#
+
+{
+   php53-readline:1
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:rl_set_prompt
+   fun:rl_initialize
+   fun:zm_startup_readline
+   ...
+}
+
+#
+# Memory leaked by the openssl extension.
+#
+
+{
+   php53-openssl:1
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:?alloc
+   ...
+   fun:zm_startup_openssl
+   ...
+}

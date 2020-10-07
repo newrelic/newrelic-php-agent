@@ -1,0 +1,323 @@
+[
+  {
+    "comment":"Agent all true, preconnect with mix of false and true",
+    "agent_policies": {
+      "record_sql": {
+          "enabled": true, "supported": true
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true, "supported": true
+      },
+      "custom_events": {
+          "enabled": true, "supported": true
+      },
+      "request_parameters": {
+          "enabled": true, "supported": true
+      },
+      "custom_parameters": {
+          "enabled": true, "supported": true
+      }
+    },
+    "preconnect_policies": {
+      "record_sql": {
+          "enabled": false
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true
+      },
+      "custom_events": {
+          "enabled": false
+      },
+      "request_parameters": {
+          "enabled": true
+      },
+      "custom_parameters": {
+          "enabled": false
+      }
+    },
+    "expected_intersection": {
+      "record_sql": {
+          "enabled": false
+      },
+      "allow_raw_exception_messages": {
+          "enabled": true
+      },
+      "custom_events": {
+          "enabled": false
+      },
+      "request_parameters": {
+          "enabled": true
+      },
+      "custom_parameters": {
+          "enabled": false
+      }
+    }
+  },
+  {
+      "comment":"Agent all true, preconnect all false",
+      "agent_policies": {
+          "record_sql": {
+              "enabled": true, "supported": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true, "supported": true
+          },
+          "custom_events": {
+              "enabled": true, "supported": true
+          },
+          "request_parameters": {
+              "enabled": true, "supported": true
+          },
+          "custom_parameters": {
+              "enabled": true, "supported": true
+          }
+      },
+      "preconnect_policies": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false
+          },
+          "custom_events": {
+              "enabled": false
+          },
+          "request_parameters": {
+              "enabled": false
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      },
+      "expected_intersection": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false
+          },
+          "custom_events": {
+              "enabled": false
+          },
+          "request_parameters": {
+              "enabled": false
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      }
+  },
+  {
+      "comment":"Agent all false, preconnect all true",
+      "agent_policies": {
+          "record_sql": {
+              "enabled": false, "supported": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false, "supported": true
+          },
+          "custom_events": {
+              "enabled": false, "supported": true
+          },
+          "request_parameters": {
+              "enabled": false, "supported": true
+          },
+          "custom_parameters": {
+              "enabled": false, "supported": true
+          }
+      },
+      "preconnect_policies": {
+          "record_sql": {
+              "enabled": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "custom_events": {
+              "enabled": true
+          },
+          "request_parameters": {
+              "enabled": true
+          },
+          "custom_parameters": {
+              "enabled": true
+          }
+      },
+      "expected_intersection": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false
+          },
+          "custom_events": {
+              "enabled": false
+          },
+          "request_parameters": {
+              "enabled": false
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      }
+  },
+  {
+      "comment":"Inverse mix of true and false in agent and preconnect.",
+      "agent_policies": {
+          "record_sql": {
+              "enabled": true, "supported": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false, "supported": true
+          },
+          "custom_events": {
+              "enabled": true, "supported": true
+          },
+          "request_parameters": {
+              "enabled": false, "supported": true
+          },
+          "custom_parameters": {
+              "enabled": true, "supported": true
+          }
+      },
+      "preconnect_policies": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "custom_events": {
+              "enabled": false
+          },
+          "request_parameters": {
+              "enabled": true
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      },
+      "expected_intersection": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": false
+          },
+          "custom_events": {
+              "enabled": false
+          },
+          "request_parameters": {
+              "enabled": false
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      }
+  },
+  {
+      "comment":"Mix of true and false, with some expected values true.",
+      "agent_policies": {
+          "record_sql": {
+              "enabled": true, "supported": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true, "supported": true
+          },
+          "custom_events": {
+              "enabled": true, "supported": true
+          },
+          "request_parameters": {
+              "enabled": false, "supported": true
+          },
+          "custom_parameters": {
+              "enabled": false, "supported": true
+          }
+      },
+      "preconnect_policies": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "custom_events": {
+              "enabled": true
+          },
+          "request_parameters": {
+              "enabled": true
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      },
+      "expected_intersection": {
+          "record_sql": {
+              "enabled": false
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "custom_events": {
+              "enabled": true
+          },
+          "request_parameters": {
+              "enabled": false
+          },
+          "custom_parameters": {
+              "enabled": false
+          }
+      }
+  },
+  {
+      "comment":"Tests that an unsupported agent policy (custom_events) does not end up in the expected_intersection. Unexpected case.",
+      "agent_policies": {
+          "record_sql": {
+              "enabled": true, "supported": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true, "supported": true
+          },
+          "custom_events": {
+              "enabled": true, "supported": false
+          },
+          "request_parameters": {
+              "enabled": true, "supported": true
+          },
+          "custom_parameters": {
+              "enabled": true, "supported": true
+          }
+      },
+      "preconnect_policies": {
+          "record_sql": {
+              "enabled": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "custom_events": {
+              "enabled": true
+          },
+          "request_parameters": {
+              "enabled": true
+          },
+          "custom_parameters": {
+              "enabled": true
+          }
+      },
+      "expected_intersection": {
+          "record_sql": {
+              "enabled": true
+          },
+          "allow_raw_exception_messages": {
+              "enabled": true
+          },
+          "request_parameters": {
+              "enabled": true
+          },
+          "custom_parameters": {
+              "enabled": true
+          }
+      }
+  }
+]

@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Start / stop the New Relic Proxy Daemon
+
+LANG=
+
+id=`id -u 2> /dev/null`
+if [ "$id" != "0" ]; then
+  if [ -z "${NR_SILENT}" -a -z "${SILENT}" ]; then
+    echo "INFO: $0 should normally be run by root"
+  fi
+fi
+
+ulimit -n 2048 > /dev/null 2>&1
+
+NAME=newrelic-daemon
+DESC="New Relic Daemon"
+
+#
+# Override cfgfile with your own location if it is not in
+# /etc/newrelic/newrelic.cfg or # /usr/local/etc/newrelic/newrelic.cfg
+#
+cfgfile=
+
+#
+# Override nrdaemon with the location of the New Relic daemon if it is not
+# in /usr/bin/newrelic-daemon or /usr/local/bin/newrelic-daemon
+#
+nrdaemon=
+
+if [ -z "${nrdaemon}" ]; then
+  if [ -x /usr/bin/newrelic-daemon ]; then
+    nrdaemon=/usr/bin/newrelic-daemon
+  elif [ -x /usr/local/bin/newrelic-daemon ]; then
+    nrdaemon=/usr/local/bin/newrelic-daemon
+  fi
+fi
+
+if [ -z "${cfgfile}" ]; then
+  if [ -f /etc/newrelic/newrelic.cfg ]; then
+    cfgfile=/etc/newrelic/newrelic.cfg
+  elif [ -f /usr/local/etc/newrelic.cfg ]; then
+    cfgfile=/usr/local/etc/newrelic.cfg
+  fi
+
+  if [ -z "${cfgfile}" ]; then
+    cfgfile=`echo "${nrdaemon}" | sed -e 's/newrelic-daemon/newrelic.cfg/' 2> /dev/null`
+  fi
+
+  [ -f "${cfgfile}" ] || cfgfile=
+fi
+
+pidfile=
+if [ -n "${cfgfile}" -a -f "${cfgfile}" ]; then
+  pidfile=`sed -n -e 's/^[ 	]*pidfile[ 	]*=[ 	]*//p' -e 's/[ 	]*$//' "${cfgfile}" 2> /dev/null`
+fi
+
+pidarg=
+if [ -z "${pidfile}" ]; then
+  if [ -d /var/run ]; then
+    pidfile=/var/run/newrelic-daemon.pid
+  elif [ -d /var/pid ]; then
+    pidfile=/var/pid/newrelic-daemon.pid
+  fi
+  if [ -n "${pidfile}" ]; then
+    pidarg=" --pidfile ${pidfile}"
+  fi
+fi
+
+cfgarg=
+if [ -n "${cfgfile}" -a -f "${cfgfile}" ]; then
+  cfgarg=" -c ${cfgfile}"
+fi
+
+nrdaemonopts="${cfgarg}${pidarg}"
+
