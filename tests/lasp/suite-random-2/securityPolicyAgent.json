@@ -1,0 +1,18 @@
+{
+    "record_sql": {
+        "enabled": false,
+        "supported": true
+    },
+    "allow_raw_exception_messages": {
+        "enabled": false,
+        "supported": true
+    },
+    "custom_events": {
+        "enabled": false,
+        "supported": true
+    },
+    "custom_parameters": {
+        "enabled": false,
+        "supported": true
+    }
+}
