@@ -52,7 +52,7 @@ release-installer: Makefile bin/newrelic-install bin/newrelic-iutil | releases/$
 	cp bin/newrelic-iutil   releases/$(RELEASE_OS)/scripts/newrelic-iutil.$(RELEASE_ARCH)
 
 release-docs: Makefile | releases/$(RELEASE_OS)/
-	cp agent/README.txt LICENSE.txt releases/$(RELEASE_OS)
+	cp agent/README.txt LICENSE releases/$(RELEASE_OS)
 
 release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 	cp agent/scripts/init.alpine               releases/$(RELEASE_OS)/scripts
