@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"newrelic/log"
 	"newrelic/sysinfo"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -241,6 +242,13 @@ func ScrubHost(in []byte) []byte {
 	return re.ReplaceAll(in, []byte("__HOST__"))
 }
 
+func SubEnvVars(in []byte) []byte {
+	re := regexp.MustCompile("ENV\\[.*?\\]")
+	return re.ReplaceAllFunc(in, func(match []byte) []byte {
+		return []byte(os.Getenv(string(match[4 : len(match)-1])))
+	})
+}
+
 // Response headers have to be compared in this verbose way to support the "??"
 // wildcard.
 func (t *Test) compareResponseHeaders() {
@@ -329,6 +337,8 @@ func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreat
 			return
 		}
 	}
+
+	expected = SubEnvVars(expected)
 
 	err = IsFuzzyMatch(expected, actual)
 	if nil != err {
