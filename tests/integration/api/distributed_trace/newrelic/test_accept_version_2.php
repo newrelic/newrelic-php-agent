@@ -8,6 +8,13 @@
 Test that a version 0.2 payload is accepted.
 */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_distributed_traces"] || !$_ENV["APP_distributed_traces"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 */

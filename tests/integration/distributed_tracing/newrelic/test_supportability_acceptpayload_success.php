@@ -9,6 +9,13 @@ Tests the Supportability metric "Supportability/DistributedTrace/AcceptPayload/S
 when the payload is correct.
  */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false

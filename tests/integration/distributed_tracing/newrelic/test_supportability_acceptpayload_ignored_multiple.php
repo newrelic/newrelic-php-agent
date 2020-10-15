@@ -10,6 +10,13 @@ Tests the Supportability metric:
 by calling newrelic_accept_distributed_trace_payload twice.
  */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
