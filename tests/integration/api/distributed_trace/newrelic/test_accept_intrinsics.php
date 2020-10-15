@@ -12,8 +12,8 @@ Test that a version 0.1 payload is accepted.
 newrelic.distributed_tracing_enabled=1
 */
 
-/*EXPECT_REGEX
-^\s*(PHP )?Deprecated:\s*Function newrelic_accept_distributed_trace_payload\(\)*
+/*EXPECT
+ok - Accepted
 */
 
 
@@ -43,13 +43,10 @@ newrelic.distributed_tracing_enabled=1
         "parent.transportDuration": "??",
         "parentId": "0011223344556677",
         "parentSpanId": "332c7b9a18777990",
-        "error": true
+        "error": false
       },
       {},
-      {
-        "errorType": "Error",
-        "errorMessage": "Function newrelic_accept_distributed_trace_payload() is deprecated.  Please see https:\/\/docs.newrelic.com\/docs\/agents\/php-agent\/features\/distributed-tracing-php-agent#manual for more details."
-       }
+      {}
     ]
   ]
 ]
