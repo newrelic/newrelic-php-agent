@@ -12,7 +12,7 @@
    cross application tracing is enabled.
 */
 
-/*XFAIL*/
+/*XFAIL Expected */
 
 /*SKIPIF
 <?php
