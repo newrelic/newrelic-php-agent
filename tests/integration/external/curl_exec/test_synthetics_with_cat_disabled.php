@@ -10,7 +10,7 @@ the current request is a synthetics request regardless of whether
 cross application tracing is enabled.
 */
 
-/*XFAIL*/
+/*XFAIL Expected */
 
 /*INI
 newrelic.cross_application_tracer.enabled = false
