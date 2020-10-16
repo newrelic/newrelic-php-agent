@@ -82,7 +82,7 @@ function test_memcache() {
   tap_assert($memcache->set($k1, $v1), 'set key 1 (2 args)');
   tap_equal($v1, $memcache->get($k1), 'get key 1');
 
-  /*Three argument form */
+  /* Three argument form */
   list($k2, $v2) = array($keys[1], $data[$keys[1]]);
   tap_assert($memcache->set($k2, $v2, false), 'set key 2 (3 args)');
   tap_equal($v2, $memcache->get($k2), 'get key 2');
