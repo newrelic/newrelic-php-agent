@@ -7,13 +7,20 @@
 /*DESCRIPTION
 The agent should add X-NewRelic-Synthetics headers to external calls when
 the current request is from the Synthetics product.
+ */
+
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["SYNTHETICS_HEADER_supportability"]) {
+    die("skip: env vars required");
+}
 */
 
 /*
  * The synthetics header contains the following JSON.
  *   [
  *     1,
- *     432507,
+ *     ENV[ACCOUNT_supportability],
  *     "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
  *     "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
  *     "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
@@ -21,7 +28,7 @@ the current request is from the Synthetics product.
  */
 
 /*HEADERS
-X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERRMUERofEg4LCF1bXQxJW1xZCEtSUANWFQhSUl4fWQ9TC1sLWQgOXF0LRE8aXl0JDA9aXBoLCVxbHlNUUFYdD1UPVRVZX14IVAxcDF4PCVsVPA==
+X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
 
 /*EXPECT
@@ -44,10 +51,11 @@ X-NewRelic-App-Data=??
     [{"name":"External/all"},                             [   1, "??", "??", "??", "??", "??"]],
     [{"name":"External/allWeb"},                          [   1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                   [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/432507#4741547/all"}, [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing"},
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"},
                                                           [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing",
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"},
+                                                          [   1, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
       "scope":"WebTransaction/Uri__FILE__"},              [   1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                           [   1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransaction"},                           [   1, "??", "??", "??", "??", "??"]],

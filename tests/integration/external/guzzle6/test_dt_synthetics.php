@@ -19,6 +19,10 @@ if (version_compare(phpversion(), '5.5.0', '<=')) {
 if (!unpack_guzzle(6)) {
     die("skip: guzzle 6 installation required\n");
 }
+
+if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+    die("skip: env vars required");
+}
 */
 
 /*INI
@@ -30,7 +34,7 @@ newrelic.cross_application_tracer.enabled = false
  * The synthetics header contains the following JSON.
  *   [
  *     1,
- *     432507,
+ *     ENV[ACCOUNT_supportability],
  *     "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
  *     "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
  *     "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
@@ -38,7 +42,7 @@ newrelic.cross_application_tracer.enabled = false
  */
 
 /*HEADERS
-X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERRMUERofEg4LCF1bXQxJW1xZCEtSUANWFQhSUl4fWQ9TC1sLWQgOXF0LRE8aXl0JDA9aXBoLCVxbHlNUUFYdD1UPVRVZX14IVAxcDF4PCVsVPA==
+X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
 
 

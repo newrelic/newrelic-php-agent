@@ -13,12 +13,19 @@ and the transaction event when the synthetics feature is disabled.
  * The synthetics header contains the following.
  *   [
  *     1,
- *     432507,
+ *     ENV[ACCOUNT_supportability],
  *     "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
  *     "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
  *     "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
  *   ]
  */
+
+/*SKIPIF
+<?php
+if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+    die("skip: env vars required");
+}
+*/
 
 /*INI
 newrelic.synthetics.enabled = false
@@ -27,7 +34,7 @@ newrelic.special.expensive_node_min = 0
 */
 
 /*HEADERS
-X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERRMUERofEg4LCF1bXQxJW1xZCEtSUANWFQhSUl4fWQ9TC1sLWQgOXF0LRE8aXl0JDA9aXBoLCVxbHlNUUFYdD1UPVRVZX14IVAxcDF4PCVsVPA==
+X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
 
 /*EXPECT_ANALYTICS_EVENTS

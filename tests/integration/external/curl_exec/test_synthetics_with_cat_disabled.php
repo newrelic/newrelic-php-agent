@@ -8,6 +8,13 @@
 The agent SHALL add X-NewRelic-Synthetics headers to external calls when
 the current request is a synthetics request regardless of whether
 cross application tracing is enabled.
+ */
+
+/*SKIPIF
+<?php
+if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+    die("skip: env vars required");
+}
 */
 
 /*XFAIL Expected */
@@ -20,7 +27,7 @@ newrelic.cross_application_tracer.enabled = false
  * The synthetics header contains the following JSON.
  *   [
  *     1,
- *     432507,
+ *     ENV[ACCOUNT_supportability],
  *     "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
  *     "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
  *     "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
@@ -28,7 +35,7 @@ newrelic.cross_application_tracer.enabled = false
  */
 
 /*HEADERS
-X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERRMUERofEg4LCF1bXQxJW1xZCEtSUANWFQhSUl4fWQ9TC1sLWQgOXF0LRE8aXl0JDA9aXBoLCVxbHlNUUFYdD1UPVRVZX14IVAxcDF4PCVsVPA==
+X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
 
 /*EXPECT

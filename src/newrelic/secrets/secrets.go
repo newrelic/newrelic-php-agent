@@ -11,4 +11,6 @@ var (
 	NewrelicCollectorHost = ""
 	NewrelicLicenseKey    = ""
 	NewrelicCollectorKeys = ""
+	NewrelicAccountId     = ""
+	NewrelicAppId         = ""
 )

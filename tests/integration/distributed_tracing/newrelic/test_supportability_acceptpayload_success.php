@@ -39,9 +39,9 @@ newrelic.cross_application_tracer.enabled = false
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/accept_distributed_trace_payload"},
                                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/App/432507/4741547/Unknown/all"},
+    [{"name":"TransportDuration/App/ENV[ACCOUNT_supportability]/ENV[APP_supportability]/Unknown/all"},
                                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/App/432507/4741547/Unknown/allOther"},
+    [{"name":"TransportDuration/App/ENV[ACCOUNT_supportability]/ENV[APP_supportability]/Unknown/allOther"},
                                                           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
