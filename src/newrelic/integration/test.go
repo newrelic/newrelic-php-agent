@@ -174,7 +174,8 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	headers := make(http.Header)
 	for key, vals := range t.headers {
 		for _, v := range vals {
-			headers.Set(key, string(SubEnvVars([]byte(v))))
+			expanded := SubEnvVars([]byte(v))
+			headers.Set(key, string(expanded))
 		}
 	}
 
