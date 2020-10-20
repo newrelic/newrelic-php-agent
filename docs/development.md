@@ -16,12 +16,6 @@ The PHP agent supports PHP versions `5.3`, `5.4`, `5.5`, `5.6`, `7.0`, `7.1`, `7
 
 Install the [latest version of Go](https://golang.org/dl/). Typically it's installed in `/usr/local/go`. Be sure to extend your **`$PATH`** to include it!
 
-### Submodules
-
-To run all the unit tests, you will need to get the `cross_agent_tests` submodule. This can be done by running:
-```
-git submodule update --init
-```
 ## Build the PHP Agent
 
 Hooray, you've met all the requirements! Now let's build the agent. From the top level of the php agent directory, run `make` to build both the agent and daemon. The agent can be found in `agent/.libs/newrelic.so`, and the daemon and associated Go binaries can be found in `newrelic-php-agent/bin`.
@@ -30,19 +24,13 @@ Hooray, you've met all the requirements! Now let's build the agent. From the top
 make
 ```
 
-To only build the agent:
+To build the agent and install it to the active PHP installation:
 
 ```
-make agent
+make agent-install
 ```
+For this to work with the daemon, you should copy the daemon binary (found in `newrelic-php-agent/bin`) to `usr/bin/newrelic-daemon`.
 
-To only build the daemon:
-
-```
-make daemon
-```
-
-See [make](#make) for more information of the makefile capabilities.
 
 ### Configuration settings
 
