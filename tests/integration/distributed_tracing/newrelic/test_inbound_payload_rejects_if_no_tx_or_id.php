@@ -10,6 +10,13 @@ the guid (d.id). A ParseException supportability metric should be created when
 the payload is rejected for this reason.
  */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
@@ -37,6 +44,6 @@ newrelic.cross_application_tracer.enabled = false
 ]
 */
 
-$payload = '{"v":[0,1],"d":{"ty":"App","ac":"000000","ap":"1111111","tr":"3925aa3552e648dd","pr":1.82236,"sa":true,"ti":1538512769934,"tk":"222222"}}';
+$payload = "{\"v\":[0,1],\"d\":{\"ty\":\"App\",\"ac\":\"000000\",\"ap\":\"1111111\",\"tr\":\"3925aa3552e648dd\",\"pr\":1.82236,\"sa\":true,\"ti\":1538512769934,\"tk\":\"{$_ENV['ACCOUNT_supportability_trusted']}\"}}";
 
 newrelic_accept_distributed_trace_payload($payload);

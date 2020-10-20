@@ -12,7 +12,7 @@ by calling newrelic_accept_distributed_trace_payload twice.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["ACCOUNT_supportability_trusted"]) {
     die("skip: env vars required");
 }
 */
@@ -50,6 +50,6 @@ newrelic.cross_application_tracer.enabled = false
 ]
 */
 
-$payload = "{\"v\":[0,1],\"d\":{\"ty\":\"App\",\"ac\":\"{$_ENV['ACCOUNT_supportability']}\",\"ap\":\"{$_ENV['APP_supportability']}\",\"id\":\"3925aa3552e648dd\",\"tr\":\"3925aa3552e648dd\",\"pr\":1.82236,\"sa\":true,\"ti\":1538512769934,\"tk\":\"222222\"}}";
+$payload = "{\"v\":[0,1],\"d\":{\"ty\":\"App\",\"ac\":\"{$_ENV['ACCOUNT_supportability']}\",\"ap\":\"{$_ENV['APP_supportability']}\",\"id\":\"3925aa3552e648dd\",\"tr\":\"3925aa3552e648dd\",\"pr\":1.82236,\"sa\":true,\"ti\":1538512769934,\"tk\":\"{$_ENV['ACCOUNT_supportability_trusted']}\"}}";
 newrelic_accept_distributed_trace_payload($payload);
 newrelic_accept_distributed_trace_payload($payload);

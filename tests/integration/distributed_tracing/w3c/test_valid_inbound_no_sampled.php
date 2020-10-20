@@ -9,6 +9,13 @@ Tests that a trace context header without sampled of priority is still accepted
 correctly.
  */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
@@ -117,7 +124,9 @@ newrelic.cross_application_tracer.enabled = false
 
 $payload = array(
   'trAcepaRent' => "00-eb970877cfd349b4dcf5eb9957283bca-5f474d64b9cc9b2a-00",
-  'traCeStAte' => "222222@nr=0-2-111111-2827902-5f474d64b9cc9b2a-7d3efb1b173fecfa---1518469636035"
+  'traCeStAte' => "{$_ENV['ACCOUNT_supportability_trusted']}@nr=0-2-111111-2827902-5f474d64b9cc9b2a-7d3efb1b173fecfa---1518469636035"
 );
+
+var_dump($payload);
 
 newrelic_accept_distributed_trace_headers($payload, "HTTP");
