@@ -117,7 +117,7 @@ newrelic.cross_application_tracer.enabled = false
 
 $payload = array(
   'trAcepaRent' => "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00",
-  'traCeStAte' => "dd=YzRiMTIxODk1NmVmZTE4ZQ,310705@nr=0-0-33-5043-27ddd2d8890283b4-5569065a5b1313bd-1-1.23456-1518469636025"
+  'traCeStAte' => "dd=YzRiMTIxODk1NmVmZTE4ZQ,222222@nr=0-0-33-5043-27ddd2d8890283b4-5569065a5b1313bd-1-1.23456-1518469636025"
 );
 
 newrelic_accept_distributed_trace_headers($payload, "HTTPS");

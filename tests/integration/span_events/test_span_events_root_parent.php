@@ -73,7 +73,7 @@ newrelic.cross_application_tracer.enabled = false
 Hello
 */
 
-$payload = '{"v":[0,1],"d":{"ty":"App","ac":"111111","ap":"222222","tr":"3221bf09aa0bcf0d","tx":"6789","id":"4321","tk":"1010","pr":0.1234,"sa":true,"ti":1482959525577,"tk":"310705"}}';
+$payload = '{"v":[0,1],"d":{"ty":"App","ac":"111111","ap":"222222","tr":"3221bf09aa0bcf0d","tx":"6789","id":"4321","tk":"1010","pr":0.1234,"sa":true,"ti":1482959525577,"tk":"222222"}}';
 newrelic_accept_distributed_trace_payload($payload, 'http');
 newrelic_add_custom_tracer('main'); 
 

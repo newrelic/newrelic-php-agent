@@ -38,6 +38,6 @@ newrelic.cross_application_tracer.enabled = false
 ]
 */
 
-$payload = '{"v":[1,1],"d":{"ty":"App","ac":"000000","ap":"1111111","id":"3925aa3552e648dd","tr":"3925aa3552e648dd","pr":1.82236,"sa":true,"ti":1538512769934,"tk":"310705"}}';
+$payload = '{"v":[1,1],"d":{"ty":"App","ac":"000000","ap":"1111111","id":"3925aa3552e648dd","tr":"3925aa3552e648dd","pr":1.82236,"sa":true,"ti":1538512769934,"tk":"222222"}}';
 
 newrelic_accept_distributed_trace_payload($payload);

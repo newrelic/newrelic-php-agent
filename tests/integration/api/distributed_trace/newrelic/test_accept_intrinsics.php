@@ -53,6 +53,6 @@ ok - Accepted
 */
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/tap.php');
 
-$payload = '{"v":[0,1],"d":{"ty":"App","ac":"111111","ap":"2222222","id":"332c7b9a18777990","tr":"aabbccddeeff0000","pr":1.28674,"sa":true,"ti":1530311294670,"tk":"310705","tx":"0011223344556677"}}';
+$payload = '{"v":[0,1],"d":{"ty":"App","ac":"111111","ap":"2222222","id":"332c7b9a18777990","tr":"aabbccddeeff0000","pr":1.28674,"sa":true,"ti":1530311294670,"tk":"222222","tx":"0011223344556677"}}';
 
 $result = tap_equal(true, newrelic_accept_distributed_trace_payload($payload), 'Accepted');
