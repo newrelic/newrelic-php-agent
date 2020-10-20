@@ -46,18 +46,15 @@ See [make](#make) for more information of the makefile capabilities.
 
 ### Configuration settings
 
-The PHP agent is configured using a **`newrelic.ini`** config file. To get started with configuring the PHP agent, create your own copy of the template found in `agent/scripts/newrelic.ini.template`. The `newrelic.ini` file needs to be placed in the same location as your `php.ini`. Running `php --ini` will tell you where that is. Once your `newrelic.ini` is created and in the correct location, edit it to add a license key, a unique application name, and a full path to your daemon. Make sure your log directory exists and is read/writable; `/opt/nr/logs` or `/var/log/` are good options. You may want to change the log levels for the [agent](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-loglevel) and [daemon](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-loglevel). For more information on the PHP agent configuration see our [documentation](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration).
+The PHP agent is configured using a **`newrelic.ini`** config file. To get started with configuring the PHP agent, create your own copy of the template found in `agent/scripts/newrelic.ini.template`. The `newrelic.ini` file needs to be placed in the same location as your `php.ini`. Running `php --ini` will tell you where that is. Once your `newrelic.ini` is created and in the correct location, edit it to add a license key, a unique application name, and a full path to your daemon. Make sure your log directory exists and is read/writable; `/opt/nr/logs` or `/var/log/` are good options. The default log level for both is `info` but this can be changed in both the [agent](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-loglevel) and [daemon](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-loglevel). The more verbose settings can generate a lot of information very quickly. When necessary, we suggest setting `debug` for short periods of time to identify problems. For more information on the PHP agent configuration see our [documentation](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration).
 
 Here are some suggested settings to change:
 ```
 newrelic.license = "<my_license_key>"
 newrelic.logfile = "/opt/nr/logs/php_agent.log"
-newrelic.loglevel = "verbosedebug"
 newrelic.appname = "<my_app_name>"
 newrelic.daemon.logfile = "/opt/nr/logs/newrelic-daemon.log"
-newrelic.daemon.loglevel = "debug"
 newrelic.daemon.location = "<parent_directory_of_php_agent>/newrelic-php-agent/bin/daemon"
-newrelic.daemon.collector_host = "staging-collector.newrelic.com"
 ```
 
 Once the agent is compiled, make sure the `newrelic.so` extension you just created is somewhere PHP can see it. You can do this by editing the `extension` setting.
@@ -115,22 +112,21 @@ Here are the non-exhaustive capabilities of the Makefile. All targets should sup
 |command|function|
 |-------|--------|
 |`make clean`|Cleans all the things! This should return your working directory to a pristine, slightly minty state|
-|`make agent-clean`|Just cleans the agent. Useful if you want to build against a different PHP version but don't want to rebuild axiom or the daemon.|
+|`make agent-clean`|Just cleans the agent. Useful if you want to build against a different PHP version but don't want to rebuild axiom or the daemon|
 |`make axiom-clean`|Just clean axiom|
 |`make daemon-clean`|Just clean the daemon|
 
 ## Take the agent for a spin
 
-Make sure the new newrelic.so you just created is somewhere PHP can see it. This is done by using the `extension` setting in the `newrelic.ini`.
+Once the agent (and daemon) are built and configured, monitoring can commence. Below is a quick example to demonstrate instrumentation:
 
 **phpinfo()**
-Request phpinfo() in the terminal and watch the activity in the daemon and agent logs. Any php program will automatically start the agent and daemon and in a few moments you can view the activity in then check your New relic one account. Wow, look at all those non-web background transactions!
+Request phpinfo() in the terminal and watch the activity in the daemon and agent logs. Any php program will automatically start the agent and daemon and in a few moments you can view the activity in your New Relic account. Wow, look at all those non-web background transactions!
 
 ```
 php -i # Do this a few times to fully connect
-tail -f /opt/nr/logs/php_agent.log
-tail -f /opt/nr/logs/newrelic-daemon.log
 ```
+
 ### Start the daemon manually
 
 You can start the daemon manually or via the agent (the previous example had the agent start the daemon). To start it manually, tell the daemon not to launch automatically in your newrelic.ini with newrelic.daemon.dont_launch = 3 and start it with appropriate flags. See our [daemon .ini](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-settings) and [newrelic.cfg](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings) settings for more info.
@@ -142,8 +138,8 @@ You can start the daemon manually or via the agent (the previous example had the
 
 The PHP agent API allows you to extend the functionality of the PHP agent. The agent API is included by default with your installation, so no additional configuration is required to use the agent.
 
-Among other things, you can use the API to customize your app name collect errors; record custom attributes, custom events, and custom metrics; and enable or disable browser monitoring. For an introduction to this API, see Guide to [PHP agent API](https://docs.newrelic.com/docs/agents/php-agent/api-guides/guide-using-php-agent-api).
+Among other things, you can use the API to customize your app name; collect errors; record custom attributes, custom events, and custom metrics; and enable or disable browser monitoring. For an introduction to this API, see our guide to the [PHP agent API](https://docs.newrelic.com/docs/agents/php-agent/api-guides/guide-using-php-agent-api).
 
 ## Troubleshooting
 
-If you are having issues with the PHP Agent, our [troubleshooting](https://docs.newrelic.com/docs/agents/php-agent/troubleshooting) is a great start to look for an answer. 
+If you are having issues with the PHP Agent, our [troubleshooting](https://docs.newrelic.com/docs/agents/php-agent/troubleshooting) guide is a great starting point.
