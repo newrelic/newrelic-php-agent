@@ -109,11 +109,17 @@ Here are the non-exhaustive capabilities of the Makefile. All targets should sup
 Once the agent (and daemon) are built and configured, monitoring can commence. Below is a quick example to demonstrate instrumentation:
 
 **phpinfo()**
-Request phpinfo() in the terminal and watch the activity in the daemon and agent logs. Any php program will automatically start the agent and daemon and in a few moments you can view the activity in your New Relic account. Wow, look at all those non-web background transactions!
+For this example our app is named `phpinfo example` and we have correctly [configured](configuration-settings) our agent. First, we create a simple php file that contains a call to `phpinfo()`. Next, we run it to start the agent and begin instrumentation. We should be to see activity in the both the agent and daemon logs at this point. Any php program that is run (when the agent is correctly configured) will automatically start the agent and daemon. Within a few moments, the application should be available in your New Relic account and you will be able to view the instrumentation. 
 
 ```
-php -i # Do this a few times to fully connect
+echo "<?php phpinfo(); ?>" > phpinfo.php
+php phpinfo.php # Do this a few times to fully connect
 ```
+
+Here is how our simple example transaction looks like in New Relic One.
+![phpinfo() transaction example](img/Phpinfo_Example_Summary.png)
+
+![phpinfo() transaction example](img/Phpinfo_Example_Transaction.png)
 
 ### Start the daemon manually
 

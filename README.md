@@ -4,6 +4,8 @@
 
 The [New Relic APM PHP Agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) monitors your application to help you identify and solve performance issues. The PHP agent consists of a PHP extension (which collects data from your application) and a local proxy daemon (which transmits the data to New Relic).
 
+![PHP Agent Architecture](docs/img/PHP_Agent_Architecture.png)
+
 ## Installation
 
 The PHP agent supports many of the most common PHP releases, PHP frameworks, databases, and libraries. Prior to installation, please ensure your system meets the [compatibility requirements](https://docs.newrelic.com/docs/agents/php-agent/getting-started/php-agent-compatibility-requirements).
@@ -24,7 +26,7 @@ Should you need assistance with New Relic products, you are in good hands with s
 
 This [troubleshooting framework](https://discuss.newrelic.com/t/php-troubleshooting-framework-install/108683) steps you through common troubleshooting questions.
 
-New Relic offers NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
+New Relic offers NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. For customers with a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
 
 If the issue has been confirmed as a bug or is a Feature request, please file a Github issue.
 
@@ -38,7 +40,7 @@ If the issue has been confirmed as a bug or is a Feature request, please file a 
 
 ## Privacy
 
-At New Relic we take your privacy and the security of your information seriously, and are committed to protecting your information. We must emphasize the importance of not sharing personal data in public forums, and ask all users to scrub logs and diagnostic information for sensitive information, whether personal, proprietary, or otherwise.
+At New Relic we take your privacy and the security of your information seriously. We are committed to protecting your information and must emphasize the importance of not sharing personal data in public forums. We ask all users to scrub logs and diagnostic information for sensitive information, whether personal, proprietary, or otherwise.
 
 We define "Personal Data" as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address and email address.
 
