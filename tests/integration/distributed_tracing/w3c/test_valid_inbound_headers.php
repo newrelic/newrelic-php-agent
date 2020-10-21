@@ -9,6 +9,13 @@ Tests the Supportability metric "Supportability/DistributedTrace/AcceptPayload/S
 when the payload is correct.
  */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
@@ -44,7 +51,7 @@ newrelic.cross_application_tracer.enabled = false
 
 $payload = array(
   'traceparent' => "00-74be672b84ddc4e4b28be285632bbc0a-27ddd2d8890283b4-01",
-  'tracestate' => "310705@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-1-1.1273-1569367663277"
+  'tracestate' => "{$_ENV['ACCOUNT_supportability_trusted']}@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-1-1.1273-1569367663277"
 );
 
 newrelic_accept_distributed_trace_headers($payload);

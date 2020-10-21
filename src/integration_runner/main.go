@@ -142,7 +142,7 @@ var (
 
 	// Integration tests have this mock cross process id hard coded into
 	// metric assertions
-	MockCrossProcessId = "432507#4741547"
+	MockCrossProcessId = fmt.Sprintf("%s#%s", secrets.NewrelicAccountId, secrets.NewrelicAppId)
 )
 
 var ctx *integration.Context

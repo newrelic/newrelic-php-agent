@@ -171,11 +171,19 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = t.Name
 
+	headers := make(http.Header)
+	for key, vals := range t.headers {
+		for _, v := range vals {
+			expanded := SubEnvVars([]byte(v))
+			headers.Set(key, string(expanded))
+		}
+	}
+
 	if t.IsC() {
-		return CTx(ScriptFile(t.Path), env, settings, t.headers, ctx)
+		return CTx(ScriptFile(t.Path), env, settings, headers, ctx)
 	}
 	if t.IsWeb() {
-		return CgiTx(ScriptFile(t.Path), env, settings, t.headers, ctx)
+		return CgiTx(ScriptFile(t.Path), env, settings, headers, ctx)
 	}
 	return PhpTx(ScriptFile(t.Path), env, settings, ctx)
 }
