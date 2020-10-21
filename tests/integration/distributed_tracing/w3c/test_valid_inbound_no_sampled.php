@@ -127,6 +127,4 @@ $payload = array(
   'traCeStAte' => "{$_ENV['ACCOUNT_supportability_trusted']}@nr=0-2-111111-2827902-5f474d64b9cc9b2a-7d3efb1b173fecfa---1518469636035"
 );
 
-var_dump($payload);
-
 newrelic_accept_distributed_trace_headers($payload, "HTTP");
