@@ -19,6 +19,10 @@ if (version_compare(phpversion(), '5.4.0', '<')) {
 if (!unpack_guzzle(5)) {
     die("skip: guzzle 5 installation required\n");
 }
+
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+    die("skip: env vars required");
+}
 */
 
 /*EXPECT
@@ -42,10 +46,11 @@ X-NewRelic-App-Data=??
     [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                             [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                        [3, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/432507#4741547/all"}, [3, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing"},
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"},
                                                           [3, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing",
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"},
+                                                          [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
       "scope":"OtherTransaction/php__FILE__"},            [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],

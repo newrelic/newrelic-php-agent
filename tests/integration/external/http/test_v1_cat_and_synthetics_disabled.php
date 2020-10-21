@@ -21,6 +21,10 @@ if (!extension_loaded('http')) {
 if (version_compare(phpversion('http'), '2.0.0', '>=')) {
     die("skip: http 1.x required\n");
 }
+
+if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+    die("skip: env vars required");
+}
 */
 
 /*INI
@@ -32,7 +36,7 @@ newrelic.synthetics.enabled = false
  * The synthetics header contains the following JSON.
  *   [
  *     1,
- *     432507,
+ *     ENV[ACCOUNT_supportability],
  *     "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
  *     "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
  *     "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
@@ -40,7 +44,7 @@ newrelic.synthetics.enabled = false
  */
 
 /*HEADERS
-X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERRMUERofEg4LCF1bXQxJW1xZCEtSUANWFQhSUl4fWQ9TC1sLWQgOXF0LRE8aXl0JDA9aXBoLCVxbHlNUUFYdD1UPVRVZX14IVAxcDF4PCVsVPA==
+X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
 
 /*EXPECT

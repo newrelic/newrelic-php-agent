@@ -11,7 +11,7 @@ when the payload is correct.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["APP_supportability"]) {
     die("skip: env vars required");
 }
 */
@@ -39,14 +39,14 @@ newrelic.cross_application_tracer.enabled = false
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/accept_distributed_trace_payload"},
                                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/App/432507/4741547/Unknown/all"},
+    [{"name":"TransportDuration/App/ENV[ACCOUNT_supportability]/ENV[APP_supportability]/Unknown/all"},
                                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/App/432507/4741547/Unknown/allOther"},
+    [{"name":"TransportDuration/App/ENV[ACCOUNT_supportability]/ENV[APP_supportability]/Unknown/allOther"},
                                                           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
-$payload = "{\"v\":[0,1],\"d\":{\"ty\":\"App\",\"ac\":\"{$_ENV['ACCOUNT_supportability']}\",\"ap\":\"{$_ENV['APP_supportability']}\",\"id\":\"3925aa3552e648dd\",\"tr\":\"3925aa3552e648dd\",\"pr\":1.82236,\"sa\":true,\"ti\":1538512769934,\"tk\":\"310705\"}}";
+$payload = "{\"v\":[0,1],\"d\":{\"ty\":\"App\",\"ac\":\"{$_ENV['ACCOUNT_supportability']}\",\"ap\":\"{$_ENV['APP_supportability']}\",\"id\":\"3925aa3552e648dd\",\"tr\":\"3925aa3552e648dd\",\"pr\":1.82236,\"sa\":true,\"ti\":1538512769934,\"tk\":\"{$_ENV['ACCOUNT_supportability_trusted']}\"}}";
 
 newrelic_accept_distributed_trace_payload($payload);

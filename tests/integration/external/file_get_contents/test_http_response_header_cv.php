@@ -9,6 +9,13 @@ Test that CAT works with file_get_contents when $file_get_contents is a compiled
 variable.
 */
 
+/*SKIPIF
+<?php
+if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+    die("skip: env vars required");
+}
+*/
+
 /*EXPECT
 tracing endpoint reached
 1
@@ -39,10 +46,11 @@ X-NewRelic-App-Data=??
     [{"name":"External/all"},                             [5, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                        [5, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                   [5, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/432507#4741547/all"}, [5, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing"},
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"},
                                                           [5, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing",
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"},
+                                                          [5, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
       "scope":"OtherTransaction/php__FILE__"},            [5, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
