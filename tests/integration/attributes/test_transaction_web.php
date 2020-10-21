@@ -21,7 +21,7 @@ X-Request-Start=1368811467146000
 Content-Type=text/html
 Accept=text/plain
 User-Agent=Mozilla/5.0
-Referer=http://user:pass@fwomp.com/foo?q=bar#fragment
+Referer=http://user:pass@example.com/foo?q=bar#fragment
 */
 
 /*ENVIRONMENT
@@ -57,7 +57,7 @@ CONTENT_LENGTH=348
           "request.headers.contentType": "text/html",
           "request.headers.accept": "text/plain",
           "request.headers.contentLength": 348,
-          "request.headers.referer": "http://fwomp.com/foo"
+          "request.headers.referer": "http://example.com/foo"
         },
         "intrinsics": "??",
         "request_uri": "__FILE__"
@@ -107,7 +107,7 @@ CONTENT_LENGTH=348
         "request.headers.accept": "text/plain",
         "request.headers.userAgent": "Mozilla/5.0",
         "request.headers.User-Agent": "Mozilla/5.0",
-        "request.headers.referer": "http://fwomp.com/foo"
+        "request.headers.referer": "http://example.com/foo"
       }
     ]
   ]
