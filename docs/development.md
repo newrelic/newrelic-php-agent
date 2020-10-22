@@ -72,7 +72,7 @@ make valgrind
 
 Agent integration tests:
 
-**Note:** Although integration testing is available in the makefile, all tests will fail due to internal licensing requirements. This will be changed in the future and will allow integration tests to be run locally by anyone.
+**Note:** Although agent integration tests are is available, all tests will fail due to internal licensing requirements. This will be changed in the future and will allow integration tests to be run locally by anyone.
 
 ## Make
 
