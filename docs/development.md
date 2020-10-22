@@ -36,9 +36,13 @@ For this to work with the daemon, you should copy the daemon binary (found in `n
 
 The PHP agent is configured using a **`newrelic.ini`** config file. To get started with configuring the PHP agent, create your own copy of the template found in `agent/scripts/newrelic.ini.template`. The `newrelic.ini` file needs to be placed in the same location as your `php.ini`. Running `php --ini` will tell you where that is. Once your `newrelic.ini` is created and in the correct location, edit it to add a license key, a unique application name, and a full path to your daemon. Make sure your log directory exists and is read/writable; `/opt/nr/logs` or `/var/log/` are good options. The default log level for both is `info`, but this can be changed in both the [agent](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-loglevel) and [daemon](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-loglevel). The more verbose log settings can generate a lot of information very quickly. When necessary, we suggest setting `debug` for short periods of time to identify problems. For more information on the PHP agent configuration see our [documentation](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration).
 
-Here are some suggested settings to change:
+It is necessary to provide a valid license:
 ```
 newrelic.license = "<my_license_key>"
+```
+
+The default configuration settings should work for most cases. Here are some examples of customized settings:
+```
 newrelic.logfile = "/opt/nr/logs/php_agent.log"
 newrelic.appname = "<my_app_name>"
 newrelic.daemon.logfile = "/opt/nr/logs/newrelic-daemon.log"
@@ -52,7 +56,7 @@ extension = "<parent_directory_of_php_agent>/newrelic-php-agent/agent/.libs/newr
 
 ## Testing
 
-The PHP agent unit tests are split into two categories. [Agent](../agent/tests) and [axiom](../axiom/tests) unit tests. The agent unit tests contain all of the tests related to PHP instrumentation while the axiom unit tests contain all of the PHP independent tests. 
+The PHP agent unit tests are split into two categories. [agent](../agent/tests) and [axiom](../axiom/tests) unit tests. The agent unit tests contain all of the tests related to PHP instrumentation while the axiom unit tests contain all of the PHP independent tests.
 
 To run both the agent and axiom unit tests:
 
@@ -67,7 +71,8 @@ make valgrind
 ```
 
 Agent integration tests:
-Although integration testing is available in the makefile, all tests will fail due to internal licensing requirements. This will be changed in the future and will allow integration tests to be run locally by anyone. 
+
+**Note:** Although integration testing is available in the makefile, all tests will fail due to internal licensing requirements. This will be changed in the future and will allow integration tests to be run locally by anyone.
 
 ## Make
 
