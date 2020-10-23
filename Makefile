@@ -159,7 +159,7 @@ agent-valgrind: agent/Makefile
 #
 
 #
-# Minimum required version of Go is 1.5.
+# Minimum required version of Go is 1.9.
 #
 # This is defined as a rule that other rules that require Go can depend upon.
 # We don't want to require Go for a general build primarily to make the PHP
@@ -301,7 +301,7 @@ axiom-clean:
 daemon-protobuf: src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go
 
 src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_tracing/v1.proto
-	$(MAKE) vendor # Only build vendor stuff if v1.proto has changed. Otherwise
+	$(MAKE) vendor # Only build vendor files if v1.proto has changed. Otherwise
 	               # this rule will be triggered every time the daemon is built.
 	$(VENDOR_BASE)/local/bin/protoc \
 	    -I=./protocol/infinite_tracing \
@@ -316,7 +316,7 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 integration: Makefile daemon lasp-test-all
 	for PHP in $${PHPS:-7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
           echo; echo "# PHP=$${PHP}"; \
-	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
+	  bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
 	  echo "# PHP=$${PHP}"; \
 	done
 
@@ -381,7 +381,7 @@ lasp-test: daemon
 	if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
 	for PHP in $${PHPS:-7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
           echo; echo "# PHP=$${PHP}"; \
-          NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
+          bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
         -license $(LICENSE_lasp_$(subst -,_,$(SUITE_LASP))) \
         -security_token @tests/lasp/$(SUITE_LASP)/security-token.txt \
         -supported_policies @tests/lasp/$(SUITE_LASP)/securityPolicyAgent.json tests/lasp/$(SUITE_LASP) || exit 1; \
