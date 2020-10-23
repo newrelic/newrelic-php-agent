@@ -1,8 +1,8 @@
 [![Community Project header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Project.png)](https://opensource.newrelic.com/oss-category/#community-project)
 
-# New Relic PHP Agent
+# New Relic PHP agent
 
-The [New Relic APM PHP Agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) monitors your application to help you identify and solve performance issues. The PHP agent consists of a PHP extension (which collects data from your application) and a local proxy daemon (which transmits the data to New Relic).
+The [New Relic APM PHP agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) monitors your application to help you identify and solve performance issues. The PHP agent consists of a PHP extension (which collects data from your application) and a local proxy daemon (which transmits the data to New Relic).
 
 ![PHP Agent Architecture](docs/img/PHP_Agent_Architecture.png)
 
@@ -10,7 +10,7 @@ The [New Relic APM PHP Agent](https://docs.newrelic.com/docs/agents/php-agent/ge
 
 The PHP agent supports many of the most common PHP releases, PHP frameworks, databases, and libraries. Prior to installation, please ensure your system meets the [compatibility requirements](https://docs.newrelic.com/docs/agents/php-agent/getting-started/php-agent-compatibility-requirements).
 
-To get started with installation, see the PHP Agent [install](https://docs.newrelic.com/docs/agents/php-agent/installation/php-agent-installation-overview) documentation. The PHP Agent pre-built package includes the interactive [`newrelic-install`](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/using-newrelic-install-script) script, which automates some installation tasks. Also, see our [advanced installation documentation](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/docker-other-container-environments-install-php-agent) for Docker (or other container) installation.
+To get started with installation, see the PHP Agent [installation](https://docs.newrelic.com/docs/agents/php-agent/installation/php-agent-installation-overview) documentation. The PHP a         gent pre-built package includes the interactive [`newrelic-install`](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/using-newrelic-install-script) script, which automates some installation tasks. Also, see our [advanced installation documentation](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/docker-other-container-environments-install-php-agent) for Docker or other container installations.
 
 ## Getting Started
 
@@ -24,11 +24,13 @@ For instructions on how to build and test the agent, please see our [development
 
 Should you need assistance with New Relic products, you are in good hands with several support diagnostic tools and support channels.
 
-This [troubleshooting framework](https://discuss.newrelic.com/t/php-troubleshooting-framework-install/108683) steps you through common troubleshooting questions.
+**Troubleshooting**
 
-New Relic offers NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. For customers with a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
+We have a [troubleshooting framework](https://discuss.newrelic.com/t/php-troubleshooting-framework-install/108683) that steps you through common troubleshooting questions.
 
-If the issue has been confirmed as a bug or is a Feature request, please file a Github issue.
+The troubleshooting framework includes NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. If you have a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
+
+If the issue is confirmed as a bug or is a feature request, please file a GitHub issue.
 
 **Support Channels**
 
@@ -42,12 +44,12 @@ If the issue has been confirmed as a bug or is a Feature request, please file a 
 
 At New Relic we take your privacy and the security of your information seriously. We are committed to protecting your information and must emphasize the importance of not sharing personal data in public forums. We ask all users to scrub logs and diagnostic information for sensitive information, whether personal, proprietary, or otherwise.
 
-We define "Personal Data" as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address and email address.
+We define "Personal Data" as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address, and email address.
 
 Please review [New Relic’s General Data Privacy Notice](https://newrelic.com/termsandconditions/privacy) for more information.
 
 ## Contributing
-We encourage your contributions to improve New Relic's PHP Agent! Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project.
+We encourage your contributions to improve New Relic's PHP agent! Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project.
 If you have any questions, or to execute our corporate CLA, required if your contribution is on behalf of a company,  please drop us an email at opensource@newrelic.com.
 
 **A note about vulnerabilities**
@@ -61,4 +63,4 @@ If you would like to [contribute](https://github.com/newrelic/newrelic-php-agent
 To all [contributors](https://github.com/newrelic/newrelic-php-agent/graphs/contributors), we thank you! Without your contribution, this project would not be what it is today. We also host a community project page dedicated to the [New Relic PHP agent](https://opensource.newrelic.com/projects/newrelic/newrelic-php-agent).
 
 ## License
-The PHP Agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License and also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.]
+The PHP agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License and also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.
