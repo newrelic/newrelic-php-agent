@@ -10,8 +10,7 @@ RUN apt-get update
 RUN apt-get install -y build-essential
 
 # PHP dependencies
-RUN apt-get build-dep -y php7.0
-RUN apt-get install -y libmysqlclient-dev php-dev libmcrypt-dev libphp7.0-embed
+RUN apt-get install -y libmysqlclient-dev php-dev libmcrypt-dev libphp7.0-embed libxml2-dev
 
 # Other tools
 RUN apt-get install -y curl gdb valgrind libcurl4-openssl-dev pkg-config postgresql python-psycopg2 libpq-dev libedit-dev libreadline-dev git
