@@ -48,7 +48,7 @@ The PHP agent is configured using a `newrelic.ini` config file. To get started w
     * A license key (Insert a valid key: `newrelic.license = "INSERT_YOUR_LICENSE_KEY"`)
     * A unique application name
     * The full path to your daemon
-4. Make sure your log directory exists and is read/writable; `/opt/nr/logs` or `/var/log/` are good options. 
+4. Make sure your log directory exists and is read/writable (`/opt/nr/logs` or `/var/log/` are good options). 
 
 **NOTE:** The default log level for both is `info`, but this can be changed in both the [agent](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-loglevel) and [daemon](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-loglevel). The more verbose log settings can generate a lot of information very quickly. When necessary, we suggest setting `debug` for short periods of time to identify problems. 
 
@@ -143,7 +143,7 @@ The [transaction page](https://docs.newrelic.com/docs/apm/apm-ui-pages/monitorin
 
 ### Start the daemon manually
 
-You can start the daemon manually or via the agent (the previous example had the agent start the daemon). To start it manually, tell the daemon not to launch automatically in your newrelic.ini with `newrelic.daemon.dont_launch = 3` and start it with appropriate flags. See our [daemon .ini](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-settings) and [newrelic.cfg](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings) settings for more information.
+You can start the daemon manually or via the agent (the previous example had the agent start the daemon). To start it manually, tell the daemon not to launch automatically in your `newrelic.ini` with `newrelic.daemon.dont_launch = 3` and start it with appropriate flags. See our [daemon .ini](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-settings) and [newrelic.cfg](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings) settings for more information.
 
 ```
 ./bin/daemon -f -logfile stdout -loglevel debug
