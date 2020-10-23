@@ -119,7 +119,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
     PHP_ADD_INCLUDE($PHP_AXIOM)
     dnl Avoid using PHP_ADD_LIBRARY and friends. They add an RPATH for
     dnl the axiom directory, and there's no way to prevent it.
-    NEWRELIC_SHARED_LIBADD="-L$PHP_AXIOM -laxiom $NEWRELIC_SHARED_LIBADD"
+    NEWRELIC_SHARED_LIBADD="-L$PHP_AXIOM -laxiom -lm $NEWRELIC_SHARED_LIBADD"
   ],[
     AC_MSG_ERROR([axiom not found])
   ],[
