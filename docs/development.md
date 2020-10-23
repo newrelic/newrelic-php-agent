@@ -154,11 +154,10 @@ You can start the daemon manually or via the agent (the previous example had the
 The PHP agent API allows you to extend the functionality of the PHP agent. The agent API is included by default with your installation, so no additional configuration is required to use the agent.
 
 Among other things, you can use the API to:
-
-    * Customize your app name
-    * Collect errors 
-    * Record custom attributes, custom events, and custom metrics
-    * Enable or disable browser monitoring 
+* Customize your app name
+* Collect errors 
+* Record custom attributes, custom events, and custom metrics
+* Enable or disable browser monitoring 
     
 For an introduction to this API, see our guide to the [PHP agent API](https://docs.newrelic.com/docs/agents/php-agent/api-guides/guide-using-php-agent-api).
 
