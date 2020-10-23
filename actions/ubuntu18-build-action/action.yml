@@ -1,0 +1,5 @@
+name: ubuntu18-build-action
+description: 'Build the agent on ubuntu 18'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

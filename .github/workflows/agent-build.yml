@@ -1,0 +1,23 @@
+name: agent-build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [./actions/ubuntu20-build-action, ubuntu18, ubuntu16]
+    steps:
+    - uses: actions/checkout@v2
+    - if: matrix.os == 'ubuntu20'
+      uses: ./actions/ubuntu20-build-action
+    - if: matrix.os == 'ubuntu18'
+      uses: ./actions/ubuntu18-build-action
+    - if: matrix.os == 'ubuntu16'
+      uses: ./actions/ubuntu16-build-action
