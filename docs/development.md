@@ -1,6 +1,10 @@
 # Development
 
+Here are some instructions for building the New Relic PHP agent yourself.
+
 ## Requirements
+
+Check out what's important before you get started:
 
 ### Development Platform
 
@@ -41,15 +45,10 @@ The PHP agent is configured using a `newrelic.ini` config file. To get started w
 1. Create your own copy of the template found in `agent/scripts/newrelic.ini.template`. 
 2. Insert the `newrelic.ini` file in the same location as your `php.ini` (Running `php --ini` will tell you where that is). 
 3. Once your `newrelic.ini` is created and in the correct location, edit the file and add the following:
-
-    * A license key
-```
-    newrelic.license = "YOUR_LICENSE_KEY"
-```
+    * A license key (Insert a valid key: `newrelic.license = "INSERT_YOUR_LICENSE_KEY"`)
     * A unique application name
     * The full path to your daemon
 4. Make sure your log directory exists and is read/writable; `/opt/nr/logs` or `/var/log/` are good options. 
-
 
 **NOTE:** The default log level for both is `info`, but this can be changed in both the [agent](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-loglevel) and [daemon](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-loglevel). The more verbose log settings can generate a lot of information very quickly. When necessary, we suggest setting `debug` for short periods of time to identify problems. 
 
@@ -96,7 +95,7 @@ Here is a partial list of Makefile capabilities. All targets should support para
 |-------|--------|
 |`make -j8`|Use 8 CPUs|
 |`make agent`|Just build the agent|
-|`make agent-install`|Build the agent and install it to the active PHP installation.|
+|`make agent-install`|Build the agent and install it to the active PHP installation|
 |`make daemon`|Build the daemon|
 
 ### Test commands
@@ -104,8 +103,8 @@ Here is a partial list of Makefile capabilities. All targets should support para
 |command|function|
 |-------|--------|
 |`make run_tests`|Build and run the agent and axiom unit tests (Agent unit tests currently require Linux)|
-|`make run_tests TESTS=test_txn`|Run only the **test_txn.c** tests|
-|`make run_tests SKIP_TESTS=test_rpm`|Skip the **test_rpm.c** tests|
+|`make run_tests TESTS=test_txn`|Run only the `test_txn.c` tests|
+|`make run_tests SKIP_TESTS=test_rpm`|Skip the `test_rpm.c` tests|
 |`make valgrind`|Build and run the agent tests under valgrind and fail if any memory leaks occur|
 |`make agent-valgrind`|Build and run the agent tests under valgrind|
 |`make axiom-valgrind`|Build and run the axiom tests under valgrind|
@@ -116,7 +115,7 @@ Here is a partial list of Makefile capabilities. All targets should support para
 
 |command|function|
 |-------|--------|
-|`make clean`|Cleans all the things! This should return your working directory to a pristine, slightly minty state|
+|`make clean`|Cleans everything! This should return your working directory to a pristine, slightly minty state|
 |`make agent-clean`|Just cleans the agent. Useful if you want to build against a different PHP version but don't want to rebuild axiom or the daemon|
 |`make axiom-clean`|Just clean axiom|
 |`make daemon-clean`|Just clean the daemon|
