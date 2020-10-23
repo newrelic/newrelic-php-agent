@@ -1,4 +1,4 @@
 #!/bin/bash
-make -j 8 all
-make -j 8 run_tests
+make -j $(nproc) all
+make -j $(nproc) run_tests
 
