@@ -1,0 +1,8 @@
+# Build artifacts
+bin
+pkg
+agent/configure.ac
+agent/newrelic.map
+
+# Test artifacts
+integration-tests.log
