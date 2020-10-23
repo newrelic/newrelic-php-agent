@@ -38,7 +38,7 @@ make agent-install
 
 For this to work with the daemon, copy the daemon binary (found in `newrelic-php-agent/bin`) to `usr/bin/newrelic-daemon`.
 
-### Configuration settings
+## Configuration settings
 
 The PHP agent is configured using a `newrelic.ini` config file. To get started with configuration, you can follow the basic steps below, or you can check out our [detailed documentation](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration).
 
@@ -141,7 +141,7 @@ The [transaction page](https://docs.newrelic.com/docs/apm/apm-ui-pages/monitorin
 
 ![phpinfo() transaction example](img/Phpinfo_Example_Transaction.png)
 
-### Start the daemon manually
+## Start the daemon manually
 
 You can start the daemon manually or via the agent (the previous example had the agent start the daemon). To start it manually, tell the daemon not to launch automatically in your `newrelic.ini` with `newrelic.daemon.dont_launch = 3` and start it with appropriate flags. See our [daemon .ini](https://docs.newrelic.com/docs/agents/php-agent/configuration/php-agent-configuration#inivar-daemon-settings) and [newrelic.cfg](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings) settings for more information.
 
