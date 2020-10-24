@@ -1,0 +1,5 @@
+name: ubuntu20-build-action
+description: 'Build the agent on ubuntu 20'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

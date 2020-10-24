@@ -1,6 +1,6 @@
 [![Community Project header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Project.png)](https://opensource.newrelic.com/oss-category/#community-project)
 
-# New Relic PHP agent
+# New Relic PHP agent [![agent-build status](https://github.com/newrelic/newrelic-php-agent/workflows/agent-build/badge.svg)](https://github.com/newrelic/newrelic-php-agent/actions)
 
 The [New Relic APM PHP agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) monitors your application to help you identify and solve performance issues. The PHP agent consists of a PHP extension (which collects data from your application) and a local proxy daemon (which transmits the data to New Relic).
 

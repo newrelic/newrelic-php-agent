@@ -215,7 +215,7 @@ v1.pb-c.o: v1.pb-c.c
 	@echo '$(VERSION_FLAGS)' | cmp -s - $@ || echo '$(VERSION_FLAGS)' > $@
 
 .deps/:
-	@mkdir .deps
+	@mkdir -p .deps
 
 #
 # Clean up build products: that's object files, dependency files, and the
