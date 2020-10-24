@@ -632,15 +632,6 @@
   fun:_dl_open
 }
 {
-  <invocation of obj:/opt/nr/lamp/bin/httpd, valgrind finds partial stack trace only>
-  Memcheck:Leak
-  fun:malloc
-  fun:strdup
-  obj:/opt/nr/lamp/bin/httpd
-  fun:ap_add_loaded_module
-}
-
-{
   <Addr1 memcpy linux libc>
   Memcheck:Addr1
   fun:memcpy

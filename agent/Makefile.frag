@@ -213,35 +213,31 @@ endif
 # in cases where the build machine doesn't handle suffixes correctly 
 # for embed SAPI builds.
 #
-ifeq (/opt/nr/lamp/lib,$(findstring /opt/nr/lamp/lib,$(PHP_EMBED_LIBRARY)))
-	ifeq (no-zts,$(findstring no-zts,$(shell $(PHP_CONFIG) --include-dir)))
-		PHP_EMBED_LIBRARY_SUFFIX = no-zts
-	else
-		PHP_EMBED_LIBRARY_SUFFIX = zts
-	endif
-	PHP_EMBED_LIBRARY := $(libdir)/libphp$(shell $(PHP_CONFIG) --version | cut -d . -f 1)-$(shell $(PHP_CONFIG) --version | cut -d . -f -2)-$(PHP_EMBED_LIBRARY_SUFFIX).a
-        #
-	# `libevent` has an issue with kqueues on macOS Sierra: this has been fixed
-	# upstream (https://github.com/libevent/libevent/issues/376).  However,
-	# for build machines using older versions of `libevent`, the
-        # following will set an environment variable to hush it 
-        # on all versions of OS X/macOS (at least
-	# when the unit tests are being run via the Makefile, which is the normal
-	# case).
-        #
-	ifeq (Darwin,$(shell uname))
-		export EVENT_NOKQUEUE = 1
-	endif
+ifeq (no-zts,$(findstring no-zts,$(shell $(PHP_CONFIG) --include-dir)))
+	PHP_EMBED_LIBRARY_SUFFIX = no-zts
+else
+	PHP_EMBED_LIBRARY_SUFFIX = zts
+endif
+PHP_EMBED_LIBRARY := $(libdir)/libphp$(shell $(PHP_CONFIG) --version | cut -d . -f 1)-$(shell $(PHP_CONFIG) --version | cut -d . -f -2)-$(PHP_EMBED_LIBRARY_SUFFIX).a
+			#
+# `libevent` has an issue with kqueues on macOS Sierra: this has been fixed
+# upstream (https://github.com/libevent/libevent/issues/376).  However,
+# for build machines using older versions of `libevent`, the
+			# following will set an environment variable to hush it 
+			# on all versions of OS X/macOS (at least
+# when the unit tests are being run via the Makefile, which is the normal
+# case).
+			#
+ifeq (Darwin,$(shell uname))
+	export EVENT_NOKQUEUE = 1
 endif
 
 #
 # ZTS builds need -pthread specified again at the end of the build line, 
 # so let's reuse TEST_NEWRELIC_SHARED_LIBADD to do that.
 #
-ifeq (/opt/nr/lamp/lib,$(findstring /opt/nr/lamp/lib,$(PHP_EMBED_LIBRARY)))
-	ifneq (no-zts,$(findstring no-zts,$(shell $(PHP_CONFIG) --include-dir)))
-		TEST_NEWRELIC_SHARED_LIBADD := $(TEST_NEWRELIC_SHARED_LIBADD) -pthread
-	endif
+ifneq (no-zts,$(findstring no-zts,$(shell $(PHP_CONFIG) --include-dir)))
+	TEST_NEWRELIC_SHARED_LIBADD := $(TEST_NEWRELIC_SHARED_LIBADD) -pthread
 endif
 
 #

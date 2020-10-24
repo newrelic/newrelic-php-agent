@@ -102,15 +102,7 @@ endif
 # Flags required to link PCRE.
 #
 PCRE_CFLAGS := $(shell pcre-config --cflags)
-
-#
-# Special handling for outdated build environments.
-#
-ifneq (,$(findstring /opt/nr/camp,$(shell pcre-config --prefix)))
-  PCRE_LDLIBS := -lnrpcre-pic
-else
-  PCRE_LDLIBS := $(shell pcre-config --libs)
-endif
+PCRE_LDLIBS := $(shell pcre-config --libs)
 
 all: tests
 
