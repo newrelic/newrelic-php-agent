@@ -97,8 +97,13 @@ if test "$PHP_NEWRELIC" = "yes"; then
   dnl Our one external dependency is libpcre, which axiom needs. We'll use
   dnl pcre-config to find it, since every modern version of PCRE provides it.
   PCRE_INCLINE=`pcre-config --cflags`
-  PCRE_LIBLINE=`pcre-config --libs`
-  PCRE_LIBRARY=pcre
+  if pcre-config --prefix | grep -q /opt/nr/camp; then
+    PCRE_LIBLINE=-lnrpcre-pic
+    PCRE_LIBRARY=nrpcre-pic
+  else
+    PCRE_LIBLINE=`pcre-config --libs`
+    PCRE_LIBRARY=pcre
+  fi
 
   PHP_CHECK_LIBRARY($PCRE_LIBRARY, pcre_exec, [
     PHP_EVAL_INCLINE($PCRE_INCLINE)
