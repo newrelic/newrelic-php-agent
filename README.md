@@ -10,7 +10,7 @@ The [New Relic APM PHP agent](https://docs.newrelic.com/docs/agents/php-agent/ge
 
 The PHP agent supports many of the most common PHP releases, PHP frameworks, databases, and libraries. Prior to installation, please ensure your system meets the [compatibility requirements](https://docs.newrelic.com/docs/agents/php-agent/getting-started/php-agent-compatibility-requirements).
 
-To get started with installation, see the PHP Agent [installation](https://docs.newrelic.com/docs/agents/php-agent/installation/php-agent-installation-overview) documentation. The PHP a         gent pre-built package includes the interactive [`newrelic-install`](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/using-newrelic-install-script) script, which automates some installation tasks. Also, see our [advanced installation documentation](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/docker-other-container-environments-install-php-agent) for Docker or other container installations.
+To get started with installation, see the PHP Agent [installation](https://docs.newrelic.com/docs/agents/php-agent/installation/php-agent-installation-overview) documentation. The PHP agent pre-built package includes the interactive [`newrelic-install`](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/using-newrelic-install-script) script, which automates some installation tasks. Also, see our [advanced installation documentation](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/docker-other-container-environments-install-php-agent) for Docker or other container installations.
 
 ## Getting Started
 
@@ -26,9 +26,9 @@ Should you need assistance with New Relic products, you are in good hands with s
 
 **Troubleshooting**
 
-We have a [troubleshooting framework](https://discuss.newrelic.com/t/php-troubleshooting-framework-install/108683) that steps you through common troubleshooting questions.
+For help with framework troubleshooting, this [guide](https://discuss.newrelic.com/t/php-troubleshooting-framework-install/108683) steps you through common framework troubleshooting questions.
 
-The troubleshooting framework includes NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. If you have a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
+New Relic offers  NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. If you have a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
 
 If the issue is confirmed as a bug or is a feature request, please file a GitHub issue.
 
