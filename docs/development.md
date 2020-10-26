@@ -10,7 +10,47 @@ Check out what's important before you get started:
 
 Currently, the PHP agent has only been developed and compiled on Linux systems. Below is a partial list of platforms (and their dependences) that the PHP agent can be built on:
 
-[ This will be filled in with the findings from make system investigation ]
+Operating Systems (versions support by upstream project):
+- Fully supported for building from source
+    - Debian/Ubuntu
+    - CentOS/RHEL/Fedora
+- Supported in binary form only (may require experimentation to build)
+    - MacOS
+    - FreeBSD
+    - Alpine Linux
+    - AWS Linux 2
+    - Any Linux with Kernel >=2.6.26 and `glibc` >=2.5 (or `musl libc` >= 1.1)
+
+Build system dependencies:
+- `build-essential` on Debian systems, `"Development Tools"` group on RHEL systems, equivalent packages on other supported systems for `make`, `cmake`, `gcc`, etc.
+- `valgrind` is extensively in the test suite
+
+Libraries:
+- `libbzip`
+- `libcurl`
+- `libedit`
+- `libjpeg-turbo`
+- `libmcrypt`
+- `libpng`
+- `libreadline`
+- `libtidy`
+- `libtool-ltdl`
+- `libxml2`
+- `libxslt`
+- `openssl`
+- `pcre`
+- `zlib`
+
+Application development headers (most operating systems package these with `-dev` or `-devel` suffixes):
+- `freetds`
+- `freetype`
+- `httpd`
+- `libmemcached`
+- `mariadb`
+- `php`
+- `postgresql`
+- `sqlite`
+
 
 ### PHP
 
