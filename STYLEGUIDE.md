@@ -8,10 +8,9 @@ _"This does not contain everything, but what it contains is true"._
 
 ```
   /*
-   * Purpose: All function declarations in .h files in the repository are documented 
-   * using Doxygen. Every function has an @brief, lists its @param as well
-   * as its @return value.  In some cases, @warning is used to point out a
-   * particularly problematic issue with respect to usage or behavior.  
+   * Purpose: All function declarations in .h files in the repository are documented. 
+   * Every function has a Purpose, lists its Params as well
+   * as its Return value.  
    * 
    * Params:  1. parameter1  Long descriptions must be indented for easier 
    *                         reading. Notice how this description is long but 
