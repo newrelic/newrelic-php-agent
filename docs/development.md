@@ -10,15 +10,56 @@ Check out what's important before you get started:
 
 Currently, the PHP agent has only been developed and compiled on Linux systems. Below is a partial list of platforms (and their dependences) that the PHP agent can be built on:
 
-[ This will be filled in with the findings from make system investigation ]
+#### Operating Systems
+- Fully supported for building from source
+    - Ubuntu 16.04+
+    - CentOS/RHEL 7+
+- Supported in binary form only (may require experimentation to build)
+    - MacOS
+    - FreeBSD
+    - Alpine Linux
+    - AWS Linux 2
+    - Any Linux with Kernel >=2.6.26 and `glibc` >=2.5 (or `musl libc` >= 1.1)
+
+#### Build system dependencies
+- `build-essential` on Debian systems, `"Development Tools"` group on RHEL systems, equivalent packages on other supported systems for `make`, `cmake`, `gcc`, etc.
+- `valgrind` is extensively in the test suite
+
+#### Go
+
+Install the [latest version of Go](https://golang.org/dl/). Typically it's installed in `/usr/local/go`. Be sure to extend your `$PATH` to include it!
+
+#### Libraries
+- `libbzip`
+- `libcurl`
+- `libedit`
+- `libjpeg-turbo`
+- `libmcrypt`
+- `libpng`
+- `libreadline`
+- `libtidy`
+- `libtool-ltdl`
+- `libxml2`
+- `libxslt`
+- `openssl`
+- `pcre`
+- `zlib`
+
+#### Application development headers
+_(most operating systems package these with `-dev` or `-devel` suffixes)_
+- `freetds`
+- `freetype`
+- `httpd`
+- `libmemcached`
+- `mariadb`
+- `php`
+- `postgresql`
+- `sqlite`
+
 
 ### PHP
 
 The PHP agent supports PHP versions `5.3`, `5.4`, `5.5`, `5.6`, `7.0`, `7.1`, `7.2`, `7.3`, and `7.4`.
-
-### Go
-
-Install the [latest version of Go](https://golang.org/dl/). Typically it's installed in `/usr/local/go`. Be sure to extend your `$PATH` to include it!
 
 ## Build the PHP Agent
 
