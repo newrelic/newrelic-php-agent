@@ -2,31 +2,27 @@
 
 _"This does not contain everything, but what it contains is true"._
 
-1. Use Doxygen to document all constants, enums, typedefs, struct 
+1. Document all constants, enums, typedefs, struct 
    fields and function declarations. Use the following style for function 
    comments headers:
 
 ```
-  /**
-   * @brief Notice that the Doxygen header starts with /**
-   *
-   * All function declarations in .h files in the repository are documented 
+  /*
+   * Purpose: All function declarations in .h files in the repository are documented 
    * using Doxygen. Every function has an @brief, lists its @param as well
    * as its @return value.  In some cases, @warning is used to point out a
    * particularly problematic issue with respect to usage or behavior.  
    * 
-   * @param [in]  parameter1  Long descriptions must be indented for easier 
-   *                          reading. Notice how this description is long but 
-   *                          is indented with the parameter description to set 
-   *                          it apart from the next param.
-   * @param [in]  parameter2  Here's that other param.
+   * Params:  1. parameter1  Long descriptions must be indented for easier 
+   *                         reading. Notice how this description is long but 
+   *                         is indented with the parameter description to set 
+   *                         it apart from the next param.
+   *          2. parameter2  Here's that other param.
    *
    *
-   * @param [out] parameter3 But when descriptions are short.
-   * @param [out] parameter4 It's fine for them to omit the tabs.
+   *          3. parameter3  But when descriptions are short.
+   *          4. parameter4  It's fine for them to omit the tabs.
    *
-   * @warning Notice that the comments in the Doxygen header are one
-   * space after the * and do not start on the same line as /**. 
    */
 ``` 
 
