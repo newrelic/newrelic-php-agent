@@ -1,4 +1,4 @@
-[![Community Project header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Project.png)](https://opensource.newrelic.com/oss-category/#community-project)
+[![Community Plus header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
 
 # New Relic PHP agent [![agent-build status](https://github.com/newrelic/newrelic-php-agent/workflows/agent-build/badge.svg)](https://github.com/newrelic/newrelic-php-agent/actions)
 
