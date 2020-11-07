@@ -43,6 +43,8 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   size_t filename_len;
   char* plugin = NULL;
 
+  return NULL;
+
   if (NULL == func) {
     return NULL;
   }
