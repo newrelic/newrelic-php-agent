@@ -249,6 +249,9 @@ nrinistr_t browser_monitoring_loader; /* newrelic.browser_monitoring.loader */
 
 nrinibool_t drupal_modules;  /* newrelic.framework.drupal.modules */
 nrinibool_t wordpress_hooks; /* newrelic.framework.wordpress.hooks */
+nrinistr_t
+    wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
+                                    */
 
 nrinibool_t
     analytics_events_enabled; /* DEPRECATED newrelic.analytics_events.enabled */
