@@ -42,7 +42,7 @@ If you see anything _other_ than these libraries, you should investigate.
 
 ### `protobuf`
 
-Version 3.11.4 of [the C++ protobuf
+Version 3.13.0 of [the C++ protobuf
 code](https://github.com/protocolbuffers/protobuf), as cloned from the repo.
 
 Two directories have been removed from the checkout to avoid build issues:
