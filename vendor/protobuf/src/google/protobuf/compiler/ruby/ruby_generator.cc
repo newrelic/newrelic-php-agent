@@ -77,6 +77,10 @@ std::string GetOutputFilename(const std::string& proto_file) {
 }
 
 std::string LabelForField(const FieldDescriptor* field) {
+  if (field->has_optional_keyword() &&
+      field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3) {
+    return "proto3_optional";
+  }
   switch (field->label()) {
     case FieldDescriptor::LABEL_OPTIONAL: return "optional";
     case FieldDescriptor::LABEL_REQUIRED: return "required";
@@ -255,12 +259,12 @@ bool GenerateMessage(const Descriptor* message, io::Printer* printer,
 
   for (int i = 0; i < message->field_count(); i++) {
     const FieldDescriptor* field = message->field(i);
-    if (!field->containing_oneof()) {
+    if (!field->real_containing_oneof()) {
       GenerateField(field, printer);
     }
   }
 
-  for (int i = 0; i < message->oneof_decl_count(); i++) {
+  for (int i = 0; i < message->real_oneof_decl_count(); i++) {
     const OneofDescriptor* oneof = message->oneof_decl(i);
     GenerateOneof(oneof, printer);
   }
@@ -407,7 +411,7 @@ int GeneratePackageModules(const FileDescriptor* file, io::Printer* printer) {
   if (file->options().has_ruby_package()) {
     package_name = file->options().ruby_package();
 
-    // If :: is in the package use the Ruby formated name as-is
+    // If :: is in the package use the Ruby formatted name as-is
     //    -> A::B::C
     // otherwise, use the dot seperator
     //    -> A.B.C
@@ -421,7 +425,7 @@ int GeneratePackageModules(const FileDescriptor* file, io::Printer* printer) {
     package_name = file->package();
   }
 
-  // Use the appropriate delimter
+  // Use the appropriate delimiter
   string delimiter = need_change_to_module ? "." : "::";
   int delimiter_size = need_change_to_module ? 1 : 2;
 
