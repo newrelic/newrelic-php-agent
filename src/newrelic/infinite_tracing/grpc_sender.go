@@ -102,6 +102,10 @@ func newGrpcSpanBatchSender(cfg *Config) (*grpcSpanBatchSender, error) {
 	}, nil
 }
 
+func (s *grpcSpanBatchSender) clone() (spanBatchSender, error) {
+	return newGrpcSpanBatchSender(&s.Config)
+}
+
 func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	stream, err := s.client.RecordSpanBatch(
 		metadata.AppendToOutgoingContext(context.Background(),
@@ -170,6 +174,8 @@ func newSpanBatchStatusFromGrpcErr(err error) spanBatchSenderStatus {
 		code = statusShutdown
 	case codes.OK:
 		code = statusImmediateRestart
+	case codes.FailedPrecondition:
+		code = statusReconnect
 	}
 
 	return spanBatchSenderStatus{
