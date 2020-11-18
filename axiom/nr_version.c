@@ -26,8 +26,9 @@
  *  https://en.wikipedia.org/wiki/List_of_colors_(compact)
  *
  *   ube                (9.14)
+ *   vanilla            (9.15)
  */
-#define NR_CODENAME "ube"
+#define NR_CODENAME "vanilla"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
