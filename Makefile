@@ -313,11 +313,7 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 #
 
 .PHONY: integration
-#
-# Disable LASP tests, as required LASP test accounts aren't currently working.
-#
-# integration: Makefile daemon lasp-test-all
-integration: Makefile daemon
+integration: Makefile daemon lasp-test-all
 	for PHP in $${PHPS:-7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
           echo; echo "# PHP=$${PHP}"; \
 	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
