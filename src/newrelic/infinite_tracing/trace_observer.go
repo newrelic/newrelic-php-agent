@@ -45,6 +45,10 @@ const (
 	// An error occured, another connection attempt should be made after the
 	// backoff wait time.
 	statusRestart
+	// An error occured, another TCP connection attempt should be made,
+	// resolving the trace observer host name anew (to account for cell
+	// shifts).
+	statusReconnect
 	// An error occured, another connection attempt should be made
 	// immediately.
 	statusImmediateRestart
@@ -62,6 +66,7 @@ type spanBatchSender interface {
 	// channel.
 	response() chan spanBatchSenderStatus
 	shutdown()
+	clone() (spanBatchSender, error)
 }
 
 type TraceObserver struct {
@@ -122,10 +127,9 @@ func newTraceObserverWithWorker(cfg *Config) (*TraceObserver, func()) {
 	}
 	go to.handleSupportability()
 	worker := func() {
-		defer to.sender.shutdown()
-		to.responseError = to.sender.response()
-
 		for {
+			to.responseError = to.sender.response()
+
 			status := to.doStreaming()
 
 			if status.code == statusShutdown {
@@ -133,10 +137,22 @@ func newTraceObserverWithWorker(cfg *Config) (*TraceObserver, func()) {
 				break
 			} else if status.code == statusRestart {
 				time.Sleep(recordSpanBackoff)
+			} else if status.code == statusReconnect {
+				to.sender.shutdown()
+
+				sender, err := to.sender.clone()
+				if err != nil {
+					log.Debugf("cannot clone sender: %v", err)
+					break
+				}
+				to.sender = sender
+
+				log.Debugf("sender cloned for reconnect attempt")
 			}
 		}
 
 		to.completeShutdown()
+		to.sender.shutdown()
 	}
 
 	return to, worker

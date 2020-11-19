@@ -16,6 +16,7 @@ type mockSpanBatchSender struct {
 	cbConnect     func() (error, spanBatchSenderStatus)
 	cbSend        func(batch encodedSpanBatch) (error, spanBatchSenderStatus)
 	responseError chan spanBatchSenderStatus
+	cloneAttempts uint
 }
 
 func (ms *mockSpanBatchSender) connect() (error, spanBatchSenderStatus) {
@@ -31,6 +32,11 @@ func (ms *mockSpanBatchSender) response() chan spanBatchSenderStatus {
 }
 
 func (ms *mockSpanBatchSender) shutdown() {}
+
+func (ms *mockSpanBatchSender) clone() (spanBatchSender, error) {
+	ms.cloneAttempts += 1
+	return ms, nil
+}
 
 func expectSupportabilityMetrics(t *testing.T, to *TraceObserver, expected map[string]float64) {
 	t.Helper()
@@ -341,5 +347,55 @@ func TestImmediateRestart(t *testing.T) {
 	case <-received:
 	case <-ticker.C:
 		t.Errorf("didn't receive span batch, no immediate restart")
+	}
+}
+
+func TestReconnect(t *testing.T) {
+	connectReturn := make(chan spanBatchSenderStatus, 10)
+	received := make(chan encodedSpanBatch)
+	sender := &mockSpanBatchSender{
+		cbConnect: func() (error, spanBatchSenderStatus) {
+			status := <-connectReturn
+			if status.code != statusOk {
+				return errors.New(""), status
+			}
+			return nil, spanBatchSenderStatus{code: statusOk}
+		},
+		cbSend: func(batch encodedSpanBatch) (error, spanBatchSenderStatus) {
+			received <- batch
+			return nil, spanBatchSenderStatus{code: statusOk}
+		},
+		responseError: make(chan spanBatchSenderStatus, 10),
+		cloneAttempts: 0,
+	}
+
+	to, worker := newTraceObserverWithWorker(&Config{
+		QueueSize: 100,
+	})
+	defer to.Shutdown(10 * time.Millisecond)
+	go func() {
+		to.sender = sender
+		worker()
+	}()
+
+	// Force a reconnect
+	connectReturn <- spanBatchSenderStatus{code: statusReconnect}
+	connectReturn <- spanBatchSenderStatus{code: statusReconnect}
+	connectReturn <- spanBatchSenderStatus{code: statusOk}
+
+	to.QueueBatch(1, []byte{1, 2, 3})
+
+	// Wait for a timeout, or until the message was sent
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	select {
+	case <-received:
+	case <-ticker.C:
+		t.Errorf("didn't receive span batch")
+	}
+
+	if sender.cloneAttempts != 2 {
+		t.Errorf("expected 2 clone attempts, got %v", sender.cloneAttempts)
 	}
 }
