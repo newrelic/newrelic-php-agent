@@ -127,10 +127,9 @@ func newTraceObserverWithWorker(cfg *Config) (*TraceObserver, func()) {
 	}
 	go to.handleSupportability()
 	worker := func() {
-		defer to.sender.shutdown()
-		to.responseError = to.sender.response()
-
 		for {
+			to.responseError = to.sender.response()
+
 			status := to.doStreaming()
 
 			if status.code == statusShutdown {
@@ -153,6 +152,7 @@ func newTraceObserverWithWorker(cfg *Config) (*TraceObserver, func()) {
 		}
 
 		to.completeShutdown()
+		to.sender.shutdown()
 	}
 
 	return to, worker

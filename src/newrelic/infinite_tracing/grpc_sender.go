@@ -133,7 +133,7 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 			default:
 				log.Errorf("unexpected error from grpc endpoint:  %v", err)
 				status := newSpanBatchStatusFromGrpcErr(err)
-				if status.code == statusShutdown {
+				if status.code == statusShutdown || status.code == statusReconnect {
 					s.responseError <- status
 					return
 				} else {
