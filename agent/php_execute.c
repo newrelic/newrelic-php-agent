@@ -406,6 +406,10 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_ZEND2},
     {"Zend2", "zend2", "zend-mvc/src/application.php", 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
+    {"Laminas3", "laminas3", "laminas/mvc/application.php", 0,
+     nr_fw_laminas3_enable, NR_FW_LAMINAS3},
+    {"Laminas3", "laminas3", "laminas-mvc/src/application.php", 0,
+     nr_fw_laminas3_enable, NR_FW_LAMINAS3},
 };
 static const int num_all_frameworks
     = sizeof(all_frameworks) / sizeof(nr_framework_table_t);
@@ -489,6 +493,13 @@ static nr_library_table_t libraries[] = {
      * necessary for Magento in particular, which is built on ZF1.
      */
     {"Zend_Http", "zend/http/client.php", nr_zend_http_enable},
+
+    /*
+     * Allow Laminas Framework 3.x to be detected as a library as well as a
+     * framework. This allows Laminas_Http_Client to be instrumented when used
+     * with other frameworks or even without a framework at all.
+     */
+    {"Laminas_Http", "laminas-http/src/client.php", nr_laminas_http_enable},
 
     /*
      * Other frameworks, detected only, but not specifically

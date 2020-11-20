@@ -40,6 +40,7 @@ extern void nr_wordpress_enable(TSRMLS_D);
 extern void nr_yii_enable(TSRMLS_D);
 extern void nr_zend_enable(TSRMLS_D);
 extern void nr_fw_zend2_enable(TSRMLS_D);
+extern void nr_fw_laminas3_enable(TSRMLS_D);
 
 /* Libraries. */
 extern void nr_doctrine2_enable(TSRMLS_D);
@@ -50,5 +51,6 @@ extern void nr_mongodb_enable(TSRMLS_D);
 extern void nr_phpunit_enable(TSRMLS_D);
 extern void nr_predis_enable(TSRMLS_D);
 extern void nr_zend_http_enable(TSRMLS_D);
+extern void nr_laminas_http_enable(TSRMLS_D);
 
 #endif /* FW_HOOKS_HDR */

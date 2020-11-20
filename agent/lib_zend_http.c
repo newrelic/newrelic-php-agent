@@ -20,6 +20,23 @@ typedef enum _nr_zend_http_adapter {
 } nr_zend_http_adapter;
 
 /*
+ * Laminas is a rebranding of Zend, but the logic remains the same,
+ * it is simply a name change and corresponds directly to Zend 3.x.
+ *
+ * Refer to the manual for up to date specs:
+ * https://docs.laminas.dev/
+ *
+ * In order to toggle between `zend` and `laminas` naming schemes, the names
+ * are stored in defines.  The default is the `zend` naming scheme.
+ * If `laminas` is detected, the values are redefined.
+ */
+static char library_name[50] = "Zend";
+static char curl_adapter_typename[50] = "Zend_Http_Client_Adapter_Curl";
+static char uri_http_typename[50] = "Zend_Uri_Http";
+static char http_client[50] = "Zend_Http_Client";
+static char http_client_request[50] = "Zend_Http_Client::request";
+
+/*
  * Purpose : Determine which HTTP client adapter is being used by a Zend
  *           external call.
  *
@@ -31,7 +48,6 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
   zval* config = NULL;
   zval* adapter_ivar = NULL;
   zval* adapter_val = NULL;
-  const char* curl_adapter_typename = "Zend_Http_Client_Adapter_Curl";
 
   if (NULL == this_var) {
     return NR_ZEND_ADAPTER_UNKNOWN;
@@ -50,7 +66,7 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
   if (nr_php_is_zval_valid_object(adapter_ivar)) {
     if (nr_php_object_instanceof_class(adapter_ivar,
                                        curl_adapter_typename TSRMLS_CC)) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "Zend: adapter is Curl");
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: adapter is Curl", library_name);
       return NR_ZEND_ADAPTER_CURL;
     }
     return NR_ZEND_ADAPTER_OTHER;
@@ -58,14 +74,16 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
 
   config = nr_php_get_zval_object_property(this_var, "config" TSRMLS_CC);
   if ((0 == config) || (IS_ARRAY != Z_TYPE_P(config))) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "Zend: this->config is not array");
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: this->config is not array",
+                     library_name);
     return NR_ZEND_ADAPTER_UNKNOWN;
   }
 
   adapter_val = nr_php_zend_hash_find(Z_ARRVAL_P(config), "adapter");
   if (NULL == adapter_val) {
     nrl_verbosedebug(NRL_FRAMEWORK,
-                     "Zend: unable to find adapter in this->config");
+                     "%s: unable to find adapter in this->config",
+                     library_name);
     return NR_ZEND_ADAPTER_UNKNOWN;
   }
 
@@ -73,7 +91,7 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
     if (0
         == nr_strncaseidx(Z_STRVAL_P(adapter_val), curl_adapter_typename,
                           Z_STRLEN_P(adapter_val))) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "Zend: adapter is Curl");
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: adapter is Curl", library_name);
       return NR_ZEND_ADAPTER_CURL;
     }
     return NR_ZEND_ADAPTER_OTHER;
@@ -82,22 +100,28 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
   if (nr_php_is_zval_valid_object(adapter_val)) {
     if (nr_php_object_instanceof_class(adapter_val,
                                        curl_adapter_typename TSRMLS_CC)) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "Zend: adapter is Curl");
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: adapter is Curl", library_name);
       return NR_ZEND_ADAPTER_CURL;
     }
     return NR_ZEND_ADAPTER_OTHER;
   }
 
   nrl_verbosedebug(NRL_FRAMEWORK,
-                   "Zend: this->config['adapter'] is not string or object");
+                   "%s: this->config['adapter'] is not string or object",
+                   library_name);
   return NR_ZEND_ADAPTER_UNKNOWN;
 }
 
 /*
- * Purpose : Get the url of a Zend_Http_Client instance before a
+ * Purpose : For Zend, get the url of a Zend_Http_Client instance before a
  *           Zend_Http_Client::request call.
+ *           For Laminas, get the url of a Zend_Http_Client instance before a
+ *           Laminas_Http_Client::send call.
  *
- * Params  : 1. The instance receiver of the Zend_Http_Client::request call.
+ * Params  : 1. For Zend, the instance receiver of the
+ *              Zend_Http_Client::request call.
+ *              For Laminas, the instance receiver of the
+ *              Zend_Http_Client::send call.
  *           2. A pointer to a string that will receive the URL. It is the
  *              responsibility of the caller to free this URL.
  *
@@ -116,26 +140,26 @@ static nr_status_t nr_zend_http_client_request_get_url(zval* this_var,
   }
 
   if (!nr_php_is_zval_valid_object(this_var)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "Zend: this not an object: %d",
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: this not an object: %d", library_name,
                      Z_TYPE_P(this_var));
     goto end;
   }
 
   uri = nr_php_get_zval_object_property(this_var, "uri" TSRMLS_CC);
   if (NULL == uri) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "Zend: no URI");
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: no URI", library_name);
     goto end;
   }
 
-  if (0 == nr_php_object_instanceof_class(uri, "Zend_Uri_Http" TSRMLS_CC)) {
+  if (0 == nr_php_object_instanceof_class(uri, uri_http_typename TSRMLS_CC)) {
     if (nr_php_is_zval_valid_object(uri)) {
       nrl_verbosedebug(
-          NRL_FRAMEWORK, "Zend: URI is wrong class: %*s.",
+          NRL_FRAMEWORK, "%s: URI is wrong class: %*s.", library_name,
           NRSAFELEN(nr_php_class_entry_name_length(Z_OBJCE_P(uri))),
           nr_php_class_entry_name(Z_OBJCE_P(uri)));
     } else {
-      nrl_verbosedebug(NRL_FRAMEWORK, "Zend: URI is not an object: %d",
-                       Z_TYPE_P(uri));
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: URI is not an object: %d",
+                       library_name, Z_TYPE_P(uri));
     }
     goto end;
   }
@@ -150,7 +174,7 @@ static nr_status_t nr_zend_http_client_request_get_url(zval* this_var,
     *url_ptr = nr_strndup(Z_STRVAL_P(rval), Z_STRLEN_P(rval));
     retval = NR_SUCCESS;
   } else {
-    nrl_verbosedebug(NRL_FRAMEWORK, "Zend: uri->getUri() failed");
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: uri->getUri() failed", library_name);
   }
 
 end:
@@ -191,9 +215,8 @@ static void nr_zend_http_client_request_add_request_headers(
   if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
     nrl_verbosedebug(
         NRL_CAT,
-        "CAT: outbound request: transport='Zend_Http_Client' %s=" NRP_FMT
-        " %s=" NRP_FMT,
-        X_NEWRELIC_ID,
+        "CAT: outbound request: transport='%s' %s=" NRP_FMT " %s=" NRP_FMT,
+        http_client, X_NEWRELIC_ID,
         NRP_CAT((char*)nr_hashmap_get(outbound_headers, X_NEWRELIC_ID,
                                       nr_strlen(X_NEWRELIC_ID))),
         X_NEWRELIC_TRANSACTION,
@@ -288,15 +311,15 @@ static uint64_t nr_zend_http_client_request_get_response_code(
 
 /*
  * Wrap and record external metrics for Zend_Http_Client::request.
+ * Wrap and record external metrics for Laminas_Http_Client::send.
  *
  * http://framework.zend.com/manual/1.12/en/zend.http.client.advanced.html
  */
 NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
-  zval* this_var = NULL; 
+  zval* this_var = NULL;
   zval** retval_ptr;
   nr_segment_t* segment;
-  nr_segment_external_params_t external_params
-      = {.library = "Zend_Http_Client"};
+  nr_segment_external_params_t external_params = {.library = http_client};
   nr_zend_http_adapter adapter;
 
   (void)wraprec;
@@ -331,8 +354,9 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    * versions of the Zend framework.
    *
    * Our agent creates an external segment for calls to `request` method calls
-   * of `Zend_Http_Client` objects. However, the request method itself creates
-   * child segments to the external segments triggered by our automatic
+   * of `Zend_Http_Client` objects or for calls to `send` method calls
+   * of `Laminas_Http_Client` objects. However, the request method itself
+   * creates child segments to the external segments triggered by our automatic
    * instrumentation. These child segments are not correctly parented, to the
    * external segment, but to the segment for the `request` method. Thus the
    * total time calculated from those segments is incorrect. This behavior is
@@ -356,14 +380,15 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
         = nr_zend_http_client_request_get_response_code(*retval_ptr TSRMLS_CC);
   } else {
     nrl_verbosedebug(NRL_FRAMEWORK,
-                     "Zend: unable to obtain return value from request");
+                     "%s: unable to obtain return value from request",
+                     library_name);
   }
 
   if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
-    nrl_verbosedebug(
-        NRL_CAT,
-        "CAT: outbound response: transport='Zend_Http_Client' %s=" NRP_FMT,
-        X_NEWRELIC_APP_DATA, NRP_CAT(external_params.encoded_response_header));
+    nrl_verbosedebug(NRL_CAT,
+                     "CAT: outbound response: transport='%s' %s=" NRP_FMT,
+                     http_client, X_NEWRELIC_APP_DATA,
+                     NRP_CAT(external_params.encoded_response_header));
   }
 
   /*
@@ -378,9 +403,8 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
   if (segment) {
     for (size_t i = 0; i < nr_segment_children_size(&segment->children); i++) {
       nr_segment_t* child = nr_segment_children_get(&segment->children, i);
-      nrl_verbosedebug(
-          NRL_FRAMEWORK,
-          "Zend: deleting child from Zend_Http_Client::request");
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: deleting child from %s",
+                       library_name, http_client_request);
 
       nr_segment_discard(&child);
     }
@@ -397,8 +421,26 @@ leave:
 NR_PHP_WRAPPER_END
 
 void nr_zend_http_enable(TSRMLS_D) {
-  if (NR_FW_ZEND != NRPRG(current_framework)) {
-    nr_php_wrap_user_function(NR_PSTR("Zend_Http_Client::request"),
+  if ((NR_FW_ZEND != NRPRG(current_framework))
+      && (NR_FW_LAMINAS3 != NRPRG(current_framework))) {
+    nr_php_wrap_user_function(NR_PSTR(http_client_request),
+                              nr_zend_http_client_request TSRMLS_CC);
+  }
+}
+
+void nr_laminas_http_enable(TSRMLS_D) {
+  if ((NR_FW_ZEND != NRPRG(current_framework))) {
+    /*
+     * Redefine zend to laminas.
+     */
+    nr_strcpy(library_name, "Laminas");
+    nr_strcpy(curl_adapter_typename,
+              "Laminas\\Http\\Client\\Adapter\\Curl::class");
+    nr_strcpy(uri_http_typename, "Laminas\\Uri\\Http");
+    nr_strcpy(http_client, "Laminas\\Http\\Client");
+    nr_strcpy(http_client_request, "Laminas\\Http\\Client::send");
+
+    nr_php_wrap_user_function(NR_PSTR(http_client_request),
                               nr_zend_http_client_request TSRMLS_CC);
   }
 }
