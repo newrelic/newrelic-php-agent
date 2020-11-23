@@ -14,7 +14,7 @@
 #include "util_memory.h"
 
 /*
- *  Laminas is a rebranding of Zend, but the logic remains the same,
+ * Laminas is a rebranding of Zend, but the logic remains the same,
  * it is simply a name change and corresponds directly to Zend 3.x.
  * Compare to `fw_zend2.c`
  *
