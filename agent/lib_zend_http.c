@@ -444,3 +444,4 @@ void nr_laminas_http_enable(TSRMLS_D) {
                               nr_zend_http_client_request TSRMLS_CC);
   }
 }
+
