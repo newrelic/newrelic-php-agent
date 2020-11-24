@@ -1,0 +1,10 @@
+# Build artifacts
+agent/configure.ac
+agent/newrelic.map
+bin/
+pkg/
+
+# Test artifacts
+integration-tests.log
+make/secrets.mk
+php_agent.log
