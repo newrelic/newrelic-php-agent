@@ -43,11 +43,11 @@ typedef enum _nr_zend_http_adapter {
 #define HTTP_CLIENT_L "Laminas\\Http\\Client"
 #define HTTP_CLIENT_REQUEST_L "Laminas\\Http\\Client::send"
 
-char * library_name = LIB_NAME_Z;
-char * curl_adapter_typename = CURL_ADAPTER_Z;
-char * uri_http_typename = URI_HTTP_Z;
-char * http_client = HTTP_CLIENT_Z;
-char * http_client_request = HTTP_CLIENT_REQUEST_Z;
+char* library_name = LIB_NAME_Z;
+char* curl_adapter_typename = CURL_ADAPTER_Z;
+char* uri_http_typename = URI_HTTP_Z;
+char* http_client = HTTP_CLIENT_Z;
+char* http_client_request = HTTP_CLIENT_REQUEST_Z;
 
 /*
  * Purpose : Determine which HTTP client adapter is being used by a Zend
