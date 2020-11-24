@@ -359,9 +359,9 @@ static const nr_framework_table_t all_frameworks[] = {
     /* See below: Zend, the legacy project of Laminas, which shares much
        of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", "laminas/mvc/application.php", 0,
-     nr_fw_laminas3_enable, NR_FW_LAMINAS3},
+     nr_laminas3_enable, NR_FW_LAMINAS3},
     {"Laminas3", "laminas3", "laminas-mvc/src/application.php", 0,
-     nr_fw_laminas3_enable, NR_FW_LAMINAS3},
+     nr_laminas3_enable, NR_FW_LAMINAS3},
 
     {"Laravel", "laravel", "illuminate/foundation/application.php", 0,
      nr_laravel_enable, NR_FW_LARAVEL},

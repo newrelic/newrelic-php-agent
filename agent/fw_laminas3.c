@@ -112,7 +112,7 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
-void nr_fw_laminas3_enable(TSRMLS_D) {
+void nr_laminas3_enable(TSRMLS_D) {
   nr_txn_set_path("Laminas3", NRPRG(txn), "unknown", NR_PATH_TYPE_ACTION,
                   NR_OK_TO_OVERWRITE);
 
