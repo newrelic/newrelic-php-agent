@@ -28,13 +28,26 @@ typedef enum _nr_zend_http_adapter {
  *
  * In order to toggle between `zend` and `laminas` naming schemes, the names
  * are stored in defines.  The default is the `zend` naming scheme.
- * If `laminas` is detected, the values are redefined.
+ * If `laminas` is detected, the values are redefined in this file's
+ * `nr_laminas_http_enable` function.
  */
-static char library_name[50] = "Zend";
-static char curl_adapter_typename[50] = "Zend_Http_Client_Adapter_Curl";
-static char uri_http_typename[50] = "Zend_Uri_Http";
-static char http_client[50] = "Zend_Http_Client";
-static char http_client_request[50] = "Zend_Http_Client::request";
+#define LIB_NAME_Z "Zend"
+#define CURL_ADAPTER_Z "Zend_Http_Client_Adapter_Curl"
+#define URI_HTTP_Z  "Zend_Uri_Http"
+#define HTTP_CLIENT_Z  "Zend_Http_Client"
+#define HTTP_CLIENT_REQUEST_Z "Zend_Http_Client::request"
+
+#define LIB_NAME_L "Laminas"
+#define CURL_ADAPTER_L "Laminas\\Http\\Client\\Adapter\\Curl::class"
+#define URI_HTTP_L "Laminas\\Uri\\Http"
+#define HTTP_CLIENT_L "Laminas\\Http\\Client"
+#define HTTP_CLIENT_REQUEST_L "Laminas\\Http\\Client::send"
+
+char * library_name = LIB_NAME_Z;
+char * curl_adapter_typename = CURL_ADAPTER_Z;
+char * uri_http_typename = URI_HTTP_Z;
+char * http_client = HTTP_CLIENT_Z;
+char * http_client_request = HTTP_CLIENT_REQUEST_Z;
 
 /*
  * Purpose : Determine which HTTP client adapter is being used by a Zend
@@ -433,12 +446,11 @@ void nr_laminas_http_enable(TSRMLS_D) {
     /*
      * Redefine zend to laminas.
      */
-    nr_strcpy(library_name, "Laminas");
-    nr_strcpy(curl_adapter_typename,
-              "Laminas\\Http\\Client\\Adapter\\Curl::class");
-    nr_strcpy(uri_http_typename, "Laminas\\Uri\\Http");
-    nr_strcpy(http_client, "Laminas\\Http\\Client");
-    nr_strcpy(http_client_request, "Laminas\\Http\\Client::send");
+    library_name = LIB_NAME_L;
+    curl_adapter_typename = CURL_ADAPTER_L;
+    uri_http_typename = URI_HTTP_L;
+    http_client = HTTP_CLIENT_L;
+    http_client_request = HTTP_CLIENT_REQUEST_L;
 
     nr_php_wrap_user_function(NR_PSTR(http_client_request),
                               nr_zend_http_client_request TSRMLS_CC);
