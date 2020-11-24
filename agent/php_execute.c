@@ -356,6 +356,13 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
     {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
 
+    /* See below: Zend, the legacy project of Laminas, which shares much
+       of the instrumentation implementation with Laminas */
+    {"Laminas3", "laminas3", "laminas/mvc/application.php", 0,
+     nr_laminas3_enable, NR_FW_LAMINAS3},
+    {"Laminas3", "laminas3", "laminas-mvc/src/application.php", 0,
+     nr_laminas3_enable, NR_FW_LAMINAS3},
+
     {"Laravel", "laravel", "illuminate/foundation/application.php", 0,
      nr_laravel_enable, NR_FW_LARAVEL},
     {"Laravel", "laravel", "bootstrap/compiled.php", 0, nr_laravel_enable,
@@ -401,6 +408,8 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Yii", "yii", "framework/yii.php", 0, nr_yii_enable, NR_FW_YII},
     {"Yii", "yii", "framework/yiilite.php", 0, nr_yii_enable, NR_FW_YII},
 
+    /* See above: Laminas, the successor to Zend, which shares much
+       of the instrumentation implementation with Zend */
     {"Zend", "zend", "zend/loader.php", 0, nr_zend_enable, NR_FW_ZEND},
     {"Zend2", "zend2", "zend/mvc/application.php", 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
@@ -489,6 +498,13 @@ static nr_library_table_t libraries[] = {
      * necessary for Magento in particular, which is built on ZF1.
      */
     {"Zend_Http", "zend/http/client.php", nr_zend_http_enable},
+
+    /*
+     * Allow Laminas Framework 3.x to be detected as a library as well as a
+     * framework. This allows Laminas_Http_Client to be instrumented when used
+     * with other frameworks or even without a framework at all.
+     */
+    {"Laminas_Http", "laminas-http/src/client.php", nr_laminas_http_enable},
 
     /*
      * Other frameworks, detected only, but not specifically

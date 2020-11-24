@@ -121,7 +121,7 @@ typedef enum {
   NR_FW_YII,
   NR_FW_ZEND,
   NR_FW_ZEND2,
-
+  NR_FW_LAMINAS3,
   NR_FW_NONE, /* Must be immediately before NR_FW_MUST_BE_LAST */
   NR_FW_MUST_BE_LAST
 } nrframework_t;
