@@ -6,32 +6,111 @@
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_user_instrument.h"
-#include "php_error.h"
 #include "php_execute.h"
-#include "php_globals.h"
 #include "php_wrapper.h"
-#include "fw_hooks.h"
 #include "php_hash.h"
-#include "fw_lumen.h"
-#include "fw_laravel.h"
-#include "fw_laravel_queue.h"
-#include "fw_support.h"
+#include "fw_hooks.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
 
-#include "ext/standard/php_versioning.h"
-#include "Zend/zend_exceptions.h"
 
+static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
+                                          const char* lumen_version,
+                                          bool strip_base) {
+  if (nrlikely(nr_php_is_zval_non_empty_string(name))) {
+    char* path = nr_strndup(Z_STRVAL_P(name), Z_STRLEN_P(name));
+    char* action = strrchr(path, '\\') + 1;
+
+    nrl_verbosedebug(NRL_TXN, "path in wt: %s", path);
+
+    nr_txn_set_path(
+        lumen_version, NRPRG(txn), strip_base ? action : path,
+        NR_PATH_TYPE_ACTION,
+        NR_OK_TO_OVERWRITE); /* Watch out: this name is OK to overwrite */
+
+    nr_free(path);
+    return NR_SUCCESS;
+  }
+
+  return NR_FAILURE;
+}
+
+NR_PHP_WRAPPER(nr_lumen_name_the_wt) {
+  zval* route_info = NULL;
+
+  /* Warning avoidance */
+  (void)wraprec;
+
+  /* Verify that we are using Lumen, otherwise bail. */
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LUMEN);
+
+  /* $routeInfo object used by Application */
+  route_info = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  /* We expect route_info to be an array.  At index 1, if we see an
+   * 'as' key, then we have access to the route, otherwise, if we have
+   * a 'uses' key we have access to the controller and action.
+   * See: https://lumen.laravel.com/docs/5.3/routing#route-group-middleware
+   */
+  if (!nr_php_is_zval_valid_array(route_info)) {
+    nrl_verbosedebug(NRL_TXN, "Lumen: $routeInfo was not an array");
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  NR_PHP_WRAPPER_CALL;
+
+  /* obtain $routeInfo[1] */
+  zend_ulong idx = 1;
+  zval* route_info_pos
+      = nr_php_zend_hash_index_find(Z_ARRVAL_P(route_info), idx);
+
+  /* obtain $routeInfo[1]['as'] for route name */
+  zval* route_name = nr_php_zend_hash_find(Z_ARRVAL_P(route_info_pos), "as");
+
+  if (NULL != route_name) {
+    if (NR_SUCCESS
+        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen", 0)) {
+      nrl_verbosedebug(NRL_TXN, "Lumen: located route name is a non-string");
+    }
+  } else {
+    /* No route located, use controller instead */
+    nrl_verbosedebug(
+        NRL_TXN,
+        "Lumen: unable locate route, attempting to use controller instead");
+
+    /* obtain $routeInfo[1]['uses'] for controller name */
+    zval* controller_name
+        = nr_php_zend_hash_find(Z_ARRVAL_P(route_info_pos), "uses");
+
+    if (NULL != controller_name) {
+      if (NR_SUCCESS
+          != nr_lumen_name_the_wt_from_zval(controller_name TSRMLS_CC, "Lumen",
+                                            1)) {
+        nrl_verbosedebug(NRL_TXN,
+                         "Lumen: located controller name is a non-string");
+      }
+
+    } else {
+      nrl_verbosedebug(NRL_TXN, "Lumen: unable to locate controller or route");
+    }
+  }
+
+end:
+  nr_php_arg_release(&route_info);
+}
+NR_PHP_WRAPPER_END
 
 void nr_lumen_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
-   * This follows what is done in symfony2.
+   * This follows what is done in the symfony logic
    */
   nr_txn_set_path("Lumen", NRPRG(txn), "unknown", NR_PATH_TYPE_ACTION,
                   NR_NOT_OK_TO_OVERWRITE);
 
-
-
+  nr_php_wrap_user_function(
+      NR_PSTR("Laravel\\Lumen\\Application::handleFoundRoute"),
+      nr_lumen_name_the_wt TSRMLS_CC);
 }
