@@ -381,6 +381,7 @@ NR_PHP_WRAPPER_END
 static void nr_wordpress_call_user_func_array(zend_function* func,
                                               const zend_function* caller
                                                   NRUNUSED TSRMLS_DC) {
+  const char* filename;
   /*
    * We only want to hook the function being called if this is a WordPress
    * function, we're instrumenting hooks, and WordPress is currently executing
@@ -389,6 +390,17 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
   if ((NR_FW_WORDPRESS != NRPRG(current_framework))
       || (0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
     return;
+  }
+
+  if (NRINI(wordpress_hooks_skip_filename)
+      && 0 != nr_strlen(NRINI(wordpress_hooks_skip_filename))) {
+    filename = nr_php_op_array_file_name(&func->op_array);
+
+    if (nr_strstr(filename, NRINI(wordpress_hooks_skip_filename))) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "skipping hooks for function from %s",
+                       filename);
+      return;
+    }
   }
 
   /*
