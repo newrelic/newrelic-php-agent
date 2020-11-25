@@ -192,3 +192,12 @@
 ;          sent to the daemon when Infinite Tracing is enabled.
 ;
 ;newrelic.infinite_tracing.span_events.agent_queue.timeout=1s
+
+; Setting: newrelic.framework.wordpress.hooks_skip_filename
+; Type   : string
+; Scope  : system
+; Default: ""
+; Info   : PHP files that contain this string will not have their Wordpress
+;          hooks instrumented.
+;
+;newrelic.framework.wordpress.hooks_skip_filename=""
