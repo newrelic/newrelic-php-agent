@@ -115,89 +115,89 @@ void nr_print_globals(FILE* fp) {
  * New Relic API function argument descriptors.
  */
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_parameter_arginfo, 0, 0, 2)
-ZEND_ARG_INFO(0, "parameter")
-ZEND_ARG_INFO(0, "value")
+ZEND_ARG_INFO(0, parameter)
+ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_custom_metric_arginfo, 0, 0, 2)
-ZEND_ARG_INFO(0, "metric")
-ZEND_ARG_INFO(0, "value")
+ZEND_ARG_INFO(0, metric)
+ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_background_job_arginfo, 0, 0, 0)
-ZEND_ARG_INFO(0, "background")
+ZEND_ARG_INFO(0, background)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_name_transaction_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "name")
+ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_tracer_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "functionname")
+ZEND_ARG_INFO(0, functionname)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_enable_params_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "enable")
+ZEND_ARG_INFO(0, enable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_capture_params_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "enable")
+ZEND_ARG_INFO(0, enable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_browser_timing_arginfo, 0, 0, 0)
-ZEND_ARG_INFO(0, "with_tags")
+ZEND_ARG_INFO(0, with_tags)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_set_appname_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "appname")
-ZEND_ARG_INFO(0, "license_key")
-ZEND_ARG_INFO(0, "xmit")
+ZEND_ARG_INFO(0, appname)
+ZEND_ARG_INFO(0, license_key)
+ZEND_ARG_INFO(0, xmit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_start_transaction_arginfo, 0, 0, 0)
-ZEND_ARG_INFO(0, "appname")
-ZEND_ARG_INFO(0, "license_key")
+ZEND_ARG_INFO(0, appname)
+ZEND_ARG_INFO(0, license_key)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_set_user_attributes_arginfo, 0, 0, 3)
-ZEND_ARG_INFO(0, "user")
-ZEND_ARG_INFO(0, "account")
-ZEND_ARG_INFO(0, "product")
+ZEND_ARG_INFO(0, user)
+ZEND_ARG_INFO(0, account)
+ZEND_ARG_INFO(0, product)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_end_transaction_arginfo, 0, 0, 0)
-ZEND_ARG_INFO(0, "ignore")
+ZEND_ARG_INFO(0, ignore)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_record_custom_event_arginfo, 0, 0, 0)
-ZEND_ARG_INFO(0, "event_type")
-ZEND_ARG_ARRAY_INFO(0, "parameters", 0)
+ZEND_ARG_INFO(0, event_type)
+ZEND_ARG_ARRAY_INFO(0, parameters, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_span_parameter_arginfo, 0, 0, 3)
-ZEND_ARG_INFO(0, "key")
-ZEND_ARG_INFO(0, "value")
+ZEND_ARG_INFO(0, key)
+ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_record_datastore_segment_arginfo, 0, 0, 2)
-ZEND_ARG_INFO(0, "callback")
-ZEND_ARG_ARRAY_INFO(0, "parameters", 0)
+ZEND_ARG_INFO(0, callback)
+ZEND_ARG_ARRAY_INFO(0, parameters, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_accept_distributed_trace_headers_arginfo,
                        0,
                        0,
                        1)
-ZEND_ARG_INFO(0, "headers")
-ZEND_ARG_INFO(0, "transport_type")
+ZEND_ARG_INFO(0, headers)
+ZEND_ARG_INFO(0, transport_type)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_accept_distributed_trace_payload_arginfo,
                        0,
                        0,
                        1)
-ZEND_ARG_INFO(0, "payload")
-ZEND_ARG_INFO(0, "transport_type")
+ZEND_ARG_INFO(0, payload)
+ZEND_ARG_INFO(0, transport_type)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(
@@ -205,8 +205,8 @@ ZEND_BEGIN_ARG_INFO_EX(
     0,
     0,
     1)
-ZEND_ARG_INFO(0, "payload")
-ZEND_ARG_INFO(0, "transport_type")
+ZEND_ARG_INFO(0, payload)
+ZEND_ARG_INFO(0, transport_type)
 ZEND_END_ARG_INFO()
 /*
  * New Relic Distributed Trace API
@@ -221,27 +221,27 @@ ZEND_BEGIN_ARG_INFO_EX(newrelic_insert_distributed_trace_headers_arginfo,
                        0,
                        0,
                        3)
-ZEND_ARG_INFO(1, "headers")
+ZEND_ARG_INFO(1, headers)
 ZEND_END_ARG_INFO()
 
 /*
  * Other New Relic Functions
  */
 ZEND_BEGIN_ARG_INFO_EX(newrelic_curl_header_callback_arginfo, 0, 0, 3)
-ZEND_ARG_INFO(0, "curl_resource")
-ZEND_ARG_INFO(0, "header_data")
+ZEND_ARG_INFO(0, curl_resource)
+ZEND_ARG_INFO(0, header_data)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_headers_to_context_arginfo, 0, 0, 3)
-ZEND_ARG_INFO(0, "stream_context")
+ZEND_ARG_INFO(0, stream_context)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_remove_headers_from_context_arginfo, 0, 0, 3)
-ZEND_ARG_INFO(0, "stream_context")
+ZEND_ARG_INFO(0, stream_context)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_exception_handler_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "exception")
+ZEND_ARG_INFO(0, exception)
 ZEND_END_ARG_INFO()
 
 /*
@@ -249,11 +249,11 @@ ZEND_END_ARG_INFO()
  */
 #ifdef ENABLE_TESTING_API
 ZEND_BEGIN_ARG_INFO_EX(newrelic_get_metric_table_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "scoped")
+ZEND_ARG_INFO(0, scoped)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_is_localhost_arginfo, 0, 0, 1)
-ZEND_ARG_INFO(0, "host")
+ZEND_ARG_INFO(0, host)
 ZEND_END_ARG_INFO()
 #endif /* ENABLE_TESTING_API */
 
