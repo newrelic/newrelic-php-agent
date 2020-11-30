@@ -14,7 +14,6 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
-
 static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
                                           const char* lumen_version,
                                           bool strip_base) {
@@ -67,7 +66,10 @@ NR_PHP_WRAPPER(nr_lumen_name_the_wt) {
       = nr_php_zend_hash_index_find(Z_ARRVAL_P(route_info), idx);
 
   /* obtain $routeInfo[1]['as'] for route name */
-  zval* route_name = nr_php_zend_hash_find(Z_ARRVAL_P(route_info_pos), "as");
+  zval* route_name = NULL;
+  if (NULL != route_info_pos) {
+    route_name = nr_php_zend_hash_find(Z_ARRVAL_P(route_info_pos), "as");
+  }
 
   if (NULL != route_name) {
     if (NR_SUCCESS
