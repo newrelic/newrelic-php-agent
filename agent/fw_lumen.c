@@ -50,7 +50,7 @@ NR_PHP_WRAPPER(nr_lumen_name_the_wt) {
   /* We expect route_info to be an array.  At index 1, if we see an
    * 'as' key, then we have access to the route, otherwise, if we have
    * a 'uses' key we have access to the controller and action.
-   * See: https://lumen.laravel.com/docs/5.3/routing#route-group-middleware
+   * See: https://lumen.laravel.com/docs/8.x/routing#named-routes
    */
   if (!nr_php_is_zval_valid_array(route_info)) {
     nrl_verbosedebug(NRL_TXN, "Lumen: $routeInfo was not an array");
