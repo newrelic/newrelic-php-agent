@@ -54,7 +54,7 @@ static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
   int rc = NR_FAILURE;
   if (nrlikely(nr_php_is_zval_non_empty_string(name))) {
     char* name_str = nr_strndup(Z_STRVAL_P(name), Z_STRLEN_P(name));
-    rc = nr_lumen_name_the_wt(name_str, lumen_version, strip_base);
+    rc = nr_lumen_name_the_wt(name_str TSRMLS_CC, lumen_version, strip_base);
     nr_free(name_str);
   }
 
@@ -164,7 +164,7 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
    */
   class_name = get_active_class_name(&ignored TSRMLS_CC);
   name = nr_formatf("%s@%s", class_name, get_active_function_name(TSRMLS_C));
-  nr_lumen_name_the_wt(name, "Lumen", 1);
+  nr_lumen_name_the_wt(name TSRMLS_CC, "Lumen", 1);
   nr_free(name);
 
   exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
