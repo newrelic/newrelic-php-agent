@@ -19,7 +19,7 @@
  * Sets the web transaction name.  If strip_base == true,
  * leading class path components will be stripped.
  */
-static int nr_lumen_name_the_wt(const char* name,
+static int nr_lumen_name_the_wt(const char* name TSRMLS_DC,
                                 const char* lumen_version,
                                 bool strip_base) {
   const char* path = NULL;
