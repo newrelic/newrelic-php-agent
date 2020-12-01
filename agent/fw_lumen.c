@@ -145,6 +145,7 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LUMEN);
+
 #if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   const char* class_name = NULL;
   const char* ignored = NULL;
@@ -155,10 +156,6 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
 
   char* name = NULL;
 
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LUMEN);
 
   /*
    * When the exception handler renders the response, name the transaction
