@@ -5,6 +5,7 @@
 
 #include "php_agent.h"
 #include "php_call.h"
+#include "php_error.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "php_wrapper.h"
@@ -14,28 +15,57 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+/*
+ * Sets the web transaction name.  If strip_base == true,
+ * leading class path components will be stripped.
+ */
+static int nr_lumen_name_the_wt(const char* name,
+                                const char* lumen_version,
+                                bool strip_base) {
+  const char* path = NULL;
+
+  if (NULL == name) {
+    return NR_FAILURE;
+  }
+
+  if (strip_base) {
+    path = strrchr(name, '\\');
+    // Backslash was not found
+    if (NULL == path) {
+      path = name;
+    } else {
+      path += 1;
+    }
+  }
+
+  nr_txn_set_path(
+      lumen_version, NRPRG(txn), path, NR_PATH_TYPE_ACTION,
+      NR_OK_TO_OVERWRITE); /* Watch out: this name is OK to overwrite */
+
+  return NR_SUCCESS;
+}
+
+/*
+ * Wrapper around nr_lumen_name_the_wt for zval strings
+ */
 static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
                                           const char* lumen_version,
                                           bool strip_base) {
+  int rc = NR_FAILURE;
   if (nrlikely(nr_php_is_zval_non_empty_string(name))) {
-    char* path = nr_strndup(Z_STRVAL_P(name), Z_STRLEN_P(name));
-    char* action = strrchr(path, '\\') + 1;
-
-    nrl_verbosedebug(NRL_TXN, "path in wt: %s", path);
-
-    nr_txn_set_path(
-        lumen_version, NRPRG(txn), strip_base ? action : path,
-        NR_PATH_TYPE_ACTION,
-        NR_OK_TO_OVERWRITE); /* Watch out: this name is OK to overwrite */
-
-    nr_free(path);
-    return NR_SUCCESS;
+    char* name_str = nr_strndup(Z_STRVAL_P(name), Z_STRLEN_P(name));
+    rc = nr_lumen_name_the_wt(name_str, lumen_version, strip_base);
+    nr_free(name_str);
   }
 
-  return NR_FAILURE;
+  return rc;
 }
 
-NR_PHP_WRAPPER(nr_lumen_name_the_wt) {
+/*
+ * Core transaction naming logic. Wraps the function that correlates
+ * requests to routes
+ */
+NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
   zval* route_info = NULL;
 
   /* Warning avoidance */
@@ -104,15 +134,80 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Exception handling logic. Wraps the function that routes
+ * exceptions to their respective handlers
+ */
+NR_PHP_WRAPPER(nr_lumen_exception) {
+  zval* exception = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LUMEN);
+#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
+  const char* class_name = NULL;
+  const char* ignored = NULL;
+#else
+  char* class_name = NULL;
+  char* ignored = NULL;
+#endif /* PHP >= 5.4 */
+
+  char* name = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LUMEN);
+
+  /*
+   * When the exception handler renders the response, name the transaction
+   * after the exception handler using the same format used for controller
+   * actions. e.g. Controller@action.
+   */
+  class_name = get_active_class_name(&ignored TSRMLS_CC);
+  name = nr_formatf("%s@%s", class_name, get_active_function_name(TSRMLS_C));
+  nr_lumen_name_the_wt(name, "Lumen", 1);
+  nr_free(name);
+
+  exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (NULL == exception) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: $e is NULL", __func__);
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  NR_PHP_WRAPPER_CALL;
+
+  nr_status_t st;
+  int priority = nr_php_error_get_priority(E_ERROR);
+
+  st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
+                                     NULL /* use default prefix */,
+                                     &NRPRG(exception_filters) TSRMLS_CC);
+
+  if (NR_FAILURE == st) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
+  }
+
+end:
+  nr_php_arg_release(&exception);
+}
+NR_PHP_WRAPPER_END
+
 void nr_lumen_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
    * This follows what is done in the symfony logic
    */
   nr_txn_set_path("Lumen", NRPRG(txn), "unknown", NR_PATH_TYPE_ACTION,
-                  NR_NOT_OK_TO_OVERWRITE);
+                  NR_OK_TO_OVERWRITE);
 
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::handleFoundRoute"),
-      nr_lumen_name_the_wt TSRMLS_CC);
+      nr_lumen_handle_found_route TSRMLS_CC);
+
+  nr_php_wrap_user_function(
+      NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
+      nr_lumen_exception TSRMLS_CC);
 }
