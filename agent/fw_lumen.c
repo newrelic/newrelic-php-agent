@@ -156,7 +156,6 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
 
   char* name = NULL;
 
-
   /*
    * When the exception handler renders the response, name the transaction
    * after the exception handler using the same format used for controller
