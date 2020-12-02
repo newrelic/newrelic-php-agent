@@ -29,6 +29,7 @@ extern void nr_joomla_enable(TSRMLS_D);
 extern void nr_kohana_enable(TSRMLS_D);
 extern void nr_laminas3_enable(TSRMLS_D);
 extern void nr_laravel_enable(TSRMLS_D);
+extern void nr_lumen_enable(TSRMLS_D);
 extern void nr_magento1_enable(TSRMLS_D);
 extern void nr_magento2_enable(TSRMLS_D);
 extern void nr_mediawiki_enable(TSRMLS_D);
