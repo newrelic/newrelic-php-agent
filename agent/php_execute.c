@@ -374,6 +374,8 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Laravel", "laravel", "bootstrap/cache/compiled.php", 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
 
+    {"Lumen", "lumen", "lumen-framework/src/helpers.php", 0, nr_lumen_enable, NR_FW_LUMEN},
+
     {"Magento", "magento", "app/mage.php", 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
     {"Magento2", "magento2", "magento/framework/app/bootstrap.php", 0,
@@ -518,7 +520,6 @@ static nr_library_table_t libraries[] = {
     {"CakePHP3", "cakephp/src/core/functions.php", NULL},
     {"Fuel", "fuel/core/classes/fuel.php", NULL},
     {"Lithium", "lithium/core/libraries.php", NULL},
-    {"Lumen", "lumen-framework/src/helpers.php", NULL},
     {"Phpbb", "phpbb/request/request.php", NULL},
     {"Phpixie2", "phpixie/core/classes/phpixie/pixie.php", NULL},
     {"Phpixie3", "phpixie/framework.php", NULL},
