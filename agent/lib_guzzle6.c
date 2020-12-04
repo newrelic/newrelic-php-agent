@@ -203,8 +203,8 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_construct) {
     return;
   }
 
-  zend_update_property(Z_OBJCE_P(this_obj), this_obj, NR_PSTR("request"),
-                       request TSRMLS_CC);
+  zend_update_property(Z_OBJCE_P(this_obj), ZVAL_OR_ZEND_OBJECT(this_obj),
+                       NR_PSTR("request"), request TSRMLS_CC);
 
   nr_guzzle_obj_add(this_obj, "Guzzle 6" TSRMLS_CC);
 }

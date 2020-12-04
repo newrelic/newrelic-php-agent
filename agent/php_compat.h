@@ -9,8 +9,9 @@
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define PHP7
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 #define PHP8
+#endif /* PHP 8.0+ */
 
 typedef uint32_t zend_uint;
 typedef size_t nr_string_len_t;

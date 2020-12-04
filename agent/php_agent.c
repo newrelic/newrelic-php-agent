@@ -17,7 +17,7 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
     zval* object,
     zend_class_entry* ce,
     const char* cname TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   /*
    * Although the below notes still apply in principle, PHP 7 additionally broke
    * the API for zend_read_property by adding an rv parameter, which is used to
@@ -33,7 +33,8 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
   zval rv;
   zend_bool silent = 1;
 
-  data = zend_read_property(ce, object, cname, nr_strlen(cname), silent, &rv);
+  data = zend_read_property(ce, ZVAL_OR_ZEND_OBJECT(object), cname,
+                            nr_strlen(cname), silent, &rv);
   if (&EG(uninitialized_zval) != data) {
     return data;
   }
@@ -942,12 +943,12 @@ void nr_php_remove_interface_from_class(zend_class_entry* class_ce,
     }
   }
 
-    /*
-     * We have to discard the const qualifier on the interface class entry to
-     * pass it through to nr_php_zend_hash_ptr_apply, even though the apply
-     * callback itself takes a const zend_class_entry *. Since this generates a
-     * warning in gcc, we'll squash it.
-     */
+  /*
+   * We have to discard the const qualifier on the interface class entry to
+   * pass it through to nr_php_zend_hash_ptr_apply, even though the apply
+   * callback itself takes a const zend_class_entry *. Since this generates a
+   * warning in gcc, we'll squash it.
+   */
 #if defined(__clang__) || (__GNUC__ > 4) \
     || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 5))
 #pragma GCC diagnostic push
