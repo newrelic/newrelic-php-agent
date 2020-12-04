@@ -114,6 +114,10 @@ void nr_print_globals(FILE* fp) {
 /*
  * New Relic API function argument descriptors.
  */
+
+ZEND_BEGIN_ARG_INFO_EX(newrelic_arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_parameter_arginfo, 0, 0, 2)
 ZEND_ARG_INFO(0, parameter)
 ZEND_ARG_INFO(0, value)
@@ -263,13 +267,9 @@ static zend_function_entry newrelic_functions[] = {
     /*
      * API Functions
      */
-    PHP_FE(newrelic_ignore_transaction, 0)
-    PHP_FE(newrelic_ignore_apdex, 0)
-    PHP_FE(newrelic_end_of_transaction,0)
     PHP_FE(newrelic_end_transaction,newrelic_end_transaction_arginfo)
     PHP_FE(newrelic_start_transaction,newrelic_start_transaction_arginfo)
     PHP_FE(newrelic_background_job, newrelic_background_job_arginfo)
-    PHP_FE(newrelic_notice_error,0)
     PHP_FE(newrelic_add_custom_parameter,newrelic_add_custom_parameter_arginfo)
     PHP_FE(newrelic_name_transaction, newrelic_name_transaction_arginfo)
     PHP_FE(newrelic_add_custom_tracer,newrelic_add_custom_tracer_arginfo)
@@ -278,15 +278,30 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_enable_params,newrelic_enable_params_arginfo)
     PHP_FE(newrelic_get_browser_timing_header,newrelic_browser_timing_arginfo)
     PHP_FE(newrelic_get_browser_timing_footer,newrelic_browser_timing_arginfo)
-    PHP_FE(newrelic_disable_autorum, 0)
     PHP_FE(newrelic_set_appname, newrelic_set_appname_arginfo)
     PHP_FE(newrelic_set_user_attributes, newrelic_set_user_attributes_arginfo)
     PHP_FE(newrelic_record_custom_event, newrelic_record_custom_event_arginfo)
     PHP_FE(newrelic_record_datastore_segment, newrelic_record_datastore_segment_arginfo)
     PHP_FE(newrelic_create_distributed_trace_payload, newrelic_create_distributed_trace_payload_arginfo)
     PHP_FE(newrelic_insert_distributed_trace_headers, newrelic_insert_distributed_trace_headers_arginfo)
-    PHP_FE(newrelic_is_sampled, 0)
     PHP_FE(newrelic_add_custom_span_parameter, newrelic_add_custom_span_parameter_arginfo)
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    PHP_FE(newrelic_ignore_transaction, newrelic_arginfo_void)
+    PHP_FE(newrelic_ignore_apdex, newrelic_arginfo_void)
+    PHP_FE(newrelic_end_of_transaction, newrelic_arginfo_void)
+    PHP_FE(newrelic_notice_error, newrelic_arginfo_void)
+    PHP_FE(newrelic_disable_autorum, newrelic_arginfo_void)
+    PHP_FE(newrelic_is_sampled, newrelic_arginfo_void)
+#else
+    PHP_FE(newrelic_ignore_transaction, 0)
+    PHP_FE(newrelic_ignore_apdex, 0)
+    PHP_FE(newrelic_end_of_transaction,0)
+    PHP_FE(newrelic_notice_error,0)
+    PHP_FE(newrelic_disable_autorum, 0)
+    PHP_FE(newrelic_is_sampled, 0)
+#endif /* PHP8+ */
+
 
     /*
     * Other Functions
@@ -295,23 +310,38 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_add_headers_to_context, newrelic_add_headers_to_context_arginfo)
     PHP_FE(newrelic_remove_headers_from_context, newrelic_remove_headers_from_context_arginfo)
     PHP_FE(newrelic_exception_handler, newrelic_exception_handler_arginfo)
-    PHP_FE(newrelic_get_request_metadata, 0)
     PHP_FE(newrelic_accept_distributed_trace_headers, newrelic_accept_distributed_trace_headers_arginfo)
     PHP_FE(newrelic_accept_distributed_trace_payload, newrelic_accept_distributed_trace_payload_arginfo)
     PHP_FE(newrelic_accept_distributed_trace_payload_httpsafe, newrelic_accept_distributed_trace_payload_httpsafe_arginfo)
+
+#ifdef PHP8
+    PHP_FE(newrelic_get_request_metadata, newrelic_arginfo_void)
+    PHP_FE(newrelic_get_linking_metadata, newrelic_arginfo_void)
+    PHP_FE(newrelic_get_trace_metadata, newrelic_arginfo_void)
+#else
+    PHP_FE(newrelic_get_request_metadata, 0)
     PHP_FE(newrelic_get_linking_metadata, 0)
     PHP_FE(newrelic_get_trace_metadata, 0)
+#endif /* PHP 8 */
     /*
      * Integration test helpers
      */
 #ifdef ENABLE_TESTING_API
 
-    PHP_FE(newrelic_get_hostname, 0)
     PHP_FE(newrelic_get_metric_table, newrelic_get_metric_table_arginfo)
+    PHP_FE(newrelic_is_localhost, newrelic_is_localhost_arginfo)
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    PHP_FE(newrelic_get_hostname, newrelic_arginfo_void)
+    PHP_FE(newrelic_get_slowsqls, newrelic_arginfo_void)
+    PHP_FE(newrelic_get_trace_json, newrelic_arginfo_void)
+    PHP_FE(newrelic_is_recording, newrelic_arginfo_void)
+#else
+    PHP_FE(newrelic_get_hostname, 0)
     PHP_FE(newrelic_get_slowsqls, 0)
     PHP_FE(newrelic_get_trace_json, 0)
-    PHP_FE(newrelic_is_localhost, newrelic_is_localhost_arginfo)
     PHP_FE(newrelic_is_recording, 0)
+#endif /* PHP 8 */
 
 #endif /* ENABLE_TESTING_API */
 
