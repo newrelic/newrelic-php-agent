@@ -15,14 +15,14 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
-  int zend_result;
+  int zend_result = FAILURE;
   zval* fname = NULL;
-#ifndef PHP8
-  int no_separation = 0;
-#endif /* PHP8 */
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
   zval* retval = NULL;
+#ifndef PHP8
+  int no_separation = 0;
+#endif /* PHP8 */
 
   /*
    * Prevent an unused variable warning. PHP 7.1 changed call_user_function_ex
@@ -49,8 +49,17 @@ zval* nr_php_call_user_func(zval* object_ptr,
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                   retval, param_count, param_values);
+
+  /*
+   * `call_user_function_ex` was removed and `call_user_function` became the
+   * recommended function; however, it no longer gracefully handled the case
+   * of the 2nd parameter  being passed in as NULL. We no longer assume graceful
+   * handling, and now we check for NULL before calling the function.
+   */
+  if (NULL != object_ptr) {
+    zend_result = call_user_function(EG(function_table), object_ptr, fname,
+                                     retval, param_count, param_values);
+  }
 
 #else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
@@ -165,7 +174,7 @@ zval* nr_php_call_user_func_catch(zval* object_ptr,
       zend_clear_exception(TSRMLS_C);
     }
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return retval;
 }
