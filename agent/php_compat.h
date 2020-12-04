@@ -88,10 +88,10 @@ static inline zval* nr_php_zval_direct(zval* zv) {
   return zv;
 }
 
-  /*
-   * Reimplement some of the macros that PHP 7 defines to make iteration easier.
-   * For now, only the macros we actually need are implemented.
-   */
+/*
+ * Reimplement some of the macros that PHP 7 defines to make iteration easier.
+ * For now, only the macros we actually need are implemented.
+ */
 
 #define ZEND_HASH_FOREACH(ht)                                              \
   do {                                                                     \

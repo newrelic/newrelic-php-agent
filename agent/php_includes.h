@@ -61,4 +61,17 @@
 #include "TSRM.h"
 #endif
 
+/*
+ * The TSRMLS_* functions included below have actually been voided out since PHP
+ * 7.0.  They were formally removed in PHP 8.0 but we still support in our code,
+ * so we need to add the voided out macros here.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#define TSRMLS_D void
+#define TSRMLS_DC
+#define TSRMLS_C
+#define TSRMLS_CC
+#define TSRMLS_FETCH()
+#endif
+
 #endif /* PHP_INCLUDES_HDR */
