@@ -39,7 +39,7 @@ extern zend_module_entry newrelic_module_entry;
  * majority of those changes so the rest of the code can simply use the macros
  * and not have to take the different APIs into account.
  */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
       zend_execute_data *execute_data
@@ -74,7 +74,7 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_ZEND_EXECUTE_HOOK zend_execute
 #endif
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define NR_UNUSED_EXECUTE_DATA (void)execute_data;
 #define NR_UNUSED_HT
 #define NR_UNUSED_RETURN_VALUE (void)return_value;
@@ -88,12 +88,12 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_UNUSED_RETURN_VALUE_PTR (void)return_value_ptr;
 #define NR_UNUSED_RETURN_VALUE_USED (void)return_value_used;
 #define NR_UNUSED_THIS_PTR (void)this_ptr;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
 /*
  * Convenience macro to handle unused TSRM parameters.
  */
-#if ZTS && !defined(PHP7)
+#if ZTS && !defined(PHP7) && !defined(PHP8)
 #define NR_UNUSED_TSRMLS (void)tsrm_ls;
 #else
 #define NR_UNUSED_TSRMLS
@@ -181,12 +181,19 @@ typedef void (*nrphpfn_t)(INTERNAL_FUNCTION_PARAMETERS);
 typedef void(ZEND_FASTCALL* nrphpfn_t)(INTERNAL_FUNCTION_PARAMETERS);
 #endif /* PHP < 7.3 */
 
+#if ZEND_MODULE_API_NO <= ZEND_8_0_X_API_NO
 typedef void (*nrphperrfn_t)(int type,
-                             const char* filenm,
-                             uint lineno,
+                             const char* error_filename,
+                             uint error_lineno,
+                             zend_string* message);
+#else
+typedef void (*nrphperrfn_t)(int type,
+                             const char* error_filename,
+                             uint error_lineno,
                              const char* fmt,
                              va_list args)
     ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
+#endif /* PHP <= 8.0 */
 typedef zend_op_array* (*nrphpcfile_t)(zend_file_handle* file_handle,
                                        int type TSRMLS_DC);
 typedef zend_op_array* (*nrphpcstr_t)(zval* source_string,
@@ -198,7 +205,7 @@ typedef int (*nrphphdrfn_t)(sapi_header_struct* sapi_header,
                             sapi_header_op_enum op,
                             sapi_headers_struct* sapi_headers TSRMLS_DC);
 
-#if defined(PHP7)
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 typedef void (*nr_php_execute_internal_function_t)(
     zend_execute_data* execute_data,
     zval* return_value);
