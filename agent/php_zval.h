@@ -58,9 +58,9 @@
  *           nr_php_zval_free() rather than nr_php_zval_dtor().
  */
 inline static zval* nr_php_zval_alloc(void) {
-  zval* zv;
+  zval* zv = NULL;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zv = (zval*)emalloc(sizeof(zval));
   ZVAL_UNDEF(zv);
 #else
@@ -343,10 +343,24 @@ static inline void nr_php_zval_bool(zval* zv, int b) {
  *           that function will then set the value).
  */
 static inline void nr_php_zval_prepare_out_arg(zval* zv) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   ZVAL_NEW_REF(zv, &EG(uninitialized_zval));
 #else
   ZVAL_NULL(zv);
+#endif
+}
+
+/*
+ * Purpose : Wraps a zval to be ready for use as an out argument (ie an
+ *           argument that will be passed to a function by reference)
+ *           with a value.  Used for PHP8 since no longer automatically
+ *           wraps the argument.
+ */
+static inline void nr_php_zval_wrap_out_arg(zval* zv) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  if (!Z_ISREF_P(zv)) {
+    ZVAL_NEW_REF(zv, zv);
+  }
 #endif
 }
 
@@ -363,7 +377,7 @@ static inline void nr_php_zval_prepare_out_arg(zval* zv) {
  * Note that you will need to use nr_php_zval_real_value() (below) if you don't
  * want to do this in place.
  */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define nr_php_zval_unwrap(zv) ZVAL_DEREF(zv)
 
 /*

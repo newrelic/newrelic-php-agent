@@ -51,15 +51,16 @@ zval* nr_php_call_user_func(zval* object_ptr,
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 
   /*
-   * `call_user_function_ex` was removed and `call_user_function` became the
-   * recommended function; however, it no longer gracefully handled the case
-   * of the 2nd parameter  being passed in as NULL. We no longer assume graceful
-   * handling, and now we check for NULL before calling the function.
+   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
+   * became the recommended function; however, the call handles param_values
+   * differently. Prior to PHP8, we used the no_separation flag set to 0 which
+   * then did some internal manipulation of param_values.  There is no longer a
+   * no separation flag, so that internal manipulation is no longer done and we
+   * need to do it prior to sending param_values or `call_user_function` will
+   * cause a segfault.
    */
-  if (NULL != object_ptr) {
-    zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                     retval, param_count, param_values);
-  }
+  zend_result = call_user_function(EG(function_table), object_ptr, fname,
+                                   retval, param_count, param_values);
 
 #else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
