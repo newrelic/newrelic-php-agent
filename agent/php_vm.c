@@ -8,7 +8,7 @@
 #include "php_call.h"
 #include "util_logging.h"
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 
 /*
  * An entry in the previous_opcode_handlers table.
@@ -134,8 +134,8 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
 
   /*
    * To actually determine whether this is a call_user_func_array() call we
-   * have to look at the previous opcode. ZEND_DO_FCALL will never be the first
-   * opcode in an op array -- minimally, there is always at least a
+   * have to look at one of the previous opcodes. ZEND_DO_FCALL will never be
+   * the first opcode in an op array -- minimally, there is always at least a
    * ZEND_INIT_FCALL before it -- so this is safe.
    *
    * When PHP 7 flattens a call_user_func_array() call into direct opcodes, it
@@ -146,15 +146,23 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
    * https://github.com/php/php-src/blob/php-7.0.19/Zend/zend_compile.c#L3082-L3098
    * https://github.com/php/php-src/blob/php-7.1.5/Zend/zend_compile.c#L3564-L3580
    *
+   * In PHP 8, a ZEND_CHECK_UNDEF_ARGS opcode is added after the call to
+   * ZEND_SEND_ARRAY and before ZEND_DO_FCALL so we need to look back two opcodes
+   * instead of just one.
+   *
    * Note that this heuristic will fail if the Zend Engine ever starts
-   * compiling flattened call_user_func_array() calls differently. (There is a
-   * change coming in PHP 7.2, but it only optimizes array_slice() calls, which
-   * as an internal function won't get this far anyway.) We can disable this
-   * behaviour by setting the ZEND_COMPILE_NO_BUILTINS compiler flag, but since
-   * that will cause additional performance overhead, this should be considered
-   * a last resort.
+   * compiling flattened call_user_func_array() calls differently. PHP 7.2 made a
+   * change, but it only optimized array_slice() calls, which as an internal
+   * function won't get this far anyway.) We can disable this behaviour by setting
+   * the ZEND_COMPILE_NO_BUILTINS compiler flag, but since that will cause
+   * additional performance overhead, this should be considered a last resort.
    */
+#ifdef PHP8
+  prev_opline = execute_data->opline - 2;
+#else
   prev_opline = execute_data->opline - 1;
+#endif
+
   if (ZEND_SEND_ARRAY == prev_opline->opcode) {
     if (UNEXPECTED((NULL == execute_data->call)
                    || (NULL == execute_data->call->func))) {
@@ -216,4 +224,4 @@ void nr_php_set_opcode_handlers(void) {}
 
 void nr_php_remove_opcode_handlers(void) {}
 
-#endif /* PHP7 */
+#endif /* PHP 7.0+ */
