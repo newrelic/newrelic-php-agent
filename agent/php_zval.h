@@ -350,20 +350,6 @@ static inline void nr_php_zval_prepare_out_arg(zval* zv) {
 #endif
 }
 
-/*
- * Purpose : Wraps a zval to be ready for use as an out argument (ie an
- *           argument that will be passed to a function by reference)
- *           with a value.  Used for PHP8 since no longer automatically
- *           wraps the argument.
- */
-static inline void nr_php_zval_wrap_out_arg(zval* zv) {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  if (!Z_ISREF_P(zv)) {
-    ZVAL_NEW_REF(zv, zv);
-  }
-#endif
-}
-
 /* }}} */
 /* {{{ Reference handling functions */
 
