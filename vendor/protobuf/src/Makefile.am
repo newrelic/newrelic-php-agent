@@ -18,7 +18,7 @@ else
 PTHREAD_DEF =
 endif
 
-PROTOBUF_VERSION = 22:4:0
+PROTOBUF_VERSION = 24:0:0
 
 if GCC
 # Turn on all warnings except for sign comparison (we ignore sign comparison
@@ -497,9 +497,6 @@ protoc_inputs =                                                   \
   google/protobuf/unittest_lite.proto                             \
   google/protobuf/unittest_mset.proto                             \
   google/protobuf/unittest_mset_wire_format.proto                 \
-  google/protobuf/unittest_no_arena_lite.proto                    \
-  google/protobuf/unittest_no_arena_import.proto                  \
-  google/protobuf/unittest_no_arena.proto                         \
   google/protobuf/unittest_no_field_presence.proto                \
   google/protobuf/unittest_no_generic_services.proto              \
   google/protobuf/unittest_optimize_for.proto                     \
@@ -510,6 +507,7 @@ protoc_inputs =                                                   \
   google/protobuf/unittest_proto3_arena.proto                     \
   google/protobuf/unittest_proto3_arena_lite.proto                \
   google/protobuf/unittest_proto3_lite.proto                      \
+  google/protobuf/unittest_proto3_optional.proto                  \
   google/protobuf/unittest_well_known_types.proto                 \
   google/protobuf/util/internal/testdata/anys.proto               \
   google/protobuf/util/internal/testdata/books.proto              \
@@ -572,8 +570,6 @@ protoc_lite_outputs =                                          \
   google/protobuf/map_lite_unittest.pb.h                       \
   google/protobuf/unittest_lite.pb.cc                          \
   google/protobuf/unittest_lite.pb.h                           \
-  google/protobuf/unittest_no_arena_lite.pb.cc                 \
-  google/protobuf/unittest_no_arena_lite.pb.h                  \
   google/protobuf/unittest_import_lite.pb.cc                   \
   google/protobuf/unittest_import_lite.pb.h                    \
   google/protobuf/unittest_import_public_lite.pb.cc            \
@@ -619,10 +615,6 @@ protoc_outputs =                                                  \
   google/protobuf/unittest_mset.pb.h                              \
   google/protobuf/unittest_mset_wire_format.pb.cc                 \
   google/protobuf/unittest_mset_wire_format.pb.h                  \
-  google/protobuf/unittest_no_arena_import.pb.cc                  \
-  google/protobuf/unittest_no_arena_import.pb.h                   \
-  google/protobuf/unittest_no_arena.pb.cc                         \
-  google/protobuf/unittest_no_arena.pb.h                          \
   google/protobuf/unittest_no_field_presence.pb.cc                \
   google/protobuf/unittest_no_field_presence.pb.h                 \
   google/protobuf/unittest_no_generic_services.pb.cc              \
@@ -643,6 +635,8 @@ protoc_outputs =                                                  \
   google/protobuf/unittest_proto3_arena_lite.pb.h                 \
   google/protobuf/unittest_proto3_lite.pb.cc                      \
   google/protobuf/unittest_proto3_lite.pb.h                       \
+  google/protobuf/unittest_proto3_optional.pb.cc                  \
+  google/protobuf/unittest_proto3_optional.pb.h                   \
   google/protobuf/unittest_well_known_types.pb.cc                 \
   google/protobuf/unittest_well_known_types.pb.h                  \
   google/protobuf/util/internal/testdata/anys.pb.cc               \
@@ -686,7 +680,7 @@ else
 # relative to srcdir, which may not be the same as the current directory when
 # building out-of-tree.
 unittest_proto_middleman: protoc$(EXEEXT) $(protoc_inputs)
-	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/protoc$(EXEEXT) -I. --cpp_out=$$oldpwd $(protoc_inputs) )
+	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/protoc$(EXEEXT) -I. --cpp_out=$$oldpwd $(protoc_inputs) --experimental_allow_proto3_optional )
 	touch unittest_proto_middleman
 
 endif
