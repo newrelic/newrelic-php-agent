@@ -52,12 +52,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   /*
    * With PHP8, `call_user_function_ex` was removed and `call_user_function`
-   * became the recommended function; however, the call handles param_values
-   * differently. Prior to PHP8, we used the no_separation flag set to 0 which
-   * then did some internal manipulation of param_values.  There is no longer a
-   * no separation flag, so that internal manipulation is no longer done and we
-   * need to do it prior to sending param_values or `call_user_function` will
-   * cause a segfault.
+   * became the recommended function.
    */
   zend_result = call_user_function(EG(function_table), object_ptr, fname,
                                    retval, param_count, param_values);
