@@ -46,7 +46,7 @@ void my_error_notify_cb(int type,
                 }
                 zend_register_error_notify_callback(my_error_notify_cb);
  */
-#if ZEND_MODULE_API_NO <= ZEND_8_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 extern void nr_php_error_cb(int type,
                             const char* filename,
                             uint error_lineno,
