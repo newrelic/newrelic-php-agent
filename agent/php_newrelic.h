@@ -193,7 +193,7 @@ typedef void (*nrphperrfn_t)(int type,
                              const char* fmt,
                              va_list args)
     ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
-#endif /* PHP <= 8.0 */
+#endif /* PHP >= 8.0 */
 typedef zend_op_array* (*nrphpcfile_t)(zend_file_handle* file_handle,
                                        int type TSRMLS_DC);
 typedef zend_op_array* (*nrphpcstr_t)(zval* source_string,
