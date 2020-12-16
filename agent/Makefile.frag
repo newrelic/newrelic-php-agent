@@ -213,7 +213,7 @@ ifeq ($(major), 8)
     major = ""
 endif
 
-ifeq (,$(wildcard $(libdir)/libphp$(major).a))
+ifneq (,$(wildcard $(libdir)/libphp$(major).a))
 	PHP_EMBED_LIBRARY := $(libdir)/libphp$(major).a
 else
 	PHP_EMBED_LIBRARY := $(libdir)/libphp$(major).so
