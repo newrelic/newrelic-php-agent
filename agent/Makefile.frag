@@ -210,7 +210,7 @@ endif
 
 major = $(shell $(PHP_CONFIG) --version | cut -d . -f 1)
 ifeq ($(major), 8)
-    major = ""
+    major =
 endif
 
 ifneq (,$(wildcard $(libdir)/libphp$(major).a))
