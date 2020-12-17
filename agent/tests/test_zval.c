@@ -93,13 +93,18 @@ static void test_is_zval_valid_callable(TSRMLS_D) {
   test_valid_callable("'date'" TSRMLS_CC);
   test_valid_callable(
       "array(new ReflectionFunction('date'), 'isDisabled')" TSRMLS_CC);
+#ifdef PHP8
+  test_valid_callable("array('ReflectionReference', 'fromArrayElement')" TSRMLS_CC);
+  test_valid_callable("'ReflectionReference::fromArrayElement'" TSRMLS_CC);
+#else
   test_valid_callable("array('ReflectionFunction', 'export')" TSRMLS_CC);
   test_valid_callable("'ReflectionFunction::export'" TSRMLS_CC);
+#endif
   test_valid_callable("function () {}" TSRMLS_CC);
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   test_valid_callable("new class { function __invoke() {} }" TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP 7.0+ */
 
   tlib_php_request_end();
 }

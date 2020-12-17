@@ -558,7 +558,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
   if (EG(exception)) {
     zval* exception_zval = NULL;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     /*
      * On PHP 7, EG(exception) is stored as a zend_object, and is only wrapped
      * in a zval when it actually needs to be. Unfortunately, our error handling
@@ -583,7 +583,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
      * On PHP 5, the exception is just a regular old zval.
      */
     exception_zval = EG(exception);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
     nr_php_error_record_exception(
         NRPRG(txn), exception_zval, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
@@ -748,7 +748,8 @@ NR_PHP_WRAPPER(nr_laravel_queue_queue_createpayload) {
     header_mq = nr_laravel_get_payload_header_mq(header);
 
     if (header_mq) {
-      zend_update_property_string(Z_OBJCE_P(payload), payload, header_mq,
+      zend_update_property_string(Z_OBJCE_P(payload),
+                                  ZVAL_OR_ZEND_OBJECT(payload), header_mq,
                                   nr_strlen(header_mq), value TSRMLS_CC);
     }
   }
@@ -761,13 +762,13 @@ NR_PHP_WRAPPER(nr_laravel_queue_queue_createpayload) {
   /*
    * Finally, we change the string in the return value to our new JSON.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zend_string_free(Z_STR_P(*retval_ptr));
   Z_STR_P(*retval_ptr) = zend_string_copy(Z_STR_P(json));
 #else
   efree(Z_STRVAL_PP(retval_ptr));
   nr_php_zval_str_len(*retval_ptr, Z_STRVAL_P(json), Z_STRLEN_P(json));
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
 end:
   nr_php_zval_free(&payload);
