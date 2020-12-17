@@ -6,6 +6,10 @@
 #ifndef PHP_COMPAT_HDR
 #define PHP_COMPAT_HDR
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+#define PHP8
+#endif /* PHP 8.0+ */
+
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define PHP7
 
@@ -85,10 +89,10 @@ static inline zval* nr_php_zval_direct(zval* zv) {
   return zv;
 }
 
-  /*
-   * Reimplement some of the macros that PHP 7 defines to make iteration easier.
-   * For now, only the macros we actually need are implemented.
-   */
+/*
+ * Reimplement some of the macros that PHP 7 defines to make iteration easier.
+ * For now, only the macros we actually need are implemented.
+ */
 
 #define ZEND_HASH_FOREACH(ht)                                              \
   do {                                                                     \

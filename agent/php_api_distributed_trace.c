@@ -317,10 +317,10 @@ PHP_FUNCTION(newrelic_create_distributed_trace_payload) {
         NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
 
     if (payload) {
-      zend_update_property_string(nr_distributed_trace_payload_ce, return_value,
-                                  nr_remove_const(payload_text_prop),
-                                  sizeof(payload_text_prop) - 1,
-                                  payload TSRMLS_CC);
+      zend_update_property_string(
+          nr_distributed_trace_payload_ce, ZVAL_OR_ZEND_OBJECT(return_value),
+          nr_remove_const(payload_text_prop), sizeof(payload_text_prop) - 1,
+          payload TSRMLS_CC);
       nr_free(payload);
     }
   }
@@ -384,7 +384,7 @@ PHP_FUNCTION(newrelic_insert_distributed_trace_headers) {
   tracestate = nr_txn_create_w3c_tracestate_header(
       NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   SEPARATE_ARRAY(header_array);
 #endif /* PHP7 */
 

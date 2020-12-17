@@ -49,6 +49,7 @@
 #define ZEND_7_2_X_API_NO 20170718
 #define ZEND_7_3_X_API_NO 20180731
 #define ZEND_7_4_X_API_NO 20190902
+#define ZEND_8_0_X_API_NO 20200930
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
 #include "Zend/zend_virtual_cwd.h"
@@ -58,6 +59,19 @@
 
 #if defined(ZTS)
 #include "TSRM.h"
+#endif
+
+/*
+ * The TSRMLS_* functions included below have actually been voided out since PHP
+ * 7.0.  They were formally removed in PHP 8.0 but we still support in our code,
+ * so we need to add the voided out macros here.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#define TSRMLS_D void
+#define TSRMLS_DC
+#define TSRMLS_C
+#define TSRMLS_CC
+#define TSRMLS_FETCH()
 #endif
 
 #endif /* PHP_INCLUDES_HDR */
