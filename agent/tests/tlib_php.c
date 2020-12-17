@@ -125,7 +125,12 @@ static const char* tlib_php_new_interned_string(const char* key,
 }
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static zend_string* ZEND_FASTCALL
+tlib_php_init_interned_string(const char* str, size_t size, bool permanent) {
+  return zend_string_init(str, size, permanent);
+}
+#elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
 static zend_string* ZEND_FASTCALL tlib_php_init_interned_string(const char* str,
                                                                 size_t size,
                                                                 int permanent) {
@@ -429,7 +434,14 @@ zval* tlib_php_request_eval_expr(const char* code TSRMLS_DC) {
   return rv;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void tlib_php_error_silence_cb(int type NRUNUSED,
+                                      const char* error_filename NRUNUSED,
+                                      const uint32_t error_lineno NRUNUSED,
+                                      zend_string* message NRUNUSED) {
+  /* Squash the error by doing absolutely nothing. */
+}
+#elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
 static void tlib_php_error_silence_cb(int type NRUNUSED,
                                       const char* error_filename NRUNUSED,
                                       const uint32_t error_lineno NRUNUSED,
@@ -442,7 +454,9 @@ static void tlib_php_error_silence_cb(int type NRUNUSED,
 int tlib_php_require_extension(const char* extension TSRMLS_DC) {
   char* file = NULL;
   int loaded = 0;
-#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  void (*prev_error_cb)(int, const char*, const uint32_t, zend_string*);
+#elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   void (*prev_error_cb)(int, const char*, const uint32_t, const char*, va_list);
 #else
   zend_error_handling_t prev_error;

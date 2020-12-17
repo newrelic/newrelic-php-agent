@@ -444,24 +444,37 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
 
   return 1;
 }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+void nr_php_error_cb(int type,
+                     const char* error_filename,
+                     uint error_lineno,
+                     zend_string* message) {
+#else
 void nr_php_error_cb(int type,
                      const char* error_filename,
                      uint error_lineno,
                      const char* format,
                      va_list args) {
+#endif /* PHP >= 8.0 */
   TSRMLS_FETCH();
+  char* stack_json = NULL;
+  const char* errclass = NULL;
+  char* msg = NULL;
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (nr_php_should_record_error(type, format TSRMLS_CC)) {
     va_list args2;
-    char* stack_json = NULL;
-    const char* errclass = NULL;
-    char* msg = NULL;
     int len;
 
     va_copy(args2, args);
     len = vasprintf(&msg, format, args2);
     msg[len] = '\0';
+
+#else
+  if (nr_php_should_record_error(type, ZSTR_VAL(message))) {
+    msg = nr_strdup(ZSTR_VAL(message));
+
+#endif /* PHP < 8.0 */
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = get_error_type_string(type);
@@ -477,8 +490,13 @@ void nr_php_error_cb(int type,
    * Call through to the actual error handler.
    */
   if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
     (type, error_filename, error_lineno, format, args);
+#else
+    NR_PHP_PROCESS_GLOBALS(orig_error_cb)
+    (type, error_filename, error_lineno, message);
+#endif /* PHP < 8.0 */
   }
 }
 
@@ -590,11 +608,10 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
 
   ce = Z_OBJCE_P(exception);
   klass = nr_strndup(ZEND_STRING_VALUE(ce->name), ZEND_STRING_LEN(ce->name));
-  zend_err_file =
-      nr_php_get_zval_object_property(exception, "file" TSRMLS_CC);
+  zend_err_file = nr_php_get_zval_object_property(exception, "file" TSRMLS_CC);
   file = nr_strndup(Z_STRVAL_P(zend_err_file), Z_STRLEN_P(zend_err_file));
-  zend_err_message =
-      nr_php_get_zval_object_property(exception, "message" TSRMLS_CC);
+  zend_err_message
+      = nr_php_get_zval_object_property(exception, "message" TSRMLS_CC);
   message
       = nr_strndup(Z_STRVAL_P(zend_err_message), Z_STRLEN_P(zend_err_message));
   zend_err_line = nr_php_get_zval_object_property(exception, "line" TSRMLS_CC);
