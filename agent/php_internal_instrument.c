@@ -241,9 +241,8 @@ void nr_php_wrap_internal_function(nrinternalfn_t* wraprec TSRMLS_DC) {
    * Prior to PHP 8, attempting to use a disabled function resulted in a
    * warning.
    * In PHP 8 and later, attempting to use a disabled function will throw a
-   * standard error for an undeclared function.”
-   * In PHP 8+, a disabled function is indistinguishable from a function that
-   * does not exist.
+   * standard error for an undeclared function as it is indistinguishable
+   * from a function that does not exist.
    */
 
   /*

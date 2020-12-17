@@ -724,7 +724,6 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 /* PHP 8 expects zend_object not zval */
 #define ZVAL_OR_ZEND_OBJECT(x) Z_OBJ(*x)
-
 #else
 #define ZVAL_OR_ZEND_OBJECT(x) x
 #endif /* PHP8+ */

@@ -359,7 +359,7 @@ static void** nr_php_get_php55_stack_arguments(int legitimate_frame_delta,
 }
 #endif
 
-#ifndef PHP7 && !defined(PHP8) /* PHP 5.5 and 5.6 */
+#if !defined(PHP7) && !defined(PHP8) /* PHP 5.5 and 5.6 */
 /*
  * Use detailed zend specific knowledge of the interpreter stack
  * to read the argument vector.
