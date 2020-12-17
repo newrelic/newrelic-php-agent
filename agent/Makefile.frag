@@ -202,10 +202,21 @@ endif
 # prefer the static version if it's available, but depending on how PHP was
 # installed, we may only have the shared version.
 #
-ifneq (,$(wildcard $(libdir)/libphp$(shell $(PHP_CONFIG) --version | cut -d . -f 1).a))
-	PHP_EMBED_LIBRARY := $(libdir)/libphp$(shell $(PHP_CONFIG) --version | cut -d . -f 1).a
+
+
+# Update for PHP8:
+# They no longer adhere to their prior versioning system.  The library is now
+# simply $prefix/lib/libphp.{a,so}
+
+major = $(shell $(PHP_CONFIG) --version | cut -d . -f 1)
+ifeq ($(major), 8)
+    major =
+endif
+
+ifneq (,$(wildcard $(libdir)/libphp$(major).a))
+	PHP_EMBED_LIBRARY := $(libdir)/libphp$(major).a
 else
-	PHP_EMBED_LIBRARY := $(libdir)/libphp$(shell $(PHP_CONFIG) --version | cut -d . -f 1).so
+	PHP_EMBED_LIBRARY := $(libdir)/libphp$(major).so
 endif
 
 #
