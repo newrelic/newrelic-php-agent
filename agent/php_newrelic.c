@@ -115,8 +115,10 @@ void nr_print_globals(FILE* fp) {
  * New Relic API function argument descriptors.
  */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 ZEND_BEGIN_ARG_INFO_EX(newrelic_arginfo_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
+#endif /* PHP 8.0+ */
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_parameter_arginfo, 0, 0, 2)
 ZEND_ARG_INFO(0, parameter)
