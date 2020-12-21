@@ -30,9 +30,9 @@ static int nr_php_curl_do_cross_process(TSRMLS_D) {
 
 static int nr_php_is_zval_valid_curl_handle(const zval* ch) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  return NULL != ch && nr_php_is_zval_valid_object(curlres);
+  return NULL != ch && nr_php_is_zval_valid_object(ch);
 #else
-  return NULL != ch && nr_php_is_zval_valid_resource(curlres);
+  return NULL != ch && nr_php_is_zval_valid_resource(ch);
 #endif /* PHP 8.0+ */
 }
 
@@ -366,7 +366,7 @@ end:
 }
 
 static void nr_php_curl_setopt_curlopt_writeheader(zval* curlval TSRMLS_DC) {
-  if (!nr_php_is_zval_valid_curl_handle(ch)) {
+  if ((NULL == curlval) || (IS_RESOURCE != Z_TYPE_P(curlval))) {
     return;
   }
 
