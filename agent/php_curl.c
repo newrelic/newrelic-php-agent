@@ -28,6 +28,14 @@ static int nr_php_curl_do_cross_process(TSRMLS_D) {
           || NRPRG(txn)->options.distributed_tracing_enabled);
 }
 
+static int nr_php_is_zval_valid_curl_handle(const zval* ch) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  return NULL != ch && nr_php_is_zval_valid_object(curlres);
+#else
+  return NULL != ch && nr_php_is_zval_valid_resource(curlres);
+#endif /* PHP 8.0+ */
+}
+
 static void nr_php_curl_save_response_header_from_zval(const zval* ch,
                                                        const zval* zstr
                                                            TSRMLS_DC) {
@@ -113,7 +121,7 @@ static void nr_php_curl_set_default_response_header_callback(
   zval* retval = NULL;
   zval* curlopt = NULL;
 
-  if ((NULL == curlres) || (IS_RESOURCE != Z_TYPE_P(curlres))) {
+  if ((NULL == curlres)) {
     return;
   }
 
@@ -137,7 +145,7 @@ static void nr_php_curl_set_default_request_headers(zval* curlres TSRMLS_DC) {
   zval* retval = NULL;
   zval* curlopt = NULL;
 
-  if ((NULL == curlres) || (IS_RESOURCE != Z_TYPE_P(curlres))) {
+  if (!nr_php_is_zval_valid_curl_handle(curlres)) {
     return;
   }
 
@@ -358,7 +366,7 @@ end:
 }
 
 static void nr_php_curl_setopt_curlopt_writeheader(zval* curlval TSRMLS_DC) {
-  if ((NULL == curlval) || (IS_RESOURCE != Z_TYPE_P(curlval))) {
+  if (!nr_php_is_zval_valid_curl_handle(ch)) {
     return;
   }
 
@@ -421,8 +429,8 @@ void nr_php_curl_setopt_pre(zval* curlres,
     return;
   }
 
-  if ((NULL == curlres) || (NULL == curlopt) || (NULL == curlval)
-      || (IS_RESOURCE != Z_TYPE_P(curlres)) || (IS_LONG != Z_TYPE_P(curlopt))) {
+  if ( !nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt) || (NULL == curlval)
+       || (IS_LONG != Z_TYPE_P(curlopt))) {
     return;
   }
 
@@ -445,8 +453,8 @@ void nr_php_curl_setopt_post(zval* curlres,
     return;
   }
 
-  if ((NULL == curlres) || (NULL == curlopt) || (NULL == curlval)
-      || (IS_RESOURCE != Z_TYPE_P(curlres)) || (IS_LONG != Z_TYPE_P(curlopt))) {
+  if ( !nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt) || (NULL == curlval)
+      || (IS_LONG != Z_TYPE_P(curlopt))) {
     return;
   }
 
@@ -526,7 +534,7 @@ void nr_php_curl_setopt_array(zval* curlres,
       .func = func,
   };
 
-  if (!nr_php_is_zval_valid_resource(curlres)
+  if (!nr_php_is_zval_valid_curl_handle(curlres)
       || !nr_php_is_zval_valid_array(options)) {
     return;
   }
@@ -541,7 +549,7 @@ static bool nr_php_curl_finished(zval* curlres TSRMLS_DC) {
   zval* result = NULL;
   bool finished = false;
 
-  if (!nr_php_is_zval_valid_resource(curlres)) {
+  if (!nr_php_is_zval_valid_curl_handle(curlres)) {
     return false;
   }
 
