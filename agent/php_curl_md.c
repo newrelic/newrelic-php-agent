@@ -14,6 +14,20 @@ static void nr_php_curl_md_destroy(nr_php_curl_md_t* metadata) {
   nr_free(metadata);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+#define check_curl_handle(ch)                                              \
+  ({                                                                       \
+    bool __ok = true;                                                      \
+                                                                           \
+    if (nrunlikely(!nr_php_is_zval_valid_object(ch))) {                    \
+      nrl_verbosedebug(NRL_CAT, "%s: invalid curl handle; not an object",  \
+                       __func__);                                          \
+      __ok = false;                                                        \
+    }                                                                      \
+                                                                           \
+    __ok;                                                                  \
+  })
+#else
 #define check_curl_handle(ch)                                              \
   ({                                                                       \
     bool __ok = true;                                                      \
@@ -26,6 +40,7 @@ static void nr_php_curl_md_destroy(nr_php_curl_md_t* metadata) {
                                                                            \
     __ok;                                                                  \
   })
+#endif
 
 #define ensure_curl_metadata_hashmap()                                       \
   if (!NRTXNGLOBAL(curl_metadata)) {                                         \
