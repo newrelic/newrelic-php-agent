@@ -429,8 +429,8 @@ void nr_php_curl_setopt_pre(zval* curlres,
     return;
   }
 
-  if ( !nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt) || (NULL == curlval)
-       || (IS_LONG != Z_TYPE_P(curlopt))) {
+  if (!nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt)
+      || (NULL == curlval) || (IS_LONG != Z_TYPE_P(curlopt))) {
     return;
   }
 
@@ -453,8 +453,8 @@ void nr_php_curl_setopt_post(zval* curlres,
     return;
   }
 
-  if ( !nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt) || (NULL == curlval)
-      || (IS_LONG != Z_TYPE_P(curlopt))) {
+  if (!nr_php_is_zval_valid_curl_handle(curlres) || (NULL == curlopt)
+      || (NULL == curlval) || (IS_LONG != Z_TYPE_P(curlopt))) {
     return;
   }
 
