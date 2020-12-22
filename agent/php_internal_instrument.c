@@ -2191,11 +2191,11 @@ NR_INNER_WRAPPER(curl_exec) {
   int rv = FAILURE;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  rv = zend_parse_parameters_ex(
-      ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "o", &curlres);
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "o", &curlres);
 #else
-  rv = zend_parse_parameters_ex(
-      ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres);
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres);
 #endif /* PHP 8.0+ */
   if (SUCCESS != rv) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
