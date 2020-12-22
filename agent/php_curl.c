@@ -121,7 +121,7 @@ static void nr_php_curl_set_default_response_header_callback(
   zval* retval = NULL;
   zval* curlopt = NULL;
 
-  if ((NULL == curlres)) {
+  if (!nr_php_is_zval_valid_curl_handle(curlres)) {
     return;
   }
 
