@@ -2250,10 +2250,16 @@ NR_INNER_WRAPPER(curl_init) {
 NR_INNER_WRAPPER(curl_exec) {
   zval* curlres = NULL;
   int zcaught = 0;
+  int rv = FAILURE;
 
-  if (SUCCESS
-      != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "o", &curlres);
+#else
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres);
+#endif /* PHP 8.0+ */
+  if (SUCCESS != rv) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
@@ -2283,9 +2289,15 @@ NR_INNER_WRAPPER(curl_multi_add_handle) {
   zval* curlres = NULL;
   int rv = FAILURE;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "oo", &multires,
+                                &curlres);
+#else
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
+#endif /* PHP 8.0+ */
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_add(multires, curlres TSRMLS_CC)
@@ -2317,9 +2329,15 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
   zval* curlres = NULL;
   int rv = FAILURE;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "oo", &multires,
+                                &curlres);
+#else
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
+#endif /* PHP 8.0+ */
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_remove(multires, curlres TSRMLS_CC)) {
