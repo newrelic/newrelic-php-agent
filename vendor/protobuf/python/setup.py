@@ -82,8 +82,6 @@ def GenerateUnittestProtos():
   generate_proto("../src/google/protobuf/test_messages_proto3.proto", False)
   generate_proto("../src/google/protobuf/test_messages_proto2.proto", False)
   generate_proto("../src/google/protobuf/unittest_arena.proto", False)
-  generate_proto("../src/google/protobuf/unittest_no_arena.proto", False)
-  generate_proto("../src/google/protobuf/unittest_no_arena_import.proto", False)
   generate_proto("../src/google/protobuf/unittest.proto", False)
   generate_proto("../src/google/protobuf/unittest_custom_options.proto", False)
   generate_proto("../src/google/protobuf/unittest_import.proto", False)
@@ -110,6 +108,7 @@ def GenerateUnittestProtos():
   generate_proto("google/protobuf/internal/no_package.proto", False)
   generate_proto("google/protobuf/internal/packed_field_test.proto", False)
   generate_proto("google/protobuf/internal/test_bad_identifiers.proto", False)
+  generate_proto("google/protobuf/internal/test_proto3_optional.proto", False)
   generate_proto("google/protobuf/pyext/python.proto", False)
 
 
@@ -280,6 +279,7 @@ if __name__ == '__main__':
           'build_py': build_py,
           'test_conformance': test_conformance,
       },
+      setup_requires = ['wheel'],
       install_requires=install_requires,
       ext_modules=ext_module_list,
   )

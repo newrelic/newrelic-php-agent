@@ -55,11 +55,26 @@ static void test_invalid_parameters(TSRMLS_D) {
   tlib_php_request_start();
 
   /* Literally any parameter should cause this to bail. */
+#ifdef PHP8
+  tlib_php_request_eval("$exception = false;"
+                        "try {"
+                        "    $value = newrelic_get_trace_json('invalid');"
+                        "    echo \"No exception, returned \" . $value . \".\\n\";"
+                        "} catch(ArgumentCountError $_e) {"
+                        "    $exception = true;"
+                        "}" TSRMLS_CC);
+  retval = tlib_php_request_eval_expr("$exception;" TSRMLS_CC);
+
+  tlib_pass_if_zval_is_bool_true(
+      "newrelic_get_trace_json() throws an exception when a parameter is given",
+      retval);
+#else
   retval = nr_php_call(NULL, "newrelic_get_trace_json", param);
 
   tlib_pass_if_zval_is_bool_false(
       "newrelic_get_trace_json() returns false when a parameter is given",
       retval);
+#endif
 
   nr_php_zval_free(&param);
   nr_php_zval_free(&retval);

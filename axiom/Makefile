@@ -77,7 +77,10 @@ VERSION_FLAGS := -DNR_VERSION=$(AGENT_VERSION) -DNR_COMMIT=$(GIT_COMMIT)
 # Object files that we have to build. If you're adding a new C file to axiom,
 # you need to add a corresponding line here.
 #
+# Note: v1.pb-c.o is built first in order to generate v1.pb-c.h which is needed
+# by at least nr_span_encoding.c.
 OBJS := \
+	v1.pb-c.o \
 	cmd_appinfo_transmit.o \
 	cmd_span_batch_transmit.o \
 	cmd_txndata_transmit.o \
@@ -156,8 +159,7 @@ OBJS := \
 	util_text.o \
 	util_threads.o \
 	util_url.o \
-	util_vector.o \
-	v1.pb-c.o
+	util_vector.o
 
 #
 # The rule to actually build the library.

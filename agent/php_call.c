@@ -14,13 +14,15 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#ifdef PHP7
-  int zend_result;
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+  int zend_result = FAILURE;
   zval* fname = NULL;
-  int no_separation = 0;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
   zval* retval = NULL;
+#ifndef PHP8
+  int no_separation = 0;
+#endif /* PHP8 */
 
   /*
    * Prevent an unused variable warning. PHP 7.1 changed call_user_function_ex
@@ -46,9 +48,20 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+
+  /*
+   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
+   * became the recommended function.
+   */
+  zend_result = call_user_function(EG(function_table), object_ptr, fname,
+                                   retval, param_count, param_values);
+
+#else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
                                       retval, param_count, param_values,
                                       no_separation, symbol_table TSRMLS_CC);
+#endif /* PHP8+ */
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
@@ -59,7 +72,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   nr_php_zval_free(&retval);
   return NULL;
-#else
+#else /* PHP < 7 */
   int zend_result;
   zval* fname = NULL;
   int no_separation = 0;
@@ -114,14 +127,14 @@ zval* nr_php_call_user_func_catch(zval* object_ptr,
   }
 
   /*
-   * The approach for both PHP 5 and 7 is conceptually the same: persist the
+   * The approach for both PHP 5, 7, and 8 is conceptually the same: persist the
    * current exception pointer in the executor globals, then compare it after
    * the call has been made. If the pointer changes, then an exception was
-   * thrown. The key difference is that PHP 5 uses a zval, whereas PHP 7 uses
+   * thrown. The key difference is that PHP 5 uses a zval, whereas PHP 7+ uses
    * a zend_object.
    */
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   {
     zend_object* exception_obj = EG(exception);
 
@@ -157,7 +170,7 @@ zval* nr_php_call_user_func_catch(zval* object_ptr,
       zend_clear_exception(TSRMLS_C);
     }
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return retval;
 }

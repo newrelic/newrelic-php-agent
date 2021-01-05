@@ -37,16 +37,6 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/stubs/strutil.h>
-#include <google/protobuf/any.pb.h>
-#include <google/protobuf/api.pb.h>
-#include <google/protobuf/duration.pb.h>
-#include <google/protobuf/empty.pb.h>
-#include <google/protobuf/field_mask.pb.h>
-#include <google/protobuf/source_context.pb.h>
-#include <google/protobuf/struct.pb.h>
-#include <google/protobuf/timestamp.pb.h>
-#include <google/protobuf/type.pb.h>
-#include <google/protobuf/wrappers.pb.h>
 
 #include <sstream>
 
@@ -129,7 +119,7 @@ std::string ReservedNamePrefix(const string& classname,
   bool is_reserved = false;
 
   string lower = classname;
-  transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
   for (int i = 0; i < kReservedNamesSize; i++) {
     if (lower == kReservedNames[i]) {
@@ -213,7 +203,7 @@ std::string LegacyGeneratedClassName(const DescriptorType* desc) {
 
 std::string ClassNamePrefix(const string& classname) {
   string lower = classname;
-  transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
   for (int i = 0; i < kReservedNamesSize; i++) {
     if (lower == kReservedNames[i]) {
@@ -228,7 +218,7 @@ std::string ConstantNamePrefix(const string& classname) {
   bool is_reserved = false;
 
   string lower = classname;
-  transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
   for (int i = 0; i < kReservedNamesSize; i++) {
     if (lower == kReservedNames[i]) {
@@ -634,21 +624,17 @@ void GenerateField(const FieldDescriptor* field, io::Printer* printer,
     printer->Print(
         "private $^name^;\n",
         "name", field->name());
-  } else if (field->containing_oneof()) {
+  } else if (field->real_containing_oneof()) {
     // Oneof fields are handled by GenerateOneofField.
     return;
   } else {
+    std::string initial_value =
+        field->has_presence() ? "null" : DefaultForField(field);
     GenerateFieldDocComment(printer, field, is_descriptor, kFieldProperty);
     printer->Print(
-        "protected $^name^ = ^default^;\n",
+        "protected $^name^ = ^initial_value^;\n",
         "name", field->name(),
-        "default", DefaultForField(field));
-  }
-
-  if (is_descriptor) {
-    printer->Print(
-        "private $has_^name^ = false;\n",
-        "name", field->name());
+        "initial_value", initial_value);
   }
 }
 
@@ -662,20 +648,41 @@ void GenerateOneofField(const OneofDescriptor* oneof, io::Printer* printer) {
 
 void GenerateFieldAccessor(const FieldDescriptor* field, bool is_descriptor,
                            io::Printer* printer) {
-  const OneofDescriptor* oneof = field->containing_oneof();
+  const OneofDescriptor* oneof = field->real_containing_oneof();
 
   // Generate getter.
+  GenerateFieldDocComment(printer, field, is_descriptor, kFieldGetter);
+
   if (oneof != NULL) {
-    GenerateFieldDocComment(printer, field, is_descriptor, kFieldGetter);
     printer->Print(
         "public function get^camel_name^()\n"
         "{\n"
         "    return $this->readOneof(^number^);\n"
+        "}\n\n"
+        "public function has^camel_name^()\n"
+        "{\n"
+        "    return $this->hasOneof(^number^);\n"
         "}\n\n",
         "camel_name", UnderscoresToCamelCase(field->name(), true),
         "number", IntToString(field->number()));
+  } else if (field->has_presence()) {
+    printer->Print(
+        "public function get^camel_name^()\n"
+        "{\n"
+        "    return isset($this->^name^) ? $this->^name^ : ^default_value^;\n"
+        "}\n\n"
+        "public function has^camel_name^()\n"
+        "{\n"
+        "    return isset($this->^name^);\n"
+        "}\n\n"
+        "public function clear^camel_name^()\n"
+        "{\n"
+        "    unset($this->^name^);\n"
+        "}\n\n",
+        "camel_name", UnderscoresToCamelCase(field->name(), true),
+        "name", field->name(),
+        "default_value", DefaultForField(field));
   } else {
-    GenerateFieldDocComment(printer, field, is_descriptor, kFieldGetter);
     printer->Print(
         "public function get^camel_name^()\n"
         "{\n"
@@ -754,11 +761,11 @@ void GenerateFieldAccessor(const FieldDescriptor* field, bool is_descriptor,
   } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
     printer->Print(
         "GPBUtil::checkMessage($var, \\^class_name^::class);\n",
-        "class_name", LegacyFullClassName(field->message_type(), is_descriptor));
+        "class_name", FullClassName(field->message_type(), is_descriptor));
   } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_ENUM) {
     printer->Print(
         "GPBUtil::checkEnum($var, \\^class_name^::class);\n",
-        "class_name", LegacyFullClassName(field->enum_type(), is_descriptor));
+        "class_name", FullClassName(field->enum_type(), is_descriptor));
   } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_STRING) {
     printer->Print(
         "GPBUtil::checkString($var, ^utf8^);\n",
@@ -784,13 +791,6 @@ void GenerateFieldAccessor(const FieldDescriptor* field, bool is_descriptor,
         "name", field->name());
   }
 
-  // Set has bit for proto2 only.
-  if (is_descriptor) {
-    printer->Print(
-        "$this->has_^field_name^ = true;\n",
-        "field_name", field->name());
-  }
-
   printer->Print("\nreturn $this;\n");
 
   Outdent(printer);
@@ -809,17 +809,6 @@ void GenerateFieldAccessor(const FieldDescriptor* field, bool is_descriptor,
         "{\n"
         "    $this->writeWrapperValue(\"^field_name^\", $var);\n"
         "    return $this;"
-        "}\n\n",
-        "camel_name", UnderscoresToCamelCase(field->name(), true),
-        "field_name", field->name());
-  }
-
-  // Generate has method for proto2 only.
-  if (is_descriptor) {
-    printer->Print(
-        "public function has^camel_name^()\n"
-        "{\n"
-        "    return $this->has_^field_name^;\n"
         "}\n\n",
         "camel_name", UnderscoresToCamelCase(field->name(), true),
         "field_name", field->name());
@@ -888,7 +877,7 @@ void GenerateMessageToPool(const string& name_prefix, const Descriptor* message,
           "value", ToUpper(val->type_name()),
           "number", StrCat(field->number()),
           "other", EnumOrMessageSuffix(val, true));
-    } else if (!field->containing_oneof()) {
+    } else if (!field->real_containing_oneof()) {
       printer->Print(
           "->^label^('^field^', "
           "\\Google\\Protobuf\\Internal\\GPBType::^type^, ^number^^other^)\n",
@@ -901,7 +890,7 @@ void GenerateMessageToPool(const string& name_prefix, const Descriptor* message,
   }
 
   // oneofs.
-  for (int i = 0; i < message->oneof_decl_count(); i++) {
+  for (int i = 0; i < message->real_oneof_decl_count(); i++) {
     const OneofDescriptor* oneof = message->oneof_decl(i);
     printer->Print("->oneof(^name^)\n",
                    "name", oneof->name());
@@ -1368,7 +1357,7 @@ void GenerateEnumFile(const FileDescriptor* file, const EnumDescriptor* en,
   Outdent(&printer);
   printer.Print("}\n\n");
 
-  // write legacy file for backwards compatiblity with nested messages and enums
+  // write legacy file for backwards compatibility with nested messages and enums
   if (en->containing_type() != NULL) {
     printer.Print(
         "// Adding a class alias for backwards compatibility with the previous class name.\n");
@@ -1424,7 +1413,7 @@ void GenerateMessageFile(const FileDescriptor* file, const Descriptor* message,
     const FieldDescriptor* field = message->field(i);
     GenerateField(field, &printer, is_descriptor);
   }
-  for (int i = 0; i < message->oneof_decl_count(); i++) {
+  for (int i = 0; i < message->real_oneof_decl_count(); i++) {
     const OneofDescriptor* oneof = message->oneof_decl(i);
     GenerateOneofField(oneof, &printer);
   }
@@ -1453,7 +1442,7 @@ void GenerateMessageFile(const FileDescriptor* file, const Descriptor* message,
     const FieldDescriptor* field = message->field(i);
     GenerateFieldAccessor(field, is_descriptor, &printer);
   }
-  for (int i = 0; i < message->oneof_decl_count(); i++) {
+  for (int i = 0; i < message->real_oneof_decl_count(); i++) {
     const OneofDescriptor* oneof = message->oneof_decl(i);
     printer.Print(
       "/**\n"
@@ -1470,7 +1459,7 @@ void GenerateMessageFile(const FileDescriptor* file, const Descriptor* message,
   Outdent(&printer);
   printer.Print("}\n\n");
 
-  // write legacy file for backwards compatiblity with nested messages and enums
+  // write legacy file for backwards compatibility with nested messages and enums
   if (message->containing_type() != NULL) {
     printer.Print(
         "// Adding a class alias for backwards compatibility with the previous class name.\n");
@@ -1764,7 +1753,7 @@ void GenerateWrapperFieldSetterDocComment(io::Printer* printer, const FieldDescr
   printer->Print("/**\n");
   printer->Print(
       " * Sets the field by wrapping a primitive type in a ^message_name^ object.\n\n",
-      "message_name", LegacyFullClassName(field->message_type(), false));
+      "message_name", FullClassName(field->message_type(), false));
   GenerateDocCommentBody(printer, field);
   printer->Print(
     " * Generated from protobuf field <code>^def^</code>\n",
@@ -1853,11 +1842,12 @@ bool Generator::GenerateAll(const std::vector<const FileDescriptor*>& files,
   bool aggregate_metadata = false;
   std::set<string> aggregate_metadata_prefixes;
 
-  for (const auto& option : Split(parameter, ",")) {
-    const auto option_pair = Split(option, "=");
+  for (const auto& option : Split(parameter, ",", true)) {
+    const std::vector<std::string> option_pair = Split(option, "=", true);
     if (HasPrefixString(option_pair[0], "aggregate_metadata")) {
       string options_string = option_pair[1];
-      const auto options = Split(options_string, "#", false);
+      const std::vector<std::string> options =
+          Split(options_string, "#", false);
       aggregate_metadata = true;
       for (int i = 0; i < options.size(); i++) {
         aggregate_metadata_prefixes.insert(options[i]);

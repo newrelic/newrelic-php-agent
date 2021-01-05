@@ -356,7 +356,11 @@ PHP_MINIT_FUNCTION(newrelic) {
   int daemon_connect_succeeded;
   nr_conn_params_t* conn_params;
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* < PHP8 */
   zend_extension dummy;
+#else
+  char dummy[] = "newrelic";
+#endif
 
   (void)type;
 
@@ -610,8 +614,11 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_set_opcode_handlers();
 
   nrl_debug(NRL_INIT, "MINIT processing done");
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
+  NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(dummy);
+#else
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(&dummy);
-
+#endif
   return (SUCCESS);
 }
 

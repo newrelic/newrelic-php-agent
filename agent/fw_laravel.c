@@ -109,7 +109,8 @@ static PHP_NAMED_FUNCTION(nr_laravel_afterfilter_construct) {
       /*
        * It's a valid app object. Set $this->app to contain it.
        */
-      zend_update_property(nr_laravel_afterfilter_ce, this_obj, NR_PSTR("app"),
+      zend_update_property(nr_laravel_afterfilter_ce,
+                           ZVAL_OR_ZEND_OBJECT(this_obj), NR_PSTR("app"),
                            app TSRMLS_CC);
     } else {
       /*

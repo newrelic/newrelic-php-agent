@@ -330,7 +330,7 @@ extern zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC);
  *           won't help you!
  */
 static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == execute_data) {
     /*
      * This function shouldn't be called from outside a function context, so
@@ -346,7 +346,7 @@ static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
   NR_UNUSED_SPECIALFN;
 
   return return_value_ptr_ptr ? *return_value_ptr_ptr : NULL;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 /*
@@ -358,7 +358,7 @@ static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
  *           other "should not happen" situation. Note that this may be an
  *           IS_REFERENCE zval in PHP 7 if the function expects a reference.
  *
- * Warning : Directly modifying the returned zval in PHP 7 may result in 
+ * Warning : Directly modifying the returned zval in PHP 7 may result in
  *           difficult issues that are difficult to debug.
  *
  * IMPORTANT : This should only be called before the call to the current user
@@ -389,14 +389,14 @@ static inline zend_function* nr_php_execute_function(
   }
 #endif
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return execute_data->func;
 #elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   return execute_data->function_state.function;
 #else
   return op_array_arg->prototype ? op_array_arg->prototype
                                  : (zend_function*)op_array_arg;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
@@ -404,7 +404,7 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return &execute_data->This;
 #else
   return execute_data->object;
@@ -600,26 +600,26 @@ extern const char* nr_php_function_filename(zend_function* func);
 static inline zend_class_entry* nr_php_zend_register_internal_class_ex(
     zend_class_entry* ce,
     zend_class_entry* parent_ce TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return zend_register_internal_class_ex(ce, parent_ce);
 #else
   return zend_register_internal_class_ex(ce, parent_ce, NULL TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 static inline char* nr_php_zend_ini_string(char* name,
                                            nr_string_len_t name_len,
                                            int orig) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return zend_ini_string(name, name_len, orig);
 #else
   return zend_ini_string(name, name_len + 1, orig);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 static inline const char* NRPURE
 nr_php_class_entry_name(const zend_class_entry* ce) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (ce->name && ce->name->len) ? ce->name->val : NULL;
 #else
   return ce->name;
@@ -628,7 +628,7 @@ nr_php_class_entry_name(const zend_class_entry* ce) {
 
 static inline nr_string_len_t NRPURE
 nr_php_class_entry_name_length(const zend_class_entry* ce) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return ce->name ? ce->name->len : 0;
 #else
   return NRSAFELEN(ce->name_length);
@@ -637,7 +637,7 @@ nr_php_class_entry_name_length(const zend_class_entry* ce) {
 
 static inline const char* NRPURE
 nr_php_function_name(const zend_function* func) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (func->common.function_name && func->common.function_name->len)
              ? func->common.function_name->val
              : NULL;
@@ -648,7 +648,7 @@ nr_php_function_name(const zend_function* func) {
 
 static inline nr_string_len_t NRPURE
 nr_php_function_name_length(const zend_function* func) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return func->common.function_name ? func->common.function_name->len : 0;
 #else
   /*
@@ -661,7 +661,7 @@ nr_php_function_name_length(const zend_function* func) {
 
 static inline const char* NRPURE
 nr_php_op_array_file_name(const zend_op_array* op_array) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (op_array->filename && op_array->filename->len)
              ? op_array->filename->val
              : NULL;
@@ -672,7 +672,7 @@ nr_php_op_array_file_name(const zend_op_array* op_array) {
 
 static inline const char* NRPURE
 nr_php_op_array_function_name(const zend_op_array* op_array) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (op_array->function_name && op_array->function_name->len)
              ? op_array->function_name->val
              : NULL;
@@ -683,7 +683,7 @@ nr_php_op_array_function_name(const zend_op_array* op_array) {
 
 static inline const char* NRPURE
 nr_php_op_array_scope_name(const zend_op_array* op_array) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
     return op_array->scope->name->val;
   }
@@ -698,7 +698,7 @@ nr_php_op_array_scope_name(const zend_op_array* op_array) {
 
 static inline const char* NRPURE
 nr_php_ini_entry_name(const zend_ini_entry* entry) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (entry->name && entry->name->len) ? entry->name->val : NULL;
 #else
   return entry->name;
@@ -706,7 +706,7 @@ nr_php_ini_entry_name(const zend_ini_entry* entry) {
 }
 static inline nr_string_len_t NRPURE
 nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return entry->name ? entry->name->len : 0;
 #else
   return NRSAFELEN(entry->name_length - 1);
@@ -715,11 +715,18 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 
 #define NR_PHP_INTERNAL_FN_THIS() getThis()
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define NR_PHP_USER_FN_THIS() getThis()
 #else
 #define NR_PHP_USER_FN_THIS() EG(This)
-#endif
+#endif /* PHP 7.0+ */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+/* PHP 8 expects zend_object not zval */
+#define ZVAL_OR_ZEND_OBJECT(x) Z_OBJ(*x)
+#else
+#define ZVAL_OR_ZEND_OBJECT(x) x
+#endif /* PHP8+ */
 
 /*
  * Purpose : Wrap the native PHP json_decode function for those times when we

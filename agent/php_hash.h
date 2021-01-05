@@ -122,13 +122,18 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
 static inline int nr_php_add_assoc_zval(zval* arr,
                                         const char* key,
                                         zval* value) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zval copy;
 
   ZVAL_DUP(&copy, value);
 
-  return add_assoc_zval(arr, key, &copy);
+#ifdef PHP8
+  add_assoc_zval(arr, key, &copy);
+  return 0;
 #else
+  return add_assoc_zval(arr, key, &copy);
+#endif /* PHP8 */
+#else  /* Less than PHP7 */
   zval* copy;
 
   ALLOC_ZVAL(copy);

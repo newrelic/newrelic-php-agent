@@ -134,7 +134,7 @@ static void nr_php_instrument_delegate(nrinternalfn_t* wraprec,
   }
 #else
 #define NR_OUTER_WRAPPER(RAW)                                     \
-  static nrinternalfn_t* NR_OUTER_GLOBAL_NAME(RAW) = NULL;           \
+  static nrinternalfn_t* NR_OUTER_GLOBAL_NAME(RAW) = NULL;        \
   static void ZEND_FASTCALL NR_OUTER_WRAPPER_NAME(RAW)(           \
       INTERNAL_FUNCTION_PARAMETERS) {                             \
     nr_php_instrument_delegate(NR_OUTER_GLOBAL_NAME(RAW),         \
@@ -231,11 +231,25 @@ void nr_php_wrap_internal_function(nrinternalfn_t* wraprec TSRMLS_DC) {
       return;
     }
   }
+  /*
+   * PHP has a feature to disable certain functions and classes with
+   * disable_functions and disable_classes INI directives. This is often used
+   * as a security measure to disable potentially unsafe functions.
+   *
+   * This functionality still exists in PHP 8, but the disabled functions
+   * behave as if they are not declared at all.
+   * Prior to PHP 8, attempting to use a disabled function resulted in a
+   * warning.
+   * In PHP 8 and later, attempting to use a disabled function will throw a
+   * standard error for an undeclared function as it is indistinguishable
+   * from a function that does not exist.
+   */
 
   /*
    * If the internal function is disabled, don't wrap it; doing so breaks
    * function_exists(), and it can't be invoked anyway.
    */
+#ifndef PHP8
   if (zif_display_disabled_function
       == ((zend_internal_function*)orig_func)->handler) {
     nrl_verbosedebug(
@@ -244,6 +258,7 @@ void nr_php_wrap_internal_function(nrinternalfn_t* wraprec TSRMLS_DC) {
         NRP_PHP(wraprec->full_name));
     return;
   }
+#endif /* not PHP8 */
 
   if (wraprec->outer_wrapper_global) {
     /*
@@ -1431,9 +1446,8 @@ NR_INNER_WRAPPER(redis_connect) {
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s|lzzz", &host,
           &host_len, &port, &ignore1, &ignore2, &ignore3)) {
-    instance = nr_php_redis_save_datastore_instance(
-        NR_PHP_INTERNAL_FN_THIS(), host,
-        port TSRMLS_CC);
+    instance = nr_php_redis_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
+                                                    host, port TSRMLS_CC);
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
@@ -2174,10 +2188,16 @@ NR_INNER_WRAPPER(curl_init) {
 NR_INNER_WRAPPER(curl_exec) {
   zval* curlres = NULL;
   int zcaught = 0;
+  int rv = FAILURE;
 
-  if (SUCCESS
-      != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "o", &curlres);
+#else
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "r", &curlres);
+#endif /* PHP 8.0+ */
+  if (SUCCESS != rv) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
@@ -2207,9 +2227,15 @@ NR_INNER_WRAPPER(curl_multi_add_handle) {
   zval* curlres = NULL;
   int rv = FAILURE;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "oo", &multires,
+                                &curlres);
+#else
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
+#endif /* PHP 8.0+ */
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_add(multires, curlres TSRMLS_CC)
@@ -2241,9 +2267,15 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
   zval* curlres = NULL;
   int rv = FAILURE;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "oo", &multires,
+                                &curlres);
+#else
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
+#endif /* PHP 8.0+ */
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_remove(multires, curlres TSRMLS_CC)) {
@@ -2773,7 +2805,7 @@ static inline int nr_php_should_instrument_exception_handler(
 NR_INNER_WRAPPER(exception_common) {
   zval* exception_handler = NULL;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   exception_handler = &EG(user_exception_handler);
 #else
   exception_handler = EG(user_exception_handler);
@@ -2795,7 +2827,7 @@ NR_INNER_WRAPPER(exception_common) {
    */
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   exception_handler = &EG(user_exception_handler);
 #else
   exception_handler = EG(user_exception_handler);
@@ -2809,11 +2841,11 @@ NR_INNER_WRAPPER(exception_common) {
 
     func = nr_php_zval_to_function(exception_handler TSRMLS_CC);
     nr_php_add_exception_function(func TSRMLS_CC);
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   } else if (IS_UNDEF == Z_TYPE_P(exception_handler)) {
 #else
   } else if (NULL == exception_handler) {
-#endif /* PHP7 */
+#endif /* PHP7+ */
     nr_php_error_install_exception_handler(TSRMLS_C);
   }
 }
@@ -3067,13 +3099,13 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
                       0)
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   NR_INTERNAL_WRAPREC("mysqli::__construct", mysqliC_construct,
                       mysqli_construct, 0, 0)
 #else
   NR_INTERNAL_WRAPREC("mysqli::mysqli", mysqliC_construct, mysqli_construct, 0,
                       0)
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   NR_INTERNAL_WRAPREC("mysqli::multi_query", mysqliC_multi_query,
                       mysqli_general_query, 0, 0)

@@ -17,7 +17,7 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
     zval* object,
     zend_class_entry* ce,
     const char* cname TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   /*
    * Although the below notes still apply in principle, PHP 7 additionally broke
    * the API for zend_read_property by adding an rv parameter, which is used to
@@ -33,7 +33,8 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
   zval rv;
   zend_bool silent = 1;
 
-  data = zend_read_property(ce, object, cname, nr_strlen(cname), silent, &rv);
+  data = zend_read_property(ce, ZVAL_OR_ZEND_OBJECT(object), cname,
+                            nr_strlen(cname), silent, &rv);
   if (&EG(uninitialized_zval) != data) {
     return data;
   }
@@ -55,7 +56,7 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
   if (EG(uninitialized_zval_ptr) != data) {
     return data;
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return NULL;
 }
@@ -124,7 +125,7 @@ int nr_php_object_has_method(zval* object, const char* lcname TSRMLS_DC) {
     } else {
       void* func;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
       zend_string* name_str = zend_string_init(vname, namelen, 0);
 
       func = (void*)Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object), name_str,
@@ -188,7 +189,7 @@ zend_function* nr_php_find_function(const char* name TSRMLS_DC) {
  * whereas PHP 7 only uses a single level of indirection.
  */
 zend_class_entry* nr_php_find_class(const char* name TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == name) {
     return NULL;
   }
@@ -204,7 +205,7 @@ zend_class_entry* nr_php_find_class(const char* name TSRMLS_DC) {
   ce_ptr = (zend_class_entry**)nr_php_zend_hash_find_ptr(EG(class_table), name);
 
   return ce_ptr ? *ce_ptr : NULL;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 zend_function* nr_php_find_class_method(const zend_class_entry* klass,
@@ -260,7 +261,7 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (zend_is_callable_ex(zv, NULL, 0, NULL, &fcc, NULL)) {
     return fcc.function_handler;
   }
@@ -268,7 +269,7 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
   if (zend_is_callable_ex(zv, NULL, 0, NULL, NULL, &fcc, NULL TSRMLS_CC)) {
     return fcc.function_handler;
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return NULL;
 }
@@ -319,8 +320,8 @@ zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
  *
  * See the picture near line 1525 of PHP 5.5.3 zend_execute.c
  */
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO \
-    && !defined(PHP7) /* PHP 5.5 and 5.6 */
+#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO && !defined(PHP7) \
+    && !defined(PHP8) /* PHP 5.5 and 5.6 */
 static void** nr_php_get_php55_stack_arguments(int legitimate_frame_delta,
                                                NR_EXECUTE_PROTO TSRMLS_DC) {
   zend_execute_data* ex;
@@ -358,7 +359,7 @@ static void** nr_php_get_php55_stack_arguments(int legitimate_frame_delta,
 }
 #endif
 
-#ifndef PHP7
+#if !defined(PHP7) && !defined(PHP8) /* PHP 5.5 and 5.6 */
 /*
  * Use detailed zend specific knowledge of the interpreter stack
  * to read the argument vector.
@@ -408,7 +409,7 @@ static zval* nr_php_get_user_func_arg_via_h(int requested_arg_index,
   arg = *argp;
   return arg;
 }
-#endif /* !PHP7 */
+#endif /* !PHP7 && !PHP8*/
 
 /*
  * NOTICE: requested_arg_index is a 1-based value, not a 0-based value!
@@ -422,7 +423,7 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   (void)arg_count_via_h;
 
   if (requested_arg_index > ZEND_CALL_NUM_ARGS(execute_data)) {
@@ -433,13 +434,13 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
 #else
   arg_via_h = nr_php_get_user_func_arg_via_h(
       requested_arg_index, &arg_count_via_h, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return arg_via_h;
 }
 
 size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (size_t)ZEND_CALL_NUM_ARGS(execute_data);
 #else
   int arg_count_via_h = -1;
@@ -455,7 +456,7 @@ size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 
   return (size_t)arg_count_via_h;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
@@ -484,7 +485,7 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
     ced = ced->prev_execute_data;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if ((NULL == ced) || (NULL == ced->opline)) {
     return NULL;
   }
@@ -492,14 +493,14 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
   if ((NULL == ced) || (NULL == ced->op_array)) {
     return NULL;
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   if ((ZEND_DO_FCALL != ced->opline->opcode)
       && (ZEND_DO_FCALL_BY_NAME != ced->opline->opcode)) {
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == ced->func) {
     return NULL;
   }
@@ -507,7 +508,7 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
   if (0 == ced->function_state.function) {
     return NULL;
   }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   return ced;
 }
@@ -521,17 +522,17 @@ const zend_function* nr_php_get_caller(NR_EXECUTE_PROTO,
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return ped->func;
 #else
   return ped->function_state.function;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC) {
   HashTable* table;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   table = zend_rebuild_symbol_table();
 
   /*
@@ -548,7 +549,7 @@ zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC) {
 #else
   table = EG(active_symbol_table);
   return nr_php_zend_hash_find(table, name);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 int nr_php_silence_errors(TSRMLS_D) {
@@ -564,7 +565,7 @@ void nr_php_restore_errors(int error_reporting TSRMLS_DC) {
 }
 
 zval* nr_php_get_constant(const char* name TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zval* constant;
   zval* copy = NULL;
   zend_string* name_str;
@@ -608,7 +609,7 @@ zval* nr_php_get_constant(const char* name TSRMLS_DC) {
   }
 
   return constant;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 zval* nr_php_get_class_constant(const zend_class_entry* ce, const char* name) {
@@ -674,7 +675,7 @@ int nr_php_is_zval_named_constant(const zval* zv, const char* name TSRMLS_DC) {
 }
 
 int nr_php_zend_is_auto_global(const char* name, size_t name_len TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zend_bool rv;
   zend_string* zs = zend_string_init(name, name_len, 0);
 
@@ -684,7 +685,7 @@ int nr_php_zend_is_auto_global(const char* name, size_t name_len TSRMLS_DC) {
   return rv;
 #else
   return (int)zend_is_auto_global(name, (int)name_len TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 const char* nr_php_use_license(const char* api_license TSRMLS_DC) {
@@ -712,7 +713,7 @@ char* nr_php_get_server_global(const char* name TSRMLS_DC) {
     return NULL;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   global = &(PG(http_globals)[TRACK_VARS_SERVER]);
 #else
   global = PG(http_globals)[TRACK_VARS_SERVER];
@@ -942,12 +943,12 @@ void nr_php_remove_interface_from_class(zend_class_entry* class_ce,
     }
   }
 
-    /*
-     * We have to discard the const qualifier on the interface class entry to
-     * pass it through to nr_php_zend_hash_ptr_apply, even though the apply
-     * callback itself takes a const zend_class_entry *. Since this generates a
-     * warning in gcc, we'll squash it.
-     */
+  /*
+   * We have to discard the const qualifier on the interface class entry to
+   * pass it through to nr_php_zend_hash_ptr_apply, even though the apply
+   * callback itself takes a const zend_class_entry *. Since this generates a
+   * warning in gcc, we'll squash it.
+   */
 #if defined(__clang__) || (__GNUC__ > 4) \
     || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 5))
 #pragma GCC diagnostic push
@@ -1039,11 +1040,11 @@ char* nr_php_function_debug_name(const zend_function* func) {
 
   if ((ZEND_USER_FUNCTION == func->type)
       && (func->common.fn_flags & ZEND_ACC_CLOSURE)) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     const char* filename = ZSTR_VAL(func->op_array.filename);
 #else
     const char* filename = func->op_array.filename;
-#endif /* PHP7 */
+#endif /* PHP7+ */
     char* orig_name = name;
 
     name = nr_formatf("%s declared at %s:%d", orig_name, NRSAFESTR(filename),
