@@ -13,6 +13,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_memory.h"
+#include "util_signals.h"
 #include "util_strings.h"
 
 int nr_drupal_do_view_execute(const char* name,
@@ -170,6 +171,16 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
   if (-1 == (int)module_len) {
     module_len = module_hook_len - hook_len
                  - 1; /* Subtract 1 for underscore separator */
+  }
+
+  if (-1 >= (int)module_len) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: module len is %d; ; "
+                     "hook='%.*s'; module_hook='%.*s'",
+                     __func__, (int)module_len, NRSAFELEN(hook_len), NRSAFESTR(hook),
+                     NRSAFELEN(module_hook_len), NRSAFESTR(module_hook));
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
+    return NR_FAILURE;
   }
 
   module = nr_strndup(module_hook, module_len);
