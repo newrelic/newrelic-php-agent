@@ -110,7 +110,8 @@ nr_status_t module_invoke_all_parse_module_and_hook(char** module_ptr,
                                                     size_t* module_len_ptr,
                                                     const char* hook,
                                                     size_t hook_len,
-                                                    const zend_function* func);
+                                                    const zend_function* func
+						    TSRMLS_DC);
 /*
  * Purpose : Given a function that is a hook function in a module, determine
  *           which component is the module and which is the hook, given that we
@@ -131,7 +132,8 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
     const char* hook,
     size_t hook_len,
     const char* module_hook,
-    size_t module_hook_len);
+    size_t module_hook_len
+    TSRMLS_DC);
 
 /*
  * Purpose: This function adds NR request headers for Drupal. arg is the second
