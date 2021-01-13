@@ -115,7 +115,10 @@ if test "$PHP_NEWRELIC" = "yes"; then
   ])
 
   dnl Check for axiom.
-  PHP_CHECK_LIBRARY(axiom, nro_new, [
+  dnl The -ldl in the first argument is there to get the library check to pass.
+  dnl Without it, we get an undefined reference to dladdr as the dl lib must
+  dnl come after the axiom lib when linking.
+  PHP_CHECK_LIBRARY(axiom -ldl, nro_new, [
     PHP_ADD_INCLUDE($PHP_AXIOM)
     dnl Avoid using PHP_ADD_LIBRARY and friends. They add an RPATH for
     dnl the axiom directory, and there's no way to prevent it.

@@ -179,7 +179,17 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
                      "hook='%.*s'; module_hook='%.*s'",
                      __func__, (int)module_len, NRSAFELEN(hook_len), NRSAFESTR(hook),
                      NRSAFELEN(module_hook_len), NRSAFESTR(module_hook));
-    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
+
+    char* metric_name = NULL;
+    if (NR_FW_DRUPAL == NRPRG(current_framework)) {
+      metric_name = "Supportability/framework/Drupal/NegativeModuleLength";
+    } else if (NR_FW_DRUPAL8 == NRPRG(current_framework)) {
+      metric_name = "Supportability/framework/Drupal8/NegativeModuleLength";
+    }
+
+    if (metric_name != NULL) {
+      nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+    }
     return NR_FAILURE;
   }
 
