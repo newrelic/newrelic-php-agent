@@ -17,20 +17,21 @@ tlib_parallel_info_t parallel_info
 static void test_single_extract_module_name_from_hook_and_hook_function(
     const char* hook_function_name,
     char* hook_name,
-    char* expected_module_name) {
+    char* expected_module_name
+    TSRMLS_DC) {
   char* module = 0;
   size_t module_len = 0;
 
   module_invoke_all_parse_module_and_hook_from_strings(
       &module, &module_len, hook_name, strlen(hook_name), hook_function_name,
-      strlen(hook_function_name));
+      strlen(hook_function_name) TSRMLS_CC);
 
   tlib_pass_if_str_equal("Extracted Correct Module Name", module,
                          expected_module_name);
   nr_free(module);
 }
 
-static void test_module_name(void) {
+static void test_module_name(TSRMLS_D) {
   int i = 0;
   int number_of_fixtures = 0;
 
@@ -56,7 +57,7 @@ static void test_module_name(void) {
 
   for (i = 0; i < number_of_fixtures; i++) {
     test_single_extract_module_name_from_hook_and_hook_function(
-        fixtures[i][0], fixtures[i][1], fixtures[i][2]);
+        fixtures[i][0], fixtures[i][1], fixtures[i][2] TSRMLS_CC);
   }
 }
 
@@ -374,7 +375,7 @@ void test_main(void* p NRUNUSED) {
   void*** tsrm_ls = NULL;
 #endif /* ZTS && !PHP7 */
   tlib_php_engine_create("" PTSRMLS_CC);
-  test_module_name();
+  test_module_name(TSRMLS_C);
   test_drupal_headers_add(TSRMLS_C);
   test_drupal_http_request_drupal_7(TSRMLS_C);
   test_drupal_http_request_drupal_6(TSRMLS_C);
