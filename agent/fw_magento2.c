@@ -322,8 +322,9 @@ NR_PHP_WRAPPER(nr_magento2_soap_handler_prepareoperationinput) {
 
   svc_class = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   method_metadata = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  /* We expect method_metadata to be an array.  At index 'method', if we see
-   * a method name, we'll pass is to the transaction naming.
+  /* 
+   * We expect method_metadata to be an array.  At index 'method', if we see
+   * a method name, we'll pass it to the transaction naming.
    * See:
    * https://www.magentoextensions.org/documentation/class_magento_1_1_webapi_1_1_model_1_1_service_metadata.html
    */
