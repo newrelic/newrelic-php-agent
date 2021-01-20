@@ -6,6 +6,7 @@
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_wrapper.h"
+#include "php_hash.h"
 #include "fw_magento_common.h"
 #include "fw_hooks.h"
 #include "nr_txn.h"
@@ -148,7 +149,6 @@ NR_PHP_WRAPPER(nr_magento2_objectmanager_get) {
   const char* fci_class = "Magento\\Framework\\App\\FrontControllerInterface";
   zval** retval_ptr = NULL;
   zval* type = NULL;
-
   (void)wraprec;
 
   /*
@@ -167,7 +167,6 @@ NR_PHP_WRAPPER(nr_magento2_objectmanager_get) {
      */
     goto leave;
   }
-
   retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
   NR_PHP_WRAPPER_CALL;
 
@@ -279,10 +278,15 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdllistrequest) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Takes the following arguments:
+ * string $serviceClass
+ * string $serviceMethod
+ * array $arguments
+ */
 NR_PHP_WRAPPER(nr_magento2_soap_handler_preparerequestdata) {
   zval* svc_class = NULL;
   zval* svc_method = NULL;
-
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
@@ -296,6 +300,51 @@ NR_PHP_WRAPPER(nr_magento2_soap_handler_preparerequestdata) {
   nr_php_arg_release(&svc_class);
   nr_php_arg_release(&svc_method);
 
+  NR_PHP_WRAPPER_CALL;
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Introduced in Magento 2.3.2
+ * Convert arguments received from SOAP server to arguments to pass to a
+ * service. Takes the following arguments:
+ * string $serviceClass
+ * array $methodMetadata
+ * array $arguments
+ */
+NR_PHP_WRAPPER(nr_magento2_soap_handler_prepareoperationinput) {
+  zval* svc_class = NULL;
+  zval* svc_method = NULL;
+  zval* method_metadata = NULL;
+
+  (void)wraprec;
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
+
+  svc_class = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  method_metadata = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  /* We expect method_metadata to be an array.  At index 'method', if we see
+   * a method name, we'll pass is to the transaction naming.
+   * See:
+   * https://www.magentoextensions.org/documentation/class_magento_1_1_webapi_1_1_model_1_1_service_metadata.html
+   */
+
+  if (!nr_php_is_zval_valid_array(method_metadata)) {
+    nrl_verbosedebug(NRL_TXN, "Magento: $methodMetadata was not an array");
+    goto end;
+  }
+  svc_method = nr_php_zend_hash_find(Z_ARRVAL_P(method_metadata), "method");
+
+  if (NULL != svc_method) {
+    nr_magento2_name_transaction_from_service("Webapi/Soap", svc_class,
+                                              svc_method TSRMLS_CC);
+  } else {
+    nrl_verbosedebug(NRL_TXN,
+                     "Magento: unable to determine method name from metadata.");
+  }
+
+end:
+  nr_php_arg_release(&svc_class);
+  nr_php_arg_release(&method_metadata);
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
@@ -373,6 +422,16 @@ void nr_magento2_enable(TSRMLS_D) {
       NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::_"
               "prepareRequestData"),
       nr_magento2_soap_handler_preparerequestdata TSRMLS_CC);
+
+  /*
+   * Version 2.3.2 changed the call path for the Soap Handler from
+   * `_prepareRequestData` to `prepareOperationInput`
+   */
+
+  nr_php_wrap_user_function(
+      NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::"
+              "prepareOperationInput"),
+      nr_magento2_soap_handler_prepareoperationinput TSRMLS_CC);
 
   /*
    * The Magento_Ui render controllers will, if sent a json Accepts
