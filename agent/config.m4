@@ -117,8 +117,20 @@ if test "$PHP_NEWRELIC" = "yes"; then
   dnl Check for axiom.
   dnl The -ldl in the first argument is there to get the library check to pass.
   dnl Without it, we get an undefined reference to dladdr as the dl lib must
-  dnl come after the axiom lib when linking.
-  PHP_CHECK_LIBRARY(axiom -ldl, nro_new, [
+  dnl come after the axiom lib when linking. Note: this does not apply to
+  dnl FreeBSD builds, and if present, causes errors when building the agent.
+  dnl If other platforms are known to have the same issue, simply change the
+  dnl   *freebsd*)
+  dnl line to something like
+  dnl   *freebsd*|*darwin*)
+  dnl See the other `case $host in` block later in this file for known targets
+  case "$host" in
+    *freebsd*) AXIOM_CHECK="axiom"
+               ;;
+    *) AXIOM_CHECK="axiom -ldl"
+               ;;
+  esac
+  PHP_CHECK_LIBRARY($AXIOM_CHECK, nro_new, [
     PHP_ADD_INCLUDE($PHP_AXIOM)
     dnl Avoid using PHP_ADD_LIBRARY and friends. They add an RPATH for
     dnl the axiom directory, and there's no way to prevent it.
