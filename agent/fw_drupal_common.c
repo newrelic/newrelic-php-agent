@@ -13,6 +13,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_memory.h"
+#include "util_signals.h"
 #include "util_strings.h"
 
 int nr_drupal_do_view_execute(const char* name,
@@ -127,7 +128,7 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
     const char* hook,
     size_t hook_len,
     const char* module_hook,
-    size_t module_hook_len) {
+    size_t module_hook_len TSRMLS_DC) {
   size_t module_len = 0;
   char* module = NULL;
 
@@ -172,6 +173,26 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
                  - 1; /* Subtract 1 for underscore separator */
   }
 
+  if (-1 >= (int)module_len) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: module len is %d; ; "
+                     "hook='%.*s'; module_hook='%.*s'",
+                     __func__, (int)module_len, NRSAFELEN(hook_len), NRSAFESTR(hook),
+                     NRSAFELEN(module_hook_len), NRSAFESTR(module_hook));
+
+    char* metric_name = NULL;
+    if (NR_FW_DRUPAL == NRPRG(current_framework)) {
+      metric_name = "Supportability/framework/Drupal/NegativeModuleLength";
+    } else if (NR_FW_DRUPAL8 == NRPRG(current_framework)) {
+      metric_name = "Supportability/framework/Drupal8/NegativeModuleLength";
+    }
+
+    if (metric_name != NULL) {
+      nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+    }
+    return NR_FAILURE;
+  }
+
   module = nr_strndup(module_hook, module_len);
 
   *module_ptr = module;
@@ -184,7 +205,7 @@ nr_status_t module_invoke_all_parse_module_and_hook(char** module_ptr,
                                                     size_t* module_len_ptr,
                                                     const char* hook,
                                                     size_t hook_len,
-                                                    const zend_function* func) {
+                                                    const zend_function* func TSRMLS_DC) {
   const char* module_hook = NULL;
   size_t module_hook_len = 0;
 
@@ -200,7 +221,7 @@ nr_status_t module_invoke_all_parse_module_and_hook(char** module_ptr,
   module_hook_len = (size_t)nr_php_function_name_length(func);
 
   return module_invoke_all_parse_module_and_hook_from_strings(
-      module_ptr, module_len_ptr, hook, hook_len, module_hook, module_hook_len);
+      module_ptr, module_len_ptr, hook, hook_len, module_hook, module_hook_len TSRMLS_CC);
 }
 
 void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC) {

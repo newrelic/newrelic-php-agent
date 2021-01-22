@@ -14,6 +14,7 @@
 
 #include "util_logging.h"
 #include "util_memory.h"
+#include "util_signals.h"
 
 #ifndef HAVE_REALLOCARRAY
 #include <sys/types.h>
@@ -40,6 +41,7 @@ void* NRMALLOC NRMALLOCSZ(1) nr_malloc(size_t size) {
   ret = (malloc)(size);
   if (nrunlikely(0 == ret)) {
     nrl_error(NRL_MEMORY, "failed to allocate %zu byte(s)", size);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
@@ -56,6 +58,7 @@ void* NRMALLOC NRMALLOCSZ(1) nr_zalloc(size_t size) {
   ret = (calloc)(1, size);
   if (nrunlikely(0 == ret)) {
     nrl_error(NRL_MEMORY, "failed to allocate %zu byte(s)", size);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
@@ -76,6 +79,7 @@ void* NRMALLOC NRCALLOCSZ(1, 2) nr_calloc(size_t nelem, size_t elsize) {
   ret = (calloc)(nelem, elsize);
   if (nrunlikely(0 == ret)) {
     nrl_error(NRL_MEMORY, "failed to allocate %zu x %zu bytes", nelem, elsize);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
@@ -97,6 +101,7 @@ void* NRMALLOCSZ(2) nr_realloc(void* oldptr, size_t newsize) {
   if (nrunlikely(0 == ret)) {
     nrl_error(NRL_MEMORY, "failed to reallocate %p for %zu bytes", oldptr,
               newsize);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
@@ -166,6 +171,7 @@ char* NRMALLOC nr_strdup(const char* orig) {
 
   if (NULL == ret) {
     nrl_error(NRL_MEMORY | NRL_STRING, "failed to duplicate string %p", orig);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
@@ -210,6 +216,7 @@ char* NRMALLOC nr_strndup(const char* orig, size_t len) {
   if (nrunlikely(0 == ret)) {
     nrl_error(NRL_MEMORY | NRL_STRING, "failed to duplicate string %p %zu",
               orig, len);
+    nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
     exit(3);
   }
 
