@@ -100,11 +100,29 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 #
 define RELEASE_AGENT_TARGET
 
+#
+#Target for non-zts GHA releases
+#
+release-$1-gha: PHPIZE := /usr/local/bin/phpize
+release-$1-gha: PHP_CONFIG := /usr/local/bin/php-config
+release-$1-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
+
+#
+#Target for zts GHA releases
+#
+release-$1-zts-gha: PHPIZE := /usr/local/bin/phpize
+release-$1-zts-gha: PHP_CONFIG := /usr/local/bin/php-config
+release-$1-zts-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.so"
+	 @test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
+
 release-$1-no-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-no-zts
 release-$1-no-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-no-zts
 release-$1-no-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-no-zts.so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
 
 release-$1-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-zts
 release-$1-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-zts
@@ -114,6 +132,8 @@ release-$1-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
 
 endef
 
+$(eval $(call RELEASE_AGENT_TARGET,8.0,20200930))
+#$(eval $(call RELEASE_AGENT_TARGET,8.0,20200930))
 $(eval $(call RELEASE_AGENT_TARGET,7.4,20190902))
 $(eval $(call RELEASE_AGENT_TARGET,7.3,20180731))
 $(eval $(call RELEASE_AGENT_TARGET,7.2,20170718))
