@@ -16,9 +16,15 @@ on:
   # Triggers the workflow on push or pull request events but only for the main branch
   #
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - 'php8'
+      - 'dev'
   pull_request:
-    branches: [ main ]
+    branches: 
+      - main
+      - 'php8'
+      - 'dev'
 
 jobs:
   agent_pr:
