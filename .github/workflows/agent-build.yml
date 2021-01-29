@@ -1,23 +1,43 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+#
+# This is the workflow to do a PR build.
+#
+
 name: agent-build
+
+#
+# Controls when the action will run. 
+#
 on:
+  #
+  # Triggers the workflow on push or pull request events but only for the main branch
+  #
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
-
+  agent_pr:
+    env:
+      PHP_VER: ${{ matrix.php_ver }}
+      ARCH: ${{ matrix.arch }}
+      BUILD_TYPE: pr
+      OS: ${{ matrix.os }}
+      image_name: ${{ matrix.os }}:${{ matrix.php_ver }}${{ matrix.arch }}
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        os: [ubuntu20, ubuntu18, ubuntu16]
+        os: [linux]
+        php_ver: ['8.0', '8.0-zts']
+        arch: ['x64', 'x86']
     steps:
-    - uses: actions/checkout@v2
-    - if: matrix.os == 'ubuntu20'
-      uses: ./.github/actions/ubuntu20-build-action
-    - if: matrix.os == 'ubuntu18'
-      uses: ./.github/actions/ubuntu18-build-action
-    - if: matrix.os == 'ubuntu16'
-      uses: ./.github/actions/ubuntu16-build-action
+      - name: Checkout Repo 
+        uses: actions/checkout@v2
+      - name: Build Custom Docker Image
+        run: docker build --build-arg ARCH=$ARCH --build-arg PHP_VER=$PHP_VER --build-arg BUILD_TYPE=$BUILD_TYPE -f ./.github/docker/${OS}/${ARCH}/Dockerfile -t $image_name .
+      - name: Build and Test
+        run: docker run --name runtest --workdir /github/workspace --rm -e GITHUB_WORKSPACE -e GITHUB_ENV -v "${GITHUB_WORKSPACE}":"/github/workspace" $image_name
