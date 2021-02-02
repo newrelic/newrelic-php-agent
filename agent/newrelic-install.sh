@@ -312,7 +312,7 @@ if [ -z "${ispkg}" ]; then
   check_file "${ilibdir}/scripts/newrelic-daemon.logrotate"
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
-for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731"; do
+for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
   if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ]; then
@@ -513,6 +513,7 @@ add_to_path /usr/local/php-7.1/bin
 add_to_path /usr/local/php-7.2/bin
 add_to_path /usr/local/php-7.3/bin
 add_to_path /usr/local/php-7.4/bin
+add_to_path /usr/local/php-8.0/bin
 
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
@@ -526,6 +527,7 @@ add_to_path /usr/php-7.1/bin
 add_to_path /usr/php-7.2/bin
 add_to_path /usr/php-7.3/bin
 add_to_path /usr/php-7.4/bin
+add_to_path /usr/php-8.0/bin
 
 add_to_path /usr/php/5.3/bin
 add_to_path /usr/php/5.4/bin
@@ -536,6 +538,7 @@ add_to_path /usr/php/7.1/bin
 add_to_path /usr/php/7.2/bin
 add_to_path /usr/php/7.3/bin
 add_to_path /usr/php/7.4/bin
+add_to_path /usr/php/8.0/bin
 
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
@@ -549,6 +552,7 @@ add_to_path /opt/php-7.1/bin
 add_to_path /opt/php-7.2/bin
 add_to_path /opt/php-7.3/bin
 add_to_path /opt/php-7.4/bin
+add_to_path /opt/php-8.0/bin
 
 if [ -n "${NR_INSTALL_PATH}" ]; then
   oIFS="${IFS}"
@@ -1030,6 +1034,9 @@ for this copy of PHP. We apologize for the inconvenience.
     7.4.*)
       ;;
 
+    8.0.*)
+      ;;
+
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
@@ -1083,7 +1090,7 @@ Ignoring this particular instance of PHP.
 
   if [ -n "${ispkg}" -a "${arch}" = "x64" ]; then
     if [ "${pi_arch}" = "x86" ]; then
-      for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902"; do
+      for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
         check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
         check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
       done
@@ -1194,6 +1201,7 @@ does not exist. This particular instance of PHP will be skipped.
     7.2.*)  pi_modver="20170718" ;;
     7.3.*)  pi_modver="20180731" ;;
     7.4.*)  pi_modver="20190902" ;;
+    8.0.*)  pi_modver="20200930" ;;
   esac
   log "${pdir}: pi_modver=${pi_modver}"
 
