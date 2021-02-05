@@ -204,25 +204,24 @@ static void test_sql_obfuscate(void) {
       "SELECT * FROM PASSWORDS -- hunter2 -- WHERE foo IN (1)",
       "SELECT * FROM PASSWORDS ");
 
-    sql_obfuscate_testcase(
-            "Comment, SQL style on two lines",
-            "SELECT * FROM PASSWORDS -- hunter2\n -- WHERE foo IN (1)",
-            "SELECT * FROM PASSWORDS  ");
+  sql_obfuscate_testcase(
+      "Comment, SQL style on two lines",
+      "SELECT * FROM PASSWORDS -- hunter2\n -- WHERE foo IN (1)",
+      "SELECT * FROM PASSWORDS  ");
 
-    sql_obfuscate_testcase(
-            "Comment, SQL style, next line ok",
-            "SELECT * FROM PASSWORDS -- hunter2\nWHERE foo IN (1)",
-            "SELECT * FROM PASSWORDS WHERE foo IN (?)");
+  sql_obfuscate_testcase("Comment, SQL style, next line ok",
+                         "SELECT * FROM PASSWORDS -- hunter2\nWHERE foo IN (1)",
+                         "SELECT * FROM PASSWORDS WHERE foo IN (?)");
 
   sql_obfuscate_testcase(
       "Comment, C style",
       "SELECT * FROM PASSWORDS /* hunter2 */ WHERE foo IN (1)",
       "SELECT * FROM PASSWORDS  WHERE foo IN (?)");
 
-    sql_obfuscate_testcase(
-            "Comment, C style, nested",
-            "SELECT * FROM PASSWORDS /* /** hunter2 */ WHERE */ foo IN (1)",
-            "SELECT * FROM PASSWORDS  WHERE */ foo IN (?)");
+  sql_obfuscate_testcase(
+      "Comment, C style, nested",
+      "SELECT * FROM PASSWORDS /* /** hunter2 */ WHERE */ foo IN (1)",
+      "SELECT * FROM PASSWORDS  WHERE */ foo IN (?)");
 
   sql_obfuscate_testcase("C-style comment start alone", "/*", "");
   sql_obfuscate_testcase("SQL-style comment start alone", "--", "");
@@ -241,8 +240,7 @@ static void test_sql_obfuscate(void) {
 
   sql_obfuscate_testcase(
       "Mixed comments",
-      "SELECT * -- FROM PASSWORDS /* hunter2 */ WHERE foo IN (1)",
-      "SELECT * ");
+      "SELECT * -- FROM PASSWORDS /* hunter2 */ WHERE foo IN (1)", "SELECT * ");
 
   sql_obfuscate_testcase("Half of a SQL comment delimiter.",
                          " not - - a-comment-", " not - - a-comment-");
@@ -782,6 +780,25 @@ static void test_weird_and_wonderful(void) {
 
   sql = "alpha";
   test_get_operation_and_table("alpha", sql, NULL, NULL);
+
+  sql = "commit";
+  test_get_operation_and_table("single commit", sql, "commit", NULL);
+
+  sql = "commit alpha";
+  test_get_operation_and_table("simple commit", sql, "commit", "alpha");
+
+  sql = "DROP DATABASE myDB";
+  test_get_operation_and_table("database drop", sql, "drop", "myDB");
+  sql = "DROP TABLE alpha";
+  test_get_operation_and_table("database drop", sql, "drop", "alpha");
+  sql = "CREATE DATABASE myDB";
+  test_get_operation_and_table("database create", sql, "create", "myDB");
+  sql
+      = "CREATE TABLE alpha ("
+        "id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+        "code VARCHAR(30) NOT NULL"
+        ")";
+  test_get_operation_and_table("table create", sql, "create", "alpha");
 }
 
 static void test_unterminated(void) {
