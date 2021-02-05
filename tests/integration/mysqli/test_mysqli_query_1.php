@@ -10,7 +10,7 @@ The agent should capture database metrics and slow sqls for mysqli_query().
 
 /*SKIPIF
 <?php
-//require("skipif.inc");
+require("skipif.inc");
 */
 
 /*INI
