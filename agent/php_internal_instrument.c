@@ -3169,8 +3169,6 @@ void nr_php_generate_internal_wrap_records(void) {
                       mysqli_stmt_execute, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_stmt::prepare", mysqli_stmtC_prepare,
                       mysqli_stmt_prepare, 0, 0)
-  NR_INTERNAL_WRAPREC("mysqli_stmt::prepare", mysqli_stmtC_prepare,
-                      mysqli_stmt_prepare, 0, 0)
 
   NR_INTERNAL_WRAPREC("memcache_connect", memcache_connect, memcache_function,
                       0, "connect")

@@ -274,8 +274,8 @@ typedef enum _nr_sql_parse_type_t {
   NR_SQL_PARSE_UPDATE = 1, /* update statement */
   NR_SQL_PARSE_FROM = 2,   /* select and delete statements */
   NR_SQL_PARSE_INTO = 3,   /* insert and replace statements */
-  NR_SQL_PARSE_DROP = 4,   /* create and drop table statements */
-  NR_SQL_PARSE_CREATE = 5, /* create and drop database statements */
+  NR_SQL_PARSE_DROP = 4,   /* drop database and table statements */
+  NR_SQL_PARSE_CREATE = 5, /* create database and table statements */
   NR_SQL_PARSE_COMMIT = 6  /* commit operation */
 } nr_sql_parse_type_t;
 
