@@ -64,7 +64,6 @@ Array
       "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/insert",
       "scope":"OtherTransaction/php__FILE__"},          [3, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/select",
       "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]]
   ]
