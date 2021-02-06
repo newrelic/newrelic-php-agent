@@ -786,9 +786,10 @@ NR_INNER_WRAPPER(mysqli_commit) {
                                NR_DATASTORE_MYSQL, instance TSRMLS_CC);
 
     nr_explain_plan_destroy(&plan);
-    nr_free(sqlstr);
+
   }
 
+  nr_free(sqlstr);
   if (zcaught) {
     zend_bailout();
     /* NOTREACHED */
