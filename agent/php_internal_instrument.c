@@ -134,7 +134,7 @@ static void nr_php_instrument_delegate(nrinternalfn_t* wraprec,
   }
 #else
 #define NR_OUTER_WRAPPER(RAW)                                     \
-  static nrinternalfn_t* NR_OUTER_GLOBAL_NAME(RAW) = NULL;           \
+  static nrinternalfn_t* NR_OUTER_GLOBAL_NAME(RAW) = NULL;        \
   static void ZEND_FASTCALL NR_OUTER_WRAPPER_NAME(RAW)(           \
       INTERNAL_FUNCTION_PARAMETERS) {                             \
     nr_php_instrument_delegate(NR_OUTER_GLOBAL_NAME(RAW),         \
@@ -728,6 +728,68 @@ NR_INNER_WRAPPER(mysqli_options) {
     nr_free(value_term);
   }
 
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_commit ( object $link [, int $flags=0, string $name] )
+ *   bool mysqli::commit ( [, int $flags=0, string $name] )
+ */
+NR_INNER_WRAPPER(mysqli_commit) {
+  zval* mysqli_obj = NULL;
+  nr_segment_t* segment = NULL;
+  nr_datastore_instance_t* instance = NULL;
+  nr_explain_plan_t* plan = NULL;
+  char* name = NULL;
+  char* sqlstr = NULL;
+  nr_string_len_t sqlstrlen;
+  zend_long flags = 0;
+  nr_string_len_t name_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|ls",
+                                  &mysqli_obj, &flags, &name, &name_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "|ls", &flags,
+                                    &name, &name_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  if (NULL != name) {
+    sqlstr = nr_formatf("%s %s", "COMMIT", name);
+  } else {
+    sqlstr = nr_formatf("%s", "COMMIT");
+  }
+  sqlstrlen = nr_strlen(sqlstr);
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
+  if (nrlikely(NULL != segment)) {
+    /*
+     * Set the stop time now so that we don't include the explain plan time.
+     */
+    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj TSRMLS_CC);
+
+    nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
+                               NR_DATASTORE_MYSQL, instance TSRMLS_CC);
+
+    nr_explain_plan_destroy(&plan);
+
+  }
+
+  nr_free(sqlstr);
   if (zcaught) {
     zend_bailout();
     /* NOTREACHED */
@@ -1431,9 +1493,8 @@ NR_INNER_WRAPPER(redis_connect) {
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s|lzzz", &host,
           &host_len, &port, &ignore1, &ignore2, &ignore3)) {
-    instance = nr_php_redis_save_datastore_instance(
-        NR_PHP_INTERNAL_FN_THIS(), host,
-        port TSRMLS_CC);
+    instance = nr_php_redis_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
+                                                    host, port TSRMLS_CC);
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
@@ -2837,6 +2898,7 @@ NR_OUTER_WRAPPER(mysqli_real_connect)
 NR_OUTER_WRAPPER(mysqli_real_query)
 NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
+NR_OUTER_WRAPPER(mysqli_commit)
 
 NR_OUTER_WRAPPER(mysqliC_construct)
 NR_OUTER_WRAPPER(mysqliC_multi_query)
@@ -2847,6 +2909,7 @@ NR_OUTER_WRAPPER(mysqliC_real_connect)
 NR_OUTER_WRAPPER(mysqliC_real_query)
 NR_OUTER_WRAPPER(mysqliC_select_db)
 NR_OUTER_WRAPPER(mysqliC_stmt_init)
+NR_OUTER_WRAPPER(mysqliC_commit)
 
 NR_OUTER_WRAPPER(mysqli_stmt_bind_param)
 NR_OUTER_WRAPPER(mysqli_stmt_execute)
@@ -3066,6 +3129,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
                       0)
+  NR_INTERNAL_WRAPREC("mysqli_commit", mysqli_commit, mysqli_commit, 0, 0)
 
 #ifdef PHP7
   NR_INTERNAL_WRAPREC("mysqli::__construct", mysqliC_construct,
@@ -3089,6 +3153,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       0, 0)
   NR_INTERNAL_WRAPREC("mysqli::stmt_init", mysqliC_stmt_init, mysqli_stmt_init,
                       0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::commit", mysqliC_commit, mysqli_commit, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli_stmt_bind_param", mysqli_stmt_bind_param,
                       mysqli_stmt_bind_param, 0, 0)
