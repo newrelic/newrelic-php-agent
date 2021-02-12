@@ -28,7 +28,7 @@ static void nr_php_modify_sql_table_name_magento2(char* tablename) {
 }
 
 /*
- *In order to avoid the metrics explosion that occurs when Wordpress 
+ *In order to avoid the metrics explosion that occurs when Wordpress
  *duplicates all of the tables when a new blog is created, if the
  * current framework is Wordpress, we make the following substitution:
  * wp_\([0-9]*\)_\(.*\) -> wp_*_\2.
@@ -105,7 +105,7 @@ void nr_php_txn_end_segment_sql(nr_segment_t** segment_ptr,
   }
 
   /*
-   * Export the explain plan as JSON, assuming if we got one.
+   * Export the explain plan as JSON, assuming we got one.
    */
   if (plan) {
     plan_json = nr_explain_plan_to_json(plan);

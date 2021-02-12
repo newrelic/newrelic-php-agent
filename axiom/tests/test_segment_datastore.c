@@ -384,6 +384,49 @@ static void test_value_transforms(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_web_transaction_commit(void) {
+  nrtxn_t* txn = new_txn(0);
+  nrtime_t duration = 4 * NR_TIME_DIVISOR;
+  nr_segment_t* segment = NULL;
+  const char* tname = "web transaction mysqli::commit";
+
+  nr_segment_datastore_params_t params = {
+      .datastore = {.type = NR_DATASTORE_MYSQL},
+      .sql = {.sql = "commit"},
+      .callbacks = {.backtrace = stack_dump_callback},
+  };
+
+  txn->status.recording = 1;
+  txn->options.ep_threshold = 1;
+  txn->options.ss_threshold = 1;
+  txn->options.database_name_reporting_enabled = 1;
+  txn->options.instance_reporting_enabled = 0;
+
+  params.instance
+      = nr_datastore_instance_create("super_db_host", "3306", "my_database");
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+
+  test_segment_datastore_end_and_keep(&segment, &params);
+
+  test_datastore_segment(&segment->typed_attributes->datastore, tname, "MySQL",
+                         NULL, "commit", NULL, "[\"Zip\",\"Zap\"]", NULL, NULL,
+                         NULL, NULL);
+
+  test_metric_table_size(tname, txn->unscoped_metrics, 2);
+  test_metric_created(tname, txn->unscoped_metrics, MET_FORCED, duration,
+                      "Datastore/all");
+  test_metric_created(tname, txn->unscoped_metrics, MET_FORCED, duration,
+                      "Datastore/MySQL/all");
+  test_metric_vector_size(segment->metrics, 1);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/operation/MySQL/commit", true);
+
+  nr_datastore_instance_destroy(&params.instance);
+  nr_txn_destroy(&txn);
+}
+
 static void test_web_transaction_insert(void) {
   nrtxn_t* txn = new_txn(0);
   nrtime_t duration = 4 * NR_TIME_DIVISOR;
@@ -1091,6 +1134,7 @@ void test_main(void* p NRUNUSED) {
   test_instance_info_empty();
   test_instance_metric_with_slashes();
   test_value_transforms();
+  test_web_transaction_commit();
   test_web_transaction_insert();
   test_options_tt_recordsql_obeyed_part0();
   test_options_tt_recordsql_obeyed_part1();

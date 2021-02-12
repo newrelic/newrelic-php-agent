@@ -273,7 +273,10 @@ typedef enum _nr_sql_parse_type_t {
   NR_SQL_PARSE_UNKNOWN = 0,
   NR_SQL_PARSE_UPDATE = 1, /* update statement */
   NR_SQL_PARSE_FROM = 2,   /* select and delete statements */
-  NR_SQL_PARSE_INTO = 3    /* insert and replace statements */
+  NR_SQL_PARSE_INTO = 3,   /* insert and replace statements */
+  NR_SQL_PARSE_DROP = 4,   /* drop database and table statements */
+  NR_SQL_PARSE_CREATE = 5, /* create database and table statements */
+  NR_SQL_PARSE_COMMIT = 6  /* commit operation */
 } nr_sql_parse_type_t;
 
 static const char* nr_sql_parse_type_string(
@@ -285,6 +288,12 @@ static const char* nr_sql_parse_type_string(
       return "from";
     case NR_SQL_PARSE_INTO:
       return "into";
+    case NR_SQL_PARSE_CREATE:
+      return "create";
+    case NR_SQL_PARSE_DROP:
+      return "drop";
+    case NR_SQL_PARSE_COMMIT:
+      return "commit";
     case NR_SQL_PARSE_UNKNOWN:
       return "unknown";
     default:
@@ -373,18 +382,21 @@ void nr_sql_get_operation_and_table(const char* sql,
     int oplength;
     nr_sql_parse_type_t opflag;
   } sql_parse_expectation_t;
-  static sql_parse_expectation_t operations[] = {
-      /*
-       * In the future, we could match additional sql statements, e.g., create,
-       * alter, drop, etc. We could also expand on the show to parse the table
-       * name from "show columns in", etc.
-       */
-      {"select", sizeof("select") - 1, NR_SQL_PARSE_FROM},
-      {"update", sizeof("update") - 1, NR_SQL_PARSE_UPDATE},
-      {"insert", sizeof("insert") - 1, NR_SQL_PARSE_INTO},
-      {"replace", sizeof("replace") - 1, NR_SQL_PARSE_INTO},
-      {"delete", sizeof("delete") - 1, NR_SQL_PARSE_FROM},
-      {NULL, 0, NR_SQL_PARSE_UNKNOWN}};
+  static sql_parse_expectation_t operations[]
+      = {/*
+          * In the future, we could match additional sql statements, e.g.,
+          * create, alter, drop, etc. We could also expand on the show to parse
+          * the table name from "show columns in", etc.
+          */
+         {"select", sizeof("select") - 1, NR_SQL_PARSE_FROM},
+         {"update", sizeof("update") - 1, NR_SQL_PARSE_UPDATE},
+         {"insert", sizeof("insert") - 1, NR_SQL_PARSE_INTO},
+         {"replace", sizeof("replace") - 1, NR_SQL_PARSE_INTO},
+         {"delete", sizeof("delete") - 1, NR_SQL_PARSE_FROM},
+         {"commit", sizeof("commit") - 1, NR_SQL_PARSE_COMMIT},
+         {"create", sizeof("create") - 1, NR_SQL_PARSE_CREATE},
+         {"drop", sizeof("drop") - 1, NR_SQL_PARSE_DROP},
+         {NULL, 0, NR_SQL_PARSE_UNKNOWN}};
 
   if (table_ptr) {
     *table_ptr = 0;
@@ -392,10 +404,10 @@ void nr_sql_get_operation_and_table(const char* sql,
   if (operation_ptr) {
     *operation_ptr = 0;
   }
-  if (0 == table_ptr) {
+  if (NULL == table_ptr) {
     return;
   }
-  if (0 == operation_ptr) {
+  if (NULL == operation_ptr) {
     return;
   }
 
@@ -411,7 +423,7 @@ void nr_sql_get_operation_and_table(const char* sql,
   }
 
   *operation_ptr = operations[i].opname;
-  if (0 == operations[i].opname) {
+  if (NULL == operations[i].opname) {
     return;
   }
 
@@ -422,7 +434,16 @@ void nr_sql_get_operation_and_table(const char* sql,
 
   x = sql;
 
-  if (NR_SQL_PARSE_UPDATE == operations[i].opflag) {
+  if (NR_SQL_PARSE_COMMIT == operations[i].opflag) {
+    /*
+     * If this is a commit command then the table name (if exists) should follow
+     * directly after the 'commit' (ignoring whitespace and comments).
+     * Since 'commit' is the first word, we merely advance to the second
+     * word.
+     */
+    sl = nr_strcspn(x, NR_SQL_WHITESPACE_CHARS);
+    x += sl;
+  } else if (NR_SQL_PARSE_UPDATE == operations[i].opflag) {
     /*
      * If this is an UPDATE statement then the table name should follow
      * directly after the 'UPDATE' (ignoring whitespace and comments).
@@ -452,6 +473,31 @@ void nr_sql_get_operation_and_table(const char* sql,
           return;
         }
         continue;
+      }
+
+      if ((NR_SQL_PARSE_CREATE == operations[i].opflag)
+          || (NR_SQL_PARSE_DROP == operations[i].opflag)) {
+        /*
+         * If this is a `CREATE` or `DROP` statement then it will be followed by
+         * `DATABASE` or `TABLE` (ignoring whitespace and comments). Since
+         * 'create' is the first word, we merely advance to the second word to
+         * see if it is DATABASE OR TABLE then advance to the db/table name.
+         */
+        if (('d' == nr_tolower(x[0])) && ('a' == nr_tolower(x[1]))
+            && ('t' == nr_tolower(x[2])) && ('a' == nr_tolower(x[3]))
+            && ('b' == nr_tolower(x[4])) && ('a' == nr_tolower(x[5]))
+            && ('s' == nr_tolower(x[6])) && ('e' == nr_tolower(x[7]))
+            && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[8]))) {
+          x += 8;
+          break;
+
+        } else if (('t' == nr_tolower(x[0])) && ('a' == nr_tolower(x[1]))
+                   && ('b' == nr_tolower(x[2])) && ('l' == nr_tolower(x[3]))
+                   && ('e' == nr_tolower(x[4]))
+                   && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[5]))) {
+          x += 5;
+          break;
+        }
       }
 
       if ((NR_SQL_PARSE_FROM == operations[i].opflag)
