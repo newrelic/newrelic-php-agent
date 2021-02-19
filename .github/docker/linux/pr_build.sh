@@ -81,9 +81,7 @@ VALGRIND_ISSUE=0
     echo "php = $PHPS"
 case $PHPS in
   *8.0*)
-    if [ $ARCH = "x86" ]; then
-      VALGRIND_ISSUE=1
-    fi
+    VALGRIND_ISSUE=1
     ;;
   *)
     VALGRIND_ISSUE=0
