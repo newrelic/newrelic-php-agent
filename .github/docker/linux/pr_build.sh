@@ -41,6 +41,12 @@ export PATH
 
 
 #
+# Set LD_LIBRARY_PATH
+#
+LD_LIBRARY_PATH=/usr/local/lib
+export LD_LIBRARY_PATH
+
+#
 # Get PHPS from the environment.
 #
 
@@ -49,7 +55,6 @@ PHPS=${PHP_VER}
 printf \\n
 printf 'running daemon tests\n'
 make -r -s daemon daemon_integration  "ARCH=${ARCH}"
-
 
 #
 # Limit valgrind to just the Linux builders. On Alpine Linux, valgrind
@@ -152,7 +157,8 @@ EOF
     ;;
   *)
     printf "Running agent integration tests (PHP=%s ZTS=disabled)\n" "$PHPS"
-    make integration PHPS="$PHPS" "ARCH=${ARCH}" INTEGRATION_ARGS="--retry=1"
+    printf "Temporarily disable integration tests in GHA while determining what to do with private keys.\n"
+    #make integration PHPS="$PHPS" "ARCH=${ARCH}" INTEGRATION_ARGS="--retry=1"
     ;;
   esac
   printf \\n
@@ -167,10 +173,10 @@ EOF
       *embed*)
         if [ -n "$do_valgrind" ]; then
           printf 'grinding agent unit tests\n'
-          make -r -s -j $(nproc) agent-valgrind "ARCH=${ARCH}" LDFLAGS='-Wl,--no-warn-search-mismatch -Wl,-z,muldefs'
+          make -r -s -j $(nproc) agent-valgrind "ARCH=${ARCH}"
         else
           printf 'running agent unit tests\n'
-          make -r -s -j $(nproc) agent-run-tests "ARCH=${ARCH}"
+          make -r -s -j $(nproc) agent-check "ARCH=${ARCH}"
         fi
 	;;
       *)
