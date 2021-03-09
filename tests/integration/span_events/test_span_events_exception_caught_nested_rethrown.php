@@ -140,7 +140,7 @@ newrelic.cross_application_tracer.enabled = false
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error: Uncaught.*Exception.*Rethrown caught exception: Division by zero.*
+^\s*(PHP )?Fatal error:.*Uncaught.*Exception.*Rethrown caught exception: Division by zero.*
 */
 
 function c()
