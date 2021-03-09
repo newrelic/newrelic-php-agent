@@ -20,7 +20,7 @@ if (!unpack_guzzle(6)) {
     die("skip: guzzle 6 installation required\n");
 }
 
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"]) {
+if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"])) {
     die("skip: env vars required");
 }
 */
