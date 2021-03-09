@@ -5,23 +5,24 @@
  */
 
 /*DESCRIPTION
-The agent should capture compile warnings.
+The agent should capture and report deprecation warnings.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
 /*INI
+error_reporting = E_ALL | E_STRICT
 display_errors=1
 log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*Unterminated comment starting line [0-9]+ in .*? on line [0-9]+\s*$
+^\s*(PHP )?Deprecated: Required parameter \$b follows optional parameter \$a in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -31,10 +32,10 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Unterminated comment starting line ??",
-      "E_COMPILE_WARNING",
+      "Required parameter $b follows optional parameter $a",
+      "Error",
       {
-        "stack_trace": [],
+        "stack_trace": "??",
         "agentAttributes": "??",
         "intrinsics": "??"
       }
@@ -55,8 +56,8 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_COMPILE_WARNING",
-        "error.message": "Unterminated comment starting line ??",
+        "error.class": "Error",
+        "error.message": "Required parameter $b follows optional parameter $a",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??"
@@ -68,5 +69,6 @@ log_errors=0
 ]
 */
 
-/*
-unterminated comment
+function test($a = [], $b) {
+  echo "Deprecated";
+}

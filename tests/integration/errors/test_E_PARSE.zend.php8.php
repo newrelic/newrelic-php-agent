@@ -5,13 +5,13 @@
  */
 
 /*DESCRIPTION
-The agent should capture compile warnings.
+The agent should capture and report parse errors.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
@@ -21,7 +21,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*Unterminated comment starting line [0-9]+ in .*? on line [0-9]+\s*$
+^\s*(PHP )?Parse error:\s*syntax error, unexpected token \"\}\" in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -31,8 +31,8 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Unterminated comment starting line ??",
-      "E_COMPILE_WARNING",
+      "syntax error, unexpected token \"}\"",
+      "Error",
       {
         "stack_trace": [],
         "agentAttributes": "??",
@@ -55,8 +55,8 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_COMPILE_WARNING",
-        "error.message": "Unterminated comment starting line ??",
+        "error.class": "Error",
+        "error.message": "syntax error, unexpected token \"}\"",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??"
@@ -68,5 +68,6 @@ log_errors=0
 ]
 */
 
-/*
-unterminated comment
+if (2 == 2) {
+  lacks_semicolon()
+}
