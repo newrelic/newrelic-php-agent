@@ -2695,11 +2695,17 @@ NR_INNER_WRAPPER(curl_multi_exec) {
   int zcaught = 0;
   zval* curlres = NULL;
   zend_long still_running;
+  int rv = FAILURE;
 
-  if (SUCCESS
-      != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "rl", &curlres,
-                                  &still_running)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
+                           "ol", &curlres, &still_running);
+#else
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
+                           "rl", &curlres, &still_running);
+#endif /* PHP 8.0+ */
+
+  if (SUCCESS != rv) {
     goto leave;
   }
 
@@ -2719,8 +2725,13 @@ NR_INNER_WRAPPER(curl_multi_exec) {
    * to clean up any curl handles for which no request could be made and
    * which are still lingering.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
+                           "ol", &curlres, &still_running);
+#else
   zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
                            "rl", &curlres, &still_running);
+#endif /* PHP 8.0+ */
 
   if (0 == still_running) {
     nr_php_curl_multi_exec_finalize(curlres TSRMLS_CC);
