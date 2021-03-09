@@ -1,7 +1,7 @@
 /*
-* Copyright 2020 New Relic Corporation. All rights reserved.
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include "php_agent.h"
 #include "php_vm.h"
@@ -146,19 +146,23 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
    * https://github.com/php/php-src/blob/php-7.0.19/Zend/zend_compile.c#L3082-L3098
    * https://github.com/php/php-src/blob/php-7.1.5/Zend/zend_compile.c#L3564-L3580
    *
-   * In PHP 8, a ZEND_CHECK_UNDEF_ARGS opcode is added after the call to
-   * ZEND_SEND_ARRAY and before ZEND_DO_FCALL so we need to look back two opcodes
-   * instead of just one.
+   * In PHP 8, sometimes a ZEND_CHECK_UNDEF_ARGS opcode is added after the call
+   * to ZEND_SEND_ARRAY and before ZEND_DO_FCALL so we need to sometimes look
+   * back two opcodes instead of just one.
    *
    * Note that this heuristic will fail if the Zend Engine ever starts
-   * compiling flattened call_user_func_array() calls differently. PHP 7.2 made a
-   * change, but it only optimized array_slice() calls, which as an internal
-   * function won't get this far anyway.) We can disable this behaviour by setting
-   * the ZEND_COMPILE_NO_BUILTINS compiler flag, but since that will cause
-   * additional performance overhead, this should be considered a last resort.
+   * compiling flattened call_user_func_array() calls differently. PHP 7.2 made
+   * a change, but it only optimized array_slice() calls, which as an internal
+   * function won't get this far anyway.) We can disable this behaviour by
+   * setting the ZEND_COMPILE_NO_BUILTINS compiler flag, but since that will
+   * cause additional performance overhead, this should be considered a last
+   * resort.
    */
-#ifdef PHP8
-  prev_opline = execute_data->opline - 2;
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+  prev_opline = execute_data->opline - 1;
+  if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
+    prev_opline = execute_data->opline - 2;
+  }
 #else
   prev_opline = execute_data->opline - 1;
 #endif
