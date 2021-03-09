@@ -6,7 +6,16 @@
 
 /*DESCRIPTION
 The agent treats bad input to newrelic_get_browser_timing_header() the same as
-newrelic_get_browser_timing_header(true).
+newrelic_get_browser_timing_header(true). This is skipped on PHP version 8+ because
+this will now throw an TypeError instead of a warning. Since that is a fatal error,
+this test is invalid and not needed in php 8+.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
 */
 
 /*EXPECT

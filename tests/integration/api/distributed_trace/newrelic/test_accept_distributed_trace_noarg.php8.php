@@ -5,33 +5,34 @@
  */
 
 /*DESCRIPTION
-Tests that the API function warns when params are missing.
+Tests that the API function throws an exception when params are missing.
+Prior to PHP 8 this was a warning.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">=")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 display_errors=1
 log_errors=0
 */
 
 /*EXPECT
-Warning Detected
-Warning Detected
+Error Detected
+Error Detected
 */
 
 $functions = array('newrelic_accept_distributed_trace_payload','newrelic_accept_distributed_trace_payload_httpsafe');
 foreach($functions as $function) {
     ob_start();
-    $function();
-    $contents = ob_get_clean();
-    if(strpos($contents, 'Warning:') !== false)
-    {
-        echo 'Warning Detected',"\n";
+    try {
+      $function();
+    } catch (ArgumentCountError $e) {
+      echo 'Error Detected',"\n";
     }
 }

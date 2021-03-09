@@ -3,24 +3,24 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 /*DESCRIPTION
 Test that no trace metadata is returned when invalid arguments are given.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
 /*INI
 newrelic.distributed_tracing_enabled = true
- */
+*/
 
 /*EXPECT_REGEX
-.*Warning.*newrelic_get_trace_metadata\(\) expects exactly 0 parameters, 1 given.*
-ok - empty metadata
+^\s*(PHP )?Fatal error:.*Uncaught ArgumentCountError:.*newrelic_get_trace_metadata\(\) expects exactly 0 arguments, 1 given.*
 */
 
 /*EXPECT_METRICS

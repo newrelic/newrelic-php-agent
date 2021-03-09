@@ -8,6 +8,10 @@
 Tests that our new API functions are added correctly.
 */
 
+/*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
+*/
+
 /*EXPECT
 ok - newrelic_accept_distributed_trace_payload exists
 ok - newrelic_accept_distributed_trace_payload_httpsafe exists

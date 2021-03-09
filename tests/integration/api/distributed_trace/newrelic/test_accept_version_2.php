@@ -4,11 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*SKIPIF
+<?php
+if (!isset($_ENV["ACCOUNT_supportability_trusted"]))
+{
+  die("skip: env vars required");
+}
+*/
+
 /*DESCRIPTION
 Test that a version 0.2 payload is accepted.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=1
 */
 
