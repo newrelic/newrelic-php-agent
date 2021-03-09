@@ -5,7 +5,14 @@
  */
 
 /*DESCRIPTION
-Tests that non-reference arguments are rejected without segfault.
+Tests that non-array arguments are cause an error
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
+}
 */
 
 /*EXPECT_METRICS
@@ -20,13 +27,18 @@ Tests that non-reference arguments are rejected without segfault.
     [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/insert_distributed_trace_headers"},
+                                                          [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:.*passed by reference.*
+^\s*(PHP )?Fatal error:.*Uncaught TypeError:.*newrelic_insert_distributed_trace_headers\(\).*
 */
 
-newrelic_insert_distributed_trace_headers("howdy");
+require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
+
+$string_arg = "howdy";
+tap_assert(!newrelic_insert_distributed_trace_headers($string_arg), 'rejected non-array argument');

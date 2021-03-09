@@ -12,12 +12,13 @@ by calling newrelic_accept_distributed_trace_payload twice.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["ACCOUNT_supportability_trusted"]) {
+if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"]) || !isset($_ENV["ACCOUNT_supportability_trusted"])) {
     die("skip: env vars required");
 }
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
 */

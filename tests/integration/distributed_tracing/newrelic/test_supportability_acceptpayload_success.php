@@ -11,12 +11,13 @@ when the payload is correct.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["APP_supportability"]) {
+if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"]) || !isset($_ENV["APP_supportability"])) {
     die("skip: env vars required");
 }
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
 */

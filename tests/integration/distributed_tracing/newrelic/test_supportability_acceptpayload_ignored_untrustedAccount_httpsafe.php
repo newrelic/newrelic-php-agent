@@ -11,6 +11,7 @@ by changing the trusted key to an incorrect key "tk":"12345"
  */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
 */
