@@ -48,8 +48,16 @@ function test_add_custom_parameter() {
   $result = @newrelic_add_custom_parameter("key1");
   tap_refute($result, "should reject one arg");
 
-  $result = @newrelic_add_custom_parameter("key2", "value", "bad");
-  tap_refute($result, "should reject more than two args");
+  /*
+   * In PHP 8.0 this now throws an ArgumentCountError instead of a warning.
+   * Lets catch the error and move on to allow for backwards compatibility.
+   */
+  try {
+    $result = @newrelic_add_custom_parameter("key2", "value", "bad");
+    tap_refute($result, "should reject more than two args");
+  } catch (\ArgumentCountError $e) {
+    echo 'ok - should reject more than two args',"\n";
+  }
 
   $result = @newrelic_add_custom_parameter("key3", INF);
   tap_refute($result, "should reject infinity");

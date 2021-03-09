@@ -8,6 +8,13 @@
 Test that newrelic_set_appname returns false when given bad parameters.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
+
 /*EXPECT_REGEX
 .*Warning:.*newrelic_set_appname\(\) expects at least 1 parameter, 0 given.*
 ok - newrelic_set_appname no params

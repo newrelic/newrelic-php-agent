@@ -9,6 +9,7 @@ same transaction after a call to newrelic_create_distributed_trace_payload.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=1
 */
 
