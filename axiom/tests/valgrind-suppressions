@@ -4,6 +4,28 @@
 # Suppressing things may hide true problems, so watch out.
 
 {
+   agent-32bit-debian-invalid-read
+   Memcheck:Addr4
+   fun:check_free
+   fun:free_key_mem
+   fun:__dlerror_main_freeres
+   fun:__libc_freeres
+   fun:_vgnU_freeres
+   ...
+}
+
+{
+   agent-32bit-debian-invalid-free
+   Memcheck:Free
+   fun:free
+   fun:free_key_mem
+   fun:__dlerror_main_freeres
+   fun:__libc_freeres
+   fun:_vgnU_freeres
+   ...
+}
+
+{
   <mach/macosx dynamic loader 1>
   Memcheck:Leak
   fun:malloc
