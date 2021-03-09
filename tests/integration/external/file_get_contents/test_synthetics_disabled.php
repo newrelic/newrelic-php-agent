@@ -26,7 +26,7 @@ newrelic.synthetics.enabled = false
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"]) || !isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
