@@ -45,7 +45,7 @@ arguments.
       "?? when",
       "OtherTransaction/php__FILE__",
       "?? error message",
-      "E_WARNING",
+      "??",
       {
         "stack_trace": [
           " in SQLite3::query called at __FILE__ (??)",
