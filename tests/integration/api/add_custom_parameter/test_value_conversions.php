@@ -58,7 +58,7 @@ function test_add_custom_parameters() {
   newrelic_add_custom_parameter("IS_LONG", 42);
   newrelic_add_custom_parameter("IS_NULL", null);
   newrelic_add_custom_parameter("IS_OBJECT", new MyClass());
-  newrelic_add_custom_parameter("IS_RESOURCE", curl_init());
+  newrelic_add_custom_parameter("IS_RESOURCE", fopen('php://temp', 'r'));
   newrelic_add_custom_parameter("IS_STRING", "foo");
 }
 

@@ -6,7 +6,16 @@
 
 /*DESCRIPTION
 Calling newrelic_enable_params() with an argument that is neither a boolean nor
-an integer enables the recording of request parameters.
+an integer enables the recording of request parameters. This test is skipped on
+PHP 8+ because invalid arguments now throw a TypeError instead of a warning. Since
+this causes test execution to stop, it invalidates the test on PHP 8+ versions.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
 */
 
 /*ENVIRONMENT

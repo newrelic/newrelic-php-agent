@@ -11,6 +11,7 @@ that a distributed trace payload is still created.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=1
 newrelic.span_events_enabled=1
 newrelic.transaction_events.enabled=0

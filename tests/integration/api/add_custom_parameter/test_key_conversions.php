@@ -46,14 +46,14 @@ newrelic.cross_application_tracer.enabled = 0
 class MyClass {}
 
 function test_add_custom_parameters() {
-  newrelic_add_custom_parameter(array(),       "IS_ARRAY");
-  newrelic_add_custom_parameter(true,          "IS_BOOL");
-  newrelic_add_custom_parameter(42.0,          "IS_DOUBLE");
-  newrelic_add_custom_parameter(42,            "IS_LONG");
-  newrelic_add_custom_parameter(null,          "IS_NULL");
-  newrelic_add_custom_parameter(new MyClass(), "IS_OBJECT");
-  newrelic_add_custom_parameter(curl_init(),   "IS_RESOURCE");
-  newrelic_add_custom_parameter("foo",         "IS_STRING");
+  newrelic_add_custom_parameter(array(),                  "IS_ARRAY");
+  newrelic_add_custom_parameter(true,                     "IS_BOOL");
+  newrelic_add_custom_parameter(42.0,                     "IS_DOUBLE");
+  newrelic_add_custom_parameter(42,                       "IS_LONG");
+  newrelic_add_custom_parameter(null,                     "IS_NULL");
+  newrelic_add_custom_parameter(new MyClass(),            "IS_OBJECT");
+  newrelic_add_custom_parameter(fopen('php://temp', 'r'), "IS_RESOURCE");
+  newrelic_add_custom_parameter("foo",                    "IS_STRING");
 }
 
 test_add_custom_parameters();

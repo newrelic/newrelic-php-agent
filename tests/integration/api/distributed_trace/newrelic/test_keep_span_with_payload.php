@@ -10,6 +10,7 @@ the segment is kept when sampling the segment tree.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.detail = 1
 newrelic.transaction_tracer.threshold = 0

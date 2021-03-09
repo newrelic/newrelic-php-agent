@@ -6,7 +6,14 @@
 
 /*DESCRIPTION
 Test that newrelic_is_sampled() returns true when DT is enabled and it is the sole txn
- */
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
 
 /*INI
 newrelic.distributed_tracing_enabled = true

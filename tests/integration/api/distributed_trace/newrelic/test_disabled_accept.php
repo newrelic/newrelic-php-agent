@@ -10,6 +10,7 @@ when distributed tracing is disabled.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=0
 */
 

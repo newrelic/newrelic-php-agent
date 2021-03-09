@@ -11,8 +11,8 @@ and no metric should be added.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
@@ -49,14 +49,28 @@ tap_refute($result, 'should reject zero args');
 $result = @newrelic_custom_metric('Custom/Metric');
 tap_refute($result, 'should reject one arg');
 
-$result = @newrelic_custom_metric(array(), 1.0);
-tap_refute($result, 'should reject non-string name');
+/*
+ * In PHP 8, internal function parameters have types and value validations enforced and will now
+ * throw TypeError exceptions if the expected type or value is not allowed. Prior to PHP 8, this
+ * only resulted in a PHP warning.
+ */
+try {
+  @newrelic_custom_metric(array(), 1.0);
+} catch (TypeError $e) {
+  echo 'ok - should reject non-string name',"\n";
+}
 
-$result = @newrelic_custom_metric('Custom/Metric', 'bad');
-tap_refute($result, 'should reject non-numeric value (string)');
+try {
+  @newrelic_custom_metric('Custom/Metric', 'bad');
+} catch (TypeError $e) {
+  echo 'ok - should reject non-numeric value (string)',"\n";
+}
 
-$result = @newrelic_custom_metric('Custom/Metric', array());
-tap_refute($result, 'should reject non-numeric value (array)');
+try {
+  @newrelic_custom_metric('Custom/Metric', array());
+} catch (TypeError $e) {
+  echo 'ok - should reject non-numeric value (array)',"\n";
+}
 
 $result = @newrelic_custom_metric('Custom/Metric', INF);
 tap_refute($result, 'should reject infinity');

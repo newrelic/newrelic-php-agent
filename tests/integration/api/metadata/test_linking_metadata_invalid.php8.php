@@ -8,10 +8,11 @@
 Test that no linking metadata is returned when invalid arguments are given.
 */
 
+
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
@@ -20,8 +21,7 @@ newrelic.distributed_tracing_enabled = false
  */
 
 /*EXPECT_REGEX
-.*Warning.*newrelic_get_linking_metadata\(\) expects exactly 0 parameters, 1 given.*
-ok - empty metadata
+^\s*(PHP )?Fatal error:.*Uncaught ArgumentCountError:.*newrelic_get_linking_metadata\(\) expects exactly 0 arguments, 1 given.*
 */
 
 /*EXPECT_METRICS
@@ -44,6 +44,4 @@ ok - empty metadata
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
-$metadata = newrelic_get_linking_metadata("arg");
-
-tap_equal(array(), $metadata, 'empty metadata');
+tap_equal(array(), newrelic_get_linking_metadata("arg"), 'empty metadata');
