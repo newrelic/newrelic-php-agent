@@ -24,7 +24,7 @@ trace threshold. This has to happen when both CAT and DT are disabled.
 
 /*SKIPIF
 <?php
-if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
