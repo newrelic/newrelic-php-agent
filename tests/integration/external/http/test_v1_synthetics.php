@@ -20,7 +20,7 @@ if (version_compare(phpversion('http'), '2.0.0', '>=')) {
     die("skip: http 1.x required\n");
 }
 
-if (!$_ENV["ACCOUNT_supportability"] || !$_ENV["APP_supportability"] || !$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"]) || !isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
