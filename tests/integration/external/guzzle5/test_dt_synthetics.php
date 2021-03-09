@@ -20,7 +20,7 @@ if (!unpack_guzzle(5)) {
     die("skip: guzzle 5 installation required\n");
 }
 
-if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
