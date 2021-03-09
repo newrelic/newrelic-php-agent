@@ -27,7 +27,7 @@ newrelic.distributed_tracing_enabled = true
 
 /*SKIPIF
 <?php
-if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
