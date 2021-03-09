@@ -24,7 +24,7 @@ trace threshold. Synthetics attributes should be added when CAT is enabled.
 
 /*SKIPIF
 <?php
-if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
+if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
 }
 */
