@@ -40,8 +40,8 @@ if (!extension_loaded("curl")) {
     [
       "?? timestamp",
       "OtherTransaction/php__FILE__",
-      "curl_exec() expects exactly 1 parameter, 0 given",
-      "E_WARNING",
+      "?? error message",
+      "??",
       {
         "stack_trace": "??",
         "agentAttributes": "??",
