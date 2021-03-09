@@ -20,4 +20,14 @@ NULL
 */
 
 var_dump(function_exists('strlen'));
-var_dump(strlen('foo'));
+
+/*
+ * In PHP 8+, disabled functions behave as if they are not declared at all.
+ * Prior to PHP 8, attempting to use a disabled functions resulted in a warning.
+ * Now it throws a standard error so we have to catch it in PHP 8
+ */
+try {
+  var_dump(strlen('foo'));
+} catch (\Throwable $e) {
+  echo 'NULL',"\n";
+}
