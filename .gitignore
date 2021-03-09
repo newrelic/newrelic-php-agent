@@ -1,6 +1,7 @@
 # Build artifacts
 agent/configure.ac
 agent/newrelic.map
+axiom/tests
 bin/
 pkg/
 
