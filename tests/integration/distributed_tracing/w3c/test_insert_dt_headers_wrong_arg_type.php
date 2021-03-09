@@ -8,6 +8,13 @@
 Tests that non-array arguments are gracefully rejected
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",
