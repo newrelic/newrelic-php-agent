@@ -14,6 +14,9 @@ newrelic.error_collector.ignore_errors setting.
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: PHP 5 not supported\n");
 }
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
 */
 
 /*INI
