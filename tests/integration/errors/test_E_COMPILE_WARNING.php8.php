@@ -10,8 +10,8 @@ The agent should capture compile warnings.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
@@ -21,7 +21,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*Unterminated comment starting line [0-9]+ in .*? on line [0-9]+\s*$
+^\s*(PHP )?Warning:\s*Private methods cannot be final as they are never overridden by other classes
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -31,7 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Unterminated comment starting line ??",
+      "Private methods cannot be final as they are never overridden by other classes",
       "E_COMPILE_WARNING",
       {
         "stack_trace": [],
@@ -56,7 +56,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_COMPILE_WARNING",
-        "error.message": "Unterminated comment starting line ??",
+        "error.message": "Private methods cannot be final as they are never overridden by other classes",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??"
@@ -67,6 +67,8 @@ log_errors=0
   ]
 ]
 */
-
-/*
-unterminated comment
+class Foo {
+  final private static function compileWarning(){
+    echo 'Compile warning',"\n";
+  }
+}
