@@ -13,7 +13,13 @@ $request_headers = array_change_key_case(getallheaders());
 
 foreach (array(DT_TRACEPARENT, DT_TRACESTATE, DT_NEWRELIC) as $header) {
   if (array_key_exists(strtolower($header), $request_headers)) {
-    echo $header . "=found ";
+    /* A comma indicates there is more than one value for the header.
+       Flag this as having duplicate values. */
+    if (strpos($request_headers[$header], ",") !== false) {
+        echo $header . "=dup ";
+    } else {
+        echo $header . "=found ";
+    }
   }
 }
 
