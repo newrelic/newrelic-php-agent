@@ -22,6 +22,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
@@ -39,11 +40,11 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? start time",
   "?? stop time",
   [
-    [{"name":"External/all"},                             [12, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                        [12, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                   [12, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                             [13, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                        [13, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                   [13, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all", 
-      "scope":"OtherTransaction/php__FILE__"},            [12, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},            [13, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                     [ 1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},             [ 1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [ 1, "??", "??", "??", "??", "??"]],
@@ -53,9 +54,9 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, 
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/Create/Success"},    
-							  [12, "??", "??", "??", "??", "??"]],
+							  [13, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, 
-                                                          [12, "??", "??", "??", "??", "??"]]
+                                                          [13, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -72,6 +73,9 @@ echo file_get_contents($url, false, $context);
 /* Context Empty Array Options. */
 $opts = array();
 $context = stream_context_create($opts);
+echo file_get_contents($url, false, $context);
+
+/* Reuse Existing Context (headers should not be duplicated). */
 echo file_get_contents($url, false, $context);
 
 /* Context Without ['http'] */
