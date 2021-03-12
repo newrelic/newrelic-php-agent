@@ -1073,7 +1073,8 @@ static inline void nr_php_execute_segment_end(
 
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id
-      || stacked->attributes) {
+      || stacked->attributes
+      || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
     nr_segment_end(&s);
