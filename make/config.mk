@@ -141,11 +141,9 @@ ifeq (1,$(ENABLE_COVERAGE))
 endif
 
 #
-# Conditionally compile Go files to use the system certs.
+# Unconditionally compile Go files to use the system certs.
 #
-ifeq (1,$(USE_SYSTEM_CERTS))
-	GO_TAGS += use_system_certs
-endif
+GO_TAGS += use_system_certs
 
 #
 # Conditionally compile Go files for integration tests.

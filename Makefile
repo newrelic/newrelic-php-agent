@@ -191,7 +191,7 @@ daemon: go-minimum-version daemon-protobuf Makefile | bin/
 .PHONY: daemon_race
 daemon_race: go-minimum-version daemon-protobuf Makefile | bin/
 	@rm -rf $(DAEMON_TARGETS)
-	$(GO) install -race $(GOFLAGS) ./...
+	USE_SYSTEM_CERTS=1 $(GO) install -race $(GOFLAGS) ./...
 
 .PHONY: daemon_test
 daemon_test: go-minimum-version daemon-protobuf
