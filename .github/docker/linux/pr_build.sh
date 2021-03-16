@@ -73,23 +73,7 @@ case $PHP_SAPIS in
     ;;
 esac
 
-#
-# This check can be removed when the valgrind PHP 8.0 mem issues 
-# on 32-bit OSs are resolved.  64-bit has different issue.
-#
-VALGRIND_ISSUE=0
-    echo "php = $PHPS"
-case $PHPS in
-  *8.0*)
-    VALGRIND_ISSUE=1
-    ;;
-  *)
-    VALGRIND_ISSUE=0
-    ;;
-esac
-    echo "valgrindissue : $VALGRIND_ISSUE"
-
-if [ "$(uname)" = Linux ] && [ ! -e /etc/alpine-release ] && [ $PHP_SAPIS_EMBED ] && [ $VALGRIND_ISSUE = 0 ]; then
+if [ "$(uname)" = Linux ] && [ ! -e /etc/alpine-release ] && [ $PHP_SAPIS_EMBED ]; then
   do_valgrind=yes
   printf \\n
   printf 'grinding axiom tests\n'
