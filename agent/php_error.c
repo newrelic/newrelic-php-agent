@@ -423,12 +423,15 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
    * conditional will help us prevent double capture once we start recording
    * more than one error per transaction.
    *
-   * Note:  The format string comparison is a fragile check:  This "Uncaught %s"
+   * Note:  The format string comparison is a fragile check:  This "Uncaught"
    * string is not guaranteed in the PHP runtime.  If there was a better way to
    * detect uncaught exceptions we would do so.  To reduce the chance that this
    * early exit triggers erroneously, we check for the exception error type.
+   *
+   * In PHP 8.0+, this is no longer a format string so we now omit the %s in the
+   * check.
    */
-  if ((E_ERROR == type) && (0 == nr_strnicmp(format, NR_PSTR("Uncaught %s")))) {
+  if ((E_ERROR == type) && (0 == nr_strnicmp(format, NR_PSTR("Uncaught")))) {
     return 0;
   }
 
@@ -471,6 +474,12 @@ void nr_php_error_cb(int type,
     msg[len] = '\0';
 
 #else
+  /*
+   * In PHP 8.0+, the type is OR'ed with the new E_DONT_BAIL error value. None
+   * of our existing routines can handle this addition so we remove it before
+   * proceeding.
+   */
+  type = type & ~E_DONT_BAIL;
   if (nr_php_should_record_error(type, ZSTR_VAL(message))) {
     msg = nr_strdup(ZSTR_VAL(message));
 

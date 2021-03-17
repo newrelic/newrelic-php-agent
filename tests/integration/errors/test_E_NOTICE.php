@@ -15,7 +15,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Notice:\s*Undefined variable: usernmae in .*? on line [0-9]+\s*$
+^\s*(PHP )?Notice:\s*session_start\(\):.*session.*in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -27,13 +27,9 @@ null
 */
 
 function provoke_notice() {
-  $username = 'foo';
-
-  // Misspell username to cause a notice.
-  if ($usernmae) {
-    return 1;
-  }
-  return 0;
+  session_start();
+  /* Trigger a NOTICE by attempting to start another session. */
+  session_start();
 }
 
 provoke_notice();
