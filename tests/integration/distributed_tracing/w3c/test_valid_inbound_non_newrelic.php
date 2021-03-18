@@ -10,7 +10,7 @@ Tests that a trace context header parses other vendors correctly.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+if (!isset($_ENV["ACCOUNT_supportability_trusted"])) {
     die("skip: env vars required");
 }
 */

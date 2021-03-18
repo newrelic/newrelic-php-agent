@@ -10,6 +10,7 @@ when DT is enabled.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.threshold = 0
 */

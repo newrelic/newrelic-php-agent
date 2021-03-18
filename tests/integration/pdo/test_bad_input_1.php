@@ -19,10 +19,6 @@ display_errors=1
 log_errors=0
 */
 
-/*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*PDO::exec\(\) expects exactly 1 parameter, 0 given in .*? on line [0-9]+\s*$
-*/
-
 /*EXPECT_METRICS
 [
   "?? agent run id",
@@ -54,8 +50,8 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "PDO::exec() expects exactly 1 parameter, 0 given",
-      "E_WARNING",
+      "?? error message",
+      "??",
       {
         "stack_trace": [
           " in PDO::exec called at __FILE__ (??)",

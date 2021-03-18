@@ -11,7 +11,7 @@ when the payload is correct.
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+if (!isset($_ENV["ACCOUNT_supportability_trusted"])) {
     die("skip: env vars required");
 }
 */

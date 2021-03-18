@@ -8,6 +8,13 @@
 The agent should capture compile warnings.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
+
 /*INI
 display_errors=1
 log_errors=0

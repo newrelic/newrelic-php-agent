@@ -60,7 +60,7 @@ newrelic.error_collector.prioritize_api_errors = true
 ]
 */
 
-function nop_error_handler($errno, $errstr, $errfile, $errline, array $errctx)
+function nop_error_handler($errno, $errstr, $errfile, $errline)
 {
     /*
      * Nothing to do. This is only here to prevent early termination

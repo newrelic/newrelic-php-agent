@@ -26,7 +26,7 @@ Tests that non-reference arguments are rejected without segfault.
 */
 
 /*EXPECT_REGEX
-Fatal error: Only variables can be passed by reference in
+^\s*(PHP )?Fatal error:.*passed by reference.*
 */
 
 newrelic_insert_distributed_trace_headers("howdy");

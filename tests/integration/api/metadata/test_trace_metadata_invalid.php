@@ -7,6 +7,13 @@
 Test that no trace metadata is returned when invalid arguments are given.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = true
  */

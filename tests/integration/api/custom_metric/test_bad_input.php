@@ -9,6 +9,13 @@ Calling newrelic_custom_metric() with the wrong arguments should return FALSE
 and no metric should be added.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.4", ">")) {
+  die("skip: PHP > 7.4.0 not supported\n");
+}
+*/
+
 /*EXPECT
 ok - should reject zero args
 ok - should reject one arg

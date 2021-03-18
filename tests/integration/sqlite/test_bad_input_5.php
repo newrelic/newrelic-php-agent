@@ -45,7 +45,7 @@ with the wrong argument types.
       "?? when",
       "OtherTransaction/php__FILE__",
       "?? error message",
-      "E_WARNING",
+      "??",
       {
         "stack_trace": [
           " in sqlite_unbuffered_query called at __FILE__ (??)",

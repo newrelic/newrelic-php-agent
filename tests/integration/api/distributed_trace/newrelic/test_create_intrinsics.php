@@ -9,6 +9,7 @@ Test that a version 0.2 payload is created.
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=1
 */
 

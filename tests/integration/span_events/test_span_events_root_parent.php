@@ -11,12 +11,13 @@ value of the inbound payload as its parent id;
 
 /*SKIPIF
 <?php
-if (!$_ENV["ACCOUNT_supportability_trusted"]) {
+if (!isset($_ENV["ACCOUNT_supportability_trusted"])) {
     die("skip: env vars required");
 }
 */
 
 /*INI
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false

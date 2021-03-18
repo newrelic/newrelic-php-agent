@@ -45,7 +45,7 @@ receiving the wrong arguments.
       "?? when",
       "OtherTransaction/php__FILE__",
       "?? error message",
-      "E_WARNING",
+      "??",
       {
         "stack_trace": [
           " in SQLiteDatabase::query called at __FILE__ (??)",
