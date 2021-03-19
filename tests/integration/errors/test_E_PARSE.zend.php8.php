@@ -32,7 +32,7 @@ log_errors=0
       "?? when",
       "OtherTransaction/php__FILE__",
       "syntax error, unexpected token \"}\"",
-      "Error",
+      "E_PARSE",
       {
         "stack_trace": [],
         "agentAttributes": "??",
@@ -55,7 +55,7 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_PARSE",
         "error.message": "syntax error, unexpected token \"}\"",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
