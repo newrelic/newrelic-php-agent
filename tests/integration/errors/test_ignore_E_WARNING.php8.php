@@ -18,13 +18,13 @@ log_errors=0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not supported\n");
 }
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*Division by zero in .*? on line [0-9]+\s*$
+^\s*(PHP )?Warning:\s*session_gc\(\):.*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -36,7 +36,7 @@ null
 */
 
 function run_test() {
-  $x = 8 / 0;
+  session_gc();
 }
 
 run_test();
