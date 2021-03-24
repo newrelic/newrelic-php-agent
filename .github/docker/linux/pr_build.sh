@@ -171,4 +171,7 @@ EOF
     printf 'skipping agent unit tests - not Linux\n'
   fi
 
+  printf 'creating build artifacts'
+  make -r -j $(nproc) release-${PHP_VER}-gha "OPTIMIZE=1" "ARCH=${ARCH}"
+
   printf \\n   # put a blank line
