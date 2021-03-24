@@ -64,3 +64,29 @@ jobs:
         run: docker build --build-arg ARCH=$ARCH --build-arg PHP_VER=$PHP_VER --build-arg BUILD_TYPE=$BUILD_TYPE -f ./.github/docker/${OS}/${ARCH}/Dockerfile -t $image_name .
       - name: Build and Test
         run: docker run --name runtest --workdir /github/workspace --rm -e GITHUB_WORKSPACE -e GITHUB_ENV -v "${GITHUB_WORKSPACE}":"/github/workspace" $image_name
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.php_ver }}binaries
+          path: releases
+          if-no-files-found: error
+  combine:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Combine artifacts from matrix build
+    needs: agent_release
+    steps:
+      - name: Create directory
+        run: mkdir releases
+      - name: Download to directory
+        uses: actions/download-artifact@v2
+        with:
+          path: releases
+      - run: sudo apt install tree
+      - run: tree
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: $GITHUB_SHA
+          path: releases
+          if-no-files-found: error
