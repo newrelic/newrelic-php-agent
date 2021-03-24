@@ -87,6 +87,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.pull_request.head.sha }}
+          name: ${{ github.sha }}
           path: releases
           if-no-files-found: error
