@@ -74,7 +74,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     name: Combine artifacts from matrix build
-    needs: agent_release
+    needs: agent_pr
     steps:
       - name: Create directory
         run: mkdir releases
