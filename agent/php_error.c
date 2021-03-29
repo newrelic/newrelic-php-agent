@@ -643,6 +643,7 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
   nr_segment_record_exception(nr_txn_get_current_segment(NRPRG(txn), NULL),
                               error_message, klass);
 
+  nr_free(file);
   nr_free(error_message);
   nr_free(klass);
   nr_free(message);
