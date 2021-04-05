@@ -312,10 +312,10 @@ if [ -z "${ispkg}" ]; then
   check_file "${ilibdir}/scripts/newrelic-daemon.logrotate"
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
-for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
+for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
-  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ]; then
+  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ] && [ "${pmv}" != "20200930"]; then
     # Only check for x86 agent files on supported platforms.
     case "$ostype" in
       alpine|darwin|freebsd) ;;
@@ -1090,7 +1090,7 @@ Ignoring this particular instance of PHP.
 
   if [ -n "${ispkg}" -a "${arch}" = "x64" ]; then
     if [ "${pi_arch}" = "x86" ]; then
-      for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
+      for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
         check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
         check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
       done
