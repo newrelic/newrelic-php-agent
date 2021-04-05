@@ -43,7 +43,7 @@ endif
 # Build for PHP 8.0 on everything other than 32-bit Linux
 BUILD_PHP_80 := yes
 ifeq (linux,$(RELEASE_OS))
-  ifeq (x32,$(ARCH))
+  ifeq (x86,$(ARCH))
     BUILD_PHP_80 := no
   endif
 endif
