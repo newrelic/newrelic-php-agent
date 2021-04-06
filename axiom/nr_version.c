@@ -28,8 +28,9 @@
  *   ube                (9.14)
  *   vanilla            (9.15)
  *   watermelon         (9.16)
+ *   xigua              (9.17)
  */
-#define NR_CODENAME "watermelon"
+#define NR_CODENAME "xigua"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
