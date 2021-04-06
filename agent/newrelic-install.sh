@@ -314,7 +314,7 @@ fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
   # If on a 32-bit system, don't look for a PHP 8.0 build.
-  if [ "${arch}" = "x64" ] -o [ "${pmv}" != "20200930" ]; then
+  if [ "${arch}" = "x64" -o "${pmv}" != "20200930" ]; then
     check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
     check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
   fi
