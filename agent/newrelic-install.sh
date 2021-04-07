@@ -1038,18 +1038,25 @@ for this copy of PHP. We apologize for the inconvenience.
       ;;
 
     8.0.*)
+      if [ "${arch}" = "x86" ]; then
+        UNSUPPORTED_VERSION="yes"
+      fi
       ;;
 
     *)
-      error "unsupported version '${pi_ver}' of PHP found at:
+      UNSUPPORTED_VERSION="yes"
+      ;;
+  esac
+
+  if [ "${UNSUPPORTED_VERSION}" = "yes" ]; then
+    error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
 Ignoring this particular instance of PHP.
 "
-      log "${pdir}: unsupported version '${pi_ver}'"
-      unsupported_php=1
-      return 1
-      ;;
-  esac
+    log "${pdir}: unsupported version '${pi_ver}'"
+    unsupported_php=1
+    return 1
+  fi
 
   #
   # Get the extension and ini directories.
