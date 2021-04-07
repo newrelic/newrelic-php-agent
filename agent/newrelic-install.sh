@@ -313,9 +313,12 @@ if [ -z "${ispkg}" ]; then
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20090626" "20100525" "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" "20190902" "20200930"; do
-  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
-  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
-  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ]; then
+  # If on a 32-bit system, don't look for a PHP 8.0 build.
+  if [ "${arch}" = "x64" -o "${pmv}" != "20200930" ]; then
+    check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
+    check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
+  fi
+  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ] && [ "${pmv}" != "20200930" ]; then
     # Only check for x86 agent files on supported platforms.
     case "$ostype" in
       alpine|darwin|freebsd) ;;
@@ -1035,6 +1038,7 @@ for this copy of PHP. We apologize for the inconvenience.
       ;;
 
     8.0.*)
+      pi_php8="yes"
       ;;
 
     *)
@@ -1086,6 +1090,17 @@ Ignoring this particular instance of PHP.
   fi
   if [ -z "${pi_arch}" ]; then
     pi_arch="${arch}"
+  fi
+
+  # This handles both 32-bit on 64-bit systems and 32-bit only systems
+  if [ "${pi_arch}" = "x86" -a "${pi_php8}" = "yes" ]; then
+    error "unsupported 32-bit version '${pi_ver}' of PHP found at:
+    ${pdir}
+Ignoring this particular instance of PHP.
+"
+    log "${pdir}: unsupported 32-bit version '${pi_ver}'"
+    unsupported_php=1
+    return 1
   fi
 
   if [ -n "${ispkg}" -a "${arch}" = "x64" ]; then
