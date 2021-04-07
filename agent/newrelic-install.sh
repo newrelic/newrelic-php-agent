@@ -1038,25 +1038,19 @@ for this copy of PHP. We apologize for the inconvenience.
       ;;
 
     8.0.*)
-      if [ "${arch}" = "x86" ]; then
-        UNSUPPORTED_VERSION="yes"
-      fi
+      pi_php8="yes"
       ;;
 
     *)
-      UNSUPPORTED_VERSION="yes"
-      ;;
-  esac
-
-  if [ "${UNSUPPORTED_VERSION}" = "yes" ]; then
-    error "unsupported version '${pi_ver}' of PHP found at:
+      error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
 Ignoring this particular instance of PHP.
 "
-    log "${pdir}: unsupported version '${pi_ver}'"
-    unsupported_php=1
-    return 1
-  fi
+      log "${pdir}: unsupported version '${pi_ver}'"
+      unsupported_php=1
+      return 1
+      ;;
+  esac
 
   #
   # Get the extension and ini directories.
@@ -1096,6 +1090,17 @@ Ignoring this particular instance of PHP.
   fi
   if [ -z "${pi_arch}" ]; then
     pi_arch="${arch}"
+  fi
+
+  # This handles both 32-bit on 64-bit systems and 32-bit only systems
+  if [ "${pi_arch}" = "x86" -a "${pi_php8}" = "yes" ]; then
+    error "unsupported 32-bit version '${pi_ver}' of PHP found at:
+    ${pdir}
+Ignoring this particular instance of PHP.
+"
+    log "${pdir}: unsupported 32-bit version '${pi_ver}'"
+    unsupported_php=1
+    return 1
   fi
 
   if [ -n "${ispkg}" -a "${arch}" = "x64" ]; then
