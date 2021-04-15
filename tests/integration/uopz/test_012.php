@@ -12,12 +12,12 @@ Test function uopz_add_function.
 <?php include("skipif.inc") ?>
 */
 
-/*EXPECT
-bool(true)
-bool(true)
-string(50) "Call to private method Foo::priv() from context ''"
-string(73) "will not replace existing method Foo::exists, use uopz_set_return instead"
-
+/*EXPECT_REGEX
+bool\(true\)
+bool\(true\)
+string\(5\d\) "Call to private method Foo::priv\(\) from .*
+string\(73\) "will not replace existing method Foo::exists, use uopz_set_return instead"
+.*
 */
 
 require __DIR__.'/load.inc';

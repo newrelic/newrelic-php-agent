@@ -15,16 +15,23 @@ an atomic operation.
   "?? start time",
   "?? stop time",
   [
-    [{"name":"Datastore/all"},                                                            [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                                       [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                                                      [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                                                 [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                                            [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                                       [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                                      [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                                                 [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/__HOST__/6379"},                                   [12, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del","scope":"OtherTransaction/php__FILE__"},     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists","scope":"OtherTransaction/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pipeline"},                                       [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pipeline","scope":"OtherTransaction/php__FILE__"},[2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                                         [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists","scope":"OtherTransaction/php__FILE__"},  [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/flushdb"},                                        [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/flushdb","scope":"OtherTransaction/php__FILE__"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/incrby"},                                         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/incrby","scope":"OtherTransaction/php__FILE__"},  [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mget"},                                           [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mget","scope":"OtherTransaction/php__FILE__"},    [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ping"},                                           [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ping","scope":"OtherTransaction/php__FILE__"},    [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                                                [1, "??", "??", "??", "??", "??"]],
@@ -64,6 +71,7 @@ function test_pipeline() {
 
   /* method 1 */
   $replies = $client->pipeline(array('atomic'), function($pipe) {
+    global $key;
     $pipe->ping();
     $pipe->flushdb();
     $pipe->incrby($key, 7);

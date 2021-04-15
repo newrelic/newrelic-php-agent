@@ -6,14 +6,19 @@
 
 /*DESCRIPTION
 The agent should handle pg_query_params calls with bad params.
+
+This test is skipped on PHP 8.0+ because calling a function with bad
+params is a fatal error.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+require("skipif.inc");
+require("skipif_php8.inc");
 */
 
 /*INI
-newrelic.datastore_tracer.database_name_reporting.enabled = 0
+tnewrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.stack_trace_threshold = 0
 newrelic.transaction_tracer.explain_threshold = 0

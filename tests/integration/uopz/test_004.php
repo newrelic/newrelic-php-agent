@@ -13,11 +13,11 @@ uopz_set_mock
 */
 
 /*EXPECT
-object(Foo)#1 (0) {
+object(Bar)#1 (0) {
 }
 int(1)
 int(-1)
-object(Bar)#2 (0) {
+object(Foo)#1 (0) {
 }*/
 
 require __DIR__.'/load.inc';
