@@ -18,7 +18,7 @@ require("skipif_php8.inc");
 */
 
 /*INI
-tnewrelic.datastore_tracer.database_name_reporting.enabled = 0
+newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.stack_trace_threshold = 0
 newrelic.transaction_tracer.explain_threshold = 0
