@@ -16,7 +16,7 @@
 #include "util_strings.h"
 
 /*
- * Sets the web transaction name.  If strip_base == true,
+ * Sets the web transaction name. If strip_base == true,
  * leading class path components will be stripped.
  */
 static int nr_lumen_name_the_wt(const char* name TSRMLS_DC,
@@ -36,6 +36,8 @@ static int nr_lumen_name_the_wt(const char* name TSRMLS_DC,
     } else {
       path += 1;
     }
+  } else {
+    path = name;
   }
 
   nr_txn_set_path(
@@ -103,7 +105,7 @@ NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
 
   if (NULL != route_name) {
     if (NR_SUCCESS
-        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen", 0)) {
+        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen", false)) {
       nrl_verbosedebug(NRL_TXN, "Lumen: located route name is a non-string");
     }
   } else {
@@ -119,7 +121,7 @@ NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
     if (NULL != controller_name) {
       if (NR_SUCCESS
           != nr_lumen_name_the_wt_from_zval(controller_name TSRMLS_CC, "Lumen",
-                                            1)) {
+                                            true)) {
         nrl_verbosedebug(NRL_TXN,
                          "Lumen: located controller name is a non-string");
       }
@@ -163,7 +165,7 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
    */
   class_name = get_active_class_name(&ignored TSRMLS_CC);
   name = nr_formatf("%s@%s", class_name, get_active_function_name(TSRMLS_C));
-  nr_lumen_name_the_wt(name TSRMLS_CC, "Lumen", 1);
+  nr_lumen_name_the_wt(name TSRMLS_CC, "Lumen", true);
   nr_free(name);
 
   exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
