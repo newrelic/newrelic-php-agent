@@ -40,8 +40,8 @@ array(1) {
     [{"name":"Datastore/MySQL/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/TABLES/select",
+    [{"name":"Datastore/statement/MySQL/tables/select"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/tables/select",
       "scope":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
@@ -58,8 +58,8 @@ null
 require_once(realpath (dirname ( __FILE__ )) . '/mysqli.inc');
 
 function test_multi_query($link) {
-  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS'; ";
-  $query .= "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'COLUMNS';";
+  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'; ";
+  $query .= "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='COLUMNS';";
 
   if (FALSE === mysqli_multi_query($link, $query)) {
     echo $mysqli_error($link);
