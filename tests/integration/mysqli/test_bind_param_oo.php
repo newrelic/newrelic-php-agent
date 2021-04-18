@@ -36,8 +36,8 @@ STATISTICS
     [{"name":"Datastore/MySQL/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select",
+    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/TABLES/select",
       "scope":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
@@ -54,8 +54,8 @@ STATISTICS
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL ID",
-      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?",
-      "Datastore/statement/MySQL/tables/select",
+      "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = ?",
+      "Datastore/statement/MySQL/TABLES/select",
       1,
       "?? total time",
       "?? min time",
@@ -66,26 +66,22 @@ STATISTICS
             "id",
             "select_type",
             "table",
-            "partitions",
             "type",
             "possible_keys",
             "key",
             "key_len",
             "ref",
             "rows",
-            "filtered",
             "Extra"
           ],
           [
             [
               1,
               "SIMPLE",
-              "tables",
-              null,
+              "TABLES",
               "ALL",
               null,
               "TABLE_NAME",
-              null,
               null,
               null,
               null,
@@ -113,8 +109,8 @@ function test_stmt_prepare($link)
 {
   $stmt = $link->stmt_init();
   $name = 'STATISTICS';
+  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = ?";
 
-  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?";
   if (FALSE === $stmt->prepare($query) ||
       FALSE === $stmt->bind_param('s', $name) ||
       FALSE === $stmt->execute() ||

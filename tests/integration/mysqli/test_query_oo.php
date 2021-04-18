@@ -35,8 +35,8 @@ ok - test_query2 (fetch)
     [{"name":"Datastore/allOther"},                      [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"}, [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select",
+    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/TABLES/select",
       "scope":"OtherTransaction/php__FILE__"},           [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
@@ -55,7 +55,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/mysqli.inc');
 
 function test_query1($link)
 {
-  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'";
+  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS';";
   $result = $link->query($query);
   tap_not_equal(FALSE, $result, "test_query1 (query)");
 
@@ -63,7 +63,7 @@ function test_query1($link)
 
   if (FALSE !== $result) {
     while ($row = $result->fetch_array()) {
-        tap_equal($expected, $row, "test_query1 (fetch)");
+      tap_equal($expected, $row, "test_query1 (fetch)");
     }
     $result->close();
   }
@@ -71,7 +71,7 @@ function test_query1($link)
 
 function test_query2($link)
 {
-  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'";  
+  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS';";
   $result = $link->query($query, MYSQLI_USE_RESULT);
   tap_not_equal(FALSE, $result, "test_query2 (query)");
 
