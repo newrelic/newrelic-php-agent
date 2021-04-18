@@ -35,8 +35,8 @@ STATISTICS
     [{"name":"Datastore/allOther"},                      [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"}, [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select",
+    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/TABLES/select",
       "scope":"OtherTransaction/php__FILE__"},           [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
@@ -53,8 +53,8 @@ STATISTICS
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL ID",
-      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?",
-      "Datastore/statement/MySQL/tables/select",
+      "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = ?",
+      "Datastore/statement/MySQL/TABLES/select",
       1,
       "?? total time",
       "?? min time",
@@ -65,26 +65,22 @@ STATISTICS
             "id",
             "select_type",
             "table",
-            "partitions",
             "type",
             "possible_keys",
             "key",
             "key_len",
             "ref",
             "rows",
-            "filtered",
             "Extra"
           ],
           [
             [
               1,
               "SIMPLE",
-              "tables",
-              null,
+              "TABLES",
               "ALL",
               null,
               "TABLE_NAME",
-              null,
               null,
               null,
               null,
@@ -102,8 +98,8 @@ STATISTICS
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL ID",
-      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=? AND ? = ?",
-      "Datastore/statement/MySQL/tables/select",
+      "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = ? AND ? = ?",
+      "Datastore/statement/MySQL/TABLES/select",
       1,
       "?? total time",
       "?? min time",
@@ -114,26 +110,22 @@ STATISTICS
             "id",
             "select_type",
             "table",
-            "partitions",
             "type",
             "possible_keys",
             "key",
             "key_len",
             "ref",
             "rows",
-            "filtered",
             "Extra"
           ],
           [
             [
               1,
               "SIMPLE",
-              "tables",
-              null,
+              "TABLES",
               "ALL",
               null,
               "TABLE_NAME",
-              null,
               null,
               null,
               null,
@@ -210,6 +202,6 @@ if (mysqli_connect_errno()) {
   exit(1);
 }
 
-test_prepare($link, "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS' AND ? = ?", 'ii', array(1, 1));
-test_prepare($link, "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'");
+test_prepare($link, "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS' AND ? = ?", 'ii', array(1, 1));
+test_prepare($link, "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS'");
 mysqli_close($link);
