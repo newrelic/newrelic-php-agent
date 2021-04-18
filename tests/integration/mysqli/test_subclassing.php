@@ -33,8 +33,8 @@ STATISTICS
     [{"name":"Datastore/MySQL/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select",
+    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/TABLES/select",
       "scope":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
@@ -91,7 +91,7 @@ class MyStatement extends mysqli_stmt
 
 function test_stmt_prepare($link)
 {
-    $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'";
+  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS'";
   $stmt = $link->prepare($query);
 
   if (FALSE === $stmt->execute() ||
