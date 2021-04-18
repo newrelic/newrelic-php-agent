@@ -22,8 +22,70 @@ if (!extension_loaded("mysqli")) {
 mysqli_report(MYSQLI_REPORT_STRICT);   // prevent warning if connect fails
 
 try {
-  $link = @mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
-  mysqli_close($link);
+    $link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
+
+    mysqli_close($link);
 } catch (Exception $e) {
-  die("skip: " . $e->getMessage() . "\n");
+    /* Error connecting to DB.  Will attempt to create and populate a new one. */
+
+    echo "Not able to connect to DB." . $e->getMessage() . "\n";
+    $link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD);
+
+    /* Create database. */
+    $sql = "CREATE DATABASE " .  $MYSQL_DB;
+    $result = mysqli_query($link, $sql);
+    mysqli_select_db($link, $MYSQL_DB);
+
+    $result = mysqli_query($link, $sql);
+    if (FALSE === $result) {
+        die("skip: Error with database.");
+    }
+
+    /* Create table `COLUMNS`. */
+    if (mysqli_query($link,"DESCRIBE  COLUMNS ")){
+        /* Already exists */
+    }else{
+        $sql = "CREATE TABLE COLUMNS(
+            id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            code VARCHAR(30) NOT NULL
+            )";
+        mysqli_query($link, $sql);
+    }
+
+
+    /* Create table `STATISTICS`. */
+    if (mysqli_query($link,"DESCRIBE  STATISTICS ")){
+        /* Already exists */
+    }else{
+        $sql = "CREATE TABLE STATISTICS(
+            )";
+        mysqli_query($link, $sql);
+    }
+
+    /* Create table `TRIGGERS`. */
+    if (mysqli_query($link,"DESCRIBE  TRIGGERS ")){
+        /* Already exists */
+    }else{
+        $sql = "CREATE TABLE TRIGGERS(
+            id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            code VARCHAR(30) NOT NULL
+            )";
+        mysqli_query($link, $sql);
+    }
+
+
+    /* commit transaction */
+    if (!mysqli_commit($link)) {
+        print("Transaction commit failed.\n");
+    } else {
+        echo "Transaction commit succeeded.\n";
+    }
+
+    mysqli_close($link);
+
+    try {
+
+    } catch (Exception $e) {
+        die("skip: " . $e->getMessage() . "\n");
+    }
 }
