@@ -110,7 +110,6 @@ STATISTICS
       "?? max time",
       {
         "explain_plan": [
-          [
             "id",
             "select_type",
             "table",
