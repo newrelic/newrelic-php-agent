@@ -16,12 +16,12 @@ Disable uopz.
 uopz.disable=1
 */
 
-/*EXPECT_SCRUBBED
-Fatal error: Uncaught RuntimeException: uopz is disabled by configuration (uopz.disable) in __FILE__:??
+/*EXPECT_REGEX
+(PHP )?Fatal error: .?Uncaught RuntimeException: uopz is disabled by configuration \(uopz\.disable\) in .*:\d+
 Stack trace:
-#0 __FILE__(??): uopz_set_return()
+#0 .*\(\d+\): uopz_set_return\(\)
 #1 {main}
-  thrown in __FILE__ on line ??
+  thrown in .* on line \d+
 */
 
 require __DIR__.'/load.inc';

@@ -6,10 +6,15 @@
 
 /*DESCRIPTION
 The agent should handle pg_query calls with bad params.
+
+This test is skipped on PHP 8.0+ because calling a function with bad
+params is a fatal error.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+require("skipif.inc");
+require("skipif_php8.inc");
 */
 
 /*INI

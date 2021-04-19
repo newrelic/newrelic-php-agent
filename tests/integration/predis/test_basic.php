@@ -29,6 +29,7 @@ ok - delete key
     [{"name":"Datastore/allOther"},                                                      [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/all"},                                                     [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/allOther"},                                                [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/__HOST__/6379"},                                  [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                                           [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del","scope":"OtherTransaction/php__FILE__"},    [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists"},                                        [1, "??", "??", "??", "??", "??"]],
@@ -80,8 +81,8 @@ function test_basic() {
   tap_equal(1, $client->del($key), 'delete key');
   tap_equal(0, $client->del($key), 'delete missing key');
 
-  tap_assert($client->setnx($key, 'bar'), 'reuse deleted key');
-  tap_refute($client->setnx($key, 'bar'), 'set duplicate key');
+  tap_assert($client->setnx($key, 'bar') == 1, 'reuse deleted key');
+  tap_refute($client->setnx($key, 'bar') == 1, 'set duplicate key');
 
   /* Cleanup the key used by this test run */
   tap_equal(1, $client->del($key), 'delete key');
