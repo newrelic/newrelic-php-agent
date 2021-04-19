@@ -11,8 +11,8 @@ list operations.
 
 /*SKIPIF
 <?php 
-if (version_compare(phpversion(), '8.0.0', '>=')) {
-    die("skip: PHP < 8.0.0 required\n");
+if (version_compare(phpversion(), '8.0.0', '<')) {
+    die("skip: PHP >= 8.0.0 required\n");
 }
 require("skipif.inc");
 */
@@ -22,24 +22,34 @@ newrelic.datastore_tracer.database_name_reporting.enabled = 1
 newrelic.datastore_tracer.instance_reporting.enabled = 1
 */
 
-/*EXPECT
+/*EXPECT_REGEX
 ok - append A
 ok - append B
 ok - append C
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 0
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 1
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 2
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve last element
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve invalid element
 ok - retrieve element 0
 ok - retrieve element 1
 ok - retrieve element 2
+((?s).*?)Deprecated: Method Redis::lRemove((?s).*?)
 ok - remove first occurence of B
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - A was not removed
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - C was not removed
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - B was removed
 ok - remove missing element
 ok - replace list head
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - list head was replaced
 ok - delete list
 ok - trace nodes match
