@@ -77,7 +77,7 @@ STATISTICS
             [
               1,
               "SIMPLE",
-              "TABLES",
+              "tables",
               "ALL",
               null,
               "TABLE_NAME",
@@ -122,7 +122,7 @@ STATISTICS
             [
               1,
               "SIMPLE",
-              "TABLES",
+              "tables",
               "ALL",
               null,
               "TABLE_NAME",
