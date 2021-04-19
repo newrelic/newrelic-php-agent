@@ -58,6 +58,8 @@ try {
         /* Already exists */
     }else{
         $sql = "CREATE TABLE STATISTICS(
+            id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            code VARCHAR(30) NOT NULL
             )";
         mysqli_query($link, $sql);
     }
