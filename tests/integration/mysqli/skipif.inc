@@ -27,8 +27,8 @@ try {
     mysqli_close($link);
 } catch (Exception $e) {
     /* Error connecting to DB.  Will attempt to create and populate a new one. */
-
-    echo "Not able to connect to DB." . $e->getMessage() . "\n";
+  try {
+    echo "Will try to create new DB after not connecting to DB." . $e->getMessage() . "\n";
     $link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD);
 
     /* Create database. */
@@ -84,8 +84,6 @@ try {
     }
 
     mysqli_close($link);
-
-    try {
 
     } catch (Exception $e) {
         die("skip: " . $e->getMessage() . "\n");
