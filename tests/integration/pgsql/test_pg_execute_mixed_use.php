@@ -38,10 +38,13 @@ pg_stats
     [{"name":"Datastore/allOther"},                         [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Postgres/all"},                     [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Postgres/allOther"},                [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/Postgres/TABLES/select"}, [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/Postgres/TABLES/select"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/Postgres/TABLES/select",
-      "scope":"OtherTransaction/php__FILE__"},              [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Postgres/select"},        [4, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Postgres/other"},         [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Postgres/other",
+      "scope":"OtherTransaction/php__FILE__"},              [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Postgres/select"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                  [1, "??", "??", "??", "??", "??"]],
@@ -66,7 +69,26 @@ pg_stats
       {
         "backtrace": [
           " in pg_execute called at __FILE__ (??)",
-          " in test_prepare_unnamed called at __FILE__ (??)"
+          " in my_pg_execute called at __FILE__ (??)",
+          " in test_prepared_stmt called at __FILE__ (??)"
+        ]
+      }
+    ],
+    [
+      "OtherTransaction/php__FILE__",
+      "<unknown>",
+      "?? SQL ID",
+      "(prepared statement)",
+      "Datastore/operation/Postgres/other",
+      3,
+      "?? total time",
+      "?? min time",
+      "?? max time",
+      {
+        "backtrace": [
+          " in pg_execute called at __FILE__ (??)",
+          " in my_pg_execute called at __FILE__ (??)",
+          " in test_prepared_stmt called at __FILE__ (??)"
         ]
       }
     ]
