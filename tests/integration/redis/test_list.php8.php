@@ -10,9 +10,9 @@ The agent should report Redis metrics for Redis list operations.
 
 /*SKIPIF
 <?php
-if (version_compare(phpversion(), '8.0.0', '>=')) {
-    die("skip: PHP < 8.0.0 required\n");
-} 
+if (version_compare(phpversion(), '8.0.0', '<')) {
+    die("skip: PHP >= 8.0.0 required\n");
+}
 require("skipif.inc");
 */
 
@@ -21,24 +21,34 @@ newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 */
 
-/*EXPECT
+/*EXPECT_REGEX
 ok - append A
 ok - append B
 ok - append C
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 0
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 1
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve element 2
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve last element
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - retrieve invalid element
 ok - retrieve element 0
 ok - retrieve element 1
 ok - retrieve element 2
+((?s).*?)Deprecated: Method Redis::lRemove((?s).*?)
 ok - remove first occurrence of B
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - A was not removed
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - C was not removed
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - B was removed
 ok - remove missing element
 ok - replace list head
+((?s).*?)Deprecated: Method Redis::lGet((?s).*?)
 ok - list head was replaced
 ok - delete list
 */
@@ -74,6 +84,9 @@ ok - delete list
     [{"name":"Datastore/operation/Redis/lset"},        [1,"??","??","??","??","??"]],
     [{"name":"Datastore/operation/Redis/lset",
       "scope":"OtherTransaction/php__FILE__"},         [1,"??","??","??","??","??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},   [1,"??","??","??","??","??"]],
+    [{"name":"Errors/all"},                            [1,"??","??","??","??","??"]],
+    [{"name":"Errors/allOther"},                       [1,"??","??","??","??","??"]],
     [{"name":"OtherTransaction/all"},                  [1,"??","??","??","??","??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1,"??","??","??","??","??"]],
     [{"name":"OtherTransactionTotalTime"},             [1,"??","??","??","??","??"]],
