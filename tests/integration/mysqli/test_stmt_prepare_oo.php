@@ -35,8 +35,8 @@ STATISTICS
     [{"name":"Datastore/MySQL/all"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select"},        [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/TABLES/select",
+    [{"name":"Datastore/statement/MySQL/tables/select"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/tables/select",
       "scope":"OtherTransaction/php__FILE__"},           [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
@@ -54,7 +54,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/mysqli.inc');
 
 function test_stmt_construct($link)
 {
-  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'TRIGGERS'";
+  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='TRIGGERS'";
   $stmt = new mysqli_stmt($link, $query);
 
   if (FALSE === $stmt->execute() ||
@@ -64,9 +64,8 @@ function test_stmt_construct($link)
     return;
   }
 
-  while ($stmt->fetch()) {
-    echo $name . "\n";
-  }
+  $stmt->fetch();
+  echo $name . "\n";
 
   $stmt->close();
 }
@@ -74,7 +73,7 @@ function test_stmt_construct($link)
 function test_stmt_prepare($link)
 {
   $stmt = $link->stmt_init();
-  $query = "SELECT TABLE_NAME FROM TABLES WHERE TABLE_NAME = 'STATISTICS'";
+  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'";
 
   if (FALSE === $stmt->prepare($query) ||
       FALSE === $stmt->execute() ||
