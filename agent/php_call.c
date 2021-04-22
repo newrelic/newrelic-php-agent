@@ -40,6 +40,16 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
     param_values = (zval*)nr_calloc(param_count, sizeof(zval));
     for (i = 0; i < param_count; i++) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+      /*
+       * With PHP8, we need to create references in order to pass or allow
+       * passing arguments by reference when invoking call_user_function.
+       */
+      if (!Z_ISREF_P(params[i])) {
+        Z_TRY_ADDREF_P(params[i]);
+        ZVAL_NEW_REF(params[i], params[i]);
+      }
+#endif
       param_values[i] = *params[i];
     }
   }
