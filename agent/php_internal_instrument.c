@@ -749,6 +749,39 @@ NR_INNER_WRAPPER(mysqli_options) {
   }
 }
 
+static void nr_php_instrument_datastore_operation_call(
+    const nrinternalfn_t* nr_wrapper,
+    nr_datastore_t datastore,
+    const char* operation,
+    nr_datastore_instance_t* instance,
+    INTERNAL_FUNCTION_PARAMETERS) {
+  int zcaught = 0;
+  nr_segment_t* segment = NULL;
+  nr_segment_datastore_params_t params = {
+      .datastore = {
+          .type = datastore,
+      },
+      .operation = nr_strdup(operation),
+      .instance  = instance,
+      .callbacks = {
+          .backtrace = nr_php_backtrace_callback,
+      },
+  };
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  nr_segment_datastore_end(&segment, &params);
+
+  nr_free(params.operation);
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
 /*
  * Handle
  *   bool mysqli_commit ( object $link [, int $flags=0, string $name] )
@@ -756,15 +789,10 @@ NR_INNER_WRAPPER(mysqli_options) {
  */
 NR_INNER_WRAPPER(mysqli_commit) {
   zval* mysqli_obj = NULL;
-  nr_segment_t* segment = NULL;
   nr_datastore_instance_t* instance = NULL;
-  nr_explain_plan_t* plan = NULL;
   char* name = NULL;
-  char* sqlstr = NULL;
-  nr_string_len_t sqlstrlen;
   zend_long flags = 0;
   nr_string_len_t name_len = 0;
-  int zcaught = 0;
 
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
@@ -780,35 +808,9 @@ NR_INNER_WRAPPER(mysqli_commit) {
       mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
     }
   }
-
-  if (NULL != name) {
-    sqlstr = nr_formatf("%s %s", "COMMIT", name);
-  } else {
-    sqlstr = nr_formatf("%s", "COMMIT");
-  }
-  sqlstrlen = nr_strlen(sqlstr);
-
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-
-  if (nrlikely(NULL != segment)) {
-    /*
-     * Set the stop time now so that we don't include the explain plan time.
-     */
-    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
-    instance = nr_php_mysqli_retrieve_datastore_instance(mysqli_obj TSRMLS_CC);
-
-    nr_php_txn_end_segment_sql(&segment, sqlstr, sqlstrlen, plan,
-                               NR_DATASTORE_MYSQL, instance TSRMLS_CC);
-
-    nr_explain_plan_destroy(&plan);
-
-  }
-
-  nr_free(sqlstr);
-  if (zcaught) {
-    zend_bailout();
-    /* NOTREACHED */
-  }
+  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MYSQL,
+                                             "commit", instance,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
 /*
@@ -1442,39 +1444,6 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
       && nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
     nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(mysqli_stmt_obj), sqlstr,
                                   sqlstrlen TSRMLS_CC);
-  }
-}
-
-static void nr_php_instrument_datastore_operation_call(
-    const nrinternalfn_t* nr_wrapper,
-    nr_datastore_t datastore,
-    const char* operation,
-    nr_datastore_instance_t* instance,
-    INTERNAL_FUNCTION_PARAMETERS) {
-  int zcaught = 0;
-  nr_segment_t* segment = NULL;
-  nr_segment_datastore_params_t params = {
-    .datastore = {
-      .type = datastore,
-    },
-    .operation = nr_strdup(operation),
-    .instance  = instance,
-    .callbacks = {
-      .backtrace = nr_php_backtrace_callback,
-    },
-  };
-
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
-
-  nr_segment_datastore_end(&segment, &params);
-
-  nr_free(params.operation);
-
-  if (zcaught) {
-    zend_bailout();
-    /* NOTREACHED */
   }
 }
 
@@ -2698,11 +2667,13 @@ NR_INNER_WRAPPER(curl_multi_exec) {
   int rv = FAILURE;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
-                           "ol", &curlres, &still_running);
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "ol", &curlres,
+                                &still_running);
 #else
-  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC,
-                           "rl", &curlres, &still_running);
+  rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "rl", &curlres,
+                                &still_running);
 #endif /* PHP 8.0+ */
 
   if (SUCCESS != rv) {
