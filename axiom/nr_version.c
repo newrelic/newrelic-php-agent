@@ -25,10 +25,10 @@
  * Here's a list:
  *  https://en.wikipedia.org/wiki/List_of_colors_(compact)
  *
- *   ube                (9.14)
- *   vanilla            (9.15)
- *   watermelon         (9.16)
- *   xigua              (9.17)
+ *   ube                29Oct2020 (9.14)
+ *   vanilla            07Dec2020 (9.15)
+ *   watermelon         25Jan2021 (9.16)
+ *   xigua              21Apr2021 (9.17)
  */
 #define NR_CODENAME "xigua"
 
