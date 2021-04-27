@@ -130,11 +130,11 @@ int nr_php_pdo_rebind_apply_parameter(struct pdo_bound_param_data* param,
   zval* type = nr_php_zval_alloc();
   zval* retval = NULL;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   value = &param->parameter;
 #else
   value = param->parameter;
-#endif /* PHP7 */
+#endif /* PHP 7.0+ */
 
   if (nr_php_zend_hash_key_is_string(hash_key)) {
     /*
@@ -152,6 +152,16 @@ int nr_php_pdo_rebind_apply_parameter(struct pdo_bound_param_data* param,
 
   ZVAL_LONG(type, param->param_type);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  /*
+   * Create a reference to value to prevent PHP 8 from
+   * emitting a warning.
+   */
+  if (!Z_ISREF_P(value)) {
+    Z_TRY_ADDREF_P(value);
+    ZVAL_NEW_REF(value, value);
+  }
+#endif
   retval = nr_php_call(stmt, "bindParam", key, value, type);
 
   nr_php_zval_free(&key);
