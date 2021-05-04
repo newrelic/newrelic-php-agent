@@ -1327,7 +1327,7 @@ does not exist. This particular instance of PHP will be skipped.
   # stopgap, let's detect that situation and set ${pi_inidir_dso} so that the
   # INI file gets installed to the right place.
   #
-  for cfg_pfx in /etc/php5 /etc/php7 /etc/php/[57].*; do
+  for cfg_pfx in /etc/php5 /etc/php7 /etc/php8 /etc/php/[578].*; do
     if [ "${pi_inidir_cli}" = "${cfg_pfx}/cli/conf.d" -a -z "${pi_inidir_dso}" ]; then
       #
       # Check Apache first, then FPM. If both are installed, we want FPM to win:
