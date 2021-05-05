@@ -770,9 +770,9 @@ void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC) {
 
   /*
    * Looping over all handled added to this curl_multi_exec handle. Each
-   * handle is checked; if the request represented by the handle is  done and
+   * handle is checked; if the request represented by the handle is done and
    * the necessary instrumentation was created, the handle is removed from the
-   * vector.
+   * vector and our dup'ed copy of the handle is freed.
    */
   if (handles) {
     for (pos = 0; pos < nr_vector_size(handles); pos++) {
@@ -785,6 +785,7 @@ void nr_php_curl_multi_exec_post(zval* curlres TSRMLS_DC) {
       nr_php_curl_exec_post(handle, true TSRMLS_CC);
 
       nr_vector_remove(handles, pos, &removed_handle);
+      nr_php_zval_free((zval**)&removed_handle);
       pos--;
     }
   }
@@ -817,6 +818,7 @@ void nr_php_curl_multi_exec_finalize(zval* curlres TSRMLS_DC) {
       nr_php_curl_exec_post(handle, false TSRMLS_CC);
 
       nr_vector_remove(handles, pos, &removed_handle);
+      nr_php_zval_free((zval**)&removed_handle);
       pos--;
     }
   }
