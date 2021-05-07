@@ -416,4 +416,15 @@ vendor-clean:
 
 include make/release.mk
 
+#
+# Docker Development Environment
+#
+
+dev-start:
+	docker-compose up --build --remove-orphans -d
+	docker exec -it agent bash -c "sh files/set_path.sh ; bash"
+
+dev-stop:
+	docker-compose stop
+
 # vim: set noet ts=2 sw=2:
