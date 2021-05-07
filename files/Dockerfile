@@ -14,8 +14,9 @@ FROM php:${PHP_VER:-8.0}
 RUN docker-php-source extract
 
 #
-# The sql tests produce partition/filtered but tests can't currently be updated 
-# to reflect that since the sql database on CI doesn't have those values.
+# The explain plan in the sql tests contain partition/filtered properties
+# but the tests can't currently be updated  to reflect that since the sql 
+# database on our CI doesn't include those values.
 # RUN docker-php-ext-install pdo pdo_mysql
 #
 

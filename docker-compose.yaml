@@ -40,7 +40,6 @@ services:
       NEWRELIC_COLLECTOR_HOST : ${NEWRELIC_COLLECTOR_HOST:-collector.newrelic.com}
       NEWRELIC_LICENSE_KEY: ${NEWRELIC_LICENSE_KEY}
     volumes:
-#      - ./:/usr/src/myapp
        - ${PWD}:/usr/src/myapp
     working_dir: /usr/src/myapp 
     stdin_open: true
