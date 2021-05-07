@@ -91,8 +91,8 @@ RUN apt-get update && apt-get install -y \
 RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
       wget --quiet https://golang.org/dl/go1.11.6.linux-amd64.tar.gz -O- | tar -C /usr/local -zxvf -; \
       export GOROOT=/usr/local/go; \
-      exportGOPATH="${HOME}/go"; \
-      exportPATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; \
+      export GOPATH="${HOME}/go"; \
+      export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; \
     else \
       apt-get install -y golang; \
     fi
