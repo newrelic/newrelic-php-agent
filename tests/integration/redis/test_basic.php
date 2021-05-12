@@ -9,7 +9,11 @@ The agent should report Redis metrics for Redis basic operations.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+if (version_compare(phpversion(), '5.4', '<')) {
+    die("skip: PHP > 5.3 required\n");
+}
+require("skipif.inc");
 */
 
 /*INI
@@ -22,6 +26,9 @@ ok - set key
 ok - get key
 ok - delete key
 ok - delete missing key
+ok - mset key
+ok - mget key
+ok - delete key
 ok - reuse deleted key
 ok - set duplicate key
 ok - delete key
@@ -33,21 +40,27 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
-    [{"name":"Datastore/all"},                         [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                         [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                    [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                   [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},              [11, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},         [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},         [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
-      "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},         [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mget"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mget",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mset"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/mset",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setnx"},       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setnx",
@@ -82,6 +95,10 @@ function test_basic() {
   tap_equal('bar', $redis->get($key), 'get key');
   tap_equal(1, $redis->del($key), 'delete key');
   tap_equal(0, $redis->del($key), 'delete missing key');
+
+  tap_assert($redis->mset([$key => 'bar']), 'mset key');
+  tap_equal(['bar'], $redis->mget([$key]), 'mget key');
+  tap_equal(1, $redis->del($key), 'delete key');
 
   tap_assert($redis->setnx($key, 'bar'), 'reuse deleted key');
   tap_refute($redis->setnx($key, 'bar'), 'set duplicate key');
