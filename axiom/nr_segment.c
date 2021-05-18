@@ -433,8 +433,7 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
           event, NR_SPAN_PARENT_TRANSPORT_TYPE,
           nr_distributed_trace_inbound_get_transport_type(
               segment->txn->distributed_trace));
-      if (nr_distributed_trace_inbound_get_timestamp_delta(
-              segment->txn->distributed_trace, 0)) {
+      if (nr_distributed_trace_inbound_has_timestamp(segment->txn->distributed_trace)) {
         nr_span_event_set_parent_transport_duration(
             event, nr_distributed_trace_inbound_get_timestamp_delta(
                        segment->txn->distributed_trace,

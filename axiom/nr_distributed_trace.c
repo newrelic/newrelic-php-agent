@@ -378,7 +378,16 @@ nrtime_t nr_distributed_trace_inbound_get_timestamp_delta(
     return 0;
   }
 
-  return nr_time_duration(txn_start, dt->inbound.timestamp);
+  return nr_time_duration(dt->inbound.timestamp, txn_start);
+}
+
+extern bool nr_distributed_trace_inbound_has_timestamp(
+    const nr_distributed_trace_t* dt) {
+  if (NULL == dt) {
+      return 0;
+  }
+
+  return dt->inbound.timestamp != 0;
 }
 
 const char* nr_distributed_trace_inbound_get_transport_type(
