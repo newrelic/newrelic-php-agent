@@ -1097,7 +1097,7 @@ static const char* nr_distributed_trace_convert_w3c_headers_tracestate(
   nr_free(str);
 
   str = nr_regex_substrings_get_named(ss, "timestamp");
-  nro_set_hash_long(tracestate_obj, "timestamp", strtol(str, NULL, 10));
+  nro_set_hash_long(tracestate_obj, "timestamp", strtoull(str, NULL, 10));
   nr_free(str);
 
   nro_set_hash(obj, "tracestate", tracestate_obj);
