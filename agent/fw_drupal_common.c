@@ -128,7 +128,7 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
     const char* hook,
     size_t hook_len,
     const char* module_hook,
-    size_t module_hook_len TSRMLS_DC) {
+    size_t module_hook_len) {
   size_t module_len = 0;
   char* module = NULL;
 
