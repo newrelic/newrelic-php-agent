@@ -132,8 +132,7 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
     const char* hook,
     size_t hook_len,
     const char* module_hook,
-    size_t module_hook_len
-    TSRMLS_DC);
+    size_t module_hook_len);
 
 /*
  * Purpose: This function adds NR request headers for Drupal. arg is the second

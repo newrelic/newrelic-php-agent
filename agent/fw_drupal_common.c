@@ -195,7 +195,7 @@ nr_status_t module_invoke_all_parse_module_and_hook(char** module_ptr,
                                                     size_t* module_len_ptr,
                                                     const char* hook,
                                                     size_t hook_len,
-                                                    const zend_function* func TSRMLS_DC) {
+                                                    const zend_function* func) {
   const char* module_hook = NULL;
   size_t module_hook_len = 0;
 
@@ -211,7 +211,7 @@ nr_status_t module_invoke_all_parse_module_and_hook(char** module_ptr,
   module_hook_len = (size_t)nr_php_function_name_length(func);
 
   return module_invoke_all_parse_module_and_hook_from_strings(
-      module_ptr, module_len_ptr, hook, hook_len, module_hook, module_hook_len TSRMLS_CC);
+      module_ptr, module_len_ptr, hook, hook_len, module_hook, module_hook_len);
 }
 
 void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC) {

@@ -334,7 +334,7 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
 
   rv = module_invoke_all_parse_module_and_hook(
       &module, &module_len, NRPRG(drupal_module_invoke_all_hook),
-      NRPRG(drupal_module_invoke_all_hook_len), func TSRMLS_CC);
+      NRPRG(drupal_module_invoke_all_hook_len), func);
 
   if (NR_SUCCESS != rv) {
     return;
