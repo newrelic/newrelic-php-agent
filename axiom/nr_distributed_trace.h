@@ -195,6 +195,8 @@ extern const char* nr_distributed_trace_inbound_get_type(
 extern nrtime_t nr_distributed_trace_inbound_get_timestamp_delta(
     const nr_distributed_trace_t* dt,
     nrtime_t txn_start);
+extern bool nr_distributed_trace_inbound_has_timestamp(
+    const nr_distributed_trace_t* dt);
 extern const char* nr_distributed_trace_inbound_get_transport_type(
     const nr_distributed_trace_t* dt);
 extern const char* nr_distributed_trace_inbound_get_tracing_vendors(
