@@ -378,7 +378,16 @@ nrtime_t nr_distributed_trace_inbound_get_timestamp_delta(
     return 0;
   }
 
-  return nr_time_duration(txn_start, dt->inbound.timestamp);
+  return nr_time_duration(dt->inbound.timestamp, txn_start);
+}
+
+extern bool nr_distributed_trace_inbound_has_timestamp(
+    const nr_distributed_trace_t* dt) {
+  if (NULL == dt) {
+      return 0;
+  }
+
+  return dt->inbound.timestamp != 0;
 }
 
 const char* nr_distributed_trace_inbound_get_transport_type(
@@ -1088,7 +1097,7 @@ static const char* nr_distributed_trace_convert_w3c_headers_tracestate(
   nr_free(str);
 
   str = nr_regex_substrings_get_named(ss, "timestamp");
-  nro_set_hash_long(tracestate_obj, "timestamp", strtol(str, NULL, 10));
+  nro_set_hash_long(tracestate_obj, "timestamp", strtoull(str, NULL, 10));
   nr_free(str);
 
   nro_set_hash(obj, "tracestate", tracestate_obj);

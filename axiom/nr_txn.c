@@ -2048,7 +2048,7 @@ void nr_txn_add_distributed_tracing_intrinsics(const nrtxn_t* txn,
     nro_set_hash_string(intrinsics, "parent.transportType",
                         nr_distributed_trace_inbound_get_transport_type(dt));
 
-    if (nr_distributed_trace_inbound_get_timestamp_delta(dt, 0)) {
+    if (nr_distributed_trace_inbound_has_timestamp(dt)) {
       nro_set_hash_double(intrinsics, "parent.transportDuration",
                           nr_distributed_trace_inbound_get_timestamp_delta(
                               dt, nr_txn_start_time(txn))
