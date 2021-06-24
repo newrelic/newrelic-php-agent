@@ -5964,6 +5964,7 @@ static void test_accept_before_create_distributed_tracing(void) {
       \"ti\": 1482959525577 \
     } \
   }";
+  const nrtime_t expected_duration = 1234;
   nr_hashmap_t* header_map = nr_hashmap_create(NULL);
 
   nr_memset(&txn, 0, sizeof(nrtxn_t));
@@ -5976,6 +5977,7 @@ static void test_accept_before_create_distributed_tracing(void) {
   txn.segment_slab = nr_slab_create(sizeof(nr_segment_t), 0);
   txn.segment_root = nr_segment_start(&txn, NULL, NULL);
   txn.unscoped_metrics = nrm_table_create(0);
+  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS + expected_duration * NR_TIME_DIVISOR;
 
   /*
    * Test : Valid accept before create.
@@ -5990,7 +5992,7 @@ static void test_accept_before_create_distributed_tracing(void) {
   nr_hashmap_update(header_map, NR_PSTR(NEWRELIC), json_payload);
   nr_txn_accept_distributed_trace_payload(&txn, header_map, NULL);
   test_metric_created("transport duration all", txn.unscoped_metrics,
-                      MET_FORCED, 1482959525,
+                      MET_FORCED, expected_duration,
                       "TransportDuration/App/9123/51424/HTTP/all");
 
   // Create
@@ -6046,12 +6048,14 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
       \"ti\": 1482959525577 \
     } \
   }";
+  const nrtime_t expected_duration = 1234;
   nr_hashmap_t* header_map = nr_hashmap_create(NULL);
   nr_hashmap_update(header_map, NR_PSTR(NEWRELIC), json_payload);
 
   txn.options.distributed_tracing_enabled = true;
   txn.app_connect_reply
       = nro_create_from_json("{\"trusted_account_key\":\"9123\"}");
+  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS + expected_duration * NR_TIME_DIVISOR;
 
   /*
    * Test : Successful (web)
@@ -6060,10 +6064,10 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
   txn.distributed_trace = nr_distributed_trace_create();
   nr_txn_accept_distributed_trace_payload(&txn, header_map, NULL);
   test_metric_created("transport duration all", txn.unscoped_metrics,
-                      MET_FORCED, 1482959525,
+                      MET_FORCED, expected_duration,
                       "TransportDuration/App/9123/51424/HTTP/all");
   test_metric_created("transport duration allWeb", txn.unscoped_metrics,
-                      MET_FORCED, 1482959525,
+                      MET_FORCED, expected_duration,
                       "TransportDuration/App/9123/51424/HTTP/allWeb");
 
   nr_distributed_trace_destroy(&txn.distributed_trace);
@@ -6074,10 +6078,10 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
   txn.distributed_trace = nr_distributed_trace_create();
   nr_txn_accept_distributed_trace_payload(&txn, header_map, "HTTPS");
   test_metric_created("transport duration all", txn.unscoped_metrics,
-                      MET_FORCED, 1482959525,
+                      MET_FORCED, expected_duration,
                       "TransportDuration/App/9123/51424/HTTPS/all");
   test_metric_created("transport duration allWeb", txn.unscoped_metrics,
-                      MET_FORCED, 1482959525,
+                      MET_FORCED, expected_duration,
                       "TransportDuration/App/9123/51424/HTTPS/allWeb");
 
   nr_distributed_trace_destroy(&txn.distributed_trace);
@@ -6204,8 +6208,10 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
-      txn_timestamp_us, (payload_timestamp_ms * NR_TIME_DIVISOR_MS));
+    (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
   char* traceparent;
+
+  tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
 
   nr_memset(&txn, 0, sizeof(nrtxn_t));
   txn.app_connect_reply = nro_new_hash();
@@ -6679,7 +6685,8 @@ static void test_txn_accept_distributed_trace_payload_w3c_and_nr(void) {
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
-      txn_timestamp_us, (payload_timestamp_ms * NR_TIME_DIVISOR_MS));
+      (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
+
   char* nr_payload_trusted_key
       = "{ \
     \"v\": [0,1],   \
@@ -6695,6 +6702,8 @@ static void test_txn_accept_distributed_trace_payload_w3c_and_nr(void) {
       \"tk\": \"123\" \
     } \
   }";
+
+  tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
 
   nr_memset(&txn, 0, sizeof(nrtxn_t));
   txn.app_connect_reply = nro_new_hash();
