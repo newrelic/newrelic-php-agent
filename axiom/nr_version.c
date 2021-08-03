@@ -30,7 +30,7 @@
  *   watermelon         25Jan2021 (9.16)
  *   xigua              21Apr2021 (9.17)
  */
-#define NR_CODENAME "xigua"
+#define NR_CODENAME "yam"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
