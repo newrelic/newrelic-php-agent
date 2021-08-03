@@ -350,6 +350,27 @@ static void test_distributed_trace_field_inbound_timestamp_delta(void) {
   nr_distributed_trace_destroy(&dt);
 }
 
+static void test_distributed_trace_field_inbound_has_timestamp(void) {
+  nr_distributed_trace_t* dt;
+
+  dt = nr_distributed_trace_create();
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_false(
+          "NULL dt", nr_distributed_trace_inbound_has_timestamp(NULL), "Expected true, got false");
+
+  /*
+   * Test : Default value.
+   */
+  tlib_pass_if_false(
+          "default value",
+          nr_distributed_trace_inbound_has_timestamp(dt), "Expected true, got false");
+
+  nr_distributed_trace_destroy(&dt);
+}
+
 static void test_distributed_trace_field_inbound_guid(void) {
   nr_distributed_trace_t* dt;
 
@@ -392,7 +413,7 @@ static void test_distributed_trace_payload_txn_payload_timestamp_delta(void) {
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
-      txn_timestamp_us, (payload_timestamp_ms * NR_TIME_DIVISOR_MS));
+      (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
 
   const char* error = NULL;
   nrobj_t* obj_payload;
@@ -417,6 +438,7 @@ static void test_distributed_trace_payload_txn_payload_timestamp_delta(void) {
   nr_distributed_trace_accept_inbound_payload(dt, obj_payload, "HTTP", &error);
   tlib_pass_if_null("No error", error);
 
+  tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
   tlib_pass_if_long_equal(
       "Compare payload and txn time", delta_timestamp_us,
       nr_distributed_trace_inbound_get_timestamp_delta(dt, txn_timestamp_us));
@@ -782,8 +804,8 @@ static void test_distributed_trace_payload_accept_inbound_payload(void) {
                          nr_distributed_trace_inbound_get_transport_type(dt));
   tlib_pass_if_uint_equal(
       "Timestamp",
-      nr_time_duration(txn_timestamp_us,
-                       (payload_timestamp_ms * NR_TIME_DIVISOR_MS)),
+      nr_time_duration((payload_timestamp_ms * NR_TIME_DIVISOR_MS),
+                       txn_timestamp_us),
       nr_distributed_trace_inbound_get_timestamp_delta(dt, txn_timestamp_us));
 
   nr_distributed_trace_destroy(&dt);
@@ -1341,7 +1363,8 @@ static void test_distributed_trace_accept_inbound_w3c_payload_invalid(void) {
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
-      txn_timestamp_us, (payload_timestamp_ms * NR_TIME_DIVISOR_MS));
+      (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
+  tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
 
   /*
    * Test : Everything is NULL
@@ -1649,6 +1672,7 @@ void test_main(void* p NRUNUSED) {
   test_distributed_trace_field_inbound_account_id();
   test_distributed_trace_field_inbound_transport_type();
   test_distributed_trace_field_inbound_timestamp_delta();
+  test_distributed_trace_field_inbound_has_timestamp();
   test_distributed_trace_field_inbound_guid();
   test_distributed_trace_field_inbound_txn_id();
   test_distributed_trace_field_inbound_tracing_vendors();

@@ -10,7 +10,11 @@ basic operations.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+if (version_compare(phpversion(), '5.4', '<')) {
+    die("skip: PHP > 5.3 required\n");
+}
+require("skipif.inc");
 */
 
 /*INI
@@ -23,6 +27,9 @@ ok - set key
 ok - get key
 ok - delete key
 ok - delete missing key
+ok - mset key
+ok - mget key
+ok - delete key
 ok - reuse deleted key
 ok - set duplicate key
 ok - delete key
@@ -56,6 +63,10 @@ function test_basic() {
   tap_equal(1, $redis->del($key), 'delete key');
   tap_equal(0, $redis->del($key), 'delete missing key');
 
+  tap_assert($redis->mset([$key => 'bar']), 'mset key');
+  tap_equal(['bar'], $redis->mget([$key]), 'mget key');
+  tap_equal(1, $redis->del($key), 'delete key');
+
   tap_assert($redis->setnx($key, 'bar'), 'reuse deleted key');
   tap_refute($redis->setnx($key, 'bar'), 'set duplicate key');
 
@@ -75,6 +86,8 @@ redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/del',
   'Datastore/operation/Redis/get',
   'Datastore/operation/Redis/set',
+  'Datastore/operation/Redis/mget',
+  'Datastore/operation/Redis/mset',
   'Datastore/operation/Redis/setnx',
 ));
 
