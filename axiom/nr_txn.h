@@ -110,6 +110,8 @@ typedef struct _nrtxnopt_t {
                                    spans will be batched, and non-8T behaviour
                                    will be used. */
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
+
+  int collect_script_name; /* Whether to collect script names. */
 } nrtxnopt_t;
 
 typedef enum _nrtxnstatus_cross_process_t {

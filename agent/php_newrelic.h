@@ -454,6 +454,8 @@ nriniuint_t
 nrinitime_t
     agent_span_queue_timeout; /* newrelic.infinite_tracing.span_events.agent_queue.timeout
                                */
+nrinibool_t
+    collect_script_name; /* newrelic.collect_script_name */
 
 /*
  * pid and user_function_wrappers are used to store user function wrappers.

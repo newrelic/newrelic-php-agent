@@ -62,6 +62,11 @@ static void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
     return;
   }
 
+  if (! NRPRG(txn)->options.collect_script_name) {
+    nrl_debug(NRL_INIT, "Skip collecting script name.");
+    return;
+  }
+
 #ifdef PHP7
   server = &PG(http_globals)[TRACK_VARS_SERVER];
 #else
@@ -679,6 +684,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.allow_raw_exception_messages = NRINI(allow_raw_exception_messages);
   opts.custom_parameters_enabled = NRINI(custom_parameters_enabled);
   opts.distributed_tracing_enabled = NRINI(distributed_tracing_enabled);
+  opts.collect_script_name = NRINI(collect_script_name);
   opts.distributed_tracing_exclude_newrelic_header
       = NRINI(distributed_tracing_exclude_newrelic_header);
   opts.span_events_enabled = NRINI(span_events_enabled);
