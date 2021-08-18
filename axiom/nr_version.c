@@ -29,8 +29,9 @@
  *   vanilla            07Dec2020 (9.15)
  *   watermelon         25Jan2021 (9.16)
  *   xigua              21Apr2021 (9.17)
+ *   yam                18Aug2021 (9.18)
  */
-#define NR_CODENAME "yam"
+#define NR_CODENAME "zomp"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
