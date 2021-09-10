@@ -36,3 +36,5 @@ nrobj_t* nr_php_txn_get_supported_security_policy_settings();
  * Params  : 1. The current transaction.
  */
 extern void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC);
+
+extern void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC);

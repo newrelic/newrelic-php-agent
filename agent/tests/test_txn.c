@@ -9,6 +9,7 @@
 #include "php_header.h"
 #include "php_txn_private.h"
 #include "php_newrelic.h"
+#include "php_hash.h"
 
 #include "php_globals.h"
 
@@ -161,6 +162,41 @@ static void test_max_segments_config_values(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+
+static void test_set_initial_path(TSRMLS_D) {
+  nrtxn_t* txn;
+  zval* server;  
+  /*
+   * Test : max_segments_cli defaults correctly.
+   */
+
+  NR_PHP_PROCESS_GLOBALS(cli) = 1;
+
+#ifdef PHP7
+  server = &PG(http_globals)[TRACK_VARS_SERVER];
+#else
+  server = PG(http_globals)[TRACK_VARS_SERVER];
+#endif
+
+  tlib_php_request_start();
+  nr_php_add_assoc_string(server, "SCRIPT_FILENAME", "test/script_file.php");
+  txn = NRPRG(txn);
+
+  // skip pattern
+  txn->options.collect_script_name = 0;
+  nr_php_set_initial_path(txn);
+  tlib_pass_if_null("Transaction path", txn->path);
+  tlib_pass_if_int_equal("Path type", NR_PATH_TYPE_UNKNOWN, txn->status.path_type);
+
+  // not skip
+  txn->options.collect_script_name = 1;
+  nr_php_set_initial_path(txn);
+  tlib_pass_if_str_equal("Transaction path", "test/script_file.php", txn->path);
+  tlib_pass_if_int_equal("Path type", NR_PATH_TYPE_URI, txn->status.path_type);
+
+  tlib_php_request_end();
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -177,6 +213,7 @@ void test_main(void* p NRUNUSED) {
 
   test_handle_fpm_error(TSRMLS_C);
   test_max_segments_config_values(TSRMLS_C);
+  test_set_initial_path(TSRMLS_C);
 
   tlib_php_engine_destroy(TSRMLS_C);
 }

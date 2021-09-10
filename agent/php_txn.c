@@ -50,7 +50,7 @@ static void nr_php_collect_x_request_start(TSRMLS_D) {
   nr_free(x_request_start);
 }
 
-static void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
+void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
   const zval* docroot = NULL;
   const zval* uri = NULL;
   const char* suri = NULL;
