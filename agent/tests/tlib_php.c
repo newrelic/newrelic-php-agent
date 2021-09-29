@@ -277,13 +277,20 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
    * will attempt to write to an uninitialised hash table in the compiler
    * globals.
    *
+   * PHP 8.1 added an additional request storage handler for existing interned
+   * strings which needs to be replaced as well.
+   *
    * For PHP 5.4-7.1, we need to switch the function pointers after calling
    * php_module_startup(), as there are hard coded references in the Zend
    * Engine to the permanent interned string hash table, and changing those
    * function pointers beforehand means that hash table will never be
    * initialised.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  zend_interned_strings_set_request_storage_handlers(
+      tlib_php_new_interned_string, tlib_php_init_interned_string,
+      tlib_php_init_interned_string);
+#elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   zend_interned_strings_set_request_storage_handlers(
       tlib_php_new_interned_string, tlib_php_init_interned_string);
 #elif ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO
@@ -434,7 +441,14 @@ zval* tlib_php_request_eval_expr(const char* code TSRMLS_DC) {
   return rv;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+static void tlib_php_error_silence_cb(int type NRUNUSED,
+                                      zend_string* error_filename NRUNUSED,
+                                      const uint32_t error_lineno NRUNUSED,
+                                      zend_string* message NRUNUSED) {
+  /* Squash the error by doing absolutely nothing. */
+}
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 static void tlib_php_error_silence_cb(int type NRUNUSED,
                                       const char* error_filename NRUNUSED,
                                       const uint32_t error_lineno NRUNUSED,
@@ -449,12 +463,14 @@ static void tlib_php_error_silence_cb(int type NRUNUSED,
                                       va_list args NRUNUSED) {
   /* Squash the error by doing absolutely nothing. */
 }
-#endif /* PHP >= 7.3 */
+#endif /* PHP >= 8.1 */
 
 int tlib_php_require_extension(const char* extension TSRMLS_DC) {
   char* file = NULL;
   int loaded = 0;
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  void (*prev_error_cb)(int, zend_string*, const uint32_t, zend_string*);
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   void (*prev_error_cb)(int, const char*, const uint32_t, zend_string*);
 #elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   void (*prev_error_cb)(int, const char*, const uint32_t, const char*, va_list);
@@ -487,6 +503,12 @@ int tlib_php_require_extension(const char* extension TSRMLS_DC) {
    * For PHP 7.3 and newer, we also need to do the same for
    * zend_string_init_interned to cover all possible interned string scenarios.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  zend_string_init_existing_interned_func_t saved_existing_interned_string;
+
+  saved_existing_interned_string = zend_string_init_existing_interned;
+  zend_string_init_existing_interned = tlib_php_init_interned_string;
+#endif
 #if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   zend_new_interned_string_func_t saved_new_interned_string;
   zend_string_init_interned_func_t saved_string_init_interned;
@@ -545,6 +567,10 @@ end:
 #if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   zend_string_init_interned = saved_string_init_interned;
 #endif /* PHP >= 7.3 */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  zend_string_init_existing_interned = saved_existing_interned_string;
+#endif
 
   return loaded;
 }

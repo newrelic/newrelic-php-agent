@@ -46,7 +46,12 @@ void my_error_notify_cb(int type,
                 }
                 zend_register_error_notify_callback(my_error_notify_cb);
  */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+extern void nr_php_error_cb(int type,
+                            zend_string* filename,
+                            uint error_lineno,
+                            zend_string* message);
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 extern void nr_php_error_cb(int type,
                             const char* filename,
                             uint error_lineno,
@@ -58,7 +63,7 @@ extern void nr_php_error_cb(int type,
                             const char* fmt,
                             va_list args)
     ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
-#endif /* PHP >= 8.0 */
+#endif /* PHP >= 8.1 */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 extern void nr_php_execute_internal(zend_execute_data* execute_data,

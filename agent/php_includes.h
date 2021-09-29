@@ -50,6 +50,10 @@
 #define ZEND_7_3_X_API_NO 20180731
 #define ZEND_7_4_X_API_NO 20190902
 #define ZEND_8_0_X_API_NO 20200930
+/*
+ * TEMPORARY value for 8.1 based on RC2 - update when final 8.1 is released.
+ */
+#define ZEND_8_1_X_API_NO 20210902
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
 #include "Zend/zend_virtual_cwd.h"
@@ -72,6 +76,41 @@
 #define TSRMLS_C
 #define TSRMLS_CC
 #define TSRMLS_FETCH()
+#endif
+
+/*
+ * The convert_to_explicit_type() macro was removed for 8.1.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#define convert_to_explicit_type(pzv, type) \
+  do {                                      \
+    switch (type) {                         \
+      case IS_NULL:                         \
+        convert_to_null(pzv);               \
+        break;                              \
+      case IS_LONG:                         \
+        convert_to_long(pzv);               \
+        break;                              \
+      case IS_DOUBLE:                       \
+        convert_to_double(pzv);             \
+        break;                              \
+      case _IS_BOOL:                        \
+        convert_to_boolean(pzv);            \
+        break;                              \
+      case IS_ARRAY:                        \
+        convert_to_array(pzv);              \
+        break;                              \
+      case IS_OBJECT:                       \
+        convert_to_object(pzv);             \
+        break;                              \
+      case IS_STRING:                       \
+        convert_to_string(pzv);             \
+        break;                              \
+      default:                              \
+        assert(0);                          \
+        break;                              \
+    }                                       \
+  } while (0);
 #endif
 
 #endif /* PHP_INCLUDES_HDR */

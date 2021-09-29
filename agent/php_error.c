@@ -447,7 +447,13 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
 
   return 1;
 }
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+void nr_php_error_cb(int type,
+                     zend_string* error_filename,
+                     uint error_lineno,
+                     zend_string* message) {
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 void nr_php_error_cb(int type,
                      const char* error_filename,
                      uint error_lineno,
@@ -458,7 +464,7 @@ void nr_php_error_cb(int type,
                      uint error_lineno,
                      const char* format,
                      va_list args) {
-#endif /* PHP >= 8.0 */
+#endif /* PHP >= 8.1 */
   TSRMLS_FETCH();
   char* stack_json = NULL;
   const char* errclass = NULL;
