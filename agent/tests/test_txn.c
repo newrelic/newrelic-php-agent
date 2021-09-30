@@ -165,9 +165,9 @@ static void test_max_segments_config_values(TSRMLS_D) {
 
 static void test_set_initial_path(TSRMLS_D) {
   nrtxn_t* txn;
-  zval* server;  
+  zval* server;
   /*
-   * Test : max_segments_cli defaults correctly.
+   * Test : Collect script name.
    */
 
   NR_PHP_PROCESS_GLOBALS(cli) = 1;
