@@ -6,7 +6,10 @@ version: '3.7'
 services:
 # The Database
   mysqldb:
-    image: mysql:5.7
+    # original
+    #image: mysql:5.7
+    # arm64 needs this version
+    image: mysql/mysql-server:8.0.23
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: admin
