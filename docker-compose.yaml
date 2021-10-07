@@ -20,11 +20,22 @@ services:
   redisdb:
     build:
       context: .
-      dockerfile: files/Dockerfile.redis    
+      dockerfile: files/Dockerfile.redis
     restart: always
     ports:
       - "6379:6379"
     container_name: redisdb
+  memcached:
+    image: memcached:latest
+    restart: always
+    ports:
+      - "11211:11211"
+    container_name: memcached
+  mongodb:
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27019:27019"
   agent:
     build:
       context: .
@@ -36,12 +47,14 @@ services:
       MYSQL_PASSWD: admin
       MYSQL_HOST: mysqldb
       REDIS_HOST: redisdb
-      PS1: "New Relic > "      
+      MEMCACHE_HOST: memcached
+      MONGO_HOST: mongodb
+      PS1: "New Relic > "
       NEWRELIC_COLLECTOR_HOST : ${NEWRELIC_COLLECTOR_HOST:-collector.newrelic.com}
       NEWRELIC_LICENSE_KEY: ${NEWRELIC_LICENSE_KEY}
     volumes:
        - ${PWD}:/usr/src/myapp
-    working_dir: /usr/src/myapp 
+    working_dir: /usr/src/myapp
     stdin_open: true
     tty: true
     container_name: agent
