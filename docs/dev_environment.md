@@ -60,12 +60,4 @@ In the shell, you can run all `make` commands as you normally would.
 
 ## There is possibly some incompatibility with mysql in the main build container.  It might make sense at a future point to have the integration tests run from a different container than the build container.
 
-## There are currently 5 known failing integration tests with this prototype.
-
-not ok - tests/integration/errors/test_E_WARNING.php8.php
-not ok - tests/integration/errors/test_ignore_all_except_E_WARNING.php8.php
-not ok - tests/integration/external/curl_exec/test_cat_response_header_anonymous.php
-not ok - tests/integration/external/curl_exec/test_cat_response_header_to_file.php
-not ok - tests/integration/api/internal/test_get_request_metadata_cat.php
-
-Please ignore (or fix) these errors for now.
+## There are currently 0 known failing integration tests with this prototype.
