@@ -31,8 +31,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "include(): Failed opening 'abc.php' for inclusion (include_path='.:')",
-      "E_WARNING",
+      "/include\\(\\): Failed opening 'abc.php' for inclusion \\(include_path='.:.*'\\)/",      "E_WARNING",
       {
         "stack_trace": "??",
         "agentAttributes": "??",
@@ -56,7 +55,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_WARNING",
-        "error.message": "include(): Failed opening 'abc.php' for inclusion (include_path='.:')",
+        "error.message": "/include\\(\\): Failed opening 'abc.php' for inclusion \\(include_path='.:.*'\\)/",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??"
