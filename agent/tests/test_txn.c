@@ -172,7 +172,7 @@ static void test_set_initial_path(TSRMLS_D) {
 
   NR_PHP_PROCESS_GLOBALS(cli) = 1;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   server = &PG(http_globals)[TRACK_VARS_SERVER];
 #else
   server = PG(http_globals)[TRACK_VARS_SERVER];
