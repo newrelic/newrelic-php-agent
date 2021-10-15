@@ -421,26 +421,26 @@ include make/release.mk
 #
 
 dev-shell:
-	docker-compose up --build --remove-orphans -d
+	docker compose up --build --remove-orphans -d
 	docker exec -it agent bash -c "sh files/set_path.sh ; bash"
 
 dev-build:
-	docker-compose up --build --remove-orphans -d
+	docker compose up --build --remove-orphans -d
 	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 all"
 
 dev-unit-tests:
-	docker-compose up --build --remove-orphans -d
+	docker compose up --build --remove-orphans -d
 	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 valgrind"
 
 dev-integration-tests:
-	docker-compose up --build --remove-orphans -d
+	docker compose up --build --remove-orphans -d
 	docker exec -it agent bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-all:
-	docker-compose up --build --remove-orphans -d
+	docker compose up --build --remove-orphans -d
 	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-stop:
-	docker-compose stop
+	docker compose stop
 
 # vim: set noet ts=2 sw=2:
