@@ -39,6 +39,15 @@ services:
 #    restart: always
 #    ports:
 #      - "27019:27019"
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+       POSTGRES_PASSWORD: root
+       POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    container_name: postgres
   agent:
     build:
       context: .
@@ -52,6 +61,8 @@ services:
       REDIS_HOST: redisdb
       MEMCACHE_HOST: memcached
 #      MONGO_HOST: mongodb
+      PG_HOST: postgres
+      PG_PORT: 5432
       PREDIS_HOME: /usr/src/myapp/vendor/predis/predis/
       PS1: "New Relic > "
       NEWRELIC_COLLECTOR_HOST : ${NEWRELIC_COLLECTOR_HOST:-collector.newrelic.com}
