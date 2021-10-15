@@ -33,6 +33,10 @@ RUN apt-get update \
  insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
  zlib1g-dev libmcrypt-dev
 
+# pgsql extension
+RUN apt-get install -y libpq-dev
+RUN docker-php-ext-install pgsql
+
 #
 # Other tools
 #
