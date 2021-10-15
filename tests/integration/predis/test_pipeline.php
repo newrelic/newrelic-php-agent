@@ -19,7 +19,7 @@ are being run, so they are instrumented as "pipeline".
     [{"name":"Datastore/allOther"},                                                       [12, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/all"},                                                      [12, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/allOther"},                                                 [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Redis/__HOST__/6379"},                                   [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/redisdb/6379"},                                   [12, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del","scope":"OtherTransaction/php__FILE__"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists"},                                         [3, "??", "??", "??", "??", "??"]],

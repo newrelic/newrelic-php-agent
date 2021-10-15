@@ -25,7 +25,7 @@ ok - delete key
     [{"name":"/Datastore/allOther/"},                                                      [4, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/Redis/all/"},                                                     [4, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/Redis/allOther/"},                                                [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/instance/Redis/__HOST__/[0-9]{1,5}/"},                            [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/instance/Redis/redisdb/[0-9]{1,5}/"},                            [4, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/operation/Redis/del/"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/operation/Redis/del/","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/operation/Redis/exists/"},                                        [1, "??", "??", "??", "??", "??"]],
