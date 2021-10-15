@@ -14,7 +14,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: database
-      MYSQL_USER: admin
+      MYSQL_USER: admin 
       MYSQL_PASSWORD: admin
       MYSQL_HOST: mysqldb
     ports:
@@ -34,11 +34,11 @@ services:
     ports:
       - "11211:11211"
     container_name: memcached
-  mongodb:
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27019:27019"
+#  mongodb:
+#    image: mongo:latest
+#    restart: always
+#    ports:
+#      - "27019:27019"
   agent:
     build:
       context: .
@@ -46,12 +46,13 @@ services:
     user: ${UID}:${GID}
     environment:
       MYSQL_DB: database
-      MYSQL_USER: root
-      MYSQL_PASSWD: admin
-      MYSQL_HOST: mysqldb
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWD: ${MYSQL_PASSWD}
+      MYSQL_HOST: ${MYSQL_HOST}
       REDIS_HOST: redisdb
       MEMCACHE_HOST: memcached
-      MONGO_HOST: mongodb
+#      MONGO_HOST: mongodb
+      PREDIS_HOME: /usr/src/myapp/vendor/predis/predis/
       PS1: "New Relic > "
       NEWRELIC_COLLECTOR_HOST : ${NEWRELIC_COLLECTOR_HOST:-collector.newrelic.com}
       NEWRELIC_LICENSE_KEY: ${NEWRELIC_LICENSE_KEY}
