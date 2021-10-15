@@ -42,6 +42,14 @@ try {
         die("skip: " . mysqli_error() . "\n");
     }
 
+    /* tests only work with mysql 5.6 or earlier */
+    $min_mysql_version = 5*10000 + 7*100;
+    $detect_mysql_version = mysqli_get_server_version($link);
+    if ($detect_mysql_version >= $min_mysql_version) {
+        die("skip: mysqli tests can only be run with server >= $min_mysql_version, " .
+	    "detected = $detect_mysql_version\n");
+    }
+
     if (!empty($MYSQL_DB)) {
         if (FALSE === mysqli_select_db($link, $MYSQL_DB)) {
             /* Database doesn't exist, will try to create. */
