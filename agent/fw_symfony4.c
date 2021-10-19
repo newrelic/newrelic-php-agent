@@ -39,8 +39,17 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
     goto end;
   }
 
-  /* Get the exception from the event. */
-  exception = nr_php_call(event, "getException");
+  /*
+   * Get the exception from the event.
+   * Firstly, we check if ExceptionEvent is available - if yes, that means we are using Symfony 5
+   */
+  if (nr_php_object_instanceof_class(
+        event, "Symfony\\Component\\HttpKernel\\Event\\ExceptionEvent" TSRMLS_CC)) {
+    exception = nr_php_call(event, "getThrowable");
+  } else {
+    exception = nr_php_call(event, "getException");
+  }
+
   if (!nr_php_is_zval_valid_object(exception)) {
     nrl_verbosedebug(NRL_TXN,
                      "Symfony 4: getException() returned a non-object");
@@ -72,7 +81,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   /*
    * A high level overview of the logic:
    *
-   * RouterListener::onKernelRequest() receives a GetResponseEvent parameter,
+   * RouterListener::onKernelRequest() receives a GetResponseEvent (RequestEvent in Symfony 5) parameter,
    * which includes the request object accessible via the getRequest() method.
    * We want to get the request, then access its attributes: the request
    * matcher will create a number of internal attributes prefixed by
@@ -184,5 +193,14 @@ void nr_symfony4_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Symfony\\Component\\HttpKernel\\"
               "EventListener\\ExceptionListener::onKernelException"),
+      nr_symfony4_exception TSRMLS_CC);
+
+  /*
+   * In Symfony 5 listener that catch errors was changed to ErrorListener,
+   * we try to hook into it
+   */
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\"
+              "EventListener\\ErrorListener::onKernelException"),
       nr_symfony4_exception TSRMLS_CC);
 }

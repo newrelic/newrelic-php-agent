@@ -402,7 +402,7 @@ static const nr_framework_table_t all_frameworks[] = {
      "symfony/bundle/frameworkbundle/frameworkbundle.php", 0,
      nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony4", "symfony4", "http-kernel/httpkernel.php", 0,
-     nr_symfony4_enable, NR_FW_SYMFONY4},
+     nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5 */
 
     {"WordPress", "wordpress", "wp-config.php", 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
