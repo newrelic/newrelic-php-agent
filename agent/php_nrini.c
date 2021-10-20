@@ -2669,6 +2669,9 @@ STD_PHP_INI_ENTRY_EX(
     newrelic_globals,
     0)
 
+/**
+ * The flag that determines whether the agent collects script name or not.
+ */
 STD_PHP_INI_ENTRY_EX("newrelic.collect_script_name",
                      "1",
                      NR_PHP_REQUEST,
