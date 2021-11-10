@@ -100,6 +100,7 @@ RUN if [ -z "$(grep '^8\.' /etc/debian_version)" ]; then \
     fi
 
 # install composer
+WORKDIR /usr/src
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 RUN php -r "if (hash_file('sha384', 'composer-setup.php') === '906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
 RUN php composer-setup.php
@@ -124,12 +125,6 @@ RUN docker-php-ext-install pdo pdo_mysql
 
 RUN docker-php-ext-install mysqli
 
-# install predis
-# installation will be in /usr/src/myapp/vendor/predis/predis
-# which is value which should be used for PREDIS_HOME
-RUN php composer.phar require "predis/predis"
-RUN php composer.phar update
-
 # redis
 RUN pecl install redis && docker-php-ext-enable redis
 
@@ -153,6 +148,12 @@ RUN pecl install uopz && docker-php-ext-enable uopz
 
 # configure uopz to honor exit() and die() otherwise it just ignores these
 RUN echo "uopz.exit=1" > /usr/local/etc/php/conf.d/uopz-enable-exit.ini
+
+# install predis
+# installation will be in /usr/src/vendor/predis/predis
+# which is value which should be used for PREDIS_HOME
+RUN php composer.phar require "predis/predis"
+RUN php composer.phar update
 
 #
 # These args need to be repeated so we can propagate the VARS within this build context.
