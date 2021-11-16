@@ -105,5 +105,5 @@ func tapOutput(tests []*integration.Test) {
     } else {
 	    fmt.Println("#", Fata(totals.failed), Fata("failed"))
     }
-	fmt.Println("#", totals.xfail, "xfail")
+	fmt.Println("#", totals.xfail, "expected fail")
 }
