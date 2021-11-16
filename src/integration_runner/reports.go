@@ -6,12 +6,12 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"io"
-	"os"
+    "bytes"
+    "fmt"
+    "io"
+    "os"
 
-	"newrelic/integration"
+    "newrelic/integration"
 )
 
 var (
@@ -32,10 +32,10 @@ var (
 )
 
 type TestRunTotals struct {
-	passed  int
-	skipped int
-	failed  int
-	xfail   int
+    passed  int
+    skipped int
+    failed  int
+    xfail   int
 }
 
 func Color(colorString string) func(...interface{}) string {
@@ -47,63 +47,63 @@ func Color(colorString string) func(...interface{}) string {
 }
 
 func (totals *TestRunTotals) Accumulate(test *integration.Test) {
-	if test.Skipped {
-		totals.skipped++
-		return
-	}
-	if test.Failed {
-		if "" != test.Xfail {
-			totals.xfail++
-		} else {
-			totals.failed++
-		}
-		return
-	}
-	totals.passed++
+    if test.Skipped {
+        totals.skipped++
+        return
+    }
+    if test.Failed {
+        if "" != test.Xfail {
+            totals.xfail++
+        } else {
+            totals.failed++
+        }
+        return
+    }
+    totals.passed++
 }
 
 func tapOutput(tests []*integration.Test) {
-	totals := TestRunTotals{}
-	for _, test := range tests {
-		totals.Accumulate(test)
-		name := test.Name
+    totals := TestRunTotals{}
+    for _, test := range tests {
+        totals.Accumulate(test)
+        name := test.Name
 
-		switch {
-		case test.Skipped:
-			fmt.Println(Warn("skip -"), name, "#", Warn(test.Err))
-		case test.Failed:
-			if "" != test.Xfail {
-				fmt.Println("xfail -", name)
-			} else {
-				if test.Err != nil {
-					fmt.Println(Fata("FAIL -"), Fata(name), "#", test.Err)
-					if len(test.Output) > 0 {
-						fmt.Println()
-						io.Copy(os.Stdout, bytes.NewReader(test.Output))
-						fmt.Println()
-					}
-				} else {
-					fmt.Println(Fata("FAIL -"), Fata(name))
-					for _, e := range test.Failures {
-						fmt.Println(e)
-					}
-				}
-			}
-		default:
-			fmt.Printf(Good("pass - "))
-			fmt.Printf("%s", name)
-			if test.Duration > 0 {
-				fmt.Printf(" # time=%vs", test.Duration.Seconds())
-			}
-			fmt.Printf("\n")
-		}
-	}
-	fmt.Println("#", totals.passed, "passed")
-	fmt.Println("#", totals.skipped, "skipped")
-    if totals.failed == 0 {
-	    fmt.Println("#", Good(totals.failed), Good("failed"))
-    } else {
-	    fmt.Println("#", Fata(totals.failed), Fata("failed"))
+        switch {
+        case test.Skipped:
+            fmt.Println(Warn("skip -"), name, "#", Warn(test.Err))
+        case test.Failed:
+            if "" != test.Xfail {
+                fmt.Println("xfail -", name)
+            } else {
+                if test.Err != nil {
+                    fmt.Println(Fata("FAIL -"), Fata(name), "#", test.Err)
+                    if len(test.Output) > 0 {
+                        fmt.Println()
+                        io.Copy(os.Stdout, bytes.NewReader(test.Output))
+                        fmt.Println()
+                    }
+                } else {
+                    fmt.Println(Fata("FAIL -"), Fata(name))
+                    for _, e := range test.Failures {
+                        fmt.Println(e)
+                    }
+                }
+            }
+        default:
+            fmt.Printf(Good("pass - "))
+            fmt.Printf("%s", name)
+            if test.Duration > 0 {
+                fmt.Printf(" # time=%vs", test.Duration.Seconds())
+            }
+            fmt.Printf("\n")
+        }
     }
-	fmt.Println("#", totals.xfail, "expected fail")
+    fmt.Println("#", totals.passed, "passed")
+    fmt.Println("#", totals.skipped, "skipped")
+    if totals.failed == 0 {
+        fmt.Println("#", Good(totals.failed), Good("failed"))
+    } else {
+        fmt.Println("#", Fata(totals.failed), Fata("failed"))
+    }
+    fmt.Println("#", totals.xfail, "expected fail")
 }
