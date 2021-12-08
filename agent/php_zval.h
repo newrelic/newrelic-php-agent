@@ -298,6 +298,22 @@ static inline long nr_php_zval_resource_id(const zval* zv) {
 #endif /* PHP7 */
 }
 
+/*
+ * Purpose : Get the ID for the given object.
+ *
+ * Params  : 1. The object zval to retrieve the ID for.
+ *
+ * Returns : An ID, or 0 on error.
+ *
+ */
+static inline long nr_php_zval_object_id(const zval* zv) {
+  if (!nr_php_is_zval_valid_object(zv))
+  {
+      return 0;
+  }
+  return Z_OBJ_HANDLE_P(zv);
+}
+
 /* }}} */
 /* {{{ Mutators */
 
