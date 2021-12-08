@@ -285,10 +285,12 @@ static inline bool nr_php_is_zval_null(const zval* z) {
  *
  * Returns : An ID, or 0 on error.
  *
- * Warning : The type of the given zval is not checked -- if it is not a
- *           resource, you will probably get segfaults!
  */
 static inline long nr_php_zval_resource_id(const zval* zv) {
+  if (!nr_php_is_zval_valid_resource(zv))
+  {
+      return 0;
+  }
 #ifdef PHP7
   return Z_RES_P(zv)->handle;
 #else
