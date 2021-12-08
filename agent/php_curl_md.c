@@ -92,7 +92,11 @@ static void ensure_curl_multi_metadata_hashmap()
 
 static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    uint64_t id = (uint64_t)nr_php_zval_object_id(ch);
+#else
     uint64_t id = (uint64_t)nr_php_zval_resource_id(ch);
+#endif
     if (id == 0)
     {
         return NULL;
@@ -112,7 +116,11 @@ static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 
 static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
 {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    uint64_t id = (uint64_t)nr_php_zval_object_id(mh);
+#else
     uint64_t id = (uint64_t)nr_php_zval_resource_id(mh);
+#endif
     if (id == 0)
     {
         return NULL;
@@ -139,22 +147,30 @@ static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
 static int curl_handle_comparator(const void* a,
                                   const void* b,
                                   void* userdata NRUNUSED) {
-  int resource_a = 0;
-  int resource_b = 0;
+  int id_a = 0;
+  int id_b = 0;
   const zval* za = (const zval*)a;
   const zval* zb = (const zval*)b;
 
   if (za) {
-    resource_a = nr_php_zval_resource_id(za);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    id_a = nr_php_zval_object_id(za);
+#else
+    id_a = nr_php_zval_resource_id(za);
+#endif
   }
 
   if (zb) {
-    resource_b = nr_php_zval_resource_id(zb);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+    id_b = nr_php_zval_object_id(zb);
+#else
+    id_b = nr_php_zval_resource_id(zb);
+#endif
   }
 
-  if (resource_a < resource_b) {
+  if (id_a < id_b) {
     return -1;
-  } else if (resource_a > resource_b) {
+  } else if (id_a > id_b) {
     return 1;
   } else {
     return 0;
