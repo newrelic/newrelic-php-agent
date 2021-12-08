@@ -7,13 +7,6 @@
 #include "php_curl_md.h"
 #include "util_logging.h"
 
-static void nr_php_curl_md_destroy(nr_php_curl_md_t* metadata) {
-  nr_php_zval_free(&metadata->outbound_headers);
-  nr_free(metadata->method);
-  nr_free(metadata->response_header);
-  nr_free(metadata);
-}
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 #define check_curl_handle(ch)                                             \
   ({                                                                      \
@@ -42,56 +35,106 @@ static void nr_php_curl_md_destroy(nr_php_curl_md_t* metadata) {
   })
 #endif
 
-#define ensure_curl_metadata_hashmap()                                       \
-  if (!NRTXNGLOBAL(curl_metadata)) {                                         \
-    NRTXNGLOBAL(curl_metadata)                                               \
-        = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_curl_md_destroy); \
+static void nr_php_curl_multi_md_destroy(
+    nr_php_curl_multi_md_t* multi_metadata) {
+  nr_vector_deinit(&multi_metadata->curl_handles);
+  nr_free(multi_metadata->async_context);
+  nr_free(multi_metadata);
+}
+
+static void nr_php_curl_md_destroy(nr_php_curl_md_t* metadata) {
+  nr_php_zval_free(&metadata->outbound_headers);
+  nr_free(metadata->method);
+  nr_free(metadata->response_header);
+  nr_free(metadata);
+}
+
+static void curl_handle_vector_dtor(void* element, void* userdata NRUNUSED) {
+  zval* handle = (zval*)element;
+
+  if (!handle) {
+    return;
   }
 
-#define ensure_curl_multi_metadata_hashmap()                   \
-  if (!NRTXNGLOBAL(curl_multi_metadata)) {                     \
-    NRTXNGLOBAL(curl_multi_metadata) = nr_hashmap_create(      \
-        (nr_hashmap_dtor_func_t)nr_php_curl_multi_md_destroy); \
+  nr_php_zval_free(&handle);
+}
+
+/*
+ * The index parameter is used to initialize an unique async context
+ * name for each curl multi handle inside a transaction.
+ *
+ * This async context name is used to set proper async context names on
+ * segments related to this curl_multi handle.
+ */
+static bool nr_php_curl_multi_md_init(nr_php_curl_multi_md_t* multi_metadata,
+                                      size_t index) {
+  multi_metadata->async_context = nr_formatf("curl_multi_exec #%zu", index);
+
+  return nr_vector_init(&multi_metadata->curl_handles, 8,
+                        curl_handle_vector_dtor, NULL);
+}
+
+static void ensure_curl_metadata_hashmap()
+{
+  if (!NRTXNGLOBAL(curl_metadata)) {
+    NRTXNGLOBAL(curl_metadata)
+        = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_curl_md_destroy);
   }
+}
 
-#define get_curl_metadata(ch)                                             \
-  ({                                                                      \
-    uint64_t __id = (uint64_t)nr_php_zval_resource_id(ch);                \
-    nr_php_curl_md_t* __metadata = NULL;                                  \
-                                                                          \
-    ensure_curl_metadata_hashmap();                                       \
-                                                                          \
-    __metadata = nr_hashmap_index_get(NRTXNGLOBAL(curl_metadata), __id);  \
-    if (!__metadata) {                                                    \
-      __metadata = nr_zalloc(sizeof(nr_php_curl_md_t));                   \
-      nr_hashmap_index_set(NRTXNGLOBAL(curl_metadata), __id, __metadata); \
-    }                                                                     \
-                                                                          \
-    __metadata;                                                           \
-  })
+static void ensure_curl_multi_metadata_hashmap()
+{
+  if (!NRTXNGLOBAL(curl_multi_metadata)) {
+    NRTXNGLOBAL(curl_multi_metadata) = nr_hashmap_create(
+        (nr_hashmap_dtor_func_t)nr_php_curl_multi_md_destroy);
+  }
+}
 
-#define get_curl_multi_metadata(mh)                                     \
-  ({                                                                    \
-    uint64_t __id = (uint64_t)nr_php_zval_resource_id(mh);              \
-    nr_php_curl_multi_md_t* __multi_metadata;                           \
-    size_t async_index;                                                 \
-                                                                        \
-    ensure_curl_multi_metadata_hashmap();                               \
-                                                                        \
-    __multi_metadata                                                    \
-        = nr_hashmap_index_get(NRTXNGLOBAL(curl_multi_metadata), __id); \
-                                                                        \
-    if (!__multi_metadata) {                                            \
-      __multi_metadata = nr_zalloc(sizeof(nr_php_curl_multi_md_t));     \
-      nr_hashmap_index_set(NRTXNGLOBAL(curl_multi_metadata), __id,      \
-                           __multi_metadata);                           \
-      async_index = nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata)); \
-      if (!nr_php_curl_multi_md_init(__multi_metadata, async_index)) {  \
-        nr_free(__multi_metadata);                                      \
-      }                                                                 \
-    }                                                                   \
-    __multi_metadata;                                                   \
-  })
+static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
+{
+    uint64_t id = (uint64_t)nr_php_zval_resource_id(ch);
+    if (id == 0)
+    {
+        return NULL;
+    }
+    nr_php_curl_md_t* metadata = NULL;
+
+    ensure_curl_metadata_hashmap();
+
+    metadata = nr_hashmap_index_get(NRTXNGLOBAL(curl_metadata), id);
+    if (!metadata) {
+      metadata = nr_zalloc(sizeof(nr_php_curl_md_t));
+      nr_hashmap_index_set(NRTXNGLOBAL(curl_metadata), id, metadata);
+    }
+
+    return metadata;
+}
+
+static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
+{
+    uint64_t id = (uint64_t)nr_php_zval_resource_id(mh);
+    if (id == 0)
+    {
+        return NULL;
+    }
+    nr_php_curl_multi_md_t* multi_metadata;
+    size_t async_index;
+
+    ensure_curl_multi_metadata_hashmap();
+
+    multi_metadata = nr_hashmap_index_get(NRTXNGLOBAL(curl_multi_metadata), id);
+
+    if (!multi_metadata) {
+      multi_metadata = nr_zalloc(sizeof(nr_php_curl_multi_md_t));
+      nr_hashmap_index_set(NRTXNGLOBAL(curl_multi_metadata), id,
+                           multi_metadata);
+      async_index = nr_hashmap_count(NRTXNGLOBAL(curl_multi_metadata));
+      if (!nr_php_curl_multi_md_init(multi_metadata, async_index)) {
+        nr_free(multi_metadata);
+      }
+    }
+    return multi_metadata;
+}
 
 static int curl_handle_comparator(const void* a,
                                   const void* b,
@@ -259,38 +302,6 @@ nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC) {
   }
 
   return metadata->segment;
-}
-
-static void curl_handle_vector_dtor(void* element, void* userdata NRUNUSED) {
-  zval* handle = (zval*)element;
-
-  if (!handle) {
-    return;
-  }
-
-  nr_php_zval_free(&handle);
-}
-
-/*
- * The index parameter is used to initialize an unique async context
- * name for each curl multi handle inside a transaction.
- *
- * This async context name is used to set proper async context names on
- * segments related to this curl_multi handle.
- */
-static bool nr_php_curl_multi_md_init(nr_php_curl_multi_md_t* multi_metadata,
-                                      size_t index) {
-  multi_metadata->async_context = nr_formatf("curl_multi_exec #%zu", index);
-
-  return nr_vector_init(&multi_metadata->curl_handles, 8,
-                        curl_handle_vector_dtor, NULL);
-}
-
-static void nr_php_curl_multi_md_destroy(
-    nr_php_curl_multi_md_t* multi_metadata) {
-  nr_vector_deinit(&multi_metadata->curl_handles);
-  nr_free(multi_metadata->async_context);
-  nr_free(multi_metadata);
 }
 
 void nr_curl_rshutdown(TSRMLS_D) {
