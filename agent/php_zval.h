@@ -291,7 +291,7 @@ static inline long nr_php_zval_resource_id(const zval* zv) {
   {
       return 0;
   }
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return Z_RES_P(zv)->handle;
 #else
   return Z_LVAL_P(zv);
