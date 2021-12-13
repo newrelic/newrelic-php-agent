@@ -121,8 +121,8 @@ nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
   const char* pdo_query_string = ZSTR_VAL(pdo_stmt->query_string);
   int pdo_query_string_len = ZSTR_LEN(pdo_stmt->query_string);
 #else
-  const char* pdo_query_string = pdo_stmt->query_string int pdo_query_string_len
-      = pdo_stmt->query_stringlen
+  const char* pdo_query_string = pdo_stmt->query_string; 
+  int pdo_query_string_len = pdo_stmt->query_stringlen;
 #endif /* PHP8.1+ */
 
   if (!nr_php_explain_mysql_query_is_explainable(pdo_query_string,
@@ -294,8 +294,8 @@ static zval* issue_explain_query(zval* dbh,
   const char* pdo_query_string = ZSTR_VAL(pdo_stmt->query_string);
   int pdo_query_string_len = ZSTR_LEN(pdo_stmt->query_string);
 #else
-  const char* pdo_query_string = pdo_stmt->query_string
-    int pdo_query_string_len = pdo_stmt->query_stringlen
+  const char* pdo_query_string = pdo_stmt->query_string;
+  int pdo_query_string_len = pdo_stmt->query_stringlen;
 #endif /* PHP8.1+ */
 
   explain_query = (char*)nr_zalloc(pdo_query_string_len + sizeof("EXPLAIN "));
