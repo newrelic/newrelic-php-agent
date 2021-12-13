@@ -39,6 +39,7 @@
 
 /*
  * Zend Engine API numbers.
+ * Find these numbers at: php-src/Zend/zend_modules.h
  */
 #define ZEND_5_3_X_API_NO 20090626
 #define ZEND_5_4_X_API_NO 20100525
@@ -50,9 +51,6 @@
 #define ZEND_7_3_X_API_NO 20180731
 #define ZEND_7_4_X_API_NO 20190902
 #define ZEND_8_0_X_API_NO 20200930
-/*
- * TEMPORARY value for 8.1 based on RC2 - update when final 8.1 is released.
- */
 #define ZEND_8_1_X_API_NO 20210902
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
