@@ -74,7 +74,7 @@ static bool nr_php_curl_multi_md_init(nr_php_curl_multi_md_t* multi_metadata,
                         curl_handle_vector_dtor, NULL);
 }
 
-static void ensure_curl_metadata_hashmap()
+static void ensure_curl_metadata_hashmap(TSRMLS_D)
 {
   if (!NRTXNGLOBAL(curl_metadata)) {
     NRTXNGLOBAL(curl_metadata)
@@ -82,7 +82,7 @@ static void ensure_curl_metadata_hashmap()
   }
 }
 
-static void ensure_curl_multi_metadata_hashmap()
+static void ensure_curl_multi_metadata_hashmap(TSRMLS_D)
 {
   if (!NRTXNGLOBAL(curl_multi_metadata)) {
     NRTXNGLOBAL(curl_multi_metadata) = nr_hashmap_create(
@@ -92,18 +92,17 @@ static void ensure_curl_multi_metadata_hashmap()
 
 static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 {
+    nr_php_curl_md_t* metadata = NULL;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
     uint64_t id = (uint64_t)nr_php_zval_object_id(ch);
 #else
     uint64_t id = (uint64_t)nr_php_zval_resource_id(ch);
 #endif
-    if (id == 0)
-    {
+    if (0 == id) {
         return NULL;
     }
-    nr_php_curl_md_t* metadata = NULL;
 
-    ensure_curl_metadata_hashmap();
+    ensure_curl_metadata_hashmap(TSRMLS_C);
 
     metadata = nr_hashmap_index_get(NRTXNGLOBAL(curl_metadata), id);
     if (!metadata) {
@@ -116,19 +115,18 @@ static nr_php_curl_md_t* get_curl_metadata(const zval* ch TSRMLS_DC)
 
 static nr_php_curl_multi_md_t* get_curl_multi_metadata(const zval* mh TSRMLS_DC)
 {
+    nr_php_curl_multi_md_t* multi_metadata;
+    size_t async_index;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
     uint64_t id = (uint64_t)nr_php_zval_object_id(mh);
 #else
     uint64_t id = (uint64_t)nr_php_zval_resource_id(mh);
 #endif
-    if (id == 0)
-    {
+    if (0 == id) {
         return NULL;
     }
-    nr_php_curl_multi_md_t* multi_metadata;
-    size_t async_index;
 
-    ensure_curl_multi_metadata_hashmap();
+    ensure_curl_multi_metadata_hashmap(TSRMLS_C);
 
     multi_metadata = nr_hashmap_index_get(NRTXNGLOBAL(curl_multi_metadata), id);
 
@@ -182,7 +180,7 @@ const nr_php_curl_md_t* nr_php_curl_md_get(const zval* ch TSRMLS_DC) {
     return NULL;
   }
 
-  return get_curl_metadata(ch);
+  return get_curl_metadata(ch TSRMLS_CC);
 }
 
 bool nr_php_curl_md_set_method(const zval* ch, const char* method TSRMLS_DC) {
@@ -192,7 +190,7 @@ bool nr_php_curl_md_set_method(const zval* ch, const char* method TSRMLS_DC) {
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl handle metadata", __func__);
     return false;
@@ -209,7 +207,7 @@ const char* nr_php_curl_md_get_method(const zval* ch TSRMLS_DC) {
     return "GET";
   }
 
-  nr_php_curl_md_t* metadata = get_curl_metadata(ch);
+  nr_php_curl_md_t* metadata = get_curl_metadata(ch TSRMLS_CC);
 
   if (nrunlikely(NULL == metadata) || NULL == metadata->method) {
     return "GET";
@@ -231,7 +229,7 @@ bool nr_php_curl_md_set_outbound_headers(const zval* ch,
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl handle metadata", __func__);
     return false;
@@ -253,7 +251,7 @@ bool nr_php_curl_md_set_response_header(const zval* ch,
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl handle metadata", __func__);
     return false;
@@ -270,7 +268,7 @@ const char* nr_php_curl_md_get_response_header(const zval* ch TSRMLS_DC) {
     return false;
   }
 
-  nr_php_curl_md_t* metadata = get_curl_metadata(ch);
+  nr_php_curl_md_t* metadata = get_curl_metadata(ch TSRMLS_CC);
 
   if (nrunlikely(NULL == metadata)) {
     return NULL;
@@ -289,7 +287,7 @@ bool nr_php_curl_md_set_segment(zval* ch, nr_segment_t* segment TSRMLS_DC) {
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl handle metadata", __func__);
     return false;
@@ -308,7 +306,7 @@ nr_segment_t* nr_php_curl_md_get_segment(const zval* ch TSRMLS_DC) {
     return NULL;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     return NULL;
   }
@@ -350,7 +348,7 @@ nr_php_curl_multi_md_t* nr_php_curl_multi_md_get(const zval* mh TSRMLS_DC) {
     return NULL;
   }
 
-  return get_curl_multi_metadata(mh);
+  return get_curl_multi_metadata(mh TSRMLS_CC);
 }
 
 bool nr_php_curl_multi_md_add(const zval* mh, zval* ch TSRMLS_DC) {
@@ -362,13 +360,13 @@ bool nr_php_curl_multi_md_add(const zval* mh, zval* ch TSRMLS_DC) {
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl metadata", __func__);
     return false;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl multi metadata", __func__);
     return false;
@@ -402,13 +400,13 @@ bool nr_php_curl_multi_md_remove(const zval* mh, const zval* ch TSRMLS_DC) {
     return false;
   }
 
-  metadata = get_curl_metadata(ch);
+  metadata = get_curl_metadata(ch TSRMLS_CC);
   if (nrunlikely(NULL == metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl metadata", __func__);
     return false;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl multi metadata", __func__);
     return false;
@@ -446,7 +444,7 @@ bool nr_php_curl_multi_md_set_segment(zval* mh,
     return false;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl_multi handle metadata",
               __func__);
@@ -466,7 +464,7 @@ nr_segment_t* nr_php_curl_multi_md_get_segment(const zval* mh TSRMLS_DC) {
     return NULL;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     return NULL;
   }
@@ -485,7 +483,7 @@ const char* nr_php_curl_multi_md_get_async_context(const zval* mh TSRMLS_DC) {
     return NULL;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl_multi metadata", __func__);
     return NULL;
@@ -501,7 +499,7 @@ nr_vector_t* nr_php_curl_multi_md_get_handles(const zval* mh TSRMLS_DC) {
     return NULL;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl_multi metadata", __func__);
     return NULL;
@@ -517,7 +515,7 @@ bool nr_php_curl_multi_md_set_initialized(const zval* mh TSRMLS_DC) {
     return false;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl_multi metadata", __func__);
     return false;
@@ -535,7 +533,7 @@ bool nr_php_curl_multi_md_is_initialized(const zval* mh TSRMLS_DC) {
     return false;
   }
 
-  multi_metadata = get_curl_multi_metadata(mh);
+  multi_metadata = get_curl_multi_metadata(mh TSRMLS_CC);
   if (nrunlikely(NULL == multi_metadata)) {
     nrl_error(NRL_CAT, "%s: error creating curl_multi metadata", __func__);
     return false;
