@@ -51,7 +51,7 @@ extern void nr_php_error_cb(int type,
                             zend_string* filename,
                             uint error_lineno,
                             zend_string* message);
-#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
 extern void nr_php_error_cb(int type,
                             const char* filename,
                             uint error_lineno,

@@ -448,7 +448,7 @@ static void tlib_php_error_silence_cb(int type NRUNUSED,
                                       zend_string* message NRUNUSED) {
   /* Squash the error by doing absolutely nothing. */
 }
-#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
 static void tlib_php_error_silence_cb(int type NRUNUSED,
                                       const char* error_filename NRUNUSED,
                                       const uint32_t error_lineno NRUNUSED,
@@ -470,7 +470,7 @@ int tlib_php_require_extension(const char* extension TSRMLS_DC) {
   int loaded = 0;
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   void (*prev_error_cb)(int, zend_string*, const uint32_t, zend_string*);
-#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
   void (*prev_error_cb)(int, const char*, const uint32_t, zend_string*);
 #elif ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   void (*prev_error_cb)(int, const char*, const uint32_t, const char*, va_list);

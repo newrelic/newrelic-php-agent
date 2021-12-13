@@ -186,7 +186,7 @@ typedef void (*nrphperrfn_t)(int type,
                              zend_string* error_filename,
                              uint error_lineno,
                              zend_string* message);
-#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
 typedef void (*nrphperrfn_t)(int type,
                              const char* error_filename,
                              uint error_lineno,
