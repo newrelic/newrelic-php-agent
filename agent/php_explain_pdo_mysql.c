@@ -113,8 +113,20 @@ nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
     goto end;
   }
 
-  if (!nr_php_explain_mysql_query_is_explainable(pdo_stmt->query_string,
-                                                 pdo_stmt->query_stringlen)) {
+/*
+ * PHP 8.1 changed to using a zend_string for PDO.
+ * For further details, see PHP 8.1 UPGRADING.INTERNALS
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  const char* pdo_query_string = ZSTR_VAL(pdo_stmt->query_string);
+  int pdo_query_string_len = ZSTR_LEN(pdo_stmt->query_string);
+#else
+  const char* pdo_query_string = pdo_stmt->query_string; 
+  int pdo_query_string_len = pdo_stmt->query_stringlen;
+#endif /* PHP8.1+ */
+
+  if (!nr_php_explain_mysql_query_is_explainable(pdo_query_string,
+                                                 pdo_query_string_len)) {
     goto end;
   }
 
@@ -273,11 +285,22 @@ static zval* issue_explain_query(zval* dbh,
    * Construct the EXPLAIN query that needs to be sent, which simply involves
    * prepending the keyword EXPLAIN.
    */
-  explain_query
-      = (char*)nr_zalloc(pdo_stmt->query_stringlen + sizeof("EXPLAIN "));
-  nr_strcat(explain_query, "EXPLAIN ");
-  nr_strncat(explain_query, pdo_stmt->query_string, pdo_stmt->query_stringlen);
 
+/*
+ * PHP 8.1 changed to using a zend_string for PDO.
+ * For further details, see PHP 8.1 UPGRADING.INTERNALS
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  const char* pdo_query_string = ZSTR_VAL(pdo_stmt->query_string);
+  int pdo_query_string_len = ZSTR_LEN(pdo_stmt->query_string);
+#else
+  const char* pdo_query_string = pdo_stmt->query_string;
+  int pdo_query_string_len = pdo_stmt->query_stringlen;
+#endif /* PHP8.1+ */
+
+  explain_query = (char*)nr_zalloc(pdo_query_string_len + sizeof("EXPLAIN "));
+  nr_strcat(explain_query, "EXPLAIN ");
+  nr_strncat(explain_query, pdo_query_string, pdo_query_string_len);
   explain_stmt = nr_php_pdo_prepare_query(dbh, explain_query TSRMLS_CC);
   if (NULL == explain_stmt) {
     goto end;
