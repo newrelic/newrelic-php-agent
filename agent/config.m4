@@ -174,7 +174,8 @@ if test "$PHP_NEWRELIC" = "yes"; then
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wpointer-arith"
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wcast-qual"
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Werror"
-    NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wno-typedef-redefinition"
+  dnl The flag below only works under clang, but not gcc
+  dnl NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wno-typedef-redefinition"
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wno-missing-field-initializers"
 
     dnl Enable building dependency files.

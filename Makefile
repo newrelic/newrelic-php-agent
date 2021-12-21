@@ -22,6 +22,8 @@ include make/version.mk
 # Configure an isolated workspace for the Go daemon.
 export GOPATH=$(CURDIR)
 export GO15VENDOREXPERIMENT=1
+# Needed for Go > 1.11 to avoid building with modules by default (and failing!)
+export GO111MODULE=auto
 
 # GOBIN affects the behavior of go install, ensure it is unset.
 unexport GOBIN
@@ -314,7 +316,7 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 
 .PHONY: integration
 integration: Makefile daemon lasp-test-all
-	for PHP in $${PHPS:-8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
           echo; echo "# PHP=$${PHP}"; \
 	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
 	  echo "# PHP=$${PHP}"; \
@@ -379,7 +381,7 @@ lasp-test: daemon
 	if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
 	if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
 	if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
-	for PHP in $${PHPS:-8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5 5.4 5.3}; do \
           echo; echo "# PHP=$${PHP}"; \
           NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
         -license $(LICENSE_lasp_$(subst -,_,$(SUITE_LASP))) \
