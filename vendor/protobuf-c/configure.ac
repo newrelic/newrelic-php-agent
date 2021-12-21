@@ -50,6 +50,8 @@ AX_CHECK_COMPILE_FLAG(["-Wnull-dereference"],
                       [my_CFLAGS="$my_CFLAGS -Wnull-dereference"])
 AC_SUBST([my_CFLAGS])
 
+AX_COMPILER_VENDOR
+
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 AM_CONDITIONAL([HAVE_DOXYGEN],
                [test -n "$DOXYGEN"])
