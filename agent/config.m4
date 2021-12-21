@@ -173,19 +173,20 @@ if test "$PHP_NEWRELIC" = "yes"; then
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wshadow"
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wpointer-arith"
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wcast-qual"
-    NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Werror"
 
     dnl Get the Compiler Vendor name for additional flags
     dnl that depend either on clang or gcc (since both are "GNUC")
+    m4_include([ax_compiler_vendor.m4])
     AX_COMPILER_VENDOR
 
     if test "x$ax_cv_cxx_compiler_vendor" = "xclang"; then
       dnl The flag below only works under clang, but not gcc
       NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wno-typedef-redefinition"
+      NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Werror"
     else
-    dnl By contrast, the next flag only works under gcc
-    NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wstringop-overflow"
-  fi
+      dnl By contrast, the next flag only works under gcc
+      NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wstringop-overflow"
+    fi
     NEWRELIC_CFLAGS="${NEWRELIC_CFLAGS} -Wno-missing-field-initializers"
 
     dnl Enable building dependency files.
