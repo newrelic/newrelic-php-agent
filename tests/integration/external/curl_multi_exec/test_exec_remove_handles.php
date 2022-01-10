@@ -156,7 +156,7 @@ function test_curl_multi_exec_remove_handles() {
   curl_multi_add_handle($mh, $ch3);
   curl_multi_add_handle($mh, $ch4);
 
-  $active = null;
+  $active = 0;
   curl_multi_exec($mh, $active);
   curl_multi_remove_handle($mh, $ch2);
   curl_multi_remove_handle($mh, $ch3);

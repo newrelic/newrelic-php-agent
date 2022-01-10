@@ -37,6 +37,7 @@ function test_stop_txn() {
   $ch1 = curl_init($url);
   $ch2 = curl_init($url);
   $mh = curl_multi_init();
+  $active = 0;
 
   curl_multi_add_handle($mh, $ch1);
   curl_multi_exec($mh, $active);
@@ -44,7 +45,7 @@ function test_stop_txn() {
   newrelic_end_transaction();
 
   curl_multi_add_handle($mh, $ch2);
-  $active = null;
+  $active = 0;
   do {
     curl_multi_exec($mh, $active);
   } while ($active > 0);

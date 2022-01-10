@@ -54,7 +54,7 @@ function test_multi_url($url, $msg) {
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_multi_add_handle($cm, $ch);
 
-    $active = null;
+    $active = 0;
 
     do {
 	curl_multi_exec($cm, $active);

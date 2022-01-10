@@ -154,7 +154,7 @@ function test_curl_multi_exec_add_handles() {
   curl_multi_add_handle($mh, $ch1);
   curl_multi_add_handle($mh, $ch2);
 
-  $active = null;
+  $active = 0;
   curl_multi_exec($mh, $active);
   curl_multi_add_handle($mh, $ch3);
 
