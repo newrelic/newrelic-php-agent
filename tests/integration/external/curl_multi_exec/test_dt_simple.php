@@ -73,7 +73,7 @@ $cm = curl_multi_init();
 curl_multi_add_handle($cm, $ch1);
 curl_multi_add_handle($cm, $ch2);
 
-$active = null;
+$active = 0;
 
 do {
     curl_multi_exec($cm, $active);
