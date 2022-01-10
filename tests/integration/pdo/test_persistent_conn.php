@@ -12,6 +12,9 @@ the agent's handling of a non-empty options array.
 
 /*SKIPIF
 <?php require('skipif_mysql.inc');
+if (version_compare(PHP_VERSION, "8.1", ">=")) {
+  die("skip: PHP >= 8.1.0 not supported\n");
+}
 */
 
 /*INI
