@@ -10,11 +10,8 @@ The agent should capture and report deprecation warnings.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0.0 not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -25,7 +22,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Deprecated: Required parameter \$b follows optional parameter \$a in .*? on line [0-9]+\s*$
+^\s*(PHP )?Deprecated: Optional parameter \$a declared before required parameter \$b is implicitly treated as a required parameter in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -35,7 +32,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Required parameter $b follows optional parameter $a",
+      "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
       "Error",
       {
         "stack_trace": "??",
@@ -60,7 +57,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "Error",
-        "error.message": "Required parameter $b follows optional parameter $a",
+        "error.message": "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??"
