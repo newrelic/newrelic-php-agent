@@ -12,8 +12,8 @@ classes.
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -67,7 +67,7 @@ class MyDB extends mysqli
     parent::__construct($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
   }
 
-  function prepare($query)
+  function prepare($query): mysqli_stmt|false
   {
     return new MyStatement($this, $query);
   }
@@ -84,11 +84,11 @@ class MyStatement extends mysqli_stmt
     $this->_query = $query;
   }
 
-  public function execute()
+  public function execute(?array $params = null): bool
   {
     /* It's legal (though not recommended) in PHP to reinvoke the constructor. */
     parent::__construct($this->_link, $this->_query);
-    return parent::execute();
+    return parent::execute($params);
   }
 }
 
