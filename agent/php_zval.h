@@ -285,15 +285,33 @@ static inline bool nr_php_is_zval_null(const zval* z) {
  *
  * Returns : An ID, or 0 on error.
  *
- * Warning : The type of the given zval is not checked -- if it is not a
- *           resource, you will probably get segfaults!
  */
 static inline long nr_php_zval_resource_id(const zval* zv) {
-#ifdef PHP7
+  if (!nr_php_is_zval_valid_resource(zv))
+  {
+      return 0;
+  }
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return Z_RES_P(zv)->handle;
 #else
   return Z_LVAL_P(zv);
 #endif /* PHP7 */
+}
+
+/*
+ * Purpose : Get the ID for the given object.
+ *
+ * Params  : 1. The object zval to retrieve the ID for.
+ *
+ * Returns : An ID, or 0 on error.
+ *
+ */
+static inline long nr_php_zval_object_id(const zval* zv) {
+  if (!nr_php_is_zval_valid_object(zv))
+  {
+      return 0;
+  }
+  return Z_OBJ_HANDLE_P(zv);
 }
 
 /* }}} */
