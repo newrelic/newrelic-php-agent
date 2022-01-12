@@ -9,7 +9,9 @@ The agent should report Database metrics for pg_query_params.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+require("skipif.inc");
+require("skipif_php81.inc");
 */
 
 /*INI

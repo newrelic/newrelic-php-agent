@@ -9,7 +9,9 @@ The agent should report Datastore metrics for Postgres prepared statements.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+require("skipif.inc");
+require("skipif_php81.inc");
 */
 
 /*INI
