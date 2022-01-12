@@ -1558,12 +1558,20 @@ static char* nr_php_prepared_statement_make_pgsql_key(
    * connection. We expect this value to be sufficiently unique
    * because non-empty statement names cannot be reused.
    */
-
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  if (nr_php_is_zval_valid_object(conn)) {
+    key = nr_formatf("type=pgsql id=%ld name=%.*s",
+                     nr_php_zval_object_id(conn), NRSAFELEN(stmtname_len),
+                     stmtname);
+  }
+#else
   if (nr_php_is_zval_valid_resource(conn)) {
     key = nr_formatf("type=pgsql id=%ld name=%.*s",
                      nr_php_zval_resource_id(conn), NRSAFELEN(stmtname_len),
                      stmtname);
-  } else {
+  }
+#endif
+  else {
     key = nr_formatf("type=pgsql id=default name=%.*s", NRSAFELEN(stmtname_len),
                      stmtname);
   }
@@ -1574,13 +1582,20 @@ static char* nr_php_prepared_statement_make_pgsql_key(
 /*
  * Handle
  *    bool pg_close ([ resource $connection ] )
+ *    As of PHP 8.1: all resources for pg are objects instead
  */
 NR_INNER_WRAPPER(pg_close) {
   zval* pgsql = NULL;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  if (FAILURE
+      != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "|o", &pgsql)) {
+#else
   if (FAILURE
       != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                   ZEND_NUM_ARGS() TSRMLS_CC, "|r", &pgsql)) {
+#endif
     nr_php_pgsql_remove_datastore_instance(pgsql TSRMLS_CC);
   }
 
@@ -1590,6 +1605,7 @@ NR_INNER_WRAPPER(pg_close) {
 /*
  * Handle
  *    resource pg_connect ( string $connection_string [, int $connect_type ] )
+ *    As of PHP 8.1: all resources for pg are objects instead
  */
 NR_INNER_WRAPPER(pg_connect) {
   char* conn_info = NULL;
@@ -1624,6 +1640,7 @@ NR_INNER_WRAPPER(pg_connect) {
 /*
  * Handle
  *   resource pg_execute(resource $conn, string $stmtname, array params)
+ *   As of PHP 8.1: all resources for pg are objects instead
  */
 NR_INNER_WRAPPER(pg_execute) {
   zval* conn = NULL;
@@ -1642,9 +1659,15 @@ NR_INNER_WRAPPER(pg_execute) {
 
   switch (argc) {
     case 3:
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+      rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
+                                    "osa/", &conn, &stmtname, &stmtname_len,
+                                    &params);
+#else
       rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
                                     "rsa/", &conn, &stmtname, &stmtname_len,
                                     &params);
+#endif
       break;
     case 2:
       rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
@@ -1688,6 +1711,7 @@ NR_INNER_WRAPPER(pg_execute) {
 /*
  * Handle
  *   resource pg_prepare(resource $conn, string $stmtname, string $query)
+ *   As of PHP 8.1: all resources for pg are objects instead
  */
 NR_INNER_WRAPPER(pg_prepare) {
   zval* conn = NULL;
@@ -1703,9 +1727,15 @@ NR_INNER_WRAPPER(pg_prepare) {
 
   switch (argc) {
     case 3:
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+      rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
+                                    "oss", &conn, &stmtname, &stmtname_len,
+                                    &query, &query_len);
+#else
       rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
                                     "rss", &conn, &stmtname, &stmtname_len,
                                     &query, &query_len);
+#endif
       break;
     case 2:
       rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, argc TSRMLS_CC,
@@ -1735,6 +1765,7 @@ NR_INNER_WRAPPER(pg_prepare) {
 /*
  * Handle
  *   pg_query (string) and pg_query (resource, string)
+ *   As of PHP 8.1: all resources for pg are objects instead
  */
 NR_INNER_WRAPPER(pg_query) {
   char* sqlstr = NULL;
@@ -1756,10 +1787,17 @@ NR_INNER_WRAPPER(pg_query) {
       sqlstrlen = nr_strlen(sqlstr);
     }
   } else {
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+    if (FAILURE
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "os",
+                                    &pgsql_link, &sqlstr, &sqlstrlen)) {
+#else
     if (FAILURE
         == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                     ZEND_NUM_ARGS() TSRMLS_CC, "rs",
                                     &pgsql_link, &sqlstr, &sqlstrlen)) {
+#endif
       sqlstr = "(unknown sql)";
       sqlstrlen = nr_strlen(sqlstr);
     }
@@ -1788,6 +1826,7 @@ NR_INNER_WRAPPER(pg_query) {
  * Handle
  *   pg_query_params (string, array) and pg_query_params (resource, string,
  * array)
+ *   As of PHP 8.1: all resources for pg are objects instead
  *
  * NOTE: This function allows you to use variable placeholders in the query
  * string like $1, $2 etc whose values come from the array passed as the last
@@ -1817,10 +1856,17 @@ NR_INNER_WRAPPER(pg_query_params) {
       sqlstrlen = nr_strlen(sqlstr);
     }
   } else {
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+    if (FAILURE
+        == zend_parse_parameters_ex(
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "osa",
+            &pgsql_link, &sqlstr, &sqlstrlen, &param_array)) {
+#else
     if (FAILURE
         == zend_parse_parameters_ex(
             ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "rsa",
             &pgsql_link, &sqlstr, &sqlstrlen, &param_array)) {
+#endif
       sqlstr = "(unknown sql)";
       sqlstrlen = nr_strlen(sqlstr);
     }
