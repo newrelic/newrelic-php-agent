@@ -12,16 +12,10 @@ Test that Distributed Tracing (DT) works with guzzle 5.
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 
+require('skipif.inc');
+
 if (version_compare(phpversion(), '5.5.0', '<')) {
     die("skip: PHP >= 5.5.0 required\n");
-}
-
-if (version_compare(phpversion(), '8.1.0', '>=')) {
-    die("skip: PHP < 8.1.0 required\n");
-}
-
-if (!unpack_guzzle(5)) {
-    die("skip: guzzle 5 installation required\n");
 }
 */
 
