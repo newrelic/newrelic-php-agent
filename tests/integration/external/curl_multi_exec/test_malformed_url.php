@@ -59,6 +59,7 @@ function test_curl() {
   curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
   curl_setopt($ch2, CURLOPT_URL, 19);
   curl_multi_add_handle($cm, $ch2);
+  $active = 0;
 
   do {
     curl_multi_exec($cm, $active);

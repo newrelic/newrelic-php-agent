@@ -11,8 +11,8 @@ explain plan. PHP-754
 
 /*SKIPIF
 <?php require('skipif_mysql.inc');
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -78,7 +78,7 @@ ok - found rows
           ],
           [
             [
-              "1",
+              1,
               "SIMPLE",
               null,
               null,
@@ -109,7 +109,7 @@ function test_slow_sql() {
   // FOUND_ROWS() on older MySQL and MariaDB versions will return 0 here after
   // an explain plan is generated, instead of 1.
   $result = $conn->query('/* comment to prevent explain plan generation */ SELECT FOUND_ROWS() AS r;');
-  tap_equal(array('r' => '1'), $result->fetch(PDO::FETCH_ASSOC), 'found rows');
+  tap_equal(array('r' => 1), $result->fetch(PDO::FETCH_ASSOC), 'found rows');
 }
 
 test_slow_sql();

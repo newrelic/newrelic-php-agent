@@ -5,14 +5,14 @@
  */
 
 /*DESCRIPTION
-The agent shouldn't obliterate MySQL's FOUND_ROWS() value when generating an
-explain plan. PHP-754
+The agent should record a slow sql trace when a query executed via
+PDOStatement::execute() exceeds the explain threshold.
 */
 
 /*SKIPIF
 <?php require('skipif_mysql.inc');
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -25,7 +25,7 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
 */
 
 /*EXPECT
-ok - found rows
+ok - execute slow query
 */
 
 /*EXPECT_SLOW_SQLS
@@ -35,32 +35,15 @@ ok - found rows
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      " SELECT FOUND_ROWS() AS r;",
-      "Datastore/operation/MySQL/select",
+      "select * from tables limit ?;",
+      "Datastore/statement/MySQL/tables/select",
       1,
       "?? total time",
       "?? min time",
       "?? max time",
       {
         "backtrace": [
-          " in PDO::query called at __FILE__ (??)",
-          " in test_slow_sql called at __FILE__ (??)"
-        ]
-      }
-    ],
-    [
-      "OtherTransaction/php__FILE__",
-      "<unknown>",
-      "?? SQL id",
-      "select ?;",
-      "Datastore/operation/MySQL/select",
-      1,
-      "?? total time",
-      "?? min time",
-      "?? max time",
-      {
-        "backtrace": [
-          " in PDO::query called at __FILE__ (??)",
+          " in PDOStatement::execute called at __FILE__ (??)",
           " in test_slow_sql called at __FILE__ (??)"
         ],
         "explain_plan": [
@@ -78,10 +61,10 @@ ok - found rows
           ],
           [
             [
-              "1",
+              1,
               "SIMPLE",
-              null,
-              null,
+              "tables",
+              "ALL",
               null,
               null,
               null,
@@ -104,12 +87,8 @@ function test_slow_sql() {
   global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
 
   $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD);
-  $conn->query('select 1;');
-
-  // FOUND_ROWS() on older MySQL and MariaDB versions will return 0 here after
-  // an explain plan is generated, instead of 1.
-  $result = $conn->query('/* comment to prevent explain plan generation */ SELECT FOUND_ROWS() AS r;');
-  tap_equal(array('r' => '1'), $result->fetch(PDO::FETCH_ASSOC), 'found rows');
+  $stmt = $conn->prepare('select * from tables limit 1;');
+  tap_assert($stmt->execute(), 'execute slow query');
 }
 
 test_slow_sql();

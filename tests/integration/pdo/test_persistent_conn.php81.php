@@ -7,13 +7,13 @@
 /*DESCRIPTION
 The agent should record a slow sql trace when a query executed via PDO::query()
 using a persistent connection exceeds the explain threshold. This also exercises
-the agent's handling of a null options array.
+the agent's handling of a non-empty options array.
 */
 
 /*SKIPIF
 <?php require('skipif_mysql.inc');
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -58,7 +58,7 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
           ],
           [
             [
-              "1",
+              1,
               "SIMPLE",
               "tables",
               "ALL",
@@ -80,12 +80,13 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/pdo.inc');
 
-function test_slow_sql() {
-  global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
+function test_slow_sql()
+{
+    global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
 
-  $options = null;
-  $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD, $options);
-  $result = $conn->query('select * from tables limit 1;');
+    $options = array(PDO::ATTR_PERSISTENT => true);
+    $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD, $options);
+    $result = $conn->query('select * from tables limit 1;');
 }
 
 test_slow_sql();
