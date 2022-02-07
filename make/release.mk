@@ -75,7 +75,7 @@ release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 # Build for PHP 8.0+ only on 64-bit targets
 ifeq (x64,$(ARCH))
-        $(MAKE) agent-clean; $(MAKE) release-8.1-no-zts
+	$(MAKE) agent-clean; $(MAKE) release-8.1-no-zts
 	$(MAKE) agent-clean; $(MAKE) release-8.0-no-zts
 endif
 	$(MAKE) agent-clean; $(MAKE) release-7.4-no-zts
@@ -88,7 +88,7 @@ endif
 	$(MAKE) agent-clean; $(MAKE) release-5.4-no-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.3-no-zts
 ifeq (x64,$(ARCH))
-        $(MAKE) agent-clean; $(MAKE) release-8.1-zts
+	$(MAKE) agent-clean; $(MAKE) release-8.1-zts
 	$(MAKE) agent-clean; $(MAKE) release-8.0-zts
 endif
 	$(MAKE) agent-clean; $(MAKE) release-7.4-zts
