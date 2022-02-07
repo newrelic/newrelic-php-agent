@@ -88,7 +88,7 @@ endif
 	$(MAKE) agent-clean; $(MAKE) release-5.4-no-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.3-no-zts
 ifeq (x64,$(ARCH))
-        $(MAKE) agent-clean; $(MAKE) release-8.0-zts
+        $(MAKE) agent-clean; $(MAKE) release-8.1-zts
 	$(MAKE) agent-clean; $(MAKE) release-8.0-zts
 endif
 	$(MAKE) agent-clean; $(MAKE) release-7.4-zts
