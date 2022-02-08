@@ -16,10 +16,8 @@
 #include "util_memory.h"
 #include "util_signals.h"
 
-#ifndef HAVE_REALLOCARRAY
 #include <sys/types.h>
 #include <errno.h>
-#endif /* !HAVE_REALLOCARRAY */
 
 #undef free
 
@@ -110,13 +108,6 @@ void* NRMALLOCSZ(2) nr_realloc(void* oldptr, size_t newsize) {
 
 void* NRMALLOC NRCALLOCSZ(2, 3)
     nr_reallocarray(void* ptr, size_t nmemb, size_t size) {
-#ifdef HAVE_REALLOCARRAY
-  /*
-   * Our semantics are exactly the same as the underlying reallocarray() call as
-   * defined by BSD, so we can just let it do all the checks.
-   */
-  return (reallocarray)(ptr, nmemb, size);
-#else
   /*
    * This implementation is adapted from OpenSSH's OpenBSD compatibility layer:
    * https://github.com/openssh/openssh-portable/blob/285310b897969a63ef224d39e7cc2b7316d86940/openbsd-compat/reallocarray.c#L39-L44
@@ -133,10 +124,6 @@ void* NRMALLOC NRCALLOCSZ(2, 3)
   }
 
   /*
-   * Delegating down to nr_realloc() results in different behaviour between the
-   * BSD reallocarray() and our wrapper. We'll be consistent with the reference
-   * implementation, rather than the nr_realloc() wrapper.
-   *
    * In general, the reference implementation has the same behaviour as
    * realloc() on all of our supported platforms, with one exception: realloc()
    * with a non-NULL pointer and a zero length size is equivalent to free() on
@@ -149,7 +136,6 @@ void* NRMALLOC NRCALLOCSZ(2, 3)
   }
 
   return (realloc)(ptr, size * nmemb);
-#endif /* HAVE_REALLOCARRAY */
 }
 
 char* NRMALLOC nr_strdup(const char* orig) {
