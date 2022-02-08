@@ -85,8 +85,7 @@ endif
 	$(MAKE) agent-clean; $(MAKE) release-7.0-no-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.6-no-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.5-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.4-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.3-no-zts
+
 ifeq (x64,$(ARCH))
 	$(MAKE) agent-clean; $(MAKE) release-8.1-zts
 	$(MAKE) agent-clean; $(MAKE) release-8.0-zts
@@ -98,8 +97,7 @@ endif
 	$(MAKE) agent-clean; $(MAKE) release-7.0-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.6-zts
 	$(MAKE) agent-clean; $(MAKE) release-5.5-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.4-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.3-zts
+
 
 #
 # Add a new target to build the agent against build machines.
@@ -150,8 +148,7 @@ $(eval $(call RELEASE_AGENT_TARGET,7.1,20160303))
 $(eval $(call RELEASE_AGENT_TARGET,7.0,20151012))
 $(eval $(call RELEASE_AGENT_TARGET,5.6,20131226))
 $(eval $(call RELEASE_AGENT_TARGET,5.5,20121212))
-$(eval $(call RELEASE_AGENT_TARGET,5.4,20100525))
-$(eval $(call RELEASE_AGENT_TARGET,5.3,20090626))
+
 
 #
 # Release directories
