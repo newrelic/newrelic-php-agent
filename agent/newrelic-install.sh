@@ -1012,12 +1012,6 @@ for this copy of PHP. We apologize for the inconvenience.
   fi
 
   case "${pi_ver}" in
-    5.3.*)
-      ;;
-
-    5.4.*)
-      ;;
-
     5.5.*)
       ;;
 
