@@ -18,7 +18,6 @@
 #include "util_vector.h"
 
 #define PHP_NEWRELIC_EXT_NAME "newrelic"
-#define PHP_NEWRELIC_EXT_URL "https://newrelic.com/docs/php/new-relic-for-php"
 
 extern PHP_MINIT_FUNCTION(newrelic);
 extern PHP_MSHUTDOWN_FUNCTION(newrelic);

@@ -531,7 +531,7 @@ PHP_MINIT_FUNCTION(newrelic) {
                   "expects a daemon "
                   "to be started externally. "
                   "Please refer to: "
-                  "https://docs.newrelic.com/docs/apm/agents/php-agent/"
+                  NR_PHP_AGENT_EXT_DOCS_URL
                   "advanced-installation/starting-php-daemon-advanced/#daemon-external");
     }
   }
