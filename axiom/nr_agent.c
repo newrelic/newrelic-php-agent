@@ -479,7 +479,8 @@ static void nr_agent_warn_connect_failure(int connect_fd,
       "Failed to connect to the newrelic-daemon. Please make sure that there "
       "is a properly configured newrelic-daemon running. "
       "For additional assistance, please see: "
-      "https://newrelic.com/docs/php/newrelic-daemon-startup-modes",
+      "https://docs.newrelic.com/docs/apm/agents/php-agent/"
+      "advanced-installation/starting-php-daemon-advanced/",
       connect_fd, nr_agent_connect_method_msg, connect_rv,
       nr_errno(connect_err));
 }
