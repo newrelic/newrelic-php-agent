@@ -5,14 +5,15 @@
  */
 
 /*DESCRIPTION
-Tests the agent sends slow sql transactions when LASP configuration
+Tests the agent sends slow sql transactions when 
+Language Agent Security Policy (LASP) configuration
 indicates record_sql:{enabled:true} and agent is configured to send obfuscated.
 */
 
 /*SKIPIF
 <?php require('../../integration/pdo/skipif_mysql.inc');
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP < 8.1.0 not supported\n");
 }
 */
 
@@ -53,7 +54,7 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
           ],
           [
             [
-              "1",
+              1,
               "SIMPLE",
               "tables",
               "ALL",
