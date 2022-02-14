@@ -530,9 +530,9 @@ PHP_MINIT_FUNCTION(newrelic) {
                   "failed to connect to the newrelic-daemon.  The agent "
                   "expects a daemon "
                   "to be started externally. "
-                  "Please refer to: "
-                  NR_PHP_AGENT_EXT_DOCS_URL
-                  "advanced-installation/starting-php-daemon-advanced/#daemon-external");
+                  "Please refer to: " NR_PHP_AGENT_EXT_DOCS_URL
+                  "advanced-installation/starting-php-daemon-advanced/"
+                  "#daemon-external");
     }
   }
 
