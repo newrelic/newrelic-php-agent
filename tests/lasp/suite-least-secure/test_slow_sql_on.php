@@ -12,6 +12,9 @@ indicates record_sql:{enabled:true} and agent is configured to send obfuscated.
 
 /*SKIPIF
 <?php require('../../integration/pdo/skipif_mysql.inc');
+if (version_compare(PHP_VERSION, "8.1", ">=")) {
+  die("skip: PHP >= 8.1.0 not supported\n");
+}
 */
 
 /*INI
