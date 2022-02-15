@@ -12,6 +12,8 @@
 #include "nr_axiom.h"
 #include "nr_app.h"
 
+#define NR_PHP_AGENT_EXT_DOCS_URL "https://docs.newrelic.com/docs/apm/agents/php-agent/"
+
 /*
  * The means by which the agent and the daemon connect.
  */
