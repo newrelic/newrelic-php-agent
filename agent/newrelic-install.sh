@@ -959,6 +959,7 @@ gather_info() {
   havecfg=
   havebin=
   pi_bin=
+  pi_php8=
 
   #
   # Get the path to the binary.
