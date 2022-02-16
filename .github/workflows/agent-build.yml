@@ -42,7 +42,7 @@ jobs:
         arch: ['x64', 'x86']
         exclude:
         # Excludes PHP 5.x, 7.x on linux 32-bit
-	# Excludes PHP 8.x as only 64bit is supported for these versions
+        # Excludes PHP 8.x as only 64bit is supported for these versions
         - os: linux
           php_ver: '7.0'
           arch: 'x86'
