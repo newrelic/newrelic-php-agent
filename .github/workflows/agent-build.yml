@@ -62,7 +62,13 @@ jobs:
           php_ver: '8.0'
           arch: 'x86'
         - os: linux
+          php_ver: '8.0-zts'
+          arch: 'x86'
+        - os: linux
           php_ver: '8.1'
+          arch: 'x86'
+        - os: linux
+          php_ver: '8.1-zts'
           arch: 'x86'
     steps:
       - name: Checkout Repo 
