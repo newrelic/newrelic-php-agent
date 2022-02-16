@@ -230,6 +230,9 @@ func parseDescription(test *Test, content []byte) error {
 }
 func parseXFail(test *Test, content []byte) error {
 	test.Xfail = string(bytes.TrimSpace(content))
+    if test.Xfail == "" { // add a default comment incase test is missing a comment after XFAIL directive
+        test.Xfail = "expected failure"
+    }
 	return nil
 }
 func parseExpect(test *Test, content []byte) error {

@@ -11,6 +11,9 @@ PDO::query().
 
 /*SKIPIF
 <?php require('skipif_sqlite.inc');
+if (version_compare(PHP_VERSION, "8.1", ">=")) {
+  die("skip: PHP >= 8.1.0 not supported\n");
+}
 */
 
 /*INI
