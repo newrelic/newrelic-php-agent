@@ -92,8 +92,9 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 # First build non-ZTS binaries of the PHP versions requested that are supported
 # on this OS.
 #
+	printf "Supported: %s\n" "$(SUPPORTED_PHP)"
 	@for PHP in ${SUPPORTED_PHP} ; do \
-		printf 'Calling make for: %s\n' "release-$(PHP)-no-zts" 
+		printf 'Calling make for: %s\n' "release-$(PHP)-no-zts"; \ 
 		$(MAKE) agent-clean; $(MAKE) "release-$(PHP)-no-zts"; \
         done
 #
