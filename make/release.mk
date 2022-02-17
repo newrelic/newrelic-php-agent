@@ -93,14 +93,14 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 # on this OS.
 #
 	@for PHP in ${SUPPORTED_PHP} ; do \
-		$(MAKE) agent-clean; $(MAKE) release-${PHP}-no-zts; \
+		$(MAKE) agent-clean; $(MAKE) release-$$(PHP)-no-zts; \
         done
 #
 # Next build ZTS binaries of the PHP versions requested that are supported
 # on this OS.
 #
 	@for PHP in ${SUPPORTED_PHP} ; do \
-		$(MAKE) agent-clean; $(MAKE) release-${PHP}-zts; \
+		$(MAKE) agent-clean; $(MAKE) release-$$(PHP)-zts; \
 	done
 
 
