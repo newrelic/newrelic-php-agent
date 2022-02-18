@@ -26,7 +26,7 @@ type aws struct {
 	AvailabilityZone string `json:"availabilityZone,omitempty"`
 }
 
-func gatherAWS(util *Data, client *http.Client) error {
+func GatherAWS(util *Data, client *http.Client) error {
 	aws, err := getAWS(client)
 	if err != nil {
 		// Only return the error here if it is unexpected to prevent
