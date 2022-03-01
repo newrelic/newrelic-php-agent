@@ -15,7 +15,6 @@ Currently, the PHP agent has only been developed and compiled on Linux systems. 
     - Ubuntu 16.04+
     - CentOS/RHEL 7+
 - Supported in binary form only (may require experimentation to build)
-    - MacOS
     - FreeBSD
     - Alpine Linux
     - AWS Linux 2
@@ -59,7 +58,7 @@ _(most operating systems package these with `-dev` or `-devel` suffixes)_
 
 ### PHP
 
-The PHP agent supports PHP versions `5.5`, `5.6`, `7.0`, `7.1`, `7.2`, `7.3`, `7.4`, and `8.0`.
+The PHP agent supports PHP versions `5.5`, `5.6`, `7.0`, `7.1`, `7.2`, `7.3`, `7.4`,`8.0`, and `8.1`.
 
 ## Build the PHP Agent
 

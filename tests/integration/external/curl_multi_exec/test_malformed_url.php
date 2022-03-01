@@ -30,8 +30,8 @@ ok - no more errors
     [{"name":"External/<unknown>/all"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/<unknown>/all",
       "scope":"OtherTransaction/php__FILE__"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/19/all"},                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/19/all",
+    [{"name":"/External/(0\\.0\\.0\\.)?19/all/"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/External/(0\\.0\\.0\\.)?19/all/",
       "scope":"OtherTransaction/php__FILE__"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                                    [2, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                               [2, "??", "??", "??", "??", "??"]],
@@ -59,6 +59,7 @@ function test_curl() {
   curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
   curl_setopt($ch2, CURLOPT_URL, 19);
   curl_multi_add_handle($cm, $ch2);
+  $active = 0;
 
   do {
     curl_multi_exec($cm, $active);

@@ -14,6 +14,7 @@
 #include "php_api_datastore_private.h"
 #include "php_call.h"
 #include "php_hash.h"
+#include "php_includes.h"
 #include "util_logging.h"
 #include "util_sql.h"
 

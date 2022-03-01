@@ -12,6 +12,9 @@ classes.
 /*SKIPIF
 <?php
 require("skipif.inc");
+if (version_compare(PHP_VERSION, "8.1", ">=")) {
+  die("skip: PHP >= 8.1.0 not supported\n");
+}
 */
 
 /*INI
@@ -85,7 +88,7 @@ class MyStatement extends mysqli_stmt
   {
     /* It's legal (though not recommended) in PHP to reinvoke the constructor. */
     parent::__construct($this->_link, $this->_query);
-    parent::execute();
+    return parent::execute();
   }
 }
 

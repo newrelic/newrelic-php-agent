@@ -39,8 +39,15 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
     goto end;
   }
 
-  /* Get the exception from the event. */
-  exception = nr_php_call(event, "getException");
+  /*
+   * Get the exception from the event.
+   * Firstly, we check if ExceptionEvent is available - if yes, that means we are using Symfony 5
+  */
+  exception = nr_php_call(event, "getThrowable");
+  if (!nr_php_is_zval_valid_object(exception)) {
+    exception = nr_php_call(event, "getException");
+  }
+
   if (!nr_php_is_zval_valid_object(exception)) {
     nrl_verbosedebug(NRL_TXN,
                      "Symfony 4: getException() returned a non-object");
@@ -59,6 +66,48 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_symfony4_console_application_run) {
+  zval* command = NULL;
+  zval* input = NULL;
+
+  (void)wraprec;
+
+  /* Verify that we are using symfony 4, otherwise bail. */
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_SYMFONY4);
+
+  /*
+   * The first parameter to this method should be an instance of an
+   * InputInterface, which defines a method called getFirstArgument which will
+   * return the command name, or an empty string if no command name was given.
+   * We can then use that to name the transaction.
+   */
+  input = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (!nr_php_object_instanceof_class(
+      input,
+      "Symfony\\Component\\Console\\Input\\InputInterface" TSRMLS_CC)) {
+    goto leave;
+  }
+
+  command = nr_php_call(input, "getFirstArgument");
+  if (nr_php_is_zval_non_empty_string(command)) {
+    nr_txn_set_path("Symfony4", NRPRG(txn), Z_STRVAL_P(command), NR_PATH_TYPE_ACTION,
+                    NR_OK_TO_OVERWRITE);
+  } else {
+    /*
+     * Not having any arguments will result in the same behaviour as
+     * "bin/console list", so we'll name the transaction accordingly.
+     */
+    nr_txn_set_path("Symfony4", NRPRG(txn), "list", NR_PATH_TYPE_ACTION,
+                    NR_OK_TO_OVERWRITE);
+  }
+
+leave:
+  NR_PHP_WRAPPER_CALL;
+  nr_php_arg_release(&input);
+  nr_php_zval_free(&command);
+}
+NR_PHP_WRAPPER_END
+
 NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   zval* event = NULL;
   zval* request = NULL;
@@ -72,7 +121,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   /*
    * A high level overview of the logic:
    *
-   * RouterListener::onKernelRequest() receives a GetResponseEvent parameter,
+   * RouterListener::onKernelRequest() receives a GetResponseEvent (RequestEvent in Symfony 5) parameter,
    * which includes the request object accessible via the getRequest() method.
    * We want to get the request, then access its attributes: the request
    * matcher will create a number of internal attributes prefixed by
@@ -185,4 +234,20 @@ void nr_symfony4_enable(TSRMLS_D) {
       NR_PSTR("Symfony\\Component\\HttpKernel\\"
               "EventListener\\ExceptionListener::onKernelException"),
       nr_symfony4_exception TSRMLS_CC);
+
+  /*
+   * In Symfony 5 listener that catch errors was changed to ErrorListener,
+   * we try to hook into it
+   */
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\"
+              "EventListener\\ErrorListener::onKernelException"),
+      nr_symfony4_exception TSRMLS_CC);
+
+  /*
+   * Listen for Symfony commands so we can name those appropriately.
+   */
+  nr_php_wrap_user_function(
+        NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
+     nr_symfony4_console_application_run TSRMLS_CC);
 }

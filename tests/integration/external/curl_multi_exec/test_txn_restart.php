@@ -57,7 +57,7 @@ function test_txn_restart() {
   $ch2 = curl_init($url);
   $mh = curl_multi_init();
 
-  $active = null;
+  $active = 0;
 
   curl_multi_add_handle($mh, $ch1);
   curl_multi_exec($mh, $active);

@@ -10,7 +10,7 @@
 /*
  * Purpose : Create and save datastore instance metadata for a pgsql connection.
  *
- * Params  : 1. The pgsql connection resource
+ * Params  : 1. The pgsql connection resource (object in >= PHP 8.1)
  *           2. The connection string
  */
 extern void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
@@ -20,7 +20,7 @@ extern void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
 /*
  * Purpose : Retrieve datastore instance metadata for a pgsql connection.
  *
- * Params  : 1. The pgsql connection resource
+ * Params  : 1. The pgsql connection resource (object in >= PHP 8.1)
  *
  * Returns : A pointer to the datastore instance structure or NULL on error.
  */
@@ -30,7 +30,7 @@ extern nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
 /*
  * Purpose : Remove datastore instance metadata for a pgsql connection.
  *
- * Params  : 1. The pgsql connection resource
+ * Params  : 1. The pgsql connection resource (object in >= PHP 8.1)
  */
 extern void nr_php_pgsql_remove_datastore_instance(
     const zval* pgsql_conn TSRMLS_DC);

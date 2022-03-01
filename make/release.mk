@@ -40,6 +40,20 @@ ifeq (osx,$(RELEASE_OS))
   endif
 endif
 
+# Set the default PHP versions we will build.
+PHPS?=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
+# Set the PHP versions we support on 64-bit OSs.
+SUPPORTED_64=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
+# Set the PHP versions we support on 32-bit OSs.
+SUPPORTED_32=7.4 7.3 7.2 7.1 7.0 5.6 5.5
+# Of the PHP versions we want to build, determine which are supported on the detected OS.
+ifeq (x64,$(ARCH))
+  SUPPORTED_PHP = $(filter $(SUPPORTED_64),$(PHPS))
+else
+  SUPPORTED_PHP = $(filter $(SUPPORTED_32),$(PHPS))
+endif
+
+
 release: Makefile release-daemon release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
 	printf '%s\n' "$(AGENT_VERSION)" > releases/$(RELEASE_OS)/VERSION
 	printf '%s\n' "$(GIT_COMMIT)" > releases/$(RELEASE_OS)/COMMIT
@@ -73,31 +87,22 @@ release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 # Build the agent sequentially for each version of PHP. This is necessary
 # because the PHP build process only supports in-tree builds.
 release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
-# Build for PHP 8.0 only on 64-bit targets
-ifeq (x64,$(ARCH))
-	$(MAKE) agent-clean; $(MAKE) release-8.0-no-zts
-endif
-	$(MAKE) agent-clean; $(MAKE) release-7.4-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.3-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.2-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.1-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.0-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.6-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.5-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.4-no-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.3-no-zts
-ifeq (x64,$(ARCH))
-	$(MAKE) agent-clean; $(MAKE) release-8.0-zts
-endif
-	$(MAKE) agent-clean; $(MAKE) release-7.4-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.3-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.2-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.1-zts
-	$(MAKE) agent-clean; $(MAKE) release-7.0-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.6-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.5-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.4-zts
-	$(MAKE) agent-clean; $(MAKE) release-5.3-zts
+
+#
+# First build non-ZTS binaries of the PHP versions requested that are supported
+# on this OS.
+#
+	for PHP in $(SUPPORTED_PHP) ; do \
+		$(MAKE) agent-clean; $(MAKE) release-$$PHP-no-zts; \
+        done
+#
+# Next build ZTS binaries of the PHP versions requested that are supported
+# on this OS.
+#
+	for PHP in $(SUPPORTED_PHP) ; do \
+		$(MAKE) agent-clean; $(MAKE) release-$$PHP-zts; \
+	done
+
 
 #
 # Add a new target to build the agent against build machines.
@@ -139,6 +144,7 @@ release-$1-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
 
 endef
 
+$(eval $(call RELEASE_AGENT_TARGET,8.1,20210902))
 $(eval $(call RELEASE_AGENT_TARGET,8.0,20200930))
 $(eval $(call RELEASE_AGENT_TARGET,7.4,20190902))
 $(eval $(call RELEASE_AGENT_TARGET,7.3,20180731))
@@ -147,8 +153,7 @@ $(eval $(call RELEASE_AGENT_TARGET,7.1,20160303))
 $(eval $(call RELEASE_AGENT_TARGET,7.0,20151012))
 $(eval $(call RELEASE_AGENT_TARGET,5.6,20131226))
 $(eval $(call RELEASE_AGENT_TARGET,5.5,20121212))
-$(eval $(call RELEASE_AGENT_TARGET,5.4,20100525))
-$(eval $(call RELEASE_AGENT_TARGET,5.3,20090626))
+
 
 #
 # Release directories

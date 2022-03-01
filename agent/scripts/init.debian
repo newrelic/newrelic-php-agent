@@ -192,7 +192,7 @@ INFO: newrelic.cfg not found - daemon must be launched by the agent.
       If you want to start the daemon via this script then please copy the
       file /etc/newrelic/newrelic.cfg.template to /etc/newrelic/newrelic.cfg,
       edit it to taste, and then re-run this script. For more information
-      please refer to https://newrelic.com/docs/php/new-relic-for-php.
+      please refer to https://docs.newrelic.com/docs/apm/agents/php-agent/advanced-installation/starting-php-daemon-advanced/.
 EOF
     fi
     exit 0

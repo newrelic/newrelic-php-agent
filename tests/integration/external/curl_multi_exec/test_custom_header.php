@@ -56,7 +56,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, array(CUSTOMER_HEADER.': foo'));
 $cm = curl_multi_init();
 curl_multi_add_handle($cm, $ch);
 
-$active = null;
+$active = 0;
 
 do {
     curl_multi_exec($cm, $active);
