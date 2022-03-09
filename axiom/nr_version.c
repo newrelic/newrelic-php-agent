@@ -21,17 +21,15 @@
 #endif
 
 /*
- * Current version naming scheme is color names that are also food.
- * Here's a list:
- *  https://en.wikipedia.org/wiki/List_of_colors_(compact)
+ * Current version naming scheme is flowers
  *
- *   ube                29Oct2020 (9.14)
  *   vanilla            07Dec2020 (9.15)
  *   watermelon         25Jan2021 (9.16)
  *   xigua              21Apr2021 (9.17)
  *   yam                23Aug2021 (9.18)
+ *   zomp               02Mar2022 (9.19)
  */
-#define NR_CODENAME "zomp"
+#define NR_CODENAME "allium"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
