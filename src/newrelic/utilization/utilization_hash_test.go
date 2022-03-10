@@ -340,7 +340,7 @@ func TestVendorsIsEmpty(t *testing.T) {
 		t.Fatal("default vendors does not register as empty")
 	}
 
-	v.AWS = newAWS()
+	v.AWS = &aws{}
 	if v.isEmpty() {
 		t.Fatal("non-empty vendors registers as empty")
 	}
