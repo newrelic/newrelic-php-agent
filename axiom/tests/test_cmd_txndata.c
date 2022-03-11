@@ -826,7 +826,8 @@ static void test_encode_trace(void) {
   nr_segment_end(&root);
 
   txn.final_data = nr_segment_tree_finalise(&txn, NR_MAX_SEGMENTS,
-                                            NR_MAX_SPAN_EVENTS, NULL, NULL);
+                                            NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED, 
+                                            NULL, NULL);
   fb = nr_txndata_encode(&txn);
   nr_flatbuffers_table_init_root(&tbl, nr_flatbuffers_data(fb),
                                  nr_flatbuffers_len(fb));
