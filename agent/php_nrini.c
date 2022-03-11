@@ -2586,11 +2586,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.span_events_enabled",
                      newrelic_globals,
                      0)
 
-STD_PHP_INI_ENTRY_EX("newrelic.special.max_span_events",
+STD_PHP_INI_ENTRY_EX("newrelic.span_events.max_samples_stored",
                      "0",
                      NR_PHP_REQUEST,
                      nr_unsigned_int_mh,
-                     max_span_events,
+                     span_events_max_samples_stored,
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)

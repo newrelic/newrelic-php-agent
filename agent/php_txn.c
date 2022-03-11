@@ -682,7 +682,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.distributed_tracing_exclude_newrelic_header
       = NRINI(distributed_tracing_exclude_newrelic_header);
   opts.span_events_enabled = NRINI(span_events_enabled);
-  opts.max_span_events = NRINI(max_span_events);
+  opts.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
   opts.max_segments
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);

@@ -11,7 +11,7 @@
 newrelic.distributed_tracing_enabled = 1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false
-newrelic.special.max_span_events = 0
+newrelic.span_events.max_samples_stored = 0
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -19,13 +19,13 @@ newrelic.special.max_span_events = 0
   "?? agent run id",
   {
     "reservoir_size": 1000,
-    "events_seen": 1000 
+    "events_seen": 2000
   },
   "??"
 ]
  */
 
-$NEWRELIC_SPAN_EVENTS_MAX = 1000; // The agent internal maximum of span events 
+$NEWRELIC_SPAN_EVENTS_MAX = 3000; // The agent internal maximum of span events
 				  // per transaction.
 
 newrelic_add_custom_tracer('main');

@@ -33,9 +33,9 @@
 #define NR_MAX_SEGMENTS 2000
 
 /*
- * The maximum number of span events in a transaction.
+ * The default maximum number of span events in a transaction.
  */
-#define NR_MAX_SPAN_EVENTS 1000
+#define NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED 2000
 
 /*
  * The maximum number of span events in an 8T span batch.
