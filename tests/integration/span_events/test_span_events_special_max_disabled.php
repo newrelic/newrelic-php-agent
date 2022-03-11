@@ -18,7 +18,7 @@ newrelic.span_events.max_samples_stored = 0
 [
   "?? agent run id",
   {
-    "reservoir_size": 1000,
+    "reservoir_size": 10000,
     "events_seen": 2000
   },
   "??"

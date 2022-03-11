@@ -23,7 +23,7 @@ null
 [
   "?? agent run id",
   {
-    "reservoir_size": 1000,
+    "reservoir_size": 10000,
     "events_seen": 6
   },
   [
