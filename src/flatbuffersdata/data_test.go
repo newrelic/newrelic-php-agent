@@ -184,7 +184,7 @@ func TestFlatbuffersTxnData(t *testing.T) {
 	}
 
 	out, err = harvest.SpanEvents.Data(id, now)
-	if nil != err || string(out) != `["12345",{"reservoir_size":1000,"events_seen":3},[[{"Span1":1}],[{"Span2":2}],[{"Span3":3}]]]` {
+	if nil != err || string(out) != `["12345",{"reservoir_size":10000,"events_seen":3},[[{"Span1":1}],[{"Span2":2}],[{"Span3":3}]]]` {
 		t.Fatal(err, string(out))
 	}
 
