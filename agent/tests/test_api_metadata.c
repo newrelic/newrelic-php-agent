@@ -90,7 +90,7 @@ void test_main(void* p NRUNUSED) {
   void*** tsrm_ls = NULL;
 #endif /* ZTS && !PHP7 */
 
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("newrelic.distributed_tracing_enabled = false\n" PTSRMLS_CC);
 
   test_is_sampled(TSRMLS_C);
   test_get_linking_metadata(TSRMLS_C);
