@@ -864,14 +864,15 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.distributed_tracing_enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: false
+; Default: true
 ; Info   : Distributed tracing lets you see the path that a request takes
-;          through your distributed system. Enabling distributed tracing changes
-;          the behavior of some New Relic features, so carefully consult the
-;          transition guide before you enable this feature:
+;          through your distributed system. See this guide for more information:
+;          https://docs.newrelic.com/docs/distributed-tracing/concepts/introduction-distributed-tracing
+;          When distributed tracing is enabled it changes the behavior of some
+;          New Relic features. See this guide for details:
 ;          https://docs.newrelic.com/docs/transition-guide-distributed-tracing
 ;
-;newrelic.distributed_tracing_enabled = false
+;newrelic.distributed_tracing_enabled = true
 
 ; Setting: newrelic.distributed_tracing_exclude_newrelic_header
 ; Type   : boolean
