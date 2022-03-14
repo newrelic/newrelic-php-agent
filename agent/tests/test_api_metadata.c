@@ -29,7 +29,7 @@ static void test_is_sampled(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-static void test_get_linking_metadata(TSRMLS_D) {
+static void test_get_linking_metadata_when_dt_disabled(TSRMLS_D) {
   zval* retval;
   zval* val;
 
@@ -67,7 +67,43 @@ static void test_get_linking_metadata(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-static void test_get_trace_metadata(TSRMLS_D) {
+static void test_get_linking_metadata_when_dt_enabled(TSRMLS_D) {
+  zval* retval;
+  zval* val;
+
+  tlib_php_request_start();
+
+  retval = nr_php_call(NULL, "newrelic_get_linking_metadata");
+
+  tlib_pass_if_zval_type_is("newrelic_get_linking_metadata() returns an array ",
+                            IS_ARRAY, retval);
+
+  val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "entity.type");
+  tlib_pass_if_not_null("entity.name", val);
+  tlib_pass_if_zval_type_is("entity.type", IS_STRING, val);
+  tlib_pass_if_str_equal("entity.type", Z_STRVAL_P(val), "SERVICE");
+
+  val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "entity.name");
+  tlib_pass_if_not_null("entity.name", val);
+  tlib_pass_if_zval_type_is("entity.name", IS_STRING, val);
+
+  val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "hostname");
+  tlib_pass_if_not_null("hostname", val);
+  tlib_pass_if_zval_type_is("hostname", IS_STRING, val);
+
+  val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "trace.id");
+  tlib_pass_if_not_null("trace.id", val);
+  tlib_pass_if_zval_type_is("trace.id is string", IS_STRING, val);
+
+  val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "span.id");
+  tlib_pass_if_null("span.id", val);
+
+  nr_php_zval_free(&retval);
+
+  tlib_php_request_end();
+}
+
+static void test_get_trace_metadata_when_dt_disabled(TSRMLS_D) {
   zval* retval;
 
   tlib_php_request_start();
@@ -85,16 +121,46 @@ static void test_get_trace_metadata(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_get_trace_metadata_when_dt_enabled(TSRMLS_D) {
+  zval* retval;
+
+  tlib_php_request_start();
+
+  retval = nr_php_call(NULL, "newrelic_get_trace_metadata");
+
+  tlib_pass_if_zval_type_is("newrelic_get_trace_metadata() returns an array ",
+                            IS_ARRAY, retval);
+
+  tlib_pass_if_size_t_equal("trace metadata present", 1,
+                            nr_php_zend_hash_num_elements(Z_ARRVAL_P(retval)));
+
+  zval* val = nr_php_zend_hash_find(Z_ARRVAL_P(retval), "trace_id");
+  tlib_pass_if_not_null("trace_id present", val);
+  tlib_pass_if_zval_type_is("trace_id is string", IS_STRING, val);
+
+  nr_php_zval_free(&retval);
+
+  tlib_php_request_end();
+}
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
 #endif /* ZTS && !PHP7 */
 
-  tlib_php_engine_create("newrelic.distributed_tracing_enabled = false\n" PTSRMLS_CC);
+  tlib_php_engine_create(
+      "newrelic.distributed_tracing_enabled = false\n" PTSRMLS_CC);
 
   test_is_sampled(TSRMLS_C);
-  test_get_linking_metadata(TSRMLS_C);
-  test_get_trace_metadata(TSRMLS_C);
+  test_get_linking_metadata_when_dt_disabled(TSRMLS_C);
+  test_get_trace_metadata_when_dt_disabled(TSRMLS_C);
+
+  tlib_php_engine_destroy(TSRMLS_C);
+
+  tlib_php_engine_create("" PTSRMLS_CC);
+
+  test_is_sampled(TSRMLS_C);
+  test_get_linking_metadata_when_dt_enabled(TSRMLS_C);
+  test_get_trace_metadata_when_dt_enabled(TSRMLS_C);
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
