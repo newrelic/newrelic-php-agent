@@ -25,8 +25,8 @@ newrelic.span_events.max_samples_stored = 0
 ]
  */
 
-$NEWRELIC_SPAN_EVENTS_MAX = 3000; // The agent internal maximum of span events
-				  // per transaction.
+$NEWRELIC_SPAN_EVENTS_MAX = 3000; // The number of span events to send per transaction. 
+				  //The agent internal maximum is 10000.
 
 newrelic_add_custom_tracer('main');
 function main()
