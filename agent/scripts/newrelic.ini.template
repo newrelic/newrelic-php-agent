@@ -901,9 +901,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.span_events.max_samples_stored
 ; Type   : unsigned integer
 ; Scope  : per-directory
-; Default: 0
+; Default: 2000
 ; Info   : The maximum number of span events added to the span event reservoir
-;          per transaction. A value of 0 will use the agent default.
+;          per transaction. A value of 0 will use the agent default.  The max
+;          setting is 10000.
 ;
 ;newrelic.span_events.max_samples_stored = 0
 
