@@ -12,14 +12,14 @@ Only 10 span events must be sent when the limit is set to 10.
 newrelic.distributed_tracing_enabled = 1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false
-newrelic.special.max_span_events = 10
+newrelic.span_events.max_samples_stored = 10
 */
 
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
   {
-    "reservoir_size": 1000,
+    "reservoir_size": 10000,
     "events_seen": 10
   },
   "??"

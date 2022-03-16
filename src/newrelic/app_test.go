@@ -249,7 +249,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"environment":[["b",2]],` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1000}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":10000}}` +
 		`}` +
 		`]`
 
@@ -275,7 +275,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"environment":[["b",2]],` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1000}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":10000}}` +
 		`}` +
 		`]`
 

@@ -30,7 +30,7 @@ const (
 	MaxTxnEvents          = 10 * 1000
 	MaxCustomEvents       = 10 * 1000
 	MaxErrorEvents        = 100
-	MaxSpanEvents         = 1000
+	MaxSpanEvents         = 10000
 	MaxErrors             = 20
 	MaxSlowSQLs           = 10
 	MaxRegularTraces      = 1

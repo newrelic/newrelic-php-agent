@@ -93,9 +93,12 @@ typedef struct _nrtxnopt_t {
                                                        W3C trace context headers
                                                      */
   int span_events_enabled; /* Whether span events are enabled */
-  size_t max_span_events;  /* The maximum number of span events per transaction.
-                              When set to 0, the app harvest's span event limit
-                              is used. */
+  size_t
+      span_events_max_samples_stored; /* The maximum number of span events per
+                                         transaction. When set to 0, the default
+                                         event limit
+                                         NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED
+                                         is used. */
   size_t max_segments; /* The maximum number of segments that are kept in the
                           segment tree at a time. When set to 0 or 1, no maximum
                           is applied. */

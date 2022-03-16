@@ -1423,11 +1423,14 @@ void nr_txn_end(nrtxn_t* txn) {
   /*
    * Finalise the segment tree.
    */
-  txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
-                                             (0 != txn->options.max_span_events)
-                                                 ? txn->options.max_span_events
-                                                 : NR_MAX_SPAN_EVENTS,
-                                             nr_txn_handle_total_time, NULL);
+  txn->final_data = nr_segment_tree_finalise(
+      txn, NR_MAX_SEGMENTS,
+      ((0 < txn->options.span_events_max_samples_stored)
+       && (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED
+           >= txn->options.span_events_max_samples_stored))
+          ? txn->options.span_events_max_samples_stored
+          : NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      nr_txn_handle_total_time, NULL);
 }
 
 bool nr_txn_set_timing(nrtxn_t* txn, nrtime_t start, nrtime_t duration) {
