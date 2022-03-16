@@ -3951,9 +3951,9 @@ static void test_create_event(void) {
       NR_ATTRIBUTE_DESTINATION_ALL & ~NR_ATTRIBUTE_DESTINATION_TXN_EVENT,
       "NOPE", 2);
 
-  txn.final_data
-      = nr_segment_tree_finalise(&txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
-                                 nr_txn_handle_total_time, NULL);
+  txn.final_data = nr_segment_tree_finalise(
+      &txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      nr_txn_handle_total_time, NULL);
 
   event = nr_txn_to_event(0);
   tlib_pass_if_null("null txn", event);
@@ -4124,7 +4124,8 @@ static void test_create_event_with_retimed_segments(void) {
   nr_segment_end(&seg);
 
   txn->final_data = nr_segment_tree_finalise(
-      txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, nr_txn_handle_total_time, NULL);
+      txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      nr_txn_handle_total_time, NULL);
 
   event = nr_txn_to_event(txn);
   tlib_pass_if_str_equal("retimed segments", nr_analytics_event_json(event),
@@ -4636,8 +4637,9 @@ static void test_txn_dt_cross_agent_testcase(nrapp_t* app,
   txn->segment_root->start_time = 1000;
   txn->segment_root->stop_time = 2000;
   txn->segment_count++;
-  txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
-                                             NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL, NULL);
+  txn->final_data = nr_segment_tree_finalise(
+      txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL,
+      NULL);
 
   /*
    * Intrinsics.
@@ -4922,8 +4924,9 @@ static void test_txn_trace_context_cross_agent_testcase(nrapp_t* app,
   txn->segment_root->start_time = 1000;
   txn->segment_root->stop_time = 2000;
   txn->segment_count++;
-  txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
-                                             NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL, NULL);
+  txn->final_data = nr_segment_tree_finalise(
+      txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL,
+      NULL);
 
   /*
    * Intrinsics.
@@ -5977,7 +5980,8 @@ static void test_accept_before_create_distributed_tracing(void) {
   txn.segment_slab = nr_slab_create(sizeof(nr_segment_t), 0);
   txn.segment_root = nr_segment_start(&txn, NULL, NULL);
   txn.unscoped_metrics = nrm_table_create(0);
-  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS + expected_duration * NR_TIME_DIVISOR;
+  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS
+                       + expected_duration * NR_TIME_DIVISOR;
 
   /*
    * Test : Valid accept before create.
@@ -6055,7 +6059,8 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
   txn.options.distributed_tracing_enabled = true;
   txn.app_connect_reply
       = nro_create_from_json("{\"trusted_account_key\":\"9123\"}");
-  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS + expected_duration * NR_TIME_DIVISOR;
+  txn.abs_start_time = (nrtime_t)1482959525577 * NR_TIME_DIVISOR_MS
+                       + expected_duration * NR_TIME_DIVISOR;
 
   /*
    * Test : Successful (web)
@@ -6208,7 +6213,7 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
-    (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
+      (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
   char* traceparent;
 
   tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
