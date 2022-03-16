@@ -638,7 +638,7 @@ static void test_process_connected_app(void) {
   tlib_pass_if_int_equal(__func__, 833, app.limits.analytics_events);
   tlib_pass_if_int_equal(__func__, 0, app.limits.custom_events);
   tlib_pass_if_int_equal(__func__, NR_MAX_ERRORS, app.limits.error_events);
-  tlib_pass_if_int_equal(__func__, NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED, app.limits.span_events);
+  tlib_pass_if_int_equal(__func__, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, app.limits.span_events);
 
   /*
    * Perform same test again to make sure that populated fields are freed

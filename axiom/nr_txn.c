@@ -1425,9 +1425,9 @@ void nr_txn_end(nrtxn_t* txn) {
    */
   txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
                                              ((0 < txn->options.span_events_max_samples_stored) &&
-                                              (NR_SPAN_EVENTS_MAX_SAMPLES_STORED >= txn->options.span_events_max_samples_stored))
+                                              (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED >= txn->options.span_events_max_samples_stored))
                                                  ? txn->options.span_events_max_samples_stored
-                                                 : NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED,
+                                                 : NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
                                              nr_txn_handle_total_time, NULL);
 }
 

@@ -3952,7 +3952,7 @@ static void test_create_event(void) {
       "NOPE", 2);
 
   txn.final_data
-      = nr_segment_tree_finalise(&txn, NR_MAX_SEGMENTS, NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED,
+      = nr_segment_tree_finalise(&txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
                                  nr_txn_handle_total_time, NULL);
 
   event = nr_txn_to_event(0);
@@ -4124,7 +4124,7 @@ static void test_create_event_with_retimed_segments(void) {
   nr_segment_end(&seg);
 
   txn->final_data = nr_segment_tree_finalise(
-      txn, NR_MAX_SEGMENTS, NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED, nr_txn_handle_total_time, NULL);
+      txn, NR_MAX_SEGMENTS, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, nr_txn_handle_total_time, NULL);
 
   event = nr_txn_to_event(txn);
   tlib_pass_if_str_equal("retimed segments", nr_analytics_event_json(event),
@@ -4637,7 +4637,7 @@ static void test_txn_dt_cross_agent_testcase(nrapp_t* app,
   txn->segment_root->stop_time = 2000;
   txn->segment_count++;
   txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
-                                             NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED, NULL, NULL);
+                                             NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL, NULL);
 
   /*
    * Intrinsics.
@@ -4923,7 +4923,7 @@ static void test_txn_trace_context_cross_agent_testcase(nrapp_t* app,
   txn->segment_root->stop_time = 2000;
   txn->segment_count++;
   txn->final_data = nr_segment_tree_finalise(txn, NR_MAX_SEGMENTS,
-                                             NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED, NULL, NULL);
+                                             NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED, NULL, NULL);
 
   /*
    * Intrinsics.
@@ -7931,7 +7931,7 @@ static void test_segment_record_error(void) {
       .state = NR_APP_OK,
       .limits = {
         .analytics_events = NR_MAX_ANALYTIC_EVENTS,
-        .span_events = NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED,
+        .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
       },
   };
   nrtxnopt_t opts;

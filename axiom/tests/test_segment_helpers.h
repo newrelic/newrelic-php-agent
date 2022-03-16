@@ -242,7 +242,7 @@ static NRUNUSED nrtxn_t* new_txn(int background) {
       .analytics_events = NR_MAX_ANALYTIC_EVENTS,
       .custom_events = NR_MAX_CUSTOM_EVENTS,
       .error_events = NR_MAX_ERRORS,
-      .span_events = NR_SPAN_EVENTS_DEFAULT_MAX_SAMPLES_STORED,
+      .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
   };
 
   txn = nr_txn_begin(&app, &nr_txn_test_options, 0);
