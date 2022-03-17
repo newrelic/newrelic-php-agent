@@ -398,7 +398,6 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
   app_limits->span_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "span_event_data",
      NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED);
-//      NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED);
 }
 
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
