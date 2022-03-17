@@ -10,7 +10,6 @@ Forcing the framework to 'none' should not generate a forced framework metric.
 
 /*INI
 newrelic.framework=none
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS
@@ -19,6 +18,10 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"CPU/User Time"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"CPU/User/Utilization"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Memory/Physical"},                        [1, "??", "??", "??", "??", "??"]],

@@ -60,7 +60,12 @@ log_errors=0
         "error.message": "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

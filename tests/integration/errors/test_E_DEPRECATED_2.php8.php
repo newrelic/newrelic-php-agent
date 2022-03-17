@@ -22,7 +22,6 @@ if (version_compare(PHP_VERSION, "8.1", ">=")) {
 error_reporting = E_ALL | E_STRICT
 display_errors=1
 log_errors=0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_REGEX
@@ -64,7 +63,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "Required parameter $b follows optional parameter $a",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

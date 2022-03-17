@@ -11,7 +11,6 @@ is disabled.  This test tests the transaction event and transaction trace cases
 
 /*INI
 newrelic.transaction_tracer.threshold = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_ANALYTICS_EVENTS
@@ -29,7 +28,11 @@ newrelic.distributed_tracing_enabled=0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {}
@@ -80,7 +83,11 @@ newrelic.distributed_tracing_enabled=0
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??"
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
             }
           }
         ],

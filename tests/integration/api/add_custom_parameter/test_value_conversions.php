@@ -10,7 +10,6 @@ Tests how the agent converts custom parameter values to strings.
 
 /*INI
 newrelic.cross_application_tracer.enabled = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_ANALYTICS_EVENTS
@@ -25,7 +24,11 @@ newrelic.distributed_tracing_enabled=0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
         "IS_STRING": "foo",

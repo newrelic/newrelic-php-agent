@@ -9,10 +9,6 @@ Content-type and content-length values with preceding whitespace should be
 parsed correctly.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*HEADERS
 X-Request-Start=1368811467146000
 */
@@ -65,7 +61,12 @@ X-Request-Start=1368811467146000
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
         "queueDuration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {
@@ -97,7 +98,11 @@ X-Request-Start=1368811467146000
         "totalTime": "??",
         "nr.apdexPerfZone": "F",
         "queueDuration": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
       },

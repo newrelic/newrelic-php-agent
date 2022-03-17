@@ -8,10 +8,6 @@
 The agent should safely handle arguments that are not valid curl_multi handles.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {
@@ -25,6 +21,14 @@ if (!extension_loaded("curl")) {
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/all"},                                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],

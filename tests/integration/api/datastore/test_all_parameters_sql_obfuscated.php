@@ -13,7 +13,6 @@ possible options, while respecting query obfuscation.
 newrelic.transaction_tracer.detail = 0
 newrelic.transaction_tracer.record_sql = "obfuscated"
 newrelic.transaction_tracer.threshold = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS
@@ -22,6 +21,10 @@ newrelic.distributed_tracing_enabled=0
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                          [1, "??", "??", "??", "??", "??"]],
@@ -77,7 +80,11 @@ newrelic.distributed_tracing_enabled=0
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??"
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
             }
           }
         ],

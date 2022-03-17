@@ -8,10 +8,6 @@
 Test that newrelic_set_appname returns false when given bad parameters.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "7.4", ">")) {
@@ -34,6 +30,14 @@ ok - newrelic_set_appname too many params
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/all"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],

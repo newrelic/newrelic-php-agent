@@ -62,7 +62,12 @@ Strict Standards: mktime(): You should be using the time() function instead in _
         "error.message": "mktime(): You should be using the time() function instead",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

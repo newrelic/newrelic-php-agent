@@ -12,7 +12,6 @@ configuration setting is enabled.
 /*INI
 newrelic.transaction_tracer.internal_functions_enabled = true
 newrelic.transaction_tracer.threshold = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TXN_TRACES
@@ -47,7 +46,11 @@ newrelic.distributed_tracing_enabled=0
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??"
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
             }
           }
         ],

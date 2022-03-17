@@ -8,10 +8,6 @@
 Ensure the transaction event includes the error intrinsic.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT_ANALYTICS_EVENTS
 [
   "?? agent run id",
@@ -27,7 +23,11 @@ newrelic.distributed_tracing_enabled=0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {}

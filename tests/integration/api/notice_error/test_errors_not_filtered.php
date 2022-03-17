@@ -9,10 +9,6 @@ The agent should report the last error when newrelic_notice_error is called
 multiple times with the same error priority.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",
@@ -53,7 +49,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "Report Me!",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

@@ -19,7 +19,6 @@ if (version_compare(PHP_VERSION, "8.1", ">=")) {
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
@@ -37,6 +36,10 @@ ok - drop table
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                          [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                     [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                   [6, "??", "??", "??", "??", "??"]],

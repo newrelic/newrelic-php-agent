@@ -9,10 +9,6 @@ Calling newrelic_custom_metric() with the wrong arguments should return FALSE
 and no metric should be added.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.0", "<")) {
@@ -36,6 +32,10 @@ ok - should reject NaN
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],

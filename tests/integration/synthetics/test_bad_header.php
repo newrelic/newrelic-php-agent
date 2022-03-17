@@ -23,7 +23,6 @@ or the transaction event when an invalid synthetics header is received.
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.special.expensive_node_min = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*HEADERS
@@ -46,7 +45,11 @@ X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERR
         "duration": "??",
         "totalTime": "??",
         "nr.apdexPerfZone": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       "?? user attributes",
       "?? agent attributes"
@@ -74,7 +77,11 @@ X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERR
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??"
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
             }
           }
         ],

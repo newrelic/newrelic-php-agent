@@ -8,10 +8,6 @@
 The agent should report database metrics for SQLite3.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php require("skipif.inc");
 */
@@ -40,6 +36,10 @@ Array
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                   [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/allOther"},              [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                          [6, "??", "??", "??", "??", "??"]],

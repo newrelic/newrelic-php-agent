@@ -8,10 +8,6 @@
 The agent should prioritize traced errors based on their severity.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",
@@ -49,7 +45,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "highest priority",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

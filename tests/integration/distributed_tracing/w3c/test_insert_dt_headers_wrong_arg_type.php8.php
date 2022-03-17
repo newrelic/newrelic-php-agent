@@ -8,10 +8,6 @@
 Tests that non-array arguments are cause an error
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.0", "<")) {
@@ -25,6 +21,14 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                          [1, "??", "??", "??", "??", "??"]],

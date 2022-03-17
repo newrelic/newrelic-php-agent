@@ -11,7 +11,6 @@ is disabled.  This test tests the error data and error events cases.
 
 /*INI
 newrelic.transaction_tracer.threshold=0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -32,7 +31,11 @@ newrelic.distributed_tracing_enabled=0
           "totalTime": "??",
           "cpu_time": "??",
           "cpu_user_time": "??",
-          "cpu_sys_time": "??"
+          "cpu_sys_time": "??",
+          "guid": "??",
+          "sampled": true,
+          "priority": "??",
+          "traceId": "??"
         }
       }
     ]
@@ -56,7 +59,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "??",
         "transactionName": "??",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

@@ -9,10 +9,6 @@ In a background transactions, the agent should NOT include web transaction
 attributes in error traces, error events, and analytic events.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*HEADERS
 X-Request-Start=1368811467146000
 */
@@ -59,7 +55,12 @@ X-Request-Start=1368811467146000
         "error.message": "I'M COVERED IN BEES!",
         "transactionName": "OtherTransaction/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {
@@ -84,7 +85,11 @@ X-Request-Start=1368811467146000
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
       },

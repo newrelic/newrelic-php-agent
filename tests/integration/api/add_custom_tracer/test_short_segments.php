@@ -10,7 +10,6 @@ Test that traces will be generated even for very short segments.
 
 /*INI
 newrelic.transaction_tracer.threshold=0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TXN_TRACES
@@ -36,7 +35,11 @@ newrelic.distributed_tracing_enabled=0
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??"
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
             }
           }
         ],
@@ -61,6 +64,10 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function"},                     [1000, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function",
      "scope":"OtherTransaction/php__FILE__" },          [1000, "??", "??", "??", "??", "??"]],

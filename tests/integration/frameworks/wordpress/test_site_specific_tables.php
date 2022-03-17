@@ -19,7 +19,6 @@ if (!extension_loaded("sqlite3")) {
 
 /*INI
 newrelic.framework = wordpress
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS
@@ -28,6 +27,10 @@ newrelic.distributed_tracing_enabled=0
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                  [1, "??", "??", "??", "??", "??"]],
     [{"name": "Datastore/SQLite/all"},                            [9,"??","??","??","??","??"]],
     [{"name": "Datastore/SQLite/allOther"},                       [9,"??","??","??","??","??"]],
     [{"name": "Datastore/all"},                                   [9,"??","??","??","??","??"]],

@@ -16,7 +16,6 @@ X-Request-Start=1368811467146000
 
 /*INI
 default_mimetype = html/css
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -66,7 +65,12 @@ newrelic.distributed_tracing_enabled=0
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
         "queueDuration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {
@@ -97,7 +101,11 @@ newrelic.distributed_tracing_enabled=0
         "totalTime": "??",
         "nr.apdexPerfZone": "F",
         "queueDuration": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
       },

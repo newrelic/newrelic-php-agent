@@ -8,10 +8,6 @@
 The agent should record an error when a SQLite3::querysingle() fails.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php require("skipif.inc");
 */
@@ -22,6 +18,14 @@ newrelic.distributed_tracing_enabled=0
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                  [1, "??", "??", "??", "??", "??"]],
