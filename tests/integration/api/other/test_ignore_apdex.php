@@ -8,6 +8,10 @@
 Test that no apdex metrics are created after calling newrelic_ignore_apdex.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",

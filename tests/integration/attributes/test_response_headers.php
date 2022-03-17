@@ -12,6 +12,7 @@ headers() supercedes headers set with ini_set or in the INI file.
 
 /*INI
 default_mimetype = application/pdf
+newrelic.distributed_tracing_enabled=0
 */
 
 /*HEADERS

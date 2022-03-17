@@ -19,6 +19,7 @@ if (!extension_loaded("sqlite3")) {
 
 /*INI
 newrelic.framework = magento2
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

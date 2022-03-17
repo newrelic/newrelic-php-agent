@@ -12,6 +12,7 @@ datastores.
 /*INI
 newrelic.transaction_tracer.detail = 0
 newrelic.transaction_tracer.threshold = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

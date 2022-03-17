@@ -15,6 +15,7 @@ The agent should report Redis metrics for Redis hash operations.
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

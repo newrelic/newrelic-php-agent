@@ -10,6 +10,7 @@ Forcing the framework to 'none' should not generate a forced framework metric.
 
 /*INI
 newrelic.framework=none
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

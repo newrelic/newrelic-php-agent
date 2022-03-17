@@ -9,6 +9,10 @@ The agent should not create external metrics (and not blow up!) when curl_exec
 is called with zero arguments.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

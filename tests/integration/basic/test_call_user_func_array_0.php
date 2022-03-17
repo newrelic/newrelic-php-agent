@@ -11,6 +11,7 @@ CodeIgniter or Drupal is detected/forced.
 
 /*INI
 newrelic.framework=codeigniter   ; cause agent to hook call_user_func_array
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

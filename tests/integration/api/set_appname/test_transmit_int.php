@@ -9,6 +9,10 @@ Test that newrelic_set_appname works as expected when the transmit bool is
 set to a value that is of type int or float.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - newrelic_set_appname transmit=1
 ok - newrelic_set_appname transmit=1

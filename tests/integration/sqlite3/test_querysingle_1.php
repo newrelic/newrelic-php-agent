@@ -8,6 +8,10 @@
 The agent should generate Database metrics for SQLite3::querysingle().
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php require("skipif.inc");
 */

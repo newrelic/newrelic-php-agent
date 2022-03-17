@@ -11,6 +11,7 @@ is disabled.  This test tests the transaction event and transaction trace cases
 
 /*INI
 newrelic.transaction_tracer.threshold = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_ANALYTICS_EVENTS

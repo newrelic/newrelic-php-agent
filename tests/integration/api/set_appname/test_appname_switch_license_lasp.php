@@ -12,6 +12,7 @@ is enabled.
 
 /*INI
 newrelic.security_policies_token = 00000000
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_REGEX

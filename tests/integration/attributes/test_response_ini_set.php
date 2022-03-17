@@ -16,6 +16,7 @@ X-Request-Start=1368811467146000
 
 /*INI
 default_mimetype = html/css
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS

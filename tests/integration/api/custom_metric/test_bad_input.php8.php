@@ -9,6 +9,10 @@ Calling newrelic_custom_metric() with the wrong arguments should return FALSE
 and no metric should be added.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.0", "<")) {

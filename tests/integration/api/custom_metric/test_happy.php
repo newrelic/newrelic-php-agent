@@ -10,6 +10,10 @@ the agent should correctly calculate the count, sum, min, max and sum-of-
 squares.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - min added successfully
 ok - max added successfully

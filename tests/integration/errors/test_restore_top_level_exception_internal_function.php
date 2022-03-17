@@ -9,6 +9,10 @@ The agent should not crash when an internal function is used as an exception
 handler and restore_exception_handler is called.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",

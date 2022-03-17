@@ -23,6 +23,7 @@ or the transaction event when an invalid synthetics header is received.
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.special.expensive_node_min = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*HEADERS

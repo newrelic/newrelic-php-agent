@@ -11,6 +11,7 @@ errors except uncaught exceptions.
 
 /*INI
 newrelic.error_collector.prioritize_api_errors = true
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS

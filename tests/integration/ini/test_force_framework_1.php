@@ -11,6 +11,7 @@ a forced framework metric.
 
 /*INI
 newrelic.framework = bogus_framework_name
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

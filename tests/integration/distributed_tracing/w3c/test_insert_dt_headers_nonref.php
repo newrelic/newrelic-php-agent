@@ -8,6 +8,10 @@
 Tests that non-reference arguments are rejected without segfault.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",

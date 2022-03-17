@@ -15,6 +15,7 @@ newrelic.special.expensive_node_min = 0
 newrelic.transaction_events.attributes.enabled = false
 newrelic.transaction_tracer.attributes.enabled = false
 newrelic.error_collector.attributes.enabled = false
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS

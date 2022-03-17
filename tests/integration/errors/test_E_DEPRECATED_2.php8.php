@@ -22,6 +22,7 @@ if (version_compare(PHP_VERSION, "8.1", ">=")) {
 error_reporting = E_ALL | E_STRICT
 display_errors=1
 log_errors=0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_REGEX

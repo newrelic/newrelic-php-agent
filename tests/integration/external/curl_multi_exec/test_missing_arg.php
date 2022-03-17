@@ -9,6 +9,10 @@ The agent should not create external metrics (and not blow up!) when
 curl_multi_exec is called with too few arguments.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

@@ -9,6 +9,10 @@ Test that newrelic_set_appname works even when a transaction is not currently
 running.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - newrelic_set_appname no transaction
 */

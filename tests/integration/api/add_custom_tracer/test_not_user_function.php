@@ -8,6 +8,10 @@
 Test that adding custom tracers for internal functions does not blow up.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",

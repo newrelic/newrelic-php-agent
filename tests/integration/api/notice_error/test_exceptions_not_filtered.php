@@ -10,6 +10,7 @@ The agent should NOT ignore exceptions reported via the API.
 
 /*INI
 newrelic.error_collector.ignore_exceptions = 'Exception'
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS

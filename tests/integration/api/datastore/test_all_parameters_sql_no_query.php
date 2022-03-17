@@ -13,6 +13,7 @@ record_sql option is set to "off".
 newrelic.transaction_tracer.detail = 0
 newrelic.transaction_tracer.record_sql = "off"
 newrelic.transaction_tracer.threshold = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

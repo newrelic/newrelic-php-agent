@@ -8,6 +8,10 @@
 The agent should prioritize traced errors based on their severity.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",

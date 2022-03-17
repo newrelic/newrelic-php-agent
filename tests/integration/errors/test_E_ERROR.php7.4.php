@@ -8,6 +8,10 @@
 The agent should capture and report fatal errors.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "7.4", "<")) {
