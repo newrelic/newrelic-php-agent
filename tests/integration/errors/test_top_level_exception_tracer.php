@@ -9,10 +9,6 @@ The agent should not remove a custom tracer from a function when it is no longer
 used as an exception handler.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT
 NULL
 */
@@ -23,6 +19,10 @@ NULL
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],

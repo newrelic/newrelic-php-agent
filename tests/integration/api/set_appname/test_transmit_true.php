@@ -9,10 +9,6 @@ Test that newrelic_set_appname works as expected when the transmit bool is
 set to true.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT
 ok - newrelic_set_appname transmit=true
 ok - newrelic_set_appname transmit=1
@@ -24,6 +20,10 @@ ok - newrelic_set_appname transmit=1
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                            [3, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                            [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                       [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},               [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                  [3, "??", "??", "??", "??", "??"]],

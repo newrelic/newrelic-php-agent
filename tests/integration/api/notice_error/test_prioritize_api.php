@@ -11,7 +11,6 @@ errors except uncaught exceptions.
 
 /*INI
 newrelic.error_collector.prioritize_api_errors = true
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -53,7 +52,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "Noticed exception 'Exception' with message 'Sample Exception' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

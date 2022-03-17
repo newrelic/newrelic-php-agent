@@ -8,16 +8,20 @@
 Exercise the instrumentation for the dl() function.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT_METRICS
 [
   "?? agent run id",
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/all"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],

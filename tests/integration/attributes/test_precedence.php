@@ -21,7 +21,6 @@ newrelic.error_collector.attributes.enabled = true
 newrelic.transaction_tracer.capture_attributes = false
 newrelic.error_collector.capture_attributes = false
 newrelic.analytics_events.capture_attributes = false
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -63,7 +62,11 @@ newrelic.distributed_tracing_enabled=0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
         "hat": "who"

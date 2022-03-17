@@ -11,7 +11,6 @@ Exercise the wrappers for the various output buffer functions.
 
 /*INI
 error_reporting = E_ERROR | E_CORE_ERROR | E_RECOVERABLE_ERROR
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
@@ -34,6 +33,10 @@ block4 <br>
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                        [1, "??", "??", "??", "??", "??"]],

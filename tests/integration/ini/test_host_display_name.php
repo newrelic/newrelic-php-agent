@@ -32,10 +32,10 @@ foo=42
         "duration": "??",
         "totalTime": "??",
         "error": false,
-                      	"guid": "??",
-                              "sampled": true,
-                              "priority": "??",
-                              "traceId": "??"
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {

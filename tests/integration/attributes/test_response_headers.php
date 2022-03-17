@@ -12,7 +12,6 @@ headers() supercedes headers set with ini_set or in the INI file.
 
 /*INI
 default_mimetype = application/pdf
-newrelic.distributed_tracing_enabled=0
 */
 
 /*HEADERS
@@ -67,7 +66,12 @@ X-Request-Start=1368811467146000
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
         "queueDuration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {
@@ -99,7 +103,11 @@ X-Request-Start=1368811467146000
         "totalTime": "??",
         "nr.apdexPerfZone": "F",
         "queueDuration": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
       },

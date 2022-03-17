@@ -9,10 +9,6 @@ Ensure the transaction event include the error intrinsic and that
 the intrinsic's value is true for normal PHP errors.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT_ANALYTICS_EVENTS
 [
   "?? agent run id",
@@ -28,7 +24,11 @@ newrelic.distributed_tracing_enabled=0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {

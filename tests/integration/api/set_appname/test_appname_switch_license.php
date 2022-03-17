@@ -8,10 +8,6 @@
 Test that newrelic_set_appname works with two parameters.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT
 ok - newrelic_set_appname appname and license
 */
@@ -22,6 +18,10 @@ ok - newrelic_set_appname appname and license
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                    [2, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                    [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [2, "??", "??", "??", "??", "??"]],

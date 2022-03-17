@@ -8,10 +8,6 @@
 Test return value of curl_multi_add_handle and curl_multi_remove_handle.
  */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {
@@ -31,6 +27,10 @@ ok - curl handle removed
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],

@@ -11,7 +11,6 @@ The agent should capture and report compile errors.
 /*INI
 display_errors=1
 log_errors=0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_REGEX
@@ -53,7 +52,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "Cannot re-assign $this",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

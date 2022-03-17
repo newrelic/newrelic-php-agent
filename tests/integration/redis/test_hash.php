@@ -15,7 +15,6 @@ The agent should report Redis metrics for Redis hash operations.
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
@@ -37,6 +36,10 @@ ok - delete hash
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/all"},                   [8, "??", "??", "??", "??", "??"]],

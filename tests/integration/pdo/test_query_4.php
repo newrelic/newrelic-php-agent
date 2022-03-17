@@ -16,7 +16,6 @@ PDO::query().
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
@@ -32,6 +31,10 @@ ok - drop table
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                          [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                     [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                   [4, "??", "??", "??", "??", "??"]],

@@ -8,10 +8,6 @@
 Test normal successful usage of newrelic_add_custom_tracer.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT
 zip
 zap
@@ -23,6 +19,10 @@ zap
   "?? timeframe start",
   "?? timeframe stop",
   [
+   [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+   [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/MY_function"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/MY_function",
      "scope":"OtherTransaction/php__FILE__" },          [1, "??", "??", "??", "??", "??"]],

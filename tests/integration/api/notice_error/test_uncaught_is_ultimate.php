@@ -10,7 +10,6 @@ The agent should prioritize uncaught errors above all others.
 
 /*INI
 newrelic.error_collector.prioritize_api_errors = true
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -52,7 +51,12 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "Uncaught exception 'Exception' with message 'Sample Exception' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

@@ -13,7 +13,6 @@ happens. For the list of files, we reference ourself with a pcre.
 /*INI
 newrelic.webtransaction.name.functions = f_0,f_1,bogus_f_0,,,
 newrelic.webtransaction.name.files = .*test_ini_003.php,**,[,bat/,baz,,,
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
@@ -34,6 +33,10 @@ f_3() called
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_0"},                              [2, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_0",
       "scope":"OtherTransaction/Function/f_0"},          [2, "??", "??", "??", "??", "??"]],
