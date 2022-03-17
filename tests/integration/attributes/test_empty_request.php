@@ -9,6 +9,10 @@ The agent should not include attributes about the web transaction request when
 the values are empty.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X-Request-Start=1368811467146000
 Content-Type=

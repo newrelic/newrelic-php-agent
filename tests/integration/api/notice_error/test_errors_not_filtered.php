@@ -9,6 +9,10 @@ The agent should report the last error when newrelic_notice_error is called
 multiple times with the same error priority.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",

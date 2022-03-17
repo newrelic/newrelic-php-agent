@@ -9,6 +9,10 @@ The agent should capture and report unhandled exceptions along with a stack
 trace that omits argument values.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",

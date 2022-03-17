@@ -9,6 +9,10 @@ The agent should generate external metrics for curl_exec when the HTTP protocol
 is used.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

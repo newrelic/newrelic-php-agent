@@ -8,6 +8,10 @@
 Test normal successful usage of newrelic_add_custom_tracer.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 zip
 zap

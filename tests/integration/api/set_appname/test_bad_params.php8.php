@@ -8,6 +8,10 @@
 Test that newrelic_set_appname with bad parameters.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.0", "<")) {

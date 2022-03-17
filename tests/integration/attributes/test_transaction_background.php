@@ -9,6 +9,10 @@ In a background transactions, the agent should NOT include web transaction
 attributes in error traces, error events, and analytic events.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X-Request-Start=1368811467146000
 */

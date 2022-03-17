@@ -8,6 +8,10 @@
 Test return value of curl_multi_add_handle and curl_multi_remove_handle.
  */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

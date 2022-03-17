@@ -11,6 +11,7 @@ transaction being named "list".
 
 /*INI
 newrelic.framework=laravel
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

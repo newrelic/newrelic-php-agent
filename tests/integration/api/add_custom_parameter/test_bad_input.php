@@ -8,6 +8,10 @@
 Tests how the agent converts custom parameter values to strings.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - should reject zero args
 ok - should reject one arg

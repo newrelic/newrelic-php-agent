@@ -11,6 +11,7 @@ Exercise the wrappers for the various output buffer functions.
 
 /*INI
 error_reporting = E_ERROR | E_CORE_ERROR | E_RECOVERABLE_ERROR
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

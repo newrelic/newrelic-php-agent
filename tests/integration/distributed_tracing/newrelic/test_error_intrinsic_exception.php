@@ -9,6 +9,10 @@ Ensure the transaction event includes the error intrinsic and that
 the intrinsic's value is true for Exceptions.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_ANALYTICS_EVENTS
 [
   "?? agent run id",

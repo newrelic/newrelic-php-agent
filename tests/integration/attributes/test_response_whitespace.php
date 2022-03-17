@@ -9,6 +9,10 @@ Content-type and content-length values with preceding whitespace should be
 parsed correctly.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X-Request-Start=1368811467146000
 */

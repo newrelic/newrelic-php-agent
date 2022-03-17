@@ -10,6 +10,7 @@ Forcing the framework to 'no_framework' should generate a forced framework metri
 
 /*INI
 newrelic.framework = no_framework
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

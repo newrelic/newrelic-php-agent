@@ -9,6 +9,7 @@ Test that newrelic_end_transaction() ends all unended segments in the stack.
 
 /*INI
 newrelic.transaction_tracer.threshold = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TXN_TRACES

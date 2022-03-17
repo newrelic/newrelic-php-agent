@@ -11,6 +11,7 @@ enable the Drupal tab in APM.
 
 /*INI
 newrelic.framework = drupal8
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

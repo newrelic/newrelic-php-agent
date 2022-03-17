@@ -9,6 +9,10 @@ Test that newrelic_set_appname works as expected when the transmit bool is
 set to true.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - newrelic_set_appname transmit=true
 ok - newrelic_set_appname transmit=1

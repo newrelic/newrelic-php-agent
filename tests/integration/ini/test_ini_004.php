@@ -13,6 +13,7 @@ happens. For the list of files, we reference ourself with a pcre.
 /*INI
 newrelic.webtransaction.name.functions = CLI/PHP_FLAGS_ARGS,Foobar::interesting_method,bar,baz,,,
 newrelic.webtransaction.name.files = .*exercise_ini_3.php,**,[,bat/,baz,,,
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

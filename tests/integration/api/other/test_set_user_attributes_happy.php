@@ -8,6 +8,10 @@
 Tests newrelic_set_user_attributes() happy path.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_ANALYTICS_EVENTS
 [
   "?? agent run id",

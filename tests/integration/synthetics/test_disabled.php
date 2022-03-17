@@ -31,6 +31,7 @@ if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
 newrelic.synthetics.enabled = false
 newrelic.transaction_tracer.threshold = 0
 newrelic.special.expensive_node_min = 0
+newrelic.distributed_tracing_enabled = false
 */
 
 /*HEADERS

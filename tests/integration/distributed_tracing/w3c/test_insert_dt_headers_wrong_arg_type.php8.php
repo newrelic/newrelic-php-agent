@@ -8,6 +8,10 @@
 Tests that non-array arguments are cause an error
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.0", "<")) {

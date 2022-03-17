@@ -8,6 +8,10 @@
 Test the agent's handling of malformed urls passed to curl_exec().
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

@@ -8,6 +8,10 @@
 The agent should report database metrics for SQLite3.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php require("skipif.inc");
 */

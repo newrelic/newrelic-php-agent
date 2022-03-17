@@ -9,6 +9,10 @@ The agent should gracefully handle SQLite3::query() being invoked with no
 arguments.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php require("skipif.inc");
 */

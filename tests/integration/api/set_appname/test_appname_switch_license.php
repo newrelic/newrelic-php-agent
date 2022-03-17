@@ -8,6 +8,10 @@
 Test that newrelic_set_appname works with two parameters.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 ok - newrelic_set_appname appname and license
 */

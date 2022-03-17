@@ -8,6 +8,10 @@
 The agent should safely handle arguments that are not valid curl handles.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

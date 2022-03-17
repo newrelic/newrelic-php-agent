@@ -12,6 +12,7 @@ trace.
 /*INI
 display_errors=1
 log_errors=0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_REGEX

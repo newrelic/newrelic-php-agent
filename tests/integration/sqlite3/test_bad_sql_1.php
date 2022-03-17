@@ -8,6 +8,10 @@
 The agent should record an error when a query fails.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF
 <?php require("skipif.inc");
 */

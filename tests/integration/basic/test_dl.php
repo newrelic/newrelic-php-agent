@@ -8,6 +8,10 @@
 Exercise the instrumentation for the dl() function.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",

@@ -10,6 +10,7 @@ Exercise the modify handler for the newrelic.special ini setting.
 
 /*INI
 newrelic.special = flummoxed
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

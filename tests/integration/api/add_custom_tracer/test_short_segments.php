@@ -10,6 +10,7 @@ Test that traces will be generated even for very short segments.
 
 /*INI
 newrelic.transaction_tracer.threshold=0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_TXN_TRACES

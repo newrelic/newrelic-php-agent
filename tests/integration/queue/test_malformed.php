@@ -8,6 +8,10 @@
 The agent should obey the queue time header.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X_REQUEST_START=abc
 */
