@@ -632,13 +632,13 @@ static void test_process_connected_app(void) {
    * 2. custom_events_limit is 0 because the field is present and set to 0.
    * 3. error_events_limit is 100 because the field is present but invalid,
    *    as it is null, so the default value is used.
-   * 4. span_events_limit is 1000 because the field is omitted, so the default
-   *    value is used.
+   * 4. span_events_limit is 2000 because the field is omitted, so the max
+   *    value from the backend is assumed.
    */
   tlib_pass_if_int_equal(__func__, 833, app.limits.analytics_events);
   tlib_pass_if_int_equal(__func__, 0, app.limits.custom_events);
   tlib_pass_if_int_equal(__func__, NR_MAX_ERRORS, app.limits.error_events);
-  tlib_pass_if_int_equal(__func__, NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+  tlib_pass_if_int_equal(__func__, NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED,
                          app.limits.span_events);
 
   /*
