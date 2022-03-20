@@ -1305,7 +1305,7 @@ static PHP_INI_MH(nr_tt_max_segments_web_mh) {
 
 static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
   nriniuint_t* p;
-  int val;
+  int val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
 
 #ifndef ZTS
   char* base = (char*)mh_arg2;
@@ -1324,13 +1324,12 @@ static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
    */
 
   p->where = 0;
-  val = (int)strtol(NEW_VALUE, 0, 0);
 
   if (0 != NEW_VALUE_LEN) {
-    if ((0 >= tempVal) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < tempVal)) {
+    val = (int)strtol(NEW_VALUE, 0, 0);
+    if ((0 >= val) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < val)) {
       val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
     }
-  }
   p->value = (zend_uint)val;
   p->where = stage;
 
