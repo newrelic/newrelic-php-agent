@@ -5,10 +5,8 @@
  */
 
 /*DESCRIPTION
-When the span events max_samples_stored limit is set to any integer 
-less than 1 or greater than 10000(max value)
+When the span events max_samples_stored limit is set to any non-integer
 the max_samples_stored value should be treated as the default (2000) value.
-Setting an invalid value should result in the default value of 2000 being seen.
 */
 
 /*INI

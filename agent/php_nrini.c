@@ -107,7 +107,7 @@
  *      (stage == ZEND_INI_STAGE_STARTUP)
  *
  * Case 2: php not invoked with -dvar=value
- *   1: the value comes from the newrelic.ini file (stage == 
+ *   1: the value comes from the newrelic.ini file (stage ==
  *      ZEND_INI_STAGE_STARTUP) (minit time)
  *
  * Case 3: newrelic.ini file present, but the value is commented out
@@ -407,19 +407,19 @@ static PHP_INI_DISP(nr_framework_dh) {
  *  char *new_value
  *  uint new_value_length
  *  void *mh_arg1          the offset into the blob of data holding all ini
- *                         values 
- *  void *mh_arg2          the blob of data holding all ini values 
+ *                         values
+ *  void *mh_arg2          the blob of data holding all ini values
  *  void *mh_arg3          unused for our purposes int stage taken from the set
- *                         shown below 
+ *                         shown below
  *  TSRMLS_DC
  *
  * On PHP 7, the arguments are similar, but with PHP 7 appropriate changes for
  * the string and thread safety:
  *  zend_ini_entry *entry
  *  zend_string *new_value
- *  void *mh_arg1          the offset into the blob of data holding all ini 
- *                         values 
- *  void *mh_arg2          the blob of data holding all ini values 
+ *  void *mh_arg1          the offset into the blob of data holding all ini
+ *                         values
+ *  void *mh_arg2          the blob of data holding all ini values
  *  void *mh_arg3          unused for our purposes int stage taken from the set
  *                         shown below
  *
@@ -1303,6 +1303,40 @@ static PHP_INI_MH(nr_tt_max_segments_web_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
+  nriniuint_t* p;
+  int val;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  /* Anything other than a valid value will result in the
+   * default value of NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED.
+   */
+
+  p->where = 0;
+  val = (int)strtol(NEW_VALUE, 0, 0);
+
+  if (0 != NEW_VALUE_LEN) {
+    if ((0 >= tempVal) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < tempVal)) {
+      val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
+    }
+  }
+  p->value = (zend_uint)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
 static PHP_INI_MH(nr_span_queue_size_mh) {
   nriniuint_t* p;
   int val = 1;
@@ -1771,13 +1805,13 @@ PHP_INI_ENTRY_EX("newrelic.daemon.loglevel",
                  0)
 PHP_INI_ENTRY_EX(
     "newrelic.daemon.port",
-    NR_PHP_INI_DEFAULT_PORT,  /* port and address share the same default */
+    NR_PHP_INI_DEFAULT_PORT, /* port and address share the same default */
     NR_PHP_SYSTEM,
     nr_daemon_port_mh,
     0)
 PHP_INI_ENTRY_EX(
     "newrelic.daemon.address",
-    NR_PHP_INI_DEFAULT_PORT,  /* port and address share the same default */
+    NR_PHP_INI_DEFAULT_PORT, /* port and address share the same default */
     NR_PHP_SYSTEM,
     nr_daemon_address_mh,
     0)
@@ -2587,9 +2621,9 @@ STD_PHP_INI_ENTRY_EX("newrelic.span_events_enabled",
                      0)
 
 STD_PHP_INI_ENTRY_EX("newrelic.span_events.max_samples_stored",
-                     "0",
+                     "2000",
                      NR_PHP_REQUEST,
-                     nr_unsigned_int_mh,
+                     nr_span_events_max_samples_stored_mh,
                      span_events_max_samples_stored,
                      zend_newrelic_globals,
                      newrelic_globals,
@@ -2918,7 +2952,7 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
           == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
                         NR_PSTR("newrelic.distributed_tracing_enabled")))) {
     /*
-     * The collector requires that the value of 
+     * The collector requires that the value of
      * newrelic.browser_monitoring.debug is a bool, so we must convert it
      * here.
      *
