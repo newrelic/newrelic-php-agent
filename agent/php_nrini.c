@@ -1330,6 +1330,7 @@ static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
     if ((0 >= val) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < val)) {
       val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
     }
+  }
   p->value = (zend_uint)val;
   p->where = stage;
 
