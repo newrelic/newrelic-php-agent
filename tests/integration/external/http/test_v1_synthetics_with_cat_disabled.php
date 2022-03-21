@@ -32,6 +32,7 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 
 /*INI
 newrelic.cross_application_tracer.enabled = false
+newrelic.distributed_tracing_enabled=0
 */
 
 /*

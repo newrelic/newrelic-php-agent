@@ -31,7 +31,11 @@ foo=42
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {

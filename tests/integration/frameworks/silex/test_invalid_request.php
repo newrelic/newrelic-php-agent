@@ -8,6 +8,10 @@
 The agent should handle an invalid Silex request object.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*SKIPIF <?php require('skipif.inc'); */
 
 /*EXPECT_METRICS

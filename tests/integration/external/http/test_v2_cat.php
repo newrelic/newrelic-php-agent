@@ -20,6 +20,10 @@ if (version_compare(phpversion('http'), '2.0.0', '<')) {
 }
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
 */

@@ -24,7 +24,11 @@ the intrinsic's value is true for Exceptions.
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {

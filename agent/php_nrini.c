@@ -2581,7 +2581,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.custom_parameters_enabled",
  * functions
  */
 STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing_enabled",
-                     "0",
+                     "1",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      distributed_tracing_enabled,

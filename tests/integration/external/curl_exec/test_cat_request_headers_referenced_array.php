@@ -20,6 +20,10 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
 }
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 Customer-Header=found tracing endpoint reached
 ok - tracing successful

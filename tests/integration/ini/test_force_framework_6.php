@@ -18,6 +18,10 @@ newrelic.framework=none
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"CPU/User Time"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"CPU/User/Utilization"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Memory/Physical"},                        [1, "??", "??", "??", "??", "??"]],

@@ -31,7 +31,11 @@ newrelic.transaction_tracer.threshold=0
           "totalTime": "??",
           "cpu_time": "??",
           "cpu_user_time": "??",
-          "cpu_sys_time": "??"
+          "cpu_sys_time": "??",
+          "guid": "??",
+          "sampled": true,
+          "priority": "??",
+          "traceId": "??"
         }
       }
     ]
@@ -55,7 +59,12 @@ newrelic.transaction_tracer.threshold=0
         "error.message": "??",
         "transactionName": "??",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

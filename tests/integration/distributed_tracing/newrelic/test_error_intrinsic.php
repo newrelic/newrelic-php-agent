@@ -23,7 +23,11 @@ Ensure the transaction event includes the error intrinsic.
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {}

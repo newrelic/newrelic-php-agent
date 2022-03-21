@@ -52,7 +52,11 @@ newrelic.analytics_events.capture_attributes = false
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {},
       {}

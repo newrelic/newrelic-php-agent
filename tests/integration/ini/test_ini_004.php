@@ -25,6 +25,10 @@ Foobar::interesting_method() called
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/Foobar::interesting_method"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/Foobar::interesting_method",
       "scope":"OtherTransaction/Function/Foobar::interesting_method"},

@@ -24,7 +24,11 @@ newrelic.cross_application_tracer.enabled = 0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
         "foo": "IS_STRING",
