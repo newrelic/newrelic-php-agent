@@ -170,6 +170,7 @@ func merge(a, b map[string]string) map[string]string {
 
 func catRequest(w http.ResponseWriter, r *http.Request) {
 	catFile := r.URL.Query().Get("file")
+	dtEnabled := r.URL.Query().Get("dt_enabled");
 	if "" == catFile {
 		http.Error(w, "cat failure: no file provided", http.StatusBadRequest)
 		return
@@ -178,6 +179,9 @@ func catRequest(w http.ResponseWriter, r *http.Request) {
 	env := merge(ctx.Env, nil)
 	settings := merge(ctx.Settings, nil)
 	settings["newrelic.appname"] = "ignore"
+	if ("false" == dtEnabled) {
+	    settings["newrelic.distributed_tracing_enabled"] = "false";
+	}
 
 	tx, err := integration.CgiTx(integration.ScriptFile(catFile), env, settings, r.Header, ctx)
 	if nil != err {
