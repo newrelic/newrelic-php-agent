@@ -27,6 +27,10 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
 }
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */

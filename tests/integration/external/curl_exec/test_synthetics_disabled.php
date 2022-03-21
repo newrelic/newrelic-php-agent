@@ -31,6 +31,10 @@ newrelic.synthetics.enabled = false
  *   ]
  */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*HEADERS
 X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
