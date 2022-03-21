@@ -32,6 +32,7 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 /*INI
 newrelic.transaction_tracer.threshold = '1h'
 newrelic.special.expensive_node_min = 0
+newrelic.distributed_tracing_enabled=0
 */
 
 /*HEADERS

@@ -5,11 +5,12 @@
  */
 
 /*DESCRIPTION
-The agent SHALL NOT add an X-NewRelic-Synthetics header to external calls when
-the Synthetics feature is disabled.
+The agent SHALL NOT add an X-NewRelic-Synthetics header to external to CAT request
+calls when the Synthetics feature is disabled.
 */
 
 /*INI
+newrelic.distributed_tracing_enabled=0
 newrelic.synthetics.enabled = false
 */
 
