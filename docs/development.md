@@ -1,6 +1,6 @@
 # Development
 
-Here are some instructions for building the New Relic PHP agent yourself.
+Here are some instructions for building the New Relic PHP agent yourself.  Try it!
 
 ## Requirements
 
