@@ -58,7 +58,4 @@ function alpha() {
   throw new Exception('this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...');
 }
 
-// Attempt to get rid of our exception handler.
-restore_exception_handler();
-
 alpha();
