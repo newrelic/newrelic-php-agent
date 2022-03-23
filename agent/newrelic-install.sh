@@ -122,7 +122,7 @@ error() {
 ostype=
 if [ -f /etc/redhat-release -o -f /etc/redhat_version ]; then
   ostype=rhel
-elif [ -d /etc/dpkg ]; then
+elif [ -f /etc/os-release ] && grep -q -i 'Debian' /etc/os-release; then
   ostype=debian
 elif [ -f /etc/alpine-release ] || [ -d /etc/apk ]; then
   ostype=alpine
