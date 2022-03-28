@@ -1329,6 +1329,10 @@ static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
     val = (int)strtol(NEW_VALUE, 0, 0);
     if ((0 >= val) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < val)) {
       val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
+      nrl_debug(NRL_INIT,
+                "Invalid span_event.max_samples_stored value \"%.8s\"; using "
+                "%d instead",
+                NEW_VALUE, val);
     }
   }
   p->value = (zend_uint)val;
@@ -2621,7 +2625,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.span_events_enabled",
                      0)
 
 STD_PHP_INI_ENTRY_EX("newrelic.span_events.max_samples_stored",
-                     "2000",
+                     NR_STR2(NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED),
                      NR_PHP_REQUEST,
                      nr_span_events_max_samples_stored_mh,
                      span_events_max_samples_stored,

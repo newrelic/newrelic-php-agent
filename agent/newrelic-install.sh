@@ -120,9 +120,7 @@ error() {
 # Get the OS type.
 #
 ostype=
-if [ -f /proc/version ] && [ -n "$(grep 'Alpine' /proc/version)" ]; then
-  ostype=alpine
-elif [ -f /etc/redhat-release -o -f /etc/redhat_version ]; then
+if [ -f /etc/redhat-release -o -f /etc/redhat_version ]; then
   ostype=rhel
 elif [ -d /etc/dpkg ]; then
   ostype=debian
