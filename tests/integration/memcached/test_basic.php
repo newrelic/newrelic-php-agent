@@ -37,10 +37,6 @@ ok - delete
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [15, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [15, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},               [15, "??", "??", "??", "??", "??"]],

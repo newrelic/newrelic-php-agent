@@ -30,12 +30,7 @@ newrelic.allow_raw_exception_messages=0
         "error.message": "Message removed by New Relic security settings",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

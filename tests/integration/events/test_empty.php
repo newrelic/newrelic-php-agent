@@ -20,11 +20,7 @@ The agent should generate a small set of attributes on every transaction.
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       {
       },

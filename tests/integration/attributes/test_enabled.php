@@ -53,11 +53,7 @@ newrelic.special.expensive_node_min = 0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": true
       },
       {
         "hat": "who"

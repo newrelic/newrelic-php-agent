@@ -59,12 +59,7 @@ log_errors=0
         "error.message": "Private methods cannot be final as they are never overridden by other classes",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

@@ -65,12 +65,7 @@ default_mimetype = html/css
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
         "queueDuration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {
@@ -101,11 +96,7 @@ default_mimetype = html/css
         "totalTime": "??",
         "nr.apdexPerfZone": "F",
         "queueDuration": "??",
-        "error": true,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": true
       },
       {
       },

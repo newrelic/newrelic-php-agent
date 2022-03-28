@@ -14,10 +14,6 @@ Test that no apdex metrics are created after calling newrelic_ignore_apdex.
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},
-                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransaction"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransaction/Uri__FILE__"},             [1, "??", "??", "??", "??", "??"]],

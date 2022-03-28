@@ -61,12 +61,7 @@ X-Request-Start=1368811467146000
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
         "queueDuration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {
@@ -98,11 +93,7 @@ X-Request-Start=1368811467146000
         "totalTime": "??",
         "nr.apdexPerfZone": "F",
         "queueDuration": "??",
-        "error": true,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": true
       },
       {
       },

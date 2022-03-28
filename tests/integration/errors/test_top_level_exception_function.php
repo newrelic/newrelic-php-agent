@@ -9,10 +9,6 @@ The agent should report errors for exceptions that bubble to the top level and
 are handled by a named function.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*EXPECT
 In exception handler
 */

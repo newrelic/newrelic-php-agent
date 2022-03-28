@@ -57,12 +57,7 @@ Catchable fatal error: Object of class stdClass could not be converted to string
         "error.message": "Object of class stdClass could not be converted to string",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

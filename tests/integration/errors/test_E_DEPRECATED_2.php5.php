@@ -61,12 +61,7 @@ Deprecated: preg_replace(): The /e modifier is deprecated, use preg_replace_call
         "error.message": "preg_replace(): The \/e modifier is deprecated, use preg_replace_callback instead",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

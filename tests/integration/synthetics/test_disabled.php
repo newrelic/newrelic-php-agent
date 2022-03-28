@@ -53,11 +53,7 @@ X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
         "duration": "??",
         "totalTime": "??",
         "nr.apdexPerfZone": "??",
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       "?? user attributes",
       "?? agent attributes"
@@ -85,11 +81,7 @@ X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??",
-              "guid": "??",
-              "sampled": true,
-              "priority": "??",
-              "traceId": "??"
+              "cpu_sys_time": "??"
             }
           }
         ],

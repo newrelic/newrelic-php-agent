@@ -23,7 +23,6 @@ if (!unpack_guzzle(6)) {
 
 /*INI
 newrelic.cross_application_tracer.enabled = false
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

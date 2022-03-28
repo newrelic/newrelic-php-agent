@@ -28,11 +28,7 @@ ok - should reject NaN
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       {
       },

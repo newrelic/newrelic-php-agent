@@ -45,11 +45,7 @@ X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERR
         "duration": "??",
         "totalTime": "??",
         "nr.apdexPerfZone": "??",
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       "?? user attributes",
       "?? agent attributes"
@@ -77,11 +73,7 @@ X-NewRelic-Synthetics=PwcbVVVRDQMHSEMQRUNFFBZDG0EQFBFPAVALVhVKRkBBSEsTQxNBEBZERR
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??",
-              "guid": "??",
-              "sampled": true,
-              "priority": "??",
-              "traceId": "??"
+              "cpu_sys_time": "??"
             }
           }
         ],

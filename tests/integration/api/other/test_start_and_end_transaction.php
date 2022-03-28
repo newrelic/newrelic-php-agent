@@ -45,11 +45,7 @@ newrelic.transaction_tracer.detail = 1
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??",
-              "guid": "??",
-              "sampled": true,
-              "priority": "??",
-              "traceId": "??"
+              "cpu_sys_time": "??"
             }
           }
         ],

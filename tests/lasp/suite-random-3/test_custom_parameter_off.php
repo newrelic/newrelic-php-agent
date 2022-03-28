@@ -29,11 +29,7 @@ newrelic.custom_parameters_enabled = 0
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       {},
       {}

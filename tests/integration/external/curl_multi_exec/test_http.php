@@ -29,13 +29,6 @@ ok - strip credentials
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/TraceContext/Create/Success"},     [4, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/DistributedTrace/CreatePayload/Success"},
-                                                                 [4, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                                    [4, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                               [4, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                          [4, "??", "??", "??", "??", "??"]],

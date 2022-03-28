@@ -50,11 +50,7 @@ newrelic.attributes.enabled = false
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": true
       },
       {},
       {}

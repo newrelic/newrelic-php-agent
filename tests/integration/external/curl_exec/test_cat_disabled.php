@@ -11,7 +11,6 @@ to external calls when cross application tracing is disabled.
 
 /*INI
 newrelic.cross_application_tracer.enabled = false
-newrelic.distributed_tracing_enabled = false
 */
 
 /*EXPECT

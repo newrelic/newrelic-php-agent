@@ -13,7 +13,6 @@ disabled, regardless of span events being enabled.
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled = 1
 newrelic.cross_application_tracer.enabled = true
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_SPAN_EVENTS

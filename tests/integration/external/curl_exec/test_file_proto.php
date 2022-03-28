@@ -9,10 +9,6 @@ The agent should not create external metrics for curl_exec when the FILE
 protocol is used.
 */
 
-/*INI
-newrelic.distributed_tracing_enabled=0
-*/
-
 /*SKIPIF
 <?php
 if (!extension_loaded("curl")) {

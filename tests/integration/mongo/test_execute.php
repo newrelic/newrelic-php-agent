@@ -18,10 +18,6 @@ The agent should generate Datastore metrics for MongoDB::execute().
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MongoDB/all"},                 [1, "??", "??", "??", "??", "??"]],

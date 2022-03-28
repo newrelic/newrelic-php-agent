@@ -14,7 +14,6 @@
 /*INI
 newrelic.cross_application_tracer.enabled = false
 newrelic.synthetics.enabled = false
-newrelic.distributed_tracing_enabled = false
 */
 
 /*

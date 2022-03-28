@@ -54,12 +54,7 @@ if (version_compare(PHP_VERSION, "7.4", ">=")) {
         "error.message": "Method C::__toString() must not throw an exception, caught Exception: ",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

@@ -105,10 +105,6 @@ ok - iteration 39
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [40, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [40, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                   [40, "??", "??", "??", "??", "??"]],

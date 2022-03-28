@@ -31,12 +31,7 @@ newrelic.allow_raw_exception_messages=1
         "error.message": "Uncaught exception 'Exception' with message 'Hey look, an error' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

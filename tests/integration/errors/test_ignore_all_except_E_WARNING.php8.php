@@ -62,12 +62,7 @@ log_errors=0
         "error.message": "/include\\(\\): Failed opening 'abc.php' for inclusion \\(include_path='.:.*'\\)/",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
+        "nr.transactionGuid": "??"
       },
       {},
       {}

@@ -27,11 +27,7 @@ occur.
         "totalTime": "??",
         "databaseDuration": "??",
         "databaseCallCount": 1,
-        "error": false,
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??"
+        "error": false
       },
       {
       },

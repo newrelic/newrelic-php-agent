@@ -46,11 +46,7 @@ newrelic.transaction_tracer.threshold = 0
               "totalTime": "??",
               "cpu_time": "??",
               "cpu_user_time": "??",
-              "cpu_sys_time": "??",
-              "guid": "??",
-              "sampled": true,
-              "priority": "??",
-              "traceId": "??"
+              "cpu_sys_time": "??"
             }
           }
         ],

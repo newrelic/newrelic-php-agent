@@ -59,10 +59,6 @@ X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
         "nr.syntheticsResourceId": "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
         "nr.syntheticsJobId": "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
         "nr.syntheticsMonitorId": "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
         "error": false
       },
       "?? user attributes",
@@ -92,10 +88,6 @@ X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
               "cpu_time": "??",
               "cpu_user_time": "??",
               "cpu_sys_time": "??",
-              "guid": "??",
-              "sampled": true,
-              "priority": "??",
-              "traceId": "??",
               "synthetics_resource_id": "rrrrrrr-rrrr-1234-rrrr-rrrrrrrrrrrr",
               "synthetics_job_id": "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
               "synthetics_monitor_id": "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm"
