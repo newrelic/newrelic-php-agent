@@ -19,7 +19,6 @@ if (!extension_loaded("curl")) {
 /*INI
 newrelic.distributed_tracing_enabled = false
 newrelic.cross_application_tracer.enabled = true
-newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT
