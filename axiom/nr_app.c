@@ -272,6 +272,8 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
   app->info.trace_observer_host = nr_strdup(info->trace_observer_host);
   app->info.trace_observer_port = info->trace_observer_port;
   app->info.span_queue_size = info->span_queue_size;
+  app->info.span_events_max_samples_stored
+      = info->span_events_max_samples_stored;
   app->rnd = nr_random_create();
   nr_random_seed_from_time(app->rnd);
 

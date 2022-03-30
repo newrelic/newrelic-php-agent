@@ -74,6 +74,8 @@ typedef struct _nr_app_info_t {
   char* trace_observer_host;       /* 8T trace observer host */
   uint16_t trace_observer_port;    /* 8T trace observer port */
   uint64_t span_queue_size;        /* 8T span queue size (for the daemon) */
+  uint64_t span_events_max_samples_stored; /* maximum number of spans (for the
+                                              daemon) */
 } nr_app_info_t;
 
 /*
@@ -115,7 +117,8 @@ typedef struct _nrapp_t {
   nr_app_harvest_t harvest;   /* Harvest timing and sampling data */
 
   /* The limits are set based on the event harvest configuration provided in
-   * the connect reply. They do not reflect any agent side configuration. */
+   * the connect reply. They do not reflect any agent side configuration.
+   * The exception is the span_event which is negotiated with the backend. */
   nr_app_limits_t limits;
 } nrapp_t;
 

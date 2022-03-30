@@ -186,7 +186,8 @@ extern void nr_cmd_appinfo_process_harvest_timing(nr_flatbuffers_table_t* reply,
 
 extern void nr_cmd_appinfo_process_event_harvest_config(
     const nrobj_t* config,
-    nr_app_limits_t* app_limits);
+    nr_app_limits_t* app_limits,
+    nr_app_info_t info);
 
 extern int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
                                                     const char* key,
