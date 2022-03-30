@@ -181,6 +181,11 @@ func catRequest(w http.ResponseWriter, r *http.Request) {
 	settings["newrelic.appname"] = "ignore"
 	if ("false" == dtEnabled) {
 	    settings["newrelic.distributed_tracing_enabled"] = "false";
+	} else if ("true" == dtEnabled) {
+		settings["newrelic.distributed_tracing_enabled"] = "true";
+	} else {
+		http.Error(w, "cat request: invalid value of dt_enabled - expected 'true' or 'false', got '" + dtEnabled +"'.", http.StatusBadRequest)
+		return
 	}
 
 	tx, err := integration.CgiTx(integration.ScriptFile(catFile), env, settings, r.Header, ctx)
