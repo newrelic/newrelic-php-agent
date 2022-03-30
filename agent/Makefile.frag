@@ -74,7 +74,7 @@ TEST_BINARIES = \
 	tests/test_api_datastore \
 	tests/test_api_distributed_trace \
 	tests/test_api_internal \
-	tests/test_api_metadata_dt_default \
+	tests/test_api_metadata_dt_enabled \
 	tests/test_api_metadata_dt_disabled \
 	tests/test_call \
 	tests/test_curl \
