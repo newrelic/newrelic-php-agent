@@ -78,7 +78,7 @@ typedef struct _nrtxnopt_t {
   int tt_is_apdex_f; /* tt_threshold is 4 * apdex_t */
   nrtime_t ep_threshold;     /* Explain Plan threshold in usec */
   nrtime_t ss_threshold;     /* Slow SQL stack threshold in usec */
-  int cross_process_enabled; /* Whether or not to read and modify headers */
+  int cross_process_enabled; /* DEPRECATED Whether or not to read and modify headers */
   int allow_raw_exception_messages; /* Whether to replace the error/exception
                                        messages with generic text */
   int custom_parameters_enabled;    /* Whether to allow recording of custom
