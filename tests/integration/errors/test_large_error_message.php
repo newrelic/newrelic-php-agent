@@ -45,7 +45,12 @@ The agent should capture and report unhandled exceptions with large error messag
         "error.message": "Uncaught exception 'Exception' with message 'this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat... this is a very large error message that will extend beyond a 256 character limit by rambling about the size of the error, as well as inserting random characters. ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz It will also repeat...' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

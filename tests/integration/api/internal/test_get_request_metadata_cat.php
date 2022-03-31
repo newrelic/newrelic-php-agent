@@ -9,8 +9,8 @@ newrelic_get_request_metadata() should return CAT headers for use in a request.
  */
 
 /*INI
-newrelic.cross_process_enabled=1
 newrelic.distributed_tracing_enabled=0
+newrelic.cross_application_tracer.enabled = true
 */
 
 /*EXPECT
