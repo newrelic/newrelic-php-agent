@@ -57,7 +57,12 @@ log_errors=0
         "error.message": "Function newrelic_create_distributed_trace_payload() is deprecated.  Please see https://docs.newrelic.com/docs/agents/php-agent/features/distributed-tracing-php-agent#manual for more details.",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

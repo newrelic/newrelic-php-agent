@@ -55,7 +55,12 @@ X-Request-Start=1368811467146000
         "error.message": "I'M COVERED IN BEES!",
         "transactionName": "OtherTransaction/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {
@@ -80,7 +85,11 @@ X-Request-Start=1368811467146000
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": true
+        "error": true,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
       },
       {
       },

@@ -26,6 +26,13 @@ ok - type mismatch (boolean)
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/TraceContext/Create/Success"},     [2, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/DistributedTrace/CreatePayload/Success"},
+                                                                 [2, "??", "??", "??", "??", "??"]],
     [{"name":"External/<unknown>/all"},                          [2, "??", "??", "??", "??", "??"]],
     [{"name":"External/<unknown>/all",
       "scope":"OtherTransaction/php__FILE__"},                   [2, "??", "??", "??", "??", "??"]],

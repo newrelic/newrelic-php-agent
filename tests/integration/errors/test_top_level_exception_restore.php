@@ -10,6 +10,10 @@ when the exception handler stack is altered and a previous exception handler is
 called.
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 In first exception handler
 In second exception handler

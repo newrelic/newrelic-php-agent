@@ -53,7 +53,12 @@ if (version_compare(PHP_VERSION, "7.0", ">=")) {
         "error.message": "Call to undefined function not_a_function()",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

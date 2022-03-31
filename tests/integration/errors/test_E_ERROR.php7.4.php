@@ -50,7 +50,12 @@ if (version_compare(PHP_VERSION, "7.4", "<")) {
         "error.message": "Uncaught exception 'Exception' with message '' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

@@ -14,6 +14,10 @@ if a Content-Type header has not been set.
 REQUEST_METHOD=GET
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+*/
+
 /*EXPECT
 {"articlebody":"<body>Leave me alone!</body>"}
 */

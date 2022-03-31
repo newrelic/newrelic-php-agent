@@ -30,6 +30,10 @@ ok - delete key 3
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                          [9, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                     [9, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                [9, "??", "??", "??", "??", "??"]],

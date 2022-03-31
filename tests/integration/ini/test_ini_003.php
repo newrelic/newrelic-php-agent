@@ -33,6 +33,10 @@ f_3() called
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_0"},                              [2, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_0",
       "scope":"OtherTransaction/Function/f_0"},          [2, "??", "??", "??", "??", "??"]],

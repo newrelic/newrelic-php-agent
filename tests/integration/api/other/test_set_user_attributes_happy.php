@@ -20,8 +20,12 @@ Tests newrelic_set_user_attributes() happy path.
         "timestamp": "??",
         "duration": "??",
         "totalTime": "??",
-        "error": false
-      },
+        "error": false,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??"
+     },
       {
         "product": "my_product",
         "account": "my_account",
