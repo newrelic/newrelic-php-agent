@@ -171,6 +171,7 @@ func merge(a, b map[string]string) map[string]string {
 func catRequest(w http.ResponseWriter, r *http.Request) {
 	catFile := r.URL.Query().Get("file")
 	dtEnabled := r.URL.Query().Get("dt_enabled");
+	catEnabled := r.URL.Query().Get("cat_enabled");
 	if "" == catFile {
 		http.Error(w, "cat failure: no file provided", http.StatusBadRequest)
 		return
@@ -185,6 +186,15 @@ func catRequest(w http.ResponseWriter, r *http.Request) {
 		settings["newrelic.distributed_tracing_enabled"] = "true";
 	} else {
 		http.Error(w, "cat request: invalid value of dt_enabled - expected 'true' or 'false', got '" + dtEnabled +"'.", http.StatusBadRequest)
+		return
+	}
+
+	if ("false" == catEnabled) {
+	    settings["newrelic.cross_application_tracer.enabled"] = "false";
+	} else if ("true" == catEnabled) {
+		settings["newrelic.cross_application_tracer.enabled"] = "true";
+	} else {
+		http.Error(w, "cat request: invalid value of cat_enabled - expected 'true' or 'false', got '" + catEnabled +"'.", http.StatusBadRequest)
 		return
 	}
 

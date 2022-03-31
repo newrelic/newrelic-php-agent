@@ -60,12 +60,21 @@ function make_dt_enabled_param()
     return "dt_enabled=" . $value;
 }
 
+function make_cat_enabled_param()
+{
+    $value = "false";
+    if (ini_get("newrelic.cross_application_tracer.enabled"))
+        $value = "true";
+
+    return "cat_enabled=" . $value;
+}
+
 function make_tracing_url($file)
 {
     global $EXTERNAL_TRACING_URL;
 
     return $EXTERNAL_TRACING_URL . '?file=' . $file .
-            '&' . make_dt_enabled_param();
+            '&' . make_dt_enabled_param() . '&' . make_cat_enabled_param();
 }
 
 $PG_USER       = isset_or('PG_USER', 'postgres');
