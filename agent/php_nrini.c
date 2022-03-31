@@ -1239,9 +1239,10 @@ static PHP_INI_MH(nr_cat_enabled_mh) {
   }
 
   if (0 != val) {
-    nrl_warning(NRL_INIT, "Cross Application Training (CAT) has been enabled.  "
-                          "Note that CAT has been deprecated and will be removed "
-                          "in a future release.");
+    nrl_warning(NRL_INIT,
+                "Cross Application Training (CAT) has been enabled.  "
+                "Note that CAT has been deprecated and will be removed "
+                "in a future release.");
   }
 
   p->value = (zend_bool)val;
@@ -2930,11 +2931,10 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled)
-                                  ? "enabled"
-                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                        ? "disabled due to threaded MPM"
-                                        : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
+                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                  ? "disabled due to threaded MPM"
+                                  : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 
