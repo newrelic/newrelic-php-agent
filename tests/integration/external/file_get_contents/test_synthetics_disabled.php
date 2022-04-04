@@ -12,6 +12,7 @@ calls when the Synthetics feature is disabled.
 /*INI
 newrelic.distributed_tracing_enabled=0
 newrelic.synthetics.enabled = false
+newrelic.cross_application_tracer.enabled = true
 */
 
 /*
