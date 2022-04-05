@@ -13,9 +13,10 @@ services:
       MYSQL_DATABASE: database
       MYSQL_USER: admin
       MYSQL_PASSWORD: admin
-      MYSQL_HOST: mysqldb
     ports:
       - "33061:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
     container_name: mysqldb
   redisdb:
     build:
@@ -77,3 +78,6 @@ services:
     stdin_open: true
     tty: true
     container_name: agent
+
+volumes:
+  mysql-data:
