@@ -32,6 +32,10 @@ ok - pg_query_params successful
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Postgres/select"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/Postgres/pg_user/select"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/Postgres/pg_user/select",

@@ -1213,6 +1213,44 @@ static PHP_INI_MH(nr_boolean_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_cat_enabled_mh) {
+  nrinibool_t* p;
+  int val = 0;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nrinibool_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  (void)NEW_VALUE_LEN;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    return FAILURE;
+  }
+
+  if (0 != val) {
+    nrl_warning(NRL_INIT,
+                "Cross Application Training (CAT) has been enabled.  "
+                "Note that CAT has been deprecated and will be removed "
+                "in a future release.");
+  }
+
+  p->value = (zend_bool)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
 static PHP_INI_MH(nr_tt_detail_mh) {
   nriniuint_t* p;
   int val = 1;
@@ -2018,10 +2056,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_framework_dh)
+/* DEPRECATED */
 STD_PHP_INI_ENTRY_EX("newrelic.cross_application_tracer.enabled",
-                     "1",
+                     "0",
                      NR_PHP_REQUEST,
-                     nr_boolean_mh,
+                     nr_cat_enabled_mh,
                      cross_process_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
@@ -2892,11 +2931,10 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled)
-                                  ? "enabled"
-                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                        ? "disabled due to threaded MPM"
-                                        : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
+                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                  ? "disabled due to threaded MPM"
+                                  : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 

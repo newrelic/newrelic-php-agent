@@ -5,33 +5,21 @@
  */
 
 /*DESCRIPTION
-Unsupported situation displayed here:  Expose that CAT does not work for
-curl_exec when the the response headers are being sent to an anonymous function.
-*/
-
-/*SKIPIF
-<?php
-if (!extension_loaded("curl")) {
-  die("skip: curl extension required");
-}
+The agent SHALL NOT add X-NewRelic-ID and X-NewRelic-Transaction headers
+to external calls when distributed tracing is disabled because CAT is
+supposed to be disabled by default.
 */
 
 /*INI
-newrelic.distributed_tracing_enabled=0
-newrelic.cross_application_tracer.enabled = true
+newrelic.distributed_tracing_enabled = false
 */
 
 /*EXPECT
-tracing endpoint reached
-ok - tracing successful
+X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+ok - execute request
 */
 
 /*EXPECT_RESPONSE_HEADERS
-X-NewRelic-App-Data=??
-*/
-
-/*EXPECT_TRACED_ERRORS
-null
 */
 
 /*EXPECT_METRICS
@@ -48,21 +36,32 @@ null
     [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},
-                                                       [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
+if (!extension_loaded("curl")) {
+  die("skip: curl extension required");
+}
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-$url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl_resource, $header_data)
-{
-    return strlen($header_data);
-});
-tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);
+function test_curl() {
+  $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
+  $ch = curl_init($url);
+
+  $result = curl_exec($ch);
+  if (false !== $result) {
+    tap_ok("execute request");
+  } else {
+    tap_not_ok("execute request", true, $result);
+    tap_diagnostic("errno=" . curl_errno($ch));
+    tap_diagnostic("error=" . curl_error($ch));
+  }
+
+  curl_close($ch);
+}
+
+test_curl();
