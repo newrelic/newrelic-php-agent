@@ -135,7 +135,7 @@ fi
 if [ -z "${ostype}" ]; then
   tus=`uname -s 2> /dev/null`
   case "${tus}" in
-    [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=darwin ;;
+    [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=unsupported_os ;;
     [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=freebsd ;;
     [Ss][Uu][Nn][Oo][Ss])         ostype=solaris ;;
     [Ss][Mm][Aa][Rr][Tt][Oo][Ss]) ostype=solaris ;;
