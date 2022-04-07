@@ -135,10 +135,10 @@ fi
 if [ -z "${ostype}" ]; then
   tus=`uname -s 2> /dev/null`
   case "${tus}" in
-    [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=darwin ;;
+    [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=unsupported_os ;;
     [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=freebsd ;;
-    [Ss][Uu][Nn][Oo][Ss])         ostype=solaris ;;
-    [Ss][Mm][Aa][Rr][Tt][Oo][Ss]) ostype=solaris ;;
+    [Ss][Uu][Nn][Oo][Ss])         ostype=unsupported_os ;;
+    [Ss][Mm][Aa][Rr][Tt][Oo][Ss]) ostype=unsupported_os ;;
   esac
 fi
 : ${ostype:=generic}
@@ -221,6 +221,7 @@ arch=`(uname -m) 2> /dev/null` || arch="unknown"
 os=`(uname -s) 2> /dev/null` || os="unknown"
 
 case "${arch}" in
+  aarch64 | arm64)      arch=aarch64 ;;
   i[3456789]86)         arch=x86 ;;
   *64* | *amd*)         arch=x64 ;;
   i86pc)
@@ -237,12 +238,29 @@ case "${arch}" in
   unknown)              arch=x86 ;;
 esac
 
-case "${os}" in
-  [dD]arwin* ) os="darwin"; arch="x86_64" ;;
-  *) ;;
-esac
-
+# allow override of detected arch
 [ "${NR_INSTALL_ARCH}" = "x86" -o "${NR_INSTALL_ARCH}" = "x64" -o "${NR_INSTALL_ARCH}" = "x86_64" ] && arch="${NR_INSTALL_ARCH}"
+
+# exit if arch is unsupported
+if [ "${arch}" != "x86" -a "${arch}" != "x64" ]; then
+  error "An unsupported architecture "${arch}" detected."
+
+  if [ "${arch}" = "aarch64" ]; then
+  cat << EOF
+
+In order to use the New Relic PHP Agent on the "aarch64" (also known as "ARM64")
+architecture it is necessary to build the agent extension from sources.
+
+Instructions on how to build the agent are available here:
+
+https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-arm64/
+
+EOF
+  fi
+
+  echo "The install will now exit."
+  exit 1
+fi
 
 #
 # Do some sanity checking. ilibdir should contain the daemon, the agents and
@@ -1091,6 +1109,14 @@ Ignoring this particular instance of PHP.
   fi
   if [ -z "${pi_arch}" ]; then
     pi_arch="${arch}"
+  fi
+
+  # Check if this is a supported arch
+  # Should be caught on startup but add check here to be sure
+  if [ "${pi_arch}" != "x86" -a "${pi_arch}" != "x64" ]; then
+    error "An unsupported architecture "${pi_arch}" detected."
+    echo "The install will now exit."
+    exit 1
   fi
 
   # This handles both 32-bit on 64-bit systems and 32-bit only systems
