@@ -238,11 +238,6 @@ case "${arch}" in
   unknown)              arch=x86 ;;
 esac
 
-case "${os}" in
-  [dD]arwin* ) os="darwin"; arch="x86_64" ;;
-  *) ;;
-esac
-
 # allow override of detected arch
 [ "${NR_INSTALL_ARCH}" = "x86" -o "${NR_INSTALL_ARCH}" = "x64" -o "${NR_INSTALL_ARCH}" = "x86_64" ] && arch="${NR_INSTALL_ARCH}"
 
