@@ -221,7 +221,7 @@ arch=`(uname -m) 2> /dev/null` || arch="unknown"
 os=`(uname -s) 2> /dev/null` || os="unknown"
 
 case "${arch}" in
-  aarch64)               ;;
+  aarch64 | arm64)      arch=aarch64 ;;
   i[3456789]86)         arch=x86 ;;
   *64* | *amd*)         arch=x64 ;;
   i86pc)
