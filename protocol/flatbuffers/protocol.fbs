@@ -15,22 +15,23 @@ namespace protocol;
 //
 
 table App {
-  license:                     string;
-  app_name:                    string;
-  agent_language:              string;
-  agent_version:               string;
-  high_security:               bool;
-  redirect_collector:          string;
-  environment:                 string; // pre-computed json
-  settings:                    string; // pre-computed json
-  labels:                      string; // pre-computed json
-  display_host:                string; // added in the 5.1 PHP agent release
-  security_policy_token:       string; // added in the 8.1 PHP agent release
-  supported_security_policies: string; // added for PHP agent release 8.1
-  host:                        string; // added for PHP agent release 9.2
-  trace_observer_host:         string; // added for PHP agent release 9.11
-  trace_observer_port:         uint16; // added for PHP agent release 9.11
-  span_queue_size:             uint64; // added for PHP agent release 9.11
+  license:                          string;
+  app_name:                         string;
+  agent_language:                   string;
+  agent_version:                    string;
+  high_security:                    bool;
+  redirect_collector:               string;
+  environment:                      string; // pre-computed json
+  settings:                         string; // pre-computed json
+  labels:                           string; // pre-computed json
+  display_host:                     string; // added in the 5.1 PHP agent release
+  security_policy_token:            string; // added in the 8.1 PHP agent release
+  supported_security_policies:      string; // added for PHP agent release 8.1
+  host:                             string; // added for PHP agent release 9.2
+  trace_observer_host:              string; // added for PHP agent release 9.11
+  trace_observer_port:              uint16; // added for PHP agent release 9.11
+  span_queue_size:                  uint64; // added for PHP agent release 9.11
+  span_events_max_samples_stored:   uint64; // added for PHP agent release 9.21
 }
 
 enum AppStatus : byte { Unknown = 0, Disconnected = 1, InvalidLicense = 2,
