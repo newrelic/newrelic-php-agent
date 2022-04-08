@@ -153,6 +153,8 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   nr_flatbuffers_object_begin(fb, APP_NUM_FIELDS);
   nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_QUEUE_SIZE,
                                     info->span_queue_size, 0);
+  nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_EVENTS_MAX_SAMPLES_STORED,
+                                    info->span_events_max_samples_stored, 0);
   nr_flatbuffers_object_prepend_u16(fb, APP_TRACE_OBSERVER_PORT,
                                     info->trace_observer_port, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_TRACE_OBSERVER_HOST,

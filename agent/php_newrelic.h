@@ -336,8 +336,7 @@ nrinitime_t ep_threshold; /* newrelic.transaction_tracer.explain_threshold */
 nrinitime_t
     ss_threshold; /* newrelic.transaction_tracer.stack_trace_threshold */
 nrinibool_t
-    cross_process_enabled; /* DEPRECATED
-                              newrelic.cross_application_tracer.enabled */
+    cross_process_enabled; /* newrelic.cross_application_tracer.enabled */
 
 nriniuint_t max_nesting_level; /* newrelic.special.max_nesting_level (named
                                   after like-used variable in xdebug) */
@@ -455,8 +454,7 @@ nriniuint_t
 nriniuint_t
     span_queue_size; /* newrelic.infinite_tracing.span_events.queue_size */
 nriniuint_t
-    agent_span_queue_size; /* newrelic.infinite_tracing.span_events.agent_queue.size
-                            */
+    agent_span_queue_size; /* newrelic.infinite_tracing.span_events.agent_queue.size*/
 nrinitime_t
     agent_span_queue_timeout; /* newrelic.infinite_tracing.span_events.agent_queue.timeout
                                */

@@ -66,6 +66,10 @@ static void test_create_empty_query(void) {
   tlib_pass_if_uint64_t_equal(
       __func__, 0, nr_flatbuffers_table_read_u64(&app, APP_SPAN_QUEUE_SIZE, 0));
 
+  tlib_pass_if_uint64_t_equal(__func__, 0,
+                              nr_flatbuffers_table_read_u64(
+                                  &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
+
   nr_flatbuffers_destroy(&query);
 }
 
@@ -91,6 +95,7 @@ static void test_create_query(void) {
   info.trace_observer_host = nr_strdup("my_trace_observer");
   info.trace_observer_port = 443;
   info.span_queue_size = 10000;
+  info.span_events_max_samples_stored = 1234;
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
@@ -138,6 +143,9 @@ static void test_create_query(void) {
   tlib_pass_if_uint64_t_equal(
       __func__, info.span_queue_size,
       nr_flatbuffers_table_read_u16(&app, APP_SPAN_QUEUE_SIZE, 0));
+  tlib_pass_if_uint64_t_equal(__func__, info.span_events_max_samples_stored,
+                              nr_flatbuffers_table_read_u16(
+                                  &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 0);
