@@ -40,7 +40,7 @@ type rawEventHarvestConfig struct {
 // to use.
 type rawSpanEventHarvestConfig struct {
 	ReportPeriodMS uint64           `json:"report_period_ms"`
-    SpanEventData    *int           `json:"harvest_limit"`
+	SpanEventData    *int           `json:"harvest_limit"`
 }
 
 // Event lets you specify the limit and report period for each event type, this
