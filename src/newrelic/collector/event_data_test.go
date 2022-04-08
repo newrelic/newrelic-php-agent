@@ -49,7 +49,7 @@ func TestDurationToMillisecondsSuccess(t *testing.T) {
 	}
 }
 
-func TestMarshalJSON(t *testing.T) {
+func TestMarshalJSONEvent(t *testing.T) {
 	expected := `{"report_period_ms":20000,"harvest_limits":{"error_event_data":0,"analytic_event_data":0,"custom_event_data":0,"span_event_data":0}}`
 	output, err := json.Marshal(EventHarvestConfig{ReportPeriod: 20 * time.Second})
 	if err != nil {
@@ -64,7 +64,7 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestUnmarshalJSONError(t *testing.T) {
+func TestUnmarshalJSONEventError(t *testing.T) {
 	for _, input := range []struct {
 		name string
 		json string
@@ -78,15 +78,37 @@ func TestUnmarshalJSONError(t *testing.T) {
 			json: `{"harvest_limits":{"error_event_data":-1}}`,
 		},
 	} {
-		ehc := NewEventHarvestConfig()
+		ehc := NewEventHarvestConfig(nil)
 		if err := json.Unmarshal([]byte(input.json), &ehc); err == nil {
-			t.Errorf("%s: unexpected success unmarshalling JSON", input.name)
+			t.Errorf("%s: unexpected success unmarshalling event_harvest_config JSON", input.name)
 		}
 	}
 }
 
+func TestUnmarshalJSONSpanEventError(t *testing.T) {
+	for _, input := range []struct {
+		name string
+		json string
+	}{
+		{
+			name: "negative report period",
+			json: `{"report_period_ms":-1}`,
+		},
+		{
+			name: "negative harvest limit",
+			json: `{"harvest_limit":-1}`,
+		},
+	} {
+		sehc := NewDefaultSpanEventHarvestConfig()
+		if err := json.Unmarshal([]byte(input.json), &sehc); err == nil {
+			t.Errorf("%s: unexpected success unmarshalling span_event_harvest_config JSON, got %v", input.name, sehc)
+		}
+	}
+}
+
+
 func CreateEventConfig(reportPeriod time.Duration) EventConfigs {
-	eventConfig := NewHarvestLimits()
+	eventConfig := NewHarvestLimits(nil)
 
 	eventConfig.ErrorEventConfig.ReportPeriod = reportPeriod
 	eventConfig.AnalyticEventConfig.ReportPeriod = reportPeriod
@@ -97,18 +119,43 @@ func CreateEventConfig(reportPeriod time.Duration) EventConfigs {
 }
 
 func NewDefaultEventHarvestConfig() EventHarvestConfig {
-	config := NewEventHarvestConfig()
+	config := NewEventHarvestConfig(nil)
 
 	config.EventConfigs = CreateEventConfig(config.ReportPeriod)
 
 	return config
 }
 
-func TestUnmarshalJSONSuccess(t *testing.T) {
+func NewSpanEventHarvestConfig(reportPeriod time.Duration, localLimit int) SpanEventHarvestConfig {
+
+    rp:= reportPeriod
+    // The report period cannot be less than 1 ms
+    if reportPeriod > limits.DefaultReportPeriod || reportPeriod <= (1 * time.Millisecond) {
+        rp = limits.DefaultReportPeriod
+    }
+
+    ll := localLimit
+    if localLimit > limits.MaxSpanMaxEvents || localLimit < 0 {
+        ll = limits.MaxSpanMaxEvents
+    }
+    return SpanEventHarvestConfig {
+    		SpanEventConfig:
+    		    Event {
+                    ReportPeriod: rp,
+                    Limit: ll,
+    		    },
+    	    }
+}
+
+func NewDefaultSpanEventHarvestConfig() SpanEventHarvestConfig {
+    return NewSpanEventHarvestConfig(limits.DefaultReportPeriod, limits.MaxSpanMaxEvents)
+}
+
+func TestUnmarshalJSONEventSuccess(t *testing.T) {
 
 	defaultReportPeriodMs := limits.DefaultReportPeriod
 
-	// When reading the below expected values, note that NewEventHarvestConfig()
+	// When reading the below expected values, note that NewEventHarvestConfig(nil)
 	// really means "use the builtin defaults".
 	for _, input := range []struct {
 		name     string
@@ -226,10 +273,10 @@ func TestUnmarshalJSONSuccess(t *testing.T) {
 	} {
 		// The given context shouldn't matter, but let's test a few variations to be
 		// safe.
-		testUnmarshalJSONCaseSuccess(t, input.name, "no context", input.json, &EventHarvestConfig{}, &input.expected)
+		testUnmarshalJSONEventCaseSuccess(t, input.name, "no context", input.json, &EventHarvestConfig{}, &input.expected)
 
-		ehc := NewEventHarvestConfig()
-		testUnmarshalJSONCaseSuccess(t, input.name, "default context", input.json, &ehc, &input.expected)
+		ehc := NewEventHarvestConfig(nil)
+		testUnmarshalJSONEventCaseSuccess(t, input.name, "default context", input.json, &ehc, &input.expected)
 
 		ehc = EventHarvestConfig{
 			ReportPeriod: 1234 * time.Nanosecond,
@@ -248,15 +295,86 @@ func TestUnmarshalJSONSuccess(t *testing.T) {
 				},
 			},
 		}
-		testUnmarshalJSONCaseSuccess(t, input.name, "junk context", input.json, &ehc, &input.expected)
+		testUnmarshalJSONEventCaseSuccess(t, input.name, "junk context", input.json, &ehc, &input.expected)
 	}
 }
 
-func testUnmarshalJSONCaseSuccess(t *testing.T, testName, contextName, inputJSON string, context *EventHarvestConfig, expected *EventHarvestConfig) {
+func testUnmarshalJSONEventCaseSuccess(t *testing.T, testName, contextName, inputJSON string, context *EventHarvestConfig, expected *EventHarvestConfig) {
 	if err := json.Unmarshal([]byte(inputJSON), &context); err != nil {
-		t.Errorf("%s; %s: unexpected error unmarshalling JSON: %v", testName, contextName, err)
+		t.Errorf("%s; %s: unexpected error unmarshalling event_harvest_config JSON: %v", testName, contextName, err)
 	}
 	if !reflect.DeepEqual(context, expected) {
-		t.Errorf("%s; %s: items are not equal: expected %v; got %v", testName, contextName, expected, context)
+		t.Errorf("%s; %s: unmarshalling JSON event_harvest_config items are not equal: expected %v; got %v", testName, contextName, expected, context)
+	}
+}
+
+
+func TestUnmarshalJSONSpanEventSuccess(t *testing.T) {
+
+	// When reading the below expected values, note that NewEventHarvestConfig(nil)
+	// really means "use the builtin defaults".
+
+	for _, input := range []struct {
+		name     string
+		json     string
+		expected SpanEventHarvestConfig
+	}{
+		{
+			name:     "empty JSON",
+			json:     `{}`,
+			expected: NewDefaultSpanEventHarvestConfig(),
+		},
+		{
+			name:     "null report period only",
+			json:     `{"report_period_ms":null}`,
+			expected: NewDefaultSpanEventHarvestConfig(),
+		},
+		{
+			name:     "zero report period only",
+			json:     `{"report_period_ms":0}`,
+			expected: NewDefaultSpanEventHarvestConfig(),
+		},
+		{
+			name: "valid report period only",
+			json: `{"report_period_ms":42}`,
+			expected: NewSpanEventHarvestConfig(42 * time.Millisecond, limits.MaxSpanMaxEvents),
+		},
+		{
+			name: "zero harvest limit",
+			json: `{"harvest_limit":0}`,
+			expected: NewSpanEventHarvestConfig(limits.DefaultReportPeriod, 0),
+		},
+		{
+			name: "valid non-zero harvest limit",
+			json: `{"harvest_limit":1234}`,
+			expected: NewSpanEventHarvestConfig(limits.DefaultReportPeriod, 1234),
+		},
+		{
+			name: "valid nonzero harvest limit and valid report period",
+			json: `{"report_period_ms":75,"harvest_limit":1212}`,
+			expected: NewSpanEventHarvestConfig(75 * time.Millisecond, 1212),
+		},
+	} {
+		// The given context shouldn't matter, but let's test a few variations to be
+		// safe.
+
+		testUnmarshalJSONSpanEventCaseSuccess(t, input.name, "no context", input.json, &SpanEventHarvestConfig{}, &input.expected)
+
+		sehc := NewDefaultSpanEventHarvestConfig()
+		testUnmarshalJSONSpanEventCaseSuccess(t, input.name, "default context", input.json, &sehc, &input.expected)
+
+		sehc = NewSpanEventHarvestConfig(1234 * time.Nanosecond, 40000)
+
+		testUnmarshalJSONSpanEventCaseSuccess(t, input.name, "junk context", input.json, &sehc, &input.expected)
+	}
+}
+
+func testUnmarshalJSONSpanEventCaseSuccess(t *testing.T, testName, contextName, inputJSON string, context *SpanEventHarvestConfig, expected *SpanEventHarvestConfig) {
+	if err := json.Unmarshal([]byte(inputJSON), &context); err != nil {
+		t.Errorf("%s; %s: unexpected error unmarshalling span_event_harvest_config JSON: %v", testName, contextName, err)
+	}
+	if !reflect.DeepEqual(context, expected) {
+
+		t.Errorf("%s; %s: unmarshalling JSON span_event_harvset_config items are not equal: expected %v; got %v", testName, contextName, expected, context)
 	}
 }
