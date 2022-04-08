@@ -600,7 +600,7 @@ func (h *IntegrationDataHandler) IncomingTxnData(id newrelic.AgentRunID, sample 
 
 	harvest := h.harvests[string(id)]
 	if nil == harvest {
-		harvest = newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits())
+		harvest = newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 		// Save a little memory by reducing the event pools.
 		harvest.TxnEvents = newrelic.NewTxnEvents(50)
 		harvest.CustomEvents = newrelic.NewCustomEvents(50)

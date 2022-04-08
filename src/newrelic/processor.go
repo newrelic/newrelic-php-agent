@@ -306,6 +306,7 @@ func (p *Processor) considerConnect(app *App) {
 	go func() {
 		p.connectAttemptChannel <- ConnectApplication(args)
 	}()
+
 }
 
 func (p *Processor) processAppInfo(m AppInfoMessage) {
@@ -766,7 +767,7 @@ func integrationLog(now time.Time, id AgentRunID, p PayloadCreator) {
 
 func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 	if p.cfg.IntegrationMode {
-		h := NewHarvest(time.Now(), collector.NewHarvestLimits())
+		h := NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 		sample.AggregateInto(h)
 		now := time.Now()
 		integrationLog(now, id, h.Metrics)

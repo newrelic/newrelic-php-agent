@@ -263,13 +263,16 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 		TraceObserverHost:         string(app.TraceObserverHost()),
 		TraceObserverPort:         app.TraceObserverPort(),
 		SpanQueueSize:             app.SpanQueueSize(),
+		HighSecurity:              app.HighSecurity(),
+
 	}
 
 	info.initSettings(app.Settings())
 
-	if app.HighSecurity() != 0 {
-		info.HighSecurity = true
-	}
+    // Of the four Event Limits (span, custom, analytic and error),
+    // only span events is configurable from the agent.
+    // If this changes in the future, the other values can be added here.
+    info.AgentEventLimits.SpanEventConfig.Limit = int(app.SpanEventsMaxSamplesStored())
 
 	return info
 }
