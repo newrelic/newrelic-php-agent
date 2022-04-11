@@ -126,7 +126,7 @@ func getEventConfig(rawLimit *int, collectorRate time.Duration, defaultLimit int
 	    if *rawLimit > defaultLimit {
 	        limit = defaultLimit
 	    } else {
-	    limit = *rawLimit
+	    	limit = *rawLimit
 	    }
 		period = collectorRate
 	}
@@ -143,7 +143,7 @@ func (daemonConfig *SpanEventHarvestConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	// Build a new struct that represents what we'll get from the collector with
-	// the defaults (this is to ensure there is some value if the collector provies
+	// the defaults (this is to ensure there is some value if the collector provides
 	// invalid or incomplete JSONs).
 	defaultLimit := limits.MaxSpanMaxEvents
 	rawConfig := rawSpanEventHarvestConfig{
