@@ -71,7 +71,7 @@ type AppInfo struct {
 	TraceObserverHost         string
 	TraceObserverPort         uint16
 	SpanQueueSize             uint64
-	AgentEventLimits        collector.EventConfigs
+	AgentEventLimits          collector.EventConfigs
 }
 
 func (info *AppInfo) String() string {
