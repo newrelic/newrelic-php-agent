@@ -168,7 +168,7 @@ func (daemonConfig *SpanEventHarvestConfig) UnmarshalJSON(b []byte) error {
 	var harvestConfig Event
 
 	// Check the span event value to see what the report period and limit should be.
-    // getEventConfig will do additional data verification.
+        // getEventConfig will do additional data verification.
 	harvestConfig.Limit,
 	harvestConfig.ReportPeriod,
 	err = getEventConfig(
