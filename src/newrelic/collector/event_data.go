@@ -123,11 +123,11 @@ func getEventConfig(rawLimit *int, collectorRate time.Duration, defaultLimit int
 		err = fmt.Errorf("getEventConfig: event limit negative %d", rawLimit)
 		return 0, 0, err
 	} else {
-	    if *rawLimit > defaultLimit {
-	        limit = defaultLimit
-	    } else {
-	    	limit = *rawLimit
-	    }
+	    	if *rawLimit > defaultLimit {
+	        	limit = defaultLimit
+	    	} else {
+	    		limit = *rawLimit
+	    	}
 		period = collectorRate
 	}
 	return limit, period, nil
