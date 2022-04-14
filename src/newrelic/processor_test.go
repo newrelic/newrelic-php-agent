@@ -26,6 +26,7 @@ var (
 	sampleTrace = &TxnTrace{Data: data}
 
 	sampleCustomEvent = []byte("half birthday")
+	sampleSpanEvent = []byte("belated birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
 )
 
@@ -129,6 +130,9 @@ var (
 	txnErrorEventSample = AggregaterIntoFn(func(h *Harvest) {
 		h.ErrorEvents.AddEventFromData(sampleErrorEvent, SamplingPriority(0.8))
 	})
+	txnSpanEventSample = AggregaterIntoFn(func(h *Harvest) {
+    	h.SpanEvents.AddEventFromData(sampleSpanEvent, SamplingPriority(0.8))
+   	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for i := 0; i < times; i++ {
@@ -247,12 +251,111 @@ func TestProcessorHarvestErrorEvents(t *testing.T) {
 	m.p.quit()
 }
 
+func TestProcessorHarvestSpanEvents(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnSpanEventSample)
+	m.TxnData(t, idOne, txnSpanEventSample)
+
+	// Now we'll force a harvest for a span event type, and make sure we
+	// receive that harvest.
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestSpanEvents,
+	}
+
+	cp := <-m.clientParams
+	<-m.p.trackProgress // receive harvest notice, two span events in the data
+	if string(cp.data) != `["one",{"reservoir_size":7,"events_seen":2},[belated birthday,belated birthday]]` {
+		t.Fatal(string(cp.data))
+	}
+	m.p.quit()
+
+}
+
+func TestProcessorHarvestSpanEventsZeroReservoir(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":0},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnSpanEventSample)
+	m.TxnData(t, idOne, txnSpanEventSample)
+	m.TxnData(t, idOne, txnCustomEventSample)
+
+	// Trigger a span event harvest. Due to the span_event_data limit being
+	// zero, no harvest should actually occur here.
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestSpanEvents,
+	}
+
+	// No check of m.clientParams here because we expect no harvest to occur
+	// due to the zero error_event_data limit.
+	<-m.p.trackProgress // receive harvest notice
+
+	// Now we'll force a harvest for a different event type, and make sure we
+	// receive that harvest (and not a span event harvest).
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestCustomEvents,
+	}
+
+	cp := <-m.clientParams
+	<-m.p.trackProgress // receive harvest notice
+	if string(cp.data) != `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]` {
+		t.Fatal(string(cp.data))
+	}
+	m.p.quit()
+
+}
+
+func TestProcessorHarvestSpanEventsExceedReservoir(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":1},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnSpanEventSample)
+	m.TxnData(t, idOne, txnSpanEventSample)
+
+	// Now we'll force a harvest for a span event type, and make sure we
+	// receive that harvest.
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestSpanEvents,
+	}
+
+	cp := <-m.clientParams
+	<-m.p.trackProgress // receive harvest notice with 2 span events seen, but only one span sent
+	if string(cp.data) != `["one",{"reservoir_size":1,"events_seen":2},[belated birthday]]` {
+		t.Fatal(string(cp.data))
+	}
+	m.p.quit()
+
+}
+
+
 func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	m.TxnData(t, idOne, txnErrorEventSample)

@@ -455,8 +455,7 @@ nriniuint_t
 nriniuint_t
     span_queue_size; /* newrelic.infinite_tracing.span_events.queue_size */
 nriniuint_t
-    agent_span_queue_size; /* newrelic.infinite_tracing.span_events.agent_queue.size
-                            */
+    agent_span_queue_size; /* newrelic.infinite_tracing.span_events.agent_queue.size*/
 nrinitime_t
     agent_span_queue_timeout; /* newrelic.infinite_tracing.span_events.agent_queue.timeout
                                */

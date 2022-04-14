@@ -8,6 +8,7 @@ package newrelic
 import (
 	"testing"
 	"time"
+	"strconv"
 
 	"newrelic/limits"
 	"newrelic/sysinfo"
@@ -36,6 +37,8 @@ func TestConnectPayloadInternal(t *testing.T) {
 		RedirectCollector: "collector.newrelic.com",
 		Hostname:          "some_host",
 	}
+
+	info.AgentEventLimits.SpanEventConfig.Limit = 2323
 
 	expected := &RawConnectPayload{
 		Pid:             123,
@@ -211,81 +214,6 @@ func TestPreconnectPayloadEncoded(t *testing.T) {
 	}
 }
 
-func TestConnectPayloadEncoded(t *testing.T) {
-	ramInitializer := new(uint64)
-	*ramInitializer = 1000
-	processors := 22
-	util := &utilization.Data{
-		MetadataVersion:   1,
-		LogicalProcessors: &processors,
-		RamMiB:            ramInitializer,
-	}
-	info := &AppInfo{
-		License:           "the_license",
-		Appname:           "one;two",
-		AgentLanguage:     "php",
-		AgentVersion:      "0.1",
-		HostDisplayName:   "my_awesome_host",
-		Settings:          map[string]interface{}{"a": "1", "b": true},
-		Environment:       JSONString(`[["b", 2]]`),
-		HighSecurity:      false,
-		Labels:            JSONString(`[{"label_type":"c","label_value":"d"}]`),
-		RedirectCollector: "collector.newrelic.com",
-		Hostname:          "some_host",
-	}
-
-	pid := 123
-	expected := `[` +
-		`{` +
-		`"pid":123,` +
-		`"language":"php",` +
-		`"agent_version":"0.1",` +
-		`"host":"some_host",` +
-		`"display_host":"my_awesome_host",` +
-		`"settings":{"a":"1","b":true},` +
-		`"app_name":["one","two"],` +
-		`"high_security":false,` +
-		`"labels":[{"label_type":"c","label_value":"d"}],` +
-		`"environment":[["b",2]],` +
-		`"identifier":"one;two",` +
-		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":10000}}` +
-		`}` +
-		`]`
-
-	b, err := EncodePayload(info.ConnectPayloadInternal(pid, util))
-	if err != nil {
-		t.Error(err)
-	} else if string(b) != expected {
-		t.Errorf("expected: %s\nactual: %s", expected, string(b))
-	}
-
-	// an empty string for the HostDisplayName should not produce JSON
-	info.HostDisplayName = ""
-	expected = `[` +
-		`{` +
-		`"pid":123,` +
-		`"language":"php",` +
-		`"agent_version":"0.1",` +
-		`"host":"some_host",` +
-		`"settings":{"a":"1","b":true},` +
-		`"app_name":["one","two"],` +
-		`"high_security":false,` +
-		`"labels":[{"label_type":"c","label_value":"d"}],` +
-		`"environment":[["b",2]],` +
-		`"identifier":"one;two",` +
-		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":10000}}` +
-		`}` +
-		`]`
-
-	b, err = EncodePayload(info.ConnectPayloadInternal(pid, util))
-	if err != nil {
-		t.Error(err)
-	} else if string(b) != expected {
-		t.Errorf("expected: %s\nactual: %s", expected, string(b))
-	}
-}
 
 func TestNeedsConnectAttempt(t *testing.T) {
 	var app App
@@ -393,4 +321,117 @@ func TestAppKeyEquals(t *testing.T) {
 	if info.Key() == otherInfo.Key() {
 		t.Errorf("Key for application info must not match: %v and %v", info, otherInfo)
 	}
+}
+
+func TestConnectPayloadEncoded(t *testing.T) {
+	ramInitializer := new(uint64)
+	*ramInitializer = 1000
+	processors := 22
+	util := &utilization.Data{
+		MetadataVersion:   1,
+		LogicalProcessors: &processors,
+		RamMiB:            ramInitializer,
+	}
+	info := &AppInfo{
+		License:           "the_license",
+		Appname:           "one;two",
+		AgentLanguage:     "php",
+		AgentVersion:      "0.1",
+		HostDisplayName:   "my_awesome_host",
+		Settings:          map[string]interface{}{"a": "1", "b": true},
+		Environment:       JSONString(`[["b", 2]]`),
+		HighSecurity:      false,
+		Labels:            JSONString(`[{"label_type":"c","label_value":"d"}]`),
+		RedirectCollector: "collector.newrelic.com",
+		Hostname:          "some_host",
+	}
+
+
+    // A valid span event max samples stored value configured from the agent should
+    // propagate through and be sent to the collector
+	info.AgentEventLimits.SpanEventConfig.Limit = 2323
+
+	pid := 123
+	expected := `[` +
+		`{` +
+		`"pid":123,` +
+		`"language":"php",` +
+		`"agent_version":"0.1",` +
+		`"host":"some_host",` +
+		`"display_host":"my_awesome_host",` +
+		`"settings":{"a":"1","b":true},` +
+		`"app_name":["one","two"],` +
+		`"high_security":false,` +
+		`"labels":[{"label_type":"c","label_value":"d"}],` +
+		`"environment":[["b",2]],` +
+		`"identifier":"one;two",` +
+		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":2323}}` +
+		`}` +
+		`]`
+
+	b, err := EncodePayload(info.ConnectPayloadInternal(pid, util))
+	if err != nil {
+		t.Error(err)
+	} else if string(b) != expected {
+		t.Errorf("expected: %s\nactual: %s", expected, string(b))
+	}
+
+    // An invalid span event max samples stored value configured from the agent should
+    // propagate defaults through and be sent to the collector
+	info.AgentEventLimits.SpanEventConfig.Limit = 12345
+
+	pid = 123
+	expected = `[` +
+		`{` +
+		`"pid":123,` +
+		`"language":"php",` +
+		`"agent_version":"0.1",` +
+		`"host":"some_host",` +
+		`"display_host":"my_awesome_host",` +
+		`"settings":{"a":"1","b":true},` +
+		`"app_name":["one","two"],` +
+		`"high_security":false,` +
+		`"labels":[{"label_type":"c","label_value":"d"}],` +
+		`"environment":[["b",2]],` +
+		`"identifier":"one;two",` +
+		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":`+strconv.Itoa(limits.MaxSpanMaxEvents)+`}}`+
+		`}` +
+		`]`
+
+	b, err = EncodePayload(info.ConnectPayloadInternal(pid, util))
+	if err != nil {
+		t.Error(err)
+	} else if string(b) != expected {
+		t.Errorf("expected: %s\nactual: %s", expected, string(b))
+	}
+
+	// an empty string for the HostDisplayName should not produce JSON
+	info.AgentEventLimits.SpanEventConfig.Limit = 1001
+	info.HostDisplayName = ""
+	expected = `[` +
+		`{` +
+		`"pid":123,` +
+		`"language":"php",` +
+		`"agent_version":"0.1",` +
+		`"host":"some_host",` +
+		`"settings":{"a":"1","b":true},` +
+		`"app_name":["one","two"],` +
+		`"high_security":false,` +
+		`"labels":[{"label_type":"c","label_value":"d"}],` +
+		`"environment":[["b",2]],` +
+		`"identifier":"one;two",` +
+		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`}` +
+		`]`
+
+	b, err = EncodePayload(info.ConnectPayloadInternal(pid, util))
+	if err != nil {
+		t.Error(err)
+	} else if string(b) != expected {
+		t.Errorf("expected: %s\nactual: %s", expected, string(b))
+	}
+
 }

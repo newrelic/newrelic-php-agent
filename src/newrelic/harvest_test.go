@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
-	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits())
+	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
 
 	harvest.TxnEvents.AddEvent(AnalyticsEvent{data: []byte(`[{"z":42},{},{}]`), priority: SamplingPriority(0.8)})
 	harvest.TxnEvents.AddEvent(AnalyticsEvent{data: []byte(`[{"z":42},{},{}]`), priority: SamplingPriority(0.8)})
@@ -84,7 +84,7 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 }
 
 func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
-	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits())
+	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
 	harvest.pidSet[0] = struct{}{}
 	limits := collector.EventHarvestConfig{
 		ReportPeriod: 1234,
@@ -133,55 +133,55 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 func TestHarvestEmpty(t *testing.T) {
 	startTime := time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC)
 
-	if !NewHarvest(startTime, collector.NewHarvestLimits()).empty() {
+	if !NewHarvest(startTime, collector.NewHarvestLimits(nil)).empty() {
 		t.Errorf("NewHarvest().empty() = false, want true")
 	}
 
 	var h *Harvest
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.pidSet[0] = struct{}{}
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.CustomEvents.AddEvent(AnalyticsEvent{priority: 0.42})
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.ErrorEvents.AddEvent(AnalyticsEvent{priority: 0.42})
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.Errors.AddError(51, []byte{}) /* Error priority = 51 */
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.Metrics.AddCount("WebTransaction", "", 1, Forced)
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.SlowSQLs.Observe(&SlowSQL{})
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.TxnEvents.AddEvent(AnalyticsEvent{priority: 0.42})
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
 
-	h = NewHarvest(startTime, collector.NewHarvestLimits())
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
 	h.TxnTraces.AddTxnTrace(&TxnTrace{DurationMillis: 42}) /* Transactions traces are sampled by duration */
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")

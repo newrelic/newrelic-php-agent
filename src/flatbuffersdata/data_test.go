@@ -25,7 +25,7 @@ func BenchmarkAggregateTxn(b *testing.B) {
 	}
 
 	ag := newrelic.FlatTxn(data)
-	harvest := newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits())
+	harvest := newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 
 	// Add the metrics, so we are only doing lookups in the loop
 	ag.AggregateInto(harvest)
@@ -137,7 +137,7 @@ func TestFlatbuffersTxnData(t *testing.T) {
 	if nil != err {
 		t.Fatal(err)
 	}
-	harvest := newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits())
+	harvest := newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 	ag := newrelic.FlatTxn(data)
 	ag.AggregateInto(harvest)
 	id := newrelic.AgentRunID("12345")
