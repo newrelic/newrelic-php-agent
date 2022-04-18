@@ -88,6 +88,7 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
   nr_php_opcode_handler_entry_t prev_handler;
   const zend_op* prev_opline;
 
+  nrl_verbosedebug(NRL_AGENT, "%s: cannot get function from call", __func__);
   /*
    * We should have execute_data (and there isn't a realistic case where we
    * wouldn't other than memory corruption), so if we don't, we should bail as
@@ -191,6 +192,14 @@ call_previous_and_return:
   }
   opcode = execute_data->opline->opcode;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+  prev_opline = execute_data->opline - 1;
+  if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
+    prev_opline = execute_data->opline - 2;
+  }
+#else
+  prev_opline = execute_data->opline - 1;
+#endif
   /*
    * Now we have the opcode, let's see if there's a handler and, if so, call
    * it.

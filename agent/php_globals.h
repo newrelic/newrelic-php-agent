@@ -42,7 +42,14 @@ typedef struct _nrphpglobals_t {
                                       mode */
   int daemon_special_integration; /* Cause daemon to dump special log entries to
                                      help integration testing. */
-  int zend_offset;                /* Zend extension offset */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  zend_long zend_offset;                    /* Zend extension offset */
+  zend_long
+      zend_op_array_offset; /* Zend extension op_array to modify reserved */
+#else
+  int zend_offset;          /* Zend extension offset */
+  int zend_op_array_offset; /* Zend extension op_array to modify reserved */
+#endif
   int done_instrumentation;  /* Set to true if we have installed instrumentation
                                 handlers */
   nrtime_t expensive_min;    /* newrelic.special.expensive_node_min */
