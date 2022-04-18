@@ -192,14 +192,6 @@ call_previous_and_return:
   }
   opcode = execute_data->opline->opcode;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
-  prev_opline = execute_data->opline - 1;
-  if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
-    prev_opline = execute_data->opline - 2;
-  }
-#else
-  prev_opline = execute_data->opline - 1;
-#endif
   /*
    * Now we have the opcode, let's see if there's a handler and, if so, call
    * it.
