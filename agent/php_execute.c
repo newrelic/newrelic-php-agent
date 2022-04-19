@@ -898,8 +898,6 @@ static void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
 
-  nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
-
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
     nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
   }
