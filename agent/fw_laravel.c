@@ -1202,7 +1202,6 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Routing\\RouteCollection::getRouteForMethods"),
       nr_laravel_routes_get_route_for_methods TSRMLS_CC);
-  
   /*
    * Listen for Artisan commands so we can name those appropriately.
    */
