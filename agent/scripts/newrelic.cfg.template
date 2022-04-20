@@ -209,8 +209,16 @@
 # Info   : Enable detection of whether the system is running on Pivotal Cloud
 #          Foundry.
 #
-#newrelic.utilization.detect_pcf = true
+#utilization.detect_pcf = true
 
+# Setting: utilization.detect_kubernetes
+# Type   : boolean
+# Scope  : system
+# Default: true
+# Info   : Enable detection of whether the system is running in a Kubernetes 
+#          cluster.
+#
+#utilization.detect_kubernetes = true
 
 # Setting: app_timeout
 # Type   : time specification string ("5m", "1h20m", etc)
