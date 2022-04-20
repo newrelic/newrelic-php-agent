@@ -343,6 +343,7 @@ func main() {
 			DetectGCP:    true,
 			DetectPCF:    true,
 			DetectDocker: true,
+			DetectKubernetes: true,
 		})
 		str, err := json.MarshalIndent(util, "", "\t")
 		if err != nil {

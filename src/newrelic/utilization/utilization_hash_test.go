@@ -30,6 +30,7 @@ func TestJSONMarshalling(t *testing.T) {
 				AvailabilityZone: "us-west-1",
 			},
 			Docker: &docker{ID: "47cbd16b77c50cbf71401"},
+			Kubernetes: &kubernetes{KubernetesServiceHost: "10.96.0.1"},
 		},
 		Config: &override{
 			LogicalProcessors: &configProcessors,
@@ -37,10 +38,13 @@ func TestJSONMarshalling(t *testing.T) {
 	}
 
 	expect := `{
-	"metadata_version": 3,
+	"metadata_version": 5,
 	"logical_processors": 4,
 	"total_ram_mib": 1024,
 	"hostname": "localhost",
+	"config": {
+		"logical_processors": 16
+	},
 	"vendors": {
 		"aws": {
 			"instanceId": "8BADFOOD",
@@ -49,10 +53,10 @@ func TestJSONMarshalling(t *testing.T) {
 		},
 		"docker": {
 			"id": "47cbd16b77c50cbf71401"
+		},
+		"kubernetes": {
+			"kubernetes_service_host": "10.96.0.1"
 		}
-	},
-	"config": {
-		"logical_processors": 16
 	}
 }`
 
@@ -69,7 +73,7 @@ func TestJSONMarshalling(t *testing.T) {
 	u.Hostname = ""
 	u.Config = nil
 	expect = `{
-	"metadata_version": 3,
+	"metadata_version": 5,
 	"logical_processors": 4,
 	"total_ram_mib": null,
 	"hostname": "",
@@ -81,6 +85,9 @@ func TestJSONMarshalling(t *testing.T) {
 		},
 		"docker": {
 			"id": "47cbd16b77c50cbf71401"
+		},
+		"kubernetes": {
+			"kubernetes_service_host": "10.96.0.1"
 		}
 	}
 }`
@@ -104,6 +111,7 @@ func TestUtilizationHash(t *testing.T) {
 			DetectGCP:    true,
 			DetectPCF:    true,
 			DetectDocker: true,
+			DetectKubernetes: true,
 		},
 		{
 			DetectAWS:    false,
@@ -111,6 +119,7 @@ func TestUtilizationHash(t *testing.T) {
 			DetectGCP:    false,
 			DetectPCF:    false,
 			DetectDocker: false,
+			DetectKubernetes: false,
 		},
 	}
 	for _, c := range configs {
@@ -186,6 +195,8 @@ type utilizationCrossAgentTestcase struct {
 	RAMMIB            *uint64         `json:"input_total_ram_mib"`
 	LogicalProcessors *int            `json:"input_logical_processors"`
 	Hostname          string          `json:"input_hostname"`
+	FullHostname      string          `json:"input_full_hostname"`
+	Addresses         []string        `json:"input_ip_address"`
 	BootID            string          `json:"input_boot_id"`
 	AWSID             string          `json:"input_aws_id"`
 	AWSType           string          `json:"input_aws_type"`
@@ -206,6 +217,7 @@ type utilizationCrossAgentTestcase struct {
 		LogicalProcessors json.RawMessage `json:"NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS"`
 		RAWMMIB           json.RawMessage `json:"NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB"`
 		Hostname          string          `json:"NEW_RELIC_UTILIZATION_BILLING_HOSTNAME"`
+		KubernetesHost    string          `json:"KUBERNETES_SERVICE_HOST"`
 	} `json:"input_environment_variables"`
 }
 
@@ -250,6 +262,14 @@ func crossAgentVendors(tc utilizationCrossAgentTestcase) *vendors {
 		v.PCF.validate()
 	}
 
+	GatherKubernetes(v, func(key string) string {
+		if key == "KUBERNETES_SERVICE_HOST" {
+			return tc.Config.KubernetesHost
+		}
+
+		return ""
+	})
+
 	if v.isEmpty() {
 		return nil
 	}
@@ -276,9 +296,9 @@ func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTest
 
 	err := json.Unmarshal(tc.ExpectedOutput, &v)
 
-	if err == nil && v.MetadataVersion != 3 {
-		t.Skip("Unsupported utilization metdata version: ", v.MetadataVersion)
-	}
+	//if err == nil && v.MetadataVersion != 3 {
+	//	t.Skip("Unsupported utilization metdata version: ", v.MetadataVersion)
+	//}
 
 	var ConfigRAWMMIB int
 	if nil != tc.Config.RAWMMIB {
@@ -303,6 +323,8 @@ func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTest
 		BootID:            tc.BootID,
 		Vendors:           crossAgentVendors(tc),
 		Config:            overrideFromConfig(cfg),
+		FullHostname:      tc.FullHostname,
+		Addresses:         tc.Addresses,
 	}
 
 	js, err := json.Marshal(data)
@@ -314,6 +336,10 @@ func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTest
 	if string(js) != expect {
 		t.Error(tc.Name, string(js), expect)
 	}
+	t.Log("-------------------")
+	t.Log("actual: ", string(js))
+	t.Log("expected: ", expect)
+	t.Log(tc.Name, " PASSED")
 }
 
 func TestUtilizationCrossAgent(t *testing.T) {
@@ -343,5 +369,10 @@ func TestVendorsIsEmpty(t *testing.T) {
 	v.AWS = &aws{}
 	if v.isEmpty() {
 		t.Fatal("non-empty vendors registers as empty")
+	}
+
+	var nilVendors *vendors
+	if !nilVendors.isEmpty() {
+		t.Fatal("nil vendors should be empty")
 	}
 }
