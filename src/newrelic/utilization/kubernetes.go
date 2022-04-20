@@ -39,6 +39,10 @@ func newKubernetes(getenv func(string) string) *kubernetes {
 func (k8s *kubernetes) Gather() error {
 	k8s.KubernetesServiceHost = k8s.environmentVariableGetter("KUBERNETES_SERVICE_HOST")
 
+	fmt.Println("-----------")
+	fmt.Println(k8s)
+	fmt.Println("-----------")
+
 	if err := k8s.validate(); err != nil {
 		return err
 	}
