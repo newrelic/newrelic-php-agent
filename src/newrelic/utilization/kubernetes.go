@@ -6,6 +6,7 @@
 package utilization
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -51,5 +52,8 @@ func (k8s *kubernetes) validate() (err error) {
 		return fmt.Errorf("Invalid Kubernetes Service Host: %v", err)
 	}
 
+	if k8s.KubernetesServiceHost == "" {
+               err = errors.New("The environment variable KUBERNETES_SERVICE_HOST was unavailable")
+	}
 	return
 }
