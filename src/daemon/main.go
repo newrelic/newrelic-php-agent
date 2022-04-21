@@ -239,7 +239,8 @@ type Config struct {
 	DetectGCP          bool           `config:"utilization.detect_gcp"`         // Whether to detect if this is running on GCP in utilization
 	DetectPCF          bool           `config:"utilization.detect_pcf"`         // Whether to detect if this is running on PCF in utilization
 	DetectDocker       bool           `config:"utilization.detect_docker"`      // Whether to detect if this is in a Docker container in utilization
-	LogicalProcessors  int            `config:"utilization.logical_processors"` // Customer provided number of logical processors for pricing control.
+	DetectKubernetes   bool		      `config:"utilization.detect_kubernetes"`  // Whether to detect if this is in a Kubernetes cluster
+        LogicalProcessors  int            `config:"utilization.logical_processors"` // Customer provided number of logical processors for pricing control.
 	TotalRamMIB        int            `config:"utilization.total_ram_mib"`      // Customer provided total RAM in mebibytes for pricing control.
 	BillingHostname    string         `config:"utilization.billing_hostname"`   // Customer provided hostname for pricing control.
 	Agent              bool           `config:"-"`                              // Used to indicate if spawned by agent
@@ -259,6 +260,7 @@ func (cfg *Config) MakeUtilConfig() utilization.Config {
 		DetectGCP:         cfg.DetectGCP,
 		DetectPCF:         cfg.DetectPCF,
 		DetectDocker:      cfg.DetectDocker,
+		DetectKubernetes:  cfg.DetectKubernetes,
 		LogicalProcessors: cfg.LogicalProcessors,
 		TotalRamMIB:       cfg.TotalRamMIB,
 		BillingHostname:   cfg.BillingHostname,
