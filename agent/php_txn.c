@@ -848,10 +848,17 @@ nr_status_t nr_php_txn_begin(const char* appnames,
               "to use distributed tracing");
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  if (nr_php_ini_setting_is_set_by_user("opcache.enable")
+      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
+    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+  }
+#else
   if (nr_php_ini_setting_is_set_by_user("opcache.preload")
       && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
     nr_php_user_instrumentation_from_opcache(TSRMLS_C);
   }
+#endif
 
   return NR_SUCCESS;
 }
