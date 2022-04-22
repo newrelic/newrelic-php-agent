@@ -2,11 +2,11 @@
 # Copyright 2021 New Relic Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-version: '3.7'
+version: '3.8'
 services:
 # The Database
   mysqldb:
-    image: mysql:5.7
+    image: mysql:5.6
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: admin
@@ -20,28 +20,60 @@ services:
   redisdb:
     build:
       context: .
-      dockerfile: files/Dockerfile.redis    
+      dockerfile: files/Dockerfile.redis
     restart: always
     ports:
       - "6379:6379"
     container_name: redisdb
+  memcached:
+    image: memcached:latest
+    restart: always
+    ports:
+      - "11211:11211"
+    container_name: memcached
+#  mongodb:
+#    image: mongo:latest
+#    restart: always
+#    ports:
+#      - "27019:27019"
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+       POSTGRES_PASSWORD: root
+       POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    container_name: postgres
   agent:
     build:
       context: .
       dockerfile: files/Dockerfile
     user: ${UID}:${GID}
     environment:
+      MEMCACHE_HOST: memcached
+
+#      MONGO_HOST: mongodb
+
       MYSQL_DB: database
-      MYSQL_USER: root
+      MYSQL_USER: admin
       MYSQL_PASSWD: admin
       MYSQL_HOST: mysqldb
+
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: postgres
+      PG_PW: root
+
+      PREDIS_HOME: /usr/src/vendor/predis/predis/
       REDIS_HOST: redisdb
-      PS1: "New Relic > "      
-      NEWRELIC_COLLECTOR_HOST : ${NEWRELIC_COLLECTOR_HOST:-collector.newrelic.com}
-      NEWRELIC_LICENSE_KEY: ${NEWRELIC_LICENSE_KEY}
+
+      PS1: "New Relic > "
+      NEWRELIC_COLLECTOR_HOST : ${NEW_RELIC_COLLECTOR_HOST:-collector.newrelic.com}
+      NEWRELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
     volumes:
        - ${PWD}:/usr/src/myapp
-    working_dir: /usr/src/myapp 
+    working_dir: /usr/src/myapp
     stdin_open: true
     tty: true
     container_name: agent

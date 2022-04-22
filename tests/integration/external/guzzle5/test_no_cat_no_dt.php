@@ -21,6 +21,7 @@ if (version_compare(phpversion(), '5.4.0', '<')) {
 
 /*INI
 newrelic.cross_application_tracer.enabled = false
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT

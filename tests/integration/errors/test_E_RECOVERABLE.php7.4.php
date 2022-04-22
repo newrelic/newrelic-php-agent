@@ -56,7 +56,12 @@ if (version_compare(PHP_VERSION, "7.4", "<")) {
         "error.message": "Uncaught exception 'Error' with message 'Object of class stdClass could not be converted to string' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
       },
       {},
       {}

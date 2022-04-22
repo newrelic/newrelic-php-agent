@@ -51,11 +51,30 @@ if ("" != $MYSQL_SOCKET) {
 $EXTERNAL_HOST = getenv('EXTERNAL_HOST');
 $EXTERNAL_TRACING_URL = $EXTERNAL_HOST . "/cat";
 
+function make_dt_enabled_param()
+{
+    $value = "false";
+    if (ini_get("newrelic.distributed_tracing_enabled"))
+        $value = "true";
+
+    return "dt_enabled=" . $value;
+}
+
+function make_cat_enabled_param()
+{
+    $value = "false";
+    if (ini_get("newrelic.cross_application_tracer.enabled"))
+        $value = "true";
+
+    return "cat_enabled=" . $value;
+}
+
 function make_tracing_url($file)
 {
     global $EXTERNAL_TRACING_URL;
 
-    return $EXTERNAL_TRACING_URL . '?file=' . $file;
+    return $EXTERNAL_TRACING_URL . '?file=' . $file .
+            '&' . make_dt_enabled_param() . '&' . make_cat_enabled_param();
 }
 
 $PG_USER       = isset_or('PG_USER', 'postgres');

@@ -373,8 +373,11 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
     {"Laravel", "laravel", "bootstrap/cache/compiled.php", 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
+    {"Laravel", "laravel", "bootstrap/app.php", 0, nr_laravel_enable,
+     NR_FW_LARAVEL}, /* 8+ */
 
-    {"Lumen", "lumen", "lumen-framework/src/helpers.php", 0, nr_lumen_enable, NR_FW_LUMEN},
+    {"Lumen", "lumen", "lumen-framework/src/helpers.php", 0, nr_lumen_enable,
+     NR_FW_LUMEN},
 
     {"Magento", "magento", "app/mage.php", 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
@@ -1072,8 +1075,7 @@ static inline void nr_php_execute_segment_end(
   duration = nr_time_duration(stacked->start_time, stacked->stop_time);
 
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
-      || nr_vector_size(stacked->metrics) || stacked->id
-      || stacked->attributes
+      || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);

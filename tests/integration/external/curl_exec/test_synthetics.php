@@ -27,6 +27,11 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
  *   ]
  */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+newrelic.cross_application_tracer.enabled = true
+*/
+
 /*HEADERS
 X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
 */
@@ -76,7 +81,7 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 function test_curl() {
   $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
   $ch = curl_init($url);
-
+  
   $result = curl_exec($ch);
   if (false !== $result) {
     tap_ok("execute request");

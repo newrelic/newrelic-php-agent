@@ -30,6 +30,7 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
 /*INI
 newrelic.cross_application_tracer.enabled = true
 newrelic.synthetics.enabled = false
+newrelic.distributed_tracing_enabled=0
 */
 
 /*

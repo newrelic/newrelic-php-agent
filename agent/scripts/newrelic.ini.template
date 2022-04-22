@@ -856,22 +856,24 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.cross_application_tracer.enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: true
+; Default: false
 ; Info   : Enables or disables support for Cross Application Tracing, aka "CAT".
+;          NOTE: As of April 2022 CAT has been deprecated and will be removed at a future date.
 ;
-;newrelic.cross_application_tracer.enabled = true
+;newrelic.cross_application_tracer.enabled = false
 
 ; Setting: newrelic.distributed_tracing_enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: false
+; Default: true
 ; Info   : Distributed tracing lets you see the path that a request takes
-;          through your distributed system. Enabling distributed tracing changes
-;          the behavior of some New Relic features, so carefully consult the
-;          transition guide before you enable this feature:
+;          through your distributed system. See this guide for more information:
+;          https://docs.newrelic.com/docs/distributed-tracing/concepts/introduction-distributed-tracing
+;          When distributed tracing is enabled it changes the behavior of some
+;          New Relic features. See this guide for details:
 ;          https://docs.newrelic.com/docs/transition-guide-distributed-tracing
 ;
-;newrelic.distributed_tracing_enabled = false
+;newrelic.distributed_tracing_enabled = true
 
 ; Setting: newrelic.distributed_tracing_exclude_newrelic_header
 ; Type   : boolean
@@ -897,6 +899,17 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          Distributed Tracing to be enabled.
 ;
 ;newrelic.span_events_enabled = true
+
+; Setting: newrelic.span_events.max_samples_stored
+; Type   : unsigned integer
+; Scope  : per-directory
+; Default: 2000
+; Info   : The maximum number of span events added to the span event reservoir
+;          per transaction. A value of 0 will use the agent default.  The max
+;          setting is 10000.
+;
+;newrelic.span_events.max_samples_stored = 0
+
 
 ; Setting: newrelic.infinite_tracing.trace_observer.host
 ; Type   : string

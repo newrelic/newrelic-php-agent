@@ -88,6 +88,7 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
   nr_php_opcode_handler_entry_t prev_handler;
   const zend_op* prev_opline;
 
+  nrl_verbosedebug(NRL_AGENT, "%s: cannot get function from call", __func__);
   /*
    * We should have execute_data (and there isn't a realistic case where we
    * wouldn't other than memory corruption), so if we don't, we should bail as

@@ -66,6 +66,10 @@ static void test_create_empty_query(void) {
   tlib_pass_if_uint64_t_equal(
       __func__, 0, nr_flatbuffers_table_read_u64(&app, APP_SPAN_QUEUE_SIZE, 0));
 
+  tlib_pass_if_uint64_t_equal(__func__, 0,
+                              nr_flatbuffers_table_read_u64(
+                                  &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
+
   nr_flatbuffers_destroy(&query);
 }
 
@@ -91,6 +95,7 @@ static void test_create_query(void) {
   info.trace_observer_host = nr_strdup("my_trace_observer");
   info.trace_observer_port = 443;
   info.span_queue_size = 10000;
+  info.span_events_max_samples_stored = 1234;
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
@@ -138,6 +143,9 @@ static void test_create_query(void) {
   tlib_pass_if_uint64_t_equal(
       __func__, info.span_queue_size,
       nr_flatbuffers_table_read_u16(&app, APP_SPAN_QUEUE_SIZE, 0));
+  tlib_pass_if_uint64_t_equal(__func__, info.span_events_max_samples_stored,
+                              nr_flatbuffers_table_read_u16(
+                                  &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 0);
@@ -632,13 +640,15 @@ static void test_process_connected_app(void) {
    * 2. custom_events_limit is 0 because the field is present and set to 0.
    * 3. error_events_limit is 100 because the field is present but invalid,
    *    as it is null, so the default value is used.
-   * 4. span_events_limit is 1000 because the field is omitted, so the default
-   *    value is used.
+   * 4. span_events_limit is 10000 because the field is omitted, so the max
+   *    value from the backend is assumed unless the value has been configured
+   *    locally.
    */
   tlib_pass_if_int_equal(__func__, 833, app.limits.analytics_events);
   tlib_pass_if_int_equal(__func__, 0, app.limits.custom_events);
   tlib_pass_if_int_equal(__func__, NR_MAX_ERRORS, app.limits.error_events);
-  tlib_pass_if_int_equal(__func__, NR_MAX_SPAN_EVENTS, app.limits.span_events);
+  tlib_pass_if_int_equal(__func__, NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED,
+                         app.limits.span_events);
 
   /*
    * Perform same test again to make sure that populated fields are freed
@@ -940,33 +950,39 @@ static void test_process_event_harvest_config(void) {
       "}"
       "}");
 
+  nr_app_info_t info;
+  info.span_events_max_samples_stored
+      = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
+
   app_limits = app_limits_all_zero;
-  nr_cmd_appinfo_process_event_harvest_config(NULL, &app_limits);
+  nr_cmd_appinfo_process_event_harvest_config(NULL, &app_limits, info);
   tlib_pass_if_bytes_equal("a NULL config should enable all event types",
                            &app_limits_all_default, sizeof(nr_app_limits_t),
                            &app_limits, sizeof(nr_app_limits_t));
 
   app_limits = app_limits_all_zero;
-  nr_cmd_appinfo_process_event_harvest_config(array, &app_limits);
+  nr_cmd_appinfo_process_event_harvest_config(array, &app_limits, info);
   tlib_pass_if_bytes_equal("an invalid config should enable all event types",
                            &app_limits_all_default, sizeof(nr_app_limits_t),
                            &app_limits, sizeof(nr_app_limits_t));
 
   app_limits = app_limits_all_zero;
-  nr_cmd_appinfo_process_event_harvest_config(empty, &app_limits);
+  nr_cmd_appinfo_process_event_harvest_config(empty, &app_limits, info);
   tlib_pass_if_bytes_equal("an empty config should enable all event types",
                            &app_limits_all_default, sizeof(nr_app_limits_t),
                            &app_limits, sizeof(nr_app_limits_t));
 
   app_limits = app_limits_all_zero;
-  nr_cmd_appinfo_process_event_harvest_config(limits_disabled, &app_limits);
+  nr_cmd_appinfo_process_event_harvest_config(limits_disabled, &app_limits,
+                                              info);
   tlib_pass_if_bytes_equal(
       "a config with all types disabled should disable all event types",
       &app_limits_all_zero, sizeof(nr_app_limits_t), &app_limits,
       sizeof(nr_app_limits_t));
 
   app_limits = app_limits_all_zero;
-  nr_cmd_appinfo_process_event_harvest_config(limits_enabled, &app_limits);
+  nr_cmd_appinfo_process_event_harvest_config(limits_enabled, &app_limits,
+                                              info);
   tlib_pass_if_bytes_equal(
       "a config with all types enabled should enable all event types",
       &app_limits_all_enabled, sizeof(nr_app_limits_t), &app_limits,

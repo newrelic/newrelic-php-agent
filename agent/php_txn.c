@@ -546,7 +546,7 @@ bool nr_php_txn_is_policy_secure(const char* policy_name,
   }
 
   if (0 == strcmp("allow_raw_exception_messages", policy_name)) {
-    /* 
+    /*
      * allow_raw_exception_messages is considered insecure when
      * the private newrelic.allow_raw_exception_messages ini value is 1.
      */
@@ -554,7 +554,7 @@ bool nr_php_txn_is_policy_secure(const char* policy_name,
   }
 
   if (0 == strcmp("custom_events", policy_name)) {
-    /* 
+    /*
      * custom_events is considered insecure when the
      * newrelic.custom_events_enabled ini value is 1.
      */
@@ -562,7 +562,7 @@ bool nr_php_txn_is_policy_secure(const char* policy_name,
   }
 
   if (0 == strcmp("custom_parameters", policy_name)) {
-    /* 
+    /*
      * custom_parameters is considered insecure when the
      * newrelic.custom_parameters_enabled ini value is 1.
      */
@@ -581,7 +581,7 @@ nrobj_t* nr_php_txn_get_supported_security_policy_settings(nrtxnopt_t* opts) {
   int i;
   int count_supported_policy_names;
 
-  /* 
+  /*
    * The policies we support.  Non supported policies are omitted to save
    * space on the wire (vs. sending them with support/enabled of 0.
    */
@@ -682,7 +682,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.distributed_tracing_exclude_newrelic_header
       = NRINI(distributed_tracing_exclude_newrelic_header);
   opts.span_events_enabled = NRINI(span_events_enabled);
-  opts.max_span_events = NRINI(max_span_events);
+  opts.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
   opts.max_segments
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
@@ -720,6 +720,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
+  info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
 
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
@@ -847,10 +848,17 @@ nr_status_t nr_php_txn_begin(const char* appnames,
               "to use distributed tracing");
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  if (nr_php_ini_setting_is_set_by_user("opcache.enable")
+      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
+    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+  }
+#else
   if (nr_php_ini_setting_is_set_by_user("opcache.preload")
       && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
     nr_php_user_instrumentation_from_opcache(TSRMLS_C);
   }
+#endif
 
   return NR_SUCCESS;
 }
@@ -868,9 +876,9 @@ static int nr_php_txn_should_ignore(int ignoretxn TSRMLS_DC) {
   return ignoretxn;
 }
 
-/* 
+/*
  * Actually shutdown, without checking if we should ignore or if the txn is
- * NULL. 
+ * NULL.
  */
 static void nr_php_txn_do_shutdown(nrtxn_t* txn TSRMLS_DC) {
   char* request_uri;

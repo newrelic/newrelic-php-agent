@@ -46,9 +46,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	protocol.AppAddTraceObserverHost(buf, traceObserverHost)
 	protocol.AppAddTraceObserverPort(buf, info.TraceObserverPort)
 
-	if info.HighSecurity {
-		protocol.AppAddHighSecurity(buf, 1)
-	}
+	protocol.AppAddHighSecurity(buf, info.HighSecurity)
 
 	appInfo := protocol.AppEnd(buf)
 

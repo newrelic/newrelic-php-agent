@@ -2,7 +2,7 @@
 agent/configure.ac
 agent/newrelic.map
 agent/*.dep
-axiom/tests
+axiom/tests/*.tmp
 bin/
 pkg/
 

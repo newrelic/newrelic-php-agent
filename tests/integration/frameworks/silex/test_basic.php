@@ -16,6 +16,10 @@ The agent should name Silex transactions that have _route attributes.
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/Action/GET_foo"}, [1, "??", "??", "??", "??", "??"]],

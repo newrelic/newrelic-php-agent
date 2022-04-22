@@ -2324,7 +2324,7 @@ static void test_segment_ensure_id(void) {
       .state = NR_APP_OK,
       .limits = {
           .analytics_events = NR_MAX_ANALYTIC_EVENTS,
-          .span_events = NR_MAX_SPAN_EVENTS,
+          .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
       },
   };
   nrtxnopt_t opts;
@@ -2493,7 +2493,7 @@ static void test_segment_to_span_event(void) {
       .state = NR_APP_OK,
       .limits = {
           .analytics_events = NR_MAX_ANALYTIC_EVENTS,
-          .span_events = NR_MAX_SPAN_EVENTS,
+          .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
       },
   };
   nrtxnopt_t opts;
@@ -2859,7 +2859,7 @@ static void test_segment_record_exception(void) {
       .state = NR_APP_OK,
       .limits = {
         .analytics_events = NR_MAX_ANALYTIC_EVENTS,
-        .span_events = NR_MAX_SPAN_EVENTS,
+        .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
       },
   };
   nrtxnopt_t opts;

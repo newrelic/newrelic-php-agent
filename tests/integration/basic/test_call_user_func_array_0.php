@@ -23,6 +23,10 @@ foo=17
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/foo"},                                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/foo", "scope":"OtherTransaction/php__FILE__"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                     [1, "??", "??", "??", "??", "??"]],

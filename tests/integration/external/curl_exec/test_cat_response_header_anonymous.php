@@ -16,6 +16,11 @@ if (!extension_loaded("curl")) {
 }
 */
 
+/*INI
+newrelic.distributed_tracing_enabled=0
+newrelic.cross_application_tracer.enabled = true
+*/
+
 /*EXPECT
 tracing endpoint reached
 ok - tracing successful

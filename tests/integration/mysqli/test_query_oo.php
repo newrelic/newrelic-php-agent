@@ -31,6 +31,10 @@ ok - test_query2 (fetch)
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
+                                                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
+                                                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                           [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                      [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                     [2, "??", "??", "??", "??", "??"]],

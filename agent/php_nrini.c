@@ -107,7 +107,7 @@
  *      (stage == ZEND_INI_STAGE_STARTUP)
  *
  * Case 2: php not invoked with -dvar=value
- *   1: the value comes from the newrelic.ini file (stage == 
+ *   1: the value comes from the newrelic.ini file (stage ==
  *      ZEND_INI_STAGE_STARTUP) (minit time)
  *
  * Case 3: newrelic.ini file present, but the value is commented out
@@ -407,19 +407,19 @@ static PHP_INI_DISP(nr_framework_dh) {
  *  char *new_value
  *  uint new_value_length
  *  void *mh_arg1          the offset into the blob of data holding all ini
- *                         values 
- *  void *mh_arg2          the blob of data holding all ini values 
+ *                         values
+ *  void *mh_arg2          the blob of data holding all ini values
  *  void *mh_arg3          unused for our purposes int stage taken from the set
- *                         shown below 
+ *                         shown below
  *  TSRMLS_DC
  *
  * On PHP 7, the arguments are similar, but with PHP 7 appropriate changes for
  * the string and thread safety:
  *  zend_ini_entry *entry
  *  zend_string *new_value
- *  void *mh_arg1          the offset into the blob of data holding all ini 
- *                         values 
- *  void *mh_arg2          the blob of data holding all ini values 
+ *  void *mh_arg1          the offset into the blob of data holding all ini
+ *                         values
+ *  void *mh_arg2          the blob of data holding all ini values
  *  void *mh_arg3          unused for our purposes int stage taken from the set
  *                         shown below
  *
@@ -1213,6 +1213,44 @@ static PHP_INI_MH(nr_boolean_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_cat_enabled_mh) {
+  nrinibool_t* p;
+  int val = 0;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nrinibool_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  (void)NEW_VALUE_LEN;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    return FAILURE;
+  }
+
+  if (0 != val) {
+    nrl_warning(NRL_INIT,
+                "Cross Application Training (CAT) has been enabled.  "
+                "Note that CAT has been deprecated and will be removed "
+                "in a future release.");
+  }
+
+  p->value = (zend_bool)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
 static PHP_INI_MH(nr_tt_detail_mh) {
   nriniuint_t* p;
   int val = 1;
@@ -1299,6 +1337,44 @@ static PHP_INI_MH(nr_tt_max_segments_web_mh) {
     p->value = (zend_uint)val;
     p->where = stage;
   }
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_span_events_max_samples_stored_mh) {
+  nriniuint_t* p;
+  int val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  /* Anything other than a valid value will result in the
+   * default value of NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED.
+   */
+
+  p->where = 0;
+
+  if (0 != NEW_VALUE_LEN) {
+    val = (int)strtol(NEW_VALUE, 0, 0);
+    if ((0 >= val) || (NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED < val)) {
+      val = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
+      nrl_debug(NRL_INIT,
+                "Invalid span_event.max_samples_stored value \"%.8s\"; using "
+                "%d instead",
+                NEW_VALUE, val);
+    }
+  }
+  p->value = (zend_uint)val;
+  p->where = stage;
 
   return SUCCESS;
 }
@@ -1771,13 +1847,13 @@ PHP_INI_ENTRY_EX("newrelic.daemon.loglevel",
                  0)
 PHP_INI_ENTRY_EX(
     "newrelic.daemon.port",
-    NR_PHP_INI_DEFAULT_PORT,  /* port and address share the same default */
+    NR_PHP_INI_DEFAULT_PORT, /* port and address share the same default */
     NR_PHP_SYSTEM,
     nr_daemon_port_mh,
     0)
 PHP_INI_ENTRY_EX(
     "newrelic.daemon.address",
-    NR_PHP_INI_DEFAULT_PORT,  /* port and address share the same default */
+    NR_PHP_INI_DEFAULT_PORT, /* port and address share the same default */
     NR_PHP_SYSTEM,
     nr_daemon_address_mh,
     0)
@@ -1980,10 +2056,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_framework_dh)
+/* DEPRECATED */
 STD_PHP_INI_ENTRY_EX("newrelic.cross_application_tracer.enabled",
-                     "1",
+                     "0",
                      NR_PHP_REQUEST,
-                     nr_boolean_mh,
+                     nr_cat_enabled_mh,
                      cross_process_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
@@ -2547,7 +2624,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.custom_parameters_enabled",
  * functions
  */
 STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing_enabled",
-                     "0",
+                     "1",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      distributed_tracing_enabled,
@@ -2586,11 +2663,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.span_events_enabled",
                      newrelic_globals,
                      0)
 
-STD_PHP_INI_ENTRY_EX("newrelic.special.max_span_events",
-                     "0",
+STD_PHP_INI_ENTRY_EX("newrelic.span_events.max_samples_stored",
+                     NR_STR2(NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED),
                      NR_PHP_REQUEST,
-                     nr_unsigned_int_mh,
-                     max_span_events,
+                     nr_span_events_max_samples_stored_mh,
+                     span_events_max_samples_stored,
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
@@ -2854,11 +2931,10 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled)
-                                  ? "enabled"
-                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                        ? "disabled due to threaded MPM"
-                                        : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
+                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                  ? "disabled due to threaded MPM"
+                                  : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 
@@ -2918,7 +2994,7 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
           == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
                         NR_PSTR("newrelic.distributed_tracing_enabled")))) {
     /*
-     * The collector requires that the value of 
+     * The collector requires that the value of
      * newrelic.browser_monitoring.debug is a bool, so we must convert it
      * here.
      *

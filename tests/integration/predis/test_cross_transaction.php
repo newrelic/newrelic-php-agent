@@ -21,6 +21,8 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/all/"},                                                           [4, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/allOther/"},                                                      [4, "??", "??", "??", "??", "??"]],
     [{"name":"/Datastore/Redis/all/"},                                                     [4, "??", "??", "??", "??", "??"]],

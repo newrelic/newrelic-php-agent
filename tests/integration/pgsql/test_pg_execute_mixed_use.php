@@ -8,8 +8,9 @@
 The agent should report Datastore metrics for Postgres prepared statements.
 */
 
-/*XFAIL */
-
+/*XFAIL tests that our agent currently doesn't handle mix-and-matching default vs. passed
+ connections between pg_prepare and pg_execute */
+ 
 /*SKIPIF
 <?php
 require("skipif.inc");

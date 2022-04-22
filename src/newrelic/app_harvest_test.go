@@ -24,7 +24,7 @@ type MockedAppHarvest struct {
 }
 
 func (m *MockedAppHarvest) NewMockedAppHarvest() {
-	harvest := NewHarvest(time.Now(), collector.NewHarvestLimits())
+	harvest := NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 
 	m.App.HarvestTrigger = triggerBuilder(HarvestAll, time.Duration(m.cycleDuration))
 

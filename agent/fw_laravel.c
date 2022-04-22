@@ -348,34 +348,35 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
       route_name_zv = nr_php_call(route, "getName");
       if (nr_php_is_zval_valid_string(route_name_zv)) {
         const char generated_prefix[] = "generated::";
-        nr_string_len_t generated_prefix_len
-            = sizeof(generated_prefix) - 1;
+        nr_string_len_t generated_prefix_len = sizeof(generated_prefix) - 1;
 
-        if (nr_strncmp(generated_prefix, Z_STRVAL_P(route_name_zv), generated_prefix_len) != 0) {
-          char* route_name
-              = nr_strndup(Z_STRVAL_P(route_name_zv), Z_STRLEN_P(route_name_zv));
+        if (nr_strncmp(generated_prefix, Z_STRVAL_P(route_name_zv),
+                       generated_prefix_len)
+            != 0) {
+          char* route_name = nr_strndup(Z_STRVAL_P(route_name_zv),
+                                        Z_STRLEN_P(route_name_zv));
 
           nrl_debug(NRL_FRAMEWORK,
                     "%s: using Route::getName() for transaction naming",
                     __func__);
-          nr_txn_set_path("Laravel", NRPRG(txn), route_name, NR_PATH_TYPE_ACTION,
-                          NR_OK_TO_OVERWRITE);
+          nr_txn_set_path("Laravel", NRPRG(txn), route_name,
+                          NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
 
           nr_php_zval_free(&route_name_zv);
           nr_free(route_name);
           goto leave;
         } else {
-          nrl_verbosedebug(
-            NRL_FRAMEWORK,
-            "%s: Route::getName() returned a randomly generated route name, skipping. ",
-            __func__);
-            nr_php_zval_free(&route_name_zv);
+          nrl_verbosedebug(NRL_FRAMEWORK,
+                           "%s: Route::getName() returned a randomly generated "
+                           "route name, skipping. ",
+                           __func__);
+          nr_php_zval_free(&route_name_zv);
         }
       } else {
-        nrl_verbosedebug(
-            NRL_FRAMEWORK,
-            "%s: Route::getName() returned an unexpected value/type, skipping. ",
-            __func__);
+        nrl_verbosedebug(NRL_FRAMEWORK,
+                         "%s: Route::getName() returned an unexpected "
+                         "value/type, skipping. ",
+                         __func__);
         nr_php_zval_free(&route_name_zv);
       }
     }
@@ -1201,7 +1202,6 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Routing\\RouteCollection::getRouteForMethods"),
       nr_laravel_routes_get_route_for_methods TSRMLS_CC);
-
   /*
    * Listen for Artisan commands so we can name those appropriately.
    */

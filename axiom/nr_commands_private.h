@@ -79,7 +79,8 @@ enum {
   APP_TRACE_OBSERVER_HOST = 13,
   APP_TRACE_OBSERVER_PORT = 14,
   APP_SPAN_QUEUE_SIZE = 15,
-  APP_NUM_FIELDS = 16,
+  APP_SPAN_EVENTS_MAX_SAMPLES_STORED = 16,
+  APP_NUM_FIELDS = 17,
 };
 
 /* Generated from: table AppReply */
@@ -186,7 +187,8 @@ extern void nr_cmd_appinfo_process_harvest_timing(nr_flatbuffers_table_t* reply,
 
 extern void nr_cmd_appinfo_process_event_harvest_config(
     const nrobj_t* config,
-    nr_app_limits_t* app_limits);
+    nr_app_limits_t* app_limits,
+    nr_app_info_t info);
 
 extern int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
                                                     const char* key,

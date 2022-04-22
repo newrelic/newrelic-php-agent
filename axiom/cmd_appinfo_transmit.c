@@ -153,6 +153,8 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   nr_flatbuffers_object_begin(fb, APP_NUM_FIELDS);
   nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_QUEUE_SIZE,
                                     info->span_queue_size, 0);
+  nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_EVENTS_MAX_SAMPLES_STORED,
+                                    info->span_events_max_samples_stored, 0);
   nr_flatbuffers_object_prepend_u16(fb, APP_TRACE_OBSERVER_PORT,
                                     info->trace_observer_port, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_TRACE_OBSERVER_HOST,
@@ -369,7 +371,7 @@ nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,
    */
   nr_cmd_appinfo_process_event_harvest_config(
       nro_get_hash_hash(app->connect_reply, "event_harvest_config", NULL),
-      &app->limits);
+      &app->limits, app->info);
 
   /*
    * Finally, handle the harvest timing information.
@@ -380,7 +382,8 @@ nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,
 }
 
 void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
-                                                 nr_app_limits_t* app_limits) {
+                                                 nr_app_limits_t* app_limits,
+                                                 nr_app_info_t info) {
   const nrobj_t* harvest_limits
       = nro_get_hash_hash(config, "harvest_limits", NULL);
 
@@ -396,7 +399,10 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
   app_limits->error_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "error_event_data", NR_MAX_ERRORS);
   app_limits->span_events = nr_cmd_appinfo_process_get_harvest_limit(
-      harvest_limits, "span_event_data", NR_MAX_SPAN_EVENTS);
+      harvest_limits, "span_event_data",
+      0 == info.span_events_max_samples_stored
+          ? NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED
+          : info.span_events_max_samples_stored);
 }
 
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,

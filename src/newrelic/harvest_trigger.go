@@ -30,7 +30,7 @@ func (reply *ConnectReply) isHarvestAll() bool {
 	eventsConfig := reply.EventHarvestConfig.EventConfigs
 	collectorReportPeriod := reply.EventHarvestConfig.ReportPeriod
 
-	// If any event has a unique report period we will need be able to harvest
+	// If any event has a unique report period we will not be able to harvest
 	// all events at the same time.
 	if eventsConfig.ErrorEventConfig.ReportPeriod != collectorReportPeriod ||
 		eventsConfig.AnalyticEventConfig.ReportPeriod != collectorReportPeriod ||
