@@ -296,10 +296,6 @@ func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTest
 
 	err := json.Unmarshal(tc.ExpectedOutput, &v)
 
-	//if err == nil && v.MetadataVersion != 3 {
-	//	t.Skip("Unsupported utilization metdata version: ", v.MetadataVersion)
-	//}
-
 	var ConfigRAWMMIB int
 	if nil != tc.Config.RAWMMIB {
 		json.Unmarshal(tc.Config.RAWMMIB, &ConfigRAWMMIB)
