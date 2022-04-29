@@ -336,10 +336,6 @@ func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTest
 	if string(js) != expect {
 		t.Error(tc.Name, string(js), expect)
 	}
-	t.Log("-------------------")
-	t.Log("actual: ", string(js))
-	t.Log("expected: ", expect)
-	t.Log(tc.Name, " PASSED")
 }
 
 func TestUtilizationCrossAgent(t *testing.T) {
