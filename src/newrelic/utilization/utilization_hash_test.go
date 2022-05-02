@@ -106,19 +106,19 @@ func TestJSONMarshalling(t *testing.T) {
 func TestUtilizationHash(t *testing.T) {
 	configs := []Config{
 		{
-			DetectAWS:    true,
-			DetectAzure:  true,
-			DetectGCP:    true,
-			DetectPCF:    true,
-			DetectDocker: true,
+			DetectAWS:        true,
+			DetectAzure:      true,
+			DetectGCP:        true,
+			DetectPCF:        true,
+			DetectDocker:     true,
 			DetectKubernetes: true,
 		},
 		{
-			DetectAWS:    false,
-			DetectAzure:  false,
-			DetectGCP:    false,
-			DetectPCF:    false,
-			DetectDocker: false,
+			DetectAWS:        false,
+			DetectAzure:      false,
+			DetectGCP:        false,
+			DetectPCF:        false,
+			DetectDocker:     false,
 			DetectKubernetes: false,
 		},
 	}
