@@ -286,15 +286,19 @@ func compactJSON(js []byte) []byte {
 
 func runUtilizationCrossAgentTestcase(t *testing.T, tc utilizationCrossAgentTestcase) {
 
-	// Skip utilitzation cross agent tests for metadata versions newer than
-	// the supported one (which is version 3).
-	type version struct {
-		MetadataVersion uint64 `json:metadata_version`
+	// check metadata version expected and skip test if beyond the currently supported level
+	var d Data
+
+	err := json.Unmarshal(tc.ExpectedOutput, &d)
+	if nil != err {
+		t.Errorf("Unable to decode expected output for test \"%s\" - %s", tc.Name, err)
+		return
 	}
 
-	var v version
-
-	err := json.Unmarshal(tc.ExpectedOutput, &v)
+	if metadataVersion < d.MetadataVersion {
+		t.Logf("skipping test \"%s\" - test metadata version (%d) > supported (%d)", tc.Name, d.MetadataVersion, metadataVersion)
+		return
+	}
 
 	var ConfigRAWMMIB int
 	if nil != tc.Config.RAWMMIB {
