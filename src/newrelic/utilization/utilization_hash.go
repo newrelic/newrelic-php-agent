@@ -9,6 +9,7 @@ package utilization
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"sync"
 
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	metadataVersion = 3
+	metadataVersion = 5
 )
 
 type Config struct {
@@ -26,6 +27,7 @@ type Config struct {
 	DetectGCP         bool
 	DetectPCF         bool
 	DetectDocker      bool
+	DetectKubernetes  bool
 	LogicalProcessors int
 	TotalRamMIB       int
 	BillingHostname   string
@@ -44,9 +46,11 @@ type Data struct {
 	LogicalProcessors *int      `json:"logical_processors"`
 	RamMiB            *uint64   `json:"total_ram_mib"`
 	Hostname          string    `json:"hostname"`
+	FullHostname      string    `json:"full_hostname,omitempty"`
+	Addresses         []string  `json:"ip_address,omitempty"`
 	BootID            string    `json:"boot_id,omitempty"`
-	Vendors           *vendors  `json:"vendors,omitempty"`
 	Config            *override `json:"config,omitempty"`
+	Vendors           *vendors  `json:"vendors,omitempty"`
 }
 
 type docker struct {
@@ -54,15 +58,16 @@ type docker struct {
 }
 
 type vendors struct {
-	AWS    *aws    `json:"aws,omitempty"`
-	Azure  *azure  `json:"azure,omitempty"`
-	GCP    *gcp    `json:"gcp,omitempty"`
-	PCF    *pcf    `json:"pcf,omitempty"`
-	Docker *docker `json:"docker,omitempty"`
+	AWS        *aws        `json:"aws,omitempty"`
+	Azure      *azure      `json:"azure,omitempty"`
+	GCP        *gcp        `json:"gcp,omitempty"`
+	PCF        *pcf        `json:"pcf,omitempty"`
+	Docker     *docker     `json:"docker,omitempty"`
+	Kubernetes *kubernetes `json:"kubernetes,omitempty"`
 }
 
 func (v *vendors) isEmpty() bool {
-	return v.AWS == nil && v.Azure == nil && v.GCP == nil && v.PCF == nil && v.Docker == nil
+	return nil == v || *v == vendors{}
 }
 
 func overrideFromConfig(config Config) *override {
@@ -112,6 +117,14 @@ func Gather(config Config) *Data {
 	goGather(GatherCPU, uDat)
 	goGather(GatherMemory, uDat)
 
+	// Gather IPs before spawning goroutines since the IPs are used in
+	// gathering full hostname.
+	if ips, err := utilizationIPs(); nil == err {
+		uDat.Addresses = ips
+	} else {
+		log.Debugf("Error gathering addresses: %s", err)
+	}
+
 	// Now things the user can turn off.
 	if config.DetectDocker {
 		goGather(GatherDockerID, uDat)
@@ -131,6 +144,18 @@ func Gather(config Config) *Data {
 
 	if config.DetectPCF {
 		goGather(GatherPCF, uDat)
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		uDat.FullHostname = getFQDN(uDat.Addresses)
+	}()
+
+	if config.DetectKubernetes {
+		if err_k8s := GatherKubernetes(uDat.Vendors, os.Getenv); err_k8s != nil {
+		    log.Debugf("%s", err_k8s)
+		}
 	}
 
 	// Now we wait for everything!

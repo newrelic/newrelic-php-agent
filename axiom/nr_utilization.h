@@ -12,6 +12,7 @@ typedef struct _nr_utilization_t {
   int gcp : 1;
   int pcf : 1;
   int docker : 1;
+  int kubernetes : 1;
 } nr_utilization_t;
 
 static const nr_utilization_t nr_utilization_default = {
@@ -20,6 +21,7 @@ static const nr_utilization_t nr_utilization_default = {
     .gcp = 1,
     .pcf = 1,
     .docker = 1,
+    .kubernetes = 1,
 };
 
 #endif /* NR_UTILIZATION_HDR */

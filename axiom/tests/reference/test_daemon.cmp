@@ -26,6 +26,8 @@ verbosedebug: exec[24]='--define'
 verbosedebug: exec[25]='utilization.detect_pcf=false'
 verbosedebug: exec[26]='--define'
 verbosedebug: exec[27]='utilization.detect_docker=true'
-verbosedebug: exec[28]='<NULL>'
+verbosedebug: exec[28]='--define'
+verbosedebug: exec[29]='utilization.detect_kubernetes=false'
+verbosedebug: exec[30]='<NULL>'
 info: stdout should be redirected to the log file
 info: stderr should be redirected to the log file

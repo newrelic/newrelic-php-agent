@@ -824,6 +824,7 @@ NR_PHP_UTILIZATION_MH(azure)
 NR_PHP_UTILIZATION_MH(gcp)
 NR_PHP_UTILIZATION_MH(pcf)
 NR_PHP_UTILIZATION_MH(docker)
+NR_PHP_UTILIZATION_MH(kubernetes)
 
 static PHP_INI_MH(nr_daemon_special_curl_verbose_mh) {
   int val;
@@ -1936,7 +1937,11 @@ PHP_INI_ENTRY_EX("newrelic.daemon.utilization.detect_docker",
                  NR_PHP_SYSTEM,
                  NR_PHP_UTILIZATION_MH_NAME(docker),
                  nr_enabled_disabled_dh)
-
+PHP_INI_ENTRY_EX("newrelic.daemon.utilization.detect_kubernetes",
+                 "1",
+                 NR_PHP_SYSTEM,
+                 NR_PHP_UTILIZATION_MH_NAME(kubernetes),
+                 nr_enabled_disabled_dh)
 /*
  * This daemon flag is for internal development use only.  It should not be
  * documented to customers.

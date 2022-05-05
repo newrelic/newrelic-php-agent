@@ -651,11 +651,12 @@ func startDaemon(network, address string, securityToken string, securityPolicies
 	client, _ := newrelic.NewClient(&newrelic.ClientConfig{})
 	connectPayload := TestApp.ConnectPayload(utilization.Gather(
 		utilization.Config{
-			DetectAWS:    true,
-			DetectAzure:  true,
-			DetectGCP:    true,
-			DetectPCF:    true,
-			DetectDocker: true,
+			DetectAWS:        true,
+			DetectAzure:      true,
+			DetectGCP:        true,
+			DetectPCF:        true,
+			DetectDocker:     true,
+			DetectKubernetes: true,
 		}))
 
 	policies := newrelic.AgentPolicies{}

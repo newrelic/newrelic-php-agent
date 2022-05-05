@@ -335,6 +335,16 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.daemon.utilization.detect_docker = true
 
+; Setting: newrelic.daemon.utilization.detect_kubernetes
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : Enable detection of whether the system is running in a Kubernetes 
+;          cluster.
+;
+;newrelic.utilization.detect_kubernetes = true
+
+
 ; Setting: newrelic.daemon.app_timeout
 ; Type   : time specification string ("5m", "1h20m", etc)
 ; Scope  : system
