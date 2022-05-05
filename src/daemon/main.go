@@ -240,7 +240,7 @@ type Config struct {
 	DetectPCF          bool           `config:"utilization.detect_pcf"`         // Whether to detect if this is running on PCF in utilization
 	DetectDocker       bool           `config:"utilization.detect_docker"`      // Whether to detect if this is in a Docker container in utilization
 	DetectKubernetes   bool		      `config:"utilization.detect_kubernetes"`  // Whether to detect if this is in a Kubernetes cluster
-    LogicalProcessors  int            `config:"utilization.logical_processors"` // Customer provided number of logical processors for pricing control.
+	LogicalProcessors  int            `config:"utilization.logical_processors"` // Customer provided number of logical processors for pricing control.
 	TotalRamMIB        int            `config:"utilization.total_ram_mib"`      // Customer provided total RAM in mebibytes for pricing control.
 	BillingHostname    string         `config:"utilization.billing_hostname"`   // Customer provided hostname for pricing control.
 	Agent              bool           `config:"-"`                              // Used to indicate if spawned by agent
