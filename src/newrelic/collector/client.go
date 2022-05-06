@@ -6,367 +6,347 @@
 package collector
 
 import (
-	"crypto/tls"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
+    "crypto/tls"
+    //"encoding/json"
+    //"errors"
+    "fmt"
+    "io/ioutil"
+    "net"
+    "net/http"
+    "net/url"
+    "strings"
+    "time"
 
-	"golang.org/x/net/proxy"
+    "golang.org/x/net/proxy"
 
-	"newrelic/log"
-	"newrelic/version"
+    "newrelic/log"
+    "newrelic/version"
 )
-
-var ErrPayloadTooLarge = errors.New("payload too large")
-var ErrUnauthorized = errors.New("unauthorized")
-var ErrUnsupportedMedia = errors.New("unsupported media")
 
 type CollectibleFunc func(auditVersion bool) ([]byte, error)
 
 func (fn CollectibleFunc) CollectorJSON(auditVersion bool) ([]byte, error) {
-	return fn(auditVersion)
+    return fn(auditVersion)
 }
 
 type Collectible interface {
-	CollectorJSON(auditVersion bool) ([]byte, error)
+    CollectorJSON(auditVersion bool) ([]byte, error)
 }
 
-type Cmd struct {
-	Name              string
-	Collector         string
-	License           LicenseKey
-	RunID             string
-	AgentLanguage     string
-	AgentVersion      string
-	Collectible       Collectible
+// RpmCmd contains fields specific to an individual call made to RPM.
+type RpmCmd struct {
+    Name              string
+    Collector         string
+    RunID             string
+    Data              []byte
+    License       LicenseKey
 	RequestHeadersMap map[string]string
+}
 
-	ua                string
+// RpmControls contains fields which will be the same for all calls made
+// by the same application.
+type RpmControls struct {
+    Collectible   Collectible
+    AgentLanguage string
+    AgentVersion  string
+    ua            string
+}
+
+// RPMResponse contains a NR endpoint response.
+//
+// Agent Behavior Summary:
+//
+// on connect/preconnect:
+//     410 means shutdown
+//     200, 202 mean success (start run)
+//     all other response codes and errors mean try after backoff
+//
+// on harvest:
+//     410 means shutdown
+//     401, 409 mean restart run
+//     408, 429, 500, 503 mean save data for next harvest
+//     all other response codes and errors discard the data and continue the current harvest
+type RPMResponse struct {
+    StatusCode int
+    Body       []byte
+    // Err indicates whether or not the call was successful: newRPMResponse
+    // should be used to avoid mismatch between StatusCode and Err.
+    Err                      error
+    disconnectSecurityPolicy bool
+}
+
+func newRPMResponse(StatusCode int) RPMResponse {
+    var err error
+    if StatusCode != 200 && StatusCode != 202 {
+        err = fmt.Errorf("response code: %d", StatusCode)
+    }
+    return RPMResponse{StatusCode: StatusCode, Err: err}
+}
+// IsDisconnect indicates that the agent should disconnect.
+func (resp RPMResponse) IsDisconnect() bool {
+    return resp.StatusCode == 410 || resp.disconnectSecurityPolicy
+}
+// IsRestartException indicates that the agent should restart.
+func (resp RPMResponse) IsRestartException() bool {
+    return resp.StatusCode == 401 || resp.StatusCode == 409
+}
+// ShouldSaveHarvestData indicates that the agent should save the data and try
+// to send it in the next harvest.
+func (resp RPMResponse) ShouldSaveHarvestData() bool {
+    switch resp.StatusCode {
+    case 408, 429, 500, 503:
+        return true
+    default:
+        return false
+    }
 }
 
 // The agent languages we give the collector are not necessarily the ideal
 // choices for a user agent string.
 var userAgentMappings = map[string]string{
-	"c":   "C",
-	"sdk": "C",
-	"php": "PHP",
-	"":    "Native",
+    "c":   "C",
+    "sdk": "C",
+    "php": "PHP",
+    "":    "Native",
 }
 
-func (cmd *Cmd) userAgent() string {
-	if cmd.ua == "" {
-		lang := cmd.AgentLanguage
-		if val, ok := userAgentMappings[cmd.AgentLanguage]; ok {
-			lang = val
-		}
+func (control *RpmControls) userAgent() string {
+    if control.ua == "" {
+        lang := control.AgentLanguage
+        if val, ok := userAgentMappings[control.AgentLanguage]; ok {
+            lang = val
+        }
 
-		ver := "unknown"
-		if cmd.AgentVersion != "" {
-			ver = cmd.AgentVersion
-		}
+        ver := "unknown"
+        if control.AgentVersion != "" {
+            ver = control.AgentVersion
+        }
 
-		cmd.ua = fmt.Sprintf("NewRelic-%s-Agent/%s NewRelic-GoDaemon/%s", lang,
-			ver, version.Number)
-	}
+        control.ua = fmt.Sprintf("NewRelic-%s-Agent/%s NewRelic-GoDaemon/%s", lang,
+                                 ver, version.Number)
+    }
 
-	return cmd.ua
+    return control.ua
 }
 
 type Client interface {
-	Execute(cmd Cmd) ([]byte, error)
+    Execute(cmd RpmCmd, cs RpmControls) RPMResponse
 }
 
-type ClientFn func(cmd Cmd) ([]byte, error)
+type ClientFn func(cmd RpmCmd, cs RpmControls) RPMResponse
 
-func (fn ClientFn) Execute(cmd Cmd) ([]byte, error) {
-	return fn(cmd)
+func (fn ClientFn) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+    return fn(cmd, cs)
 }
 
 type limitClient struct {
-	timeout   time.Duration
-	orig      Client
-	semaphore chan bool
+    timeout   time.Duration
+    orig      Client
+    semaphore chan bool
 }
 
-func (l *limitClient) Execute(cmd Cmd) ([]byte, error) {
-	var timer <-chan time.Time
+func (l *limitClient) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+    var timer <-chan time.Time
 
-	if 0 != l.timeout {
-		timer = time.After(l.timeout)
-	}
+    if 0 != l.timeout {
+        timer = time.After(l.timeout)
+    }
 
-	select {
-	case <-l.semaphore:
-		defer func() { l.semaphore <- true }()
-		b, err := l.orig.Execute(cmd)
-		return b, err
-	case <-timer:
-		return nil, fmt.Errorf("timeout after %v", l.timeout)
-	}
+    select {
+    case <-l.semaphore:
+        defer func() { l.semaphore <- true }()
+        resp := l.orig.Execute(cmd, cs)
+        return resp
+    case <-timer:
+        return RPMResponse{}
+    }
 }
 
 func NewLimitClient(c Client, max int, timeout time.Duration) Client {
-	l := &limitClient{
-		orig:      c,
-		semaphore: make(chan bool, max),
-		timeout:   timeout,
-	}
-	// We need to use a prefilled semaphore and block on the receive rather
-	// than block on the send, because of compiler ordering flexibility.
-	//
-	// See Channel Communication in the Go Memory Model for details.
-	// https://golang.org/ref/mem#tmp_7
-	for i := 0; i < max; i++ {
-		l.semaphore <- true
-	}
-	return l
+    l := &limitClient{
+        orig:      c,
+        semaphore: make(chan bool, max),
+        timeout:   timeout,
+    }
+    // We need to use a prefilled semaphore and block on the receive rather
+    // than block on the send, because of compiler ordering flexibility.
+    //
+    // See Channel Communication in the Go Memory Model for details.
+    // https://golang.org/ref/mem#tmp_7
+    for i := 0; i < max; i++ {
+        l.semaphore <- true
+    }
+    return l
 }
 
 type ClientConfig struct {
-	CAFile      string
-	CAPath      string
-	Proxy       string
-	MaxParallel int
-	Timeout     time.Duration
+    CAFile      string
+    CAPath      string
+    Proxy       string
+    MaxParallel int
+    Timeout     time.Duration
 }
 
 func NewClient(cfg *ClientConfig) (Client, error) {
-	if nil == cfg {
-		cfg = &ClientConfig{}
-	}
+    if nil == cfg {
+        cfg = &ClientConfig{}
+    }
 
-	// Use defaults from the http package.
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}
+    // Use defaults from the http package.
+    dialer := &net.Dialer{
+        Timeout:   30 * time.Second,
+        KeepAlive: 30 * time.Second,
+    }
 
-	transport := &http.Transport{
-		Proxy:               http.ProxyFromEnvironment,
-		Dial:                dialer.Dial,
-		TLSHandshakeTimeout: 10 * time.Second,
-		TLSClientConfig:     &tls.Config{RootCAs: DefaultCertPool},
-	}
+    transport := &http.Transport{
+        Proxy:               http.ProxyFromEnvironment,
+        Dial:                dialer.Dial,
+        TLSHandshakeTimeout: 10 * time.Second,
+        TLSClientConfig:     &tls.Config{RootCAs: DefaultCertPool},
+    }
 
-	if "" != cfg.CAFile || "" != cfg.CAPath {
-		pool, err := NewCertPool(cfg.CAFile, cfg.CAPath)
-		if nil != err {
-			return nil, err
-		}
-		transport.TLSClientConfig.RootCAs = pool
-	}
+    if "" != cfg.CAFile || "" != cfg.CAPath {
+        pool, err := NewCertPool(cfg.CAFile, cfg.CAPath)
+        if nil != err {
+            return nil, err
+        }
+        transport.TLSClientConfig.RootCAs = pool
+    }
 
-	if "" != cfg.Proxy {
-		url, err := parseProxy(cfg.Proxy)
-		if err != nil {
-			return nil, err
-		}
+    if "" != cfg.Proxy {
+        url, err := parseProxy(cfg.Proxy)
+        if err != nil {
+            return nil, err
+        }
 
-		switch url.Scheme {
-		case "http", "https":
-			transport.Proxy = http.ProxyURL(url)
-		default:
-			// Other proxy schemes are assumed to use tunneling and require
-			// a custom dialer to establish the tunnel.
-			proxyDialer, err := proxy.FromURL(url, dialer)
-			if err != nil {
-				return nil, err
-			}
-			transport.Proxy = nil
-			transport.Dial = proxyDialer.Dial
-		}
-	}
+        switch url.Scheme {
+        case "http", "https":
+            transport.Proxy = http.ProxyURL(url)
+        default:
+            // Other proxy schemes are assumed to use tunneling and require
+            // a custom dialer to establish the tunnel.
+            proxyDialer, err := proxy.FromURL(url, dialer)
+            if err != nil {
+                return nil, err
+            }
+            transport.Proxy = nil
+            transport.Dial = proxyDialer.Dial
+        }
+    }
 
-	c := &clientImpl{
-		httpClient: &http.Client{
-			Transport: transport,
-			Timeout:   cfg.Timeout,
-		},
-	}
+    c := &clientImpl{
+        httpClient: &http.Client{
+            Transport: transport,
+            Timeout:   cfg.Timeout,
+        },
+    }
 
-	if cfg.MaxParallel <= 0 {
-		return c, nil
-	}
-	return NewLimitClient(c, cfg.MaxParallel, cfg.Timeout), nil
+    if cfg.MaxParallel <= 0 {
+        return c, nil
+    }
+    return NewLimitClient(c, cfg.MaxParallel, cfg.Timeout), nil
 }
 
 // parseProxy parses the URL for a proxy similar to url.Parse, but adds
 // support for URLs that do not specify a scheme. Such URLs are assumed
 // to be HTTP proxies. This mimics the behavior of libcurl.
 func parseProxy(proxy string) (*url.URL, error) {
-	url, err := url.Parse(proxy)
-	if err != nil || !strings.Contains(proxy, "://") {
-		// Try again, assuming HTTP as the scheme. If this fails, return the
-		// original error so the error message matches the original URL.
-		if httpURL, err := url.Parse("http://" + proxy); err == nil {
-			return httpURL, nil
-		}
-	}
-	return url, err
+    url, err := url.Parse(proxy)
+    if err != nil || !strings.Contains(proxy, "://") {
+    // Try again, assuming HTTP as the scheme. If this fails, return the
+    // original error so the error message matches the original URL.
+    if httpURL, err := url.Parse("http://" + proxy); err == nil {
+    return httpURL, nil
+}
+    }
+    return url, err
 }
 
 type clientImpl struct {
-	httpClient *http.Client
+    httpClient *http.Client
 }
 
-func (c *clientImpl) perform(url string, data []byte, userAgent string, requestHeadersMap map[string]string) ([]byte, error) {
-	deflated, err := Compress(data)
-	if nil != err {
-		return nil, err
-	}
+func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse {
+    deflated, err := Compress(cmd.Data)
+    if nil != err {
+        return RPMResponse{Err: err}
+    }
 
-	req, err := http.NewRequest("POST", url, deflated)
-	if nil != err {
-		return nil, err
-	}
+    req, err := http.NewRequest("POST", url, deflated)
+    if nil != err {
+        return RPMResponse{Err: err}
+    }
 
-	req.Header.Add("Accept-Encoding", "identity, deflate")
-	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Header.Add("User-Agent", userAgent)
-	req.Header.Add("Content-Encoding", "deflate")
+    req.Header.Add("Accept-Encoding", "identity, deflate")
+    req.Header.Add("Content-Type", "application/octet-stream")
+    req.Header.Add("User-Agent", cs.userAgent())
+    req.Header.Add("Content-Encoding", "deflate")
 
-	for k, v := range requestHeadersMap {
+	for k, v := range cmd.requestHeadersMap {
 		req.Header.Add(k, v)
 	}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
+    resp, err := c.httpClient.Do(req)
+    if err != nil {
+        return RPMResponse{Err: err}
+    }
 
-	defer resp.Body.Close()
+    defer resp.Body.Close()
 
-	switch resp.StatusCode {
-	case 200:
-		// Nothing to do.
-	case 202:
-		// "New" style P17 success response code with no JSON payload to decode
-		// FIXME - this just gets something working but need to change
-		//         all this code to not expect a reply payload on success 
-		//         as was the case with P16
-		//         Will be replaced by proper P17 response code handling
-		return []byte(""), nil
-	case 401:
-		return nil, ErrUnauthorized
-	case 413:
-		return nil, ErrPayloadTooLarge
-	case 415:
-		return nil, ErrUnsupportedMedia
-	default:
-		// If the response code is not 200, then the collector may not return
-		// valid JSON
-		return nil, fmt.Errorf("unexpected collector HTTP status code: %d",
-			resp.StatusCode)
-	}
+    r := newRPMResponse(resp.StatusCode)
 
-	b, err := ioutil.ReadAll(resp.Body)
-	if nil != err {
-		return nil, err
-	}
-	return parseResponse(b)
+    body, err := ioutil.ReadAll(resp.Body)
+    if nil != r.Err {
+        r.Err = err
+    }
+    r.Body = body
+    return r
 }
 
-func (c *clientImpl) Execute(cmd Cmd) ([]byte, error) {
-	data, err := cmd.Collectible.CollectorJSON(false)
-	if nil != err {
-		return nil, fmt.Errorf("unable to create json payload for '%s': %s",
-			cmd.Name, err)
-	}
+func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+    data, err := cs.Collectible.CollectorJSON(false)
+    if nil != err {
+        return RPMResponse{Err: err}
+    }
+    cmd.Data = data
 
-	var audit []byte
+    var audit []byte
 
-	if log.Auditing() {
-		audit, err = cmd.Collectible.CollectorJSON(true)
-		if nil != err {
-			log.Errorf("unable to create audit json payload for '%s': %s", cmd.Name, err)
-			audit = data
-		}
-		if nil == audit {
-			audit = data
-		}
-	}
+    if log.Auditing() {
+        audit, err = cs.Collectible.CollectorJSON(true)
+        if nil != err {
+            log.Errorf("unable to create audit json payload for '%s': %s", cmd.Name, err)
+            audit = data
+        }
+        if nil == audit {
+            audit = data
+        }
+    }
 
-	url := cmd.url(false)
-	cleanURL := cmd.url(true)
+    url := cmd.url(false)
+    cleanURL := cmd.url(true)
 
-	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
-	log.Debugf("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
+    log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
+    log.Debugf("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
 
-	resp, err := c.perform(url, data, cmd.userAgent(), cmd.RequestHeadersMap)
-	if err != nil {
-		log.Debugf("attempt to perform %s failed: %q, url=%s",
-			cmd.Name, err.Error(), cleanURL)
-	}
+    resp := c.perform(url, cmd, cs)
+    if err != nil {
+        log.Debugf("attempt to perform %s failed: %q, url=%s",
+        cmd.Name, err.Error(), cleanURL)
+    }
 
-	log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, resp)
-	log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, resp)
+    log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, resp.Body)
+    log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, resp.Body)
 
-	return resp, err
+    return resp
 }
-
-type rpmException struct {
-	Message   string `json:"message"`
-	ErrorType string `json:"error_type"`
-}
-
-func (e *rpmException) Error() string {
-	return fmt.Sprintf("%s: %s", e.ErrorType, e.Message)
-}
-
-func hasType(e error, expected string) bool {
-	rpmErr, ok := e.(*rpmException)
-	if !ok {
-		return false
-	}
-	return rpmErr.ErrorType == expected
-
-}
-
-const (
-	forceRestartType   = "NewRelic::Agent::ForceRestartException"
-	disconnectType     = "NewRelic::Agent::ForceDisconnectException"
-	licenseInvalidType = "NewRelic::Agent::LicenseException"
-	runtimeType        = "RuntimeError"
-)
 
 // These clients exist for testing.
 var (
-	DisconnectClient = ClientFn(func(cmd Cmd) ([]byte, error) {
-		return nil, SampleDisonnectException
+	DisconnectClient = ClientFn(func(cmd RpmCmd, cs RpmControls) RPMResponse {
+        return RPMResponse{StatusCode: 410}
 	})
-	LicenseInvalidClient = ClientFn(func(cmd Cmd) ([]byte, error) {
-		return nil, SampleLicenseInvalidException
+	LicenseInvalidClient = ClientFn(func(cmd RpmCmd, cs RpmControls) RPMResponse {
+        return RPMResponse{StatusCode: 401}
 	})
-	SampleRestartException        = &rpmException{ErrorType: forceRestartType}
-	SampleDisonnectException      = &rpmException{ErrorType: disconnectType}
-	SampleLicenseInvalidException = &rpmException{ErrorType: licenseInvalidType}
 )
-
-func IsRestartException(e error) bool { return hasType(e, forceRestartType) }
-func IsLicenseException(e error) bool { return hasType(e, licenseInvalidType) }
-func IsRuntime(e error) bool          { return hasType(e, runtimeType) }
-func IsDisconnect(e error) bool       { return hasType(e, disconnectType) }
-
-func parseResponse(b []byte) ([]byte, error) {
-	var r struct {
-		ReturnValue json.RawMessage `json:"return_value"`
-		Exception   *rpmException   `json:"exception"`
-	}
-
-	err := json.Unmarshal(b, &r)
-	if nil != err {
-		return nil, err
-	}
-
-	if nil != r.Exception {
-		return nil, r.Exception
-	}
-
-	return r.ReturnValue, nil
-}

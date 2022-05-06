@@ -238,11 +238,11 @@ func TestNeedsConnectAttempt(t *testing.T) {
 		t.Fatal(now, app.lastConnectAttempt, app.state)
 	}
 
-	app.state = AppStateInvalidLicense
-	app.lastConnectAttempt = now.Add(-limits.AppConnectAttemptBackoff)
-	if app.NeedsConnectAttempt(now, limits.AppConnectAttemptBackoff) {
-		t.Fatal(now, app.lastConnectAttempt, app.state)
-	}
+	//app.state = AppStateInvalidLicense
+	//app.lastConnectAttempt = now.Add(-limits.AppConnectAttemptBackoff)
+	//if app.NeedsConnectAttempt(now, limits.AppConnectAttemptBackoff) {
+	//	t.Fatal(now, app.lastConnectAttempt, app.state)
+	//}
 
 	app.state = AppStateDisconnected
 	app.lastConnectAttempt = now.Add(-limits.AppConnectAttemptBackoff)

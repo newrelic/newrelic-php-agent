@@ -7,151 +7,168 @@ package collector
 
 import (
 	"net/url"
+    "net/http"
+    "io/ioutil"
 	"newrelic/crossagent"
 	"testing"
+    "strings"
 )
 
 var (
 	actualData = "my_data"
-	call       = Cmd{
-		Name:      CommandErrors,
-		Collector: "the-collector.com",
-		License:   "12345",
-		RunID:     "db97531",
+//	call       = Cmd{
+//		Name:      CommandErrors,
+//		Collector: "the-collector.com",
+//		License:   "12345",
+//		RunID:     "db97531",
+//		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
+//			if auditVersion {
+//				return nil, nil
+//			}
+//			return []byte(actualData), nil
+//		}),
+//	}
+)
+
+func TestResponseCodeError(t *testing.T) {
+	testcases := []struct {
+		code            int
+		success         bool
+		disconnect      bool
+		restart         bool
+		saveHarvestData bool
+	}{
+		// success
+		{code: 200, success: true, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 202, success: true, disconnect: false, restart: false, saveHarvestData: false},
+		// disconnect
+		{code: 410, success: false, disconnect: true, restart: false, saveHarvestData: false},
+		// restart
+		{code: 401, success: false, disconnect: false, restart: true, saveHarvestData: false},
+		{code: 409, success: false, disconnect: false, restart: true, saveHarvestData: false},
+		// save data
+		{code: 408, success: false, disconnect: false, restart: false, saveHarvestData: true},
+		{code: 429, success: false, disconnect: false, restart: false, saveHarvestData: true},
+		{code: 500, success: false, disconnect: false, restart: false, saveHarvestData: true},
+		{code: 503, success: false, disconnect: false, restart: false, saveHarvestData: true},
+		// other errors
+		{code: 400, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 403, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 404, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 405, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 407, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 411, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 413, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 414, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 415, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 417, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 431, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		// unexpected weird codes
+		{code: -1, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 1, success: false, disconnect: false, restart: false, saveHarvestData: false},
+		{code: 999999, success: false, disconnect: false, restart: false, saveHarvestData: false},
+	}
+    for _, tc := range testcases {
+		resp := newRPMResponse(tc.code)
+		if tc.success != (nil == resp.Err) {
+			t.Error("error", tc.code, tc.success, resp.Err)
+		}
+        if tc.disconnect != resp.IsDisconnect() {
+			t.Error("disconnect", tc.code, tc.disconnect, resp.Err)
+		}
+		if tc.restart != resp.IsRestartException() {
+			t.Error("restart", tc.code, tc.restart, resp.Err)
+		}
+		if tc.saveHarvestData != resp.ShouldSaveHarvestData() {
+			t.Error("save harvest data", tc.code, tc.saveHarvestData, resp.Err)
+		}
+    }
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+func (fn roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return fn(r)
+}
+
+func TestCollectorRequest(t *testing.T) {
+	cmd := RpmCmd{
+		Name:              "cmd_name",
+		Collector:         "collector.com",
+		RunID:             "run_id",
+		Data:              nil,
+		License:           "the_license",
+	}
+	testField := func(name, v1, v2 string) {
+		if v1 != v2 {
+			t.Error(name, v1, v2)
+		}
+    }
+    cs := RpmControls{
 		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 			if auditVersion {
 				return nil, nil
 			}
 			return []byte(actualData), nil
 		}),
+		AgentVersion: "agent_version",
 	}
-)
-
-func TestLicenseInvalid(t *testing.T) {
-	r := `{"exception":{"message":"Invalid license key, please contact support@newrelic.com","error_type":"NewRelic::Agent::LicenseException"}}`
-	reply, err := parseResponse([]byte(r))
-	if reply != nil {
-		t.Fatal(string(reply))
-	}
-	if !IsLicenseException(err) {
-		t.Fatal(err)
-	}
-}
-
-func TestRedirectSuccess(t *testing.T) {
-	reply, err := parseResponse([]byte(`{"return_value":"staging-collector-101.newrelic.com"}`))
-	if nil != err {
-		t.Fatal(err)
-	}
-	if string(reply) != `"staging-collector-101.newrelic.com"` {
-		t.Fatal(string(reply))
-	}
-}
-
-func TestEmptyHash(t *testing.T) {
-	reply, err := parseResponse([]byte(`{}`))
-	if nil != err {
-		t.Fatal(err)
-	}
-	if nil != reply {
-		t.Fatal(string(reply))
+    client := clientImpl {
+		httpClient: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				testField("method", r.Method, "POST")
+				testField("url", r.URL.String(), "https://collector.com/agent_listener/invoke_raw_method?license_key=the_license&marshal_format=json&method=cmd_name&protocol_version=17&run_id=run_id")
+				testField("Accept-Encoding", r.Header.Get("Accept-Encoding"), "identity, deflate")
+				testField("Content-Type", r.Header.Get("Content-Type"), "application/octet-stream")
+				testField("Content-Encoding", r.Header.Get("Content-Encoding"), "deflate")
+                return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(strings.NewReader("body")),
+				}, nil
+			}),
+		},
+    }
+    resp := client.Execute(cmd, cs)
+	if nil != resp.Err {
+		t.Error(resp.Err)
 	}
 }
 
-func TestReturnValueNull(t *testing.T) {
-	reply, err := parseResponse([]byte(`{"return_value":null}`))
-	if nil != err {
-		t.Fatal(err)
+func TestCollectorBadRequest(t *testing.T) {
+	cmd := RpmCmd{
+		Name:              "cmd_name",
+		Collector:         "collector.com",
+		RunID:             "run_id",
+		Data:              nil,
+		License:           "the_license",
 	}
-	if "null" != string(reply) {
-		t.Fatal(string(reply))
+    cs := RpmControls{
+		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
+			if auditVersion {
+				return nil, nil
+			}
+			return []byte(actualData), nil
+		}),
+		AgentVersion: "agent_version",
 	}
-}
-
-func TestReplyNull(t *testing.T) {
-	reply, err := parseResponse(nil)
-	if nil == err || err.Error() != `unexpected end of JSON input` {
-		t.Fatal(err)
-	}
-	if nil != reply {
-		t.Fatal(string(reply))
-	}
-}
-
-func TestConnectSuccess(t *testing.T) {
-	inner := `{"agent_run_id":"599551769342729","product_level":40,"js_agent_file":"","cross_process_id":"17833#31785","collect_errors":true,"url_rules":[{"each_segment":false,"match_expression":".*\\.(ace|arj|ini|txt|udl|plist|css|gif|ico|jpe?g|js|png|swf|woff|caf|aiff|m4v|mpe?g|mp3|mp4|mov)$","eval_order":1000,"replace_all":false,"ignore":false,"terminate_chain":true,"replacement":"\/*.\\1"},{"each_segment":true,"match_expression":"^[0-9][0-9a-f_,.-]*$","eval_order":1001,"replace_all":false,"ignore":false,"terminate_chain":false,"replacement":"*"},{"each_segment":false,"match_expression":"^(.*)\/[0-9][0-9a-f_,-]*\\.([0-9a-z][0-9a-z]*)$","eval_order":1002,"replace_all":false,"ignore":false,"terminate_chain":false,"replacement":"\\1\/.*\\2"}],"messages":[{"message":"Reporting to: https:\/\/staging.newrelic.com\/accounts\/17833\/applications\/31785","level":"INFO"}],"data_report_period":60,"collect_traces":true,"sampling_rate":0,"js_agent_loader":"","encoding_key":"d67afc830dab717fd163bfcb0b8b88423e9a1a3b","apdex_t":0.5,"collect_analytics_events":true,"trusted_account_ids":[17833]}`
-	outer := `{"return_value":` + inner + `}`
-	reply, err := parseResponse([]byte(outer))
-	if nil != err {
-		t.Fatal(err)
-	}
-	if string(reply) != inner {
-		t.Fatal(string(reply))
-	}
-}
-
-func TestClientError(t *testing.T) {
-	reply, err := parseResponse([]byte(`{"exception":{"message":"something","error_type":"my_error"}}`))
-	if nil == err || err.Error() != "my_error: something" {
-		t.Fatal(err)
-	}
-	if nil != reply {
-		t.Fatal(string(reply))
-	}
-}
-
-func TestForceRestartException(t *testing.T) {
-	// NOTE: This string was generated manually, not taken from the actual
-	// collector.
-	r := `{"exception":{"message":"something","error_type":"NewRelic::Agent::ForceRestartException"}}`
-	reply, err := parseResponse([]byte(r))
-	if reply != nil {
-		t.Fatal(string(reply))
-	}
-	if !IsRestartException(err) {
-		t.Fatal(err)
-	}
-}
-
-func TestForceDisconnectException(t *testing.T) {
-	// NOTE: This string was generated manually, not taken from the actual
-	// collector.
-	r := `{"exception":{"message":"something","error_type":"NewRelic::Agent::ForceDisconnectException"}}`
-	reply, err := parseResponse([]byte(r))
-	if reply != nil {
-		t.Fatal(string(reply))
-	}
-	if !IsDisconnect(err) {
-		t.Fatal(err)
-	}
-}
-
-func TestRuntimeError(t *testing.T) {
-	// NOTE: This string was generated manually, not taken from the actual
-	// collector.
-	r := `{"exception":{"message":"something","error_type":"RuntimeError"}}`
-	reply, err := parseResponse([]byte(r))
-	if reply != nil {
-		t.Fatal(string(reply))
-	}
-	if !IsRuntime(err) {
-		t.Fatal(err)
-	}
-}
-
-func TestUnknownError(t *testing.T) {
-	r := `{"exception":{"message":"something","error_type":"unknown_type"}}`
-	reply, err := parseResponse([]byte(r))
-	if reply != nil {
-		t.Fatal(string(reply))
-	}
-	if nil == err || err.Error() != "unknown_type: something" {
-		t.Fatal(err)
+    client := clientImpl{
+		httpClient: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(strings.NewReader("body")),
+				}, nil
+			}),
+		},
+    }
+	u := ":" // bad url
+	resp := client.perform(u, cmd, cs)
+	if nil == resp.Err {
+		t.Error("missing expected error")
 	}
 }
 
 func TestObfuscateLicense(t *testing.T) {
-	cmd := Cmd{
+	cmd := RpmCmd{
 		Name:      "foo_method",
 		Collector: "example.com",
 		License:   "123abc",
@@ -172,7 +189,7 @@ func TestObfuscateLicense(t *testing.T) {
 }
 
 func TestObfuscateLicenseShort(t *testing.T) {
-	cmd := Cmd{
+	cmd := RpmCmd{
 		Name:      "foo_method",
 		Collector: "example.com",
 		License:   "abc",

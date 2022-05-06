@@ -575,10 +575,10 @@ func discoverTests(pattern string, searchPaths []string) []string {
 	return testFiles
 }
 
-func injectIntoConnectReply(reply []byte, newRunID, crossProcessId string) []byte {
+func injectIntoConnectReply(reply collector.RPMResponse, newRunID, crossProcessId string) []byte {
 	var x map[string]interface{}
 
-	json.Unmarshal(reply, &x)
+	json.Unmarshal(reply.Body, &x)
 
 	x["agent_run_id"] = newRunID
 	x["cross_process_id"] = crossProcessId
@@ -590,7 +590,7 @@ func injectIntoConnectReply(reply []byte, newRunID, crossProcessId string) []byt
 type IntegrationDataHandler struct {
 	sync.Mutex                                       // Protects harvests
 	harvests            map[string]*newrelic.Harvest // Keyed by tc.Name (which is used as AgentRunID)
-	reply               []byte                       // Constant after creation
+	reply               collector.RPMResponse        // Constant after creation
 	rawSecurityPolicies []byte                       // policies from connection attempt, needed for AppInfo reply
 }
 

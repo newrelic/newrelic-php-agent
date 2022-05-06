@@ -59,6 +59,7 @@ enum {
   APP_STATUS_INVALID_LICENSE = 2,
   APP_STATUS_CONNECTED = 3,
   APP_STATUS_STILL_VALID = 4,
+  APP_STATUS_RESTART = 5,
 };
 
 /* Generated from: table App */

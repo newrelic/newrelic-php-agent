@@ -21,7 +21,7 @@ import (
 	"newrelic/utilization"
 )
 
-// AgentRunID is a string as of agent listener protocol version 14.
+// AgentRunID is a string as of agent listener protocol version 17.
 type AgentRunID string
 
 func (id AgentRunID) String() string {
@@ -33,8 +33,9 @@ type AppState int
 const (
 	AppStateUnknown AppState = iota
 	AppStateConnected
-	AppStateInvalidLicense
+	//AppStateInvalidLicense
 	AppStateDisconnected
+    AppStateRestart
 	AppStateInvalidSecurityPolicies
 )
 
