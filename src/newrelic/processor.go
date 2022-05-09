@@ -450,6 +450,9 @@ type harvestArgs struct {
 
 	// Used for final harvest before daemon exit
 	blocking bool
+
+	// metadata blob
+	RequestHeadersMap map[string]string
 }
 
 func harvestPayload(p PayloadCreator, args *harvestArgs) {
@@ -646,6 +649,9 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		// of one every 60 seconds.
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
+
+		// metadata blob
+		RequestHeadersMap:   app.connectReply.RequestHeadersMap,
 	}
 
 	harvestByType(ph.AppHarvest, &args, harvestType)
