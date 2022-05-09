@@ -123,6 +123,7 @@ type ConnectReply struct {
 	SamplingTarget     int                                  `json:"sampling_target"`
 	EventHarvestConfig collector.EventHarvestConfig         `json:"event_harvest_config"`
 	SpanEventHarvestConfig collector.SpanEventHarvestConfig `json:"span_event_harvest_config"`
+	RequestHeadersMap map[string]string                     `json:"request_headers_map"`
 }
 
 // An App represents the state of an application.
@@ -301,6 +302,11 @@ func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
 	}
 	if nil == c.ID {
 		return nil, errors.New("missing agent run id")
+	}
+
+	log.Debugf("request_headers_map from connect reply")
+	for k, v := range c.RequestHeadersMap {
+		log.Debugf("key=%s val=%s", k, v)
 	}
 
     // Since the collector now sends seperately, we need to internally combine the limits.
