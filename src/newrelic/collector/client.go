@@ -11,11 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-
-	//	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -41,18 +38,16 @@ type Collectible interface {
 }
 
 type Cmd struct {
-	Name          string
-	Collector     string
-	License       LicenseKey
-	RunID         string
-	AgentLanguage string
-	AgentVersion  string
-	Collectible   Collectible
-
-	ua string
-
-	// metadata blob
+	Name              string
+	Collector         string
+	License           LicenseKey
+	RunID             string
+	AgentLanguage     string
+	AgentVersion      string
+	Collectible       Collectible
 	RequestHeadersMap map[string]string
+
+	ua                string
 }
 
 // The agent languages we give the collector are not necessarily the ideal
@@ -236,18 +231,8 @@ func (c *clientImpl) perform(url string, data []byte, userAgent string, requestH
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Add("Content-Encoding", "deflate")
 
-	log.Debugf("perform-> adding request_headers_map from connect reply to POST")
 	for k, v := range requestHeadersMap {
-		log.Debugf("key=%s val=%s", k, v)
 		req.Header.Add(k, v)
-	}
-
-	//fmt.Printf("Dumping NewRequest POST!\n")
-	dump, dumperr := httputil.DumpRequestOut(req, false)
-	if dumperr != nil {
-		log.Warnf("DumpRequestOut error: %s", dumperr)
-	} else {
-		log.Debugf("DumpRequestOut:\n %s", dump)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -261,10 +246,11 @@ func (c *clientImpl) perform(url string, data []byte, userAgent string, requestH
 	case 200:
 		// Nothing to do.
 	case 202:
-		// "New" style success with no JSON payload to decode
-		// MSF - FIXME - this just gets something working but need to change
-		//               all this code to not expect a reply payload on success 
-		//               as was the case with P16
+		// "New" style P17 success response code with no JSON payload to decode
+		// FIXME - this just gets something working but need to change
+		//         all this code to not expect a reply payload on success 
+		//         as was the case with P16
+		//         Will be replaced by proper P17 response code handling
 		return []byte(""), nil
 	case 401:
 		return nil, ErrUnauthorized
@@ -310,9 +296,7 @@ func (c *clientImpl) Execute(cmd Cmd) ([]byte, error) {
 	cleanURL := cmd.url(true)
 
 	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
-	log.Debugf("MSF command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
-
-	log.Debugf("ABOUT TO CALL PERFORM")
+	log.Debugf("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
 
 	resp, err := c.perform(url, data, cmd.userAgent(), cmd.RequestHeadersMap)
 	if err != nil {
@@ -321,7 +305,7 @@ func (c *clientImpl) Execute(cmd Cmd) ([]byte, error) {
 	}
 
 	log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, resp)
-	log.Debugf("MSF command='%s' url='%s', response={%s}", cmd.Name, cleanURL, resp)
+	log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, resp)
 
 	return resp, err
 }

@@ -446,11 +446,10 @@ type harvestArgs struct {
 	harvestErrorChannel chan<- HarvestError
 	client              collector.Client
 	splitLargePayloads  bool
+	RequestHeadersMap   map[string]string
+
 	// Used for final harvest before daemon exit
 	blocking bool
-
-	// metadata blob
-	RequestHeadersMap map[string]string
 }
 
 func harvestPayload(p PayloadCreator, args *harvestArgs) {
@@ -640,15 +639,13 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		rules:               app.connectReply.MetricRules,
 		harvestErrorChannel: p.harvestErrorChannel,
 		client:              p.cfg.Client,
+		RequestHeadersMap:   app.connectReply.RequestHeadersMap,
 		// Splitting large payloads is limited to applications that have
 		// distributed tracing on. That restriction is a saftey measure
 		// to not overload the backend by sending two payloads instead
 		// of one every 60 seconds.
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
-
-		// metadata blob
-		RequestHeadersMap:   app.connectReply.RequestHeadersMap,
 	}
 
 	harvestByType(ph.AppHarvest, &args, harvestType)
