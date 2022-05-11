@@ -45,6 +45,6 @@ tap_equal(basename(__FILE__), basename($metadata['entity.name']), 'entity name')
 tap_equal('SERVICE', $metadata['entity.type'], 'entity type');
 tap_equal(gethostname(), $metadata['hostname'], 'host name');
 
-tap_assert(!isset($metadata['entity.guid']), 'entity guid');
+tap_assert(isset($metadata['entity.guid']) && $metadata['entity.guid'] !== '', 'entity guid');
 tap_assert(!isset($metadata['trace.id']), 'trace id');
 tap_assert(!isset($metadata['span.id']), 'span id');
