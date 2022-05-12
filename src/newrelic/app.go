@@ -123,6 +123,7 @@ type ConnectReply struct {
 	SamplingTarget     int                                  `json:"sampling_target"`
 	EventHarvestConfig collector.EventHarvestConfig         `json:"event_harvest_config"`
 	SpanEventHarvestConfig collector.SpanEventHarvestConfig `json:"span_event_harvest_config"`
+	RequestHeadersMap map[string]string                     `json:"request_headers_map"`
 }
 
 // An App represents the state of an application.

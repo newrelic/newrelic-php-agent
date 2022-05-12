@@ -26,7 +26,7 @@ const (
 )
 
 const (
-	protocolVersion = "16"
+	protocolVersion = "17"
 )
 
 // LicenseKey represents a license key for an account.

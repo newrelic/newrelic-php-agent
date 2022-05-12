@@ -38,15 +38,16 @@ type Collectible interface {
 }
 
 type Cmd struct {
-	Name          string
-	Collector     string
-	License       LicenseKey
-	RunID         string
-	AgentLanguage string
-	AgentVersion  string
-	Collectible   Collectible
+	Name              string
+	Collector         string
+	License           LicenseKey
+	RunID             string
+	AgentLanguage     string
+	AgentVersion      string
+	Collectible       Collectible
+	RequestHeadersMap map[string]string
 
-	ua string
+	ua                string
 }
 
 // The agent languages we give the collector are not necessarily the ideal
@@ -214,7 +215,7 @@ type clientImpl struct {
 	httpClient *http.Client
 }
 
-func (c *clientImpl) perform(url string, data []byte, userAgent string) ([]byte, error) {
+func (c *clientImpl) perform(url string, data []byte, userAgent string, requestHeadersMap map[string]string) ([]byte, error) {
 	deflated, err := Compress(data)
 	if nil != err {
 		return nil, err
@@ -230,6 +231,10 @@ func (c *clientImpl) perform(url string, data []byte, userAgent string) ([]byte,
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Add("Content-Encoding", "deflate")
 
+	for k, v := range requestHeadersMap {
+		req.Header.Add(k, v)
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -240,6 +245,13 @@ func (c *clientImpl) perform(url string, data []byte, userAgent string) ([]byte,
 	switch resp.StatusCode {
 	case 200:
 		// Nothing to do.
+	case 202:
+		// "New" style P17 success response code with no JSON payload to decode
+		// FIXME - this just gets something working but need to change
+		//         all this code to not expect a reply payload on success 
+		//         as was the case with P16
+		//         Will be replaced by proper P17 response code handling
+		return []byte(""), nil
 	case 401:
 		return nil, ErrUnauthorized
 	case 413:
@@ -286,7 +298,7 @@ func (c *clientImpl) Execute(cmd Cmd) ([]byte, error) {
 	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
 	log.Debugf("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
 
-	resp, err := c.perform(url, data, cmd.userAgent())
+	resp, err := c.perform(url, data, cmd.userAgent(), cmd.RequestHeadersMap)
 	if err != nil {
 		log.Debugf("attempt to perform %s failed: %q, url=%s",
 			cmd.Name, err.Error(), cleanURL)
