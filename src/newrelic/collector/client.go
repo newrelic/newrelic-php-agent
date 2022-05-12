@@ -282,7 +282,7 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
     req.Header.Add("User-Agent", cs.userAgent())
     req.Header.Add("Content-Encoding", "deflate")
 
-	for k, v := range cmd.requestHeadersMap {
+	for k, v := range cmd.RequestHeadersMap {
 		req.Header.Add(k, v)
 	}
 
