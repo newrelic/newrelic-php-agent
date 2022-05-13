@@ -87,6 +87,7 @@ func TestCollectorRequest(t *testing.T) {
 		Data:              nil,
 		License:           "the_license",
 		RequestHeadersMap: map[string]string{"zip": "zap"},
+		MaxPayloadSize:    1000 * 1000,
 	}
 	testField := func(name, v1, v2 string) {
 		if v1 != v2 {

@@ -125,6 +125,7 @@ type ConnectReply struct {
 	EventHarvestConfig collector.EventHarvestConfig         `json:"event_harvest_config"`
 	SpanEventHarvestConfig collector.SpanEventHarvestConfig `json:"span_event_harvest_config"`
 	RequestHeadersMap map[string]string                     `json:"request_headers_map"`
+	MaxPayloadSizeInBytes int                               `json:"max_payload_size_in_bytes"`
 }
 
 // An App represents the state of an application.

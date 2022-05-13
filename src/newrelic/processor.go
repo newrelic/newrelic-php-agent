@@ -179,6 +179,8 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 		Name:      collector.CommandPreconnect,
 		Collector: collectorHostname,
 		License:   args.License,
+		// Use default maximum, because we don't know the collector limit yet
+		MaxPayloadSize: limits.DefaultMaxPayloadSizeInBytes,
 	}
 
 	// Make call to preconnect
@@ -463,6 +465,7 @@ type harvestArgs struct {
 	client              collector.Client
 	splitLargePayloads  bool
 	RequestHeadersMap   map[string]string
+	maxPayloadSize      int
 
 	// Used for final harvest before daemon exit
 	blocking bool
@@ -475,6 +478,7 @@ func harvestPayload(p PayloadCreator, args *harvestArgs) {
 		License:           args.license,
 		RunID:             args.id.String(),
 		RequestHeadersMap: args.RequestHeadersMap,
+		MaxPayloadSize:    args.maxPayloadSize,
 	}
 	cs := collector.RpmControls{
 		AgentLanguage: args.agentLanguage,
@@ -657,6 +661,7 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		harvestErrorChannel: p.harvestErrorChannel,
 		client:              p.cfg.Client,
 		RequestHeadersMap:   app.connectReply.RequestHeadersMap,
+		maxPayloadSize:      app.connectReply.MaxPayloadSizeInBytes,
 		// Splitting large payloads is limited to applications that have
 		// distributed tracing on. That restriction is a saftey measure
 		// to not overload the backend by sending two payloads instead

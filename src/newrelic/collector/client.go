@@ -40,6 +40,7 @@ type RpmCmd struct {
 	Data              []byte
 	License           LicenseKey
 	RequestHeadersMap map[string]string
+	MaxPayloadSize    int
 }
 
 // RpmControls contains fields which will be the same for all calls made
@@ -321,6 +322,10 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 	deflated, err := Compress(cmd.Data)
 	if nil != err {
 		return RPMResponse{Err: err}
+	}
+
+	if l := deflated.Len(); l > cmd.MaxPayloadSize {
+		return RPMResponse{Err: fmt.Errorf("Payload size for %s too large: %d greater than %d", cmd.Name, l, cmd.MaxPayloadSize)}
 	}
 
 	req, err := http.NewRequest("POST", url, deflated)
