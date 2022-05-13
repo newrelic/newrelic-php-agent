@@ -673,22 +673,10 @@ func (p *Processor) processHarvestError(d HarvestError) {
         case d.Reply.IsDisconnect() || app.state == AppStateDisconnected:
             app.state = AppStateDisconnected
             p.shutdownAppHarvest(d.id)
-    //case d.Reply.IsLicenseException():
-        // I think this is unlikely to ever happen (the invalid license
-        // exception should trigger during the connect), but it is included
-        // here for defensiveness.
-        //app.state = AppStateInvalidLicense
-        //p.shutdownAppHarvest(d.id)
         case d.Reply.IsRestartException() || app.state == AppStateRestart:
             app.state = AppStateUnknown
             p.shutdownAppHarvest(d.id)
             p.considerConnect(app)
-    //case (d.Reply.Err == collector.ErrPayloadTooLarge) ||
-    //    (d.Reply.Err == collector.ErrUnsupportedMedia):
-        // Do not call the failed harvest fn, since we do not want to save
-        // the data.
-    //default:
-    //    d.data.FailedHarvest(h.Harvest)
     }
 }
 

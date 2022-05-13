@@ -33,7 +33,6 @@ type AppState int
 const (
 	AppStateUnknown AppState = iota
 	AppStateConnected
-	//AppStateInvalidLicense
 	AppStateDisconnected
     AppStateRestart
 	AppStateInvalidSecurityPolicies

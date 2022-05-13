@@ -7,8 +7,6 @@ package collector
 
 import (
     "crypto/tls"
-    //"encoding/json"
-    //"errors"
     "fmt"
     "io/ioutil"
     "net"
@@ -340,13 +338,3 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
 
     return resp
 }
-
-// These clients exist for testing.
-var (
-	DisconnectClient = ClientFn(func(cmd RpmCmd, cs RpmControls) RPMResponse {
-        return RPMResponse{StatusCode: 410}
-	})
-	LicenseInvalidClient = ClientFn(func(cmd RpmCmd, cs RpmControls) RPMResponse {
-        return RPMResponse{StatusCode: 401}
-	})
-)

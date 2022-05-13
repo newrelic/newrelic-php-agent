@@ -677,8 +677,8 @@ func TestLicenseExceptionAtHarvest(t *testing.T) {
     m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
     <-m.p.trackProgress // receive harvest error
 
-    //TODO verify that restart happens
-    //m.DoAppInfo(t, nil, AppStateRestart)
+    // Unknown app state triggered immediately following AppStateRestart
+    m.DoAppInfo(t, nil, AppStateUnknown)
 
     m.p.quit()
 }
@@ -860,7 +860,7 @@ func init() {
 }
 
 func TestAppInfoInvalid(t *testing.T) {
-    p := NewProcessor(ProcessorConfig{Client: collector.LicenseInvalidClient})
+    p := NewProcessor(ProcessorConfig{Client: LicenseInvalidClient})
     p.processorHarvestChan = nil
     p.trackProgress = make(chan struct{}, 100)
     go p.Run()
@@ -882,7 +882,7 @@ func TestAppInfoInvalid(t *testing.T) {
 }
 
 func TestAppInfoDisconnected(t *testing.T) {
-    p := NewProcessor(ProcessorConfig{Client: collector.DisconnectClient})
+    p := NewProcessor(ProcessorConfig{Client: DisconnectClient})
     p.processorHarvestChan = nil
     p.trackProgress = make(chan struct{}, 100)
     go p.Run()
