@@ -16,18 +16,6 @@ import (
 
 var (
 	actualData = "my_data"
-//	call       = Cmd{
-//		Name:      CommandErrors,
-//		Collector: "the-collector.com",
-//		License:   "12345",
-//		RunID:     "db97531",
-//		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
-//			if auditVersion {
-//				return nil, nil
-//			}
-//			return []byte(actualData), nil
-//		}),
-//	}
 )
 
 func TestResponseCodeError(t *testing.T) {

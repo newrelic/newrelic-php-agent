@@ -31,11 +31,11 @@ func (id AgentRunID) String() string {
 type AppState int
 
 const (
-	AppStateUnknown AppState = iota
-	AppStateConnected
-	AppStateDisconnected
+    AppStateUnknown AppState = iota
+    AppStateConnected
+    AppStateDisconnected
     AppStateRestart
-	AppStateInvalidSecurityPolicies
+    AppStateInvalidSecurityPolicies
 )
 
 // An AppKey uniquely identifies an application.
