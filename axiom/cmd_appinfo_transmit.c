@@ -289,19 +289,17 @@ nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,
       nrl_info(NRL_ACCT, "APPINFO reply disconnected app=" NRP_FMT,
                NRP_APPNAME(app->info.appname));
       return NR_SUCCESS;
-    //case APP_STATUS_INVALID_LICENSE:
-    //  app->state = NR_APP_INVALID;
-    //  nrl_error(NRL_ACCT,
-    //            "APPINFO reply invalid license app=" NRP_FMT
-    //            " please check your license "
-    //            "key and restart your web server.",
-    //            NRP_APPNAME(app->info.appname));
-    //  return NR_SUCCESS;
+    case APP_STATUS_INVALID_LICENSE:
+      app->state = NR_APP_INVALID;
+      nrl_error(NRL_ACCT,
+                "APPINFO reply invalid license app=" NRP_FMT
+                " please check your license "
+                "key and restart your web server.",
+                NRP_APPNAME(app->info.appname));
+      return NR_SUCCESS;
     case APP_STATUS_CONNECTED:
       /* Don't return here, instead break and continue below. */
       nrl_debug(NRL_ACCT, "APPINFO reply connected");
-      break;
-    case APP_STATUS_RESTART:
       break;
     case APP_STATUS_STILL_VALID:
       app->state = NR_APP_OK;
