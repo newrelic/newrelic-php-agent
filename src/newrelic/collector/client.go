@@ -325,7 +325,7 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 	}
 
 	if l := deflated.Len(); l > cmd.MaxPayloadSize {
-		return RPMResponse{Err: fmt.Errorf("Payload size for %s too large: %d greater than %d", cmd.Name, l, cmd.MaxPayloadSize)}
+		return RPMResponse{Err: fmt.Errorf("payload size too large: %d greater than %d", l, cmd.MaxPayloadSize)}
 	}
 
 	req, err := http.NewRequest("POST", url, deflated)
@@ -420,7 +420,7 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
 	cleanURL := cmd.url(true)
 
 	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
-	log.Debugf("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, data)
+	log.Debugf("command='%s' url='%s' max_payload_size_in_bytes='%d' payload={%s}", cmd.Name, cleanURL, cmd.MaxPayloadSize, data)
 
 	resp := c.perform(url, cmd, cs)
 	if err != nil {
