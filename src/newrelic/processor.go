@@ -9,7 +9,6 @@ import (
     "encoding/json"
     "strings"
     "time"
-    "fmt"
 
     "newrelic/collector"
     "newrelic/infinite_tracing"
@@ -187,15 +186,11 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
         return rep
     }
 
-    fmt.Printf("1 !!!!!!!!!!!!!!\n")
-    fmt.Printf("%s\n", string(rep.RawReply.Body))
     rep.Err = json.Unmarshal(rep.RawReply.Body, &preconnectReply)
     if nil != rep.Err {
         return rep
     }
 
-    fmt.Printf("2 !!!!!!!!!!!!!!\n")
-    //fmt.Printf("%s\n", preconnectReply.SecurityPolicies["record_sql"].Enabled)
     // If there's a token that's part of the request, we need to check supported
     // policies vs. what we got back from preconnect
     err = nil
@@ -203,7 +198,6 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
         _, err = args.AppSupportedSecurityPolicies.verifySecurityPolicies(preconnectReply)
     }
 
-    fmt.Printf("3 !!!!!!!!!!!!!!\n")
     // Was there disagreement in the agent and preconnect policies? If
     // so, return early with an error on
     if nil != err {
@@ -212,21 +206,18 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
         return rep
     }
 
-    fmt.Printf("4 !!!!!!!!!!!!!!\n")
     // Marshal preconnect security policies to send back to agent on successful connection
     policyReturnMap := make(map[string]bool)
     for k, v := range preconnectReply.SecurityPolicies {
         policyReturnMap[k] = v.Enabled
     }
 
-    fmt.Printf("5 !!!!!!!!!!!!!!\n")
     // Marshal security policies
     rep.RawSecurityPolicies, rep.Err = json.Marshal(policyReturnMap)
     if nil != rep.Err {
         return rep
     }
 
-    fmt.Printf("6 !!!!!!!!!!!!!!\n")
     // Prepare the connect call
     // If this is a Language Agent Security Policy (LASP) request, add the supported policies
     // and their enabled/disabled value to the payload
@@ -235,7 +226,6 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
         err = args.AppSupportedSecurityPolicies.addPoliciesToPayload(preconnectReply.SecurityPolicies, args.PayloadRaw)
     }
 
-    fmt.Printf("7 !!!!!!!!!!!!!!\n")
     // If something went wrong while adding the policies, bail with an error
     if nil != err {
         log.Errorf("%s", err.Error())
@@ -243,7 +233,6 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
         return rep
     }
 
-    fmt.Printf("8 !!!!!!!!!!!!!!\n")
     args.Payload, err = EncodePayload(&args.PayloadRaw)
     if err != nil {
         log.Errorf("unable to connect application: %v", err)
@@ -258,26 +247,13 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
     })
     cmd.Name = collector.CommandConnect
 
-    fmt.Printf("9 !!!!!!!!!!!!!!\n")
     // Make call to connect
     rep.RawReply = args.Client.Execute(cmd, cs)
     if nil != rep.Err {
         return rep
     }
 
-    fmt.Printf("10 !!!!!!!!!!!!!!\n")
     // Process the connect reply
-    //var preconnect struct {
-	//	Preconnect PreconnectReply `json:"return_value"`
-	//}
-    //err = json.Unmarshal(resp.body, &preconnect)
-    //if nil != err {
-    //    // Certain security policy errors must be treated as a disconnect.
-	//	return nil, RPMResponse{
-	//		Err: fmt.Errorf("unable to process preconnect reply: %v", err),
-	//		disconnectSecurityPolicy: isDisconnectSecurityPolicyError(err),
-    //    }
-    //}
     processConnectMessages(rep.RawReply)
     rep.Reply, rep.Err = parseConnectReply(rep.RawReply.Body)
 

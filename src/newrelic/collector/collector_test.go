@@ -110,7 +110,7 @@ func TestCollectorRequest(t *testing.T) {
 				testField("Content-Encoding", r.Header.Get("Content-Encoding"), "deflate")
                 return &http.Response{
 					StatusCode: 200,
-					Body:       ioutil.NopCloser(strings.NewReader("body")),
+                    Body:       ioutil.NopCloser(strings.NewReader("{\"Body\": 0}")),
 				}, nil
 			}),
 		},
