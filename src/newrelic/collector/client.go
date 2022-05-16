@@ -7,6 +7,7 @@ package collector
 
 import (
     "crypto/tls"
+    "encoding/json"
     "fmt"
     "io/ioutil"
     "net"
@@ -296,9 +297,35 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
     body, err := ioutil.ReadAll(resp.Body)
     if nil != err {
         r.Err = err
+    } else {
+        r.Body, r.Err = parseResponse(body)
     }
-    r.Body = body
     return r
+}
+type rpmException struct {
+	Message   string `json:"message"`
+	ErrorType string `json:"error_type"`
+}
+
+func (e *rpmException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorType, e.Message)
+}
+func parseResponse(b []byte) ([]byte, error) {
+	var r struct {
+		ReturnValue json.RawMessage `json:"return_value"`
+		Exception   *rpmException   `json:"exception"`
+	}
+
+	err := json.Unmarshal(b, &r)
+	if nil != err {
+		return nil, err
+	}
+
+	if nil != r.Exception {
+		return nil, r.Exception
+	}
+
+	return r.ReturnValue, nil
 }
 
 func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
@@ -330,11 +357,10 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
     resp := c.perform(url, cmd, cs)
     if err != nil {
         log.Debugf("attempt to perform %s failed: %q, url=%s",
-        cmd.Name, err.Error(), cleanURL)
+                   cmd.Name, err.Error(), cleanURL)
     }
 
-    log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, resp.Body)
-    log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, resp.Body)
-
+    log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, string(resp.Body))
+    log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, string(resp.Body))
     return resp
 }
