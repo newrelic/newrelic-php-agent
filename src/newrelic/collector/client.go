@@ -151,12 +151,12 @@ func (l *limitClient) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
     }
 
     select {
-    case <-l.semaphore:
-        defer func() { l.semaphore <- true }()
-        resp := l.orig.Execute(cmd, cs)
-        return resp
-    case <-timer:
-        return RPMResponse{}
+        case <-l.semaphore:
+            defer func() { l.semaphore <- true }()
+            resp := l.orig.Execute(cmd, cs)
+            return resp
+        case <-timer:
+            return RPMResponse{Err: fmt.Errorf("timeout after %v", l.timeout)}
     }
 }
 
@@ -251,11 +251,11 @@ func NewClient(cfg *ClientConfig) (Client, error) {
 func parseProxy(proxy string) (*url.URL, error) {
     url, err := url.Parse(proxy)
     if err != nil || !strings.Contains(proxy, "://") {
-    // Try again, assuming HTTP as the scheme. If this fails, return the
-    // original error so the error message matches the original URL.
-    if httpURL, err := url.Parse("http://" + proxy); err == nil {
-    return httpURL, nil
-}
+        // Try again, assuming HTTP as the scheme. If this fails, return the
+        // original error so the error message matches the original URL.
+        if httpURL, err := url.Parse("http://" + proxy); err == nil {
+            return httpURL, nil
+        }
     }
     return url, err
 }
@@ -294,7 +294,7 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
     r := newRPMResponse(resp.StatusCode)
 
     body, err := ioutil.ReadAll(resp.Body)
-    if nil != r.Err {
+    if nil != err {
         r.Err = err
     }
     r.Body = body
