@@ -452,7 +452,7 @@ func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else if c.MaxPayloadSizeInBytes != expectedMaxPayloadSizeInBytes {
-		t.Errorf("expected [%v], got [%v]", expectedMaxPayloadSizeInBytes, c.MaxPayloadSizeInBytes)
+		t.Errorf("parseConnectReply(nothing), got [%v], expected [%v]", c.MaxPayloadSizeInBytes, expectedMaxPayloadSizeInBytes)
 	}
 }
 
@@ -465,6 +465,6 @@ func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else if c.MaxPayloadSizeInBytes != expectedMaxPayloadSizeInBytes {
-		t.Errorf("expected [%v], got [%v]", expectedMaxPayloadSizeInBytes, c.MaxPayloadSizeInBytes)
+		t.Errorf("parseConnectReply(something), got [%v], expected [%v]", c.MaxPayloadSizeInBytes, expectedMaxPayloadSizeInBytes)
 	}
 }
