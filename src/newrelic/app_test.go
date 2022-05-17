@@ -6,6 +6,7 @@
 package newrelic
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 	"strconv"
@@ -440,4 +441,30 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		t.Errorf("expected: %s\nactual: %s", expected, string(b))
 	}
 
+}
+
+func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
+	expectedMaxPayloadSizeInBytes := limits.DefaultMaxPayloadSizeInBytes
+	id := AgentRunID("1") // parseConnectReply expects at least agent_run_id in collector reply
+	cannedConnectReply, _ := json.Marshal(ConnectReply{ID: &id})
+
+	c, err := parseConnectReply(cannedConnectReply)
+	if err != nil {
+		t.Error(err)
+	} else if c.MaxPayloadSizeInBytes != expectedMaxPayloadSizeInBytes {
+		t.Errorf("expected [%v], got [%v]", expectedMaxPayloadSizeInBytes, c.MaxPayloadSizeInBytes)
+	}
+}
+
+func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
+	expectedMaxPayloadSizeInBytes := 1000
+	id := AgentRunID("1") // parseConnectReply expects at least agent_run_id in collector reply
+	cannedConnectReply, _ := json.Marshal(ConnectReply{ID: &id, MaxPayloadSizeInBytes: expectedMaxPayloadSizeInBytes})
+
+	c, err := parseConnectReply(cannedConnectReply)
+	if err != nil {
+		t.Error(err)
+	} else if c.MaxPayloadSizeInBytes != expectedMaxPayloadSizeInBytes {
+		t.Errorf("expected [%v], got [%v]", expectedMaxPayloadSizeInBytes, c.MaxPayloadSizeInBytes)
+	}
 }
