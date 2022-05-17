@@ -6,6 +6,11 @@
 package collector
 
 import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"testing"
 
 	"newrelic/version"
@@ -89,5 +94,81 @@ func TestUserAgent(t *testing.T) {
 		if expected != actual {
 			t.Errorf("invalid user agent; got=%s want=%s", actual, expected)
 		}
+	}
+}
+
+func TestExecuteWhenMaxPayloadSizeExceeded(t *testing.T) {
+	cmdPayload := "dummy-data"
+	cmd := RpmCmd{
+		MaxPayloadSize: 0,
+	}
+	cs := RpmControls{
+		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
+			if auditVersion {
+				return nil, nil
+			}
+			return []byte(cmdPayload), nil
+		}),
+	}
+	testedFn := fmt.Sprintf("client.Execute(payload: %v, MaxPayloadSize: %v)", cmdPayload, cmd.MaxPayloadSize)
+	var wantResponseBody []byte = nil
+	wantErr := errors.New("payload size too large:")
+
+	client := clientImpl{
+		httpClient: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				// no http.Response because no HTTP request should be made
+				return nil, nil
+			}),
+		},
+	}
+
+	resp := client.Execute(cmd, cs)
+	if resp.Body != nil {
+		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Body, wantResponseBody)
+	} else if resp.Err == nil {
+		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Err, wantErr)
+	} else if !strings.HasPrefix(resp.Err.Error(), wantErr.Error()) {
+		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Err, wantErr)
+	}
+}
+
+func TestExecuteWhenMaxPayloadSizeNotExceeded(t *testing.T) {
+	cmdPayload := "dummy-data"
+	cmd := RpmCmd{
+		MaxPayloadSize: 100,
+	}
+	cs := RpmControls{
+		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
+			if auditVersion {
+				return nil, nil
+			}
+			return []byte(cmdPayload), nil
+		}),
+	}
+	testedFn := fmt.Sprintf("client.Execute(payload: %v, MaxPayloadSize: %v)", cmdPayload, cmd.MaxPayloadSize)
+	var wantErr error = nil
+
+	client := clientImpl{
+		httpClient: &http.Client{
+			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					// perform function calls parseResponse which expects
+					// a valid JSON. Providing minimal valid JSON as HTTP
+					// response body.
+					Body: ioutil.NopCloser(strings.NewReader("{}")),
+				}, nil
+			}),
+		},
+	}
+
+	// This test does not test http.Response.Body parsing.
+	// This test ensures there's no error if payload does
+	// not exceed configured max_payload_size_in_bytes.
+	// That's why the body is ignored here.
+	resp := client.Execute(cmd, cs)
+	if resp.Err != nil {
+		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Err, wantErr)
 	}
 }
