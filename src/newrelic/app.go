@@ -296,7 +296,7 @@ func combineEventConfig (ehc collector.EventHarvestConfig, sehc collector.SpanEv
 }
 
 func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
-	var c ConnectReply
+	c := ConnectReply{MaxPayloadSizeInBytes: limits.DefaultMaxPayloadSizeInBytes}
 
 	err := json.Unmarshal(rawConnectReply, &c)
 	if nil != err {
