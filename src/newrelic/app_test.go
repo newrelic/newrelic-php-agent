@@ -6,7 +6,6 @@
 package newrelic
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 	"strconv"
@@ -445,8 +444,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 
 func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
 	expectedMaxPayloadSizeInBytes := limits.DefaultMaxPayloadSizeInBytes
-	id := AgentRunID("1") // parseConnectReply expects at least agent_run_id in collector reply
-	cannedConnectReply, _ := json.Marshal(ConnectReply{ID: &id})
+	cannedConnectReply := []byte(`{"agent_run_id":"1"}`) // parseConnectReply expects at least agent_run_id in collector reply
 
 	c, err := parseConnectReply(cannedConnectReply)
 	if err != nil {
@@ -458,8 +456,7 @@ func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
 
 func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 	expectedMaxPayloadSizeInBytes := 1000
-	id := AgentRunID("1") // parseConnectReply expects at least agent_run_id in collector reply
-	cannedConnectReply, _ := json.Marshal(ConnectReply{ID: &id, MaxPayloadSizeInBytes: expectedMaxPayloadSizeInBytes})
+	cannedConnectReply := []byte(`{"agent_run_id":"1", "max_payload_size_in_bytes":1000}`)
 
 	c, err := parseConnectReply(cannedConnectReply)
 	if err != nil {
