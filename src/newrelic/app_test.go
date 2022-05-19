@@ -6,6 +6,7 @@
 package newrelic
 
 import (
+	"fmt"
 	"testing"
 	"time"
 	"strconv"
@@ -456,7 +457,7 @@ func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
 
 func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 	expectedMaxPayloadSizeInBytes := 1000
-	cannedConnectReply := []byte(`{"agent_run_id":"1", "max_payload_size_in_bytes":1000}`)
+	cannedConnectReply := []byte(`{"agent_run_id":"1", "max_payload_size_in_bytes":`+fmt.Sprint(expectedMaxPayloadSizeInBytes)+`}`)
 
 	c, err := parseConnectReply(cannedConnectReply)
 	if err != nil {
