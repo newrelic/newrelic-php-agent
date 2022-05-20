@@ -717,7 +717,12 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.security_policies_token = nr_strdup(NRINI(security_policies_token));
   info.supported_security_policies
       = nr_php_txn_get_supported_security_policy_settings(&opts);
-  info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  /* if DT is disabled we cannot stream 8T events so disable observer host */
+  if (NRINI(distributed_tracing_enabled))
+    info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  else
+    info.trace_observer_host = nr_strdup("");
+  /* observer port setting does not really depend on DT being enabled */
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
