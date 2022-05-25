@@ -224,6 +224,8 @@ func MarshalAppInfoReply(reply AppInfoReply) []byte {
 		switch reply.State {
 		case AppStateUnknown:
 			protocol.AppReplyAddStatus(buf, protocol.AppStatusUnknown)
+        case AppStateInvalidLicense:
+			protocol.AppReplyAddStatus(buf, protocol.AppStatusInvalidLicense)
 		case AppStateDisconnected:
 			protocol.AppReplyAddStatus(buf, protocol.AppStatusDisconnected)
 		}

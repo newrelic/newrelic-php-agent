@@ -599,7 +599,7 @@ func TestLicenseExceptionAtPreconnect(t *testing.T) {
     m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
     <-m.p.trackProgress // receive connect reply
 
-    m.DoAppInfo(t, nil, AppStateRestart)
+    m.DoAppInfo(t, nil, AppStateInvalidLicense)
 
     m.p.quit()
 }
@@ -648,6 +648,7 @@ func TestDisconnectAtHarvest(t *testing.T) {
     m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
     <-m.p.trackProgress // receive harvest error
 
+    fmt.Printf("AHHHHHHHHHH\n")
     m.DoAppInfo(t, nil, AppStateDisconnected)
 
     m.p.quit()
@@ -875,7 +876,7 @@ func TestAppInfoInvalid(t *testing.T) {
     <-p.trackProgress // receive connect reply
 
     reply = p.IncomingAppInfo(&id, &sampleAppInfo)
-    if reply.State != AppStateRestart || reply.ConnectReply != nil || reply.RunIDValid || reply.ConnectTimestamp != 0 || reply.HarvestFrequency != 0 || reply.SamplingTarget != 0 {
+    if reply.State != AppStateInvalidLicense || reply.ConnectReply != nil || reply.RunIDValid || reply.ConnectTimestamp != 0 || reply.HarvestFrequency != 0 || reply.SamplingTarget != 0 {
         t.Fatal(reply)
     }
     p.quit()

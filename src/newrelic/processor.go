@@ -399,6 +399,11 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
         return
     }  else if rep.RawReply.IsRestartException() {
         app.state = AppStateRestart
+        // in accord with the spec, invalid license is a restart exception. Except we want
+        //    to shutdown instead of restart.
+        if rep.RawReply.IsInvalidLicense() {
+            app.state = AppStateInvalidLicense
+        }
         log.Warnf("app '%s' connect attempt returned %s", app, rep.RawReply.Err)
         return
     } else if nil != rep.Err {
@@ -659,7 +664,7 @@ func (p *Processor) processHarvestError(d HarvestError) {
         // Very possible:  One harvest goroutine may encounter a ErrForceRestart
         // before this.
         log.Debugf("unable to process harvest response %q for unknown id %q",
-        d.Reply, d.id)
+                   d.Reply, d.id)
         return
     }
 

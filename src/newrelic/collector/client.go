@@ -77,7 +77,7 @@ type RPMResponse struct {
 func newRPMResponse(StatusCode int) RPMResponse {
     var err error
     if StatusCode != 200 && StatusCode != 202 {
-        err = fmt.Errorf("response code: %d", StatusCode)
+        err = fmt.Errorf("response code: %d: %s", StatusCode, GetStatusCodeMessage(StatusCode))
     }
     return RPMResponse{StatusCode: StatusCode, Err: err}
 }
@@ -89,6 +89,10 @@ func (resp RPMResponse) IsDisconnect() bool {
 func (resp RPMResponse) IsRestartException() bool {
     return resp.StatusCode == 401 || resp.StatusCode == 409
 }
+// This is in place because, to update the license ini value, the PHP app must be shut off
+func (resp RPMResponse) IsInvalidLicense() bool {
+    return resp.StatusCode == 401
+}
 // ShouldSaveHarvestData indicates that the agent should save the data and try
 // to send it in the next harvest.
 func (resp RPMResponse) ShouldSaveHarvestData() bool {
@@ -97,6 +101,31 @@ func (resp RPMResponse) ShouldSaveHarvestData() bool {
         return true
     default:
         return false
+    }
+}
+
+// Not a method of RPMResponse so that it can be called during creation
+func GetStatusCodeMessage(StatusCode int) string {
+    switch StatusCode {
+        case 400: return "Invalid request formatting"
+        case 401: return "Authentication failure"
+        case 403: return "Forbidden"
+        case 404: return "Not found"
+        case 405: return "HTTP method not found"
+        case 407: return "Proxy authentication failure (misconfigured)"
+        case 408: return "Timeout"
+        case 409: return "Conflict: you should reconnect"
+        case 410: return "Gone: you should disconnect"
+        case 411: return "Content-length required"
+        case 413: return "Payload too large"
+        case 414: return "URI too large"
+        case 415: return "Content-type or content-encoding is wrong"
+        case 417: return "Expectation failed"
+        case 429: return "Too many requests"
+        case 431: return "Request headers too large"
+        case 500: return "NR server internal error"
+        case 503: return "NR service unavailable"
+        default: return "Unknown response code"
     }
 }
 
