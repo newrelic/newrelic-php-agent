@@ -6,6 +6,7 @@ version: '3.8'
 services:
 # The Database
   mysqldb:
+    platform: linux/amd64
     image: mysql:5.6
     restart: always
     environment:
