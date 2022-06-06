@@ -198,9 +198,10 @@ func TestSimpleSpan(t *testing.T) {
 	defer srv.Close()
 
 	sender, err := newGrpcSpanBatchSender(&Config{
-		Host:   srv.host,
-		Port:   srv.port,
-		Secure: false,
+		Host:              srv.host,
+		Port:              srv.port,
+		Secure:            false,
+		RequestHeadersMap: map[string]string{"zip": "zap"},
 	})
 	defer sender.conn.Close()
 
@@ -224,6 +225,23 @@ func TestSimpleSpan(t *testing.T) {
 	err, _ = sender.send(encodedSpanBatch(bs))
 	if err != nil {
 		t.Fatalf("unexpected error during sending: %v", err)
+	}
+
+	md := <-srv.metadataReceivedChan
+
+	expected := map[string]string{
+		"zip": "zap",
+	}
+
+	for expectedKey, expectedValue := range expected {
+		value, ok := md[expectedKey]
+		if ok && len(value) == 1 {
+			if value[0] != expectedValue {
+				t.Errorf("invalid value for key %s metadata: got %s, want %s", expectedKey, value[0], expectedValue)
+			}
+		} else {
+			t.Errorf("no value for %s metadata", expectedKey)
+		}
 	}
 
 	received := <-srv.spansReceivedChan

@@ -95,12 +95,13 @@ type TraceObserver struct {
 }
 
 type Config struct {
-	Host      string
-	Port      uint16
-	Secure    bool
-	License   string
-	RunId     string
-	QueueSize uint64
+	Host              string
+	Port              uint16
+	Secure            bool
+	License           string
+	RunId             string
+	QueueSize         uint64
+	RequestHeadersMap map[string]string
 }
 
 type metricIncrement struct {
