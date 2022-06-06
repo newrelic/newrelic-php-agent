@@ -304,11 +304,6 @@ func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
 		return nil, errors.New("missing agent run id")
 	}
 
-	log.Debugf("request_headers_map from connect reply")
-	for k, v := range c.RequestHeadersMap {
-		log.Debugf("key=%s val=%s", k, v)
-	}
-
     // Since the collector now sends seperately, we need to internally combine the limits.
     c.EventHarvestConfig = combineEventConfig(c.EventHarvestConfig, c.SpanEventHarvestConfig)
 
