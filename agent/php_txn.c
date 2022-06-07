@@ -605,6 +605,25 @@ nrobj_t* nr_php_txn_get_supported_security_policy_settings(nrtxnopt_t* opts) {
   return supported_policy_settings;
 }
 
+#define NR_APP_ERROR_DT_ON_TT_OFF_BACKOFF_SECONDS 60
+
+static void nr_segment_log_error_dt_on_tt_off(void) {
+  static unsigned n_occur = 0;
+  static time_t last_warn = (time_t)(0);
+  time_t now = time(0);
+
+  n_occur++;
+
+  if ((now - last_warn) > NR_APP_ERROR_DT_ON_TT_OFF_BACKOFF_SECONDS) {
+    last_warn = now;
+    nrl_error(NRL_INIT,
+              "newrelic.transaction_tracer.enabled must be enabled in order "
+              "to use distributed tracing. Occurred %u times.",
+              n_occur);
+    n_occur = 0;
+  }
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -848,9 +867,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   if (NRPRG(txn)->options.distributed_tracing_enabled
       && !NRPRG(txn)->options.tt_enabled) {
-    nrl_error(NRL_INIT,
-              "newrelic.transaction_tracer.enabled must be enabled in order "
-              "to use distributed tracing");
+    nr_segment_log_error_dt_on_tt_off();
   }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
