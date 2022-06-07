@@ -48,15 +48,14 @@ type ConnectAttempt struct {
 	Key                 AppKey
 	Collector           string
 	Reply               *ConnectReply
-	RawReply            []byte
+	RawReply            collector.RPMResponse
 	Err                 error
 	RawSecurityPolicies []byte
 }
 
 type HarvestError struct {
-	Err   error
 	id    AgentRunID
-	Reply []byte
+	Reply collector.RPMResponse
 	data  FailedHarvestSaver
 }
 
@@ -163,29 +162,40 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	args.Payload, err = EncodePayload(&RawPreconnectPayload{SecurityPolicyToken: args.SecurityPolicyToken, HighSecurity: args.HighSecurity})
 	if err != nil {
 		log.Errorf("unable to connect application: %v", err)
+		rep.Err = err
 		return rep
 	}
 
 	// Prepare preconnect call
 	collectorHostname := collector.CalculatePreconnectHost(args.License, args.RedirectCollector)
-	call := collector.Cmd{
-		Name:          collector.CommandPreconnect,
-		Collector:     collectorHostname,
-		License:       args.License,
+	cs := collector.RpmControls{
 		AgentLanguage: args.AgentLanguage,
 		AgentVersion:  args.AgentVersion,
 		Collectible: collector.CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 			return args.Payload, nil
 		}),
 	}
+	cmd := collector.RpmCmd{
+		Name:      collector.CommandPreconnect,
+		Collector: collectorHostname,
+		License:   args.License,
+	}
 
 	// Make call to preconnect
-	rep.RawReply, rep.Err = args.Client.Execute(call)
-	if nil != rep.Err {
+	// return value is a struct with the body and any error from attempt
+	// if something fails from this point on the error needs to be
+	// propagated up into the return value (rep.Err) as code downstream
+	// expects this field value to contain any errors which occurred
+	// during the connect attempt and will not inspect the RawReply
+	// field for an error value
+	rep.RawReply = args.Client.Execute(cmd, cs)
+
+	if nil != rep.RawReply.Err {
+		rep.Err = rep.RawReply.Err
 		return rep
 	}
 
-	rep.Err = json.Unmarshal(rep.RawReply, &preconnectReply)
+	rep.Err = json.Unmarshal(rep.RawReply.Body, &preconnectReply)
 	if nil != rep.Err {
 		return rep
 	}
@@ -235,26 +245,28 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	args.Payload, err = EncodePayload(&args.PayloadRaw)
 	if err != nil {
 		log.Errorf("unable to connect application: %v", err)
+		rep.Err = err
 		return rep
 	}
 
 	rep.Collector = preconnectReply.Collector
-	call.Collector = rep.Collector
+	cmd.Collector = rep.Collector
 
-	call.Collectible = collector.CollectibleFunc(func(auditVersion bool) ([]byte, error) {
+	cs.Collectible = collector.CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 		return args.Payload, nil
 	})
-	call.Name = collector.CommandConnect
+	cmd.Name = collector.CommandConnect
 
 	// Make call to connect
-	rep.RawReply, rep.Err = args.Client.Execute(call)
-	if nil != rep.Err {
+	rep.RawReply = args.Client.Execute(cmd, cs)
+	if nil != rep.RawReply.Err {
+		rep.Err = rep.RawReply.Err
 		return rep
 	}
 
 	// Process the connect reply
 	processConnectMessages(rep.RawReply)
-	rep.Reply, rep.Err = parseConnectReply(rep.RawReply)
+	rep.Reply, rep.Err = parseConnectReply(rep.RawReply.Body)
 
 	return rep
 }
@@ -358,7 +370,7 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	p.apps[key] = app
 }
 
-func processConnectMessages(reply []byte) {
+func processConnectMessages(reply collector.RPMResponse) {
 	var msgs struct {
 		Messages []struct {
 			Message string `json:"message"`
@@ -366,7 +378,7 @@ func processConnectMessages(reply []byte) {
 		} `json:"messages"`
 	}
 
-	err := json.Unmarshal(reply, &msgs)
+	err := json.Unmarshal(reply.Body, &msgs)
 	if nil != err {
 		return
 	}
@@ -391,23 +403,27 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 		return
 	}
 
-	if nil != rep.Err {
-		switch {
-		case collector.IsDisconnect(rep.Err):
-			app.state = AppStateDisconnected
-		case collector.IsLicenseException(rep.Err):
+	app.RawConnectReply = rep.RawReply.Body
+	if rep.RawReply.IsDisconnect() {
+		app.state = AppStateDisconnected
+		log.Warnf("app '%s' connect attempt returned %s", app, rep.RawReply.Err)
+		return
+	} else if rep.RawReply.IsRestartException() {
+		app.state = AppStateRestart
+		// in accord with the spec, invalid license is a restart exception. Except we want
+		//    to shutdown instead of restart.
+		if rep.RawReply.IsInvalidLicense() {
 			app.state = AppStateInvalidLicense
-		default:
-			// Try again later.
-			app.state = AppStateUnknown
 		}
-
+		log.Warnf("app '%s' connect attempt returned %s", app, rep.RawReply.Err)
+		return
+	} else if nil != rep.Err {
+		app.state = AppStateUnknown
 		log.Warnf("app '%s' connect attempt returned %s", app, rep.Err)
 		return
 	}
 
 	app.connectReply = rep.Reply
-	app.RawConnectReply = rep.RawReply
 	app.state = AppStateConnected
 	app.collector = rep.Collector
 	app.RawSecurityPolicies = rep.RawSecurityPolicies
@@ -453,33 +469,34 @@ type harvestArgs struct {
 }
 
 func harvestPayload(p PayloadCreator, args *harvestArgs) {
-	call := collector.Cmd{
-		Name:          p.Cmd(),
-		Collector:     args.collector,
-		License:       args.license,
+	cmd := collector.RpmCmd{
+		Name:              p.Cmd(),
+		Collector:         args.collector,
+		License:           args.license,
+		RunID:             args.id.String(),
+		RequestHeadersMap: args.RequestHeadersMap,
+	}
+	cs := collector.RpmControls{
 		AgentLanguage: args.agentLanguage,
 		AgentVersion:  args.agentVersion,
-		RunID:         args.id.String(),
 		Collectible: collector.CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 			if auditVersion {
 				return p.Audit(args.id, args.HarvestStart)
 			}
 			return p.Data(args.id, args.HarvestStart)
 		}),
-		RequestHeadersMap: args.RequestHeadersMap,
 	}
 
-	reply, err := args.client.Execute(call)
+	reply := args.client.Execute(cmd, cs)
 
 	// We don't need to process the response to a harvest command unless an
 	// error happened.  (Note that this may change if we have to support metric
 	// cache ids).
-	if nil == err {
+	if nil == reply.Err {
 		return
 	}
 
 	args.harvestErrorChannel <- HarvestError{
-		Err:   err,
 		Reply: reply,
 		id:    args.id,
 		data:  p,
@@ -662,28 +679,19 @@ func (p *Processor) processHarvestError(d HarvestError) {
 	}
 
 	app := h.App
-	log.Warnf("app %q with run id %q received %s", app, d.id, d.Err)
+	log.Warnf("app %q with run id %q received %s", app, d.id, d.Reply.Err)
 
+	if d.Reply.ShouldSaveHarvestData() {
+		d.data.FailedHarvest(h.Harvest)
+	}
 	switch {
-	case collector.IsDisconnect(d.Err):
+	case d.Reply.IsDisconnect() || app.state == AppStateDisconnected:
 		app.state = AppStateDisconnected
 		p.shutdownAppHarvest(d.id)
-	case collector.IsLicenseException(d.Err):
-		// I think this is unlikely to ever happen (the invalid license
-		// exception should trigger during the connect), but it is included
-		// here for defensiveness.
-		app.state = AppStateInvalidLicense
-		p.shutdownAppHarvest(d.id)
-	case collector.IsRestartException(d.Err):
+	case d.Reply.IsRestartException() || app.state == AppStateRestart:
 		app.state = AppStateUnknown
 		p.shutdownAppHarvest(d.id)
 		p.considerConnect(app)
-	case (d.Err == collector.ErrPayloadTooLarge) ||
-		(d.Err == collector.ErrUnsupportedMedia):
-		// Do not call the failed harvest fn, since we do not want to save
-		// the data.
-	default:
-		d.data.FailedHarvest(h.Harvest)
 	}
 }
 

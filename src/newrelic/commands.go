@@ -269,10 +269,10 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 
 	info.initSettings(app.Settings())
 
-    	// Of the four Event Limits (span, custom, analytic and error),
-    	// only span events is configurable from the agent.
-    	// If this changes in the future, the other values can be added here.
-    	info.AgentEventLimits.SpanEventConfig.Limit = int(app.SpanEventsMaxSamplesStored())
+	// Of the four Event Limits (span, custom, analytic and error),
+	// only span events is configurable from the agent.
+	// If this changes in the future, the other values can be added here.
+	info.AgentEventLimits.SpanEventConfig.Limit = int(app.SpanEventsMaxSamplesStored())
 
 	return info
 }

@@ -74,7 +74,7 @@ func TestUserAgent(t *testing.T) {
 			expected: "NewRelic-Native-Agent/unknown",
 		},
 	} {
-		cmd := &Cmd{
+		cmd := &RpmControls{
 			AgentLanguage: tc.language,
 			AgentVersion:  tc.version,
 		}
