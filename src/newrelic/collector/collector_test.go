@@ -7,11 +7,11 @@ package collector
 
 import (
 	"net/url"
-    "net/http"
-    "io/ioutil"
+	"net/http"
+	"io/ioutil"
 	"newrelic/crossagent"
 	"testing"
-    "strings"
+	"strings"
 )
 
 var (
