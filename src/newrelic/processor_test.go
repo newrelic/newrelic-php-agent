@@ -610,7 +610,7 @@ func TestDisconnectAtConnect(t *testing.T) {
     m.DoAppInfo(t, nil, AppStateUnknown)
 
     <-m.clientParams // preconnect
-    m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 202}
+    m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
     <-m.clientParams // connect
     m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
     <-m.p.trackProgress // receive connect reply
@@ -648,7 +648,6 @@ func TestDisconnectAtHarvest(t *testing.T) {
     m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
     <-m.p.trackProgress // receive harvest error
 
-    fmt.Printf("AHHHHHHHHHH\n")
     m.DoAppInfo(t, nil, AppStateDisconnected)
 
     m.p.quit()
@@ -690,7 +689,7 @@ func TestMalformedConnectReply(t *testing.T) {
     m.DoAppInfo(t, nil, AppStateUnknown)
 
     <-m.clientParams // preconnect
-    m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 202}
+    m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
     <-m.clientParams // connect
     m.clientReturn <- ClientReturn{[]byte(`{`), nil, 202}
     <-m.p.trackProgress // receive connect reply
@@ -706,7 +705,7 @@ func TestMalformedCollector(t *testing.T) {
     m.DoAppInfo(t, nil, AppStateUnknown)
 
     <-m.clientParams // preconnect
-    m.clientReturn <- ClientReturn{[]byte(`"`), nil, 202}
+    m.clientReturn <- ClientReturn{[]byte(`"`), nil, 200}
     <-m.p.trackProgress // receive connect reply
 
     m.DoAppInfo(t, nil, AppStateUnknown)
