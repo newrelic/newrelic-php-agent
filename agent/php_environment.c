@@ -413,6 +413,15 @@ static void nr_php_get_environment_variables() {
   NR_PHP_PROCESS_GLOBALS(metadata) = nro_new_hash();
 
   /*
+   * If we are unable to get the environment don't try to parse it.
+   */
+  if (NULL == environ) {
+    nrl_warning(NRL_AGENT, "%s: Unable to access environmental variables.",
+                __func__);
+    return;
+  }
+
+  /*
    * Iterate through the environment variables, searching for a single key or
    * a set of keys with a prefix that the agent will use.
    */
