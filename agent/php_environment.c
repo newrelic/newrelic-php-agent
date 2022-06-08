@@ -382,6 +382,49 @@ static void nr_php_gather_dispatcher_information(nrobj_t* env) {
 
   nro_set_hash_string(env, "Dispatcher", dstring);
 }
+void nr_php_process_environment_variable(const char* prefix,
+                                         const char* key,
+                                         const char* value,
+                                         nrobj_t* kv_hash) {
+  if ((NULL == prefix) || (NULL == kv_hash)) {
+    return;
+  }
+
+  if (nr_strlen(prefix) == nr_strlen(key)) {
+    return;
+  }
+
+  if (0 == nr_strncmp(key, prefix, nr_strlen(prefix))) {
+    nro_set_hash_string(kv_hash, key, value);
+  }
+}
+static void nr_php_get_environment_variables(TSRMLS_D) {
+  nrobj_t* parsed_key_val = NULL;
+  /*
+   * `environ` works for non-windows machines.
+   * Otherwise, we'd need to use *__p__environ() as well.
+   */
+  extern char** environ;
+
+  /*
+   * Initialize the metadata hash.  If there aren't any variables, we still need
+   * to send the empty hash.
+   */
+  NR_PHP_PROCESS_GLOBALS(metadata) = nro_new_hash();
+
+  /*
+   * Iterate through the environment variables, searching for a single key or
+   * a set of keys with a prefix that the agent will use.
+   */
+  for (size_t i = 0; environ[i] != NULL; i++) {
+    parsed_key_val = nr_strsplit(environ[i], "=", 0);
+    const char* key = nro_get_array_string(parsed_key_val, 1, NULL);
+    const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
+    nr_php_process_environment_variable(NR_METADATA_PREFIX, key, value,
+                                        NR_PHP_PROCESS_GLOBALS(metadata));
+    nro_delete(parsed_key_val);
+  }
+}
 
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nrobj_t* env;
@@ -391,6 +434,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_machine_information(env);
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
+  nr_php_get_environment_variables(TSRMLS_CC);
 
   return env;
 }
