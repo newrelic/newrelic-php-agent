@@ -65,6 +65,7 @@ type AppInfo struct {
 	Environment               JSONString
 	HighSecurity              bool
 	Labels                    JSONString
+	Metadata                  JSONString
 	RedirectCollector         string
 	SecurityPolicyToken       string
 	SupportedSecurityPolicies AgentPolicies
@@ -101,6 +102,7 @@ type RawConnectPayload struct {
 	HighSecurity       bool                         `json:"high_security"`
 	Labels             JSONString                   `json:"labels"`
 	Environment        JSONString                   `json:"environment"`
+	Metadata           JSONString                   `json:"metadata"`
 	Identifier         string                       `json:"identifier"`
 	Util               *utilization.Data            `json:"utilization,omitempty"`
 	SecurityPolicies   map[string]SecurityPolicy    `json:"security_policies,omitempty"`
@@ -247,6 +249,11 @@ func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *Ra
 		data.Labels = info.Labels
 	} else {
 		data.Labels = JSONString("[]")
+	}
+	if len(info.Metadata) > 0 {
+		data.Metadata = info.Metadata
+	} else {
+		data.Metadata = JSONString("{}")
 	}
 
 	return data
