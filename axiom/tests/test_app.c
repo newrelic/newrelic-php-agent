@@ -705,7 +705,7 @@ static void test_agent_find_or_add_app(void) {
    */
   p->cmd_appinfo_succeed = true;
   p->cmd_appinfo_called = 0;
-  applist->num_apps = 3;
+  applist->num_apps = 4;
   nr_free(info.appname);
   info.appname = nr_strdup("appname_security");
   info.high_security = 1;
