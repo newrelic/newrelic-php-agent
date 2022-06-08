@@ -25,6 +25,8 @@
 #define TEST_AGENT_RUN_ID "12345678"
 #define TEST_LABELS_JSON \
   "{\"Data Center\":\"US-East\",\"Server Color\":\"Beige\"}"
+#define TEST_METADATA_JSON \
+  "{\"NEW_RELIC_METADATA_ZIP\":\"zap\",\"NEW_RELIC_METADATA_ONE\":\"one\"}"
 
 typedef struct _test_app_state_t {
   bool cmd_appinfo_succeed;
@@ -201,6 +203,7 @@ static void test_find_or_add_app(void) {
   info.settings = nro_create_from_json("[\"my_settings\"]");
   info.environment = nro_create_from_json("[\"my_environment\"]");
   info.labels = nro_create_from_json(TEST_LABELS_JSON);
+  info.metadata = nro_create_from_json(TEST_METADATA_JSON);
   info.host_display_name = nr_strdup("my_host_display_name");
   info.high_security = 0;
   info.redirect_collector = nr_strdup("collector.newrelic.com");
@@ -251,6 +254,7 @@ static void test_find_or_add_app(void) {
       test_obj_as_json("new app", app->info.environment,
                        "[\"my_environment\"]");
       test_obj_as_json("new app", app->info.labels, TEST_LABELS_JSON);
+      test_obj_as_json("new app", app->info.metadata, TEST_METADATA_JSON);
       tlib_pass_if_str_equal("new app", info.host_display_name,
                              app->info.host_display_name);
       tlib_pass_if_str_equal("new app", info.redirect_collector,
@@ -310,6 +314,7 @@ static void test_find_or_add_app(void) {
       test_obj_as_json("find app", app->info.environment,
                        "[\"my_environment\"]");
       test_obj_as_json("find app", app->info.labels, TEST_LABELS_JSON);
+      test_obj_as_json("find app", app->info.metadata, TEST_METADATA_JSON);
       tlib_pass_if_str_equal("find app", info.host_display_name,
                              app->info.host_display_name);
       tlib_pass_if_str_equal("new app", info.redirect_collector,
@@ -343,6 +348,7 @@ static void test_find_or_add_app_high_security_mismatch(void) {
   info.settings = nro_create_from_json("[\"my_settings\"]");
   info.environment = nro_create_from_json("[\"my_environment\"]");
   info.labels = nro_create_from_json(TEST_LABELS_JSON);
+  info.metadata = nro_create_from_json(TEST_METADATA_JSON);
   info.high_security = 0;
   info.redirect_collector = nr_strdup("collector.newrelic.com");
 
@@ -504,6 +510,7 @@ static void test_agent_find_or_add_app(void) {
   info.settings = NULL;
   info.environment = nro_create_from_json("[\"my_environment\"]");
   info.labels = nro_create_from_json(TEST_LABELS_JSON);
+  info.metadata = nro_create_from_json(TEST_METADATA_JSON);
   info.high_security = 555;
   info.redirect_collector = nr_strdup("collector.newrelic.com");
   info.security_policies_token = nr_strdup("");
@@ -549,6 +556,7 @@ static void test_agent_find_or_add_app(void) {
     tlib_pass_if_null("new app", app->info.settings);
     test_obj_as_json("new app", app->info.environment, "[\"my_environment\"]");
     test_obj_as_json("new app", app->info.labels, TEST_LABELS_JSON);
+    test_obj_as_json("new app", app->info.metadata, TEST_METADATA_JSON);
     tlib_pass_if_str_equal("new app", info.redirect_collector,
                            app->info.redirect_collector);
     tlib_pass_if_str_equal("new app", system_host_name, app->host_name);
@@ -658,6 +666,27 @@ static void test_agent_find_or_add_app(void) {
   }
 
   /*
+   * Test : New app, but null metadata
+   */
+  p->cmd_appinfo_succeed = false;
+  p->cmd_appinfo_called = 0;
+  nr_free(info.appname);
+  info.appname = nr_strdup("appname_null_metadata");
+  nro_delete(info.metadata);
+  app = nr_agent_find_or_add_app(applist, &info, settings_callback_fn, 0);
+  tlib_pass_if_null("new app NULL metadata", app);
+  tlib_pass_if_int_equal("new app NULL metadata", 4, applist->num_apps);
+  tlib_pass_if_int_equal("new app NULL metadata", 1, p->cmd_appinfo_called);
+  app = applist->apps[3];
+  tlib_pass_if_not_null("new app NULL metadata", app);
+  if (0 != app) {
+    test_obj_as_json("new app NULL metadata", app->info.metadata, "null");
+
+    /* No unlock here because the app actually came in unlocked from the
+     * applist. */
+  }
+
+  /*
    * Test : Unable to add application due to full applist.
    */
   p->cmd_appinfo_succeed = false;
@@ -719,6 +748,7 @@ static void test_verify_id(void) {
   info.settings = NULL;
   info.environment = nro_create_from_json("[\"my_environment\"]");
   info.labels = nro_create_from_json(TEST_LABELS_JSON);
+  info.metadata = nro_create_from_json(TEST_METADATA_JSON);
   info.high_security = 0;
   info.redirect_collector = nr_strdup("collector.newrelic.com");
 

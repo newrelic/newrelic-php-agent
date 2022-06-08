@@ -53,6 +53,7 @@ static void test_create_empty_query(void) {
   test_pass_if_empty_vector(&app, APP_HOST);
   test_pass_if_empty_vector(&app, APP_TRACE_OBSERVER_HOST);
   test_pass_if_empty_vector(&app, APP_FIELD_LABELS);
+  test_pass_if_empty_vector(&app, APP_METADATA);
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 42);
@@ -85,6 +86,7 @@ static void test_create_query(void) {
   info.settings = nro_create_from_json(settings_json);
   info.environment = nro_create_from_json("{\"my_environment\":\"hi\"}");
   info.labels = nro_create_from_json("{\"my_labels\":\"hello\"}");
+  info.metadata = nro_create_from_json("{\"NEWRELIC_METADATA_ZIP\":\"zap\"}");
   info.host_display_name = nr_strdup("my_host_display_name");
   info.lang = nr_strdup("my_lang");
   info.version = nr_strdup("my_version");
@@ -128,6 +130,9 @@ static void test_create_query(void) {
   tlib_pass_if_str_equal(
       __func__, "[{\"label_type\":\"my_labels\",\"label_value\":\"hello\"}]",
       (const char*)nr_flatbuffers_table_read_bytes(&app, APP_FIELD_LABELS));
+  tlib_pass_if_str_equal(
+      __func__, "{\"NEWRELIC_METADATA_ZIP\":\"zap\"}",
+      (const char*)nr_flatbuffers_table_read_bytes(&app, APP_METADATA));
   tlib_pass_if_str_equal(__func__, "[[\"my_environment\",\"hi\"]]",
                          (const char*)nr_flatbuffers_table_read_bytes(
                              &app, APP_FIELD_ENVIRONMENT));
