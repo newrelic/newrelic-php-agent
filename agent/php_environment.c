@@ -398,7 +398,7 @@ void nr_php_process_environment_variable(const char* prefix,
     nro_set_hash_string(kv_hash, key, value);
   }
 }
-static void nr_php_get_environment_variables(TSRMLS_D) {
+static void nr_php_get_environment_variables() {
   nrobj_t* parsed_key_val = NULL;
   /*
    * `environ` works for non-windows machines.
@@ -434,7 +434,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_machine_information(env);
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
-  nr_php_get_environment_variables(TSRMLS_CC);
+  nr_php_get_environment_variables();
 
   return env;
 }
