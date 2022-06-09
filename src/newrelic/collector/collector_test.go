@@ -6,12 +6,12 @@
 package collector
 
 import (
-	"net/url"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"newrelic/crossagent"
-	"testing"
 	"strings"
+	"testing"
 )
 
 var (
@@ -56,12 +56,12 @@ func TestResponseCodeError(t *testing.T) {
 		{code: 1, success: false, disconnect: false, restart: false, saveHarvestData: false},
 		{code: 999999, success: false, disconnect: false, restart: false, saveHarvestData: false},
 	}
-    for _, tc := range testcases {
+	for _, tc := range testcases {
 		resp := newRPMResponse(tc.code)
 		if tc.success != (nil == resp.Err) {
 			t.Error("error", tc.code, tc.success, resp.Err)
 		}
-        if tc.disconnect != resp.IsDisconnect() {
+		if tc.disconnect != resp.IsDisconnect() {
 			t.Error("disconnect", tc.code, tc.disconnect, resp.Err)
 		}
 		if tc.restart != resp.IsRestartException() {
@@ -70,10 +70,11 @@ func TestResponseCodeError(t *testing.T) {
 		if tc.saveHarvestData != resp.ShouldSaveHarvestData() {
 			t.Error("save harvest data", tc.code, tc.saveHarvestData, resp.Err)
 		}
-    }
+	}
 }
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
+
 func (fn roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return fn(r)
 }
@@ -85,13 +86,14 @@ func TestCollectorRequest(t *testing.T) {
 		RunID:             "run_id",
 		Data:              nil,
 		License:           "the_license",
+		RequestHeadersMap: map[string]string{"zip": "zap"},
 	}
 	testField := func(name, v1, v2 string) {
 		if v1 != v2 {
-			t.Error(name, v1, v2)
+			t.Errorf("Field %s want %s, got %s", name, v2, v1)
 		}
-    }
-    cs := RpmControls{
+	}
+	cs := RpmControls{
 		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 			if auditVersion {
 				return nil, nil
@@ -100,7 +102,7 @@ func TestCollectorRequest(t *testing.T) {
 		}),
 		AgentVersion: "agent_version",
 	}
-    client := clientImpl {
+	client := clientImpl{
 		httpClient: &http.Client{
 			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				testField("method", r.Method, "POST")
@@ -108,14 +110,15 @@ func TestCollectorRequest(t *testing.T) {
 				testField("Accept-Encoding", r.Header.Get("Accept-Encoding"), "identity, deflate")
 				testField("Content-Type", r.Header.Get("Content-Type"), "application/octet-stream")
 				testField("Content-Encoding", r.Header.Get("Content-Encoding"), "deflate")
-                return &http.Response{
+				testField("zip", r.Header.Get("zip"), "zap")
+				return &http.Response{
 					StatusCode: 200,
-                    Body:       ioutil.NopCloser(strings.NewReader("{\"Body\": 0}")),
+					Body:       ioutil.NopCloser(strings.NewReader("{\"Body\": 0}")),
 				}, nil
 			}),
 		},
-    }
-    resp := client.Execute(cmd, cs)
+	}
+	resp := client.Execute(cmd, cs)
 	if nil != resp.Err {
 		t.Error(resp.Err)
 	}
@@ -123,13 +126,13 @@ func TestCollectorRequest(t *testing.T) {
 
 func TestCollectorBadRequest(t *testing.T) {
 	cmd := RpmCmd{
-		Name:              "cmd_name",
-		Collector:         "collector.com",
-		RunID:             "run_id",
-		Data:              nil,
-		License:           "the_license",
+		Name:      "cmd_name",
+		Collector: "collector.com",
+		RunID:     "run_id",
+		Data:      nil,
+		License:   "the_license",
 	}
-    cs := RpmControls{
+	cs := RpmControls{
 		Collectible: CollectibleFunc(func(auditVersion bool) ([]byte, error) {
 			if auditVersion {
 				return nil, nil
@@ -138,7 +141,7 @@ func TestCollectorBadRequest(t *testing.T) {
 		}),
 		AgentVersion: "agent_version",
 	}
-    client := clientImpl{
+	client := clientImpl{
 		httpClient: &http.Client{
 			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				return &http.Response{
@@ -147,7 +150,7 @@ func TestCollectorBadRequest(t *testing.T) {
 				}, nil
 			}),
 		},
-    }
+	}
 	u := ":" // bad url
 	resp := client.perform(u, cmd, cs)
 	if nil == resp.Err {
