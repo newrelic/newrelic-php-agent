@@ -390,7 +390,7 @@ void nr_php_process_environment_variable(const char* prefix,
     return;
   }
 
-  if (nr_strlen(prefix) == nr_strlen(key)) {
+  if (nr_strlen(prefix) >= nr_strlen(key)) {
     return;
   }
 

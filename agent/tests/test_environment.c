@@ -11,6 +11,14 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+/*
+ * Purpose : Tests if given a prefix a given key/value pair is added to a hash.
+ * Params  : 1. prefix: The prefix to check the key against.
+ *           2. key: The key to compare to the prefix.
+ *           3. value: The value that corresponds to the key
+ *           4. validCase: bool to indicate if the case should fail or succeed.
+ * Returns : void
+ */
 static void test_nr_php_process_environment_variable(const char* prefix,
                                                      const char* key,
                                                      const char* value,
@@ -49,6 +57,11 @@ static void test_nr_php_process_environment_variable(const char* prefix,
   nro_delete(result_hash);
 }
 
+/*
+ * Purpose : Tests adding multiple key/value pairs to a hash.
+ *
+ * Returns : void
+ */
 static void test_multi_nr_php_process_environment_variable() {
   nrobj_t* result_hash = NULL;
   nrobj_t* expect_hash = NULL;
@@ -58,6 +71,11 @@ static void test_multi_nr_php_process_environment_variable() {
   char* expect_str;
 
   result_hash = nro_new_hash();
+  /*
+   * Add multiple key/value pairs to the hash including ones with duplicate
+   * keys. The last added key should always take precedence over a previous
+   * duplicate key.
+   */
   nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_ONE", "one",
                                       result_hash);
   nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_TWO", "two",
@@ -147,27 +165,54 @@ static void test_rocket_assignment_string_to_obj_fn(const char* stimulus,
   nr_free(s);
   nro_delete(result_env);
 }
+
+/*
+ * Purpose : Test the nr_php_process_environment_variables functionality.
+ *
+ * Returns : Void
+ */
 static void test_nr_php_process_environment_variables(void) {
+  /* Prefix and Key are same length, should fail because a value with only the
+   * prefix is not valid.
+   */
   test_nr_php_process_environment_variable(
-      NR_METADATA_PREFIX, "NR_METADATA_PREFIX", "value", false);
+      NR_METADATA_PREFIX, "NR_METADATA_PREFIX_", "value", false);
+
+  /* Valid prefix, key, value. Pair should be added to hash. */
   test_nr_php_process_environment_variable(
       NR_METADATA_PREFIX, "NEW_RELIC_METADATA_ONE", "metadata_one", true);
+
+  /* Non-matching prefix and key. Should not add pair to hash. */
   test_nr_php_process_environment_variable(NR_METADATA_PREFIX, "OTHER",
                                            "metadata_two", false);
+
+  /* Non-matching prefix and key. Should not add pair to hash. */
   test_nr_php_process_environment_variable(
-      NR_METADATA_PREFIX, "RELIC_METADATA_THREE", "metadata_three", false);
+      NR_METADATA_PREFIX, "NEW_RELIC_THREE", "metadata_three", false);
+
+  /* Null prefix should fail. Should not add pair to hash. */
   test_nr_php_process_environment_variable(NULL, "NEW_RELIC_METADATA_FOUR",
                                            "metadata_four", false);
+
+  /* Valid prefix, key, value. Pair should be added to hash. */
   test_nr_php_process_environment_variable(NR_METADATA_PREFIX,
                                            "NEW_RELIC_METADATA_FIVE",
                                            "metadata_five with a space", true);
+
+  /* Valid prefix, key, NULL value (acceptable). Pair should be added to hash.
+   */
   test_nr_php_process_environment_variable(
       NR_METADATA_PREFIX, "NEW_RELIC_METADATA_SIX", NULL, true);
+
+  /* NULL key, NULL value. Pair should not be added to hash. */
   test_nr_php_process_environment_variable(NR_METADATA_PREFIX, NULL, NULL,
                                            false);
+
+  /* NULL key. Pair should not be added to hash. */
   test_nr_php_process_environment_variable(NR_METADATA_PREFIX, NULL,
                                            "metadata_seven", false);
 
+  /* Should be able to add multiple valid pairs to hash. */
   test_multi_nr_php_process_environment_variable();
 }
 
