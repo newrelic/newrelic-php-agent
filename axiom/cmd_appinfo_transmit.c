@@ -148,7 +148,6 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   uint32_t trace_observer_host;
   uint32_t metadata;
   char* json_supported_security_policies;
-  char* json_metadata;
 
   fb = nr_flatbuffers_create(0);
 
@@ -172,7 +171,6 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   supported_security_policies
       = nr_flatbuffers_prepend_string(fb, json_supported_security_policies);
 
-  json_metadata = nro_to_json(info->metadata);
   metadata = nr_appinfo_prepend_metadata(info, fb);
 
   nr_flatbuffers_object_begin(fb, APP_NUM_FIELDS);
@@ -223,7 +221,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   nr_flatbuffers_finish(fb, message);
 
   nr_free(json_supported_security_policies);
-  nr_free(json_metadata);
+
   return fb;
 }
 
