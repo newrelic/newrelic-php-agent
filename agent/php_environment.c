@@ -386,7 +386,7 @@ void nr_php_process_environment_variable(const char* prefix,
                                          const char* key,
                                          const char* value,
                                          nrobj_t* kv_hash) {
-  if ((NULL == prefix) || (NULL == kv_hash)) {
+  if ((NULL == prefix) || (NULL == kv_hash) || (NULL == key)) {
     return;
   }
 
@@ -427,6 +427,9 @@ static void nr_php_get_environment_variables() {
    */
   for (size_t i = 0; environ[i] != NULL; i++) {
     parsed_key_val = nr_strsplit(environ[i], "=", 0);
+    if (NULL == parsed_key_val) {
+      return;
+    }
     const char* key = nro_get_array_string(parsed_key_val, 1, NULL);
     const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
     nr_php_process_environment_variable(NR_METADATA_PREFIX, key, value,

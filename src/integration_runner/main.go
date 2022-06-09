@@ -134,7 +134,7 @@ var (
 		HighSecurity:      false,
 		Environment:       nil,
 		Labels:            nil,
-		Metadata:          newrelic.JSONString("{}"),
+		Metadata:          nil,
 		Settings:
 		// Ensure that we get Javascript agent code in the reply
 		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
