@@ -236,7 +236,7 @@ static char* nr_php_check_for_upgrade_license_key(void) {
   return 0;
 }
 
-static nr_status_t nr_php_check_8T_DT_config(void) {
+static nr_status_t nr_php_check_8T_DT_config(TSRMLS_D) {
   /* check if infinite tracing is enabled and DT disabled */
   if (!nr_strempty(NRINI(trace_observer_host))
       && !NRINI(distributed_tracing_enabled)) {
@@ -577,7 +577,7 @@ PHP_MINIT_FUNCTION(newrelic) {
    * axiom/nr_segment.c::nr_segment_to_span_event() Output a warning about this
    * config issue and also that 8T will be disabled
    */
-  nr_php_check_8T_DT_config();
+  nr_php_check_8T_DT_config(TSRMLS_C);
 
   /*
    * Save the original PHP hooks and then apply our own hooks. The agent is
