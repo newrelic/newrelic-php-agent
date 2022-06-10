@@ -692,17 +692,17 @@ static void test_agent_find_or_add_app(void) {
   p->cmd_appinfo_succeed = false;
   p->cmd_appinfo_called = 0;
   nr_free(info.appname);
-  info.appname = nr_strdup("appname_null_metadata");
+  info.appname = nr_strdup("appname_empty_metadata");
   nro_delete(info.metadata);
   info.metadata = nro_create_from_json("{}");
   app = nr_agent_find_or_add_app(applist, &info, settings_callback_fn, 0);
-  tlib_pass_if_null("new app NULL metadata", app);
-  tlib_pass_if_int_equal("new app NULL metadata", 4, applist->num_apps);
-  tlib_pass_if_int_equal("new app NULL metadata", 1, p->cmd_appinfo_called);
-  app = applist->apps[3];
-  tlib_pass_if_not_null("new app NULL metadata", app);
+  tlib_pass_if_null("new app empty metadata", app);
+  tlib_pass_if_int_equal("new app empty metadata", 5, applist->num_apps);
+  tlib_pass_if_int_equal("new app empty metadata", 1, p->cmd_appinfo_called);
+  app = applist->apps[4];
+  tlib_pass_if_not_null("new app empty metadata", app);
   if (0 != app) {
-    test_obj_as_json("new app NULL metadata", app->info.metadata, "{}");
+    test_obj_as_json("new app empty metadata", app->info.metadata, "{}");
 
     /* No unlock here because the app actually came in unlocked from the
      * applist. */
