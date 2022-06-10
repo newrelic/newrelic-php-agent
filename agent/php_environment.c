@@ -427,13 +427,16 @@ static void nr_php_get_environment_variables() {
    */
   for (size_t i = 0; environ[i] != NULL; i++) {
     parsed_key_val = nr_strsplit(environ[i], "=", 0);
-    if (NULL == parsed_key_val) {
-      return;
+    if ((NULL == parsed_key_val) || (2 != nro_getsize(parsed_key_val))) {
+      nrl_verbosedebug(NRL_AGENT,
+                       "%s: Skipping malformed environmental variable %s",
+                       __func__, environ[i]);
+    } else {
+      const char* key = nro_get_array_string(parsed_key_val, 1, NULL);
+      const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
+      nr_php_process_environment_variable(NR_METADATA_PREFIX, key, value,
+                                          NR_PHP_PROCESS_GLOBALS(metadata));
     }
-    const char* key = nro_get_array_string(parsed_key_val, 1, NULL);
-    const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
-    nr_php_process_environment_variable(NR_METADATA_PREFIX, key, value,
-                                        NR_PHP_PROCESS_GLOBALS(metadata));
     nro_delete(parsed_key_val);
   }
 }
