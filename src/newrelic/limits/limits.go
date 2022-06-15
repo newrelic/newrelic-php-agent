@@ -36,6 +36,7 @@ const (
 	MaxRegularTraces      = 1
 	MaxForcePersistTraces = 10
 	MaxSyntheticsTraces   = 20
+	DefaultMaxPayloadSizeInBytes = 1000 * 1000
 
 	// Failed Harvest Data Rollover Limits
 	// Use the same harvest failure limit for custom events and txn events
