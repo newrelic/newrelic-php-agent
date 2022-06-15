@@ -291,6 +291,12 @@ void nr_txn_enforce_security_settings(nrtxnopt_t* opts,
         NRL_TXN, "Setting newrelic.analytics_events.enabled = false by server");
   }
 
+  if (0 == nr_reply_get_bool(connect_reply, "collect_span_events", 1)) {
+    opts->span_events_enabled = 0;
+    nrl_verbosedebug(NRL_TXN,
+                     "Setting newrelic.span_events_enabled = false by server");
+  }
+
   // LASP also modifies this setting. Kept seperate for readability.
   if (0 == nr_reply_get_bool(connect_reply, "collect_custom_events", 1)) {
     opts->custom_events_enabled = 0;
