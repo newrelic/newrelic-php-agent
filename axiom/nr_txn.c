@@ -501,6 +501,12 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
       = nt->options.span_events_enabled && app->limits.span_events;
 
   /*
+   * Enforce SSC and LASP if enabled
+   */
+  nr_txn_enforce_security_settings(&nt->options, app->connect_reply,
+                                   app->security_policies);
+
+  /*
    * Update the options based on the 8T configuration.
    */
   if (nt->options.span_events_enabled) {
@@ -525,12 +531,6 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
-
-  /*
-   * Enforce SSC and LASP if enabled
-   */
-  nr_txn_enforce_security_settings(&nt->options, app->connect_reply,
-                                   app->security_policies);
 
   /*
    * Set the status fields to their defaults.
