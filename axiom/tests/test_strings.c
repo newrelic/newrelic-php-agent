@@ -1207,7 +1207,6 @@ static void test_str_append(void) {
 
   str = nr_str_append(str, "string1", ",");
   tlib_pass_if_str_equal("null dest string", str, "string1");
-  // amber nr_free(str);
   /*
    * Test : Valid destination and source strings.
    */

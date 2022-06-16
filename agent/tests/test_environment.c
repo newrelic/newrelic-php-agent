@@ -410,17 +410,15 @@ static void test_nr_php_process_environment_variables_to_string(void) {
 
   /* NULL key, NULL value. Pair should not be added to string. */
   test_nr_php_process_environment_variable_to_string(
-      NR_LABELS_SINGULAR_KEY_PREFIX, NULL, NULL, false);
+      NR_LABELS_SINGULAR_KEY_PREFIX, NULL, NULL, NULL);
 
   /* NULL key. Pair should not be added to string. */
   test_nr_php_process_environment_variable_to_string(
-      NR_LABELS_SINGULAR_KEY_PREFIX, NULL, "seven", false);
+      NR_LABELS_SINGULAR_KEY_PREFIX, NULL, "seven", NULL);
 
   /* Should be able to add multiple valid pairs to string. */
   test_multi_nr_php_process_environment_variable_to_string();
 }
-
-// amber end
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)

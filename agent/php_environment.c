@@ -416,8 +416,6 @@ char* nr_php_process_environment_variable_to_string(const char* prefix,
   if (0 == nr_strncmp(key, prefix, nr_strlen(prefix))) {
     kv_string = nr_str_append(kv_string, key + nr_strlen(prefix), delimiter);
     kv_string = nr_str_append(kv_string, value, kv_delimiter);
-
-    nrl_info(NRL_AGENT, "%s: amber kv_string %s", __func__, kv_string);
   }
   return kv_string;
 }
