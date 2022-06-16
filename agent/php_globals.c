@@ -39,6 +39,7 @@ static void nr_php_per_process_globals_dispose(void) {
   nr_free(nr_php_per_process_globals.upgrade_license_key);
   nro_delete(nr_php_per_process_globals.appenv);
   nro_delete(nr_php_per_process_globals.metadata);
+  nr_free(nr_php_per_process_globals.env_labels);
   nr_free(nr_php_per_process_globals.apache_add);
 
   nr_memset(&nr_php_per_process_globals, 0, sizeof(nr_php_per_process_globals));
