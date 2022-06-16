@@ -360,7 +360,7 @@ nr_hashmap_t* nr_header_outbound_request_create(nrtxn_t* txn,
         txn->distributed_trace);
 
     if (tracing_vendors && tracestate_ptr) {
-      tracestate_ptr = nr_str_append(tracestate_ptr, tracing_vendors);
+      tracestate_ptr = nr_str_append(tracestate_ptr, tracing_vendors, ",");
     }
     nr_header_outbound_save(outbound_headers, W3C_TRACESTATE, tracestate_ptr);
 

@@ -1197,22 +1197,35 @@ static void test_toupper(void) {
 
 static void test_str_append(void) {
   char* str = NULL;
-
   /*
    * Test : Bad parameters.
    */
-  tlib_pass_if_null("null dest and src strings", nr_str_append(NULL, NULL));
-  tlib_pass_if_str_equal("null src string", nr_str_append("dest", NULL),
+  tlib_pass_if_null("null dest and src strings",
+                    nr_str_append(NULL, NULL, ","));
+  tlib_pass_if_str_equal("null src string", nr_str_append("dest", NULL, ","),
                          "dest");
 
-  str = nr_str_append(str, "string1");
+  str = nr_str_append(str, "string1", ",");
   tlib_pass_if_str_equal("null dest string", str, "string1");
-
+  // amber nr_free(str);
   /*
    * Test : Valid destination and source strings.
    */
-  str = nr_str_append(str, "string2");
+  str = nr_str_append(str, "string2", ",");
   tlib_pass_if_str_equal("valid dest and src strings", str, "string1,string2");
+  nr_free(str);
+
+  /*
+   * Test : Delimiters.
+   */
+  str = nr_str_append(str, "string1", NULL);
+  str = nr_str_append(str, "string2", ":");
+  tlib_pass_if_str_equal("valid dest and src strings", str, "string1:string2");
+  nr_free(str);
+
+  str = nr_str_append(str, "string1", ",");
+  str = nr_str_append(str, "string2", NULL);
+  tlib_pass_if_str_equal("valid dest and src strings", str, "string1string2");
   nr_free(str);
 }
 
