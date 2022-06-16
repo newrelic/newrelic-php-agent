@@ -428,6 +428,7 @@ char* nr_php_process_environment_variable_to_string(const char* prefix,
  */
 static void nr_php_get_environment_variables() {
   nrobj_t* parsed_key_val = NULL;
+  const char* plural_label = NULL;
 
   /*
    * `environ` works for non-windows machines.
@@ -466,8 +467,11 @@ static void nr_php_get_environment_variables() {
   /*
    * Plural labels key.
    */
-  NR_PHP_PROCESS_GLOBALS(env_labels) = nr_str_append(
-      NR_PHP_PROCESS_GLOBALS(env_labels), getenv(NR_LABELS_PLURAL_KEY), ";");
+  plural_label = getenv(NR_LABELS_PLURAL_KEY);
+  if (!nr_strempty(plural_label)) {
+    NR_PHP_PROCESS_GLOBALS(env_labels)
+        = nr_str_append(NR_PHP_PROCESS_GLOBALS(env_labels), plural_label, ";");
+  }
 
   /*
    * Get the environment to parse the variables for that have prefixes we are
@@ -495,11 +499,16 @@ static void nr_php_get_environment_variables() {
       const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
       nr_php_process_environment_variable_to_nrobj(
           NR_METADATA_KEY_PREFIX, key, value, NR_PHP_PROCESS_GLOBALS(metadata));
+      NR_PHP_PROCESS_GLOBALS(env_labels)
+          = nr_php_process_environment_variable_to_string(
+              NR_LABELS_SINGULAR_KEY_PREFIX, key, value,
+              NR_PHP_PROCESS_GLOBALS(env_labels), ":", ";");
     }
     nro_delete(parsed_key_val);
   }
-  nrl_verbose(NRL_AGENT, "%s: set NR_PHP_PROCESS_GLOBALS(env_labels) labels %s",
-              __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
+  nrl_verbosedebug(NRL_AGENT,
+                   "%s: set NR_PHP_PROCESS_GLOBALS(env_labels) labels %s",
+                   __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
