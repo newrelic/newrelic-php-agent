@@ -426,7 +426,7 @@ char* nr_php_process_environment_variable_to_string(const char* prefix,
  * 2. Variables with the key prefix NEW_RELIC_LABEL_
  * 3. Variable with the key NEW_RELIC_LABELS
  */
-static void nr_php_get_environment_variables() {
+static void nr_php_get_environment_variables(TSRMLS_D) {
   nrobj_t* parsed_key_val = NULL;
   const char* plural_label = NULL;
 
@@ -519,7 +519,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_machine_information(env);
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
-  nr_php_get_environment_variables();
+  nr_php_get_environment_variables(TSRMLS_C);
 
   return env;
 }
