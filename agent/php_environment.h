@@ -9,7 +9,9 @@
 #ifndef PHP_ENVIRONMENT_HDR
 #define PHP_ENVIRONMENT_HDR
 
-#define NR_METADATA_PREFIX "NEW_RELIC_METADATA_"
+#define NR_METADATA_KEY_PREFIX "NEW_RELIC_METADATA_"
+#define NR_LABELS_PLURAL_KEY "NEW_RELIC_LABELS"
+#define NR_LABELS_SINGULAR_KEY_PREFIX "NEW_RELIC_LABEL_"
 
 /*
  * Purpose : Produce the object that describes the invariant parts of the
@@ -62,9 +64,37 @@ void nr_php_parse_rocket_assignment_list(char* s, size_t len, nrobj_t* kv_hash);
  *           4. The object that will have the key/value pair added to it.
  *
  */
-void nr_php_process_environment_variable(const char* prefix,
-                                         const char* key,
-                                         const char* value,
-                                         nrobj_t* kv_hash);
+void nr_php_process_environment_variable_to_nrobj(const char* prefix,
+                                                  const char* key,
+                                                  const char* value,
+                                                  nrobj_t* kv_hash);
+
+/*
+ * Purpose : Compare the given prefix to a key in a key value pair.  If matched,
+ *           add the key value pair to the given hash.
+ *
+ *           The scanner looks for lines holding "=" style
+ *           assignments:
+ *
+ *             key = value
+ *
+ *           This format is generally seen with system environment variable
+ * output.
+ *
+ * Params  : 1. The prefix to scan for.
+ *           2. The key to compare to the prefix.
+ *           3. The value associated with the prefix.
+ *           4. The string that will have the key/value pair added to it.
+ *           5. The delimiter used to separate the key and value in the string.
+ *           6. The delimiter used to separate key/value pairs in the string.
+ *
+ * Returns : String with matching key/value appended.
+ */
+char* nr_php_process_environment_variable_to_string(const char* prefix,
+                                                    const char* key,
+                                                    const char* value,
+                                                    char* kv_hash,
+                                                    const char* kv_delimeter,
+                                                    const char* delimeter);
 
 #endif /* PHP_ENVIRONMENT_HDR */
