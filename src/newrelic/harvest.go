@@ -7,6 +7,7 @@ package newrelic
 
 import (
 	"time"
+	"strconv"
 
 	"newrelic/collector"
 	"newrelic/infinite_tracing"
@@ -28,6 +29,8 @@ type Harvest struct {
 	SpanEvents        *SpanEvents
 	commandsProcessed int
 	pidSet            map[int]struct{}
+	httpErrorSet      map[int]float64
+	endpointsAttemptedSet map[string]float64
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
@@ -42,6 +45,9 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		SpanEvents:        NewSpanEvents(hl.SpanEventConfig.Limit),
 		commandsProcessed: 0,
 		pidSet:            make(map[int]struct{}),
+		//amber
+        httpErrorSet:      make(map[int]float64),
+        endpointsAttemptedSet: make(map[string]float64),
 	}
 }
 
@@ -67,6 +73,67 @@ func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *Met
 	}
 }
 
+//amber
+
+func (h *Harvest) createHttpErrorMetrics() {
+	if h.empty() {
+		// No agent data received, do not create derived metrics. This allows
+		// upstream to detect inactivity sooner.
+		return
+	}
+
+	for code, val := range h.httpErrorSet {
+		h.Metrics.AddCount("Supportability/Agent/Collector/HTTPError/" + strconv.Itoa(code), "", val, Forced)
+	}
+}
+
+// Update the Http error counts
+func (h *Harvest) IncrementHttpErrors(statusCode int) {
+	if h.empty() {
+		// No agent data received, do not create derived metrics. This allows
+		// upstream to detect inactivity sooner.
+		return
+	}
+    counter, isPresent := h.httpErrorSet[statusCode]
+
+    if isPresent {
+        h.httpErrorSet[statusCode] = counter+1
+    } else {
+        h.httpErrorSet[statusCode] = 1
+    }
+}
+
+func (h *Harvest) createEndpointsAttemptedMetrics() {
+	if h.empty() {
+		// No agent data received, do not create derived metrics. This allows
+		// upstream to detect inactivity sooner.
+		return
+	}
+
+	for cmdString, val := range h.endpointsAttemptedSet {
+	    if (val > 1) {
+		    h.Metrics.AddCount("Supportability/Agent/Collector/" + cmdString + "/Attempts", "", val, Forced)
+		}
+	}
+}
+
+// Update the Command endpoint counts
+func (h *Harvest) IncrementEndpointsAttempted(cmd string) {
+	if h.empty() {
+		// No agent data received, do not create derived metrics. This allows
+		// upstream to detect inactivity sooner.
+		return
+	}
+    counter, isPresent := h.endpointsAttemptedSet[cmd]
+
+    if isPresent {
+        h.endpointsAttemptedSet[cmd] = counter + 1
+    } else {
+        h.endpointsAttemptedSet[cmd] = 1
+    }
+}
+//amber end
+
 func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	if h.empty() {
 		// No agent data received, do not create derived metrics. This allows
@@ -87,6 +154,7 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	// Custom Events Supportability Metrics
 	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", h.CustomEvents.NumSeen(), Forced)
 	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", h.CustomEvents.NumSaved(), Forced)
+
 
 	// Transaction Events Supportability Metrics
 	// Note that these metrics used to have different names:
@@ -120,6 +188,9 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Supportability/EventHarvest/SpanEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.SpanEventConfig.Limit), Forced)
 
 	createTraceObserverMetrics(to, h.Metrics)
+
+	h.createHttpErrorMetrics()
+	h.createEndpointsAttemptedMetrics()
 }
 
 type FailedHarvestSaver interface {
