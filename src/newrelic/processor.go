@@ -408,16 +408,18 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 	app.RawConnectReply = rep.RawReply.Body
 	if rep.RawReply.IsDisconnect() {
 		app.state = AppStateDisconnected
-		log.Warnf("app '%s' connect attempt returned %s", app, rep.RawReply.Err)
+		log.Warnf("app '%s' connect attempt returned %s; disconnecting", app, rep.RawReply.Err)
 		return
 	} else if rep.RawReply.IsRestartException() {
-		app.state = AppStateRestart
 		// in accord with the spec, invalid license is a restart exception. Except we want
 		//    to shutdown instead of restart.
 		if rep.RawReply.IsInvalidLicense() {
 			app.state = AppStateInvalidLicense
+		    log.Warnf("app '%s' connect attempt returned %s; shutting down", app, rep.RawReply.Err)
+		} else {
+			app.state = AppStateRestart
+			log.Warnf("app '%s' connect attempt returned %s; restarting", app, rep.RawReply.Err)
 		}
-		log.Warnf("app '%s' connect attempt returned %s", app, rep.RawReply.Err)
 		return
 	} else if nil != rep.Err {
 		app.state = AppStateUnknown

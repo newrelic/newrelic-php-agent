@@ -89,6 +89,8 @@ func (resp RPMResponse) IsDisconnect() bool {
 }
 
 // IsRestartException indicates that the agent should restart.
+// 401 (License Exception) is considered a restart exception according to the spec,
+//   and is included here as such, however the PHP agent will not restart on a 401 and instead stop
 func (resp RPMResponse) IsRestartException() bool {
 	return resp.StatusCode == 401 || resp.StatusCode == 409
 }
