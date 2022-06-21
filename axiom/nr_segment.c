@@ -352,16 +352,17 @@ static nr_status_t add_agent_attribute_to_span_event(const char* key,
   return NR_SUCCESS;
 }
 
-#define NR_APP_LOG_SEGMENT_ID_FAILURE_BACKOFF_SECONDS 60
+#define NR_APP_LOG_WARNING_SEGMENT_ID_FAILURE_BACKOFF_SECONDS 60
 
-static void nr_segment_log_segment_id_missing(void) {
+static void nr_segment_log_warning_segment_id_missing(void) {
   static unsigned n_occur = 0;
   static time_t last_warn = (time_t)(0);
   time_t now = time(0);
 
   n_occur++;
 
-  if ((now - last_warn) > NR_APP_LOG_SEGMENT_ID_FAILURE_BACKOFF_SECONDS) {
+  if ((now - last_warn)
+      > NR_APP_LOG_WARNING_SEGMENT_ID_FAILURE_BACKOFF_SECONDS) {
     last_warn = now;
     nrl_warning(
         NRL_SEGMENT,
@@ -398,7 +399,7 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
   }
 
   if (NULL == nr_segment_ensure_id(segment, segment->txn)) {
-    nr_segment_log_segment_id_missing();
+    nr_segment_log_warning_segment_id_missing();
     return NULL;
   }
 
