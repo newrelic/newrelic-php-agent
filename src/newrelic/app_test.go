@@ -35,6 +35,7 @@ func TestConnectPayloadInternal(t *testing.T) {
 		Environment:       JSONString(`[["b", 2]]`),
 		HighSecurity:      false,
 		Labels:            JSONString(`[{"label_type":"c","label_value":"d"}]`),
+		Metadata:          JSONString(`{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"}`),
 		RedirectCollector: "collector.newrelic.com",
 		Hostname:          "some_host",
 	}
@@ -51,6 +52,7 @@ func TestConnectPayloadInternal(t *testing.T) {
 		AppName:         []string{"one", "two"},
 		HighSecurity:    false,
 		Labels:          JSONString(`[{"label_type":"c","label_value":"d"}]`),
+		Metadata:        JSONString(`{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"}`),
 		Environment:     JSONString(`[["b",2]]`),
 		Identifier:      "one;two",
 		Util:            util,
@@ -349,10 +351,10 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		Environment:       JSONString(`[["b", 2]]`),
 		HighSecurity:      false,
 		Labels:            JSONString(`[{"label_type":"c","label_value":"d"}]`),
+		Metadata:          JSONString(`{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"}`),
 		RedirectCollector: "collector.newrelic.com",
 		Hostname:          "some_host",
 	}
-
 
     // A valid span event max samples stored value configured from the agent should
     // propagate through and be sent to the collector
@@ -371,6 +373,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"high_security":false,` +
 		`"labels":[{"label_type":"c","label_value":"d"}],` +
 		`"environment":[["b",2]],` +
+		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
 		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":2323}}` +
@@ -401,6 +404,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"high_security":false,` +
 		`"labels":[{"label_type":"c","label_value":"d"}],` +
 		`"environment":[["b",2]],` +
+		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
 		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":`+strconv.Itoa(limits.MaxSpanMaxEvents)+`}}`+
@@ -428,6 +432,62 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"high_security":false,` +
 		`"labels":[{"label_type":"c","label_value":"d"}],` +
 		`"environment":[["b",2]],` +
+		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
+		`"identifier":"one;two",` +
+		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`}` +
+		`]`
+
+	b, err = EncodePayload(info.ConnectPayloadInternal(pid, util))
+	if err != nil {
+		t.Error(err)
+	} else if string(b) != expected {
+		t.Errorf("expected: %s\nactual: %s", expected, string(b))
+	}
+
+
+	// an empty JSON for the Metadata should be sent
+	info.Metadata = JSONString(`{}`)
+	expected = `[` +
+		`{` +
+		`"pid":123,` +
+		`"language":"php",` +
+		`"agent_version":"0.1",` +
+		`"host":"some_host",` +
+		`"settings":{"a":"1","b":true},` +
+		`"app_name":["one","two"],` +
+		`"high_security":false,` +
+		`"labels":[{"label_type":"c","label_value":"d"}],` +
+		`"environment":[["b",2]],` +
+		`"metadata":{},` +
+		`"identifier":"one;two",` +
+		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`}` +
+		`]`
+
+	b, err = EncodePayload(info.ConnectPayloadInternal(pid, util))
+	if err != nil {
+		t.Error(err)
+	} else if string(b) != expected {
+		t.Errorf("expected: %s\nactual: %s", expected, string(b))
+	}
+
+	// a NULL JSON for the Metadata should send an empty JSON
+	info.Metadata = nil
+	expected = `[` +
+		`{` +
+		`"pid":123,` +
+		`"language":"php",` +
+		`"agent_version":"0.1",` +
+		`"host":"some_host",` +
+		`"settings":{"a":"1","b":true},` +
+		`"app_name":["one","two"],` +
+		`"high_security":false,` +
+		`"labels":[{"label_type":"c","label_value":"d"}],` +
+		`"environment":[["b",2]],` +
+		`"metadata":{},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
 		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +

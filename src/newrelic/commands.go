@@ -256,6 +256,7 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 		RedirectCollector:         string(app.RedirectCollector()),
 		Environment:               JSONString(copySlice(app.Environment())),
 		Labels:                    JSONString(copySlice(app.Labels())),
+		Metadata:                  JSONString(copySlice(app.Metadata())),
 		Hostname:                  string(app.Host()),
 		HostDisplayName:           string(app.DisplayHost()),
 		SecurityPolicyToken:       string(app.SecurityPolicyToken()),

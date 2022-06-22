@@ -19,6 +19,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	settingsJSON, _ := json.Marshal(info.Settings)
 	envJSON, _ := json.Marshal(info.Environment)
 	labelsJSON, _ := json.Marshal(info.Labels)
+	metadataJSON, _ := json.Marshal(info.Metadata)
 
 	buf := flatbuffers.NewBuilder(0)
 
@@ -30,6 +31,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	settings := buf.CreateString(string(settingsJSON))
 	env := buf.CreateString(string(envJSON))
 	labels := buf.CreateString(string(labelsJSON))
+	metadata :=buf.CreateString(string(metadataJSON))
 	host := buf.CreateString(string(info.Hostname))
 	traceObserverHost := buf.CreateString(info.TraceObserverHost)
 
@@ -41,6 +43,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	protocol.AppAddRedirectCollector(buf, collector)
 	protocol.AppAddEnvironment(buf, env)
 	protocol.AppAddLabels(buf, labels)
+	protocol.AppAddMetadata(buf, metadata)
 	protocol.AppAddSettings(buf, settings)
 	protocol.AppAddHost(buf, host)
 	protocol.AppAddTraceObserverHost(buf, traceObserverHost)

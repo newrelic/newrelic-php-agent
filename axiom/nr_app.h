@@ -62,6 +62,7 @@ typedef struct _nr_app_info_t {
   nrobj_t* settings;    /* New Relic settings */
   nrobj_t* environment; /* Application environment */
   nrobj_t* labels;      /* Labels for Language Agents */
+  nrobj_t* metadata;    /* Environment provided metadata for Language Agents */
   char* host_display_name;  /* Optional user-provided host name for UI */
   char* lang;               /* Language */
   char* version;            /* Version */

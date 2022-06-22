@@ -84,6 +84,7 @@ void nr_app_info_destroy_fields(nr_app_info_t* info) {
   nro_delete(info->settings);
   nro_delete(info->environment);
   nro_delete(info->labels);
+  nro_delete(info->metadata);
   nr_free(info->host_display_name);
   nr_free(info->lang);
   nr_free(info->version);
@@ -264,6 +265,7 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
   app->info.environment = nro_copy(info->environment);
   app->info.high_security = info->high_security;
   app->info.labels = nro_copy(info->labels);
+  app->info.metadata = nro_copy(info->metadata);
   app->info.host_display_name = nr_strdup(info->host_display_name);
   app->info.redirect_collector = nr_strdup(info->redirect_collector);
   app->info.security_policies_token = nr_strdup(info->security_policies_token);

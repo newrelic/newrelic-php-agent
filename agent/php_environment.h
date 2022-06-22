@@ -9,6 +9,8 @@
 #ifndef PHP_ENVIRONMENT_HDR
 #define PHP_ENVIRONMENT_HDR
 
+#define NR_METADATA_PREFIX "NEW_RELIC_METADATA_"
+
 /*
  * Purpose : Produce the object that describes the invariant parts of the
  *           execution environment.
@@ -41,5 +43,28 @@ extern nrobj_t* nr_php_get_environment(TSRMLS_D);
  *           bytes.
  */
 void nr_php_parse_rocket_assignment_list(char* s, size_t len, nrobj_t* kv_hash);
+
+/*
+ * Purpose : Compare the given prefix to a key in a key value pair.  If matched,
+ *           add the key value pair to the given hash.
+ *
+ *           The scanner looks for lines holding "=" style
+ *           assignments:
+ *
+ *             key = value
+ *
+ *           This format is generally seen with system environment variable
+ * output.
+ *
+ * Params  : 1. The prefix to scan for.
+ *           2. The key to compare to the prefix.
+ *           3. The value associated with the prefix.
+ *           4. The object that will have the key/value pair added to it.
+ *
+ */
+void nr_php_process_environment_variable(const char* prefix,
+                                         const char* key,
+                                         const char* value,
+                                         nrobj_t* kv_hash);
 
 #endif /* PHP_ENVIRONMENT_HDR */

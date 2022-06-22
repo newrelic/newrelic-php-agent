@@ -11,6 +11,103 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+/*
+ * Purpose : Tests if given a prefix a given key/value pair is added to a hash.
+ * Params  : 1. prefix: The prefix to check the key against.
+ *           2. key: The key to compare to the prefix.
+ *           3. value: The value that corresponds to the key
+ *           4. validCase: bool to indicate if the case should fail or succeed.
+ * Returns : void
+ */
+static void test_nr_php_process_environment_variable(const char* prefix,
+                                                     const char* key,
+                                                     const char* value,
+                                                     bool validCase) {
+  nrobj_t* result_hash = NULL;
+  nrobj_t* expect_hash = NULL;
+  const char* r = NULL;
+  nr_status_t err;
+  char* result_str;
+  char* expect_str;
+
+  result_hash = nro_new_hash();
+  nr_php_process_environment_variable(prefix, key, value, result_hash);
+  r = nro_get_hash_string(result_hash, key, &err);
+  if (validCase) {
+    tlib_pass_if_true("index OK", NR_SUCCESS == err, "success=%d", (int)err);
+    tlib_pass_if_true("pick", 0 == nr_strcmp(r, NULL == value ? "" : value),
+                      "r=%s but expected %s for key %s", r, value, key);
+  } else {
+    tlib_pass_if_false("index OK", NR_SUCCESS == err, "success=%d", (int)err);
+    tlib_pass_if_null("NULL terms", r);
+  }
+
+  expect_hash = nro_new_hash();
+  if (validCase) {
+    nro_set_hash_string(expect_hash, key, value);
+  }
+  expect_str = nro_dump(expect_hash);
+  result_str = nro_dump(result_hash);
+  tlib_pass_if_true("contents", 0 == nr_strcmp(expect_str, result_str),
+                    "\nresult_str=%s\nexpect_str=%s", result_str, expect_str);
+
+  nr_free(expect_str);
+  nr_free(result_str);
+  nro_delete(expect_hash);
+  nro_delete(result_hash);
+}
+
+/*
+ * Purpose : Tests adding multiple key/value pairs to a hash.
+ *
+ * Returns : void
+ */
+static void test_multi_nr_php_process_environment_variable() {
+  nrobj_t* result_hash = NULL;
+  nrobj_t* expect_hash = NULL;
+  const char* r = NULL;
+  nr_status_t err;
+  char* result_str;
+  char* expect_str;
+
+  result_hash = nro_new_hash();
+  /*
+   * Add multiple key/value pairs to the hash including ones with duplicate
+   * keys. The last added key should always take precedence over a previous
+   * duplicate key.
+   */
+  nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_ONE", "one",
+                                      result_hash);
+  nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_TWO", "two",
+                                      result_hash);
+  nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_ONE", "second_one",
+                                      result_hash);
+  nr_php_process_environment_variable("MYPREFIX", "MYPREFIX_ONE", "third_one",
+                                      result_hash);
+  nr_php_process_environment_variable("MYPREFIX", "PREFIX_THREE", "three",
+                                      result_hash);
+
+  r = nro_get_hash_string(result_hash, "MYPREFIX_ONE", &err);
+
+  tlib_pass_if_true("index OK", NR_SUCCESS == err, "success=%d", (int)err);
+  tlib_pass_if_true("pick", 0 == nr_strcmp(r, "third_one"),
+                    "r=%s but expected third_one", r);
+
+  expect_hash = nro_new_hash();
+  nro_set_hash_string(expect_hash, "MYPREFIX_ONE", "third_one");
+  nro_set_hash_string(expect_hash, "MYPREFIX_TWO", "two");
+
+  expect_str = nro_dump(expect_hash);
+  result_str = nro_dump(result_hash);
+  tlib_pass_if_true("contents", 0 == nr_strcmp(expect_str, result_str),
+                    "\nresult_str=%s\nexpect_str=%s", result_str, expect_str);
+
+  nr_free(expect_str);
+  nr_free(result_str);
+  nro_delete(expect_hash);
+  nro_delete(result_hash);
+}
+
 static void test_single_rocket_assignment(const char* key, const char* value) {
   nrobj_t* result_env = NULL;
   nrobj_t* expect_env = NULL;
@@ -67,6 +164,56 @@ static void test_rocket_assignment_string_to_obj_fn(const char* stimulus,
   nr_free(expect);
   nr_free(s);
   nro_delete(result_env);
+}
+
+/*
+ * Purpose : Test the nr_php_process_environment_variables functionality.
+ *
+ * Returns : Void
+ */
+static void test_nr_php_process_environment_variables(void) {
+  /* Prefix and Key are same length, should fail because a value with only the
+   * prefix is not valid.
+   */
+  test_nr_php_process_environment_variable(
+      NR_METADATA_PREFIX, "NR_METADATA_PREFIX_", "value", false);
+
+  /* Valid prefix, key, value. Pair should be added to hash. */
+  test_nr_php_process_environment_variable(
+      NR_METADATA_PREFIX, "NEW_RELIC_METADATA_ONE", "metadata_one", true);
+
+  /* Non-matching prefix and key. Should not add pair to hash. */
+  test_nr_php_process_environment_variable(NR_METADATA_PREFIX, "OTHER",
+                                           "metadata_two", false);
+
+  /* Non-matching prefix and key. Should not add pair to hash. */
+  test_nr_php_process_environment_variable(
+      NR_METADATA_PREFIX, "NEW_RELIC_THREE", "metadata_three", false);
+
+  /* Null prefix should fail. Should not add pair to hash. */
+  test_nr_php_process_environment_variable(NULL, "NEW_RELIC_METADATA_FOUR",
+                                           "metadata_four", false);
+
+  /* Valid prefix, key, value. Pair should be added to hash. */
+  test_nr_php_process_environment_variable(NR_METADATA_PREFIX,
+                                           "NEW_RELIC_METADATA_FIVE",
+                                           "metadata_five with a space", true);
+
+  /* Valid prefix, key, NULL value (acceptable). Pair should be added to hash.
+   */
+  test_nr_php_process_environment_variable(
+      NR_METADATA_PREFIX, "NEW_RELIC_METADATA_SIX", NULL, true);
+
+  /* NULL key, NULL value. Pair should not be added to hash. */
+  test_nr_php_process_environment_variable(NR_METADATA_PREFIX, NULL, NULL,
+                                           false);
+
+  /* NULL key. Pair should not be added to hash. */
+  test_nr_php_process_environment_variable(NR_METADATA_PREFIX, NULL,
+                                           "metadata_seven", false);
+
+  /* Should be able to add multiple valid pairs to hash. */
+  test_multi_nr_php_process_environment_variable();
 }
 
 static void test_rocket_assignments(void) {
@@ -169,6 +316,8 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_rocket_assignments();
+
+  test_nr_php_process_environment_variables();
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
