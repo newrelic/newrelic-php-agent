@@ -81,7 +81,7 @@
           "tracestate.parent_type": "0",
           "tracestate.parent_account_id": "33",
           "tracestate.sampled": "0",
-          "tracestate.priority": "0.123456"
+          "tracestate.priority": "0.12346"
         },
         "expected": [
           "traceparent.parent_id",
@@ -1628,7 +1628,7 @@
           "tracestate.parent_type": "0",
           "tracestate.parent_account_id": "99",
           "tracestate.sampled": "0",
-          "tracestate.priority": "0.000012"
+          "tracestate.priority": "0.00001"
         },
         "expected": [
           "traceparent.trace_flags",
@@ -1901,7 +1901,7 @@
           "tracestate.parent_type": "0",
           "tracestate.parent_account_id": "33",
           "tracestate.sampled": "1",
-          "tracestate.priority": "1.123432",
+          "tracestate.priority": "1.12343",
           "newrelic.v": [0, 1],
           "newrelic.d.ty": "App",
           "newrelic.d.ac": "33",
