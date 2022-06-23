@@ -245,7 +245,7 @@ extern int nr_str_char_count(const char* s, char c);
  *
  * Params  : 1. The destination string.
  *           2. The source string.
- *           3. The delimiter to separate the strings
+ *           3. The delimiter to separate the strings; NULL treated as empty string
  *
  * Returns : A newly allocated string containing both.
  */
