@@ -1777,6 +1777,15 @@ static void test_begin(void) {
   nr_txn_destroy(&rv);
 
   /*
+   * Test : App turns off span events
+   */
+  nro_set_hash_boolean(app->connect_reply, "collect_span_events", 0);
+  correct.span_events_enabled = 0;
+  rv = nr_txn_begin(app, opts, attribute_config);
+  test_created_txn("app turns off span events", rv, &correct);
+  nr_txn_destroy(&rv);
+
+  /*
    * Test : High security off
    */
   app->info.high_security = 0;

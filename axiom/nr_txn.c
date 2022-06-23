@@ -291,6 +291,12 @@ void nr_txn_enforce_security_settings(nrtxnopt_t* opts,
         NRL_TXN, "Setting newrelic.analytics_events.enabled = false by server");
   }
 
+  if (0 == nr_reply_get_bool(connect_reply, "collect_span_events", 1)) {
+    opts->span_events_enabled = 0;
+    nrl_verbosedebug(NRL_TXN,
+                     "Setting newrelic.span_events_enabled = false by server");
+  }
+
   // LASP also modifies this setting. Kept seperate for readability.
   if (0 == nr_reply_get_bool(connect_reply, "collect_custom_events", 1)) {
     opts->custom_events_enabled = 0;
@@ -495,6 +501,12 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
       = nt->options.span_events_enabled && app->limits.span_events;
 
   /*
+   * Enforce SSC and LASP if enabled
+   */
+  nr_txn_enforce_security_settings(&nt->options, app->connect_reply,
+                                   app->security_policies);
+
+  /*
    * Update the options based on the 8T configuration.
    */
   if (nt->options.span_events_enabled) {
@@ -519,12 +531,6 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
-
-  /*
-   * Enforce SSC and LASP if enabled
-   */
-  nr_txn_enforce_security_settings(&nt->options, app->connect_reply,
-                                   app->security_policies);
 
   /*
    * Set the status fields to their defaults.
