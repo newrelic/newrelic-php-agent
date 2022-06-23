@@ -85,7 +85,6 @@
         },
         "expected": [
           "traceparent.parent_id",
-          "tracestate.span_id",
           "tracestate.transaction_id",
           "tracestate.timestamp",
           "tracestate.parent_application_id"
@@ -1633,7 +1632,6 @@
         "expected": [
           "traceparent.trace_flags",
           "traceparent.parent_id",
-          "tracestate.span_id",
           "tracestate.transaction_id",
           "tracestate.parent_application_id",
           "tracestate.timestamp"
