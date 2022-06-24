@@ -426,7 +426,7 @@ int nr_str_char_count(const char* s, char c) {
 char* nr_str_append(char* dest, const char* src, const char* delimiter) {
   char* tmp = NULL;
   const char* delim
-      = delimiter ? delimiter : "";  // Treat NULL delimiter as no delimiter
+      = (NULL != delimiter) ? delimiter : "";  // Treat NULL delimiter as no delimiter
 
   if (NULL == src) {
     return dest;
