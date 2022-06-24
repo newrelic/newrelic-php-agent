@@ -382,10 +382,10 @@ static void nr_php_gather_dispatcher_information(nrobj_t* env) {
 
   nro_set_hash_string(env, "Dispatcher", dstring);
 }
-void nr_php_process_environment_variable(const char* prefix,
-                                         const char* key,
-                                         const char* value,
-                                         nrobj_t* kv_hash) {
+void nr_php_process_environment_variable_to_nrobj(const char* prefix,
+                                                  const char* key,
+                                                  const char* value,
+                                                  nrobj_t* kv_hash) {
   if ((NULL == prefix) || (NULL == kv_hash) || (NULL == key)) {
     return;
   }
@@ -398,8 +398,38 @@ void nr_php_process_environment_variable(const char* prefix,
     nro_set_hash_string(kv_hash, key, value);
   }
 }
-static void nr_php_get_environment_variables() {
+
+char* nr_php_process_environment_variable_to_string(const char* prefix,
+                                                    const char* key,
+                                                    const char* value,
+                                                    char* kv_string,
+                                                    const char* kv_delimiter,
+                                                    const char* delimiter) {
+  if ((NULL == prefix) || (NULL == key)) {
+    return kv_string;
+  }
+
+  if (nr_strlen(prefix) >= nr_strlen(key)) {
+    return kv_string;
+  }
+
+  if (0 == nr_strncmp(key, prefix, nr_strlen(prefix))) {
+    kv_string = nr_str_append(kv_string, key + nr_strlen(prefix), delimiter);
+    kv_string = nr_str_append(kv_string, value, kv_delimiter);
+  }
+  return kv_string;
+}
+
+/*
+ * Current variables we scan are:
+ * 1. Variables with the key prefix NEW_RELIC_METADATA_
+ * 2. Variables with the key prefix NEW_RELIC_LABEL_
+ * 3. Variable with the key NEW_RELIC_LABELS
+ */
+static void nr_php_get_environment_variables(TSRMLS_D) {
   nrobj_t* parsed_key_val = NULL;
+  const char* plural_label = NULL;
+
   /*
    * `environ` works for non-windows machines.
    * Otherwise, we'd need to use *__p__environ() as well.
@@ -412,8 +442,41 @@ static void nr_php_get_environment_variables() {
    */
   NR_PHP_PROCESS_GLOBALS(metadata) = nro_new_hash();
 
+  /* Initialize the environment labels string to collect labels.
+   * If labels are specified in both the agent configuration file and the
+   * NEW_RELIC_LABELS environment variable or prefixed with the NEW_RELIC_LABEL_
+   * key prefix, the agent MUST use existing configuration precedence rules to
+   * determine which set of labels to send to New Relic. Configuration via
+   * environment variables always trumps file-based configuration, so if
+   * duplicate labels are specified in both the agent configuration file and the
+   * environment variable, the duplicate labels from the environment variable
+   * should be used. By appending the environment variables to the end of the
+   * ini string, we ensure the environmental variables take precedence when it
+   * is entered into the label hash.  Additionally, with the environmental and
+   * ini values combined, we are able to take advantage of all the previous
+   * label structures, tests, and string validation when `nr_php_txn_get_labels`
+   * puts the string in a hash.
+   */
+  NR_PHP_PROCESS_GLOBALS(env_labels)
+      = nr_str_append(NR_PHP_PROCESS_GLOBALS(env_labels), NRINI(labels), ";");
+
   /*
-   * If we are unable to get the environment don't try to parse it.
+   * Search environment for the specific keys (not a prefix) that NR supports.
+   */
+
+  /*
+   * Plural labels key.
+   */
+  plural_label = getenv(NR_LABELS_PLURAL_KEY);
+  if (!nr_strempty(plural_label)) {
+    NR_PHP_PROCESS_GLOBALS(env_labels)
+        = nr_str_append(NR_PHP_PROCESS_GLOBALS(env_labels), plural_label, ";");
+  }
+
+  /*
+   * Get the environment to parse the variables for that have prefixes we are
+   * interested in. If we are unable to get the environment don't try to parse
+   * it.
    */
   if (NULL == environ) {
     nrl_warning(NRL_AGENT, "%s: Unable to access environmental variables.",
@@ -434,11 +497,18 @@ static void nr_php_get_environment_variables() {
     } else {
       const char* key = nro_get_array_string(parsed_key_val, 1, NULL);
       const char* value = nro_get_array_string(parsed_key_val, 2, NULL);
-      nr_php_process_environment_variable(NR_METADATA_PREFIX, key, value,
-                                          NR_PHP_PROCESS_GLOBALS(metadata));
+      nr_php_process_environment_variable_to_nrobj(
+          NR_METADATA_KEY_PREFIX, key, value, NR_PHP_PROCESS_GLOBALS(metadata));
+      NR_PHP_PROCESS_GLOBALS(env_labels)
+          = nr_php_process_environment_variable_to_string(
+              NR_LABELS_SINGULAR_KEY_PREFIX, key, value,
+              NR_PHP_PROCESS_GLOBALS(env_labels), ":", ";");
     }
     nro_delete(parsed_key_val);
   }
+  nrl_verbosedebug(NRL_AGENT,
+                   "%s: set NR_PHP_PROCESS_GLOBALS(env_labels) labels %s",
+                   __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
@@ -449,7 +519,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_machine_information(env);
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
-  nr_php_get_environment_variables();
+  nr_php_get_environment_variables(TSRMLS_C);
 
   return env;
 }

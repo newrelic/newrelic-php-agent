@@ -240,14 +240,16 @@ extern int nr_strncspn(const char* s1, int s1len, const char* s2, int s2len);
 extern int nr_str_char_count(const char* s, char c);
 
 /*
- * Purpose : Append a string to the end of another string separated by a comma.
+ * Purpose : Append a string to the end of another string separated by a
+ * delimiter.
  *
  * Params  : 1. The destination string.
  *           2. The source string.
+ *           3. The delimiter to separate the strings; NULL treated as empty string.
  *
  * Returns : A newly allocated string containing both.
  */
-extern char* nr_str_append(char* dest, const char* src);
+extern char* nr_str_append(char* dest, const char* src, const char* delimiter);
 
 /*
  * Purpose : Test for an alphanumeric character using the "C" locale. In the "C"

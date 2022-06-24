@@ -511,15 +511,15 @@ static nr_attribute_config_t* nr_php_create_attribute_config(TSRMLS_D) {
   return config;
 }
 
-static nrobj_t* nr_php_txn_get_labels(TSRMLS_D) {
-  const char* input;
-
+static nrobj_t* nr_php_txn_get_labels() {
   /*
-   * Specifying labels via an environment variable is not supported.
+   * By appending the environment variables to the end of the ini string, we
+   * ensure the environmental variables take precedence when it is entered into
+   * the label hash.  Additionally, with the environmental and ini values
+   * combined, we are able to take advantage of all the previous label
+   * structures, tests, and string validation.
    */
-  input = NRINI(labels);
-
-  return nr_labels_parse(input);
+  return nr_labels_parse(NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
 static void nr_php_txn_prepared_statement_destroy(void* sql) {
@@ -728,7 +728,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.settings = NULL; /* Populated through callback. */
   info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
-  info.labels = nr_php_txn_get_labels(TSRMLS_C);
+  info.labels = nr_php_txn_get_labels();
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
   info.lang = nr_strdup("php");
   info.version = nr_strdup(nr_version());
