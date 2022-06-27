@@ -45,7 +45,6 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		SpanEvents:        NewSpanEvents(hl.SpanEventConfig.Limit),
 		commandsProcessed: 0,
 		pidSet:            make(map[int]struct{}),
-		//amber
         httpErrorSet:      make(map[int]float64),
         endpointsAttemptedSet: make(map[string]float64),
 	}
@@ -72,8 +71,6 @@ func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *Met
 		metrics.AddCount(name, "", val, Forced)
 	}
 }
-
-//amber
 
 func (h *Harvest) createHttpErrorMetrics() {
 	if h.empty() {
@@ -132,7 +129,6 @@ func (h *Harvest) IncrementEndpointsAttempted(cmd string) {
         h.endpointsAttemptedSet[cmd] = 1
     }
 }
-//amber end
 
 func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	if h.empty() {

@@ -121,7 +121,6 @@ func (p *Processor) processTxnData(d TxnData) {
 	}
 
 	h.Harvest.commandsProcessed++
-//amber	h.Harvest.IncrementEndpointsAttempted(d.Cmd())
 	h.App.LastActivity = time.Now()
 	d.Sample.AggregateInto(h.Harvest)
 }
@@ -536,7 +535,6 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 
 	harvest.createFinalMetrics(harvestLimits, to)
 	harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
-//amber
 
     harvest.IncrementEndpointsAttempted(harvest.Metrics.Cmd())
     harvest.IncrementEndpointsAttempted(harvest.CustomEvents.Cmd())
@@ -691,7 +689,6 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
 	}
-
 	harvestByType(ph.AppHarvest, &args, harvestType)
 }
 
@@ -708,7 +705,6 @@ func (p *Processor) processHarvestError(d HarvestError) {
 	app := h.App
 	log.Warnf("app %q with run id %q received %s", app, d.id, d.Reply.Err)
 
-//amber
     h.Harvest.IncrementHttpErrors(d.Reply.StatusCode)
 
 	if d.Reply.ShouldSaveHarvestData() {
