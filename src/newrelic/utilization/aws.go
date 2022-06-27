@@ -13,7 +13,7 @@ import (
 
 const (
 	awsHostname          = "169.254.169.254"
-	awsEndpointPath      = "/2016-09-02/dynamic/instance-identity/document"
+	awsEndpointPath      = "/latest/dynamic/instance-identity/document"
 	awsTokenEndpointPath = "/latest/api/token"
 	awsEndpoint          = "http://" + awsHostname + awsEndpointPath
 	awsTokenEndpoint     = "http://" + awsHostname + awsTokenEndpointPath

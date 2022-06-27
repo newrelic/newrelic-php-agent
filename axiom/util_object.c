@@ -1906,3 +1906,44 @@ char* nro_dump(const nrobj_t* obj) {
 
   return str;
 }
+
+static char* stringify_boolean(const nrobj_t* obj) {
+  nr_status_t err;
+  nrbuf_t* buf;
+  char* ret;
+  int ival = nro_get_ival(obj, &err);
+
+  buf = nr_buffer_create(1024, 1024);
+
+  add_obj_jfmt(buf, "%d", ival);
+  nr_buffer_add(buf, "\0", 1);
+  ret = nr_strdup((const char*)nr_buffer_cptr(buf));
+  nr_buffer_destroy(&buf);
+
+  return ret;
+}
+
+char* nro_stringify(const nrobj_t* found) {
+  nrotype_t found_type = nro_type(found);
+  nrbuf_t* buf;
+  char* tmp;
+  char* ret;
+
+  buf = nr_buffer_create(1024, 1024);
+
+  if (NR_OBJECT_BOOLEAN == found_type) {
+    tmp = stringify_boolean(found);
+  } else {
+    tmp = nro_to_json(found);
+  }
+
+  nr_buffer_add_escape_json(buf, tmp);
+  nr_buffer_add(buf, '\0', 1);
+
+  ret = nr_strdup((const char*)nr_buffer_cptr(buf));
+
+  nr_buffer_destroy(&buf);
+  nr_free(tmp);
+
+  return ret;
+}
