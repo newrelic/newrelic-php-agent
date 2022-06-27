@@ -64,10 +64,17 @@ typedef struct {
 } hash_is_subset_of_data_t;
 
 static bool need_to_stringify(const nrobj_t* val, const nrobj_t* obj) {
-  nrotype_t expected_type = nro_type(val);
-  nrotype_t found_type = nro_type(obj);
+  nrotype_t expected_type;
+  nrotype_t found_type;
 
-  if (NR_OBJECT_STRING != expected_type) {
+  if (NULL == val || NULL == obj) {
+    return false;
+  }
+
+  expected_type = nro_type(val);
+  found_type = nro_type(obj);
+
+  if (NR_OBJECT_STRING != expected_type || NR_OBJECT_INVALID == found_type) {
     return false;
   }
 
