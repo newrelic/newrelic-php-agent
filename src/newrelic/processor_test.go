@@ -260,35 +260,35 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 }
 
 func TestSupportabilityHarvest(t *testing.T) {
-    m := NewMockedProcessor(1)
+	m := NewMockedProcessor(1)
 
-    m.DoAppInfo(t, nil, AppStateUnknown)
+	m.DoAppInfo(t, nil, AppStateUnknown)
 
-    m.DoConnect(t, &idOne)
-    m.DoAppInfo(t, nil, AppStateConnected)
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
 
-    m.TxnData(t, idOne, txnErrorEventSample)
+	m.TxnData(t, idOne, txnErrorEventSample)
 
-    m.processorHarvestChan <- ProcessorHarvest{
-        AppHarvest: m.p.harvests[idOne],
-        ID:         idOne,
-        Type:       HarvestDefaultData,
-    }
-    <-m.p.trackProgress // receive harvest notice
-    m.clientReturn <- ClientReturn{} /* metrics */
-    //<-m.p.trackProgress // receive harvest
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	<-m.p.trackProgress // receive harvest notice
+	m.clientReturn <- ClientReturn{} /* metrics */
+	//<-m.p.trackProgress // receive harvest
 
-    m.processorHarvestChan <- ProcessorHarvest{
-        AppHarvest: m.p.harvests[idOne],
-        ID:         idOne,
-        Type:       HarvestDefaultData,
-    }
-    <-m.p.trackProgress // receive harvest notice
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	<-m.p.trackProgress // receive harvest notice
 
 	cp := <-m.clientParams
 	// Add timeout error response code for second harvest
-    m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
-    <-m.p.trackProgress // receive harvest error
+	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
+	<-m.p.trackProgress // receive harvest error
 
 	harvest := m.p.harvests[idOne]
 	limits := collector.EventHarvestConfig{
@@ -313,7 +313,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 	//   of harvests. So we extract the time from what we receive
 	time := strings.Split(string(cp.data), ",")[1]
 	var expectedJSON = `["one",` + time + `,1417136520,` +
-	    `[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
+		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
 		`[{"name":"Supportability/Agent/Collector/error_data/Attempts"},[2,0,0,0,0,0]],` + // Check for Connect attempt supportability metrics
 		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[2,0,0,0,0,0]],` +
@@ -341,7 +341,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 	if got := string(json); got != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
 	}
-    m.p.quit()
+	m.p.quit()
 }
 
 func TestProcessorHarvestErrorEvents(t *testing.T) {
