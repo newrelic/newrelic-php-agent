@@ -6,15 +6,16 @@
 package newrelic
 
 import (
-    "encoding/json"
-    "errors"
-    "fmt"
-    "testing"
-    "time"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"testing"
+	"strings"
+	"time"
 
-    "newrelic/collector"
-    "newrelic/log"
-    "newrelic/utilization"
+	"newrelic/collector"
+	"newrelic/log"
+	"newrelic/utilization"
 )
 
 var ErrPayloadTooLarge = errors.New("payload too large")
@@ -256,6 +257,91 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
     if string(cp.data) != expected {
         t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
     }
+}
+
+func TestSupportabilityHarvest(t *testing.T) {
+    m := NewMockedProcessor(1)
+
+    m.DoAppInfo(t, nil, AppStateUnknown)
+
+    m.DoConnect(t, &idOne)
+    m.DoAppInfo(t, nil, AppStateConnected)
+
+    m.TxnData(t, idOne, txnErrorEventSample)
+
+    m.processorHarvestChan <- ProcessorHarvest{
+        AppHarvest: m.p.harvests[idOne],
+        ID:         idOne,
+        Type:       HarvestDefaultData,
+    }
+    <-m.p.trackProgress // receive harvest notice
+    m.clientReturn <- ClientReturn{} /* metrics */
+    //<-m.p.trackProgress // receive harvest
+
+    m.processorHarvestChan <- ProcessorHarvest{
+        AppHarvest: m.p.harvests[idOne],
+        ID:         idOne,
+        Type:       HarvestDefaultData,
+    }
+    <-m.p.trackProgress // receive harvest notice
+
+	cp := <-m.clientParams
+	// Add timeout error response code for second harvest
+    m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
+    <-m.p.trackProgress // receive harvest error
+
+	harvest := m.p.harvests[idOne]
+	limits := collector.EventHarvestConfig{
+		ReportPeriod: 1234,
+		EventConfigs: collector.EventConfigs{
+			ErrorEventConfig: collector.Event{
+				Limit: 1,
+			},
+			AnalyticEventConfig: collector.Event{
+				Limit: 2,
+			},
+			CustomEventConfig: collector.Event{
+				Limit: 3,
+			},
+			SpanEventConfig: collector.Event{
+				Limit: 4,
+			},
+		},
+	}
+	harvest.createFinalMetrics(limits, nil)
+	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
+	//   of harvests. So we extract the time from what we receive
+	time := strings.Split(string(cp.data), ",")[1]
+	var expectedJSON = `["one",` + time + `,1417136520,` +
+	    `[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
+		`[{"name":"Supportability/Agent/Collector/error_data/Attempts"},[2,0,0,0,0,0]],` + // Check for Connect attempt supportability metrics
+		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/sql_trace_data/Attempts"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/transaction_sample_data/Attempts"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[8,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[6,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000001234,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+
+	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(idOne), end)
+	if nil != err {
+		t.Fatal(err)
+	}
+	if got := string(json); got != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
+	}
+    m.p.quit()
 }
 
 func TestProcessorHarvestErrorEvents(t *testing.T) {
