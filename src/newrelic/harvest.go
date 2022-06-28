@@ -6,8 +6,8 @@
 package newrelic
 
 import (
-	"time"
 	"strconv"
+	"time"
 
 	"newrelic/collector"
 	"newrelic/infinite_tracing"
@@ -78,7 +78,7 @@ func (h *Harvest) createHttpErrorMetrics() {
 	}
 
 	for code, val := range h.httpErrorSet {
-		h.Metrics.AddCount("Supportability/Agent/Collector/HTTPError/" + strconv.Itoa(code), "", val, Forced)
+		h.Metrics.AddCount("Supportability/Agent/Collector/HTTPError/"+strconv.Itoa(code), "", val, Forced)
 	}
 }
 
@@ -92,22 +92,22 @@ func (h *Harvest) IncrementHttpErrors(statusCode int) {
 	counter, isPresent := h.httpErrorSet[statusCode]
 
 	if isPresent {
-		h.httpErrorSet[statusCode] = counter+1
+		h.httpErrorSet[statusCode] = counter + 1
 	} else {
 		h.httpErrorSet[statusCode] = 1
 	}
 }
 
-func (h *Harvest) createEndpointAttemptsMetric( endpoint string, val float64) {
+func (h *Harvest) createEndpointAttemptsMetric(endpoint string, val float64) {
 	if h.empty() {
 		// No agent data received, do not create derived metrics. This allows
 		// upstream to detect inactivity sooner.
 		return
 	}
 
-	if (val > 0) {
-		h.Metrics.AddCount("Supportability/Agent/Collector/" + endpoint + "/Attempts", "", val, Forced)
-    }
+	if val > 0 {
+		h.Metrics.AddCount("Supportability/Agent/Collector/"+endpoint+"/Attempts", "", val, Forced)
+	}
 
 }
 

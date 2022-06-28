@@ -685,7 +685,7 @@ func (p *Processor) processHarvestError(d HarvestError) {
 	app := h.App
 	log.Warnf("app %q with run id %q received %s", app, d.id, d.Reply.Err)
 
-    h.Harvest.IncrementHttpErrors(d.Reply.StatusCode)
+	h.Harvest.IncrementHttpErrors(d.Reply.StatusCode)
 
 	if d.Reply.ShouldSaveHarvestData() {
 		d.data.FailedHarvest(h.Harvest)
