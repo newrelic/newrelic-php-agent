@@ -89,13 +89,13 @@ func (h *Harvest) IncrementHttpErrors(statusCode int) {
 		// upstream to detect inactivity sooner.
 		return
 	}
-    counter, isPresent := h.httpErrorSet[statusCode]
+	counter, isPresent := h.httpErrorSet[statusCode]
 
-    if isPresent {
-        h.httpErrorSet[statusCode] = counter+1
-    } else {
-        h.httpErrorSet[statusCode] = 1
-    }
+	if isPresent {
+		h.httpErrorSet[statusCode] = counter+1
+	} else {
+		h.httpErrorSet[statusCode] = 1
+	}
 }
 
 func (h *Harvest) createEndpointAttemptsMetric( endpoint string, val float64) {

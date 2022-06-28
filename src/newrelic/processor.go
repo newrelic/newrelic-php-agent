@@ -669,7 +669,6 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
 	}
-	
 	harvestByType(ph.AppHarvest, &args, harvestType)
 }
 
