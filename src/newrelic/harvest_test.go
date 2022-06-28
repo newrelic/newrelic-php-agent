@@ -61,11 +61,11 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 	// which means only send the metric if the harvest failed at some point and needed collector
 	// re-attempted
 
-    // For PHP, only metricEvents, ErrorEvents, CustomEvents, TxnEvents, and SpanEvents are retried,
-    // therefore only those will ever have a count higher than 0 failed attemps.  For more details, see:
-    // The Data Collection Limits section of Collector-Response-Handling.md in the agent-specs.
+	// For PHP, only metricEvents, ErrorEvents, CustomEvents, TxnEvents, and SpanEvents are retried,
+	// therefore only those will ever have a count higher than 0 failed attemps.  For more details, see:
+	// The Data Collection Limits section of Collector-Response-Handling.md in the agent-specs.
 
-    // TxnEvents will succeed on the first attempt and should not generate a metric
+	// TxnEvents will succeed on the first attempt and should not generate a metric
 
 	// Have CustomEvents fail once
 	harvest.CustomEvents.FailedHarvest(harvest)
@@ -99,26 +99,7 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[28,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[24,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[24,0,0,0,0,0]]]]`
-/*
-		[\"12345\",1447203720,1417136520,
-		[[{\"name\":\"Instance/Reporting\"},[1,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Agent/Collector/custom_event_data/Attempts\"},[2,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Agent/Collector/error_event_data/Attempts\"},[3,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Agent/Collector/span_event_data/Attempts\"},[4,0,0,0,0,0]],
-		[{\"name\":\"Supportability/AnalyticsEvents/TotalEventsSeen\"},[8,0,0,0,0,0]],
-		[{\"name\":\"Supportability/AnalyticsEvents/TotalEventsSent\"},[8,0,0,0,0,0]],
-		[{\"name\":\"Supportability/EventHarvest/AnalyticEventData/HarvestLimit\"},[2,0,0,0,0,0]],
-		[{\"name\":\"Supportability/EventHarvest/CustomEventData/HarvestLimit\"},[3,0,0,0,0,0]],
-		[{\"name\":\"Supportability/EventHarvest/ErrorEventData/HarvestLimit\"},[1,0,0,0,0,0]],
-		[{\"name\":\"Supportability/EventHarvest/ReportPeriod\"},[1234,0,0,0,0,0]],
-		[{\"name\":\"Supportability/EventHarvest/SpanEventData/HarvestLimit\"},[4,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Events/Customer/Seen\"},[8,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Events/Customer/Sent\"},[8,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Events/TransactionError/Seen\"},[28,0,0,0,0,0]],
-		[{\"name\":\"Supportability/Events/TransactionError/Sent\"},[28,0,0,0,0,0]],
-		[{\"name\":\"Supportability/SpanEvent/TotalEventsSeen\"},[24,0,0,0,0,0]],
-		[{\"name\":\"Supportability/SpanEvent/TotalEventsSent\"},[24,0,0,0,0,0]]]]
-*/
+
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
 		t.Fatal(err)

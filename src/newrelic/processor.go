@@ -544,7 +544,6 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayload(harvest.TxnTraces, args)
 	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args)
 	considerHarvestPayload(harvest.SpanEvents, args)
-
 }
 
 func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
@@ -597,7 +596,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(slowSQLs, args)
 		considerHarvestPayload(txnTraces, args)
 		considerHarvestPayload(spanEvents, args)
-
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
@@ -671,6 +669,7 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
 	}
+	
 	harvestByType(ph.AppHarvest, &args, harvestType)
 }
 
