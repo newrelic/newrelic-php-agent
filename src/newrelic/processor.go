@@ -536,14 +536,6 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	harvest.createFinalMetrics(harvestLimits, to)
 	harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
 
-    harvest.IncrementEndpointsAttempted(harvest.Metrics.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.CustomEvents.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.ErrorEvents.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.Errors.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.SlowSQLs.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.TxnTraces.Cmd())
-    harvest.IncrementEndpointsAttempted(harvest.SpanEvents.Cmd())
-
 	considerHarvestPayload(harvest.Metrics, args)
 	considerHarvestPayload(harvest.CustomEvents, args)
 	considerHarvestPayload(harvest.ErrorEvents, args)
@@ -600,12 +592,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		harvest.commandsProcessed = 0
 		harvest.pidSet = make(map[int]struct{})
 
-        harvest.IncrementEndpointsAttempted(metrics.Cmd())
-        harvest.IncrementEndpointsAttempted(errors.Cmd())
-        harvest.IncrementEndpointsAttempted(slowSQLs.Cmd())
-        harvest.IncrementEndpointsAttempted(txnTraces.Cmd())
-        harvest.IncrementEndpointsAttempted(spanEvents.Cmd())
-
 		considerHarvestPayload(metrics, args)
 		considerHarvestPayload(errors, args)
 		considerHarvestPayload(slowSQLs, args)
@@ -623,7 +609,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 		customEvents := harvest.CustomEvents
 		harvest.CustomEvents = NewCustomEvents(eventConfigs.CustomEventConfig.Limit)
-		harvest.IncrementEndpointsAttempted(customEvents.Cmd())
 		considerHarvestPayload(customEvents, args)
 	}
 
@@ -632,7 +617,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 		errorEvents := harvest.ErrorEvents
 		harvest.ErrorEvents = NewErrorEvents(eventConfigs.ErrorEventConfig.Limit)
-		harvest.IncrementEndpointsAttempted(errorEvents.Cmd())
 		considerHarvestPayload(errorEvents, args)
 	}
 
@@ -641,7 +625,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 		txnEvents := harvest.TxnEvents
 		harvest.TxnEvents = NewTxnEvents(eventConfigs.AnalyticEventConfig.Limit)
-		harvest.IncrementEndpointsAttempted(txnEvents.Cmd())
 		considerHarvestPayloadTxnEvents(txnEvents, args)
 	}
 
@@ -650,7 +633,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 		spanEvents := harvest.SpanEvents
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
-		harvest.IncrementEndpointsAttempted(spanEvents.Cmd())
 		considerHarvestPayload(spanEvents, args)
 
 	}

@@ -318,11 +318,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 	var expectedJSON = `["one",` + time + `,1417136520,` +
 		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
-		`[{"name":"Supportability/Agent/Collector/error_data/Attempts"},[2,0,0,0,0,0]],` + // Check for Connect attempt supportability metrics
-		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/sql_trace_data/Attempts"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/transaction_sample_data/Attempts"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +

@@ -61,6 +61,14 @@ func (events *analyticsEvents) Split() (*analyticsEvents, *analyticsEvents) {
 	return e1, e2
 }
 
+// NumAttempts returns the total number of attempts sent to this endpoint
+// The value is the number of times the agent attempted to call the given endpoint before it was successful.
+// This metric MUST NOT be generated if only one attempt was made.
+// Does not include the successful attempt
+func (events *analyticsEvents) NumFailedAttempts() float64 {
+	return float64(events.failedHarvests)
+}
+
 // NumSeen returns the total number of analytics events observed.
 func (events *analyticsEvents) NumSeen() float64 {
 	return float64(events.numSeen)
