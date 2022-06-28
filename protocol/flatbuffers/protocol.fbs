@@ -32,6 +32,7 @@ table App {
   trace_observer_port:              uint16; // added for PHP agent release 9.11
   span_queue_size:                  uint64; // added for PHP agent release 9.11
   span_events_max_samples_stored:   uint64; // added for PHP agent release 9.21
+  metadata:                         string; // pre-computed json, added for PHP agent release 10.0
 }
 
 enum AppStatus : byte { Unknown = 0, Disconnected = 1, InvalidLicense = 2,

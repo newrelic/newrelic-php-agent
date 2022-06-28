@@ -40,6 +40,11 @@ type codec struct {
 	encoding.Codec
 }
 
+const (
+	licenseMetadataKey = "license_key"
+	runIDMetadataKey   = "agent_run_token"
+)
+
 var (
 	supportabilityCodeErr = "Supportability/InfiniteTracing/Span/gRPC/"
 	codeStrings           = func() map[codes.Code]string {
@@ -107,10 +112,11 @@ func (s *grpcSpanBatchSender) clone() (spanBatchSender, error) {
 }
 
 func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
+	md := newMetadata(s.RunId, s.License, s.RequestHeadersMap)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
 	stream, err := s.client.RecordSpanBatch(
-		metadata.AppendToOutgoingContext(context.Background(),
-			"license_key", s.License,
-			"agent_run_token", s.RunId),
+		ctx,
 		grpc.ForceCodec(&codec{encoding.GetCodec("proto")}))
 
 	if err != nil {
@@ -182,6 +188,15 @@ func newSpanBatchStatusFromGrpcErr(err error) spanBatchSenderStatus {
 		code:   code,
 		metric: supportabilityCodeErr + errToCodeString(err),
 	}
+}
+
+// newMetadata creates a grpc metadata with proper keys and values for use when
+// connecting to RecordSpan.
+func newMetadata(runID string, license string, requestHeadersMap map[string]string) metadata.MD {
+	md := metadata.New(requestHeadersMap)
+	md.Set(licenseMetadataKey, license)
+	md.Set(runIDMetadataKey, runID)
+	return md
 }
 
 func errToCodeString(err error) string {

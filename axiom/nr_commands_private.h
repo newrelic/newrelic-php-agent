@@ -80,7 +80,8 @@ enum {
   APP_TRACE_OBSERVER_PORT = 14,
   APP_SPAN_QUEUE_SIZE = 15,
   APP_SPAN_EVENTS_MAX_SAMPLES_STORED = 16,
-  APP_NUM_FIELDS = 17,
+  APP_METADATA = 17,
+  APP_NUM_FIELDS = 18,
 };
 
 /* Generated from: table AppReply */

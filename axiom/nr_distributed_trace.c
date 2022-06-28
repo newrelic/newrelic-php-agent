@@ -384,7 +384,7 @@ nrtime_t nr_distributed_trace_inbound_get_timestamp_delta(
 extern bool nr_distributed_trace_inbound_has_timestamp(
     const nr_distributed_trace_t* dt) {
   if (NULL == dt) {
-      return 0;
+    return 0;
   }
 
   return dt->inbound.timestamp != 0;
@@ -988,14 +988,15 @@ static const char* nr_distributed_trace_convert_w3c_headers_tracestate(
       /*
        * Keep the other raw tracestate headers
        */
-      headers_to_be_forwarded = nr_str_append(headers_to_be_forwarded, value);
+      headers_to_be_forwarded
+          = nr_str_append(headers_to_be_forwarded, value, ",");
 
       /*
        * Keep the other tracing vendors
        */
       parsed_vendor = nr_strsplit(value, "=", 0);
       tracing_vendors = nr_str_append(
-          tracing_vendors, nro_get_array_string(parsed_vendor, 1, NULL));
+          tracing_vendors, nro_get_array_string(parsed_vendor, 1, NULL), ",");
       nro_delete(parsed_vendor);
     }
   }

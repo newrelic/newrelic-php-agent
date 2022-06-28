@@ -67,6 +67,26 @@ static uint32_t nr_appinfo_prepend_settings(const nr_app_info_t* info,
   return offset;
 }
 
+/*
+ * Send the metadata to the daemon in the format expected by the
+ * collector in the connect command.
+ */
+
+static uint32_t nr_appinfo_prepend_metadata(const nr_app_info_t* info,
+                                            nr_flatbuffer_t* fb) {
+  char* json;
+  uint32_t offset;
+
+  if ((NULL == info) || (NULL == info->metadata)) {
+    return 0;
+  }
+  json = nro_to_json(info->metadata);
+  offset = nr_flatbuffers_prepend_string(fb, json);
+  nr_free(json);
+
+  return offset;
+}
+
 static nr_status_t convert_appenv(const char* key,
                                   const nrobj_t* val,
                                   void* ptr) {
@@ -126,6 +146,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   uint32_t supported_security_policies;
   uint32_t host_name;
   uint32_t trace_observer_host;
+  uint32_t metadata;
   char* json_supported_security_policies;
 
   fb = nr_flatbuffers_create(0);
@@ -150,6 +171,8 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   supported_security_policies
       = nr_flatbuffers_prepend_string(fb, json_supported_security_policies);
 
+  metadata = nr_appinfo_prepend_metadata(info, fb);
+
   nr_flatbuffers_object_begin(fb, APP_NUM_FIELDS);
   nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_QUEUE_SIZE,
                                     info->span_queue_size, 0);
@@ -162,6 +185,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   nr_flatbuffers_object_prepend_uoffset(fb, APP_HOST, host_name, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_SUPPORTED_SECURITY_POLICIES,
                                         supported_security_policies, 0);
+  nr_flatbuffers_object_prepend_uoffset(fb, APP_METADATA, metadata, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_SECURITY_POLICY_TOKEN,
                                         security_policy_token, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_DISPLAY_HOST, display_host, 0);
@@ -197,6 +221,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   nr_flatbuffers_finish(fb, message);
 
   nr_free(json_supported_security_policies);
+
   return fb;
 }
 
@@ -204,7 +229,8 @@ int nr_command_is_flatbuffer_invalid(nr_flatbuffer_t* msg, size_t msglen) {
   size_t offset = nr_flatbuffers_read_uoffset(nr_flatbuffers_data(msg), 0);
 
   if (msglen - MIN_FLATBUFFER_SIZE <= offset) {
-    nrl_verbosedebug(NRL_DAEMON, "offset is too large, len=%zu", offset);
+    nrl_verbosedebug(NRL_DAEMON, "flatbuffer offset is too large, len=%zu",
+                     offset);
     return 1;
   }
 

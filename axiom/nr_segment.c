@@ -352,6 +352,27 @@ static nr_status_t add_agent_attribute_to_span_event(const char* key,
   return NR_SUCCESS;
 }
 
+#define NR_APP_LOG_WARNING_SEGMENT_ID_FAILURE_BACKOFF_SECONDS 60
+
+static void nr_segment_log_warning_segment_id_missing(void) {
+  static unsigned n_occur = 0;
+  static time_t last_warn = (time_t)(0);
+  time_t now = time(0);
+
+  n_occur++;
+
+  if ((now - last_warn)
+      > NR_APP_LOG_WARNING_SEGMENT_ID_FAILURE_BACKOFF_SECONDS) {
+    last_warn = now;
+    nrl_warning(
+        NRL_SEGMENT,
+        "cannot create a span event when a segment ID cannot be "
+        "generated; is distributed tracing enabled?  Occurred %u times.",
+        n_occur);
+    n_occur = 0;
+  }
+}
+
 nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
   nr_span_event_t* event;
   char* trace_id;
@@ -378,9 +399,7 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
   }
 
   if (NULL == nr_segment_ensure_id(segment, segment->txn)) {
-    nrl_warning(NRL_SEGMENT,
-                "cannot create a span event when a segment ID cannot be "
-                "generated; is distributed tracing enabled?");
+    nr_segment_log_warning_segment_id_missing();
     return NULL;
   }
 
@@ -433,7 +452,8 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
           event, NR_SPAN_PARENT_TRANSPORT_TYPE,
           nr_distributed_trace_inbound_get_transport_type(
               segment->txn->distributed_trace));
-      if (nr_distributed_trace_inbound_has_timestamp(segment->txn->distributed_trace)) {
+      if (nr_distributed_trace_inbound_has_timestamp(
+              segment->txn->distributed_trace)) {
         nr_span_event_set_parent_transport_duration(
             event, nr_distributed_trace_inbound_get_timestamp_delta(
                        segment->txn->distributed_trace,

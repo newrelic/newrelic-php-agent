@@ -31,11 +31,12 @@ func (id AgentRunID) String() string {
 type AppState int
 
 const (
-	AppStateUnknown AppState = iota
-	AppStateConnected
-	AppStateInvalidLicense
-	AppStateDisconnected
-	AppStateInvalidSecurityPolicies
+    AppStateUnknown AppState = iota
+    AppStateConnected
+    AppStateDisconnected
+    AppStateRestart
+    AppStateInvalidLicense
+    AppStateInvalidSecurityPolicies
 )
 
 // An AppKey uniquely identifies an application.
@@ -64,6 +65,7 @@ type AppInfo struct {
 	Environment               JSONString
 	HighSecurity              bool
 	Labels                    JSONString
+	Metadata                  JSONString
 	RedirectCollector         string
 	SecurityPolicyToken       string
 	SupportedSecurityPolicies AgentPolicies
@@ -100,6 +102,7 @@ type RawConnectPayload struct {
 	HighSecurity       bool                         `json:"high_security"`
 	Labels             JSONString                   `json:"labels"`
 	Environment        JSONString                   `json:"environment"`
+	Metadata           JSONString                   `json:"metadata"`
 	Identifier         string                       `json:"identifier"`
 	Util               *utilization.Data            `json:"utilization,omitempty"`
 	SecurityPolicies   map[string]SecurityPolicy    `json:"security_policies,omitempty"`
@@ -123,6 +126,8 @@ type ConnectReply struct {
 	SamplingTarget     int                                  `json:"sampling_target"`
 	EventHarvestConfig collector.EventHarvestConfig         `json:"event_harvest_config"`
 	SpanEventHarvestConfig collector.SpanEventHarvestConfig `json:"span_event_harvest_config"`
+	RequestHeadersMap map[string]string                     `json:"request_headers_map"`
+	MaxPayloadSizeInBytes int                               `json:"max_payload_size_in_bytes"`
 }
 
 // An App represents the state of an application.
@@ -246,6 +251,11 @@ func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *Ra
 	} else {
 		data.Labels = JSONString("[]")
 	}
+	if len(info.Metadata) > 0 {
+		data.Metadata = info.Metadata
+	} else {
+		data.Metadata = JSONString("{}")
+	}
 
 	return data
 }
@@ -293,7 +303,7 @@ func combineEventConfig (ehc collector.EventHarvestConfig, sehc collector.SpanEv
 }
 
 func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
-	var c ConnectReply
+	c := ConnectReply{MaxPayloadSizeInBytes: limits.DefaultMaxPayloadSizeInBytes}
 
 	err := json.Unmarshal(rawConnectReply, &c)
 	if nil != err {

@@ -423,8 +423,10 @@ int nr_str_char_count(const char* s, char c) {
   return count;
 }
 
-char* nr_str_append(char* dest, const char* src) {
+char* nr_str_append(char* dest, const char* src, const char* delimiter) {
   char* tmp = NULL;
+  const char* delim
+      = (NULL != delimiter) ? delimiter : "";  // Treat NULL delimiter as no delimiter
 
   if (NULL == src) {
     return dest;
@@ -434,7 +436,7 @@ char* nr_str_append(char* dest, const char* src) {
     dest = nr_strdup(src);
   } else {
     tmp = dest;
-    dest = nr_formatf("%s,%s", dest, src);
+    dest = nr_formatf("%s%s%s", dest, delim, src);
     nr_free(tmp);
   }
 

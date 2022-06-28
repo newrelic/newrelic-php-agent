@@ -9,12 +9,46 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"newrelic/collector"
 	"newrelic/log"
 	"newrelic/utilization"
+)
+
+var ErrPayloadTooLarge = errors.New("payload too large")
+var ErrUnauthorized = errors.New("unauthorized")
+var ErrUnsupportedMedia = errors.New("unsupported media")
+
+type rpmException struct {
+	Message   string `json:"message"`
+	ErrorType string `json:"error_type"`
+}
+
+func (e *rpmException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorType, e.Message)
+}
+
+const (
+	forceRestartType   = "NewRelic::Agent::ForceRestartException"
+	disconnectType     = "NewRelic::Agent::ForceDisconnectException"
+	licenseInvalidType = "NewRelic::Agent::LicenseException"
+	runtimeType        = "RuntimeError"
+)
+
+// These clients exist for testing.
+var (
+	DisconnectClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+		return collector.RPMResponse{Body: nil, Err: SampleDisonnectException, StatusCode: 410}
+	})
+	LicenseInvalidClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+		return collector.RPMResponse{Body: nil, Err: SampleLicenseInvalidException, StatusCode: 401}
+	})
+	SampleRestartException        = &rpmException{ErrorType: forceRestartType}
+	SampleDisonnectException      = &rpmException{ErrorType: disconnectType}
+	SampleLicenseInvalidException = &rpmException{ErrorType: licenseInvalidType}
 )
 
 var (
@@ -26,13 +60,14 @@ var (
 	sampleTrace = &TxnTrace{Data: data}
 
 	sampleCustomEvent = []byte("half birthday")
-	sampleSpanEvent = []byte("belated birthday")
+	sampleSpanEvent   = []byte("belated birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
 )
 
 type ClientReturn struct {
 	reply []byte
 	err   error
+	code  int
 }
 
 type ClientParams struct {
@@ -52,14 +87,14 @@ func NewMockedProcessor(numberOfHarvestPayload int) *MockedProcessor {
 	clientReturn := make(chan ClientReturn, numberOfHarvestPayload)
 	clientParams := make(chan ClientParams, numberOfHarvestPayload)
 
-	client := collector.ClientFn(func(cmd collector.Cmd) ([]byte, error) {
-		data, err := cmd.Collectible.CollectorJSON(false)
+	client := collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+		data, err := cs.Collectible.CollectorJSON(false)
 		if nil != err {
-			return nil, err
+			return collector.RPMResponse{Err: err}
 		}
 		clientParams <- ClientParams{cmd.Name, data}
 		r := <-clientReturn
-		return r.reply, r.err
+		return collector.RPMResponse{Body: r.reply, Err: r.err, StatusCode: r.code}
 	})
 
 	p := NewProcessor(ProcessorConfig{Client: client})
@@ -91,17 +126,17 @@ func (m *MockedProcessor) DoAppInfo(t *testing.T, id *AgentRunID, expectState Ap
 
 func (m *MockedProcessor) DoConnect(t *testing.T, id *AgentRunID) {
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
 	<-m.clientParams // connect
-	m.clientReturn <- ClientReturn{[]byte(`{"agent_run_id":"` + id.String() + `","zip":"zap","event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":5,"span_event_data":5}}}`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{"agent_run_id":"` + id.String() + `","zip":"zap","event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":5,"span_event_data":5}}}`), nil, 200}
 	<-m.p.trackProgress // receive connect reply
 }
 
 func (m *MockedProcessor) DoConnectConfiguredReply(t *testing.T, reply string) {
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
 	<-m.clientParams // connect
-	m.clientReturn <- ClientReturn{[]byte(reply), nil}
+	m.clientReturn <- ClientReturn{[]byte(reply), nil, 200}
 	<-m.p.trackProgress // receive connect reply
 }
 
@@ -131,8 +166,8 @@ var (
 		h.ErrorEvents.AddEventFromData(sampleErrorEvent, SamplingPriority(0.8))
 	})
 	txnSpanEventSample = AggregaterIntoFn(func(h *Harvest) {
-    	h.SpanEvents.AddEventFromData(sampleSpanEvent, SamplingPriority(0.8))
-   	})
+		h.SpanEvents.AddEventFromData(sampleSpanEvent, SamplingPriority(0.8))
+	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for i := 0; i < times; i++ {
@@ -227,6 +262,87 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 	}
 }
 
+func TestSupportabilityHarvest(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnErrorEventSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	<-m.p.trackProgress              // receive harvest notice
+	m.clientReturn <- ClientReturn{} /* metrics */
+	//<-m.p.trackProgress // receive harvest
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	<-m.p.trackProgress // receive harvest notice
+
+	cp := <-m.clientParams
+	// Add timeout error response code for second harvest
+	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
+	<-m.p.trackProgress // receive harvest error
+
+	harvest := m.p.harvests[idOne]
+	limits := collector.EventHarvestConfig{
+		ReportPeriod: 1234,
+		EventConfigs: collector.EventConfigs{
+			ErrorEventConfig: collector.Event{
+				Limit: 1,
+			},
+			AnalyticEventConfig: collector.Event{
+				Limit: 2,
+			},
+			CustomEventConfig: collector.Event{
+				Limit: 3,
+			},
+			SpanEventConfig: collector.Event{
+				Limit: 4,
+			},
+		},
+	}
+	harvest.createFinalMetrics(limits, nil)
+	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
+	//   of harvests. So we extract the time from what we receive
+	time := strings.Split(string(cp.data), ",")[1]
+	var expectedJSON = `["one",` + time + `,1417136520,` +
+		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
+		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[8,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[6,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000001234,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+
+	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(idOne), end)
+	if nil != err {
+		t.Fatal(err)
+	}
+	if got := string(json); got != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
+	}
+	m.p.quit()
+}
+
 func TestProcessorHarvestErrorEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
@@ -256,7 +372,7 @@ func TestProcessorHarvestSpanEvents(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"`+idOne.String()+`","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	m.TxnData(t, idOne, txnSpanEventSample)
@@ -284,7 +400,7 @@ func TestProcessorHarvestSpanEventsZeroReservoir(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":0},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"`+idOne.String()+`","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":0},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	m.TxnData(t, idOne, txnSpanEventSample)
@@ -326,7 +442,7 @@ func TestProcessorHarvestSpanEventsExceedReservoir(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":1},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"`+idOne.String()+`","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":1},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	m.TxnData(t, idOne, txnSpanEventSample)
@@ -349,13 +465,12 @@ func TestProcessorHarvestSpanEventsExceedReservoir(t *testing.T) {
 
 }
 
-
 func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.DoConnectConfiguredReply(t, `{"agent_run_id":"` + idOne.String() + `","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
+	m.DoConnectConfiguredReply(t, `{"agent_run_id":"`+idOne.String()+`","zip":"zap","span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":7},"event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":0,"span_event_data":5}}}`)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	m.TxnData(t, idOne, txnErrorEventSample)
@@ -521,7 +636,7 @@ func TestForceRestart(t *testing.T) {
 		t.Fatal(string(cp.data))
 	}
 
-	m.clientReturn <- ClientReturn{nil, collector.SampleRestartException}
+	m.clientReturn <- ClientReturn{nil, SampleRestartException, 401}
 	<-m.p.trackProgress // receive harvest error
 
 	m.DoConnect(t, &idTwo)
@@ -552,7 +667,7 @@ func TestDisconnectAtPreconnect(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{nil, collector.SampleDisonnectException}
+	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
 	<-m.p.trackProgress // receive connect reply
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
@@ -566,7 +681,7 @@ func TestLicenseExceptionAtPreconnect(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{nil, collector.SampleLicenseInvalidException}
+	m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
 	<-m.p.trackProgress // receive connect reply
 
 	m.DoAppInfo(t, nil, AppStateInvalidLicense)
@@ -580,9 +695,9 @@ func TestDisconnectAtConnect(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
 	<-m.clientParams // connect
-	m.clientReturn <- ClientReturn{nil, collector.SampleDisonnectException}
+	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
 	<-m.p.trackProgress // receive connect reply
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
@@ -611,11 +726,11 @@ func TestDisconnectAtHarvest(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	<-m.clientParams
-	m.clientReturn <- ClientReturn{nil, collector.SampleDisonnectException}
+	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
 	<-m.p.trackProgress // receive harvest error
 
 	<-m.clientParams
-	m.clientReturn <- ClientReturn{nil, collector.SampleDisonnectException}
+	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
 	<-m.p.trackProgress // receive harvest error
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
@@ -644,10 +759,11 @@ func TestLicenseExceptionAtHarvest(t *testing.T) {
 		t.Fatal(string(cp.data))
 	}
 
-	m.clientReturn <- ClientReturn{nil, collector.SampleLicenseInvalidException}
+	m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
 	<-m.p.trackProgress // receive harvest error
 
-	m.DoAppInfo(t, nil, AppStateInvalidLicense)
+	// Unknown app state triggered immediately following AppStateRestart
+	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	m.p.quit()
 }
@@ -658,9 +774,9 @@ func TestMalformedConnectReply(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
 	<-m.clientParams // connect
-	m.clientReturn <- ClientReturn{[]byte(`{`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`{`), nil, 202}
 	<-m.p.trackProgress // receive connect reply
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
@@ -674,7 +790,7 @@ func TestMalformedCollector(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
 	<-m.clientParams // preconnect
-	m.clientReturn <- ClientReturn{[]byte(`"`), nil}
+	m.clientReturn <- ClientReturn{[]byte(`"`), nil, 200}
 	<-m.p.trackProgress // receive connect reply
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
@@ -700,7 +816,7 @@ func TestDataSavedOnHarvestError(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, errors.New("unusual error")}
+	m.clientReturn <- ClientReturn{nil, errors.New("unusual error"), 500}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -714,7 +830,7 @@ func TestDataSavedOnHarvestError(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp = <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, nil}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -738,7 +854,7 @@ func TestNoDataSavedOnPayloadTooLarge(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, collector.ErrPayloadTooLarge}
+	m.clientReturn <- ClientReturn{nil, ErrPayloadTooLarge, 413}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -754,7 +870,7 @@ func TestNoDataSavedOnPayloadTooLarge(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp = <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, nil}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":2},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -778,7 +894,7 @@ func TestNoDataSavedOnErrUnsupportedMedia(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, collector.ErrUnsupportedMedia}
+	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 415}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -794,7 +910,7 @@ func TestNoDataSavedOnErrUnsupportedMedia(t *testing.T) {
 	<-m.p.trackProgress // receive harvest notice
 
 	cp = <-m.clientParams
-	m.clientReturn <- ClientReturn{nil, nil}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":2},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -816,11 +932,11 @@ var (
 		HighSecurity:      true,
 		Hostname:          "agent-hostname",
 	}
-	connectClient = collector.ClientFn(func(cmd collector.Cmd) ([]byte, error) {
+	connectClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		if cmd.Name == collector.CommandPreconnect {
-			return []byte(`{"redirect_host":"specific_collector.com"}`), nil
+			return collector.RPMResponse{Body: []byte(`{"redirect_host":"specific_collector.com"}`), Err: nil, StatusCode: 202}
 		}
-		return []byte(`{"agent_run_id":"12345","zip":"zap"}`), nil
+		return collector.RPMResponse{Body: []byte(`{"agent_run_id":"12345","zip":"zap"}`), Err: nil, StatusCode: 200}
 	})
 )
 
@@ -829,7 +945,7 @@ func init() {
 }
 
 func TestAppInfoInvalid(t *testing.T) {
-	p := NewProcessor(ProcessorConfig{Client: collector.LicenseInvalidClient})
+	p := NewProcessor(ProcessorConfig{Client: LicenseInvalidClient})
 	p.processorHarvestChan = nil
 	p.trackProgress = make(chan struct{}, 100)
 	go p.Run()
@@ -851,7 +967,7 @@ func TestAppInfoInvalid(t *testing.T) {
 }
 
 func TestAppInfoDisconnected(t *testing.T) {
-	p := NewProcessor(ProcessorConfig{Client: collector.DisconnectClient})
+	p := NewProcessor(ProcessorConfig{Client: DisconnectClient})
 	p.processorHarvestChan = nil
 	p.trackProgress = make(chan struct{}, 100)
 	go p.Run()

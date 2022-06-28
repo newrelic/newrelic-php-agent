@@ -19,6 +19,7 @@ const (
 	maxFieldValueSize = 255             // The maximum value size, in bytes.
 	providerTimeout   = 1 * time.Second // The maximum time a HTTP provider
 	// may block.
+	lookupAddrTimeout = 500 * time.Millisecond
 )
 
 // validationError represents a response from a provider endpoint that doesn't

@@ -274,4 +274,10 @@ extern nrobj_t* nro_create_from_json_unterminated(const char* json, int len);
  */
 extern char* nro_dump(const nrobj_t* obj);
 
+/*
+ * Stringify the resulting value from a test to satisfy 'exact' fields
+ * of outbound payloads.
+ */
+extern char* nro_stringify(const nrobj_t* found);
+
 #endif /* UTIL_OBJECT_HDR */

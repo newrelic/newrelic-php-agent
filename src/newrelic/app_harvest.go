@@ -43,12 +43,13 @@ func NewAppHarvest(id AgentRunID, app *App, harvest *Harvest, ph chan ProcessorH
 
 	if len(app.info.TraceObserverHost) > 0 {
 		cfg := &infinite_tracing.Config{
-			RunId:     id.String(),
-			License:   string(app.info.License),
-			Host:      app.info.TraceObserverHost,
-			Port:      app.info.TraceObserverPort,
-			Secure:    true,
-			QueueSize: app.info.SpanQueueSize,
+			RunId:             id.String(),
+			License:           string(app.info.License),
+			Host:              app.info.TraceObserverHost,
+			Port:              app.info.TraceObserverPort,
+			Secure:            true,
+			QueueSize:         app.info.SpanQueueSize,
+			RequestHeadersMap: app.connectReply.RequestHeadersMap,
 		}
 		ah.TraceObserver = infinite_tracing.NewTraceObserver(cfg)
 	}

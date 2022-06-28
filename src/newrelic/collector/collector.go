@@ -26,20 +26,20 @@ const (
 )
 
 const (
-	protocolVersion = "16"
+	protocolVersion = "17"
 )
 
 // LicenseKey represents a license key for an account.
 type LicenseKey string
 
-func (cmd *Cmd) String() string {
+func (cmd *RpmCmd) String() string {
 	if cmd.RunID != "" {
 		return cmd.Name + " " + cmd.RunID
 	}
 	return cmd.Name
 }
 
-func (cmd *Cmd) url(obfuscate bool) string {
+func (cmd *RpmCmd) url(obfuscate bool) string {
 	var u url.URL
 
 	u.Host = cmd.Collector

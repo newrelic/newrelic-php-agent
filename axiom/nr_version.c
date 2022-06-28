@@ -29,8 +29,9 @@
  *   yam                23Aug2021 (9.18)
  *   zomp               02Mar2022 (9.19)
  *   allium             14Mar2022 (9.20)
+ *   buttercup          26Apr2022 (9.21)
  */
-#define NR_CODENAME "buttercup"
+#define NR_CODENAME "cosmos"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

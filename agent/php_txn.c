@@ -511,15 +511,15 @@ static nr_attribute_config_t* nr_php_create_attribute_config(TSRMLS_D) {
   return config;
 }
 
-static nrobj_t* nr_php_txn_get_labels(TSRMLS_D) {
-  const char* input;
-
+static nrobj_t* nr_php_txn_get_labels() {
   /*
-   * Specifying labels via an environment variable is not supported.
+   * By appending the environment variables to the end of the ini string, we
+   * ensure the environmental variables take precedence when it is entered into
+   * the label hash.  Additionally, with the environmental and ini values
+   * combined, we are able to take advantage of all the previous label
+   * structures, tests, and string validation.
    */
-  input = NRINI(labels);
-
-  return nr_labels_parse(input);
+  return nr_labels_parse(NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
 static void nr_php_txn_prepared_statement_destroy(void* sql) {
@@ -603,6 +603,25 @@ nrobj_t* nr_php_txn_get_supported_security_policy_settings(nrtxnopt_t* opts) {
   }
 
   return supported_policy_settings;
+}
+
+#define NR_APP_ERROR_DT_ON_TT_OFF_BACKOFF_SECONDS 60
+
+static void nr_php_txn_log_error_dt_on_tt_off(void) {
+  static unsigned n_occur = 0;
+  static time_t last_warn = (time_t)(0);
+  time_t now = time(0);
+
+  n_occur++;
+
+  if ((now - last_warn) > NR_APP_ERROR_DT_ON_TT_OFF_BACKOFF_SECONDS) {
+    last_warn = now;
+    nrl_error(NRL_INIT,
+              "newrelic.transaction_tracer.enabled must be enabled in order "
+              "to use distributed tracing. Occurred %u times.",
+              n_occur);
+    n_occur = 0;
+  }
 }
 
 nr_status_t nr_php_txn_begin(const char* appnames,
@@ -708,7 +727,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.license = nr_strdup(lic_to_use);
   info.settings = NULL; /* Populated through callback. */
   info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
-  info.labels = nr_php_txn_get_labels(TSRMLS_C);
+  info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
+  info.labels = nr_php_txn_get_labels();
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
   info.lang = nr_strdup("php");
   info.version = nr_strdup(nr_version());
@@ -717,11 +737,15 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.security_policies_token = nr_strdup(NRINI(security_policies_token));
   info.supported_security_policies
       = nr_php_txn_get_supported_security_policy_settings(&opts);
-  info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  /* if DT is disabled we cannot stream 8T events so disable observer host */
+  if (NRINI(distributed_tracing_enabled))
+    info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  else
+    info.trace_observer_host = nr_strdup("");
+  /* observer port setting does not really depend on DT being enabled */
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
-
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*
@@ -843,9 +867,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   if (NRPRG(txn)->options.distributed_tracing_enabled
       && !NRPRG(txn)->options.tt_enabled) {
-    nrl_error(NRL_INIT,
-              "newrelic.transaction_tracer.enabled must be enabled in order "
-              "to use distributed tracing");
+    nr_php_txn_log_error_dt_on_tt_off();
   }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO

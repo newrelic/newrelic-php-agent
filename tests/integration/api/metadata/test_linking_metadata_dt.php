@@ -59,4 +59,4 @@ $payload = json_decode(newrelic_create_distributed_trace_payload()->text());
 tap_equal($payload->{"d"}->{"tr"}, $metadata['trace.id'], 'trace id');
 tap_equal($payload->{"d"}->{"id"}, $metadata['span.id'], 'span id');
 
-tap_assert(!isset($metadata['entity.guid']), 'entity guid');
+tap_assert(isset($metadata['entity.guid']) && $metadata['entity.guid'] !== '', 'entity guid');

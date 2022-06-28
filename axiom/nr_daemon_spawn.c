@@ -129,6 +129,8 @@ nr_argv_t* nr_daemon_args_to_argv(const char* name,
                         args->utilization.pcf ? "true" : "false");
     nr_argv_append_flag(argv, "--define", "utilization.detect_docker=%s",
                         args->utilization.docker ? "true" : "false");
+    nr_argv_append_flag(argv, "--define", "utilization.detect_kubernetes=%s",
+                        args->utilization.kubernetes ? "true" : "false");
 
     /* diagnostic and testing flags */
     if (args->integration_mode) {

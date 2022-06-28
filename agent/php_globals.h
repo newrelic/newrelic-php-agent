@@ -42,6 +42,11 @@ typedef struct _nrphpglobals_t {
                                       mode */
   int daemon_special_integration; /* Cause daemon to dump special log entries to
                                      help integration testing. */
+  nrobj_t* metadata; /* P17 metadata taken from environment variables with the
+                      * prefix `NEW_RELIC_METADATA_` */
+  char* env_labels;  /* Labels taken from environment variables with the
+                      * prefix `NEW_RELIC_LABEL_` and from the environment
+                      * variable with the key `NEW_RELIC_LABELS`	 */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
   zend_long zend_offset;                    /* Zend extension offset */
   zend_long

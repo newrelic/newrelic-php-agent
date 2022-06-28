@@ -63,6 +63,28 @@ typedef struct {
   int line;
 } hash_is_subset_of_data_t;
 
+static bool need_to_stringify(const nrobj_t* val, const nrobj_t* obj) {
+  nrotype_t expected_type;
+  nrotype_t found_type;
+
+  if (NULL == val || NULL == obj) {
+    return false;
+  }
+
+  expected_type = nro_type(val);
+  found_type = nro_type(obj);
+
+  if (NR_OBJECT_STRING != expected_type || NR_OBJECT_INVALID == found_type) {
+    return false;
+  }
+
+  if (expected_type != found_type) {
+    return true;
+  }
+
+  return false;
+}
+
 static nr_status_t hash_is_subset_of(const char* key,
                                      const nrobj_t* val,
                                      void* ptr) {
@@ -72,7 +94,14 @@ static nr_status_t hash_is_subset_of(const char* key,
    * types.
    */
   char* expected = nro_to_json(val);
-  char* found = nro_to_json(nro_get_hash_value(data->set, key, NULL));
+  char* found;
+  const nrobj_t* found_obj = nro_get_hash_value(data->set, key, NULL);
+
+  if (need_to_stringify(val, found_obj)) {
+    found = nro_stringify(found_obj);
+  } else {
+    found = nro_to_json(found_obj);
+  }
 
   test_pass_if_true_file_line(
       data->testname, 0 == nr_strcmp(expected, found), data->file, data->line,
@@ -1774,6 +1803,15 @@ static void test_begin(void) {
   correct.error_events_enabled = 0;
   rv = nr_txn_begin(app, opts, attribute_config);
   test_created_txn("app turns off error events", rv, &correct);
+  nr_txn_destroy(&rv);
+
+  /*
+   * Test : App turns off span events
+   */
+  nro_set_hash_boolean(app->connect_reply, "collect_span_events", 0);
+  correct.span_events_enabled = 0;
+  rv = nr_txn_begin(app, opts, attribute_config);
+  test_created_txn("app turns off span events", rv, &correct);
   nr_txn_destroy(&rv);
 
   /*
