@@ -379,9 +379,9 @@ package-clean:
 .PHONY: lasp-test
 lasp-test: daemon
 	if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
-	if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
+	@if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
 	if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	@for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
           echo; echo "# PHP=$${PHP}"; \
           NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
         -license $(LICENSE_lasp_$(subst -,_,$(SUITE_LASP))) \
