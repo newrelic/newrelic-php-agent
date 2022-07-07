@@ -1530,6 +1530,48 @@ NR_INNER_WRAPPER(redis_select) {
 
 /*
  * Handle
+ *   \Relay\Relay__construct( string $host, | int $port)
+ *
+ * The Relay class can connect in the constructor if provided a host and/or port
+ */
+NR_INNER_WRAPPER(relay_construct) {
+    char* host = NULL;
+    nr_string_len_t host_len = 0;
+    zend_long port = nr_php_redis_default_port;
+    nr_datastore_instance_t* instance = NULL;
+
+    /* Short circuit if we have no arguments, or can't parse them correctly */
+    if (ZEND_NUM_ARGS() < 1 ||
+        zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|l",
+                                 &host, &host_len, &port) != SUCCESS)
+    {
+        return;
+    }
+
+    instance = nr_php_redis_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
+                                                    host, port TSRMLS_CC);
+    nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
+                                               nr_wrapper->extra, instance,
+                                               INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+/* Simply pass-through to the PhpRedis handler */
+NR_INNER_WRAPPER(relay_select) {
+  NR_INNER_WRAPPER_NAME(redis_select)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
+}
+
+/* Simply pass-through to the PhpRedis handler */
+NR_INNER_WRAPPER(relay_connect) {
+  NR_INNER_WRAPPER_NAME(redis_connect)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
+}
+
+/* Simply pass-through to the PhpRedis handler */
+NR_INNER_WRAPPER(relay_close) {
+  NR_INNER_WRAPPER_NAME(redis_close)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
+}
+
+/*
+ * Handle
  *   bool redis::*
  */
 NR_INNER_WRAPPER(redis_function) {
@@ -3176,6 +3218,123 @@ NR_OUTER_WRAPPER(redis_zrevrank)
 NR_OUTER_WRAPPER(redis_zscore)
 NR_OUTER_WRAPPER(redis_zunionstore)
 
+NR_OUTER_WRAPPER(relay_construct)
+NR_OUTER_WRAPPER(relay_connect)
+NR_OUTER_WRAPPER(relay_close)
+NR_OUTER_WRAPPER(relay_select)
+
+NR_OUTER_WRAPPER(relay_append)
+NR_OUTER_WRAPPER(relay_bitpos)
+NR_OUTER_WRAPPER(relay_decr)
+NR_OUTER_WRAPPER(relay_decrby)
+NR_OUTER_WRAPPER(relay_del)
+NR_OUTER_WRAPPER(relay_dbsize)
+NR_OUTER_WRAPPER(relay_eval)
+NR_OUTER_WRAPPER(relay_evalsha)
+NR_OUTER_WRAPPER(relay_exec)
+NR_OUTER_WRAPPER(relay_exists)
+NR_OUTER_WRAPPER(relay_expire)
+NR_OUTER_WRAPPER(relay_expireat)
+NR_OUTER_WRAPPER(relay_flushall)
+NR_OUTER_WRAPPER(relay_flushdb)
+NR_OUTER_WRAPPER(relay_geopos)
+NR_OUTER_WRAPPER(relay_get)
+NR_OUTER_WRAPPER(relay_getbit)
+NR_OUTER_WRAPPER(relay_getrange)
+NR_OUTER_WRAPPER(relay_getset)
+NR_OUTER_WRAPPER(relay_hdel)
+NR_OUTER_WRAPPER(relay_hexists)
+NR_OUTER_WRAPPER(relay_hget)
+NR_OUTER_WRAPPER(relay_hgetall)
+NR_OUTER_WRAPPER(relay_hincrby)
+NR_OUTER_WRAPPER(relay_hincrbyfloat)
+NR_OUTER_WRAPPER(relay_hkeys)
+NR_OUTER_WRAPPER(relay_hlen)
+NR_OUTER_WRAPPER(relay_hmget)
+NR_OUTER_WRAPPER(relay_hmset)
+NR_OUTER_WRAPPER(relay_hset)
+NR_OUTER_WRAPPER(relay_hsetnx)
+NR_OUTER_WRAPPER(relay_hstrlen)
+NR_OUTER_WRAPPER(relay_hvals)
+NR_OUTER_WRAPPER(relay_incr)
+NR_OUTER_WRAPPER(relay_incrby)
+NR_OUTER_WRAPPER(relay_incrbyfloat)
+NR_OUTER_WRAPPER(relay_keys)
+NR_OUTER_WRAPPER(relay_lindex)
+NR_OUTER_WRAPPER(relay_linsert)
+NR_OUTER_WRAPPER(relay_llen)
+NR_OUTER_WRAPPER(relay_lpop)
+NR_OUTER_WRAPPER(relay_lpush)
+NR_OUTER_WRAPPER(relay_lpushx)
+NR_OUTER_WRAPPER(relay_lrange)
+NR_OUTER_WRAPPER(relay_lrem)
+NR_OUTER_WRAPPER(relay_lset)
+NR_OUTER_WRAPPER(relay_ltrim)
+NR_OUTER_WRAPPER(relay_mget)
+NR_OUTER_WRAPPER(relay_mset)
+NR_OUTER_WRAPPER(relay_msetnx)
+NR_OUTER_WRAPPER(relay_persist)
+NR_OUTER_WRAPPER(relay_pexpire)
+NR_OUTER_WRAPPER(relay_pexpireat)
+NR_OUTER_WRAPPER(relay_ping)
+NR_OUTER_WRAPPER(relay_psetex)
+NR_OUTER_WRAPPER(relay_pttl)
+NR_OUTER_WRAPPER(relay_randomkey)
+NR_OUTER_WRAPPER(relay_rawcommand)
+NR_OUTER_WRAPPER(relay_rename)
+NR_OUTER_WRAPPER(relay_renamenx)
+NR_OUTER_WRAPPER(relay_rpop)
+NR_OUTER_WRAPPER(relay_rpoplpush)
+NR_OUTER_WRAPPER(relay_rpush)
+NR_OUTER_WRAPPER(relay_rpushx)
+NR_OUTER_WRAPPER(relay_sadd)
+NR_OUTER_WRAPPER(relay_scard)
+NR_OUTER_WRAPPER(relay_sdiff)
+NR_OUTER_WRAPPER(relay_sdiffstore)
+NR_OUTER_WRAPPER(relay_set)
+NR_OUTER_WRAPPER(relay_setbit)
+NR_OUTER_WRAPPER(relay_setex)
+NR_OUTER_WRAPPER(relay_setnx)
+NR_OUTER_WRAPPER(relay_setrange)
+NR_OUTER_WRAPPER(relay_sinter)
+NR_OUTER_WRAPPER(relay_sinterstore)
+NR_OUTER_WRAPPER(relay_sismember)
+NR_OUTER_WRAPPER(relay_smembers)
+NR_OUTER_WRAPPER(relay_smismember)
+NR_OUTER_WRAPPER(relay_smove)
+NR_OUTER_WRAPPER(relay_spop)
+NR_OUTER_WRAPPER(relay_srandmember)
+NR_OUTER_WRAPPER(relay_srem)
+NR_OUTER_WRAPPER(relay_strlen)
+NR_OUTER_WRAPPER(relay_sunion)
+NR_OUTER_WRAPPER(relay_sunionstore)
+NR_OUTER_WRAPPER(relay_time)
+NR_OUTER_WRAPPER(relay_ttl)
+NR_OUTER_WRAPPER(relay_type)
+NR_OUTER_WRAPPER(relay_unlink)
+NR_OUTER_WRAPPER(relay_zadd)
+NR_OUTER_WRAPPER(relay_zcard)
+NR_OUTER_WRAPPER(relay_zcount)
+NR_OUTER_WRAPPER(relay_zincrby)
+NR_OUTER_WRAPPER(relay_zinterstore)
+NR_OUTER_WRAPPER(relay_zlexcount)
+NR_OUTER_WRAPPER(relay_zpopmax)
+NR_OUTER_WRAPPER(relay_zpopmin)
+NR_OUTER_WRAPPER(relay_zrange)
+NR_OUTER_WRAPPER(relay_zrangebylex)
+NR_OUTER_WRAPPER(relay_zrangebyscore)
+NR_OUTER_WRAPPER(relay_zrank)
+NR_OUTER_WRAPPER(relay_zrem)
+NR_OUTER_WRAPPER(relay_zremrangebylex)
+NR_OUTER_WRAPPER(relay_zremrangebyrank)
+NR_OUTER_WRAPPER(relay_zremrangebyscore)
+NR_OUTER_WRAPPER(relay_zrevrange)
+NR_OUTER_WRAPPER(relay_zrevrangebylex)
+NR_OUTER_WRAPPER(relay_zrevrangebyscore)
+NR_OUTER_WRAPPER(relay_zrevrank)
+NR_OUTER_WRAPPER(relay_zscore)
+NR_OUTER_WRAPPER(relay_zunionstore)
+
 NR_OUTER_WRAPPER(pg_close)
 NR_OUTER_WRAPPER(pg_connect)
 NR_OUTER_WRAPPER(pg_pconnect)
@@ -3680,6 +3839,137 @@ void nr_php_generate_internal_wrap_records(void) {
                       "zscore")
   NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
                       0, "zunionstore")
+
+  /* Helper macros to construct the fully qualified method name for \Relay\Relay
+   * method wrappers, as they all follow the same pattern. */
+  #define NR_RELAY_STRINGIFY(STRING) #STRING
+  #define NR_RELAY_FULL_NAME(METHOD) "relay\\relay::" NR_RELAY_STRINGIFY(METHOD)
+
+  /* Two more helper macros for the wrap records themseleves.  The first _EX macro
+   * takes the inner function and is used for the small number of methods that have
+   * specific handlers.  The non _EX macro just uses the generic `redis_function`
+   * inner function, which is used for most actual databasse ops */
+  #define NR_INTERNAL_RELAY_WRAPREC_EX(METHOD, INNER) \
+    NR_INTERNAL_WRAPREC(NR_RELAY_FULL_NAME(METHOD), relay_##METHOD, INNER, 0, #METHOD)
+  #define NR_INTERNAL_RELAY_WRAPREC(METHOD) \
+    NR_INTERNAL_RELAY_WRAPREC_EX(METHOD, redis_function)
+
+  NR_INTERNAL_RELAY_WRAPREC_EX(construct, relay_construct)
+  NR_INTERNAL_RELAY_WRAPREC_EX(connect, relay_connect)
+  NR_INTERNAL_RELAY_WRAPREC_EX(close, relay_close)
+  NR_INTERNAL_RELAY_WRAPREC_EX(select, relay_select)
+
+  NR_INTERNAL_RELAY_WRAPREC(append)
+  NR_INTERNAL_RELAY_WRAPREC(bitpos)
+  NR_INTERNAL_RELAY_WRAPREC(decr)
+  NR_INTERNAL_RELAY_WRAPREC(decrby)
+  NR_INTERNAL_RELAY_WRAPREC(del)
+  NR_INTERNAL_RELAY_WRAPREC(dbsize)
+  NR_INTERNAL_RELAY_WRAPREC(eval)
+  NR_INTERNAL_RELAY_WRAPREC(evalsha)
+  NR_INTERNAL_RELAY_WRAPREC(exec)
+  NR_INTERNAL_RELAY_WRAPREC(exists)
+  NR_INTERNAL_RELAY_WRAPREC(expire)
+  NR_INTERNAL_RELAY_WRAPREC(expireat)
+  NR_INTERNAL_RELAY_WRAPREC(flushall)
+  NR_INTERNAL_RELAY_WRAPREC(flushdb)
+  NR_INTERNAL_RELAY_WRAPREC(geopos)
+  NR_INTERNAL_RELAY_WRAPREC(get)
+  NR_INTERNAL_RELAY_WRAPREC(getbit)
+  NR_INTERNAL_RELAY_WRAPREC(getrange)
+  NR_INTERNAL_RELAY_WRAPREC(getset)
+  NR_INTERNAL_RELAY_WRAPREC(hdel)
+  NR_INTERNAL_RELAY_WRAPREC(hexists)
+  NR_INTERNAL_RELAY_WRAPREC(hget)
+  NR_INTERNAL_RELAY_WRAPREC(hgetall)
+  NR_INTERNAL_RELAY_WRAPREC(hincrby)
+  NR_INTERNAL_RELAY_WRAPREC(hincrbyfloat)
+  NR_INTERNAL_RELAY_WRAPREC(hkeys)
+  NR_INTERNAL_RELAY_WRAPREC(hlen)
+  NR_INTERNAL_RELAY_WRAPREC(hmget)
+  NR_INTERNAL_RELAY_WRAPREC(hmset)
+  NR_INTERNAL_RELAY_WRAPREC(hset)
+  NR_INTERNAL_RELAY_WRAPREC(hsetnx)
+  NR_INTERNAL_RELAY_WRAPREC(hstrlen)
+  NR_INTERNAL_RELAY_WRAPREC(hvals)
+  NR_INTERNAL_RELAY_WRAPREC(incr)
+  NR_INTERNAL_RELAY_WRAPREC(incrby)
+  NR_INTERNAL_RELAY_WRAPREC(incrbyfloat)
+  NR_INTERNAL_RELAY_WRAPREC(keys)
+  NR_INTERNAL_RELAY_WRAPREC(lindex)
+  NR_INTERNAL_RELAY_WRAPREC(linsert)
+  NR_INTERNAL_RELAY_WRAPREC(llen)
+  NR_INTERNAL_RELAY_WRAPREC(lpop)
+  NR_INTERNAL_RELAY_WRAPREC(lpush)
+  NR_INTERNAL_RELAY_WRAPREC(lpushx)
+  NR_INTERNAL_RELAY_WRAPREC(lrange)
+  NR_INTERNAL_RELAY_WRAPREC(lrem)
+  NR_INTERNAL_RELAY_WRAPREC(lset)
+  NR_INTERNAL_RELAY_WRAPREC(ltrim)
+  NR_INTERNAL_RELAY_WRAPREC(mget)
+  NR_INTERNAL_RELAY_WRAPREC(mset)
+  NR_INTERNAL_RELAY_WRAPREC(msetnx)
+  NR_INTERNAL_RELAY_WRAPREC(persist)
+  NR_INTERNAL_RELAY_WRAPREC(pexpire)
+  NR_INTERNAL_RELAY_WRAPREC(pexpireat)
+  NR_INTERNAL_RELAY_WRAPREC(ping)
+  NR_INTERNAL_RELAY_WRAPREC(psetex)
+  NR_INTERNAL_RELAY_WRAPREC(pttl)
+  NR_INTERNAL_RELAY_WRAPREC(randomkey)
+  NR_INTERNAL_RELAY_WRAPREC(rawcommand)
+  NR_INTERNAL_RELAY_WRAPREC(rename)
+  NR_INTERNAL_RELAY_WRAPREC(renamenx)
+  NR_INTERNAL_RELAY_WRAPREC(rpop)
+  NR_INTERNAL_RELAY_WRAPREC(rpoplpush)
+  NR_INTERNAL_RELAY_WRAPREC(rpush)
+  NR_INTERNAL_RELAY_WRAPREC(rpushx)
+  NR_INTERNAL_RELAY_WRAPREC(sadd)
+  NR_INTERNAL_RELAY_WRAPREC(scard)
+  NR_INTERNAL_RELAY_WRAPREC(sdiff)
+  NR_INTERNAL_RELAY_WRAPREC(sdiffstore)
+  NR_INTERNAL_RELAY_WRAPREC(set)
+  NR_INTERNAL_RELAY_WRAPREC(setbit)
+  NR_INTERNAL_RELAY_WRAPREC(setex)
+  NR_INTERNAL_RELAY_WRAPREC(setnx)
+  NR_INTERNAL_RELAY_WRAPREC(setrange)
+  NR_INTERNAL_RELAY_WRAPREC(sinter)
+  NR_INTERNAL_RELAY_WRAPREC(sinterstore)
+  NR_INTERNAL_RELAY_WRAPREC(sismember)
+  NR_INTERNAL_RELAY_WRAPREC(smembers)
+  NR_INTERNAL_RELAY_WRAPREC(smismember)
+  NR_INTERNAL_RELAY_WRAPREC(smove)
+  NR_INTERNAL_RELAY_WRAPREC(spop)
+  NR_INTERNAL_RELAY_WRAPREC(srandmember)
+  NR_INTERNAL_RELAY_WRAPREC(srem)
+  NR_INTERNAL_RELAY_WRAPREC(strlen)
+  NR_INTERNAL_RELAY_WRAPREC(sunion)
+  NR_INTERNAL_RELAY_WRAPREC(sunionstore)
+  NR_INTERNAL_RELAY_WRAPREC(time)
+  NR_INTERNAL_RELAY_WRAPREC(ttl)
+  NR_INTERNAL_RELAY_WRAPREC(type)
+  NR_INTERNAL_RELAY_WRAPREC(unlink)
+  NR_INTERNAL_RELAY_WRAPREC(zadd)
+  NR_INTERNAL_RELAY_WRAPREC(zcard)
+  NR_INTERNAL_RELAY_WRAPREC(zcount)
+  NR_INTERNAL_RELAY_WRAPREC(zincrby)
+  NR_INTERNAL_RELAY_WRAPREC(zinterstore)
+  NR_INTERNAL_RELAY_WRAPREC(zlexcount)
+  NR_INTERNAL_RELAY_WRAPREC(zpopmax)
+  NR_INTERNAL_RELAY_WRAPREC(zpopmin)
+  NR_INTERNAL_RELAY_WRAPREC(zrange)
+  NR_INTERNAL_RELAY_WRAPREC(zrangebylex)
+  NR_INTERNAL_RELAY_WRAPREC(zrangebyscore)
+  NR_INTERNAL_RELAY_WRAPREC(zrank)
+  NR_INTERNAL_RELAY_WRAPREC(zrem)
+  NR_INTERNAL_RELAY_WRAPREC(zremrangebylex)
+  NR_INTERNAL_RELAY_WRAPREC(zremrangebyrank)
+  NR_INTERNAL_RELAY_WRAPREC(zremrangebyscore)
+  NR_INTERNAL_RELAY_WRAPREC(zrevrange)
+  NR_INTERNAL_RELAY_WRAPREC(zrevrangebylex)
+  NR_INTERNAL_RELAY_WRAPREC(zrevrangebyscore)
+  NR_INTERNAL_RELAY_WRAPREC(zrevrank)
+  NR_INTERNAL_RELAY_WRAPREC(zscore)
+  NR_INTERNAL_RELAY_WRAPREC(zunionstore)
 
   NR_INTERNAL_WRAPREC("pg_close", pg_close, pg_close, 0, 0)
   NR_INTERNAL_WRAPREC("pg_connect", pg_connect, pg_connect, 0, 0)
