@@ -1938,7 +1938,7 @@ char* nro_stringify(const nrobj_t* found) {
   }
 
   nr_buffer_add_escape_json(buf, tmp);
-  nr_buffer_add(buf, '\0', 1);
+  nr_buffer_add(buf, "\0", 1);
 
   ret = nr_strdup((const char*)nr_buffer_cptr(buf));
 
