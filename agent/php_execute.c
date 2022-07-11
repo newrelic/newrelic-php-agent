@@ -1358,7 +1358,7 @@ static void nr_php_show_exec_internal(NR_EXECUTE_PROTO,
       NRP_PHP(name ? name : "?"), NRP_ARGSTR(argstr));
 }
 
-#if defined(PHP7)
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 #define CALL_ORIGINAL \
   (NR_PHP_PROCESS_GLOBALS(orig_execute_internal)(execute_data, return_value))
 
