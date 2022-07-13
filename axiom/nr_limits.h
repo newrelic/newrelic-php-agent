@@ -47,4 +47,14 @@
  */
 #define NR_MAX_8T_SPAN_BATCH_SIZE 1000
 
+/*
+ * The default maximum number of log events in a transaction.
+ */
+#define NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED 10000
+
+/*
+ * The maximum number of log events in a transaction.
+ */
+#define NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED 10000
+
 #endif /* NR_LIMITS_HDR */
