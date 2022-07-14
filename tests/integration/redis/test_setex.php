@@ -30,6 +30,10 @@ ok - remove key expiration
 ok - verify expiry removal
 ok - set timestamp expiry
 ok - verify expiry set
+ok - set timestamp expiry in milliseconds
+ok - verify milliscond expiry set
+ok - set an expiry in milliseconds
+ok - verify millisecond expiry
 ok - delete key
 */
 
@@ -43,10 +47,10 @@ ok - delete key
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [15, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [15, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [15, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [15, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                         [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                    [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                   [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},              [19, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
@@ -65,18 +69,24 @@ ok - delete key
     [{"name":"Datastore/operation/Redis/persist"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/persist",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpire"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpire",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpireat"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpireat",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/psetex"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/psetex",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pttl"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pttl"},        [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/pttl",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setex"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setex",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/ttl"},         [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ttl"},         [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/ttl",
-      "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},         [4, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
@@ -120,6 +130,12 @@ function test_redis() {
 
   tap_assert($redis->expireat($key, time() + 1), 'set timestamp expiry');
   tap_assert($redis->ttl($key) >= 0, 'verify expiry set');
+
+  tap_assert($redis->pexpireat($key, (time() + 60) * 1000), 'set timestamp expiry in milliseconds');
+  tap_assert($redis->ttl($key) > 50, 'verify milliscond expiry set');
+
+  tap_assert($redis->pexpire($key, 1500), 'set an expiry in milliseconds');
+  tap_assert($redis->pttl($key) >= 1000, 'verify millisecond expiry');
 
   tap_equal(1, $redis->del($key), 'delete key');
 

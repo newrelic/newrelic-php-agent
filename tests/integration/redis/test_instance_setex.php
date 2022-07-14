@@ -30,6 +30,10 @@ ok - remove key expiration
 ok - verify expiry removal
 ok - set timestamp expiry
 ok - verify expiry set
+ok - set timestamp expiry in milliseconds
+ok - verify milliscond expiry set
+ok - set an expiry in milliseconds
+ok - verify millisecond expiry
 ok - delete key
 ok - trace nodes match
 ok - datastore instance metric exists
@@ -73,6 +77,12 @@ function test_redis() {
   tap_assert($redis->expireat($key, time() + 1), 'set timestamp expiry');
   tap_assert($redis->ttl($key) >= 0, 'verify expiry set');
 
+  tap_assert($redis->pexpireat($key, (time() + 60) * 1000), 'set timestamp expiry in milliseconds');
+  tap_assert($redis->ttl($key) > 50, 'verify milliscond expiry set');
+
+  tap_assert($redis->pexpire($key, 1500), 'set an expiry in milliseconds');
+  tap_assert($redis->pttl($key) >= 1000, 'verify millisecond expiry');
+
   tap_equal(1, $redis->del($key), 'delete key');
 
   $redis->close();
@@ -90,6 +100,8 @@ redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/expireat',
   'Datastore/operation/Redis/get',
   'Datastore/operation/Redis/persist',
+  'Datastore/operation/Redis/pexpire',
+  'Datastore/operation/Redis/pexpireat',
   'Datastore/operation/Redis/psetex',
   'Datastore/operation/Redis/pttl',
   'Datastore/operation/Redis/setex',
