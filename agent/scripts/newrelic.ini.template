@@ -342,7 +342,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Enable detection of whether the system is running in a Kubernetes 
 ;          cluster.
 ;
-;newrelic.utilization.detect_kubernetes = true
+;newrelic.daemon.utilization.detect_kubernetes = true
 
 
 ; Setting: newrelic.daemon.app_timeout
