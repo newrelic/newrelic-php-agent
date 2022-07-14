@@ -445,9 +445,10 @@ nrinibool_t
 nrinibool_t
     distributed_tracing_exclude_newrelic_header; /* newrelic.distributed_tracing_exclude_newrelic_header
                                                   */
-nrinibool_t span_events_enabled;            /* newrelic.span_events_enabled */
-nriniuint_t span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
-                                             */
+nrinibool_t span_events_enabled; /* newrelic.span_events_enabled */
+nriniuint_t
+    span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
+                                     */
 nrinistr_t
     trace_observer_host; /* newrelic.infinite_tracing.trace_observer.host */
 nriniuint_t
@@ -459,6 +460,20 @@ nriniuint_t
 nrinitime_t
     agent_span_queue_timeout; /* newrelic.infinite_tracing.span_events.agent_queue.timeout
                                */
+
+/*
+ * configuration options for logging in context
+ */
+
+nrinibool_t logging_enabled;        /* newrelic.application_logging.enabled */
+nrinibool_t log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
+                                     */
+nriniuint_t log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
+                                            */
+nrinibool_t log_decorating_enabled; /* newrelic.application_logging.local_decorating.enabled
+                                     */
+nrinibool_t
+    log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
 /*
  * pid and user_function_wrappers are used to store user function wrappers.

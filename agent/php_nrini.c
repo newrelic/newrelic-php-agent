@@ -1730,6 +1730,45 @@ static PHP_INI_MH(nr_unsigned_int_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
+  nriniuint_t* p;
+  int val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  /* Anything other than a valid value will result in the
+   * default value of NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED.
+   */
+
+  p->where = 0;
+
+  if (0 != NEW_VALUE_LEN) {
+    val = (int)strtol(NEW_VALUE, 0, 0);
+    if ((0 >= val) || (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < val)) {
+      val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+      nrl_debug(NRL_INIT,
+                "Invalid application_logging.forwarding.max_samples_stored "
+                "value \"%.8s\"; using "
+                "%d instead",
+                NEW_VALUE, val);
+    }
+  }
+  p->value = (zend_uint)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2750,6 +2789,51 @@ STD_PHP_INI_ENTRY_EX(
     zend_newrelic_globals,
     newrelic_globals,
     0)
+
+/*
+ * Logging
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     logging_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_loggging.forwarding.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_forwarding_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_loggging.forwarding.max_samples_stored",
+    NR_STR2(NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED),
+    NR_PHP_REQUEST,
+    nr_log_events_max_samples_stored_mh,
+    log_events_max_samples_stored,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.local_decorating.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_decorating_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_metrics_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 PHP_INI_END() /* } */
 
