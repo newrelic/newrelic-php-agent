@@ -1148,7 +1148,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 
 ; Setting: newrelic.application_logging.enabled
 ; Type   : boolean
-; Scope  : system
+; Scope  : per-directory
 ; Default: true
 ; Info   : If this is disabled, all sub-features are disabled; if it is enabled, 
 ;          the individual sub-feature configurations take effect. 
@@ -1157,7 +1157,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 
 ; Setting: newrelic.application_logging.forwarding.enabled
 ; Type   : boolean
-; Scope  : system
+; Scope  : per-directory
 ; Default: false
 ; Info   : Toggles whether the agent gathers log records for sending to New Relic.
 ;
@@ -1165,7 +1165,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 
 ; Setting: newrelic.application_logging.forwarding.max_samples_stored
 ; Type   : integer
-; Scope  : system
+; Scope  : per-directory
 ; Default: 10000
 ; Info   : Number of log records to send per minute to New Relic. Controls the 
 ;          overall memory consumption when using log forwarding. SHOULD be sent 
@@ -1175,7 +1175,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 
 ; Setting: newrelic.application_logging.local_decorating.enabled
 ; Type   : boolean
-; Scope  : system
+; Scope  : per-directory
 ; Default: false
 ; Info   : Toggles whether the agent performs Local Log Decoration on standard log 
 ;          output.
@@ -1184,7 +1184,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 
 ; Setting: newrelic.application_logging.metrics.enabled
 ; Type   : boolean
-; Scope  : system
+; Scope  : per-directory
 ; Default: true
 ; Info   : Toggles whether the agent gathers the the user facing Logging/lines 
 ;          and Logging/lines/{SEVERITY} Logging Metrics used in the Logs chart 
