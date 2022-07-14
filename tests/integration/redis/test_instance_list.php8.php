@@ -10,7 +10,7 @@ list operations.
 */
 
 /*SKIPIF
-<?php 
+<?php
 if (version_compare(phpversion(), '8.0.0', '<')) {
     die("skip: PHP >= 8.0.0 required\n");
 }
@@ -115,11 +115,15 @@ $txn = new Transaction;
 redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/connect',
   'Datastore/operation/Redis/del',
+  'Datastore/operation/Redis/exists',
+  'Datastore/operation/Redis/expire',
   'Datastore/operation/Redis/lget',
   'Datastore/operation/Redis/lindex',
+  'Datastore/operation/Redis/lpush',
   'Datastore/operation/Redis/lrem',
   'Datastore/operation/Redis/lremove',
   'Datastore/operation/Redis/lset',
+  'Datastore/operation/Redis/rpush',
 ));
 
 redis_datastore_instance_metric_exists($txn);
