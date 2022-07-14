@@ -72,6 +72,8 @@ $txn = new Transaction;
 
 redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/connect',
+  'Datastore/operation/Redis/exists',
+  'Datastore/operation/Redis/expire',
   'Datastore/operation/Redis/decr',
   'Datastore/operation/Redis/decrby',
   'Datastore/operation/Redis/del',

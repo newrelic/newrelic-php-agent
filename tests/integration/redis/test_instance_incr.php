@@ -24,6 +24,7 @@ ok - check value
 ok - increment by 1
 ok - check value
 ok - increment by 3
+ok - increment by 1.5
 ok - check final value
 ok - delete key
 ok - trace nodes match
@@ -58,7 +59,8 @@ function test_redis() {
   tap_equal(21, $redis->incr($key), 'increment by 1');
   tap_equal('21', $redis->get($key), 'check value');
   tap_equal(24, $redis->incrBy($key, 3), 'increment by 3');
-  tap_equal('24', $redis->get($key), 'check final value');
+  tap_equal(25.5, $redis->incrbyfloat($key, 1.5), 'increment by 1.5');
+  tap_equal('25.5', $redis->get($key), 'check final value');
 
   /* Cleanup the key used by this test run */
   tap_equal(1, $redis->del($key), 'delete key');
@@ -72,10 +74,13 @@ $txn = new Transaction;
 
 redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/connect',
+  'Datastore/operation/Redis/exists',
+  'Datastore/operation/Redis/expire',
   'Datastore/operation/Redis/del',
   'Datastore/operation/Redis/get',
   'Datastore/operation/Redis/incr',
   'Datastore/operation/Redis/incrby',
+  'Datastore/operation/Redis/incrbyfloat',
   'Datastore/operation/Redis/set',
 ));
 

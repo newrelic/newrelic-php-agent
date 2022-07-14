@@ -22,12 +22,21 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 */
 
 /*EXPECT
+ok - ping redis
 ok - set key
 ok - get key
+ok - get first character of key
+ok - append to key
+ok - get key
+ok - ask redis for key length
+ok - check key type
 ok - delete key
 ok - delete missing key
 ok - mset key
 ok - mget key
+ok - delete key
+ok - msetnx non existing key
+ok - msetnx existing key
 ok - delete key
 ok - reuse deleted key
 ok - set duplicate key
@@ -44,18 +53,27 @@ ok - delete key
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                         [21, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                    [21, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                   [21, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},              [21, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},         [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/append"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/append",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},         [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
-      "scope":"OtherTransaction/php__FILE__"},         [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get"},         [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},         [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get"},         [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get",
+      "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/getrange"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/getrange",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set",
@@ -66,9 +84,21 @@ ok - delete key
     [{"name":"Datastore/operation/Redis/mset"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/mset",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/msetnx"},      [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/msetnx",
+      "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ping"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ping",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setnx"},       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setnx",
       "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/strlen"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/strlen",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/type"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/type",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
@@ -95,13 +125,27 @@ function test_basic() {
   }
 
   /* the tests */
+  tap_assert($redis->ping(), 'ping redis');
+
   tap_assert($redis->set($key, 'bar'), 'set key');
   tap_equal('bar', $redis->get($key), 'get key');
+  tap_equal('b', $redis->getrange($key, 0, 0), 'get first character of key');
+
+  tap_equal(strlen('barometric'), $redis->append($key, 'ometric'), 'append to key');
+  tap_equal('barometric', $redis->get($key), 'get key');
+  tap_equal(strlen('barometric'), $redis->strlen($key), 'ask redis for key length');
+
+  tap_equal(Redis::REDIS_STRING, $redis->type($key), 'check key type');
+
   tap_equal(1, $redis->del($key), 'delete key');
   tap_equal(0, $redis->del($key), 'delete missing key');
 
   tap_assert($redis->mset([$key => 'bar']), 'mset key');
   tap_equal(['bar'], $redis->mget([$key]), 'mget key');
+  tap_equal(1, $redis->del($key), 'delete key');
+
+  tap_assert($redis->msetnx([$key => 'newbar']), 'msetnx non existing key');
+  tap_refute($redis->msetnx([$key => 'newbar']), 'msetnx existing key');
   tap_equal(1, $redis->del($key), 'delete key');
 
   tap_assert($redis->setnx($key, 'bar'), 'reuse deleted key');
