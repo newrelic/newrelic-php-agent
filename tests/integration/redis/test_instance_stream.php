@@ -45,6 +45,7 @@ ok - proper xread[group] response with 1 elements
 ok - our second ID is still pending
 ok - we were able to claim the message
 ok - proper xread[group] response with 2 elements
+ok - delete our test keys
 ok - trace nodes match
 ok - datastore instance metric exists
 */
@@ -126,6 +127,8 @@ function test_stream() {
   /* Finally perform a normal XREAD */
   tap_xread_response($redis->xread([$key1 => 0]), $key1, 2);
 
+  tap_equal(2, $redis->del([$key1, $key2]), 'delete our test keys');
+
   /* close connection */
   $redis->close();
 }
@@ -136,6 +139,7 @@ $txn = new Transaction;
 
 redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/connect',
+  'Datastore/operation/Redis/del',
   'Datastore/operation/Redis/exists',
   'Datastore/operation/Redis/xack',
   'Datastore/operation/Redis/xadd',

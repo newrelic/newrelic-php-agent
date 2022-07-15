@@ -44,6 +44,7 @@ ok - proper xread[group] response with 1 elements
 ok - our second ID is still pending
 ok - we were able to claim the message
 ok - proper xread[group] response with 2 elements
+ok - delete our test keys
 */
 
 /*EXPECT_METRICS
@@ -56,12 +57,15 @@ ok - proper xread[group] response with 2 elements
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                        [24, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                   [24, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                  [24, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},             [24, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                        [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                   [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                  [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},             [25, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
+      "scope":"OtherTransaction/php__FILE__"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists",
@@ -186,6 +190,8 @@ function test_stream() {
 
   /* Finally perform a normal XREAD */
   tap_xread_response($redis->xread([$key1 => 0]), $key1, 2);
+
+  tap_equal(2, $redis->del([$key1, $key2]), 'delete our test keys');
 
   /* close connection */
   $redis->close();
