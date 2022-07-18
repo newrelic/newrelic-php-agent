@@ -252,6 +252,25 @@ static nr_status_t nr_php_check_8T_DT_config(TSRMLS_D) {
   return NR_SUCCESS;
 }
 
+/*
+ * @brief Check the INI values for 'logging_enabled' and
+ *        'log_forwarding_enabled' and log a warning on
+ *        invalid configuration state.
+ *
+ * @return nr_status_t NR_FAILURE || NR_SUCCESS
+ */
+static nr_status_t nr_php_check_logging_config(TSRMLS_D) {
+  if (!NRINI(logging_enabled) && NRINI(log_forwarding_enabled)) {
+    nrl_warning(NRL_INIT,
+                "Log Forwarding will be DISABLED because logging is disabled. "
+                "Log Forwarding requires Logging to be enabled. Please check "
+                "'newrelic.application_logging.logging.enabled' in the agent "
+                "configuration.");
+    return NR_FAILURE;
+  }
+  return NR_SUCCESS;
+}
+
 static char* nr_php_get_agent_specific_info(void) {
   const char* php_version;
   const char* zend_type;
@@ -578,6 +597,8 @@ PHP_MINIT_FUNCTION(newrelic) {
    * config issue and also that 8T will be disabled
    */
   nr_php_check_8T_DT_config(TSRMLS_C);
+
+  nr_php_check_logging_config(TSRMLS_C);
 
   /*
    * Save the original PHP hooks and then apply our own hooks. The agent is
