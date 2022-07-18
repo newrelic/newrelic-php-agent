@@ -565,6 +565,9 @@ static nr_library_table_t libraries[] = {
 
     {"Xoops", "class/xoopsload.php", NULL},
     {"E107", "e107_handlers/e107_class.php", NULL},
+
+    /* Monolog - Logging for PHP */
+    {"Monolog", "monolog/logger.php", nr_monolog_enable}
 };
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
@@ -853,6 +856,8 @@ static nrframework_t nr_try_force_framework(
 static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
+
+  // nrl_info(NRL_INSTRUMENT, "nr_execute_handle_library processing file: %s", filename);
 
   for (i = 0; i < num_libraries; i++) {
     if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
