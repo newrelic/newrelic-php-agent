@@ -118,7 +118,6 @@ typedef struct _nrtxnopt_t {
   bool log_forwarding_enabled;       /* Whether log forwarding is enabled */
   size_t log_events_max_samples_stored; /* The maximum number of log events per
                                            transaction */
-  bool log_decorating_enabled;          /* Whether log decoration is enabled */
   bool log_metrics_enabled;             /* Whether log metrics are enabled */
 } nrtxnopt_t;
 

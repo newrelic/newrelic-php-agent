@@ -709,7 +709,6 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
-  opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
 
   /*

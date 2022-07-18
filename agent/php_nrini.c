@@ -2818,14 +2818,6 @@ STD_PHP_INI_ENTRY_EX(
     zend_newrelic_globals,
     newrelic_globals,
     0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.local_decorating.enabled",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     log_decorating_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      "1",
                      NR_PHP_REQUEST,

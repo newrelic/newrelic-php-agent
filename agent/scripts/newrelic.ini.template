@@ -1173,15 +1173,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.application_logging.forwarding.max_samples_stored = 10000
 
-; Setting: newrelic.application_logging.local_decorating.enabled
-; Type   : boolean
-; Scope  : per-directory
-; Default: false
-; Info   : Toggles whether the agent performs Local Log Decoration on standard log 
-;          output.
-;
-;newrelic.application_logging.local_decorating.enabled = false
-
 ; Setting: newrelic.application_logging.metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory

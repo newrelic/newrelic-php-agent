@@ -470,8 +470,6 @@ nrinibool_t log_forwarding_enabled; /* newrelic.application_logging.forwarding.e
                                      */
 nriniuint_t log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
                                             */
-nrinibool_t log_decorating_enabled; /* newrelic.application_logging.local_decorating.enabled
-                                     */
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
