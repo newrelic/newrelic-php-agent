@@ -565,9 +565,6 @@ static nr_library_table_t libraries[] = {
 
     {"Xoops", "class/xoopsload.php", NULL},
     {"E107", "e107_handlers/e107_class.php", NULL},
-
-    /* Monolog - Logging for PHP */
-    {"Monolog", "monolog/logger.php", nr_monolog_enable}
 };
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
@@ -579,6 +576,7 @@ static nr_library_table_t logging_frameworks[] = {
 
 static size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
+
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
@@ -874,8 +872,6 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
 
-  // nrl_info(NRL_INSTRUMENT, "nr_execute_handle_library processing file: %s", filename);
-
   for (i = 0; i < num_libraries; i++) {
     if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
@@ -915,6 +911,30 @@ static void nr_execute_handle_logging_framework(
       if (NULL != logging_frameworks[i].enable) {
         logging_frameworks[i].enable(TSRMLS_C);
       }
+    }
+  }
+
+  nr_free(filename_lower);
+}
+
+static void nr_execute_handle_logging_framework(const char* filename TSRMLS_DC) {
+  char* filename_lower = nr_string_to_lowercase(filename);
+  size_t i;
+
+  for (i = 0; i < num_logging_frameworks; i++) {
+    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+      char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
+                                 logging_frameworks[i].library_name);
+
+      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+                logging_frameworks[i].library_name);
+      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+
+      if (NULL != logging_frameworks[i].enable) {
+        logging_frameworks[i].enable(TSRMLS_C);
+      }
+
+      nr_free(metname);
     }
   }
 
