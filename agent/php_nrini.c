@@ -255,6 +255,28 @@ static void check_ini_int_min_max(int* var, int minval, int maxval) {
   }
 }
 
+/*
+ * @brief error handling for strtol() functionality
+ *
+ * @param val_p   pointer to store the parsed value
+ * @param str     string to parse
+ * @param base    base to be used for number conversion
+ * @return nr_status_t NR_SUCCESS || NR_FAILURE
+ */
+static nr_status_t nr_strtol(int* val_p, const char* str, int base) {
+  int val;
+  char* endptr_p;
+  errno = 0;
+
+  val = (int)strtol(str, &endptr_p, base);
+  if (0 != errno || '\0' != *endptr_p) {
+    return NR_FAILURE;
+  }
+
+  *val_p = val;
+  return NR_SUCCESS;
+}
+
 #ifdef PHP7
 #define PHP_INI_ENTRY_NAME(ie) (ie)->name->val
 #define PHP_INI_ENTRY_NAME_LEN(ie) (ie)->name->len + 1
@@ -1734,6 +1756,7 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   nriniuint_t* p;
   int val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
   bool err = false;
+  nr_status_t parse_status = NR_SUCCESS;
 
 #ifndef ZTS
   char* base = (char*)mh_arg2;
@@ -1756,8 +1779,8 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   p->where = 0;
 
   if (0 != NEW_VALUE_LEN) {
-    val = (int)strtol(NEW_VALUE, 0, 0);
-    if (0 > val) {
+    parse_status = nr_strtol(&val, NEW_VALUE, 0);
+    if (0 > val || NR_FAILURE == parse_status) {
       val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
       err = true;
     } else if (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < val) {
