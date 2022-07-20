@@ -1733,6 +1733,7 @@ static PHP_INI_MH(nr_unsigned_int_mh) {
 static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   nriniuint_t* p;
   int val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+  bool err = false;
 
 #ifndef ZTS
   char* base = (char*)mh_arg2;
@@ -1746,16 +1747,24 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   (void)mh_arg3;
   NR_UNUSED_TSRMLS;
 
-  /* Anything other than a valid value will result in the
-   * default value of NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED.
+  /*
+   * -- An invalid value will result in the default value.
+   * -- A value < 0 will result in the default value
+   * -- A value > MAX will result in MAX value
    */
 
   p->where = 0;
 
   if (0 != NEW_VALUE_LEN) {
     val = (int)strtol(NEW_VALUE, 0, 0);
-    if ((0 >= val) || (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < val)) {
+    if (0 > val) {
       val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    } else if (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < val) {
+      val = NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    }
+    if (err) {
       nrl_debug(NRL_INIT,
                 "Invalid application_logging.forwarding.max_samples_stored "
                 "value \"%.8s\"; using "
