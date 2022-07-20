@@ -387,6 +387,93 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Purpose : Return a copy of Monolog\Logger::API.
+ *
+ * Params  : 1. An instance of Monolog\Logger.
+ *
+ * Returns : The Monolog version number as an integer
+ */
+static int nr_monolog_version(zval* logger TSRMLS_DC) {
+  int retval = 0;
+  zval* api = NULL;
+  zend_class_entry* ce = NULL;
+
+  if (0 == nr_php_is_zval_valid_object(logger)) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Logger object is invalid", __func__);
+    return 0;
+  }
+
+  ce = Z_OBJCE_P(logger);
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Logger has NULL class entry",
+                     __func__);
+    return 0;
+  }
+
+  api = nr_php_get_class_constant(ce, "API");
+  if (NULL == api) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Logger does not have API", __func__);
+    return 0;
+  }
+
+  if (nr_php_is_zval_valid_integer(api)) {
+    retval = Z_LVAL_P(api);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: expected API be a valid int, got type %d", __func__,
+                     Z_TYPE_P(api));
+  }
+
+  nr_php_zval_free(&api);
+  return retval;
+}
+
+NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
+  (void)wraprec;
+
+  /* Get Monolog API level */
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  int api = nr_monolog_version(this_var TSRMLS_CC);
+
+  /* Get values of $level and $message arguments */
+  zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  zval* message = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  nrl_verbosedebug(
+      NRL_INSTRUMENT,
+      "%s: #args = %ld, Monolog API: [%d], message=[%s], level=[%ld]", __func__,
+      argc, api, Z_STRVAL_P(message), (long)Z_LVAL_P(level));
+
+  /* Get values of optional arguments: $context and $datetime */
+  zval* context = NULL;
+  zval* datetime = NULL;
+
+  if (3 <= argc) {
+    context = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT, "%s: typeof(context)=[%d], len(context)=%ld", __func__,
+        Z_TYPE_P(context), nr_php_zend_hash_num_elements(Z_ARRVAL_P(context)));
+  }
+
+  /* $datetime is only available since API level 2 */
+  if (2 <= api && 4 <= argc) {
+    datetime = nr_php_arg_get(4, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: typeof(datetime)=[%d]", __func__,
+                     Z_TYPE_P(datetime));
+  }
+
+  NR_PHP_WRAPPER_CALL
+  if (datetime)
+    nr_php_arg_release(&datetime);
+  if (context)
+    nr_php_arg_release(&context);
+  nr_php_arg_release(&message);
+  nr_php_arg_release(&level);
+  nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
 NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
   (void)wraprec;
 
