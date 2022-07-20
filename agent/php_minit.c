@@ -265,9 +265,7 @@ static void nr_php_check_logging_config(TSRMLS_D) {
                 "Log Forwarding requires Logging to be enabled. Please check "
                 "'newrelic.application_logging.logging.enabled' in the agent "
                 "configuration.");
-    return NR_FAILURE;
   }
-  return NR_SUCCESS;
 }
 
 /*
