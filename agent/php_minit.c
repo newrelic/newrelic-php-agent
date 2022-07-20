@@ -257,9 +257,8 @@ static nr_status_t nr_php_check_8T_DT_config(TSRMLS_D) {
  *        'log_forwarding_enabled' and log a warning on
  *        invalid configuration state.
  *
- * @return nr_status_t NR_FAILURE || NR_SUCCESS
  */
-static nr_status_t nr_php_check_logging_config(TSRMLS_D) {
+static void nr_php_check_logging_config(TSRMLS_D) {
   if (!NRINI(logging_enabled) && NRINI(log_forwarding_enabled)) {
     nrl_warning(NRL_INIT,
                 "Log Forwarding will be DISABLED because logging is disabled. "
@@ -269,6 +268,22 @@ static nr_status_t nr_php_check_logging_config(TSRMLS_D) {
     return NR_FAILURE;
   }
   return NR_SUCCESS;
+}
+
+/*
+ * @brief Check the INI values for 'log_forwarding_enabled'
+ *        and 'high_security' and log a warning on invalid
+ *        configuration state.
+ *
+ */
+static void nr_php_check_high_security_log_forwarding(TSRMLS_D) {
+  if (NR_PHP_PROCESS_GLOBALS(high_security) && NRINI(log_forwarding_enabled)) {
+    nrl_warning(
+        NRL_INIT,
+        "Log Forwarding will be DISABLED because High Security mode "
+        "is enabled. Please check 'newrelic.high_security' in the agent "
+        "configuration.");
+  }
 }
 
 static char* nr_php_get_agent_specific_info(void) {
@@ -599,6 +614,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_check_8T_DT_config(TSRMLS_C);
 
   nr_php_check_logging_config(TSRMLS_C);
+  nr_php_check_high_security_log_forwarding(TSRMLS_C);
 
   /*
    * Save the original PHP hooks and then apply our own hooks. The agent is
