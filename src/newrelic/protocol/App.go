@@ -197,20 +197,8 @@ func (rcv *App) Metadata() []byte {
 	return nil
 }
 
-func (rcv *App) LogEventMaxSampelsStored() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(40))
-	if o != 0 {
-		return rcv._tab.GetUint64(o + rcv._tab.Pos)
-	}
-	return 0
-}
-
-func (rcv *App) MutateLogEventMaxSampelsStored(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(40, n)
-}
-
 func AppStart(builder *flatbuffers.Builder) {
-	builder.StartObject(19)
+	builder.StartObject(18)
 }
 func AppAddLicense(builder *flatbuffers.Builder, license flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(license), 0)
@@ -265,9 +253,6 @@ func AppAddSpanEventsMaxSamplesStored(builder *flatbuffers.Builder, spanEventsMa
 }
 func AppAddMetadata(builder *flatbuffers.Builder, metadata flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(17, flatbuffers.UOffsetT(metadata), 0)
-}
-func AppAddLogEventMaxSampelsStored(builder *flatbuffers.Builder, logEventMaxSampelsStored uint64) {
-	builder.PrependUint64Slot(18, logEventMaxSampelsStored, 0)
 }
 func AppEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()
