@@ -44,18 +44,18 @@ func EncodeMetric(b *flatbuffers.Builder, name string, data [6]float64,
 	MetricStart(b)
 	MetricAddName(b, nameOffset)
 
-	var scopedByte byte
-	var forcedByte byte
+	var scopedBool bool
+	var forcedBool bool
 
 	if scoped {
-		scopedByte = 1
+		scopedBool = true
 	}
 	if forced {
-		forcedByte = 1
+		forcedBool = true
 	}
 
 	dataOffset := CreateMetricData(b, data[0], data[1], data[2], data[3],
-		data[4], data[5], scopedByte, forcedByte)
+		data[4], data[5], scopedBool, forcedBool)
 
 	MetricAddData(b, dataOffset)
 
@@ -109,7 +109,7 @@ func EncodeTrace(b *flatbuffers.Builder, timestampMS, durationMS float64, guid s
 	TraceAddGuid(b, guidOffset)
 	TraceAddData(b, dataOffset)
 	if force {
-		TraceAddForcePersist(b, 1)
+		TraceAddForcePersist(b, true)
 	}
 	return TraceEnd(b)
 }

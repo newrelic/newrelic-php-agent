@@ -8,7 +8,7 @@ namespace protocol;
 //
 // How to Regenerate:
 //
-//   cd src/newrelic
+//   cd protocol/flatbuffers
 //   flatc -g protocol.fbs
 //   cd protocol
 //   go fmt
