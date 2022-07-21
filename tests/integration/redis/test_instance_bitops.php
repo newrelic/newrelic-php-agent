@@ -78,7 +78,7 @@ function test_bitops() {
   tap_equal(0, $redis->setbit($key1, 4, 1), 'set fourth bit');
   tap_equal('LEN', $redis->get($key1), 'verify new key value');
 
-  /* |L| 01001100 |E| 01000001 |N| 01000100 &
+  /* |L| 01001100 |E| 01000101 |N| 01000100 &
      |H| 01001000 |A| 01000001 |T| 01010100
      |H| 01001000 |A| 01000001 |D| 01000100 */
   tap_equal(3, $redis->bitop('AND', $dkey, $key1, $key2), 'perform bit operations on two keys');
