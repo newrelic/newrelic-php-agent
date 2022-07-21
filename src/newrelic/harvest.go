@@ -27,6 +27,7 @@ type Harvest struct {
 	CustomEvents      *CustomEvents
 	ErrorEvents       *ErrorEvents
 	SpanEvents        *SpanEvents
+	LogEvents         *LogEvents
 	commandsProcessed int
 	pidSet            map[int]struct{}
 	httpErrorSet      map[int]float64
@@ -57,7 +58,8 @@ func (h *Harvest) empty() bool {
 		h.Metrics.Empty() &&
 		h.SlowSQLs.Empty() &&
 		h.TxnEvents.Empty() &&
-		h.TxnTraces.Empty()
+		h.TxnTraces.Empty() &&
+		h.LogEvents.Empty()
 }
 
 func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *MetricTable) {

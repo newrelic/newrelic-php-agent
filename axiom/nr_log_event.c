@@ -145,11 +145,11 @@ void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level) {
   event->log_level = nr_strdup( log_level);
 }
 
-void nr_log_event_set_timestamp(nr_log_event_t* event, const nrtime_t timestamp) {
+void nr_log_event_set_timestamp(nr_log_event_t* event, const nrtime_t time) {
   if (NULL == event) {
     return;
   }
-  event->timestamp = timestamp;
+  event->timestamp = time / NR_TIME_DIVISOR_MS;
 }
 
 void nr_log_event_set_trace_id(nr_log_event_t* event, const char* trace_id) {
