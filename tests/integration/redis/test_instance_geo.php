@@ -44,7 +44,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/integration.php')
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/redis.inc');
 
-function test_geo() {
+function test_redis_geo() {
   global $REDIS_HOST, $REDIS_PORT;
 
   $redis = new Redis();
@@ -84,7 +84,7 @@ function test_geo() {
   $redis->close();
 }
 
-test_geo();
+test_redis_geo();
 
 $txn = new Transaction;
 

@@ -58,7 +58,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/integration.php')
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/redis.inc');
 
-function test_sorted_sets() {
+function test_setops() {
   global $REDIS_HOST, $REDIS_PORT;
 
   $redis = new Redis();
@@ -109,7 +109,7 @@ function test_sorted_sets() {
   $redis->close();
 }
 
-test_sorted_sets();
+test_setops();
 
 $txn = new Transaction;
 

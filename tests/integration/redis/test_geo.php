@@ -90,7 +90,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/redis.inc');
 
-function test_geopos() {
+function test_redis_geo() {
   global $REDIS_HOST, $REDIS_PORT;
 
   $redis = new Redis();
@@ -130,4 +130,4 @@ function test_geopos() {
   $redis->close();
 }
 
-test_geopos();
+test_redis_geo();
