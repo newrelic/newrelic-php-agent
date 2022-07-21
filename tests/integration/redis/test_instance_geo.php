@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 The agent should report Redis metrics including instance information for Redis
-basic operations.
+geo operations.
 */
 
 /*SKIPIF

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should report Redis metrics for Redis basic operations.
+The agent should report Redis metrics for Redis geo operations.
 */
 
 /*SKIPIF
