@@ -69,9 +69,7 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     return false;
   }
 
-  // We'll build the JSON manually to avoid copying the hashes into a new
-  // nrobj_t array, which is expensive and pointless given it's a fixed length
-  // array.
+  // We'll build the JSON manually
   nr_buffer_add(buf, NR_PSTR("["));
   nr_buffer_add(buf, NR_PSTR("{"));
   nr_buffer_add(buf, NR_PSTR("\"message\":\""));
