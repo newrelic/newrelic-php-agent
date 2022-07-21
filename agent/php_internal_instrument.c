@@ -3498,7 +3498,8 @@ void nr_php_generate_internal_wrap_records(void) {
                       "getbit")
   NR_INTERNAL_WRAPREC("redis::getrange", redis_getrange, redis_function, 0,
                       "getrange")
-  NR_INTERNAL_WRAPREC("redis::getset", redis_getset, redis_function, 0, "getset")
+  NR_INTERNAL_WRAPREC("redis::getset", redis_getset, redis_function, 0,
+                      "getset")
   NR_INTERNAL_WRAPREC("redis::hdel", redis_hdel, redis_function, 0, "hdel")
   NR_INTERNAL_WRAPREC("redis::hexists", redis_hexists, redis_function, 0,
                       "hexists")
@@ -3522,8 +3523,8 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::incr", redis_incr, redis_function, 0, "incr")
   NR_INTERNAL_WRAPREC("redis::incrby", redis_incrby, redis_function, 0,
                       "incrby")
-  NR_INTERNAL_WRAPREC("redis::incrbyfloat", redis_incrbyfloat, redis_function, 0,
-                      "incrbyfloat")
+  NR_INTERNAL_WRAPREC("redis::incrbyfloat", redis_incrbyfloat, redis_function,
+                      0, "incrbyfloat")
   NR_INTERNAL_WRAPREC("redis::keys", redis_keys, redis_function, 0, "keys")
   NR_INTERNAL_WRAPREC("redis::lget", redis_lget, redis_function, 0, "lget")
   NR_INTERNAL_WRAPREC("redis::lindex", redis_lindex, redis_function, 0,
@@ -3578,7 +3579,8 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::rpoplpush", redis_rpoplpush, redis_function, 0,
                       "rpoplpush")
   NR_INTERNAL_WRAPREC("redis::rpush", redis_rpush, redis_function, 0, "rpush")
-  NR_INTERNAL_WRAPREC("redis::rpushx", redis_rpushx, redis_function, 0, "rpushx")
+  NR_INTERNAL_WRAPREC("redis::rpushx", redis_rpushx, redis_function, 0,
+                      "rpushx")
   NR_INTERNAL_WRAPREC("redis::sadd", redis_sadd, redis_function, 0, "sadd")
   NR_INTERNAL_WRAPREC("redis::scard", redis_scard, redis_function, 0, "scard")
   NR_INTERNAL_WRAPREC("redis::sdiff", redis_sdiff, redis_function, 0, "sdiff")
@@ -3593,8 +3595,8 @@ void nr_php_generate_internal_wrap_records(void) {
                       "setrange")
   NR_INTERNAL_WRAPREC("redis::sinter", redis_sinter, redis_function, 0,
                       "sinter")
-  NR_INTERNAL_WRAPREC("redis::sinterstore", redis_sinterstore, redis_function, 0,
-                      "sinterstore")
+  NR_INTERNAL_WRAPREC("redis::sinterstore", redis_sinterstore, redis_function,
+                      0, "sinterstore")
   NR_INTERNAL_WRAPREC("redis::sismember", redis_sismember, redis_function, 0,
                       "sismember")
   NR_INTERNAL_WRAPREC("redis::smembers", redis_smembers, redis_function, 0,
@@ -3603,15 +3605,15 @@ void nr_php_generate_internal_wrap_records(void) {
                       "smismember")
   NR_INTERNAL_WRAPREC("redis::smove", redis_smove, redis_function, 0, "smove")
   NR_INTERNAL_WRAPREC("redis::spop", redis_spop, redis_function, 0, "spop")
-  NR_INTERNAL_WRAPREC("redis::srandmember", redis_srandmember, redis_function, 0,
-                      "srandmember")
+  NR_INTERNAL_WRAPREC("redis::srandmember", redis_srandmember, redis_function,
+                      0, "srandmember")
   NR_INTERNAL_WRAPREC("redis::srem", redis_srem, redis_function, 0, "srem")
   NR_INTERNAL_WRAPREC("redis::strlen", redis_strlen, redis_function, 0,
                       "strlen")
   NR_INTERNAL_WRAPREC("redis::sunion", redis_sunion, redis_function, 0,
                       "sunion")
-  NR_INTERNAL_WRAPREC("redis::sunionstore", redis_sunionstore, redis_function, 0,
-                      "sunionstore")
+  NR_INTERNAL_WRAPREC("redis::sunionstore", redis_sunionstore, redis_function,
+                      0, "sunionstore")
   NR_INTERNAL_WRAPREC("redis::swapdb", redis_swapdb, redis_function, 0,
                       "swapdb")
   NR_INTERNAL_WRAPREC("redis::time", redis_time, redis_function, 0, "time")
@@ -3621,9 +3623,11 @@ void nr_php_generate_internal_wrap_records(void) {
                       "unlink")
   NR_INTERNAL_WRAPREC("redis::xack", redis_xack, redis_function, 0, "xack")
   NR_INTERNAL_WRAPREC("redis::xadd", redis_xadd, redis_function, 0, "xadd")
-  NR_INTERNAL_WRAPREC("redis::xclaim", redis_xclaim, redis_function, 0, "xclaim")
+  NR_INTERNAL_WRAPREC("redis::xclaim", redis_xclaim, redis_function, 0,
+                      "xclaim")
   NR_INTERNAL_WRAPREC("redis::xdel", redis_xdel, redis_function, 0, "xdel")
-  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0, "xgroup")
+  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0, 
+                      "xgroup")
   NR_INTERNAL_WRAPREC("redis::xinfo", redis_xinfo, redis_function, 0, "xinfo")
   NR_INTERNAL_WRAPREC("redis::xlen", redis_xlen, redis_function, 0, "xlen")
   NR_INTERNAL_WRAPREC("redis::xpending", redis_xpending, redis_function, 0,
@@ -3638,22 +3642,24 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::xtrim", redis_xtrim, redis_function, 0, "xtrim")
   NR_INTERNAL_WRAPREC("redis::zadd", redis_zadd, redis_function, 0, "zadd")
   NR_INTERNAL_WRAPREC("redis::zcard", redis_zcard, redis_function, 0, "zcard")
-  NR_INTERNAL_WRAPREC("redis::zcount", redis_zcount, redis_function, 0, "zcount")
+  NR_INTERNAL_WRAPREC("redis::zcount", redis_zcount, redis_function, 0,
+                      "zcount")
   NR_INTERNAL_WRAPREC("redis::zincrby", redis_zincrby, redis_function, 0,
                       "zincrby")
-  NR_INTERNAL_WRAPREC("redis::zinterstore", redis_zinterstore, redis_function, 0,
-                      "zinterstore")
+  NR_INTERNAL_WRAPREC("redis::zinterstore", redis_zinterstore, redis_function,
+                      0, "zinterstore")
   NR_INTERNAL_WRAPREC("redis::zlexcount", redis_zlexcount, redis_function, 0,
                       "zlexcount")
   NR_INTERNAL_WRAPREC("redis::zpopmax", redis_zpopmax, redis_function, 0,
                       "zpopmax")
   NR_INTERNAL_WRAPREC("redis::zpopmin", redis_zpopmin, redis_function, 0,
                       "zpopmin")
-  NR_INTERNAL_WRAPREC("redis::zrange", redis_zrange, redis_function, 0, "zrange")
-  NR_INTERNAL_WRAPREC("redis::zrangebylex", redis_zrangebylex, redis_function, 0,
-                      "zrangebylex")
-  NR_INTERNAL_WRAPREC("redis::zrangebyscore", redis_zrangebyscore, redis_function,
-                      0, "zrangebyscore")
+  NR_INTERNAL_WRAPREC("redis::zrange", redis_zrange, redis_function, 0,
+                      "zrange")
+  NR_INTERNAL_WRAPREC("redis::zrangebylex", redis_zrangebylex, redis_function,
+                      0, "zrangebylex")
+  NR_INTERNAL_WRAPREC("redis::zrangebyscore", redis_zrangebyscore,
+                      redis_function, 0, "zrangebyscore")
   NR_INTERNAL_WRAPREC("redis::zrank", redis_zrank, redis_function, 0, "zrank")
   NR_INTERNAL_WRAPREC("redis::zrem", redis_zrem, redis_function, 0, "zrem")
   NR_INTERNAL_WRAPREC("redis::zremrangebylex", redis_zremrangebylex,
@@ -3670,9 +3676,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       redis_function, 0, "zrevrangebyscore")
   NR_INTERNAL_WRAPREC("redis::zrevrank", redis_zrevrank, redis_function, 0,
                       "zrevrank")
-  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0, "zscore")
-  NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function, 0,
-                      "zunionstore")
+  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0, 
+                      "zscore")
+  NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
+                      0, "zunionstore")
 
   NR_INTERNAL_WRAPREC("pg_close", pg_close, pg_close, 0, 0)
   NR_INTERNAL_WRAPREC("pg_connect", pg_connect, pg_connect, 0, 0)
