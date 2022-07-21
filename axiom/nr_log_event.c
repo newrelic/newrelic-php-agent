@@ -133,14 +133,20 @@ void nr_log_event_set_message(nr_log_event_t* event, const char* message) {
   if (NULL == event || NULL == message) {
     return;
   }
-  event->message = nr_strdup( message);
+  if (NULL != event->message) {
+    nr_free(event->message);
+  }
+  event->message = nr_strdup(message);
 }
 
 void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level) {
   if (NULL == event || NULL == log_level) {
     return;
   }
-  event->log_level = nr_strdup( log_level);
+  if (NULL != event->log_level) {
+    nr_free(event->log_level);
+  }
+  event->log_level = nr_strdup(log_level);
 }
 
 void nr_log_event_set_timestamp(nr_log_event_t* event, const nrtime_t time) {
@@ -154,26 +160,38 @@ void nr_log_event_set_trace_id(nr_log_event_t* event, const char* trace_id) {
   if (NULL == event || NULL == trace_id) {
     return;
   }
-  event->trace_id = nr_strdup( trace_id);
+  if (NULL != event->trace_id) {
+    nr_free(event->trace_id);
+  }
+  event->trace_id = nr_strdup(trace_id);
 }
 
 void nr_log_event_set_span_id(nr_log_event_t* event, const char* span_id) {
   if (NULL == event || NULL == span_id) {
     return;
   }
-  event->span_id = nr_strdup( span_id);
+  if (NULL != event->span_id) {
+    nr_free(event->span_id);
+  }
+  event->span_id = nr_strdup(span_id);
 }
 
 void nr_log_event_set_guid(nr_log_event_t* event, const char* guid) {
   if (NULL == event || NULL == guid) {
     return;
   }
-  event->entity_guid = nr_strdup( guid);
+  if (NULL != event->entity_guid) {
+    nr_free(event->entity_guid);
+  }
+  event->entity_guid = nr_strdup(guid);
 }
 
 void nr_log_event_set_entity_name(nr_log_event_t* event, const char* entity_name) {
   if (NULL == event || NULL == entity_name) {
     return;
+  }
+  if (NULL != event->entity_name) {
+    nr_free(event->entity_name);
   }
   event->entity_name = nr_strdup(entity_name);
 }
@@ -182,5 +200,8 @@ void nr_log_event_set_hostname(nr_log_event_t* event, const char* hostname) {
   if (NULL == event || NULL == hostname) {
     return;
   }
-  event->hostname = nr_strdup( hostname);
+  if (NULL != event->hostname) {
+    nr_free(event->hostname);
+  }
+  event->hostname = nr_strdup(hostname);
 }
