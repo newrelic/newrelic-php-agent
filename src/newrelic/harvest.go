@@ -58,8 +58,7 @@ func (h *Harvest) empty() bool {
 		h.Metrics.Empty() &&
 		h.SlowSQLs.Empty() &&
 		h.TxnEvents.Empty() &&
-		h.TxnTraces.Empty() &&
-		h.LogEvents.Empty()
+		h.TxnTraces.Empty()
 }
 
 func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *MetricTable) {
