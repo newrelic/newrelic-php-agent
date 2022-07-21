@@ -187,11 +187,6 @@ static void test_log_event_trace_id(void) {
   tlib_pass_if_null("the trace should still be NULL",
                     event->trace_id);
 
-  // Test : the getter should not blow up when we send it an event with a NULL
-  // traceID
-  tlib_pass_if_null("NULL event -> NULL trace ID",
-                    event->trace_id);
-
   // Test : setting the trace id back and forth behaves as expected
   nr_log_event_set_trace_id(event, "Florance");
   tlib_pass_if_str_equal("should be the trace ID we set 1", "Florance",
