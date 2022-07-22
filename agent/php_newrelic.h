@@ -462,7 +462,7 @@ nrinitime_t
                                */
 
 /*
- * configuration options for logging in context
+ * configuration options for handling application logging
  */
 
 nrinibool_t logging_enabled;        /* newrelic.application_logging.enabled */
