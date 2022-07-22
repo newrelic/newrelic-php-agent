@@ -1150,8 +1150,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Type   : boolean
 ; Scope  : per-directory
 ; Default: true
-; Info   : If this is disabled, all sub-features are disabled; if it is enabled, 
-;          the individual sub-feature configurations take effect. 
+; Info   : An overall configuration for enabling/disabling all application
+;          logging features. If this is disabled, all sub-features are disabled;
+;          if it is enabled, the individual sub-feature configurations
+;          take effect.
 ;
 ;newrelic.application_logging.enabled = true
 
@@ -1176,8 +1178,8 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Type   : boolean
 ; Scope  : per-directory
 ; Default: true
-; Info   : Toggles whether the agent gathers the the user facing Logging/lines 
-;          and Logging/lines/{SEVERITY} Logging Metrics used in the Logs chart 
+; Info   : Toggles whether the agent gathers the Logging/lines and
+;          Logging/lines/{SEVERITY} Logging Metrics used in the Logs chart
 ;          on the APM Summary page.
 ;
 ;newrelic.application_logging.metrics.enabled = true
