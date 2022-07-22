@@ -14,21 +14,7 @@
 #include "nr_log_event_private.h"
 
 nr_log_event_t* nr_log_event_create() {
-  nr_log_event_t* le;
-
-  le = (nr_log_event_t*)nr_malloc(sizeof(nr_log_event_t));
-
-  le->trace_id = NULL;
-  le->message = NULL;
-  le->log_level = NULL;
-  le->timestamp = 0;
-  le->trace_id = NULL;
-  le->span_id = NULL;
-  le->entity_guid = NULL;
-  le->entity_name = NULL;
-  le->hostname = NULL;
-
-  return le;
+  return (nr_log_event_t*)nr_zalloc(sizeof(struct _nr_log_event_t));
 }
 
 void nr_log_event_destroy(nr_log_event_t** ptr) {

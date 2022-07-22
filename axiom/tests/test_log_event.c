@@ -207,10 +207,6 @@ static void test_log_event_entity_name(void) {
   tlib_pass_if_null("the entity_name should still be NULL",
                     event->entity_name);
 
-  // Test : the getter should not blow up when we send it an event with a NULL
-  // entity name.
-  tlib_pass_if_null("NULL event -> NULL entity name", event->entity_name);
-
   // Test : setting the entity_name back and forth behaves as expected
   nr_log_event_set_entity_name(event, "Florance");
   tlib_pass_if_str_equal("should be the entity name we set 1", "Florance",
@@ -324,11 +320,6 @@ static void test_log_event_span_id(void) {
   nr_log_event_set_span_id(event, NULL);
   nr_log_event_set_span_id(NULL, "wallaby");
   tlib_pass_if_null("the span should still be NULL",
-                    event->span_id);
-
-  // Test : the getter should not blow up when we send it an event with a NULL
-  // spanID
-  tlib_pass_if_null("NULL event -> NULL span ID",
                     event->span_id);
 
   // Test : setting the span id back and forth behaves as expected
