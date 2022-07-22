@@ -1168,8 +1168,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Scope  : per-directory
 ; Default: 10000
 ; Info   : Number of log records to send per minute to New Relic. Controls the 
-;          overall memory consumption when using log forwarding. SHOULD be sent 
-;          as part of the harvest_limits on Connect.
+;          overall memory consumption when using log forwarding.
 ;
 ;newrelic.application_logging.forwarding.max_samples_stored = 10000
 
