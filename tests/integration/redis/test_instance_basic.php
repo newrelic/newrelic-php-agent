@@ -93,7 +93,7 @@ function test_basic() {
     exit(1);
   }
 
-  tap_assert($redis->ping(), 'ping redis');
+  tap_equal("+PONG", $redis->ping("+PONG"), 'ping redis');
 
   tap_assert($redis->set($key1, 'car'), 'set key');
   tap_equal('car', $redis->get($key1), 'get key');
