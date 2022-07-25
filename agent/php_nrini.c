@@ -269,7 +269,7 @@ static nr_status_t nr_strtoi(int* val_p, const char* str, int base) {
   char* endptr_p;
   errno = 0;
 
-  val = (int)strtoimax(str, &endptr_p, base);
+  val = strtoimax(str, &endptr_p, base);
   if (0 != errno || '\0' != *endptr_p) {
     return NR_FAILURE;
   }
