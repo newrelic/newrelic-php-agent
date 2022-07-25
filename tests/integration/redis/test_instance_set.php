@@ -37,7 +37,6 @@ ok - get set union
 ok - store set union
 ok - read stored set union
 ok - check set membership
-ok - check membership of multiple elements
 ok - move an element from one set to another
 ok - move a nonexistent element from one set to another
 ok - get a random set element
@@ -91,7 +90,6 @@ function test_setops() {
   tap_equal_unordered_values(['foo', 'bar'], $redis->smembers($dkey), 'read stored set union');
 
   tap_assert($redis->sismember($key1, 'foo'), 'check set membership');
-  tap_equal([1, 0], $redis->smismember($key1, 'foo', 'bar'), 'check membership of multiple elements');
 
   tap_assert($redis->smove($key2, $key1, 'bar'), 'move an element from one set to another');
   tap_refute($redis->smove($key2, $key1, 'bar'), 'move a nonexistent element from one set to another');
@@ -126,7 +124,6 @@ redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/sinterstore',
   'Datastore/operation/Redis/sismember',
   'Datastore/operation/Redis/smembers',
-  'Datastore/operation/Redis/smismember',
   'Datastore/operation/Redis/smove',
   'Datastore/operation/Redis/spop',
   'Datastore/operation/Redis/srandmember',

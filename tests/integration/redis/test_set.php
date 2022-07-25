@@ -36,7 +36,6 @@ ok - get set union
 ok - store set union
 ok - read stored set union
 ok - check set membership
-ok - check membership of multiple elements
 ok - move an element from one set to another
 ok - move a nonexistent element from one set to another
 ok - get a random set element
@@ -58,10 +57,10 @@ ok - remove destination key
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [26, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [26, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [26, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [26, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                         [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                    [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                   [25, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},              [25, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
@@ -95,9 +94,6 @@ ok - remove destination key
     [{"name":"Datastore/operation/Redis/smembers"},    [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/smembers",
       "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/smismember"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/smismember",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/smove"},       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/smove",
       "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
@@ -164,7 +160,6 @@ function test_setops() {
   tap_equal_unordered_values(['foo', 'bar'], $redis->smembers($dkey), 'read stored set union');
 
   tap_assert($redis->sismember($key1, 'foo'), 'check set membership');
-  tap_equal([1, 0], $redis->smismember($key1, 'foo', 'bar'), 'check membership of multiple elements');
 
   tap_assert($redis->smove($key2, $key1, 'bar'), 'move an element from one set to another');
   tap_refute($redis->smove($key2, $key1, 'bar'), 'move a nonexistent element from one set to another');
