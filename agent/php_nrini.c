@@ -256,19 +256,20 @@ static void check_ini_int_min_max(int* var, int minval, int maxval) {
 }
 
 /*
- * @brief error handling for strtol() functionality
+ * @brief error handling for strtoimax() functionality
  *
- * @param val_p   pointer to store the parsed value
+ * @param val_p   pointer to store the parsed value; remains undefined when
+ *                function returns NR_FAILURE
  * @param str     string to parse
  * @param base    base to be used for number conversion
  * @return nr_status_t NR_SUCCESS || NR_FAILURE
  */
-static nr_status_t nr_strtol(int* val_p, const char* str, int base) {
+static nr_status_t nr_strtoi(int* val_p, const char* str, int base) {
   int val;
   char* endptr_p;
   errno = 0;
 
-  val = (int)strtol(str, &endptr_p, base);
+  val = (int)strtoimax(str, &endptr_p, base);
   if (0 != errno || '\0' != *endptr_p) {
     return NR_FAILURE;
   }
@@ -1779,7 +1780,7 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   p->where = 0;
 
   if (0 != NEW_VALUE_LEN) {
-    parse_status = nr_strtol(&val, NEW_VALUE, 0);
+    parse_status = nr_strtoi(&val, NEW_VALUE, 0);
     if (0 > val || NR_FAILURE == parse_status) {
       val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
       err = true;
@@ -1788,11 +1789,11 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
       err = true;
     }
     if (err) {
-      nrl_debug(NRL_INIT,
-                "Invalid application_logging.forwarding.max_samples_stored "
-                "value \"%.8s\"; using "
-                "%d instead",
-                NEW_VALUE, val);
+      nrl_warning(NRL_INIT,
+                  "Invalid application_logging.forwarding.max_samples_stored "
+                  "value \"%.8s\"; using "
+                  "%d instead",
+                  NEW_VALUE, val);
     }
   }
   p->value = (zend_uint)val;
