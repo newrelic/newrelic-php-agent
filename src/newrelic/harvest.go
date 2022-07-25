@@ -27,6 +27,7 @@ type Harvest struct {
 	CustomEvents      *CustomEvents
 	ErrorEvents       *ErrorEvents
 	SpanEvents        *SpanEvents
+	LogEvents         *LogEvents
 	commandsProcessed int
 	pidSet            map[int]struct{}
 	httpErrorSet      map[int]float64
