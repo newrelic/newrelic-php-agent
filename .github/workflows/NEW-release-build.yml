@@ -1,0 +1,368 @@
+#
+# This is the workflow to do a release build.
+# GHA: 04/07: This is actually replacing the php-release-agent job in jenkins.
+# We do not need the php-release-agent-checkout job.
+# https://issues.newrelic.com/browse/NR-6477
+#
+
+---
+
+name: 'NEW release_CI (php-release-agent)'
+
+#
+# Control when the action will run.
+#
+on:
+  push:
+    branches:
+      - dev
+      - main
+  #
+  # Run this workflow manually from the Actions tab or using the API/CLI
+  #
+  workflow_dispatch:
+    inputs:
+      ARM64:
+        description: "Optionally Run the arm64 job"
+        required: false
+        type: boolean
+        default: false
+      START_RUNNER:
+        description: "Optionally start the arm64 runner"
+        required: false
+        type: boolean
+        default: false
+      BUILD_NUMBER:
+        description: "BUILD_NUMBER to pass to workflow"
+        required: false
+        default: ""
+      BIGCHANGE:
+        description: "Run this workflow as BIGCHANGE"
+        required: false
+        default: false
+
+jobs:
+  agent_release_by_image:
+    env:
+      PHP_VER: ${{ matrix.php_ver }}
+      ARCH: ${{ matrix.arch }}
+      BUILD_TYPE: release
+      OS: ${{ matrix.os }}
+      image_name: ${{ matrix.os }}:${{ matrix.php_ver }}${{ matrix.arch }}
+      IMAGE_OS: ${{ matrix.image_os }}
+    runs-on: ubuntu-latest
+    container:  ## GHA: testing using private docker image
+      image: ${{ matrix.registry }}/${{ matrix.image_os }}
+      credentials:
+        username: ${{ secrets.DOCKER_REPO_USER }}
+        password: ${{ secrets.DOCKER_USER_TOKEN }}
+    strategy:
+      matrix:
+        registry: [mycirrus]
+        image_os:
+          - newrelic:nr-centos8-1.1-pcre
+          - newrelic:nr-centos7-1.2-pcre
+          - newrelic:nr-alpine3.4-1.1-pcre
+          - newrelic:nr-alpine-3.14--1.2-pcre
+        os: [linux]
+        # php_ver: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.0-zts']
+        # php_ver: ['5.5', '5.6', '7.0']
+        php_ver: ['5.5', '7.0', '8.0']
+        arch: [x64]
+    steps:
+      - name: Checkout PHP Agent Repo
+        uses: actions/checkout@v3
+        with:
+          # ref: ${{ github.event.client_payload.ref }}
+          ref: main
+
+      - name: Checkout build scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: newrelic/php-agent-php-build-scripts
+          # Chaging ref temporarily for testing
+          # ref: master
+          ref: gha-dev
+          # GHA: Check for token
+          token: ${{ secrets.ACTIONS_TOKEN }}
+          path: php-build-scripts
+
+      - name: Check the workspace
+        run: |
+          echo "current directory is " $(pwd)
+          ls -la
+
+      - name: Check php-build-scripts
+        run: |
+          echo "current directory is " $(pwd)
+          ls -la php-build-scripts/
+
+      # GHA: This step shouldn't be necessary with the phpvm.bash
+      - name: Add the "opt/nr" path, install packages
+        run: |
+          ls -la /opt/nr
+          echo "/opt/nr/php/${PHP_VER}/bin" >> $GITHUB_PATH
+          echo "/opt/nr/php/${PHP_VER}/bin/phpize" >> $GITHUB_PATH
+          echo "/opt/nr/php/${PHP_VER}/bin/php-config" >> $GITHUB_PATH
+          echo "Adding pcre path"
+          echo "/opt/nr/pcre/8.40/bin" >> $GITHUB_PATH
+
+      # Add ENV variables required in makefile
+      - name: Add ENV variables required in makefile
+        run: |
+          echo "AGENT_VERSION="${GITHUB_RUN_NUMBER}"" >> $GITHUB_ENV
+          echo "GIT_COMMIT="${GITHUB_SHA}"" >> $GITHUB_ENV
+          echo "BUILD_NUMBER="${GITHUB_RUN_NUMBER}"" >> $GITHUB_ENV
+
+      - name: 'Test call phpvm.bash, then release_build_gha.sh'
+        run: |
+          set -x
+          echo "Calling phpvm.bash"
+          source php-build-scripts/bin/phpvm.bash change ${{ matrix.php_ver }}
+          echo "Where is phpize?"
+          find / -name phpize
+          whereis phpize
+          echo "Calling release_build_gha.sh"
+          ./.github/docker/linux/release_build_gha.sh
+
+      - name: Check content of releases directory
+        run: |
+          tree -a releases/
+          ls -laR releases/
+
+      # GHA: Check the contents of bin and agent/.lib/
+      - name: "Check the contents of bin/ and agent/.lib/"
+        if: ${{ always() }}
+        run: |
+          ls -la ./bin/
+          sudo find ./ -name newrelic.so
+
+      # Check ENV variables
+      # GHA: Check for IMAGE_OS value per matix run
+      - name: Check environmental variables
+        if: ${{ always() }}
+        run: printenv | sort -f
+
+      # Rename matrix item to remove problem characers
+      # GHA only required for custom artifact naming
+      - name: Rename Matrix item
+        if: ${{ failure() || success() }}
+        env:
+          MATRIX_IMAGE: ${{ matrix.image_os }}
+        run: |
+          MATRIX_IMAGE=$(echo ${MATRIX_IMAGE} | sed 's|:|-|g')
+          echo "MATRIX_IMAGE="${MATRIX_IMAGE}"" >> $GITHUB_ENV
+
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.MATRIX_IMAGE }}-${{ matrix.php_ver }}-${{ matrix.arch }}binaries
+          path: releases/
+          if-no-files-found: error
+
+  # GHA: Need to a job to provision the arm64 runner
+  # GHA: Need to run command in instance to start runner (.$HOME/actions-runner/run.sh)
+  # GHA: Create secrets for all inputs to increase sec.
+  start-runner:
+    if: ${{ github.event.inputs.ARM64 == 'true' && github.event.inputs.START_RUNNER == 'true' }}
+    name: Start self-hosted EC2 runner
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: start
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_AMI_ID }}
+          ec2-instance-type: ${{ secrets.AWS_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_SUBNET }}
+          security-group-id: ${{ secrets.AWS_SEC_GROUP }}
+          # runner-home-dir: "$HOME/actions-runner"
+          # iam-role-name: my-role-name  # optional, requires additional permissions
+          aws-resource-tags: > # optional, requires additional permissions
+            [
+              {"Key": "Name", "Value": "kentonshade"},
+              {"Key": "owning_team", "Value": "PHPC"},
+              {"Key": "environment", "Value": "development"},
+              {"Key": "product", "Value": "agents"},
+              {"Key": "department, "Value": "product"}
+            ]
+
+  # GHA: We need to check if runner online/started
+  # GHA: Confirm that changes from this job do nto persist on the runner
+  agent_release_arm64:
+    # GHA: Do not tun this job if false
+    if: ${{ github.event.inputs.ARM64 ==  'true' }}
+    # needs: start-runner
+    env:
+      PHP_VER: ${{ matrix.php_ver }}
+      ARCH: ${{ matrix.arch }}
+      BUILD_TYPE: release
+      OS: ${{ matrix.os }}
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        # registry: [mycirrus]
+        # image_os: ['newrelic:nr-centos8-1.1', 'newrelic:nr-centos7-1.2', 'newrelic:nr-alpine-3.14--1.2', 'newrelic:nr-alpine3.4-1.1']
+        # image_os: ['newrelic:nr-centos8-1.1', 'newrelic:nr-alpine3.4-1.1']
+        os: [linux]
+        # php_ver: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.0-zts']
+        # php_ver: ['5.5', '5.6', '7.0']
+        php_ver: ['8.0', '8.1']
+        # GHA we'll need to exclude some combinations I believe
+        # Check the arch for the new docker images
+        arch: [x64]
+    steps:
+      - name: Checkout PHP Agent Repo
+        uses: actions/checkout@v3
+        with:
+          # ref: ${{ github.event.client_payload.ref }}
+          ref: main
+
+      - name: Checkout build scripts repository
+        uses: actions/checkout@v3
+        with:
+          repository: newrelic/php-agent-php-build-scripts
+          # Chaging ref temporarily for testing
+          # ref: master
+          ref: gha-dev
+          # GHA: Check for token
+          token: ${{ secrets.ACTIONS_TOKEN }}
+          path: php-build-scripts
+
+      - name: Check the workspace
+        run: |
+          echo "current directory is " $(pwd)
+          ls -la
+
+      - name: Check php-build-scripts
+        run: |
+          echo "current directory is " $(pwd)
+          ls -la php-build-scripts/
+
+      # GHA: This step shouldn't be necessary with the phpvm.bash
+      - name: Add the "opt/nr" path, install packages
+        run: |
+          echo "/opt/nr/php/${PHP_VER}/bin" >> $GITHUB_PATH
+          echo "/opt/nr/php/${PHP_VER}/bin/phpize" >> $GITHUB_PATH
+          echo "/opt/nr/php/${PHP_VER}/bin/php-config" >> $GITHUB_PATH
+          echo "Adding pcre path"
+          echo "/opt/nr/pcre/8.40/bin" >> $GITHUB_PATH
+
+      # Add ENV variables required
+      - name: Add ENV variables required in makefile
+        run: |
+          echo "AGENT_VERSION="${GITHUB_RUN_NUMBER}"" >> $GITHUB_ENV
+          echo "GIT_COMMIT="${GITHUB_SHA}"" >> $GITHUB_ENV
+          echo "BUILD_NUMBER="${GITHUB_RUN_NUMBER}"" >> $GITHUB_ENV
+
+      # GHA: Spme path issues need resolving
+      # GHA: We may have to run this and build-release in same step
+      - name: 'Test call phpvm.bash, then release_build_gha.sh'
+        run: |
+          set -x
+          echo "Calling phpvm.bash"
+          source php-build-scripts/bin/phpvm.bash change ${{ matrix.php_ver }}
+          # echo "Where is phpize?"
+          # find / -name phpize
+          whereis phpize
+          echo "Calling release_build_gha.sh"
+          ./.github/docker/linux/release_build_gha.sh
+
+      - name: Check content of releases directory
+        run: |
+          tree releases/
+          ls -laR releases/
+
+      # GHA: Check the contents of bin and agent/.lib/
+      - name: "Check the contents of bin/ and agent/.lib/"
+        if: ${{ always() }}
+        run: |
+          ls -la ./bin/
+          sudo find ./ -name newrelic.so
+
+      # Check ENV variables
+      # GHA: Check for IMAGE_OS value per matix run
+      - name: Check environmental variables
+        if: ${{ always() }}
+        run: printenv | sort -f
+
+      # Rename matrix item to remove problem characers
+      # GHA only required for custom artifact naming
+      - name: Rename Matrix item
+        if: ${{ failure() || success() }}
+        env:
+          MATRIX_IMAGE: ${{ matrix.image_os }}
+        run: |
+          MATRIX_IMAGE=$(echo ${MATRIX_IMAGE} | sed 's|:|-|g')
+          echo "MATRIX_IMAGE="${MATRIX_IMAGE}"" >> $GITHUB_ENV
+
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: arm64-${{ matrix.php_ver }}-${{ matrix.arch }}binaries
+          path: releases/
+          if-no-files-found: error
+
+  # GHA renamed for better readability ⇓
+  # GHA: We might have to refactor with conditionals for arm64
+  combine-artifacts:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Combine artifacts from matrix build
+    needs:
+      - agent_release_by_image
+      # - agent_release_arm64
+    steps:
+      # - name: Dump Env Context
+      #   run: echo env is ${{ toJSON(env) }}
+
+      - name: Create directory
+        run: mkdir releases
+
+      - name: Download to directory
+        uses: actions/download-artifact@v2
+        with:
+          path: releases
+      # - run: sudo apt install tree
+
+      - run: |
+          tree releases/
+          cd releases/
+          mkdir alpine centos arm64
+          ls -la
+          # cp -R newrelic-nr-alpine*/* alpine/
+          # cp -R newrelic-nr-centos*/* centos/
+          # rm -rf newrelic-nr-alpine*/ newrelic-nr-centos*/
+          # cp -R newrelic-nr-arm64*/* arm64/
+          # tree releases/
+
+      - name: Consolidate per OS
+        # if: ${{ always() }}
+        run: |
+          cd releases/
+          cp -R newrelic-nr-alpine*/* alpine/
+          cp -R newrelic-nr-centos*/* centos/
+          rm -rf newrelic-nr-alpine*/ newrelic-nr-centos*/
+          cd ../ && mv releases combined-releases
+          tree combined-releases/
+
+      # GHA: Note the format of GitHub variable reference in contexts
+      # UNDERSCORE REPLACED WITH . SYNTAX
+      # Github "scope"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: combined-releases-${{ github.sha }}
+          path: combined-releases/
+          if-no-files-found: error
