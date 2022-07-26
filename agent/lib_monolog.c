@@ -429,6 +429,38 @@ static int nr_monolog_version(zval* logger TSRMLS_DC) {
   return retval;
 }
 
+/*
+ * Purpose : Convert $level argument of Monolog\Logger::addRecord to a string
+ * representation of Monolog's log level.
+ *
+ * Params  : Logger instance and $level argument of Monolog\Logger::addRecord.
+ *
+ * Returns : A new string with Monolog's log level name
+ */
+static char* nr_monolog_get_level_name(zval* logger, zval* level) {
+  zval* level_name = NULL;
+  char* level_name_string = nr_strdup("UNKNOWN");
+
+  if (!nr_php_object_has_method(logger, "getLevelName" TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: Logger does not have getLevelName method", __func__);
+    return level_name_string;
+  }
+
+  level_name = nr_php_call(logger, "getLevelName", level);
+  if (nr_php_is_zval_valid_string(level_name)) {
+    level_name_string = nr_strdup(Z_STRVAL_P(level_name));
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: expected level_name be a valid string, got type %d",
+                     __func__, Z_TYPE_P(level_name));
+  }
+
+  nr_php_zval_free(&level_name);
+
+  return level_name_string;
+}
+
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
@@ -438,12 +470,15 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
   /* Get values of $level and $message arguments */
   zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  char* level_name = nr_monolog_get_level_name(this_var, level);
+  nr_php_arg_release(&level);
+
   zval* message = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   nrl_verbosedebug(
       NRL_INSTRUMENT,
-      "%s: #args = %ld, Monolog API: [%d], message=[%s], level=[%ld]", __func__,
-      argc, api, Z_STRVAL_P(message), (long)Z_LVAL_P(level));
+      "%s: #args = %ld, Monolog API: [%d], level=[%s], message=[%s]", __func__,
+      argc, api, level_name, Z_STRVAL_P(message));
 
   /* Get values of optional arguments: $context and $datetime */
   zval* context = NULL;
@@ -463,13 +498,16 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
                      Z_TYPE_P(datetime));
   }
 
+  /* construct the log_event from level, message, context and datetime */
+
+  nr_free(level_name);
+
   NR_PHP_WRAPPER_CALL
   if (datetime)
     nr_php_arg_release(&datetime);
   if (context)
     nr_php_arg_release(&context);
   nr_php_arg_release(&message);
-  nr_php_arg_release(&level);
   nr_php_scope_release(&this_var);
 }
 NR_PHP_WRAPPER_END
