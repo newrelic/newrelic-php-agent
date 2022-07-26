@@ -14,6 +14,7 @@ stream operations.
 if (version_compare(phpversion(), '5.4', '<')) {
     die("skip: PHP > 5.3 required\n");
 }
+$minimum_redis_datastore_version='5.0.0';
 require("skipif.inc");
 */
 
@@ -99,8 +100,12 @@ function test_stream() {
   tap_equal(2, $redis->xlen($key1), 'verify stream was trimmed');
   tap_equal(1, $redis->xlen($key2), 'second stream length is one');
 
+  /* PhpRedis >= 5.0.0 has a custom XINFO handler that returns nicer associative key => value pairs,
+     while < 5.0.0 returns the Redis response raw, which is why we test if 'length' is a key OR is in
+     the returned array */
   $info = $redis->xinfo('stream', $key1);
-  tap_assert(is_array($info) && isset($info['length']), 'get first stream info');
+  tap_assert(is_array($info) && (isset($info['length']) || in_array('length', $info)),
+             'get first stream info');
 
   tap_assert($redis->xgroup('CREATE', $key1, 'group1', '0'), 'create a consumer group');
 
