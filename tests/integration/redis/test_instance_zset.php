@@ -40,8 +40,6 @@ ok - list elements by reverse score
 ok - get rank of an element
 ok - get the score of an element
 ok - get reverse rank of an element
-ok - pop maximum element off second sorted set
-ok - pop minimum element off of first sorted set
 ok - remove first element from first set
 ok - delete working sets keys
 ok - add elements to new set
@@ -96,12 +94,9 @@ function test_redis() {
   tap_equal(30.0, $redis->zscore($key2, 'FizzBuzz'), 'get the score of an element');
   tap_equal(0, $redis->zrevrank($key2, 'FizzBuzz'), 'get reverse rank of an element');
 
-  tap_equal(['FizzBuzz' => 30.0],  $redis->zpopmax($key2), 'pop maximum element off second sorted set');
-  tap_equal(['Fizz' => 3.0], $redis->zpopmin($key1), 'pop minimum element off of first sorted set');
+  tap_equal(1, $redis->zrem($key1, 'Fizz'), 'remove first element from first set');
 
-  tap_equal(1, $redis->zrem($key1, 'Buzz'), 'remove first element from first set');
-
-  tap_equal(2, $redis->del([$key1, $key2, $dkey]), 'delete working sets keys');
+  tap_equal(3, $redis->del([$key1, $key2, $dkey]), 'delete working sets keys');
   tap_equal(5, $redis->zadd($key1, 0, 'Apple', 1, 'Banana', 3, 'Cabbage', 3, 'Carrot', 3, 'Corn'), 'add elements to new set');
 
   tap_equal(2, $redis->zremrangebyrank($key1, 0, 1), 'remove elements by rank');
