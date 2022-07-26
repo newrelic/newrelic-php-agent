@@ -168,7 +168,6 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Supportability/EventHarvest/CustomEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.CustomEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/ErrorEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.ErrorEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/SpanEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.SpanEventConfig.Limit), Forced)
-	h.Metrics.AddCount("Supportability/EventHarvest/LogEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.LogEventConfig.Limit), Forced)
 
 	h.createEndpointAttemptsMetric(h.Metrics.Cmd(), h.Metrics.NumFailedAttempts())
 
