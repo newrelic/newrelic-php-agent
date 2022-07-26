@@ -433,11 +433,12 @@ static int nr_monolog_version(zval* logger TSRMLS_DC) {
  * Purpose : Convert $level argument of Monolog\Logger::addRecord to a string
  * representation of Monolog's log level.
  *
- * Params  : Logger instance and $level argument of Monolog\Logger::addRecord.
+ * Params  : Logger instance and Monolog\Logger::addRecord argument list
  *
  * Returns : A new string with Monolog's log level name
  */
-static char* nr_monolog_get_level_name(zval* logger, zval* level) {
+static char* nr_monolog_get_level_name(zval* logger,
+                                       NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* level_name = NULL;
   char* level_name_string = nr_strdup("UNKNOWN");
 
@@ -447,6 +448,7 @@ static char* nr_monolog_get_level_name(zval* logger, zval* level) {
     return level_name_string;
   }
 
+  zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   level_name = nr_php_call(logger, "getLevelName", level);
   if (nr_php_is_zval_valid_string(level_name)) {
     level_name_string = nr_strdup(Z_STRVAL_P(level_name));
@@ -457,6 +459,7 @@ static char* nr_monolog_get_level_name(zval* logger, zval* level) {
   }
 
   nr_php_zval_free(&level_name);
+  nr_php_arg_release(&level);
 
   return level_name_string;
 }
@@ -469,9 +472,9 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   int api = nr_monolog_version(this_var TSRMLS_CC);
 
   /* Get values of $level and $message arguments */
-  zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  char* level_name = nr_monolog_get_level_name(this_var, level);
-  nr_php_arg_release(&level);
+
+  char* level_name
+      = nr_monolog_get_level_name(this_var, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   zval* message = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
