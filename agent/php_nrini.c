@@ -2834,7 +2834,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_loggging.forwarding.enabled",
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.enabled",
                      "0",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
