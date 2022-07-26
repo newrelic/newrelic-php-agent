@@ -158,7 +158,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   if (3 <= argc) {
     context = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     nrl_verbosedebug(
-        NRL_INSTRUMENT, "%s: typeof(context)=[%d], len(context)=%ld", __func__,
+        NRL_INSTRUMENT, "%s: typeof(context)=[%d], len(context)=%zu", __func__,
         Z_TYPE_P(context), nr_php_zend_hash_num_elements(Z_ARRVAL_P(context)));
   }
 
@@ -166,8 +166,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
       = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   nrl_verbosedebug(NRL_INSTRUMENT,
-                   "%s: #args = %ld, Monolog API: [%d], level=[%s], "
-                   "message=[%s], timestamp=[%lu]",
+                   "%s: #args = %zu, Monolog API: [%d], level=[%s], "
+                   "message=[%s], timestamp=[%" PRIu64 "]",
                    __func__, argc, api, level_name, Z_STRVAL_P(message),
                    timestamp);
 
