@@ -1,8 +1,5 @@
 #
 # This is the workflow to do a release build.
-# GHA: 04/07: This is actually replacing the php-release-agent job in jenkins.
-# We do not need the php-release-agent-checkout job.
-# https://issues.newrelic.com/browse/NR-6477
 #
 
 ---
