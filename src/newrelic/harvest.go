@@ -168,6 +168,7 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Supportability/EventHarvest/CustomEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.CustomEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/ErrorEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.ErrorEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/SpanEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.SpanEventConfig.Limit), Forced)
+	h.Metrics.AddCount("Supportability/EventHarvest/LogEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.LogEventConfig.Limit), Forced)
 
 	h.createEndpointAttemptsMetric(h.Metrics.Cmd(), h.Metrics.NumFailedAttempts())
 
@@ -194,6 +195,7 @@ func (x *MetricTable) Cmd() string  { return collector.CommandMetrics }
 func (x *CustomEvents) Cmd() string { return collector.CommandCustomEvents }
 func (x *ErrorEvents) Cmd() string  { return collector.CommandErrorEvents }
 func (x *SpanEvents) Cmd() string   { return collector.CommandSpanEvents }
+func (x *LogEvents) Cmd() string    { return collector.CommandLogEvents }
 func (x *ErrorHeap) Cmd() string    { return collector.CommandErrors }
 func (x *SlowSQLs) Cmd() string     { return collector.CommandSlowSQLs }
 func (x *TxnTraces) Cmd() string    { return collector.CommandTraces }

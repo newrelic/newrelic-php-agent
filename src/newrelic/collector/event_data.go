@@ -58,6 +58,7 @@ type EventConfigs struct {
 	AnalyticEventConfig Event
 	CustomEventConfig   Event
 	SpanEventConfig     Event
+	LogEventConfig      Event
 }
 
 // EventHarvestConfig represents the event_harvest_config object used by the daemon
