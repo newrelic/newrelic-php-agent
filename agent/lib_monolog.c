@@ -17,6 +17,7 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "util_sleep.h"
 
 /*
  * Purpose : Return a copy of Monolog\Logger::API.
@@ -95,6 +96,47 @@ static char* nr_monolog_get_level_name(zval* logger,
   return level_name_string;
 }
 
+/*
+ * Purpose : Create timestamp for the log event by inspecting $datetime argument
+ * of Monolog\Logger::addRecord
+ *
+ * Params  : Logger API, # of Monolog\Logger::addRecord arguments, and
+ * Monolog\Logger::addRecord argument list
+ *
+ * Returns : timestamp in milliseconds calculated from $datetime if available,
+ * current time otherwise.
+ */
+static nrtime_t nr_monolog_get_timestamp(int api,
+                                         size_t argc,
+                                         NR_EXECUTE_PROTO TSRMLS_DC) {
+  nrtime_t timestamp = nr_get_time();
+
+  zval* datetime = NULL;
+  /* $datetime is only available since API level 2 */
+  if (2 <= api && 4 <= argc) {
+    datetime = nr_php_arg_get(4, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    if (nr_php_is_zval_valid_object(datetime)
+        && nr_php_object_has_method(datetime, "format" TSRMLS_CC)) {
+      /* call $datetime->format("Uv"); to get $datetime in milliseconds */
+      zval* fmt_datetime_milliseconds = nr_php_zval_alloc();
+      nr_php_zval_str(fmt_datetime_milliseconds, "Uv");
+      zval* datetime_milliseconds
+          = nr_php_call(datetime, "format", fmt_datetime_milliseconds);
+      nr_php_zval_free(&fmt_datetime_milliseconds);
+
+      if (nr_php_is_zval_valid_string(datetime_milliseconds)) {
+        /* convert string to nrtime_t */
+        timestamp = nr_parse_unix_time(Z_STRVAL_P(datetime_milliseconds));
+      }
+      nr_php_zval_free(&datetime_milliseconds);
+    }
+  }
+  if (datetime)
+    nr_php_arg_release(&datetime);
+
+  return timestamp;
+}
+
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
@@ -109,14 +151,9 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
   zval* message = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  nrl_verbosedebug(
-      NRL_INSTRUMENT,
-      "%s: #args = %ld, Monolog API: [%d], level=[%s], message=[%s]", __func__,
-      argc, api, level_name, Z_STRVAL_P(message));
 
   /* Get values of optional arguments: $context and $datetime */
   zval* context = NULL;
-  zval* datetime = NULL;
 
   if (3 <= argc) {
     context = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -125,20 +162,20 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
         Z_TYPE_P(context), nr_php_zend_hash_num_elements(Z_ARRVAL_P(context)));
   }
 
-  /* $datetime is only available since API level 2 */
-  if (2 <= api && 4 <= argc) {
-    datetime = nr_php_arg_get(4, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s: typeof(datetime)=[%d]", __func__,
-                     Z_TYPE_P(datetime));
-  }
+  nrtime_t timestamp
+      = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  nrl_verbosedebug(NRL_INSTRUMENT,
+                   "%s: #args = %ld, Monolog API: [%d], level=[%s], "
+                   "message=[%s], timestamp=[%lu]",
+                   __func__, argc, api, level_name, Z_STRVAL_P(message),
+                   timestamp);
 
   /* construct the log_event from level, message, context and datetime */
 
   nr_free(level_name);
 
   NR_PHP_WRAPPER_CALL
-  if (datetime)
-    nr_php_arg_release(&datetime);
   if (context)
     nr_php_arg_release(&context);
   nr_php_arg_release(&message);
