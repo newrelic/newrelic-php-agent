@@ -2834,7 +2834,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_loggging.forwarding.enabled",
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.enabled",
                      "0",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
@@ -2843,7 +2843,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_loggging.forwarding.enabled",
                      newrelic_globals,
                      0)
 STD_PHP_INI_ENTRY_EX(
-    "newrelic.application_loggging.forwarding.max_samples_stored",
+    "newrelic.application_logging.forwarding.max_samples_stored",
     NR_STR2(NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED),
     NR_PHP_REQUEST,
     nr_log_events_max_samples_stored_mh,
