@@ -12,6 +12,7 @@ import (
 	"newrelic/collector"
 	"newrelic/infinite_tracing"
 	"newrelic/limits"
+	"newrelic/log"
 )
 
 type AggregaterInto interface {
@@ -34,7 +35,7 @@ type Harvest struct {
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
-	return &Harvest{
+	nh := &Harvest{
 		Metrics:           NewMetricTable(limits.MaxMetrics, now),
 		Errors:            NewErrorHeap(limits.MaxErrors),
 		SlowSQLs:          NewSlowSQLs(limits.MaxSlowSQLs),
@@ -48,6 +49,11 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		pidSet:            make(map[int]struct{}),
 		httpErrorSet:      make(map[int]float64),
 	}
+
+	// MSF - POSSIBLE REMOVE FROM RELEASE
+	log.Debugf("NewHavest() created with log limits = %d", hl.LogEventConfig.Limit)
+
+	return nh
 }
 
 func (h *Harvest) empty() bool {

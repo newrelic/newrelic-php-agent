@@ -151,6 +151,7 @@ type ConnectArgs struct {
 	AppKey                       AppKey
 	AgentLanguage                string
 	AgentVersion                 string
+	AgentEventLimits             collector.EventConfigs
 	PayloadPreconnect            []byte
 	AppSupportedSecurityPolicies AgentPolicies
 }
@@ -271,6 +272,35 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	processConnectMessages(rep.RawReply)
 	rep.Reply, rep.Err = parseConnectReply(rep.RawReply.Body)
 
+	// need to compare agent limits to limits returned from the collector
+	// and choose the smallest value
+	final_log_limit := limits.DefaultMaxLogEvents
+
+	agent_log_limit := args.AgentEventLimits.LogEventConfig.Limit
+	agent_report_period := float64(limits.DefaultReportPeriod)
+	collector_log_limit := rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	collector_report_period := float64(rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.ReportPeriod)
+
+	// convert agent log limit to sampling period used for log events
+	agent_log_limit = int((float64(agent_log_limit) * collector_report_period) / agent_report_period)
+
+	// MSF - POSSIBLE REMOVE FROM RELEASE
+	log.Debugf("ConnectApplication: agent_report_period = %f collector_report_period = %f", agent_report_period, collector_report_period) // MSF
+	log.Debugf("ConnectApplication: agent_log_limit = %d collector_log_limit = %d", agent_log_limit, collector_log_limit)                 // MSF
+
+	if agent_log_limit < collector_log_limit {
+		final_log_limit = agent_log_limit
+	} else {
+		final_log_limit = collector_log_limit
+	}
+
+	// store final log limit in reply object which is used by rest of code to
+	// establish harvest limits
+	rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit = final_log_limit
+
+	// MSF - POSSIBLE REMOVE FROM RELEASE
+	log.Debugf("ConnectApplication: final_log_limit = %d", rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
+
 	return rep
 }
 
@@ -315,6 +345,7 @@ func (p *Processor) considerConnect(app *App) {
 		AppKey:                       app.Key(),
 		AgentLanguage:                app.info.AgentLanguage,
 		AgentVersion:                 app.info.AgentVersion,
+		AgentEventLimits:             app.info.AgentEventLimits,
 		AppSupportedSecurityPolicies: app.info.SupportedSecurityPolicies,
 	}
 
