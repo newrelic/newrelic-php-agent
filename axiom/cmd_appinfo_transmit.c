@@ -178,6 +178,12 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
                                     info->span_queue_size, 0);
   nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_EVENTS_MAX_SAMPLES_STORED,
                                     info->span_events_max_samples_stored, 0);
+  nr_flatbuffers_object_prepend_u64(fb, APP_LOG_EVENTS_MAX_SAMPLES_STORED,
+                                    info->log_events_max_samples_stored, 0);
+  // MSF - POSSIBLE REMOVE FROM RELEASE
+  nrl_verbosedebug(NRL_AGENT, "inserting %lu as agent log limit into fb",
+                   info->log_events_max_samples_stored);
+
   nr_flatbuffers_object_prepend_u16(fb, APP_TRACE_OBSERVER_PORT,
                                     info->trace_observer_port, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_TRACE_OBSERVER_HOST,
@@ -414,9 +420,9 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
       = nro_get_hash_hash(config, "harvest_limits", NULL);
 
   /* At the per-transaction agent level, the actual limits are only really
-   * meaningful for custom and span events: the other event types generally only
-   * result in one event per transaction, so we really just need to know if the
-   * event type is enabled at all. We'll still cache the limit values for
+   * meaningful for custom, log and span events: the other event types generally
+   * only result in one event per transaction, so we really just need to know if
+   * the event type is enabled at all. We'll still cache the limit values for
    * consistency, but the defaults are more or less inconsequential. */
   app_limits->analytics_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "analytic_event_data", NR_MAX_ANALYTIC_EVENTS);
@@ -429,8 +435,12 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
       0 == info.span_events_max_samples_stored
           ? NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED
           : info.span_events_max_samples_stored);
-}
+  app_limits->log_events = nr_cmd_appinfo_process_get_harvest_limit(
+      harvest_limits, "log_event_data", info.log_events_max_samples_stored);
 
+  nrl_verbosedebug(NRL_AGENT, "final app_limits->log_events = %d",
+                   app_limits->log_events);
+}
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
                                              const char* key,
                                              int default_value) {
