@@ -3247,3 +3247,13 @@ char* nr_txn_get_current_span_id(nrtxn_t* txn) {
 
   return nr_strdup(span_id);
 }
+
+void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
+                             NRUNUSED const char* log_level_name,
+                             NRUNUSED const char* log_message,
+                             NRUNUSED nrtime_t timestamp) {
+  /* This is the plan for this function:
+     1. Create a new log event
+     2. Add the created log event to transaction's log events
+   */
+}

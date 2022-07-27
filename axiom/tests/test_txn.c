@@ -8068,6 +8068,15 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_record_log_event(void) {
+  /* This is the plan for this test:
+      1. Setup state (create transaction with logging options)
+      2. Call nr_txn_record_log_event();
+      3. Check for state:
+        - log_event is added to transaction log events
+  */
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 2, .state_size = sizeof(test_txn_state_t)};
 
@@ -8166,4 +8175,5 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
+  test_record_log_event();
 }
