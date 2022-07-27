@@ -8074,6 +8074,7 @@ static void test_record_log_event(void) {
       2. Call nr_txn_record_log_event();
       3. Check for state:
         - log_event is added to transaction log events
+        - check if metrics are created
   */
 }
 
