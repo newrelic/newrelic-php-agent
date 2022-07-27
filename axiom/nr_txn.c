@@ -3248,6 +3248,21 @@ char* nr_txn_get_current_span_id(nrtxn_t* txn) {
   return nr_strdup(span_id);
 }
 
+static void nr_txn_add_logging_metrics(nrtxnopt_t* opts,
+                                       nrmtable_t* unscoped_metrics,
+                                       const char* level_name) {
+  char* metric_name = NULL;
+
+  if (!opts->logging_enabled || !opts->log_metrics_enabled) {
+    return;
+  }
+
+  nrm_force_add(unscoped_metrics, "Logging/lines", 0);
+  metric_name = nr_formatf("Logging/lines/%s", level_name);
+  nrm_force_add(unscoped_metrics, metric_name, 0);
+  nr_free(metric_name);
+}
+
 void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
                              NRUNUSED const char* log_level_name,
                              NRUNUSED const char* log_message,
@@ -3255,5 +3270,9 @@ void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
   /* This is the plan for this function:
      1. Create a new log event
      2. Add the created log event to transaction's log events
+     3. Add logging metrics
    */
+
+  nr_txn_add_logging_metrics(&txn->options, txn->unscoped_metrics,
+                             log_level_name);
 }

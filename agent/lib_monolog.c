@@ -321,19 +321,6 @@ static nrtime_t nr_monolog_get_timestamp(int api,
   return timestamp;
 }
 
-static void nr_monolog_create_logging_metrics(nrtxnopt_t* opts,
-                                              nrmtable_t* unscoped_metrics,
-                                              char* level_name) {
-  if (!opts->logging_enabled || !opts->log_metrics_enabled) {
-    return;
-  }
-
-  nrm_force_add(unscoped_metrics, "Logging/lines", 0);
-  char* metric_name = nr_formatf("Logging/lines/%s", level_name);
-  nrm_force_add(unscoped_metrics, metric_name, 0);
-  nr_free(metric_name);
-}
-
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
@@ -360,9 +347,6 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp);
-
-  nr_monolog_create_logging_metrics(&NRTXN(options), NRTXN(unscoped_metrics),
-                                    level_name);
 
   nr_free(level_name);
   nr_free(message);
