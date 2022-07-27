@@ -283,6 +283,7 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 	// only span events and log events are configurable from the agent.
 	// If this changes in the future, the other values can be added here.
 	info.AgentEventLimits.SpanEventConfig.Limit = int(app.SpanEventsMaxSamplesStored())
+	info.AgentEventLimits.LogEventConfig.Limit = int(app.LogEventsMaxSamplesStored())
 
 	return info
 }
@@ -293,7 +294,7 @@ func processBinary(data []byte, handler AgentDataHandler) ([]byte, error) {
 		return nil, nil
 	}
 
-	log.Debugf("received binary message, len=%d", len(data))
+	log.Debugf("received binary message NEW, len=%d", len(data))
 
 	// Check that the first offset is actually within the bounds of the message
 	// length.
