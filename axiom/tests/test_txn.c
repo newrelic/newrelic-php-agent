@@ -8084,7 +8084,6 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
-<<<<<<< HEAD
 static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nrapp_t app;
   nrtxnopt_t opts;
