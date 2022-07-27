@@ -611,6 +611,20 @@ extern void nr_txn_record_custom_event(nrtxn_t* txn,
                                        const nrobj_t* params);
 
 /*
+ * Purpose : Add a log event to transaction
+ *
+ * Params  : 1. The transaction.
+ *           2. Log record level name
+ *           3. Log record message
+ *           4. Log record timestamp
+ *
+ */
+extern void nr_txn_record_log_event(nrtxn_t* txn,
+                                    const char* level_name,
+                                    const char* message,
+                                    nrtime_t timestamp);
+
+/*
  * Purpose : Return the CAT trip ID for the current transaction.
  *
  * Params  : 1. The current transaction.

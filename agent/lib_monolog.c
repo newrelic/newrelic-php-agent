@@ -358,7 +358,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
                    "message=[%s], timestamp=[%" PRIu64 "]",
                    __func__, argc, api, level_name, message, timestamp);
 
-  /* construct the log_event from level, message, context and datetime */
+  /* Record the log event */
+  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp);
 
   nr_monolog_create_logging_metrics(&NRTXN(options), NRTXN(unscoped_metrics),
                                     level_name);
