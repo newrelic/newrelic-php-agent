@@ -309,6 +309,9 @@ func TestSupportabilityHarvest(t *testing.T) {
 			SpanEventConfig: collector.Event{
 				Limit: 4,
 			},
+			LogEventConfig: collector.Event{
+				Limit: 5,
+			},
 		},
 	}
 	harvest.createFinalMetrics(limits, nil)
@@ -324,12 +327,15 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[8,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[6,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000001234,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
