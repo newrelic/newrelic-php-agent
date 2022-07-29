@@ -31,16 +31,13 @@ extern char* nr_guzzle_create_async_context_name(const char* prefix,
 extern int nr_guzzle_in_call_stack(TSRMLS_D);
 
 /*
- * Purpose : Checks if the given object implements
- *           GuzzleHttp\Event\HasEmitterInterface. For a Client object, this
- *           indicates that the object is from Guzzle 4 or 5.
+ * Purpose: This function checks which guzzle version is being used by the object
  *
  * Params  : 1. The object to check.
- *
- * Returns : Non-zero if the object does implement the interface; zero
- *           otherwise.
+ * 
+ * Returns : A string indicating the guzzle version being used
  */
-extern int nr_guzzle_does_zval_implement_has_emitter(zval* obj TSRMLS_DC);
+extern char* nr_guzzle_version(zval* obj TSRMLS_DC);
 
 /*
  * Purpose : Adds a Guzzle Request object to the hashmap containing all active
