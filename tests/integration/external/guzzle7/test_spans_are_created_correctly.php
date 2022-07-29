@@ -12,12 +12,12 @@ Test that the actually external call is marked as http.
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
+if (version_compare(phpversion(), '7.2.0', '<=')) {
+    die("skip: PHP > 7.2.0 required\n");
 }
 
-if (!unpack_guzzle(6)) {
-    die("skip: guzzle 6 installation required\n");
+if (!unpack_guzzle(7)) {
+    die("skip: guzzle 7 installation required\n");
 }
 */
 
@@ -69,12 +69,7 @@ newrelic.transaction_tracer.detail = 0
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "GuzzleHttp\\Client",
-        "code.filepath": "??",
-        "code.function": "__construct"
-      }
+      {}
     ],
     [
       {
@@ -105,11 +100,11 @@ newrelic.transaction_tracer.detail = 0
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+/* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
 
 $client = new Client();
