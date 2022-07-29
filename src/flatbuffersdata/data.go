@@ -31,7 +31,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	settings := buf.CreateString(string(settingsJSON))
 	env := buf.CreateString(string(envJSON))
 	labels := buf.CreateString(string(labelsJSON))
-	metadata :=buf.CreateString(string(metadataJSON))
+	metadata := buf.CreateString(string(metadataJSON))
 	host := buf.CreateString(string(info.Hostname))
 	traceObserverHost := buf.CreateString(info.TraceObserverHost)
 
