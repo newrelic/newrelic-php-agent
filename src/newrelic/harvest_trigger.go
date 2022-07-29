@@ -36,7 +36,7 @@ func (reply *ConnectReply) isHarvestAll() bool {
 		eventsConfig.AnalyticEventConfig.ReportPeriod != collectorReportPeriod ||
 		eventsConfig.CustomEventConfig.ReportPeriod != collectorReportPeriod ||
 		eventsConfig.SpanEventConfig.ReportPeriod != collectorReportPeriod {
-			return false
+		return false
 	}
 
 	return reply.EventHarvestConfig.ReportPeriod == limits.DefaultReportPeriod
@@ -74,7 +74,7 @@ func startGroupMember(f HarvestTriggerFunc, trigger chan HarvestType) chan bool 
 	return cancel
 }
 
-func checkReportPeriod(period time.Duration, defaultPeriod time.Duration, event string) time.Duration{
+func checkReportPeriod(period time.Duration, defaultPeriod time.Duration, event string) time.Duration {
 	if period == 0 {
 		log.Debugf("%s report period not received", event)
 		return defaultPeriod

@@ -24,19 +24,19 @@ func TestHarvestTriggerGet(t *testing.T) {
 		ReportPeriod: 60000,
 		EventConfigs: collector.EventConfigs{
 			ErrorEventConfig: collector.Event{
-				Limit: errorEventConfig,
+				Limit:        errorEventConfig,
 				ReportPeriod: 60000,
 			},
 			AnalyticEventConfig: collector.Event{
-				Limit: txnEventData,
+				Limit:        txnEventData,
 				ReportPeriod: 60000,
 			},
 			CustomEventConfig: collector.Event{
-				Limit: customEventConfig,
+				Limit:        customEventConfig,
 				ReportPeriod: 60000,
 			},
 			SpanEventConfig: collector.Event{
-				Limit: spanEventConfig,
+				Limit:        spanEventConfig,
 				ReportPeriod: 60000,
 			},
 		}}
@@ -60,20 +60,20 @@ func TestHarvestTriggerGetCustom(t *testing.T) {
 	reply.EventHarvestConfig = collector.EventHarvestConfig{
 		ReportPeriod: 60000,
 		EventConfigs: collector.EventConfigs{
-			ErrorEventConfig:   collector.Event{
-				Limit: errorEventConfig,
+			ErrorEventConfig: collector.Event{
+				Limit:        errorEventConfig,
 				ReportPeriod: 60000,
 			},
 			AnalyticEventConfig: collector.Event{
-				Limit: txnEventData,
+				Limit:        txnEventData,
 				ReportPeriod: 60000,
 			},
 			CustomEventConfig: collector.Event{
-				Limit: customEventConfig,
+				Limit:        customEventConfig,
 				ReportPeriod: 60000,
 			},
 			SpanEventConfig: collector.Event{
-				Limit: spanEventConfig,
+				Limit:        spanEventConfig,
 				ReportPeriod: 60000,
 			},
 		}}

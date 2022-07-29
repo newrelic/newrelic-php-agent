@@ -106,7 +106,6 @@ func TestUnmarshalJSONSpanEventError(t *testing.T) {
 	}
 }
 
-
 func CreateEventConfig(reportPeriod time.Duration) EventConfigs {
 	eventConfig := NewHarvestLimits(nil)
 
@@ -128,27 +127,26 @@ func NewDefaultEventHarvestConfig() EventHarvestConfig {
 
 func NewSpanEventHarvestConfig(reportPeriod time.Duration, localLimit int) SpanEventHarvestConfig {
 
-    rp:= reportPeriod
-    // The report period cannot be less than 1 ms
-    if reportPeriod > limits.DefaultReportPeriod || reportPeriod <= (1 * time.Millisecond) {
-        rp = limits.DefaultReportPeriod
-    }
+	rp := reportPeriod
+	// The report period cannot be less than 1 ms
+	if reportPeriod > limits.DefaultReportPeriod || reportPeriod <= (1*time.Millisecond) {
+		rp = limits.DefaultReportPeriod
+	}
 
-    ll := localLimit
-    if localLimit > limits.MaxSpanMaxEvents || localLimit < 0 {
-        ll = limits.MaxSpanMaxEvents
-    }
-    return SpanEventHarvestConfig {
-    		SpanEventConfig:
-    		    Event {
-                    ReportPeriod: rp,
-                    Limit: ll,
-    		    },
-    	    }
+	ll := localLimit
+	if localLimit > limits.MaxSpanMaxEvents || localLimit < 0 {
+		ll = limits.MaxSpanMaxEvents
+	}
+	return SpanEventHarvestConfig{
+		SpanEventConfig: Event{
+			ReportPeriod: rp,
+			Limit:        ll,
+		},
+	}
 }
 
 func NewDefaultSpanEventHarvestConfig() SpanEventHarvestConfig {
-    return NewSpanEventHarvestConfig(limits.DefaultReportPeriod, limits.MaxSpanMaxEvents)
+	return NewSpanEventHarvestConfig(limits.DefaultReportPeriod, limits.MaxSpanMaxEvents)
 }
 
 func TestUnmarshalJSONEventSuccess(t *testing.T) {
@@ -201,20 +199,20 @@ func TestUnmarshalJSONEventSuccess(t *testing.T) {
 			expected: EventHarvestConfig{
 				ReportPeriod: defaultReportPeriodMs,
 				EventConfigs: EventConfigs{
-					ErrorEventConfig: Event {
-						   Limit: 0,
-						   ReportPeriod: defaultReportPeriodMs,
+					ErrorEventConfig: Event{
+						Limit:        0,
+						ReportPeriod: defaultReportPeriodMs,
 					},
 					AnalyticEventConfig: Event{
-						Limit: 0,
+						Limit:        0,
 						ReportPeriod: defaultReportPeriodMs,
 					},
-					CustomEventConfig:   Event{
-						Limit: 0,
+					CustomEventConfig: Event{
+						Limit:        0,
 						ReportPeriod: defaultReportPeriodMs,
 					},
-					SpanEventConfig:     Event{
-						Limit: 0,
+					SpanEventConfig: Event{
+						Limit:        0,
 						ReportPeriod: defaultReportPeriodMs,
 					},
 				},
@@ -227,19 +225,19 @@ func TestUnmarshalJSONEventSuccess(t *testing.T) {
 				ReportPeriod: defaultReportPeriodMs,
 				EventConfigs: EventConfigs{
 					ErrorEventConfig: Event{
-						Limit: 21,
+						Limit:        21,
 						ReportPeriod: defaultReportPeriodMs,
 					},
 					AnalyticEventConfig: Event{
-						Limit: 22,
+						Limit:        22,
 						ReportPeriod: defaultReportPeriodMs,
 					},
-					CustomEventConfig:   Event{
-						Limit: 23,
+					CustomEventConfig: Event{
+						Limit:        23,
 						ReportPeriod: defaultReportPeriodMs,
 					},
-					SpanEventConfig:     Event{
-						Limit: 24,
+					SpanEventConfig: Event{
+						Limit:        24,
 						ReportPeriod: defaultReportPeriodMs,
 					},
 				},
@@ -251,20 +249,20 @@ func TestUnmarshalJSONEventSuccess(t *testing.T) {
 			expected: EventHarvestConfig{
 				ReportPeriod: 42 * time.Millisecond,
 				EventConfigs: EventConfigs{
-					ErrorEventConfig:    Event{
-						Limit: 21,
+					ErrorEventConfig: Event{
+						Limit:        21,
 						ReportPeriod: 42 * time.Millisecond,
 					},
 					AnalyticEventConfig: Event{
-						Limit: 22,
+						Limit:        22,
 						ReportPeriod: 42 * time.Millisecond,
 					},
-					CustomEventConfig:   Event{
-						Limit: 23,
+					CustomEventConfig: Event{
+						Limit:        23,
 						ReportPeriod: 42 * time.Millisecond,
 					},
-					SpanEventConfig:     Event{
-						Limit: 24,
+					SpanEventConfig: Event{
+						Limit:        24,
 						ReportPeriod: 42 * time.Millisecond,
 					},
 				},
@@ -281,16 +279,16 @@ func TestUnmarshalJSONEventSuccess(t *testing.T) {
 		ehc = EventHarvestConfig{
 			ReportPeriod: 1234 * time.Nanosecond,
 			EventConfigs: EventConfigs{
-				ErrorEventConfig:    Event{
+				ErrorEventConfig: Event{
 					Limit: 1,
 				},
-				AnalyticEventConfig: Event {
+				AnalyticEventConfig: Event{
 					Limit: 2,
 				},
-				CustomEventConfig:   Event{
+				CustomEventConfig: Event{
 					Limit: 3,
 				},
-				SpanEventConfig:     Event{
+				SpanEventConfig: Event{
 					Limit: 4,
 				},
 			},
@@ -307,7 +305,6 @@ func testUnmarshalJSONEventCaseSuccess(t *testing.T, testName, contextName, inpu
 		t.Errorf("%s; %s: unmarshalling JSON event_harvest_config items are not equal: expected %v; got %v", testName, contextName, expected, context)
 	}
 }
-
 
 func TestUnmarshalJSONSpanEventSuccess(t *testing.T) {
 
@@ -335,24 +332,24 @@ func TestUnmarshalJSONSpanEventSuccess(t *testing.T) {
 			expected: NewDefaultSpanEventHarvestConfig(),
 		},
 		{
-			name: "valid report period only",
-			json: `{"report_period_ms":42}`,
-			expected: NewSpanEventHarvestConfig(42 * time.Millisecond, limits.MaxSpanMaxEvents),
+			name:     "valid report period only",
+			json:     `{"report_period_ms":42}`,
+			expected: NewSpanEventHarvestConfig(42*time.Millisecond, limits.MaxSpanMaxEvents),
 		},
 		{
-			name: "zero harvest limit",
-			json: `{"harvest_limit":0}`,
+			name:     "zero harvest limit",
+			json:     `{"harvest_limit":0}`,
 			expected: NewSpanEventHarvestConfig(limits.DefaultReportPeriod, 0),
 		},
 		{
-			name: "valid non-zero harvest limit",
-			json: `{"harvest_limit":1234}`,
+			name:     "valid non-zero harvest limit",
+			json:     `{"harvest_limit":1234}`,
 			expected: NewSpanEventHarvestConfig(limits.DefaultReportPeriod, 1234),
 		},
 		{
-			name: "valid nonzero harvest limit and valid report period",
-			json: `{"report_period_ms":75,"harvest_limit":1212}`,
-			expected: NewSpanEventHarvestConfig(75 * time.Millisecond, 1212),
+			name:     "valid nonzero harvest limit and valid report period",
+			json:     `{"report_period_ms":75,"harvest_limit":1212}`,
+			expected: NewSpanEventHarvestConfig(75*time.Millisecond, 1212),
 		},
 	} {
 		// The given context shouldn't matter, but let's test a few variations to be
@@ -363,7 +360,7 @@ func TestUnmarshalJSONSpanEventSuccess(t *testing.T) {
 		sehc := NewDefaultSpanEventHarvestConfig()
 		testUnmarshalJSONSpanEventCaseSuccess(t, input.name, "default context", input.json, &sehc, &input.expected)
 
-		sehc = NewSpanEventHarvestConfig(1234 * time.Nanosecond, 40000)
+		sehc = NewSpanEventHarvestConfig(1234*time.Nanosecond, 40000)
 
 		testUnmarshalJSONSpanEventCaseSuccess(t, input.name, "junk context", input.json, &sehc, &input.expected)
 	}

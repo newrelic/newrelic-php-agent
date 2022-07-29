@@ -415,7 +415,7 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 		//    to shutdown instead of restart.
 		if rep.RawReply.IsInvalidLicense() {
 			app.state = AppStateInvalidLicense
-		    log.Warnf("app '%s' connect attempt returned %s; shutting down", app, rep.RawReply.Err)
+			log.Warnf("app '%s' connect attempt returned %s; shutting down", app, rep.RawReply.Err)
 		} else {
 			app.state = AppStateRestart
 			log.Warnf("app '%s' connect attempt returned %s; restarting", app, rep.RawReply.Err)

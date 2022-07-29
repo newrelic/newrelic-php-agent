@@ -11,7 +11,7 @@ import (
 )
 
 type kubernetes struct {
-	KubernetesServiceHost string `json:"kubernetes_service_host",omitempty`	
+	KubernetesServiceHost string `json:"kubernetes_service_host",omitempty`
 
 	// Having a custom getter allows the unit tests to mock os.Getenv().
 	environmentVariableGetter func(key string) string
@@ -53,7 +53,7 @@ func (k8s *kubernetes) validate() (err error) {
 	}
 
 	if k8s.KubernetesServiceHost == "" {
-               err = errors.New("The environment variable KUBERNETES_SERVICE_HOST was unavailable")
+		err = errors.New("The environment variable KUBERNETES_SERVICE_HOST was unavailable")
 	}
 	return
 }

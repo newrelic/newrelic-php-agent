@@ -7,7 +7,7 @@ package proto_testdata
 
 import (
 	"google.golang.org/protobuf/proto"
-	
+
 	v1 "newrelic/infinite_tracing/com_newrelic_trace_v1"
 )
 
@@ -34,7 +34,7 @@ var (
 			"name":          "name",
 			"category":      "http",
 		},
-		UserAttributes: map[string]interface{}{},
+		UserAttributes:  map[string]interface{}{},
 		AgentAttributes: map[string]interface{}{},
 	}
 )
@@ -59,7 +59,7 @@ func MarshalSpanBatch(batchSize uint) ([]byte, error) {
 	spanBatch := &v1.SpanBatch{
 		Spans: []*v1.Span{},
 	}
-	
+
 	span := transformSpanEvent(&sampleSpanEvent)
 
 	for i := batchSize; i > 0; i-- {

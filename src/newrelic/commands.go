@@ -265,7 +265,6 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 		TraceObserverPort:         app.TraceObserverPort(),
 		SpanQueueSize:             app.SpanQueueSize(),
 		HighSecurity:              app.HighSecurity(),
-
 	}
 
 	info.initSettings(app.Settings())
