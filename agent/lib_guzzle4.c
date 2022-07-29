@@ -445,12 +445,6 @@ NR_PHP_WRAPPER_START(nr_guzzle4_client_construct) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  /* This is how we distinguish Guzzle 4/5 from other versions. */
-  if (0 == nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC)) {
-    NR_PHP_WRAPPER_CALL;
-    goto end;
-  }
-
   NR_PHP_WRAPPER_CALL;
 
   /*
