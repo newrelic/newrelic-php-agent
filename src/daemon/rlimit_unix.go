@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+//go:build !freebsd
 // +build !freebsd
 
 package main
