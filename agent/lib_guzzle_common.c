@@ -8,13 +8,21 @@
 #include "php_user_instrument.h"
 #include "php_hash.h"
 #include "php_wrapper.h"
+#include "php_execute.h"
+#include "php_globals.h"
 #include "lib_guzzle_common.h"
 #include "lib_guzzle4.h"
 #include "lib_guzzle6.h"
+#include "fw_laravel.h"
+#include "fw_laravel_queue.h"
+#include "fw_support.h"
+#include "php_error.h"
 #include "nr_header.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+
+int php_version_compare(char*, char*);
 
 char* nr_guzzle_create_async_context_name(const char* prefix, const zval* obj) {
   if (!nr_php_is_zval_valid_object(obj)) {
@@ -74,9 +82,44 @@ int nr_guzzle_in_call_stack(TSRMLS_D) {
   return in_guzzle;
 }
 
-int nr_guzzle_does_zval_implement_has_emitter(zval* obj TSRMLS_DC) {
-  return nr_php_object_instanceof_class(
-      obj, "GuzzleHttp\\Event\\HasEmitterInterface" TSRMLS_CC);
+extern char* nr_guzzle_version(zval* obj TSRMLS_DC) {
+  char* retval = NULL;
+  zval* version = NULL;
+  zend_class_entry* ce = NULL;
+
+  if (0 == nr_php_is_zval_valid_object(obj)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
+                     __func__);
+    return NULL;
+  }
+
+  ce = Z_OBJCE_P(obj);
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
+                     __func__);
+    return NULL;
+  }
+
+  if (nr_php_get_class_constant(ce, "VERSION") == NULL){
+    version = nr_php_get_class_constant(ce, "MAJOR_VERSION");
+  } else {
+    version = nr_php_get_class_constant(ce, "VERSION");
+  }
+  if (NULL == version) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
+                     __func__);
+    return NULL;
+  }
+
+  if (nr_php_is_zval_valid_string(version)) {
+    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: expected VERSION be a valid string, got type %d",
+                     __func__, Z_TYPE_P(version));
+  }
+  nr_php_zval_free(&version);
+  return retval;
 }
 
 nr_segment_t* nr_guzzle_obj_add(const zval* obj,
@@ -272,19 +315,20 @@ char* nr_guzzle_response_get_header(const char* header,
 }
 
 NR_PHP_WRAPPER_START(nr_guzzle_client_construct) {
-  int is_guzzle_45 = 0;
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  char *version = NULL;
+  version = nr_guzzle_version(this_var TSRMLS_CC);
 
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
-
-  is_guzzle_45 = nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC);
   nr_php_scope_release(&this_var);
-
-  if (is_guzzle_45) {
-    NR_PHP_WRAPPER_DELEGATE(nr_guzzle4_client_construct);
-  } else {
+  
+  if (php_version_compare(version, "7") >= 0){
+    NR_PHP_WRAPPER_DELEGATE(nr_guzzle7_client_construct);
+  } else if (php_version_compare(version, "6") >= 0) {
     NR_PHP_WRAPPER_DELEGATE(nr_guzzle6_client_construct);
+  } else{
+    NR_PHP_WRAPPER_DELEGATE(nr_guzzle4_client_construct);
   }
 }
 NR_PHP_WRAPPER_END
