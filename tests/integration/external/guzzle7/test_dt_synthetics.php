@@ -5,19 +5,19 @@
  */
 
 /*DESCRIPTION
-Test that distributed tracing works with guzzle 6.
+Test that distributed tracing works with guzzle 7.
 */
 
 /*SKIPIF
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 
-if (version_compare(phpversion(), '5.5.0', '<=')) {
-    die("skip: PHP > 5.5.0 required\n");
+if (version_compare(phpversion(), '7.2.0', '<=')) {
+    die("skip: PHP > 7.2.0 required\n");
 }
 
-if (!unpack_guzzle(6)) {
-    die("skip: guzzle 6 installation required\n");
+if (!unpack_guzzle(7)) {
+    die("skip: guzzle 7 installation required\n");
 }
 
 if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
@@ -74,8 +74,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 4-5/detected"},
-                                                          [1,    0,    0,    0,    0,    0]],
-    [{"name":"Supportability/library/Guzzle 6/detected"}, [1,    0,    0,    0,    0,    0]],
+                                                          [2,    0,    0,    0,    0,    0]],
     [{"name":"Supportability/library/Guzzle 7/detected"}, [1,    0,    0,    0,    0,    0]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
                                                           [3,    0,    0,    0,    0,    0]],
@@ -95,12 +94,12 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
 /* Create URL. */
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+/* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
 
 $client = new Client();
