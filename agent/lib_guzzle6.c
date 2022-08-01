@@ -9,14 +9,14 @@
  * It is a required component in Drupal 8, and strongly recommended by other
  * frameworks, including Symfony 2 and 3.
  *
- * Our approach for Guzzle 6 is to register middleware on every client that
+ * Our approach for Guzzle 6-7 is to register middleware on every client that
  * adds our headers to the request object, handles responses, and creates
  * metrics and trace nodes using the internal RequestHandler class declared
  * below.
  *
  * There is one issue with this approach, which is that the middleware is
  * called when the request is created, rather than when the request is sent. As
- * Guzzle 6 removed the event system that allowed us to know exactly when the
+ * Guzzle 6-7 removed the event system that allowed us to know exactly when the
  * request was sent, we are unable to get the time of the request being sent
  * without instrumenting much more deeply into Guzzle's handlers. We consider
  * this to be an obscure enough edge case that we are not doing this work at
@@ -65,12 +65,15 @@
  */
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
 
-/* {{{ newrelic\Guzzle6\RequestHandler class definition and methods */
-
 /*
  * True global for the RequestHandler class entry.
  */
 zend_class_entry* nr_guzzle6_requesthandler_ce;
+zval* config;
+zend_class_entry* guzzle_client_ce;
+zval* handler_stack;
+zval* middleware = NULL;
+zval* retval;
 
 /*
  * Arginfo for the RequestHandler methods.
@@ -107,7 +110,7 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
                                                       zval* response
                                                           TSRMLS_DC) {
   nr_segment_t* segment = NULL;
-  nr_segment_external_params_t external_params = {.library = "Guzzle 6"};
+  nr_segment_external_params_t external_params = {.library = "Guzzle 6-7"};
   zval* request;
   zval* method;
   zval* status;
@@ -140,7 +143,7 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
 
   if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
     nrl_verbosedebug(
-        NRL_CAT, "CAT: outbound response: transport='Guzzle 6' %s=" NRP_FMT,
+        NRL_CAT, "CAT: outbound response: transport='Guzzle 6-7' %s=" NRP_FMT,
         X_NEWRELIC_APP_DATA, NRP_CAT(external_params.encoded_response_header));
   }
 
@@ -206,14 +209,14 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_construct) {
   zend_update_property(Z_OBJCE_P(this_obj), ZVAL_OR_ZEND_OBJECT(this_obj),
                        NR_PSTR("request"), request TSRMLS_CC);
 
-  nr_guzzle_obj_add(this_obj, "Guzzle 6" TSRMLS_CC);
+  nr_guzzle_obj_add(this_obj, "Guzzle 6-7" TSRMLS_CC);
 }
 
 /*
  * Proto   : void RequestHandler::onFulfilled(Psr\Http\Message\ResponseInterface
  * $response)
  *
- * Purpose : Called when a Guzzle 6 request promise is fulfilled.
+ * Purpose : Called when a Guzzle 6-7 request promise is fulfilled.
  *
  * Params  : 1. The response object.
  */
@@ -257,7 +260,7 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_onfulfilled) {
  * Proto   : void
  * RequestHandler::onRejected(GuzzleHttp\Exception\TransferException $e)
  *
- * Purpose : Called when a Guzzle 6 request promise failed.
+ * Purpose : Called when a Guzzle 6-7 request promise failed.
  *
  * Params  : 1. The exception object.
  */
@@ -340,31 +343,173 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
                            nr_guzzle6_requesthandler_onrejected_arginfo,
                            ZEND_ACC_PUBLIC) PHP_FE_END};
 
-/* }}} */
+/*
+ * Guzzle 7 requires PHP 7.2.0 or later, which is why we will not build Guzzle 7
+ * support on older versions and will instead provide simple stubs for the two
+ * exported functions to avoid linking errors.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO
 
-NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
-  zval* config;
-  zend_class_entry* guzzle_client_ce;
-  zval* handler_stack;
-  zval* middleware = NULL;
-  zval* retval;
+NR_PHP_WRAPPER_START(nr_guzzle7_client_construct){
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
-
-  /* This is how we distinguish Guzzle 4/5. */
-  if (nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC)) {
-    NR_PHP_WRAPPER_CALL;
-    goto end;
-  }
-
   NR_PHP_WRAPPER_CALL;
 
   /*
    * Get our middleware callable (which is just a string), and make sure it's
    * actually callable before we invoke push(). (See also PHP-1184.)
    */
+  middleware = nr_php_zval_alloc();
+  nr_php_zval_str(middleware, "newrelic\\Guzzle7\\middleware");
+  if (!nr_php_is_zval_valid_callable(middleware TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: middleware string is not considered callable",
+                     __func__);
+
+    nrm_force_add(NRTXN(unscoped_metrics),
+                  "Supportability/library/Guzzle 7/MiddlewareNotCallable", 0);
+
+    goto end;
+  }
+
+  guzzle_client_ce = nr_php_find_class("guzzlehttp\\client" TSRMLS_CC);
+  if (NULL == guzzle_client_ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: unable to get class entry for GuzzleHttp\\Client",
+                     __func__);
+    goto end;
+  }
+
+  config = nr_php_get_zval_object_property_with_class(
+      this_var, guzzle_client_ce, "config" TSRMLS_CC);
+  if (!nr_php_is_zval_valid_array(config)) {
+    goto end;
+  }
+
+  handler_stack = nr_php_zend_hash_find(Z_ARRVAL_P(config), "handler");
+  if (!nr_php_object_instanceof_class(handler_stack,
+                                      "GuzzleHttp\\HandlerStack" TSRMLS_CC)) {
+    goto end;
+  }
+
+  retval = nr_php_call(handler_stack, "push", middleware);
+
+  nr_php_zval_free(&retval);
+
+end:
+  nr_php_zval_free(&middleware);
+  nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
+void nr_guzzle7_enable(TSRMLS_D) {
+  int _retval;
+
+  if (0 == NRINI(guzzle_enabled)) {
+    return;
+  }
+
+  /*
+   * Here's something new: we're going to evaluate PHP code to build our
+   * middleware in PHP, rather than doing it in C. This is mostly because it's
+   * fairly difficult to return a higher-order function from C; while possible,
+   * the code to do so is horrible enough that this actually feels cleaner.
+   *
+   * We'll do it when the library is detected because that should only happen
+   * once, but we'll also be careful to put guards around the function
+   * declaration just in case.
+   *
+   * On the bright side, zend_eval_string() effectively treats the string given
+   * as a standalone file, so we can use a normal namespace declaration to
+   * avoid possible clashes.
+   */
+  _retval = zend_eval_string(
+      "namespace newrelic\\Guzzle7;"
+
+      "use Psr\\Http\\Message\\RequestInterface;"
+
+      "if (!function_exists('newrelic\\Guzzle7\\middleware')) {"
+      "  function middleware(callable $handler) {"
+      "    return function (RequestInterface $request, array $options) use "
+      "($handler) {"
+
+      /*
+       * Start by adding the outbound CAT/DT/Synthetics headers to the request.
+       */
+      "      foreach (newrelic_get_request_metadata('Guzzle 7') as $k => $v) {"
+      "        $request = $request->withHeader($k, $v);"
+      "      }"
+
+      /*
+       * Set up the RequestHandler object and attach it to the promise so that
+       * we create an external node and deal with the CAT headers coming back
+       * from the far end.
+       */
+      "      $rh = new RequestHandler($request);"
+      "      $promise = $handler($request, $options);"
+      "      $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
+
+      "      return $promise;"
+      "    };"
+      "  }"
+      "}",
+      NULL, "newrelic/Guzzle7" TSRMLS_CC);
+
+  if (SUCCESS == _retval) {
+    nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
+                              nr_guzzle_client_construct TSRMLS_CC);
+  } else {
+    nrl_warning(NRL_FRAMEWORK,
+                "%s: error evaluating PHP code; not installing handler",
+                __func__);
+  }
+}
+
+void nr_guzzle7_minit(TSRMLS_D) {
+  zend_class_entry ce;
+
+  if (0 == NRINI(guzzle_enabled)) {
+    return;
+  }
+
+  INIT_CLASS_ENTRY(ce, "newrelic\\Guzzle7\\RequestHandler",
+                   nr_guzzle6_requesthandler_functions);
+  nr_guzzle6_requesthandler_ce
+      = nr_php_zend_register_internal_class_ex(&ce, NULL TSRMLS_CC);
+
+  zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
+                             ZEND_ACC_PRIVATE TSRMLS_CC);
+}
+
+
+#else /* PHP < 7.2 */
+
+NR_PHP_WRAPPER_START(nr_guzzle7_client_construct) {
+  (void)wraprec;
+  NR_UNUSED_SPECIALFN;
+  NR_UNUSED_TSRMLS;
+}
+NR_PHP_WRAPPER_END
+
+void nr_guzzle7_enable(TSRMLS_D) {
+  NR_UNUSED_TSRMLS
+}
+
+void nr_guzzle7_minit(TSRMLS_D) {
+  NR_UNUSED_TSRMLS;
+}
+
+#endif /* 7.2.x */
+
+NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  (void)wraprec;
+  NR_UNUSED_SPECIALFN;
+
+  NR_PHP_WRAPPER_CALL;
   middleware = nr_php_zval_alloc();
   nr_php_zval_str(middleware, "newrelic\\Guzzle6\\middleware");
   if (!nr_php_is_zval_valid_callable(middleware TSRMLS_CC)) {
@@ -408,28 +553,15 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+
 void nr_guzzle6_enable(TSRMLS_D) {
-  int retval;
+  int _retval;
 
   if (0 == NRINI(guzzle_enabled)) {
     return;
   }
 
-  /*
-   * Here's something new: we're going to evaluate PHP code to build our
-   * middleware in PHP, rather than doing it in C. This is mostly because it's
-   * fairly difficult to return a higher-order function from C; while possible,
-   * the code to do so is horrible enough that this actually feels cleaner.
-   *
-   * We'll do it when the library is detected because that should only happen
-   * once, but we'll also be careful to put guards around the function
-   * declaration just in case.
-   *
-   * On the bright side, zend_eval_string() effectively treats the string given
-   * as a standalone file, so we can use a normal namespace declaration to
-   * avoid possible clashes.
-   */
-  retval = zend_eval_string(
+  _retval = zend_eval_string(
       "namespace newrelic\\Guzzle6;"
 
       "use Psr\\Http\\Message\\RequestInterface;"
@@ -439,18 +571,11 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "    return function (RequestInterface $request, array $options) use "
       "($handler) {"
 
-      /*
-       * Start by adding the outbound CAT/DT/Synthetics headers to the request.
-       */
       "      foreach (newrelic_get_request_metadata('Guzzle 6') as $k => $v) {"
       "        $request = $request->withHeader($k, $v);"
       "      }"
 
-      /*
-       * Set up the RequestHandler object and attach it to the promise so that
-       * we create an external node and deal with the CAT headers coming back
-       * from the far end.
-       */
+  
       "      $rh = new RequestHandler($request);"
       "      $promise = $handler($request, $options);"
       "      $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
@@ -461,7 +586,7 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "}",
       NULL, "newrelic/Guzzle6" TSRMLS_CC);
 
-  if (SUCCESS == retval) {
+  if (SUCCESS == _retval) {
     nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
                               nr_guzzle_client_construct TSRMLS_CC);
   } else {

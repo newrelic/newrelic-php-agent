@@ -76,8 +76,6 @@ require_guzzle(7);
 
 /* Create URL. */
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
-//echo "\n";
-//echo $url."\n";
 
 /* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
