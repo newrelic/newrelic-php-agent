@@ -48,6 +48,7 @@ extern void nr_doctrine2_enable(TSRMLS_D);
 extern void nr_guzzle3_enable(TSRMLS_D);
 extern void nr_guzzle4_enable(TSRMLS_D);
 extern void nr_guzzle6_enable(TSRMLS_D);
+extern void nr_guzzle7_enable(TSRMLS_D);
 extern void nr_laminas_http_enable(TSRMLS_D);
 extern void nr_mongodb_enable(TSRMLS_D);
 extern void nr_phpunit_enable(TSRMLS_D);

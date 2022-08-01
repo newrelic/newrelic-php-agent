@@ -482,7 +482,7 @@ static nr_library_table_t libraries[] = {
      */
     {"Guzzle 4-5", "clientinterface.php", nr_guzzle4_enable},
     {"Guzzle 6", "handlerstack.php", nr_guzzle6_enable},
-
+    {"Guzzle 7", "handlerstack.php", nr_guzzle7_enable},
     {"MongoDB", "mongodb/src/client.php", nr_mongodb_enable},
 
     /*
