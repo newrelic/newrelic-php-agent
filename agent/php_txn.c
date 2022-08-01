@@ -706,6 +706,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
+  opts.logging_enabled = NRINI(logging_enabled);
+  opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
+  opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
+  opts.log_metrics_enabled = NRINI(log_metrics_enabled);
 
   /*
    * Enable the behaviour whereby asynchronous time is discounted from the total

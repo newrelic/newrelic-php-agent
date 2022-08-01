@@ -14,7 +14,7 @@ PHP_VER can also be set to vary the PHP version being used.
 
 Set all environment variables prior to running the development environment.  
 
-#Options for using the environment
+## Options for using the environment
 
 ## With a shell environment
 
@@ -22,7 +22,9 @@ To start the dev environment type `make dev-shell`.  This will create a set of d
 A prompt will open and you’ll be able to compile and run all `make` commands right away with no additional setup (for example: `make -j4 all` or `make -j4 valgrind` or `make -j4 run_tests`).
 
 After compiling the agent, the integration tests can be run using the `integration_runner`.
+
 To run all integration tests, from the prompt, run: `./bin/integration_runner -agent ./agent/.libs/newrelic.so`
+
 To run `redis` only: `./bin/integration_runner -agent ./agent/.libs/newrelic.so -pattern tests/integration/redis/*`
 
 To end the session type `exit`.  You can run `make dev-stop` to stop the docker-compose containers.
@@ -39,7 +41,7 @@ In the shell, you can run all `make` commands as you normally would.
 
 ## Integration Tests only
 
-`make dev-integration-tests
+`make dev-integration-tests`
 
 ## Build and test all
 
@@ -47,7 +49,7 @@ In the shell, you can run all `make` commands as you normally would.
 
 ## Stop all containers
 
-`make dev-all`
+`make dev-stop`
 
 # Next steps and issues
 

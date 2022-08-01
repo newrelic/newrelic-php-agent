@@ -342,7 +342,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Enable detection of whether the system is running in a Kubernetes 
 ;          cluster.
 ;
-;newrelic.utilization.detect_kubernetes = true
+;newrelic.daemon.utilization.detect_kubernetes = true
 
 
 ; Setting: newrelic.daemon.app_timeout
@@ -1145,3 +1145,41 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Indicates if WordPress hooks are to be instrumented.
 ;
 ;newrelic.framework.wordpress.hooks = true
+
+; Setting: newrelic.application_logging.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : An overall configuration for enabling/disabling all application
+;          logging features. If this is disabled, all sub-features are disabled;
+;          if it is enabled, the individual sub-feature configurations
+;          take effect.
+;
+;newrelic.application_logging.enabled = true
+
+; Setting: newrelic.application_logging.forwarding.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Toggles whether the agent gathers log records for sending to New Relic.
+;
+;newrelic.application_logging.forwarding.enabled = false
+
+; Setting: newrelic.application_logging.forwarding.max_samples_stored
+; Type   : integer
+; Scope  : per-directory
+; Default: 10000
+; Info   : Number of log records to send per minute to New Relic. Controls the 
+;          overall memory consumption when using log forwarding.
+;
+;newrelic.application_logging.forwarding.max_samples_stored = 10000
+
+; Setting: newrelic.application_logging.metrics.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : Toggles whether the agent gathers the Logging/lines and
+;          Logging/lines/{SEVERITY} Logging Metrics used in the Logs chart
+;          on the APM Summary page.
+;
+;newrelic.application_logging.metrics.enabled = true

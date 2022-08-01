@@ -114,6 +114,12 @@ typedef struct _nrtxnopt_t {
                                    spans will be batched, and non-8T behaviour
                                    will be used. */
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
+  bool logging_enabled; /* An overall configuration for enabling/disabling all
+                           application logging features */
+  bool log_forwarding_enabled;          /* Whether log forwarding is enabled */
+  size_t log_events_max_samples_stored; /* The maximum number of log events per
+                                           transaction */
+  bool log_metrics_enabled;             /* Whether log metrics are enabled */
 } nrtxnopt_t;
 
 typedef enum _nrtxnstatus_cross_process_t {
