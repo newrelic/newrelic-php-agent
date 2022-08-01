@@ -16,9 +16,9 @@ const (
 
 func TestStringLengthByteLimit(t *testing.T) {
 	testStrings := map[string]int{
-		"awesome": 7,
-		"日本\x80語": 10, // handles bad unicode
-		"":        0,
+		"awesome":                 7,
+		"日本\x80語":                 10, // handles bad unicode
+		"":                        0,
 		strings.Repeat("!", 1000): 255, // super long host name
 		strings.Repeat("!日本", 37): 253, // will not truncate mid-character
 	}
