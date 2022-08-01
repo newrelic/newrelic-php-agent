@@ -18,7 +18,7 @@ if (!isset($minimum_extension_version)) {
 }
 $extension_version = phpversion($extension);
 if (version_compare($extension_version, $minimum_extension_version) < 0) {
-  die("skip: redis extension version >= " . $minimum_extension_version . " required, detected version: " . $extension_version);
+  die("skip: " . $extension . " extension version >= " . $minimum_extension_version . " required, detected version: " . $extension_version);
 }
 
 if (!isset($minimum_redis_datastore_version)) {
