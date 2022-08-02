@@ -148,6 +148,7 @@ TESTS := \
   test_json \
   test_labels \
   test_log_event \
+  test_log_events \
   test_logging \
   test_math \
   test_memory \
