@@ -61,6 +61,7 @@ var (
 
 	sampleCustomEvent = []byte("half birthday")
 	sampleSpanEvent   = []byte("belated birthday")
+	sampleLogEvent    = []byte("log event test birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
 )
 
@@ -128,7 +129,7 @@ func (m *MockedProcessor) DoConnect(t *testing.T, id *AgentRunID) {
 	<-m.clientParams // preconnect
 	m.clientReturn <- ClientReturn{[]byte(`{"redirect_host":"specific_collector.com"}`), nil, 200}
 	<-m.clientParams // connect
-	m.clientReturn <- ClientReturn{[]byte(`{"agent_run_id":"` + id.String() + `","zip":"zap","event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":5,"span_event_data":5}}}`), nil, 200}
+	m.clientReturn <- ClientReturn{[]byte(`{"agent_run_id":"` + id.String() + `","zip":"zap","event_harvest_config":{"report_period_ms":5000,"harvest_limits":{"analytics_event_data":5,"custom_event_data":5,"error_event_data":5,"span_event_data":5,"log_event_data":5}}}`), nil, 200}
 	<-m.p.trackProgress // receive connect reply
 }
 
@@ -167,6 +168,9 @@ var (
 	})
 	txnSpanEventSample = AggregaterIntoFn(func(h *Harvest) {
 		h.SpanEvents.AddEventFromData(sampleSpanEvent, SamplingPriority(0.8))
+	})
+	txnLogEventSample = AggregaterIntoFn(func(h *Harvest) {
+		h.LogEvents.AddEventFromData(sampleLogEvent, SamplingPriority(0.8))
 	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
@@ -228,6 +232,31 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 	cp := <-m.clientParams
 	<-m.p.trackProgress // receive harvest notice
 	expected := `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]`
+	if string(cp.data) != expected {
+		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
+	}
+
+	m.p.quit()
+}
+
+func TestProcessorHarvestLogEvents(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnLogEventSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestLogEvents,
+	}
+	cp := <-m.clientParams
+	<-m.p.trackProgress // receive harvest notice
+	expected := `["one",{"reservoir_size":5,"events_seen":1},[log event test birthday]]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
@@ -327,7 +356,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[8,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[6,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000001234,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +

@@ -112,7 +112,7 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[28,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[28,0,0,0,0,0]],` +
 		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[48,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[24,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[24,0,0,0,0,0]]]]`
 
