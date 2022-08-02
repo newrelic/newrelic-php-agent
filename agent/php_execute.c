@@ -917,24 +917,30 @@ static void nr_execute_handle_logging_framework(
   nr_free(filename_lower);
 }
 
-static void nr_execute_handle_logging_framework(const char* filename TSRMLS_DC) {
+static void nr_execute_handle_logging_framework(
+    const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
     if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
-      char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
-                                 logging_frameworks[i].library_name);
-
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
+
+      char* metname = nr_formatf("Supportability/library/%s/detected",
+                                 logging_frameworks[i].library_name);
       nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+      nr_free(metname);
+
+      metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
+                           logging_frameworks[i].library_name);
+
+      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+      nr_free(metname);
 
       if (NULL != logging_frameworks[i].enable) {
         logging_frameworks[i].enable(TSRMLS_C);
       }
-
-      nr_free(metname);
     }
   }
 
