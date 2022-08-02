@@ -442,7 +442,7 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 	app.harvestFrequency = time.Duration(app.connectReply.SamplingFrequency) * time.Second
 	app.samplingTarget = uint16(app.connectReply.SamplingTarget)
 
-	// using information from agent limits and collector response harvest limits choose the 
+	// using information from agent limits and collector response harvest limits choose the
 	// final (lowest) value for the log event limit used by the daemon
 	processLogEventLimits(app)
 
@@ -464,8 +464,19 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 
 func processLogEventLimits(app *App) {
 
-	if nil == app || nil == app.info || nil == app.connectReply {
-	 	return
+	if nil == app {
+		log.Warnf("processLogEventLimits() called with *App == nil")
+		return
+	}
+
+	if nil == app.info {
+		log.Warnf("processLogEventLimits() called with app.info == nil")
+		return
+	}
+
+	if nil == app.connectReply {
+		log.Warnf("processLogEventLimits() called with  app.connectReply == nil")
+		return
 	}
 
 	// need to compare agent limits to limits returned from the collector
