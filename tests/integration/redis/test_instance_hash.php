@@ -55,8 +55,7 @@ function test_redis() {
   /* Generate a unique key to use for this test run. */
   $hash = randstr(16);
   if ($redis->exists($hash)) {
-    echo "hash already exists: ${hash}\n";
-    exit(1);
+    die("skip: key already exists: ${hash}\n");
   }
 
   /* Ensure the hash doesn't persist longer than the test. */

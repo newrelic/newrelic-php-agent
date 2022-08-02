@@ -83,9 +83,8 @@ function test_sorted_sets() {
   $redis->connect($REDIS_HOST, $REDIS_PORT);
 
   $key = randstr(16);
-  if ($redis->exists($key) > 0) {
-    echo "Test key already exists: ${key})\n";
-    exit(1);
+  if ($redis->exists($key)) {
+    die("skip: key already exists: ${key}\n");
   }
 
   tap_equal(3, $redis->zadd($key, 0, 'min', 1, 'med', 2, 'max'), 'add three elements to sorted set');

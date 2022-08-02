@@ -68,19 +68,19 @@ ok - rpushx to a list that does not exist
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                       [39, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                  [39, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                 [39, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},            [39, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                       [38, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                  [38, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                 [38, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},            [38, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
       "scope":"OtherTransaction/php__FILE__"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},       [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},    [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists",
-      "scope":"OtherTransaction/php__FILE__"},       [2, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/expire"},    [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/expire",
       "scope":"OtherTransaction/php__FILE__"},       [2, "??", "??", "??", "??", "??"]],
@@ -152,10 +152,9 @@ function test_redis() {
 
   /* generate unique key names to use for this test run */
   $key = randstr(16);
-  $key2 = randstr(16);
-  if ($redis->exists($key) || $redis->exists($key2)) {
-    echo "key(s) already exist: ${key}, ${key2}\n";
-    exit(1);
+  $key2 = "${key}_b";
+  if ($redis->exists([$key, $key2])) {
+    die("skip: key(s) already exist: ${key}, ${key2}\n");
   }
 
   /* Ensure the keys don't persist (too much) longer than the test. */

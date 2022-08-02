@@ -53,8 +53,7 @@ function test_redis_geo() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($redis->exists($key)) {
-    echo "key already exists: ${key}\n";
-    exit(1);
+    die("skip: key already exists: ${key}\n");
   }
 
   $seattle = [-122.335167, 47.608013];

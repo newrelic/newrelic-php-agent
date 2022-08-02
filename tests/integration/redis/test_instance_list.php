@@ -76,10 +76,9 @@ function test_redis() {
 
   /* generate unique key names to use for this test run */
   $key = randstr(16);
-  $key2 = randstr(16);
-  if ($redis->exists($key) || $redis->exists($key2)) {
-    echo "key(s) already exist: ${key}, ${key2}\n";
-    exit(1);
+  $key2 = "${key}_b";
+  if ($redis->exists([$key, $key2])) {
+    die("skip: key(s) already exist: ${key}, ${key2}\n");
   }
 
   /* Ensure the keys don't persist (too much) longer than the test. */

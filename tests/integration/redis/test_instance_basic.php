@@ -87,10 +87,9 @@ function test_basic() {
 
   /* generate a unique key to use for this test run */
   $key1 = randstr(16);
-  $key2 = randstr(16);
+  $key2 = "${key1}_b";
   if ($redis->exists([$key1, $key2])) {
-    echo "key(s) already exist: ${key1}, ${key2}\n";
-    exit(1);
+    die("skip: key(s) already exist: ${key1}, ${key2}\n");
   }
 
   tap_equal("+PONG", $redis->ping("+PONG"), 'ping redis');

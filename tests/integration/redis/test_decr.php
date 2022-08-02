@@ -86,8 +86,7 @@ function test_redis() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($redis->exists($key)) {
-    echo "key already exists: ${key}\n";
-    exit(1);
+    die("skip: key already exists: ${key}\n");
   }
 
   /* Ensure the key doesn't persist (too much) longer than the test. */
