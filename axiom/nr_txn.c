@@ -3395,6 +3395,7 @@ static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
   metric_name
       = nr_formatf("Logging/lines/%s", ENSURE_LOG_LEVEL_NAME(level_name));
+
   nrm_force_add(txn->unscoped_metrics, metric_name, 0);
   nr_free(metric_name);
 }
