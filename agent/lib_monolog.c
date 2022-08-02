@@ -344,7 +344,7 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
  * Returns : A new string representing zval; caller must free
  *
  */
-static char* nr_monolog_fmt_context_key(zend_hash_key* hash_key) {
+static char* nr_monolog_fmt_context_key(const zend_hash_key* hash_key) {
   char* key_str = NULL;
   zval* key = nr_php_zval_alloc();
   if (nr_php_zend_hash_key_is_string(hash_key)) {
@@ -372,7 +372,7 @@ static char* nr_monolog_fmt_context_key(zend_hash_key* hash_key) {
  * Returns : A new string representing zval; caller must free
  *
  */
-static char* nr_monolog_fmt_context_value(zval* zv) {
+static char* nr_monolog_fmt_context_value(const zval* zv) {
   char* val_str = NULL;
   zval* zv_str = nr_php_zval_alloc();
 
@@ -440,7 +440,8 @@ static char* nr_monolog_fmt_context(char* strbuf,
  *
  * Returns : A new string with Monolog's log context
  */
-static char* nr_monolog_get_context(size_t argc, NR_EXECUTE_PROTO TSRMLS_DC) {
+static char* nr_monolog_get_context(const size_t argc,
+                                    NR_EXECUTE_PROTO TSRMLS_DC) {
   char* context = nr_strdup("");
   zval* context_arg = NULL;
 
@@ -480,7 +481,8 @@ return_context:
  *
  * Returns : A new string with a log record message; caller must free
  */
-static char* nr_monolog_build_message(size_t argc, NR_EXECUTE_PROTO TSRMLS_DC) {
+static char* nr_monolog_build_message(const size_t argc,
+                                      NR_EXECUTE_PROTO TSRMLS_DC) {
   char* message_and_context = nr_strdup("");
 
   char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
