@@ -3248,18 +3248,61 @@ char* nr_txn_get_current_span_id(nrtxn_t* txn) {
   return nr_strdup(span_id);
 }
 
-static void nr_txn_add_logging_metrics(nrtxnopt_t* opts,
-                                       nrmtable_t* unscoped_metrics,
-                                       const char* level_name) {
+bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options.logging_enabled || !txn->options.log_forwarding_enabled) {
+    return false;
+  }
+
+  if (0 == txn->options.log_events_max_samples_stored) {
+    return false;
+  }
+
+  if (txn->high_security) {
+    return false;
+  }
+
+  return true;
+}
+
+bool nr_txn_log_metrics_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options.logging_enabled || !txn->options.log_metrics_enabled) {
+    return false;
+  }
+
+  return true;
+}
+
+bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options
+           .logging_enabled /* || !txn->options.log_decorating_enabled */) {
+    return false;
+  }
+
+  return false;
+}
+
+static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   char* metric_name = NULL;
 
-  if (!opts->logging_enabled || !opts->log_metrics_enabled) {
+  if (!nr_txn_log_metrics_enabled(txn)) {
     return;
   }
 
-  nrm_force_add(unscoped_metrics, "Logging/lines", 0);
+  nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
   metric_name = nr_formatf("Logging/lines/%s", level_name);
-  nrm_force_add(unscoped_metrics, metric_name, 0);
+  nrm_force_add(txn->unscoped_metrics, metric_name, 0);
   nr_free(metric_name);
 }
 
@@ -3273,6 +3316,5 @@ void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
      3. Add logging metrics
    */
 
-  nr_txn_add_logging_metrics(&txn->options, txn->unscoped_metrics,
-                             log_level_name);
+  nr_txn_add_logging_metrics(txn, log_level_name);
 }
