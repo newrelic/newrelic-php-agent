@@ -374,7 +374,16 @@ static char* nr_monolog_fmt_context_key(const zend_hash_key* hash_key) {
  */
 static char* nr_monolog_fmt_context_value(const zval* zv) {
   char* val_str = NULL;
-  zval* zv_str = nr_php_zval_alloc();
+  zval* zv_str = NULL;
+
+  if (NULL == zv) {
+    return nr_strdup("");
+  }
+
+  zv_str = nr_php_zval_alloc();
+  if (NULL == zv_str) {
+    return nr_strdup("");
+  }
 
   ZVAL_DUP(zv_str, zv);
   convert_to_string(zv_str);
