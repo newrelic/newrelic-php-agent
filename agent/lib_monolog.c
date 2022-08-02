@@ -301,14 +301,14 @@ static char* nr_monolog_build_message(const size_t argc,
  * Returns : timestamp in milliseconds calculated from $datetime if available,
  * current time otherwise.
  */
-static nrtime_t nr_monolog_get_timestamp(const int api,
-                                         const size_t argc,
+static nrtime_t nr_monolog_get_timestamp(const int monolog_api,
+                                         const size_t add_record_argc,
                                          NR_EXECUTE_PROTO TSRMLS_DC) {
   nrtime_t timestamp = nr_get_time();
 
   zval* datetime = NULL;
   /* $datetime is only available since API level 2 */
-  if (2 <= api && 4 <= argc) {
+  if (2 <= monolog_api && 4 <= add_record_argc) {
     datetime = nr_php_arg_get(4, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (nr_php_is_zval_valid_object(datetime)
         && nr_php_object_has_method(datetime, "format" TSRMLS_CC)) {
