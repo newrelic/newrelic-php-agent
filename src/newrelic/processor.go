@@ -640,6 +640,15 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(spanEvents, args)
 
 	}
+
+	if ht&HarvestLogEvents == HarvestLogEvents && eventConfigs.LogEventConfig.Limit != 0 {
+		log.Debugf("harvesting log events")
+
+		logEvents := harvest.LogEvents
+		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
+		considerHarvestPayload(logEvents, args)
+
+	}
 }
 
 func (p *Processor) doHarvest(ph ProcessorHarvest) {
@@ -802,6 +811,7 @@ func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 		integrationLog(now, id, h.SpanEvents)
 		integrationLog(now, id, h.TxnTraces)
 		integrationLog(now, id, h.TxnEvents)
+		integrationLog(now, id, h.LogEvents)
 	}
 	p.txnDataChannel <- TxnData{ID: id, Sample: sample}
 }

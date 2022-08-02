@@ -231,6 +231,26 @@ func (rcv *Transaction) SpanEventsLength() int {
 	return 0
 }
 
+func (rcv *Transaction) LogEvents(obj *Event, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(30))
+	if o != 0 {
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
+	}
+	return false
+}
+
+func (rcv *Transaction) LogEventsLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(30))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
+}
+
 func TransactionStart(builder *flatbuffers.Builder) {
 	builder.StartObject(13)
 }
