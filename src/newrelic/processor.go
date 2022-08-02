@@ -272,35 +272,6 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	processConnectMessages(rep.RawReply)
 	rep.Reply, rep.Err = parseConnectReply(rep.RawReply.Body)
 
-	// need to compare agent limits to limits returned from the collector
-	// and choose the smallest value
-	final_log_limit := limits.DefaultMaxLogEvents
-
-	agent_log_limit := args.AgentEventLimits.LogEventConfig.Limit
-	agent_report_period := float64(limits.DefaultReportPeriod)
-	collector_log_limit := rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
-	collector_report_period := float64(rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.ReportPeriod)
-
-	// convert agent log limit to sampling period used for log events
-	agent_log_limit = int((float64(agent_log_limit) * collector_report_period) / agent_report_period)
-
-	// MSF - POSSIBLE REMOVE FROM RELEASE
-	log.Debugf("ConnectApplication: agent_report_period = %f collector_report_period = %f", agent_report_period, collector_report_period) // MSF
-	log.Debugf("ConnectApplication: agent_log_limit = %d collector_log_limit = %d", agent_log_limit, collector_log_limit)                 // MSF
-
-	if agent_log_limit < collector_log_limit {
-		final_log_limit = agent_log_limit
-	} else {
-		final_log_limit = collector_log_limit
-	}
-
-	// store final log limit in reply object which is used by rest of code to
-	// establish harvest limits
-	rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit = final_log_limit
-
-	// MSF - POSSIBLE REMOVE FROM RELEASE
-	log.Debugf("ConnectApplication: final_log_limit = %d", rep.Reply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
-
 	return rep
 }
 
@@ -471,6 +442,10 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 	app.harvestFrequency = time.Duration(app.connectReply.SamplingFrequency) * time.Second
 	app.samplingTarget = uint16(app.connectReply.SamplingTarget)
 
+	// using information from agent limits and collector response harvest limits choose the 
+	// final (lowest) value for the log event limit used by the daemon
+	processLogEventLimits(app)
+
 	if 0 == app.samplingTarget {
 		app.samplingTarget = 10
 	}
@@ -485,6 +460,43 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 
 	p.harvests[*app.connectReply.ID] = NewAppHarvest(*app.connectReply.ID, app,
 		NewHarvest(time.Now(), app.connectReply.EventHarvestConfig.EventConfigs), p.processorHarvestChan)
+}
+
+func processLogEventLimits(app *App) {
+
+	if nil == app || nil == app.info || nil == app.connectReply {
+	 	return
+	}
+
+	// need to compare agent limits to limits returned from the collector
+	// and choose the smallest value
+	finalLogLimit := limits.DefaultMaxLogEvents
+	agentLogLimit := app.info.AgentEventLimits.LogEventConfig.Limit
+
+	agentReportPeriod := float64(limits.DefaultReportPeriod)
+
+	collectorLogLimit := app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	collectorReportPeriod := float64(app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.ReportPeriod)
+
+	// convert agent log limit to sampling period used for log events
+	agentLogLimit = int((float64(agentLogLimit) * collectorReportPeriod) / agentReportPeriod)
+
+	// MSF - POSSIBLE REMOVE FROM RELEASE
+	log.Debugf("ConnectApplication: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod) // MSF
+	log.Debugf("ConnectApplication: agent_log_limit = %d agentLogLimit = %d", agentLogLimit, collectorLogLimit)                       // MSF
+
+	if agentLogLimit < collectorLogLimit {
+		finalLogLimit = agentLogLimit
+	} else {
+		finalLogLimit = collectorLogLimit
+	}
+
+	// store final log limit in reply object which is used by rest of code to
+	// establish harvest limits
+	app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit = finalLogLimit
+
+	// MSF - POSSIBLE REMOVE FROM RELEASE
+	log.Debugf("ConnectApplication: finalLogLimit = %d", app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
 }
 
 type harvestArgs struct {

@@ -224,7 +224,12 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 	rawLimits := rawConfig.HarvestLimits
 	var harvestConfig EventConfigs
 
-	log.Debugf("unmarshal response collector suggested eventharvestconfig rawLimits (logging) = " + strconv.Itoa(*rawLimits.LogEventData))
+	// MSF REMOVE POSSIBLY FOR RELEASE
+	if rawLimits.LogEventData != nil {
+		log.Debugf("unmarshal response collector suggested eventharvestconfig rawLimits (logging) = " + strconv.Itoa(*rawLimits.LogEventData))
+	} else {
+		log.Debugf("unmarshal response collector did not supply suggested eventharvestconfig rawLimits (logging)!")
+	}
 
 	// Check each event value to see what the report period and limit should be.
 	harvestConfig.ErrorEventConfig.Limit,
