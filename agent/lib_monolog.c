@@ -72,28 +72,26 @@ static int nr_monolog_version(const zval* logger TSRMLS_DC) {
 static char* nr_monolog_get_level_name(zval* logger,
                                        NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* level_name = NULL;
-  char* level_name_string = nr_strdup("UNKNOWN");
+  char* level_name_string = NULL;
 
   if (!nr_php_object_has_method(logger, "getLevelName" TSRMLS_CC)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: Logger does not have getLevelName method", __func__);
-    return level_name_string;
-  }
-
-  zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  level_name = nr_php_call(logger, "getLevelName", level);
-  if (nr_php_is_zval_valid_string(level_name)) {
-    level_name_string = nr_strdup(Z_STRVAL_P(level_name));
   } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: expected level_name be a valid string, got type %d",
-                     __func__, Z_TYPE_P(level_name));
+    zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    level_name = nr_php_call(logger, "getLevelName", level);
+    nr_php_arg_release(&level);
+    if (!nr_php_is_zval_valid_string(level_name)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: expected level_name be a valid string, got type %d",
+                       __func__, Z_TYPE_P(level_name));
+    } else {
+      level_name_string = nr_strdup(Z_STRVAL_P(level_name));
+    }
+    nr_php_zval_free(&level_name);
   }
 
-  nr_php_zval_free(&level_name);
-  nr_php_arg_release(&level);
-
-  return level_name_string;
+  return level_name_string != NULL ? level_name_string : nr_strdup("UNKNOWN");
 }
 
 /*
