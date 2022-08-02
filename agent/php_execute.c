@@ -927,13 +927,11 @@ static void nr_execute_handle_logging_framework(
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
-      char* metname = nr_formatf("Supportability/library/%s/detected",
-                                 logging_frameworks[i].library_name);
-      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
-      nr_free(metname);
+      nr_php_execute_add_library_supportability_metric(
+          NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
 
-      metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
-                           logging_frameworks[i].library_name);
+      char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
+                                 logging_frameworks[i].library_name);
 
       nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
       nr_free(metname);
