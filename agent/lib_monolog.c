@@ -20,7 +20,7 @@
 #include "util_sleep.h"
 
 /*
- * Purpose : Return a copy of Monolog\Logger::API.
+ * Purpose : Convert Monolog\Logger::API to integer
  *
  * Params  : 1. An instance of Monolog\Logger.
  *
@@ -67,7 +67,7 @@ static int nr_monolog_version(zval* logger TSRMLS_DC) {
  *
  * Params  : Logger instance and Monolog\Logger::addRecord argument list
  *
- * Returns : A new string with Monolog's log level name
+ * Returns : A new string with Monolog's log level name; caller must free
  */
 static char* nr_monolog_get_level_name(zval* logger,
                                        NR_EXECUTE_PROTO TSRMLS_DC) {
