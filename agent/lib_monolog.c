@@ -368,8 +368,9 @@ NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
     goto end;
   }
 
-  if (/*NRINI(log_forwarding_enabled) && */ nr_php_object_instanceof_class(
-      handler, "NewRelic\\Monolog\\Enricher\\Handler" TSRMLS_CC)) {
+  if (nr_txn_log_forwarding_enabled(NRPRG(txn))
+      && nr_php_object_instanceof_class(
+          handler, "NewRelic\\Monolog\\Enricher\\Handler" TSRMLS_CC)) {
     nrl_warning(NRL_INSTRUMENT,
                 "detected NewRelic\\Monolog\\Enricher\\Handler. The "
                 "application may be sending logs to New Relic twice.");
