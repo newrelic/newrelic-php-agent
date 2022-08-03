@@ -372,7 +372,7 @@ static char* nr_monolog_fmt_context_key(const zend_hash_key* hash_key) {
  * Returns : A new string representing zval; caller must free
  *
  */
-static char* nr_monolog_fmt_context_value(const zval* zv) {
+static char* nr_monolog_fmt_context_value(zval* zv) {
   char* val_str = NULL;
   zval* zv_str = NULL;
 
