@@ -251,11 +251,11 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 		},
 	}
 
-	m.DoAppInfoCustom(t, nil, AppStateUnknown,  &appInfo)
+	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
 	m.DoConnect(t, &idOne)
 
-	m.DoAppInfoCustom(t, nil, AppStateConnected,  &appInfo)
+	m.DoAppInfoCustom(t, nil, AppStateConnected, &appInfo)
 
 	m.TxnData(t, idOne, txnLogEventSample)
 
@@ -312,12 +312,11 @@ func TestSupportabilityHarvest(t *testing.T) {
 		},
 	}
 
-	m.DoAppInfoCustom(t, nil, AppStateUnknown,  &appInfo)
+	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
 	m.DoConnect(t, &idOne)
 
-	m.DoAppInfoCustom(t, nil, AppStateConnected,  &appInfo)
-
+	m.DoAppInfoCustom(t, nil, AppStateConnected, &appInfo)
 
 	m.TxnData(t, idOne, txnErrorEventSample)
 
