@@ -294,7 +294,7 @@ func processBinary(data []byte, handler AgentDataHandler) ([]byte, error) {
 		return nil, nil
 	}
 
-	log.Debugf("received binary message NEW, len=%d", len(data))
+	log.Debugf("received binary message, len=%d", len(data))
 
 	// Check that the first offset is actually within the bounds of the message
 	// length.
