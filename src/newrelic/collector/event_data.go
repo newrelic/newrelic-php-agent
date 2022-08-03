@@ -277,7 +277,7 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 		err = getEventConfig(
 		rawLimits.LogEventData,
 		daemonConfig.ReportPeriod,
-		limits.MaxLogEvents,
+		limits.MaxLogMaxEvents,
 		limits.DefaultReportPeriod)
 	if err != nil {
 		log.Infof("Unexpected negative Log event limit %d", rawLimits.LogEventData)
@@ -307,6 +307,14 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 		}
 	}
 
+	logEventLimit := limits.MaxLogMaxEvents
+	if agentLimits != nil {
+		if (agentLimits.LogEventConfig.Limit < limits.MaxLogMaxEvents) &&
+			(agentLimits.LogEventConfig.Limit >= 0) {
+			logEventLimit = agentLimits.LogEventConfig.Limit
+		}
+	}
+
 	return EventConfigs{
 		ErrorEventConfig: Event{
 			Limit: limits.MaxErrorEvents,
@@ -321,7 +329,7 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 			Limit: spanEventLimit,
 		},
 		LogEventConfig: Event{
-			Limit: limits.MaxLogEvents,
+			Limit: logEventLimit,
 		},
 	}
 }
