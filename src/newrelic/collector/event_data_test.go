@@ -112,7 +112,6 @@ func CreateEventConfig(reportPeriod time.Duration) EventConfigs {
 	eventConfig.ErrorEventConfig.ReportPeriod = reportPeriod
 	eventConfig.AnalyticEventConfig.ReportPeriod = reportPeriod
 	eventConfig.CustomEventConfig.ReportPeriod = reportPeriod
-	eventConfig.LogEventConfig.ReportPeriod = reportPeriod
 	eventConfig.SpanEventConfig.ReportPeriod = reportPeriod
 	eventConfig.LogEventConfig.ReportPeriod = reportPeriod
 
