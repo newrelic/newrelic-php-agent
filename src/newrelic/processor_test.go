@@ -243,10 +243,19 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 func TestProcessorHarvestLogEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	m.DoAppInfo(t, nil, AppStateUnknown)
+	appInfo := sampleAppInfo
+	appInfo.AgentEventLimits = collector.EventConfigs{
+		LogEventConfig: collector.Event{
+			Limit:        1000,
+			ReportPeriod: 5000,
+		},
+	}
+
+	m.DoAppInfoCustom(t, nil, AppStateUnknown,  &appInfo)
 
 	m.DoConnect(t, &idOne)
-	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.DoAppInfoCustom(t, nil, AppStateConnected,  &appInfo)
 
 	m.TxnData(t, idOne, txnLogEventSample)
 
@@ -295,10 +304,20 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 func TestSupportabilityHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	m.DoAppInfo(t, nil, AppStateUnknown)
+	appInfo := sampleAppInfo
+	appInfo.AgentEventLimits = collector.EventConfigs{
+		LogEventConfig: collector.Event{
+			Limit:        1000,
+			ReportPeriod: 5000,
+		},
+	}
+
+	m.DoAppInfoCustom(t, nil, AppStateUnknown,  &appInfo)
 
 	m.DoConnect(t, &idOne)
-	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.DoAppInfoCustom(t, nil, AppStateConnected,  &appInfo)
+
 
 	m.TxnData(t, idOne, txnErrorEventSample)
 
