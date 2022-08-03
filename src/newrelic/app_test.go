@@ -358,7 +358,6 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	// A valid span event max samples stored value configured from the agent should
 	// propagate through and be sent to the collector
 	info.AgentEventLimits.SpanEventConfig.Limit = 2323
-	info.AgentEventLimits.LogEventConfig.Limit = 4545
 
 	// A valid log event max samples stored value configured from the agent should
 	// propagate through and be sent to the collector
