@@ -105,8 +105,8 @@ func (daemonConfig EventHarvestConfig) MarshalJSON() ([]byte, error) {
 		ErrorEventData:    &daemonConfig.EventConfigs.ErrorEventConfig.Limit,
 		AnalyticEventData: &daemonConfig.EventConfigs.AnalyticEventConfig.Limit,
 		CustomEventData:   &daemonConfig.EventConfigs.CustomEventConfig.Limit,
-		LogEventData:      &daemonConfig.EventConfigs.LogEventConfig.Limit,
 		SpanEventData:     &daemonConfig.EventConfigs.SpanEventConfig.Limit,
+		LogEventData:      &daemonConfig.EventConfigs.LogEventConfig.Limit,
 	}
 
 	rawConfig := rawEventHarvestConfig{
@@ -268,18 +268,6 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	harvestConfig.LogEventConfig.Limit,
-		harvestConfig.LogEventConfig.ReportPeriod,
-		err = getEventConfig(
-		rawLimits.LogEventData,
-		daemonConfig.ReportPeriod,
-		limits.MaxLogMaxEvents,
-		limits.DefaultReportPeriod)
-	if err != nil {
-		log.Infof("Unexpected negative log event limit %d", rawLimits.LogEventData)
-		return err
-	}
-
 	harvestConfig.SpanEventConfig.Limit,
 		harvestConfig.SpanEventConfig.ReportPeriod,
 		err = getEventConfig(
@@ -342,11 +330,11 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 		CustomEventConfig: Event{
 			Limit: limits.MaxCustomEvents,
 		},
-		LogEventConfig: Event{
-			Limit: logEventLimit,
-		},
 		SpanEventConfig: Event{
 			Limit: spanEventLimit,
+		},
+		LogEventConfig: Event{
+			Limit: logEventLimit,
 		},
 	}
 }
