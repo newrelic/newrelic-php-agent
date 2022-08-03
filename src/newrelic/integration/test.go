@@ -33,6 +33,7 @@ type Test struct {
 	customEvents   []byte
 	errorEvents    []byte
 	spanEvents     []byte
+	logEvents      []byte
 	metrics        []byte
 	slowSQLs       []byte
 	tracedErrors   []byte
@@ -440,6 +441,7 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	t.comparePayload(t.customEvents, harvest.CustomEvents, false)
 	t.comparePayload(t.errorEvents, harvest.ErrorEvents, false)
 	t.comparePayload(t.spanEvents, harvest.SpanEvents, false)
+	t.comparePayload(t.logEvents, harvest.LogEvents, false)
 	t.comparePayload(expectedMetrics, harvest.Metrics, true)
 	t.comparePayload(t.slowSQLs, harvest.SlowSQLs, false)
 	t.comparePayload(t.tracedErrors, harvest.Errors, false)

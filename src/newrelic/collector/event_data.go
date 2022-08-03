@@ -21,6 +21,7 @@ type rawHarvestLimits struct {
 	AnalyticEventData *int `json:"analytic_event_data"`
 	CustomEventData   *int `json:"custom_event_data"`
 	SpanEventData     *int `json:"span_event_data"`
+	LogEventData      *int `json:"log_event_data"`
 }
 
 // rawEventHarvestConfig is the wire representation of the event_harvest_config,
@@ -58,6 +59,7 @@ type EventConfigs struct {
 	AnalyticEventConfig Event
 	CustomEventConfig   Event
 	SpanEventConfig     Event
+	LogEventConfig      Event
 }
 
 // EventHarvestConfig represents the event_harvest_config object used by the daemon
@@ -103,6 +105,7 @@ func (daemonConfig EventHarvestConfig) MarshalJSON() ([]byte, error) {
 		AnalyticEventData: &daemonConfig.EventConfigs.AnalyticEventConfig.Limit,
 		CustomEventData:   &daemonConfig.EventConfigs.CustomEventConfig.Limit,
 		SpanEventData:     &daemonConfig.EventConfigs.SpanEventConfig.Limit,
+		LogEventData:      &daemonConfig.EventConfigs.LogEventConfig.Limit,
 	}
 
 	rawConfig := rawEventHarvestConfig{
@@ -269,6 +272,18 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	harvestConfig.LogEventConfig.Limit,
+		harvestConfig.LogEventConfig.ReportPeriod,
+		err = getEventConfig(
+		rawLimits.LogEventData,
+		daemonConfig.ReportPeriod,
+		limits.MaxLogMaxEvents,
+		limits.DefaultReportPeriod)
+	if err != nil {
+		log.Infof("Unexpected negative Log event limit %d", rawLimits.LogEventData)
+		return err
+	}
+
 	// Copy the harvest limits in.
 	daemonConfig.EventConfigs = harvestConfig
 
@@ -292,6 +307,14 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 		}
 	}
 
+	logEventLimit := limits.MaxLogMaxEvents
+	if agentLimits != nil {
+		if (agentLimits.LogEventConfig.Limit < limits.MaxLogMaxEvents) &&
+			(agentLimits.LogEventConfig.Limit >= 0) {
+			logEventLimit = agentLimits.LogEventConfig.Limit
+		}
+	}
+
 	return EventConfigs{
 		ErrorEventConfig: Event{
 			Limit: limits.MaxErrorEvents,
@@ -304,6 +327,9 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 		},
 		SpanEventConfig: Event{
 			Limit: spanEventLimit,
+		},
+		LogEventConfig: Event{
+			Limit: logEventLimit,
 		},
 	}
 }

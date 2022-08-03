@@ -23,6 +23,7 @@ const (
 	CommandConnect             = "connect"
 	CommandPreconnect          = "preconnect"
 	CommandSpanEvents          = "span_event_data"
+	CommandLogEvents           = "log_event_data"
 )
 
 const (

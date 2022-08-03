@@ -59,7 +59,7 @@ type HarvestError struct {
 	data  FailedHarvestSaver
 }
 
-type HarvestType uint8
+type HarvestType uint16
 
 const (
 	HarvestMetrics      HarvestType = (1 << 0)
@@ -70,8 +70,9 @@ const (
 	HarvestCustomEvents HarvestType = (1 << 5)
 	HarvestErrorEvents  HarvestType = (1 << 6)
 	HarvestSpanEvents   HarvestType = (1 << 7)
+	HarvestLogEvents    HarvestType = (1 << 8)
 	HarvestDefaultData  HarvestType = HarvestMetrics | HarvestErrors | HarvestSlowSQLs | HarvestTxnTraces
-	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents
+	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents
 )
 
 // ProcessorHarvest represents a processor harvest event: when this is received by a
@@ -546,6 +547,7 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayload(harvest.TxnTraces, args)
 	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args)
 	considerHarvestPayload(harvest.SpanEvents, args)
+	considerHarvestPayload(harvest.LogEvents, args)
 }
 
 func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
@@ -585,6 +587,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
 		spanEvents := harvest.SpanEvents
+		logEvents := harvest.LogEvents
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
@@ -598,6 +601,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(slowSQLs, args)
 		considerHarvestPayload(txnTraces, args)
 		considerHarvestPayload(spanEvents, args)
+		considerHarvestPayload(logEvents, args)
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
@@ -634,6 +638,15 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		spanEvents := harvest.SpanEvents
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
 		considerHarvestPayload(spanEvents, args)
+
+	}
+
+	if ht&HarvestLogEvents == HarvestLogEvents && eventConfigs.LogEventConfig.Limit != 0 {
+		log.Debugf("harvesting log events")
+
+		logEvents := harvest.LogEvents
+		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
+		considerHarvestPayload(logEvents, args)
 
 	}
 }
@@ -798,6 +811,7 @@ func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 		integrationLog(now, id, h.SpanEvents)
 		integrationLog(now, id, h.TxnTraces)
 		integrationLog(now, id, h.TxnEvents)
+		integrationLog(now, id, h.LogEvents)
 	}
 	p.txnDataChannel <- TxnData{ID: id, Sample: sample}
 }

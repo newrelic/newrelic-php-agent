@@ -157,6 +157,16 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 		}
 	}
 
+	if n := txn.LogEventsLength(); n > 0 {
+		var e protocol.Event
+
+		for i := 0; i < n; i++ {
+			txn.LogEvents(&e, i)
+			data := copySlice(e.Data())
+			h.LogEvents.AddEventFromData(data, samplingPriority)
+		}
+	}
+
 	if trace := txn.Trace(nil); trace != nil {
 		data := trace.Data()
 		tt := &TxnTrace{
