@@ -22,6 +22,7 @@
 #include "nr_attributes.h"
 #include "nr_errors.h"
 #include "nr_file_naming.h"
+#include "nr_log_events.h"
 #include "nr_segment.h"
 #include "nr_slowsqls.h"
 #include "nr_span_queue.h"
@@ -266,7 +267,8 @@ typedef struct _nrtxn_t {
   nr_file_naming_t* match_filenames; /* Filenames to match on for txn naming */
 
   nr_analytics_events_t*
-      custom_events; /* Custom events created through the API. */
+      custom_events;           /* Custom events created through the API. */
+  nr_log_events_t* log_events; /* Log events pool */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -632,12 +634,14 @@ extern bool nr_txn_log_decorating_enabled(nrtxn_t* txn);
  *           2. Log record level name
  *           3. Log record message
  *           4. Log record timestamp
+ *           5. The application (to get linking meta data)
  *
  */
 extern void nr_txn_record_log_event(nrtxn_t* txn,
                                     const char* level_name,
                                     const char* message,
-                                    nrtime_t timestamp);
+                                    nrtime_t timestamp,
+                                    nrapp_t* app);
 
 /*
  * Purpose : Return the CAT trip ID for the current transaction.
