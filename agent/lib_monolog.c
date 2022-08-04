@@ -79,9 +79,18 @@ static char* nr_monolog_get_level_name(zval* logger,
                      "%s: Logger does not have getLevelName method", __func__);
   } else {
     zval* level = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    level_name = nr_php_call(logger, "getLevelName", level);
+    if (NULL == level) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: $level not defined, unable to get log level name",
+                       __func__);
+    } else {
+      level_name = nr_php_call(logger, "getLevelName", level);
+    }
     nr_php_arg_release(&level);
-    if (!nr_php_is_zval_valid_string(level_name)) {
+    if (NULL == level_name) {
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected level_name be valid",
+                       __func__);
+    } else if (!nr_php_is_zval_valid_string(level_name)) {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "%s: expected level_name be a valid string, got type %d",
                        __func__, Z_TYPE_P(level_name));
@@ -107,7 +116,12 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* message_arg = NULL;
 
   message_arg = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_php_is_zval_valid_string(message_arg)) {
+  if (message_arg) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: $message not defined, unable to get log message",
+                     __func__);
+    message = nr_strdup("");
+  } else if (!nr_php_is_zval_valid_string(message_arg)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: expected $message be a valid string, got type %d",
                      __func__, Z_TYPE_P(message_arg));
@@ -245,7 +259,12 @@ static char* nr_monolog_get_context(const size_t argc,
 
   context_arg = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
-  if (!nr_php_is_zval_valid_array(context_arg)) {
+  if (NULL == context_arg) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: $context not defined, unable to get log context",
+                     __func__);
+    goto return_context;
+  } else if (!nr_php_is_zval_valid_array(context_arg)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: expected $context be a valid array, got type %d",
                      __func__, Z_TYPE_P(context_arg));
