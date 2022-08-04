@@ -461,7 +461,12 @@ static char* nr_monolog_get_context(const size_t argc,
 
   context_arg = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
-  if (!nr_php_is_zval_valid_array(context_arg)) {
+  if (NULL == context_arg) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: $context not defined, unable to get log context",
+                     __func__);
+    goto return_context;
+  } else if (!nr_php_is_zval_valid_array(context_arg)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: expected $context be a valid array, got type %d",
                      __func__, Z_TYPE_P(context_arg));
