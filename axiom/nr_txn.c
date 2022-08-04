@@ -3340,6 +3340,12 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     return;
   }
 
+  if (nr_strempty(log_message)) {
+    nrl_debug(NRL_TXN, "%s: not forwarding log event with empty log message",
+              __func__);
+    return;
+  }
+
   rnd = nr_random_create();
   nr_random_seed(rnd, timestamp);
 
@@ -3370,7 +3376,6 @@ void nr_txn_record_log_event(nrtxn_t* txn,
                              const char* log_message,
                              nrtime_t timestamp,
                              nrapp_t* app) {
-
   nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
