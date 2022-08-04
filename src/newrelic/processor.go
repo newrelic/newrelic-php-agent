@@ -492,9 +492,8 @@ func processLogEventLimits(app *App) {
 	// convert agent log limit to sampling period used for log events
 	agentLogLimit = int((float64(agentLogLimit) * collectorReportPeriod) / agentReportPeriod)
 
-	// MSF - POSSIBLE REMOVE FROM RELEASE
-	log.Debugf("ConnectApplication: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod) // MSF
-	log.Debugf("ConnectApplication: agent_log_limit = %d agentLogLimit = %d", agentLogLimit, collectorLogLimit)                       // MSF
+	log.Debugf("handling log limits: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod)
+	log.Debugf("handling log limits: agent_log_limit = %d agentLogLimit = %d", agentLogLimit, collectorLogLimit)
 
 	if agentLogLimit < collectorLogLimit {
 		finalLogLimit = agentLogLimit
@@ -506,8 +505,7 @@ func processLogEventLimits(app *App) {
 	// establish harvest limits
 	app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit = finalLogLimit
 
-	// MSF - POSSIBLE REMOVE FROM RELEASE
-	log.Debugf("ConnectApplication: finalLogLimit = %d", app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
+	log.Debugf("handling log limits: finalLogLimit = %d", app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
 }
 
 type harvestArgs struct {
