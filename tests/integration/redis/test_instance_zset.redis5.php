@@ -1,16 +1,21 @@
 <?php
 /*
- * Copyright 2020 New Relic Corporation. All rights reserved.
+ * Copyright 2022 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*DESCRIPTION
 The agent should report Redis metrics including instance information for Redis
-decrement operations.
+sorted set operations.
 */
 
 /*SKIPIF
-<?php require("skipif.inc");
+<?php
+if (version_compare(phpversion(), '5.4', '<')) {
+    die("skip: PHP > 5.3 required\n");
+}
+$minimum_redis_datastore_version = '5.0.0';
+require("skipif.inc");
 */
 
 /*INI
@@ -19,13 +24,10 @@ newrelic.datastore_tracer.instance_reporting.enabled = 1
 */
 
 /*EXPECT
-ok - set key
-ok - check value
-ok - decrement by 1
-ok - check value
-ok - decrement by 3
-ok - check final value
-ok - delete key
+ok - add three elements to sorted set
+ok - pop maximum element off sorted set
+ok - pop minimum element off sorted set
+ok - we deleted our test key
 ok - trace nodes match
 ok - datastore instance metric exists
 */
@@ -37,47 +39,39 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/integration.php')
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/redis.inc');
 
-function test_redis() {
+function test_sorted_sets() {
   global $REDIS_HOST, $REDIS_PORT;
 
   $redis = new Redis();
   $redis->connect($REDIS_HOST, $REDIS_PORT);
 
-  /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($redis->exists($key)) {
     die("skip: key already exists: ${key}\n");
   }
 
-  /* Ensure the key doesn't persist (too much) longer than the test. */
-  $redis->expire($key, 30 /* seconds */);
+  tap_equal(3, $redis->zadd($key, 0, 'min', 1, 'med', 2, 'max'), 'add three elements to sorted set');
 
-  tap_assert($redis->set($key, 20), 'set key');
-  tap_equal('20', $redis->get($key), 'check value');
-  tap_equal(19, $redis->decr($key), 'decrement by 1');
-  tap_equal('19', $redis->get($key), 'check value');
-  tap_equal(16, $redis->decrBy($key, 3), 'decrement by 3');
-  tap_equal('16', $redis->get($key), 'check final value');
+  tap_equal(['max' => 2.0],  $redis->zpopmax($key), 'pop maximum element off sorted set');
+  tap_equal(['min' => 0.0], $redis->zpopmin($key), 'pop minimum element off sorted set');
 
-  /* Cleanup the key used by this test run. */
-  tap_equal(1, $redis->del($key), 'delete key');
+  tap_equal(1, $redis->del($key), 'we deleted our test key');
 
   $redis->close();
 }
 
-test_redis();
+test_sorted_sets();
 
 $txn = new Transaction;
 
 redis_trace_nodes_match($txn, array(
+  'Datastore/operation/Redis/close',
   'Datastore/operation/Redis/connect',
-  'Datastore/operation/Redis/exists',
-  'Datastore/operation/Redis/expire',
-  'Datastore/operation/Redis/decr',
-  'Datastore/operation/Redis/decrby',
   'Datastore/operation/Redis/del',
-  'Datastore/operation/Redis/get',
-  'Datastore/operation/Redis/set',
+  'Datastore/operation/Redis/exists',
+  'Datastore/operation/Redis/zadd',
+  'Datastore/operation/Redis/zpopmax',
+  'Datastore/operation/Redis/zpopmin',
 ));
 
 redis_datastore_instance_metric_exists($txn);
