@@ -3320,8 +3320,9 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
   nr_log_event_set_span_id(e, span_id);
   nr_free(span_id);
 
+  nr_log_event_set_entity_name(e, txn->primary_app_name);
+
   if (nrlikely(app)) {
-    nr_log_event_set_entity_name(e, nr_app_get_entity_name(app));
     nr_log_event_set_hostname(e, nr_app_get_host_name(app));
     nr_log_event_set_guid(e, nr_app_get_entity_guid(app));
   }
