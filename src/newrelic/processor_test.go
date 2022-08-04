@@ -182,6 +182,18 @@ var (
 	}
 )
 
+func GetLogEventAppInfo(limit int) AppInfo {
+	appInfo := sampleAppInfo
+	appInfo.AgentEventLimits = collector.EventConfigs{
+		LogEventConfig: collector.Event{
+			Limit:        limit,
+			ReportPeriod: 5000,
+		},
+	}
+
+	return appInfo
+}
+
 func TestProcessorHarvestDefaultData(t *testing.T) {
 	m := NewMockedProcessor(2)
 
@@ -243,13 +255,7 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 func TestProcessorHarvestLogEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	appInfo := sampleAppInfo
-	appInfo.AgentEventLimits = collector.EventConfigs{
-		LogEventConfig: collector.Event{
-			Limit:        1000,
-			ReportPeriod: 5000,
-		},
-	}
+	appInfo := GetLogEventAppInfo(1000)
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
@@ -304,13 +310,7 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 func TestSupportabilityHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	appInfo := sampleAppInfo
-	appInfo.AgentEventLimits = collector.EventConfigs{
-		LogEventConfig: collector.Event{
-			Limit:        1000,
-			ReportPeriod: 5000,
-		},
-	}
+	appInfo := GetLogEventAppInfo(1000)
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
@@ -1173,17 +1173,14 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 	// NOTE: This limit is based on a 60 second harvest period!
 	//       So the actual value used to compare to the collector
 	//       limit will be 1/12th (5s/60s) smaller
-	appInfo := sampleAppInfo
-	harvestLimit := 833
+	var appInfo AppInfo = AppInfo{}
+	logHarvestLimit := 833
+
 	switch eventType {
 	case "log_event_data":
-		harvestLimit = int(collectorLimit)
-		appInfo.AgentEventLimits = collector.EventConfigs{
-			LogEventConfig: collector.Event{
-				Limit:        int(agentLimit),
-				ReportPeriod: 5000,
-			},
-		}
+		logHarvestLimit = int(collectorLimit)
+		appInfo = GetLogEventAppInfo(int(agentLimit))
+
 	default:
 		t.Fatalf("%s: runMockedCollectorHarvestLimitTest() invalid eventType \"%s\" specified", testName, eventType)
 	}
@@ -1204,7 +1201,7 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 		`"span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":166},` +
 		`"event_harvest_config":{"report_period_ms":5000,` +
 		`"harvest_limits":{"analytics_event_data":833,"custom_event_data":833,"error_event_data":833,` +
-		`"log_event_data":` + strconv.Itoa(harvestLimit) + `}}}`
+		`"log_event_data":` + strconv.Itoa(logHarvestLimit) + `}}}`
 	m.DoConnectConfiguredReply(t, mockedReply)
 
 	reply = m.p.IncomingAppInfo(nil, &appInfo)
