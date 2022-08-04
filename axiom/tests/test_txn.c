@@ -130,6 +130,22 @@ nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
   return p->txns_app;
 }
 
+const char* nr_app_get_host_name(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->host_name;
+}
+
+const char* nr_app_get_entity_guid(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->entity_guid;
+}
+
 #define test_freeze_name(...) \
   test_freeze_name_fn(__VA_ARGS__, __FILE__, __LINE__)
 
