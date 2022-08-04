@@ -481,9 +481,7 @@ func processLogEventLimits(app *App) {
 
 	// need to compare agent limits to limits returned from the collector
 	// and choose the smallest value
-	finalLogLimit := limits.DefaultMaxLogEvents
 	agentLogLimit := app.info.AgentEventLimits.LogEventConfig.Limit
-
 	agentReportPeriod := float64(limits.DefaultReportPeriod)
 
 	collectorLogLimit := app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
@@ -495,10 +493,9 @@ func processLogEventLimits(app *App) {
 	log.Debugf("handling log limits: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod)
 	log.Debugf("handling log limits: agent_log_limit = %d agentLogLimit = %d", agentLogLimit, collectorLogLimit)
 
+	finalLogLimit := collectorLogLimit
 	if agentLogLimit < collectorLogLimit {
 		finalLogLimit = agentLogLimit
-	} else {
-		finalLogLimit = collectorLogLimit
 	}
 
 	// store final log limit in reply object which is used by rest of code to
