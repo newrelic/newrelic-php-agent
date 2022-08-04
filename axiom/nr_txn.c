@@ -3296,11 +3296,14 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
   return false;
 }
 
+#define ENSURE_LOG_LEVEL_NAME(level_name) \
+  (NULL == level_name ? "UNKNOWN" : level_name)
+
 static nr_log_event_t* log_event_create(const char* log_level_name,
                                         const char* log_message,
                                         nrtime_t timestamp) {
   nr_log_event_t* e = nr_log_event_create();
-  nr_log_event_set_log_level(e, log_level_name);
+  nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
   nr_log_event_set_message(e, log_message);
   nr_log_event_set_timestamp(e, timestamp);
   return e;
@@ -3366,7 +3369,8 @@ static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   }
 
   nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
-  metric_name = nr_formatf("Logging/lines/%s", level_name);
+  metric_name
+      = nr_formatf("Logging/lines/%s", ENSURE_LOG_LEVEL_NAME(level_name));
   nrm_force_add(txn->unscoped_metrics, metric_name, 0);
   nr_free(metric_name);
 }
