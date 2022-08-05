@@ -8084,14 +8084,134 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
+static nrtxn_t* new_txn_for_record_log_event_test(void) {
+  nrapp_t app;
+  nrtxnopt_t opts;
+  nrtxn_t* txn;
+  nr_segment_t* segment;
+
+  /* Setup app state */
+  nr_memset(&app, 0, sizeof(app));
+  app.state = NR_APP_OK;
+
+  /* Setup log feature options */
+  nr_memset(&opts, 0, sizeof(opts));
+  opts.logging_enabled = true;
+  opts.log_forwarding_enabled = true;
+  opts.log_events_max_samples_stored = true;
+  opts.log_metrics_enabled = true;
+
+  opts.distributed_tracing_enabled = 1; /* for linking meta data */
+
+  /* Start txn and segment */
+  txn = nr_txn_begin(&app, &opts, NULL);
+  segment = nr_segment_start(txn, txn->segment_root, NULL);
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+  nr_txn_set_current_segment(txn, segment);
+
+  txn->options.span_events_enabled = 1; /* for linking meta data */
+
+  return txn;
+}
+
 static void test_record_log_event(void) {
-  /* This is the plan for this test:
-      1. Setup state (create transaction with logging options)
-      2. Call nr_txn_record_log_event();
-      3. Check for state:
-        - log_event is added to transaction log events
-        - check if metrics are created
-  */
+#define LOG_LEVEL "INFO"
+#define LOG_MESSAGE "Sample log message"
+#define LOG_TIMESTAMP 1234
+#define LOG_EVENT_PARAMS LOG_LEVEL, LOG_MESSAGE, LOG_TIMESTAMP * NR_TIME_DIVISOR_MS
+#define APP_HOST_NAME "localhost"
+#define APP_ENTITY_NAME "test_record_log_event"
+#define APP_ENTITY_GUID "guid"
+
+  nrapp_t appv = {.host_name = APP_HOST_NAME, .entity_guid = APP_ENTITY_GUID};
+  nrtxn_t* txn = NULL;
+  char *expected = NULL;
+  char *log_event_json = NULL;
+
+  /*
+   * NULL parameters: don't record, don't create metrics, don't blow up!
+   */
+  txn = new_txn_for_record_log_event_test();
+  nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0, nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0, nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test();
+  nr_txn_record_log_event(NULL, LOG_EVENT_PARAMS, NULL);
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0, nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0, nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  /*
+   * Mixed conditions (some NULL parameters): maybe record, create metrics, don't blow up!
+   */
+  txn = new_txn_for_record_log_event_test();
+  nr_txn_record_log_event(txn, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("null log params, event not recorded", 0, nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log params, event not recorded", 0, nr_log_events_number_saved(txn->log_events));
+  test_txn_metric_is("null log level, event not recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines", 1,
+                    0, 0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines/UNKNOWN", 1,
+                    0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test();
+  nr_txn_record_log_event(txn, NULL, LOG_MESSAGE, 0, NULL);
+  tlib_pass_if_int_equal("null log level, event seen", 1, nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log level, event saved", 1, nr_log_events_number_saved(txn->log_events));
+  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+  tlib_pass_if_not_null("null log level, event recorded", log_event_json);
+  expected = "[{"
+              "\"message\":\"" LOG_MESSAGE "\","
+              "\"log.level\":\"UNKNOWN\","
+              "\"timestamp\":0,"
+              "\"trace.id\":\"0000000000000000\","
+              "\"span.id\":\"0000000000000000\","
+              "\"entity.guid\":\"null\","
+              "\"entity.name\":\"\","
+              "\"hostname\":\"null\""
+          "}]";
+  tlib_pass_if_str_equal("null log level, event recorded, json ok", expected, log_event_json);
+  nr_free(log_event_json);
+  test_txn_metric_is("null log level, event recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines", 1,
+                    0, 0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines/UNKNOWN", 1,
+                    0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  /* Happy path - everything initialized: record! */
+  txn = new_txn_for_record_log_event_test();
+  txn->primary_app_name = nr_strdup(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  tlib_pass_if_int_equal("happy path, event seen", 1, nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, event saved", 1, nr_log_events_number_saved(txn->log_events));
+  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+  tlib_pass_if_not_null("happy path, event recorded", log_event_json);
+  expected = "[{"
+              "\"message\":\"" LOG_MESSAGE "\","
+              "\"log.level\":\"" LOG_LEVEL "\","
+              "\"timestamp\":" NR_STR2(LOG_TIMESTAMP)","
+              "\"trace.id\":\"0000000000000000\","
+              "\"span.id\":\"0000000000000000\","
+              "\"entity.guid\":\"" APP_ENTITY_GUID "\","
+              "\"entity.name\":\"" APP_ENTITY_NAME "\","
+              "\"hostname\":\"" APP_HOST_NAME "\""
+          "}]";
+  tlib_pass_if_str_equal("happy path, event recorded, json ok", expected, log_event_json);
+  nr_free(log_event_json);
+  test_txn_metric_is("happy path, event recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines", 1,
+                    0, 0, 0, 0, 0);
+  test_txn_metric_is("happy path, event recorded, metric created", txn->unscoped_metrics, MET_FORCED,
+                    "Logging/lines/" LOG_LEVEL, 1,
+                    0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
 }
 
 static void test_txn_log_configuration(void) {
