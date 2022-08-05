@@ -13,12 +13,15 @@
 /*
  * Purpose : Convert a log event to an analytic event and add it to
  *           an event pool.
+ * 
+ * Returns : true if sampling occured (see Notes below)
+ *           false otherwise
  *
  * Notes   : This function is not guaranteed to add an event: Once the events
  *           data structure is full, this event may replace an existing event
  *           based upon a sampling algorithm.
  */
-extern void nr_log_events_add_event(nr_analytics_events_t* events,
+extern bool nr_log_events_add_event(nr_analytics_events_t* events,
                                     const nr_log_event_t* event,
                                     nr_random_t* rnd);
 

@@ -10,6 +10,8 @@
 #ifndef NR_ANALYTICS_EVENTS_HDR
 #define NR_ANALYTICS_EVENTS_HDR
 
+#include <stdbool.h>
+
 #include "util_object.h"
 #include "util_random.h"
 
@@ -73,6 +75,12 @@ extern int nr_analytics_events_number_saved(
  *           associated memory.
  */
 extern void nr_analytics_events_destroy(nr_analytics_events_t** events_ptr);
+
+/*
+ * Purpose : Inform the outside world if events are being sampled when adding
+             them to the event pool.
+ */
+extern bool nr_analytics_events_is_sampling(nr_analytics_events_t* events);
 
 /*
  * Purpose : Add an event to an event pool.

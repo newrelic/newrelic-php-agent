@@ -8225,6 +8225,23 @@ static void test_record_log_event(void) {
   test_txn_metric_is("happy path, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED,
                      "Logging/lines/" LOG_LEVEL, 1, 0, 0, 0, 0, 0);
+  tlib_pass_if_null(
+      "Logging/Forwarding/Dropped not created",
+      nrm_find(txn->unscoped_metrics, "Logging/Forwarding/Dropped"));
+  nr_txn_destroy(&txn);
+
+  /* Happy path with sampling */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  /* fill up events pool to force sampling */
+  while (!nr_analytics_events_is_sampling(txn->log_events)) {
+    nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  }
+  /* force sampling */
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  test_txn_metric_is("happy path with sampling, events recorded and dropped",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
   nr_txn_destroy(&txn);
 }
 

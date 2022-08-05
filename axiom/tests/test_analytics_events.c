@@ -318,6 +318,7 @@ static void test_reservoir_replacement(void) {
   int seen;
   int saved;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
+  bool is_sampling;
 
   /*
    * This test is non-deterministic: there is some (low) probability that it
@@ -326,15 +327,20 @@ static void test_reservoir_replacement(void) {
    */
 
   for (i = 0; i < max; i++) {
+    is_sampling = nr_analytics_events_is_sampling(events);
     add_event_from_json(events, "[{\"X\":1},{}]", rnd);
     seen = nr_analytics_events_number_seen(events);
     saved = nr_analytics_events_number_saved(events);
     tlib_pass_if_true("number seen", i + 1 == seen, "i=%d seen=%d", i, seen);
     tlib_pass_if_true("number saved", i + 1 == saved, "i=%d saved=%d", i,
                       saved);
+    tlib_pass_if_false("no sampling occured", is_sampling,
+                       "nr_analytics_events_is_sampling: got [%d], want [%d]",
+                       is_sampling, false);
   }
 
   for (i = 0; i < 10 * max; i++) {
+    is_sampling = nr_analytics_events_is_sampling(events);
     add_event_from_json(events, "[{\"X\":1},{}]", rnd);
     add_event_from_json(events, "[{\"Y\":2},{}]", rnd);
     seen = nr_analytics_events_number_seen(events);
@@ -343,6 +349,9 @@ static void test_reservoir_replacement(void) {
                       "max=%d i=%d seen=%d", max, i, seen);
     tlib_pass_if_true("number saved", max == saved, "max=%d saved=%d", max,
                       saved);
+    tlib_pass_if_true("sampling occured", is_sampling,
+                      "nr_analytics_events_is_sampling: got [%d], want [%d]",
+                      is_sampling, true);
   }
 
   count1 = 0;

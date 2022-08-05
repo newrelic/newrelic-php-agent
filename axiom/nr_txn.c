@@ -3350,6 +3350,7 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
                                  nrapp_t* app) {
   nr_random_t* rnd = NULL;
   nr_log_event_t* e = NULL;
+  bool event_dropped = false;
 
   if (!nr_txn_log_forwarding_enabled(txn)) {
     return;
@@ -3367,12 +3368,17 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   e = log_event_create(log_level_name, log_message, timestamp, txn, app);
   if (NULL == e) {
     nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+    event_dropped = true;
   } else {
-    nr_log_events_add_event(txn->log_events, e, rnd);
+    event_dropped = nr_log_events_add_event(txn->log_events, e, rnd);
   }
   nr_log_event_destroy(&e);
 
   nr_random_destroy(&rnd);
+
+  if (event_dropped) {
+    nrm_force_add(txn->unscoped_metrics, "Logging/Forwarding/Dropped", 0);
+  }
 }
 
 static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
