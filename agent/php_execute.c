@@ -1507,3 +1507,58 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
 end:
   nr_php_zval_free(&status);
 }
+
+/*
+ * nr_php_execute_observer fcall_begin and nr_php_execute_observer_fcall_end
+ * are Observer API function handlers that should replicate
+ * the functionality of nr_php_execute_enabled, nr_php_execute,
+ * and nr_php_execute_show that are used when hooking in via zend_execute_ex.
+ *
+ * Observer API functionality was added with PHP 8.0.
+ *
+ * The Observer API provide function handlers that trigger on every userland
+ * function begin and end.  The handlers provide all zend_execute_data and the
+ * end handler provides the return value pointer. The previous way to hook into
+ * PHP was via zend_execute_ex which will hook all userland function calls with
+ * significant overhead for doing the call . However, depending on your stack
+ * size settings, it could potentially generate an extremely deep call stack in
+ * PH because  zend_execute_ex limits your stack size to whatever your settings
+ * are. Observer API bypasses the stack overflow issue that you can run into
+ * when intercepting userland calls.  Additionally, with PHP 8.0, JIT
+ * optimizations could optimize out a call to zend_execute_ex and our extension
+ * would not be able to enter set that call which would lead to segfaults and
+ * caused PHP to decide to disable JIT when detecting extensions that overwrote
+ * zend_execute_ex.
+ *
+ * It only provides ZEND_USER_FUNCTIONS yet as it was assumed mechanisms already
+ * exist to monitor internal functions by overwriting internal function
+ * handlers.  This will be included in PHP 8.2: Registered
+ * zend_observer_fcall_init handlers are now also called for internal functions.
+ *
+ * Without overwriting the execute function and therefore being responsible for
+ * continuing the execution of ALL functions that we intercepted,  the agent is
+ * provide zend_execute_data on each function start/end and is then able to use
+ * it with our currently existing logic and instrumentation.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+void nr_php_execute_observer_fcall_begin(zend_execute_data* execute_data) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper function will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+}
+
+void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
+                                       zval* return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper function will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+}
+#endif

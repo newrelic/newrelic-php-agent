@@ -36,6 +36,9 @@
 
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/info.h"
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#include "Zend/zend_observer.h"
+#endif
 
 /*
  * Zend Engine API numbers.

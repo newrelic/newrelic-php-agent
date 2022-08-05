@@ -64,6 +64,42 @@ extern void nr_framework_create_metric(TSRMLS_D);
  *           This is necessary to correctly instrument frameworks and libraries
  *           that are preloaded.
  */
+
 extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+/*
+ * Purpose : Call the necessary functions needed to instrument a function by
+ *           starting a transaction for a function that has just started.  This
+ *           function is registered via the Observer API and will be called by
+ *           the zend engine every time a function begins.  The zend engine
+ *           directly provides the zend_execute_data which has all details we
+ *           need to know about the function.
+ *
+ *
+ * Params  : 1. zend_execute_data: everything we need to know about the
+ * function.
+ *
+ * Returns : Void.
+ */
+void nr_php_execute_observer_fcall_begin(zend_execute_data* execute_data);
+/*
+ * Purpose : Call the necessary functions needed to instrument a function when
+ *           ending a transaction for a function that has just ended.  This
+ *           function is registered via the Observer API and will be called by
+ *           the zend engine every time a function ends.  The zend engine
+ *           directly provides the zend_execute_data and teh return_value
+ *           pointer, both of which have all details that the agent needs to
+ *           know about the function.
+ *
+ *
+ * Params  : 1. zend_execute_data: everything to know about the function.
+ *           2. return_value: function return value information
+ *
+ * Returns : Void.
+ */
+void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
+                                       zval* return_value);
+#endif
 
 #endif /* PHP_EXECUTE_HDR */
