@@ -1537,7 +1537,7 @@ end:
  *
  * Without overwriting the execute function and therefore being responsible for
  * continuing the execution of ALL functions that we intercepted,  the agent is
- * provide zend_execute_data on each function start/end and is then able to use
+ * provided zend_execute_data on each function start/end and is then able to use
  * it with our currently existing logic and instrumentation.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
@@ -1548,7 +1548,12 @@ void nr_php_execute_observer_fcall_begin(zend_execute_data* execute_data) {
    * nr_php_execute_enabled
    * nr_php_execute
    * nr_php_execute_show
+   * When fully implemented, remove NRUNUSED from the function sig.
    */
+
+  if (NULL == execute_data) {
+    return;
+  }
 }
 
 void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
@@ -1559,6 +1564,10 @@ void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute_enabled
    * nr_php_execute
    * nr_php_execute_show
+   * When fully implemented, remove NRUNUSED from the function sig.
    */
+  if ((NULL == execute_data) || (NULL == return_value)) {
+    return;
+  }
 }
 #endif
