@@ -3299,16 +3299,6 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
 #define ENSURE_LOG_LEVEL_NAME(level_name) \
   (NULL == level_name ? "UNKNOWN" : level_name)
 
-static nr_log_event_t* log_event_create(const char* log_level_name,
-                                        const char* log_message,
-                                        nrtime_t timestamp) {
-  nr_log_event_t* e = nr_log_event_create();
-  nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
-  nr_log_event_set_message(e, log_message);
-  nr_log_event_set_timestamp(e, timestamp);
-  return e;
-}
-
 static void log_event_set_linking_metadata(nr_log_event_t* e,
                                            nrtxn_t* txn,
                                            nrapp_t* app) {
@@ -3329,6 +3319,21 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
     nr_log_event_set_hostname(e, nr_app_get_host_name(app));
     nr_log_event_set_guid(e, nr_app_get_entity_guid(app));
   }
+}
+
+static nr_log_event_t* log_event_create(const char* log_level_name,
+                                        const char* log_message,
+                                        nrtime_t timestamp,
+                                        nrtxn_t* txn,
+                                        nrapp_t* app) {
+  nr_log_event_t* e = nr_log_event_create();
+  nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
+  nr_log_event_set_message(e, log_message);
+  nr_log_event_set_timestamp(e, timestamp);
+
+  log_event_set_linking_metadata(e, txn, app);
+
+  return e;
 }
 
 static void nr_txn_add_log_event(nrtxn_t* txn,
@@ -3352,8 +3357,7 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   rnd = nr_random_create();
   nr_random_seed(rnd, timestamp);
 
-  e = log_event_create(log_level_name, log_message, timestamp);
-  log_event_set_linking_metadata(e, txn, app);
+  e = log_event_create(log_level_name, log_message, timestamp, txn, app);
 
   nr_log_events_add_event(txn->log_events, e, rnd);
 
