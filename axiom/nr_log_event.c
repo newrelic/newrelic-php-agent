@@ -65,7 +65,7 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     nr_buffer_add(buf, event->message, nr_strlen(event->message));
   }
 
-  nr_buffer_add(buf, NR_PSTR("\",\"log.level\":\""));
+  nr_buffer_add(buf, NR_PSTR("\",\"level\":\""));
   if (NULL == event->log_level) {
     nr_buffer_add(buf, NR_PSTR("null"));
   } else {
