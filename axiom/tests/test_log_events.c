@@ -31,30 +31,30 @@ static nr_log_event_t* create_sample_event(const char* message) {
 
 static void test_events_success(void) {
   /* Normal operation */
-  nr_log_events_t* events = NULL;
+  nr_analytics_events_t* events = NULL;
   nr_log_event_t* e = NULL;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
-  char* json;
-  char* expected;
+  const char* json;
+  const char* expected;
 
   events = nr_log_events_create(10);
   tlib_fail_if_null("events created", events);
 
   e = create_sample_event(LOG_MESSAGE_0);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE_1);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE_2);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   tlib_pass_if_int_equal("events number seen updated", 4,
                          nr_log_events_number_seen(events));
@@ -76,7 +76,6 @@ static void test_events_success(void) {
                  "\"hostname\":\"null\"" \
               "}]";                                    \
     tlib_pass_if_str_equal("add event", expected, json); \
-    nr_free(json);                                       \
   } while (0)
 
   /* Test events are stored in order */
@@ -102,7 +101,7 @@ static void test_events_success(void) {
 
 static void test_events_sample(void) {
   /* Adding excessive number of events should cause sampling */
-  nr_log_events_t* events = NULL;
+  nr_analytics_events_t* events = NULL;
   nr_log_event_t* e = NULL;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
 
@@ -111,19 +110,19 @@ static void test_events_sample(void) {
 
   e = create_sample_event(LOG_MESSAGE);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   e = create_sample_event(LOG_MESSAGE);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   tlib_pass_if_int_equal("events number seen updated", 4,
                          nr_log_events_number_seen(events));
@@ -137,15 +136,15 @@ static void test_events_sample(void) {
 
 static void test_events_null(void) {
   /* Working with null events pool should not cause crash */
-  nr_log_events_t* events = NULL;
+  nr_analytics_events_t* events = NULL;
   nr_log_event_t* e = NULL;
-  char* json = NULL;
+  const char* json = NULL;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
 
   /* Adding to uninitialized events */
   e = create_sample_event(LOG_MESSAGE);
   nr_log_events_add_event(events, e, rnd);
-  // nr_log_event_destroy(&e);
+  nr_log_event_destroy(&e);
 
   tlib_pass_if_int_equal("events number seen updated", 0,
                          nr_log_events_number_seen(events));
