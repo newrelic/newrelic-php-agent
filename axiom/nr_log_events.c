@@ -12,18 +12,21 @@
 #include "nr_analytics_events_private.h"
 #include "util_memory.h"
 
-void nr_log_events_add_event(nr_analytics_events_t* events,
+bool nr_log_events_add_event(nr_analytics_events_t* events,
                              const nr_log_event_t* event,
                              nr_random_t* rnd) {
+  bool events_sampled = false;
   char* log_event_json = NULL;
   nr_analytics_event_t* log_event;
 
   if (0 == events) {
-    return;
+    return false;
   }
   if (0 == event) {
-    return;
+    return false;
   }
+
+  events_sampled = nr_analytics_events_is_sampling(events);
 
   log_event_json = nr_log_event_to_json(event);
   log_event = nr_analytics_event_create_from_string(log_event_json);
@@ -31,4 +34,6 @@ void nr_log_events_add_event(nr_analytics_events_t* events,
 
   nr_analytics_events_add_event(events, log_event, rnd);
   nr_free(log_event);
+
+  return events_sampled;
 }
