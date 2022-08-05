@@ -8095,11 +8095,13 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   app.state = NR_APP_OK;
   app.entity_name = entity_name;
 
+
   /* Setup log feature options */
   nr_memset(&opts, 0, sizeof(opts));
   opts.logging_enabled = true;
   opts.log_forwarding_enabled = true;
   opts.log_events_max_samples_stored = 10;
+
   opts.log_metrics_enabled = true;
 
   opts.distributed_tracing_enabled = 1; /* for linking meta data */
@@ -8205,6 +8207,7 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
+
   log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
   expected = "[{"
