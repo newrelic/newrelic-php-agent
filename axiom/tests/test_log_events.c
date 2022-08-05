@@ -104,25 +104,38 @@ static void test_events_sample(void) {
   nr_analytics_events_t* events = NULL;
   nr_log_event_t* e = NULL;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
+  bool event_dropped;
 
   events = nr_log_events_create(2);
   tlib_fail_if_null("events created", events);
 
   e = create_sample_event(LOG_MESSAGE);
-  nr_log_events_add_event(events, e, rnd);
+  event_dropped = nr_log_events_add_event(events, e, rnd);
   nr_log_event_destroy(&e);
+  tlib_pass_if_false("1st event not dropped", event_dropped,
+                     "nr_log_events_add_event: got [%d], want [%d]",
+                     event_dropped, false);
 
   e = create_sample_event(LOG_MESSAGE);
-  nr_log_events_add_event(events, e, rnd);
+  event_dropped = nr_log_events_add_event(events, e, rnd);
   nr_log_event_destroy(&e);
+  tlib_pass_if_false("2nd event not dropped", event_dropped,
+                     "nr_log_events_add_event: got [%d], want [%d]",
+                     event_dropped, false);
 
   e = create_sample_event(LOG_MESSAGE);
-  nr_log_events_add_event(events, e, rnd);
+  event_dropped = nr_log_events_add_event(events, e, rnd);
   nr_log_event_destroy(&e);
+  tlib_pass_if_true("3nd event, sampling", event_dropped,
+                    "nr_log_events_add_event: got [%d], want [%d]",
+                    event_dropped, true);
 
   e = create_sample_event(LOG_MESSAGE);
-  nr_log_events_add_event(events, e, rnd);
+  event_dropped = nr_log_events_add_event(events, e, rnd);
   nr_log_event_destroy(&e);
+  tlib_pass_if_true("4th event, sampling", event_dropped,
+                    "nr_log_events_add_event: got [%d], want [%d]",
+                    event_dropped, true);
 
   tlib_pass_if_int_equal("events number seen updated", 4,
                          nr_log_events_number_seen(events));
