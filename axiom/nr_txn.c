@@ -3305,15 +3305,21 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
   char* trace_id = NULL;
   char* span_id = NULL;
 
-  trace_id = nr_txn_get_current_trace_id(txn);
-  nr_log_event_set_trace_id(e, trace_id);
-  nr_free(trace_id);
+  if (NULL == e) {
+    return;
+  }
 
-  span_id = nr_txn_get_current_span_id(txn);
-  nr_log_event_set_span_id(e, span_id);
-  nr_free(span_id);
+  if (nrlikely(txn)) {
+    trace_id = nr_txn_get_current_trace_id(txn);
+    nr_log_event_set_trace_id(e, trace_id);
+    nr_free(trace_id);
 
-  nr_log_event_set_entity_name(e, txn->primary_app_name);
+    span_id = nr_txn_get_current_span_id(txn);
+    nr_log_event_set_span_id(e, span_id);
+    nr_free(span_id);
+  
+    nr_log_event_set_entity_name(e, txn->primary_app_name);
+  }
 
   if (nrlikely(app)) {
     nr_log_event_set_hostname(e, nr_app_get_host_name(app));
@@ -3358,8 +3364,11 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   nr_random_seed(rnd, timestamp);
 
   e = log_event_create(log_level_name, log_message, timestamp, txn, app);
-
-  nr_log_events_add_event(txn->log_events, e, rnd);
+  if (NULL == e) {
+    nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+  } else {
+    nr_log_events_add_event(txn->log_events, e, rnd);
+  }
 
   // nr_log_event_destroy(&e)
   nr_random_destroy(&rnd);
