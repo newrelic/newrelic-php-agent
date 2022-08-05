@@ -636,7 +636,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
 		spanEvents := harvest.SpanEvents
-		logEvents := harvest.LogEvents
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
@@ -650,7 +649,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(slowSQLs, args)
 		considerHarvestPayload(txnTraces, args)
 		considerHarvestPayload(spanEvents, args)
-		considerHarvestPayload(logEvents, args)
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
