@@ -36,9 +36,6 @@
 
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/info.h"
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
-#include "Zend/zend_observer.h"
-#endif
 
 /*
  * Zend Engine API numbers.
@@ -55,6 +52,10 @@
 #define ZEND_7_4_X_API_NO 20190902
 #define ZEND_8_0_X_API_NO 20200930
 #define ZEND_8_1_X_API_NO 20210902
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#include "Zend/zend_observer.h"
+#endif
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
 #include "Zend/zend_virtual_cwd.h"
