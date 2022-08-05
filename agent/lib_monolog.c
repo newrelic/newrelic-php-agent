@@ -116,7 +116,7 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* message_arg = NULL;
 
   message_arg = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (message_arg) {
+  if (NULL == message_arg) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: $message not defined, unable to get log message",
                      __func__);
@@ -302,7 +302,8 @@ static char* nr_monolog_build_message(const size_t argc,
   nr_free(message);
 
   char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  message_and_context = nr_str_append(message_and_context, context, " ");
+  if (0 < nr_strlen(context))
+    message_and_context = nr_str_append(message_and_context, context, " ");
   nr_free(context);
 
   return message_and_context;
