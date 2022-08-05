@@ -302,6 +302,7 @@ static char* nr_monolog_build_message(const size_t argc,
   nr_free(message);
 
   char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
   if (!nr_strempty(context)) {
     message_and_context = nr_str_append(message_and_context, context, " ");
   }
