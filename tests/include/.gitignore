@@ -1,2 +1,5 @@
 # byproduct of running unpack_guzzle.php.
 guzzle/
+# byproduct of logging/monolog tests
+monolog2/
+monolog3/
