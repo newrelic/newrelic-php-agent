@@ -106,6 +106,47 @@ static uint32_t nr_txndata_prepend_custom_events(nr_flatbuffer_t* fb,
   return events;
 }
 
+static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
+                                                 const nrtxn_t* txn) {
+  uint32_t* offsets;
+  uint32_t* offset;
+  uint32_t events;
+  int i;
+  int event_count;
+
+  const size_t event_size = sizeof(uint32_t);
+  const size_t event_align = sizeof(uint32_t);
+
+  event_count = nr_analytics_events_number_saved(txn->log_events);
+  if (0 == event_count) {
+    return 0;
+  }
+
+  offsets = (uint32_t*)nr_calloc(event_count, sizeof(uint32_t));
+  offset = &offsets[0];
+ 
+  for (i = 0; i < event_count; i++, offset++) {
+    const char* json;
+    uint32_t data;
+
+    json = nr_analytics_events_get_event_json(txn->log_events, i);
+    data = nr_flatbuffers_prepend_string(fb, json);
+
+    nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
+    nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
+    *offset = nr_flatbuffers_object_end(fb);
+  }
+
+  nr_flatbuffers_vector_begin(fb, event_size, event_count, event_align);
+  for (i = 0; i < event_count; i++) {
+    nr_flatbuffers_prepend_uoffset(fb, offsets[i]);
+  }
+  events = nr_flatbuffers_vector_end(fb, event_count);
+
+  nr_free(offsets);
+  return events;
+}
+
 uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
                                         nr_vector_t* span_events,
                                         size_t span_event_limit) {
@@ -487,10 +528,12 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   uint32_t txn_event;
   uint32_t txn_trace;
   uint32_t span_events;
+  uint32_t log_events;
 
   txn_trace = nr_txndata_prepend_trace_to_flatbuffer(fb, txn);
   span_events = nr_txndata_prepend_span_events(fb, txn->final_data.span_events,
                                                txn->app_limits.span_events);
+  log_events = nr_txndata_prepend_log_events(fb, txn);
   error_events = nr_txndata_prepend_error_events(fb, txn);
   custom_events = nr_txndata_prepend_custom_events(fb, txn);
   slowsqls = nr_txndata_prepend_slowsqls(fb, txn);
@@ -528,7 +571,8 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
 
   nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_SPAN_EVENTS,
                                         span_events, 0);
-
+  nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_LOG_EVENTS,
+                                        log_events, 0);
   return nr_flatbuffers_object_end(fb);
 }
 
