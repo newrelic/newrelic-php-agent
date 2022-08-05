@@ -532,7 +532,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
-  nt->log_events = nr_log_events_create(1000 /* app->limits.log_events */);
+  nt->log_events
+      = nr_analytics_events_create(1000 /* app->limits.log_events */);
 
   /*
    * Set the status fields to their defaults.
@@ -1219,7 +1220,7 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
 }
 
 void nr_txn_destroy_fields(nrtxn_t* txn) {
-  nr_log_events_destroy(&txn->log_events);
+  nr_analytics_events_destroy(&txn->log_events);
   nr_analytics_events_destroy(&txn->custom_events);
   nr_attribute_config_destroy(&txn->attribute_config);
   nr_attributes_destroy(&txn->attributes);
@@ -3317,7 +3318,7 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
     span_id = nr_txn_get_current_span_id(txn);
     nr_log_event_set_span_id(e, span_id);
     nr_free(span_id);
-  
+
     nr_log_event_set_entity_name(e, txn->primary_app_name);
   }
 
@@ -3369,8 +3370,8 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   } else {
     nr_log_events_add_event(txn->log_events, e, rnd);
   }
+  nr_log_event_destroy(&e);
 
-  // nr_log_event_destroy(&e)
   nr_random_destroy(&rnd);
 }
 
