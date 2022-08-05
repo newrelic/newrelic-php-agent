@@ -455,8 +455,6 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
  * HOWEVER, when code level metrics(CLM) are incorporated, these values can be
  * used to add lineno and filename to error traces.
  */
-void(error_filename);
-void(error_lineno);
 void nr_php_error_cb(int type,
                      zend_string* error_filename NRUNUSED,
                      uint error_lineno NRUNUSED,
