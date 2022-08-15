@@ -18,7 +18,7 @@ require('skipif.inc');
 /*EXPECT
 monolog2.DEBUG: debug []
 monolog2.INFO: info []
-monolog2.NOTICE: info []
+monolog2.NOTICE: notice []
 monolog2.WARNING: warning []
 monolog2.ERROR: error []
 monolog2.CRITICAL: critical []
@@ -48,7 +48,7 @@ function test_logging() {
     
     $logger->debug("debug");
     $logger->info("info");
-    $logger->notice("info");
+    $logger->notice("notice");
     $logger->warning("warning");
     $logger->error("error");
     $logger->critical("critical");
