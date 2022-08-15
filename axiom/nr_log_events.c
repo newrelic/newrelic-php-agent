@@ -19,10 +19,10 @@ bool nr_log_events_add_event(nr_analytics_events_t* events,
   char* log_event_json = NULL;
   nr_analytics_event_t* log_event;
 
-  if (0 == events) {
+  if (NULL == events) {
     return false;
   }
-  if (0 == event) {
+  if (NULL == event) {
     return false;
   }
 
