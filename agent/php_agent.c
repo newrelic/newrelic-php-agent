@@ -1141,3 +1141,67 @@ bool nr_php_function_is_static_method(const zend_function* func) {
 
   return (func->common.fn_flags & ZEND_ACC_STATIC);
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+extern const char* nr_php_zend_execute_data_function_name(
+    const zend_execute_data* execute_data) {
+  zend_string* function_name = NULL;
+
+  if ((NULL == execute_data) || (NULL == execute_data->func)) {
+    return NULL;
+  }
+
+  function_name = execute_data->func->common.function_name;
+
+  if ((NULL == function_name)
+      && (ZEND_USER_FUNCTION == execute_data->func->type)) {
+    return "main";
+  }
+  return function_name ? ZSTR_VAL(function_name) : NULL;
+}
+
+extern const char* nr_php_zend_execute_data_filename(
+    const zend_execute_data* execute_data) {
+  zend_string* filename = NULL;
+  while (
+      execute_data
+      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+    execute_data = execute_data->prev_execute_data;
+  }
+  if (execute_data) {
+    filename = execute_data->func->op_array.filename;
+  }
+  return filename ? ZSTR_VAL(filename) : NULL;
+}
+
+extern const char* nr_php_zend_execute_data_scope_name(
+    const zend_execute_data* execute_data) {
+  zend_class_entry* ce = NULL;
+
+  while (execute_data) {
+    if (execute_data->func
+        && (ZEND_USER_CODE(execute_data->func->type)
+            || execute_data->func->common.scope)) {
+      ce = execute_data->func->common.scope;
+      execute_data = NULL;
+    } else {
+      execute_data = execute_data->prev_execute_data;
+    }
+  }
+  return ce ? ZSTR_VAL(ce->name) : NULL;
+}
+
+extern uint32_t nr_php_zend_execute_data_lineno(
+    const zend_execute_data* execute_data) {
+  while (
+      execute_data
+      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+    execute_data = execute_data->prev_execute_data;
+  }
+  if (execute_data) {
+    return execute_data->opline ? execute_data->opline->lineno : 0;
+  }
+  return 0;
+}
+
+#endif /* PHP 8+ */
