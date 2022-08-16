@@ -1142,7 +1142,7 @@ bool nr_php_function_is_static_method(const zend_function* func) {
   return (func->common.fn_flags & ZEND_ACC_STATIC);
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 extern const char* nr_php_zend_execute_data_function_name(
     const zend_execute_data* execute_data) {
   zend_string* function_name = NULL;
@@ -1204,4 +1204,4 @@ extern uint32_t nr_php_zend_execute_data_lineno(
   return 0;
 }
 
-#endif /* PHP 8+ */
+#endif /* PHP 7+ */
