@@ -1072,3 +1072,55 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   return NR_SUCCESS;
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+extern void nr_php_txn_add_code_level_metrics(nrtxn_t* txn,
+                                              NR_EXECUTE_PROTO TSRMLS_DC) {
+  const char* filepath = NULL;
+  const char* namespace = NULL;
+  const char* function = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions: code.filepath AND code.function code.namespace AND
+   * code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   */
+
+  filepath = nr_php_zend_execute_data_filename(execute_data);
+  namespace = nr_php_zend_execute_data_scope_name(execute_data);
+  function = nr_php_zend_execute_data_function_name(execute_data);
+
+  if (NULL == function) {
+    return;
+  } else if ((NULL == namespace) && (NULL == filepath)) {
+    return;
+  }
+
+  nr_txn_set_string_attribute(txn, nr_txn_clm_code_function, function);
+  if (NULL != filepath) {
+    nr_txn_set_string_attribute(txn, nr_txn_clm_code_filepath, filepath);
+  }
+  if (NULL != namespace) {
+    nr_txn_set_string_attribute(txn, nr_txn_clm_code_namespace, namespace);
+  }
+  nr_txn_set_long_attribute(txn, nr_txn_clm_code_lineno,
+                            nr_php_zend_execute_data_lineno(execute_data));
+}
+
+#endif /* PHP 7+ */

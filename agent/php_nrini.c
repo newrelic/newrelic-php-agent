@@ -2133,6 +2133,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_framework_dh)
+
 /* DEPRECATED */
 STD_PHP_INI_ENTRY_EX("newrelic.cross_application_tracer.enabled",
                      "0",
@@ -2824,6 +2825,17 @@ STD_PHP_INI_ENTRY_EX(
     0)
 
 /*
+ * Code Level Metrics, initially off by default
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.code_level_metrics.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     code_level_metrics_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+/*
  * Logging
  */
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
@@ -3045,10 +3057,11 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
-                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                  ? "disabled due to threaded MPM"
-                                  : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled)
+                                  ? "enabled"
+                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                        ? "disabled due to threaded MPM"
+                                        : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 

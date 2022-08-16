@@ -570,6 +570,10 @@ extern const nr_txn_attribute_t* nr_txn_request_user_agent;
 extern const nr_txn_attribute_t* nr_txn_server_name;
 extern const nr_txn_attribute_t* nr_txn_response_content_type;
 extern const nr_txn_attribute_t* nr_txn_response_content_length;
+extern const nr_txn_attribute_t* nr_txn_clm_code_filepath;
+extern const nr_txn_attribute_t* nr_txn_clm_code_function;
+extern const nr_txn_attribute_t* nr_txn_clm_code_namespace;
+extern const nr_txn_attribute_t* nr_txn_clm_code_lineno;
 extern void nr_txn_set_string_attribute(nrtxn_t* txn,
                                         const nr_txn_attribute_t* attribute,
                                         const char* value);

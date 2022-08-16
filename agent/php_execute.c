@@ -1102,6 +1102,11 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
   NRTXNGLOBAL(execute_count) += 1;
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+/* Current CLM functionality only works with PHP 7+ */                                            
+  nr_php_txn_add_code_level_metrics(NRPRG(txn), NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+#endif /* PHP 7+ */
+
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;

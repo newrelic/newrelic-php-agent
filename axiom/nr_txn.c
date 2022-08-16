@@ -46,6 +46,10 @@ struct _nr_txn_attribute_t {
   uint32_t destinations;
 };
 
+#define NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT                        \
+  (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
+   | NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_SPAN)
+
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR_EVENT                             \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
    | NR_ATTRIBUTE_DESTINATION_TXN_EVENT)
@@ -99,6 +103,18 @@ NR_TXN_ATTR(nr_txn_http_statuscode,
 NR_TXN_ATTR(nr_txn_request_user_agent,
             "request.headers.userAgent",
             NR_TXN_ATTRIBUTE_TRACE_ERROR);
+NR_TXN_ATTR(nr_txn_clm_code_function,
+            "code.function",
+            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
+NR_TXN_ATTR(nr_txn_clm_code_filepath,
+            "code.filepath",
+            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
+NR_TXN_ATTR(nr_txn_clm_code_namespace,
+            "code.namespace",
+            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
+NR_TXN_ATTR(nr_txn_clm_code_lineno,
+            "code.lineno",
+            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
 
 /*
  * Deprecated per December 2019

@@ -811,6 +811,18 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+/*
+ * Purpose : If code level metrics are enabled, extract the data from the OAPI
+ * given zend_execute_data.
+ *
+ * Params  : 1. The zend_execute_data given by OAPI
+ *
+ * Returns : void
+ */
+extern void nr_php_txn_add_code_level_metrics(nrtxn_t* txn,
+                                              NR_EXECUTE_PROTO TSRMLS_DC);
+
 /*
  * Purpose : Return a pointer to the function name of zend_execute_data.
  *
