@@ -810,7 +810,7 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP7+ */
 /*
  * Purpose : Return a pointer to the function name of zend_execute_data.
  *
@@ -862,6 +862,6 @@ extern const char* nr_php_zend_execute_data_scope_name(
 extern uint32_t nr_php_zend_execute_data_lineno(
     const zend_execute_data* execute_data);
 
-#endif /* PHP 8+ */
+#endif /* PHP 7+ */
 
 #endif /* PHP_AGENT_HDR */

@@ -558,7 +558,7 @@ static void test_default_address() {
 #endif
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 
 static void test_nr_php_zend_execute_data_function_name() {
   zend_function* func;
@@ -694,7 +694,7 @@ static void test_nr_php_zend_execute_data_lineno() {
       nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
 }
 
-#endif /* PHP 8+ */
+#endif /* PHP 7+ */
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -719,12 +719,12 @@ void test_main(void* p NRUNUSED) {
    * Tests that require state and will handle their own request startup and
    * shutdown.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   test_nr_php_zend_execute_data_function_name();
   test_nr_php_zend_execute_data_filename();
   test_nr_php_zend_execute_data_lineno();
   test_nr_php_zend_execute_data_scope_name();
-#endif /* PHP 8+ */
+#endif /* PHP 7+ */
 
   test_function_debug_name(TSRMLS_C);
   test_get_zval_object_property(TSRMLS_C);
