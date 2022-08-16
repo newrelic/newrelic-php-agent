@@ -569,6 +569,13 @@ static nr_library_table_t libraries[] = {
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+static nr_library_table_t logging_frameworks[] = {
+    /* Monolog - Logging for PHP */
+    {"Monolog", "monolog/logger.php", nr_monolog_enable},
+};
+
+static size_t num_logging_frameworks
+    = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
@@ -850,24 +857,59 @@ static nrframework_t nr_try_force_framework(
   return NR_FW_UNSET;
 }
 
+static void nr_php_execute_add_library_supportability_metric(
+    nrmtable_t* unscoped_metrics,
+    const char* library_name) {
+  char* metname
+      = nr_formatf("Supportability/library/%s/detected", library_name);
+  nrm_force_add(unscoped_metrics, metname, 0);
+
+  nr_free(metname);
+}
+
 static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
     if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
-      char* metname = nr_formatf("Supportability/library/%s/detected",
-                                 libraries[i].library_name);
-
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
-      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+
+      nr_php_execute_add_library_supportability_metric(
+          NRTXN(unscoped_metrics), libraries[i].library_name);
 
       if (NULL != libraries[i].enable) {
         libraries[i].enable(TSRMLS_C);
       }
+    }
+  }
 
+  nr_free(filename_lower);
+}
+
+static void nr_execute_handle_logging_framework(
+    const char* filename TSRMLS_DC) {
+  char* filename_lower = nr_string_to_lowercase(filename);
+  size_t i;
+
+  for (i = 0; i < num_logging_frameworks; i++) {
+    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+                logging_frameworks[i].library_name);
+
+      nr_php_execute_add_library_supportability_metric(
+          NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
+
+      char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
+                                 logging_frameworks[i].library_name);
+
+      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
       nr_free(metname);
+
+      if (NULL != logging_frameworks[i].enable) {
+        logging_frameworks[i].enable(TSRMLS_C);
+      }
     }
   }
 
@@ -887,6 +929,7 @@ static void nr_php_user_instrumentation_from_file(
   nr_execute_handle_framework(all_frameworks, num_all_frameworks,
                               filename TSRMLS_CC);
   nr_execute_handle_library(filename TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename TSRMLS_CC);
 }
 
 /*

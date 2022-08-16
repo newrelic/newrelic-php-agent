@@ -3247,3 +3247,74 @@ char* nr_txn_get_current_span_id(nrtxn_t* txn) {
 
   return nr_strdup(span_id);
 }
+
+bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options.logging_enabled || !txn->options.log_forwarding_enabled) {
+    return false;
+  }
+
+  if (0 == txn->options.log_events_max_samples_stored) {
+    return false;
+  }
+
+  if (txn->high_security) {
+    return false;
+  }
+
+  return true;
+}
+
+bool nr_txn_log_metrics_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options.logging_enabled || !txn->options.log_metrics_enabled) {
+    return false;
+  }
+
+  return true;
+}
+
+bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options
+           .logging_enabled /* || !txn->options.log_decorating_enabled */) {
+    return false;
+  }
+
+  return false;
+}
+
+static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
+  char* metric_name = NULL;
+
+  if (!nr_txn_log_metrics_enabled(txn)) {
+    return;
+  }
+
+  nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
+  metric_name = nr_formatf("Logging/lines/%s", level_name);
+  nrm_force_add(txn->unscoped_metrics, metric_name, 0);
+  nr_free(metric_name);
+}
+
+void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
+                             NRUNUSED const char* log_level_name,
+                             NRUNUSED const char* log_message,
+                             NRUNUSED nrtime_t timestamp) {
+  /* This is the plan for this function:
+     1. Create a new log event
+     2. Add the created log event to transaction's log events
+     3. Add logging metrics
+   */
+
+  nr_txn_add_logging_metrics(txn, log_level_name);
+}
