@@ -1560,7 +1560,7 @@ void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
                                        zval* return_value) {
   /*
    * Instrument the function.
-   * This and any other needed helper function will replace:
+   * This and any other needed helper functions will replace:
    * nr_php_execute_enabled
    * nr_php_execute
    * nr_php_execute_show
