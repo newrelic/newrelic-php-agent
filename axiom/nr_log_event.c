@@ -174,7 +174,8 @@ void nr_log_event_set_guid(nr_log_event_t* event, const char* guid) {
   event->entity_guid = nr_strdup(guid);
 }
 
-void nr_log_event_set_entity_name(nr_log_event_t* event, const char* entity_name) {
+void nr_log_event_set_entity_name(nr_log_event_t* event,
+                                  const char* entity_name) {
   if (NULL == event || NULL == entity_name) {
     return;
   }

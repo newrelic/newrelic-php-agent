@@ -107,7 +107,7 @@ static uint32_t nr_txndata_prepend_custom_events(nr_flatbuffer_t* fb,
 }
 
 static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
-                                                 const nrtxn_t* txn) {
+                                              const nrtxn_t* txn) {
   uint32_t* offsets;
   uint32_t* offset;
   uint32_t events;
@@ -124,7 +124,7 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
 
   offsets = (uint32_t*)nr_calloc(event_count, sizeof(uint32_t));
   offset = &offsets[0];
- 
+
   for (i = 0; i < event_count; i++, offset++) {
     const char* json;
     uint32_t data;
