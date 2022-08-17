@@ -3334,6 +3334,9 @@ static nr_log_event_t* log_event_create(const char* log_level_name,
                                         nrtxn_t* txn,
                                         nrapp_t* app) {
   nr_log_event_t* e = nr_log_event_create();
+  if (NULL == e) {
+    return e;
+  }
   nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
   nr_log_event_set_message(e, log_message);
   nr_log_event_set_timestamp(e, timestamp);
