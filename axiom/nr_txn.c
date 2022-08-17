@@ -54,8 +54,10 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS) \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
+#define NR_TXN_ATTR(X, NAME, DESTS)                     \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
+    (NAME), (DESTS)                                     \
+  }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",
@@ -532,8 +534,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
-  nt->log_events
-      = nr_analytics_events_create(1000 /* app->limits.log_events */);
+  nt->log_events = nr_analytics_events_create(app->limits.log_events);
 
   /*
    * Set the status fields to their defaults.
