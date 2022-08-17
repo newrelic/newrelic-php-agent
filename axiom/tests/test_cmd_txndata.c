@@ -55,7 +55,6 @@ int nr_get_daemon_fd(void) {
   return 0;
 }
 
-
 static void test_encode_errors(void) {
   nrtxn_t txn;
   nr_flatbuffers_table_t tbl;
