@@ -65,6 +65,8 @@ func parsePHPTestFile(test *Test) *Test {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	scanner.Split(splitDirectives)
 	for scanner.Scan() {
 		p := scanner.Text()
