@@ -414,6 +414,7 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
                                                  nr_app_info_t info) {
   const nrobj_t* harvest_limits
       = nro_get_hash_hash(config, "harvest_limits", NULL);
+  uint64_t harvest_log_limit;
 
   /* At the per-transaction agent level, the actual limits are only really
    * meaningful for custom, log and span events: the other event types generally
@@ -431,10 +432,19 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
       0 == info.span_events_max_samples_stored
           ? NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED
           : info.span_events_max_samples_stored);
-  app_limits->log_events = nr_cmd_appinfo_process_get_harvest_limit(
-      harvest_limits, "log_event_data", info.log_events_max_samples_stored);
 
-  nrl_verbosedebug(NRL_AGENT, "final app_limits->log_events = %d",
+  /* we need to select the smaller value between the agent INI config value
+   * and the value returned by the collector.  */
+  harvest_log_limit = nr_cmd_appinfo_process_get_harvest_limit(
+      harvest_limits, "log_event_data", info.log_events_max_samples_stored);
+  app_limits->log_events = info.log_events_max_samples_stored;
+  if (harvest_log_limit < info.log_events_max_samples_stored)
+    app_limits->log_events = harvest_log_limit;
+
+  nrl_verbosedebug(NRL_AGENT,
+                   "log event limits:  agent config = %lu,  harvest = %lu, final "
+                   "app_limits->log_events = %d",
+                   info.log_events_max_samples_stored, harvest_log_limit,
                    app_limits->log_events);
 }
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
