@@ -6,7 +6,8 @@
 
 /*DESCRIPTION
 Test that Monolog3 instrumentation does not send metrics 
-if disabled by configuration
+if disabled by configuration.  Max log samples set to
+force some to be dropped.
 */
 
 /*SKIPIF
@@ -20,7 +21,7 @@ require('skipif.inc');
 newrelic.application_logging.enabled = true
 newrelic.application_logging.forwarding.enabled = true
 newrelic.application_logging.metrics.enabled = false
-newrelic.application_logging.forwarding.max_samples_stored = 10
+newrelic.application_logging.forwarding.max_samples_stored = 5
 */
 
 /*EXPECT
@@ -61,8 +62,8 @@ monolog3.EMERGENCY: emergency []
       },
       "logs": [
         {
-          "message": "emergency",
-          "level": "EMERGENCY",
+          "message": "??",
+          "level": "??",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -71,8 +72,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "alert",
-          "level": "ALERT",
+          "message": "??",
+          "level": "??",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -81,8 +82,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "critical",
-          "level": "CRITICAL",
+          "message": "??",
+          "level": "??",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -91,8 +92,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "error",
-          "level": "ERROR",
+          "message": "??",
+          "level": "??",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -101,38 +102,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "warning",
-          "level": "WARNING",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "notice",
-          "level": "NOTICE",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "info",
-          "level": "INFO",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "debug",
-          "level": "DEBUG",
+          "message": "??",
+          "level": "??",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",

@@ -62,6 +62,58 @@ monolog3.EMERGENCY: emergency []
 ]
 */
 
+/*EXPECT_LOG_EVENTS
+[
+    {
+      "common": {
+        "attributes": {}
+      },
+      "logs": [
+        {
+          "message": "??",
+          "level": "??",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "??",
+          "level": "??",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "??",
+          "level": "??",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "??",
+          "level": "??",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        }
+      ]
+    }
+  ]
+ */
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
 require_monolog(3);
