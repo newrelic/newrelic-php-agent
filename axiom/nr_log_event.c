@@ -122,7 +122,9 @@ void nr_log_event_set_message(nr_log_event_t* event, const char* message) {
   if (NULL != event->message) {
     nr_free(event->message);
   }
-  event->message = nr_strdup(message);
+
+  // spec says to truncate messages over max limit
+  event->message = nr_strndup(message, NR_MAX_LOG_MESSAGE_LEN);
 }
 
 void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level) {

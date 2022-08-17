@@ -14,6 +14,9 @@
 
 typedef struct _nr_log_event_t nr_log_event_t;
 
+/* Maximum length of message allowed (longer will be truncated) */
+#define NR_MAX_LOG_MESSAGE_LEN 32768
+
 /*
  * Purpose : Create a new log event.
  *
@@ -51,7 +54,7 @@ extern char* nr_log_event_to_json(const nr_log_event_t* event);
  * Returns : True on success; false on error.
  */
 extern bool nr_log_event_to_json_buffer(const nr_log_event_t* event,
-                                         nrbuf_t* buf);
+                                        nrbuf_t* buf);
 
 /*
  * Purpose : Set the various fields of the log events.
@@ -61,14 +64,17 @@ extern bool nr_log_event_to_json_buffer(const nr_log_event_t* event,
  *
  * Returns : Nothing.
  */
-extern void nr_log_event_set_message(nr_log_event_t* event, const char* message);
-extern void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level);
+extern void nr_log_event_set_message(nr_log_event_t* event,
+                                     const char* message);
+extern void nr_log_event_set_log_level(nr_log_event_t* event,
+                                       const char* log_level);
 extern void nr_log_event_set_guid(nr_log_event_t* event, const char* guid);
 extern void nr_log_event_set_trace_id(nr_log_event_t* event,
                                       const char* trace_id);
 extern void nr_log_event_set_span_id(nr_log_event_t* event,
                                      const char* span_id);
-extern void nr_log_event_set_entity_name(nr_log_event_t* event, const char* name);
+extern void nr_log_event_set_entity_name(nr_log_event_t* event,
+                                         const char* name);
 extern void nr_log_event_set_hostname(nr_log_event_t* event, const char* name);
 extern void nr_log_event_set_timestamp(nr_log_event_t* event, nrtime_t time);
 
