@@ -7,7 +7,8 @@
 /*DESCRIPTION
 Test that Monolog3 instrumentation does not send metrics 
 if disabled by configuration.  Max log samples set to
-force some to be dropped.
+force some to be dropped.  The "Dropped" metric is still
+expected to be generated.
 */
 
 /*SKIPIF
@@ -41,6 +42,7 @@ monolog3.EMERGENCY: emergency []
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Logging/Forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                            [1, "??", "??", "??", "??", "??"]],
