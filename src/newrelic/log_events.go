@@ -46,11 +46,11 @@ func (events *LogEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 	estimate := len(es) * 128
 	buf.Grow(estimate)
 	buf.WriteString(`[{` +
-	`"common": {"attributes": {}},` +
-	`"logs": [`)
+		`"common": {"attributes": {}},` +
+		`"logs": [`)
 
 	// FIXME this needs cleaning up - works but not optimal
-	// json formatted in agent for log event has "[{<json dict>}]" 
+	// json formatted in agent for log event has "[{<json dict>}]"
 	// collector doesn't like each log record wrapped with the '[' ']'
 	// so we pull out the substring - not sure how expensive this is in Go
 	// so need to investigate further
@@ -64,7 +64,7 @@ func (events *LogEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 			buf.WriteByte(',')
 		}
 		nwrit++
-		buf.Write(es[i].data[1:len(es[i].data)-1])
+		buf.Write(es[i].data[1 : len(es[i].data)-1])
 		//buf.Write(es[i].data)
 	}
 	buf.WriteByte(']')
