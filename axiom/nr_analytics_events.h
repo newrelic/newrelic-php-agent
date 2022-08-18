@@ -59,6 +59,17 @@ extern void nr_analytics_event_destroy(nr_analytics_event_t** event_ptr);
 extern nr_analytics_events_t* nr_analytics_events_create(int max_events);
 
 /*
+ * Purpose : Create a data structure to hold analytics event data.
+ *
+ * Params  : 1. The total number of events that will be recorded (0 is allowd).
+ *              After this maximum is reached, events will be saved/replaced
+ *              using a sampling algorithm.
+ *
+ * Returns : A newly allocated events structure, or NULL on error.
+ */
+extern nr_analytics_events_t* nr_analytics_events_create_ex(int max_events);
+
+/*
  * Purpose : Get the number of events that were attempted to be put in the
  *           structure using add_event.
  */

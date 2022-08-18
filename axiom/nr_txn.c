@@ -532,8 +532,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
-  nt->log_events
-      = nr_analytics_events_create(1000 /* app->limits.log_events */);
+  nt->log_events = nr_log_events_create(1000 /* app->limits.log_events */);
 
   /*
    * Set the status fields to their defaults.

@@ -13,7 +13,7 @@
 /*
  * Purpose : Convert a log event to an analytic event and add it to
  *           an event pool.
- * 
+ *
  * Returns : true if sampling occured (see Notes below)
  *           false otherwise
  *
@@ -27,7 +27,7 @@ extern bool nr_log_events_add_event(nr_analytics_events_t* events,
 
 /* Function aliases redirecting to underlying analytics events implementation */
 NRINLINE nr_analytics_events_t* nr_log_events_create(int max_events) {
-  return nr_analytics_events_create(max_events);
+  return nr_analytics_events_create_ex(max_events);
 }
 NRINLINE void nr_log_events_destroy(nr_analytics_events_t** events) {
   return nr_analytics_events_destroy(events);
