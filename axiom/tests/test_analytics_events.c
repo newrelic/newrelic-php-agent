@@ -278,6 +278,7 @@ static void test_events_create_ex(void) {
   tlib_fail_if_null("zero max_events", events);
   tlib_pass_if_int_equal("zero max_events", 0,
                          nr_analytics_events_max_events(events));
+  nr_analytics_events_destroy(&events);
 }
 
 static void test_events_add_event_failure(void) {
