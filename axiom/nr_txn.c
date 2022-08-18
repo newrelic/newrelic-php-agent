@@ -3356,11 +3356,9 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
 
   if (!nr_txn_log_forwarding_enabled(txn)) {
     return;
-  }
+    }
 
   if (nr_strempty(log_message)) {
-    nrl_debug(NRL_TXN, "%s: not forwarding log event with empty log message",
-              __func__);
     return;
   }
 
