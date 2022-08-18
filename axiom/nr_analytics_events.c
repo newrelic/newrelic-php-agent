@@ -101,7 +101,7 @@ struct _nr_analytics_events_t {
 };
 
 int nr_analytics_events_max_events(const nr_analytics_events_t* events) {
-  if (0 == events) {
+  if (NULL == events) {
     return 0;
   }
   return events->events_allocated;
