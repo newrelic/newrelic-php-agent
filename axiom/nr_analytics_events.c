@@ -100,6 +100,13 @@ struct _nr_analytics_events_t {
   nr_analytics_event_t** events; /* Array of events */
 };
 
+int nr_analytics_events_max_events(const nr_analytics_events_t* events) {
+  if (0 == events) {
+    return 0;
+  }
+  return events->events_allocated;
+}
+
 int nr_analytics_events_number_seen(const nr_analytics_events_t* events) {
   if (0 == events) {
     return 0;
