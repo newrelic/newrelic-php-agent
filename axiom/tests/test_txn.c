@@ -8268,6 +8268,7 @@ static void test_record_log_event(void) {
 }
 
 static void test_txn_log_configuration(void) {
+  // clang-format off
   nrtxn_t txnv;
   nrtxn_t* txn = &txnv;
 
@@ -8370,7 +8371,7 @@ static void test_txn_log_configuration(void) {
   txn->options.log_forwarding_enabled = true;
   txn->options.log_events_max_samples_stored = 1;
   tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1 -> off");
-
+  // clang-format on
 }
 
 tlib_parallel_info_t parallel_info
