@@ -94,6 +94,12 @@ extern void nr_analytics_events_destroy(nr_analytics_events_t** events_ptr);
 extern bool nr_analytics_events_is_sampling(nr_analytics_events_t* events);
 
 /*
+ * Purpose : Inform the outside world about maximum number of events that can be
+ *           stored.
+ */
+extern int nr_analytics_events_max_events(const nr_analytics_events_t* events);
+
+/*
  * Purpose : Add an event to an event pool.
  *
  * Notes   : This function is not guaranteed to add an event: Once the events

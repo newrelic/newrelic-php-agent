@@ -200,6 +200,9 @@ static void test_events_add_event_success(void) {
   nr_random_t* rnd = nr_random_create_from_seed(12345);
 
   events = nr_analytics_events_create(10);
+  tlib_pass_if_int_equal("10 max_events", 10,
+                         nr_analytics_events_max_events(events));
+
   event = create_sample_event();
   nr_analytics_events_add_event(events, event, rnd);
   json = nr_analytics_events_get_event_json(events, 0);
@@ -273,6 +276,8 @@ static void test_events_create_ex(void) {
 
   events = nr_analytics_events_create_ex(0);
   tlib_fail_if_null("zero max_events", events);
+  tlib_pass_if_int_equal("zero max_events", 0,
+                         nr_analytics_events_max_events(events));
 }
 
 static void test_events_add_event_failure(void) {
@@ -391,6 +396,11 @@ static void test_events_destroy_bad_params(void) {
   nr_analytics_events_destroy(&null_events);
 }
 
+static void test_max_events_bad_param(void) {
+  tlib_pass_if_int_equal("null events", nr_analytics_events_max_events(NULL),
+                         0);
+}
+
 static void test_number_seen_bad_param(void) {
   tlib_pass_if_int_equal("null events", nr_analytics_events_number_seen(NULL),
                          0);
@@ -453,6 +463,7 @@ void test_main(void* p NRUNUSED) {
   test_max_observed();
   test_reservoir_replacement();
   test_events_destroy_bad_params();
+  test_max_events_bad_param();
   test_number_seen_bad_param();
   test_number_saved_bad_param();
   test_event_int_long();

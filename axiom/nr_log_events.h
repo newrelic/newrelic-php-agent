@@ -32,6 +32,9 @@ NRINLINE nr_analytics_events_t* nr_log_events_create(int max_events) {
 NRINLINE void nr_log_events_destroy(nr_analytics_events_t** events) {
   return nr_analytics_events_destroy(events);
 }
+NRINLINE int nr_log_events_max_events(const nr_analytics_events_t* events) {
+  return nr_analytics_events_max_events(events);
+}
 NRINLINE int nr_log_events_number_seen(const nr_analytics_events_t* events) {
   return nr_analytics_events_number_seen(events);
 }

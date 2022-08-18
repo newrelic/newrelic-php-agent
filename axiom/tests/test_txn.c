@@ -8233,7 +8233,8 @@ static void test_record_log_event(void) {
   /* Happy path with sampling */
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
   /* fill up events pool to force sampling */
-  while (!nr_analytics_events_is_sampling(txn->log_events)) {
+  for (int i = 0, max_events = nr_log_events_max_events(txn->log_events);
+       i < max_events; i++) {
     nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
   }
   /* force sampling */
