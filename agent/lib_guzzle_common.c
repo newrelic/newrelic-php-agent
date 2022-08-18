@@ -322,7 +322,6 @@ NR_PHP_WRAPPER_START(nr_guzzle_client_construct) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
   nr_php_scope_release(&this_var);
-  
   if (php_version_compare(version, "7") >= 0){
     NR_PHP_WRAPPER_DELEGATE(nr_guzzle7_client_construct);
   } else if (php_version_compare(version, "6") >= 0) {
