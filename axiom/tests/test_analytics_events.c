@@ -268,6 +268,13 @@ static void test_events_create_bad_param(void) {
   tlib_pass_if_true("crazy large max_events", 0 == events, "events=%p", events);
 }
 
+static void test_events_create_ex(void) {
+  nr_analytics_events_t* events;
+
+  events = nr_analytics_events_create_ex(0);
+  tlib_fail_if_null("zero max_events", events);
+}
+
 static void test_events_add_event_failure(void) {
   nr_analytics_events_t* events;
   nr_analytics_event_t* event;
@@ -441,6 +448,7 @@ void test_main(void* p NRUNUSED) {
   test_event_destroy();
   test_events_add_event_success();
   test_events_create_bad_param();
+  test_events_create_ex();
   test_events_add_event_failure();
   test_max_observed();
   test_reservoir_replacement();

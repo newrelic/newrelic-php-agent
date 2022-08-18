@@ -117,11 +117,16 @@ int nr_analytics_events_number_saved(const nr_analytics_events_t* events) {
 #define NR_ANALYTICS_EVENTS_MAX_EVENTS_SANITY_CHECK (10 * 1000 * 1000)
 
 nr_analytics_events_t* nr_analytics_events_create(int max_events) {
+  if (max_events <= 0) {
+    return NULL;
+  }
+
+  return nr_analytics_events_create_ex(max_events);
+}
+
+nr_analytics_events_t* nr_analytics_events_create_ex(int max_events) {
   nr_analytics_events_t* events;
 
-  if (max_events <= 0) {
-    return 0;
-  }
   if (max_events > NR_ANALYTICS_EVENTS_MAX_EVENTS_SANITY_CHECK) {
     return 0;
   }
