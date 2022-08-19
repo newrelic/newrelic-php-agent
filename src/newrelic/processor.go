@@ -491,11 +491,12 @@ func processLogEventLimits(app *App) {
 	agentLogLimit = int((float64(agentLogLimit) * collectorReportPeriod) / agentReportPeriod)
 
 	log.Debugf("handling log limits: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod)
-	log.Debugf("handling log limits: agent_log_limit = %d agentLogLimit = %d", agentLogLimit, collectorLogLimit)
+	log.Debugf("handling log limits: agent_log_limit = %d collectorLogLimit = %d", agentLogLimit, collectorLogLimit)
 
 	finalLogLimit := collectorLogLimit
 	if agentLogLimit < collectorLogLimit {
 		finalLogLimit = agentLogLimit
+		log.Debugf("handling log limits: agent_log_limit = %d selected over collectorLogLimit = %d", agentLogLimit, collectorLogLimit)
 	}
 
 	// store final log limit in reply object which is used by rest of code to
