@@ -182,7 +182,7 @@ var (
 	}
 )
 
-func GetLogEventAppInfo(limit int) AppInfo {
+func NewAppInfoWithLogEventLimit(limit int) AppInfo {
 	appInfo := sampleAppInfo
 	appInfo.AgentEventLimits = collector.EventConfigs{
 		LogEventConfig: collector.Event{
@@ -255,7 +255,7 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 func TestProcessorHarvestLogEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	appInfo := GetLogEventAppInfo(1000)
+	appInfo := NewAppInfoWithLogEventLimit(1000)
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
@@ -310,7 +310,7 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 func TestSupportabilityHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	appInfo := GetLogEventAppInfo(1000)
+	appInfo := NewAppInfoWithLogEventLimit(1000)
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
@@ -1179,7 +1179,7 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 	switch eventType {
 	case "log_event_data":
 		logHarvestLimit = int(collectorLimit)
-		appInfo = GetLogEventAppInfo(int(agentLimit))
+		appInfo = NewAppInfoWithLogEventLimit(int(agentLimit))
 
 	default:
 		t.Fatalf("%s: runMockedCollectorHarvestLimitTest() invalid eventType \"%s\" specified", testName, eventType)
@@ -1245,8 +1245,6 @@ func TestConnectNegotiateLogEventLimits(t *testing.T) {
 }
 
 func TestProcessLogEventLimit(t *testing.T) {
-	//cannedConnectReply := []byte(`{"agent_run_id":"1"}`) // parseConnectReply expects at least agent_run_id in collector reply
-
 	// nil as argument should just return
 	processLogEventLimits(nil)
 
