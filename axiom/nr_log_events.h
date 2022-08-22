@@ -14,8 +14,10 @@
  * Purpose : Convert a log event to an analytic event and add it to
  *           an event pool.
  *
- * Returns : true if sampling occured (see Notes below)
- *           false otherwise
+ * Returns : true if and only if sampling occured (see Notes below)
+ *           false otherwise (sampling not occurred; event was not added
+ *           because function was called with NULL arguments, which implies
+ *           sampling not occurred).
  *
  * Notes   : This function is not guaranteed to add an event: Once the events
  *           data structure is full, this event may replace an existing event
