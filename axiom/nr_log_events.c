@@ -17,7 +17,7 @@ bool nr_log_events_add_event(nr_analytics_events_t* events,
                              nr_random_t* rnd) {
   bool events_sampled = false;
   char* log_event_json = NULL;
-  nr_analytics_event_t* log_event;
+  nr_analytics_event_t* log_event = NULL;
 
   if (NULL == events) {
     return false;
