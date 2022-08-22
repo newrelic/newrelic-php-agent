@@ -8311,7 +8311,7 @@ static void test_txn_log_configuration(void) {
   txn->options.log_forwarding_enabled = true;
   txn->options.log_events_max_samples_stored = 0;
   txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> off");
+  tlib_pass_if_true(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> on");
   tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=1 -> on");
 
   txn->options.log_forwarding_enabled = false;

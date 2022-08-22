@@ -3260,10 +3260,6 @@ bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
     return false;
   }
 
-  if (0 == txn->options.log_events_max_samples_stored) {
-    return false;
-  }
-
   if (txn->high_security) {
     return false;
   }
