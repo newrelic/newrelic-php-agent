@@ -3354,6 +3354,10 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   nr_log_event_t* e = NULL;
   bool event_dropped = false;
 
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
   if (!nr_txn_log_forwarding_enabled(txn)) {
     return;
   }
@@ -3384,6 +3388,10 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
 static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   char* metric_name = NULL;
 
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
   if (!nr_txn_log_metrics_enabled(txn)) {
     return;
   }
@@ -3400,6 +3408,10 @@ void nr_txn_record_log_event(nrtxn_t* txn,
                              const char* log_message,
                              nrtime_t timestamp,
                              nrapp_t* app) {
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
   nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
