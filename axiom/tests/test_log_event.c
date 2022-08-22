@@ -40,7 +40,7 @@ static void test_log_event_to_json(void) {
   tlib_pass_if_str_equal("empty log event",
                          "[{"
                          "\"message\":\"null\","
-                         "\"log.level\":\"null\","
+                         "\"level\":\"null\","
                          "\"timestamp\":0,"
                          "\"trace.id\":\"null\","
                          "\"span.id\":\"null\","
@@ -68,7 +68,7 @@ static void test_log_event_to_json(void) {
   tlib_pass_if_str_equal("populated log event",
                          "[{"
                          "\"message\":\"this is a test log error message\","
-                         "\"log.level\":\"LOG_LEVEL_TEST_ERROR\","
+                         "\"level\":\"LOG_LEVEL_TEST_ERROR\","
                          "\"timestamp\":12345,"
                          "\"trace.id\":\"test id 1\","
                          "\"span.id\":\"test id 2\","
@@ -108,7 +108,7 @@ static void test_log_event_to_json_buffer(void) {
   tlib_pass_if_str_equal("empty log event",
                          "[{"
                          "\"message\":\"null\","
-                         "\"log.level\":\"null\","
+                         "\"level\":\"null\","
                          "\"timestamp\":0,"
                          "\"trace.id\":\"null\","
                          "\"span.id\":\"null\","
@@ -139,7 +139,7 @@ static void test_log_event_to_json_buffer(void) {
       "full log event",
       "[{"
       "\"message\":\"this is a test log error message\","
-      "\"log.level\":\"LOG_LEVEL_TEST_ERROR\","
+      "\"level\":\"LOG_LEVEL_TEST_ERROR\","
       "\"timestamp\":12345,"
       "\"trace.id\":\"test id 1\","
       "\"span.id\":\"test id 2\","

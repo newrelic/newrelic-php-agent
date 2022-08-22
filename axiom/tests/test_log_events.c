@@ -67,7 +67,7 @@ static void test_events_success(void) {
     tlib_fail_if_null("no json", json);                  \
     expected = "[{" \
                  "\"message\":\"" MESSAGE "\"," \
-                 "\"log.level\":\"" LOG_LEVEL "\"," \
+                 "\"level\":\"" LOG_LEVEL "\"," \
                  "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "," \
                  "\"trace.id\":\"null\"," \
                  "\"span.id\":\"null\"," \
