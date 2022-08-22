@@ -441,12 +441,13 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
   if (harvest_log_limit < info.log_events_max_samples_stored)
     app_limits->log_events = harvest_log_limit;
 
-  nrl_verbosedebug(
-      NRL_AGENT,
-      "log event limits:  agent config = %lu,  harvest = %lu, final "
-      "app_limits->log_events = %d",
-      info.log_events_max_samples_stored, harvest_log_limit,
-      app_limits->log_events);
+  nrl_verbosedebug(NRL_AGENT,
+                   "log event limits:  agent config = %" PRIu64
+                   ",  harvest = %" PRIu64
+                   " final "
+                   "app_limits->log_events = %d",
+                   info.log_events_max_samples_stored, harvest_log_limit,
+                   app_limits->log_events);
 }
 
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
