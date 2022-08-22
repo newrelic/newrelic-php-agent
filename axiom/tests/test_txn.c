@@ -8094,14 +8094,13 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
   app.entity_name = entity_name;
-
+  app.limits = default_app_limits();
 
   /* Setup log feature options */
   nr_memset(&opts, 0, sizeof(opts));
   opts.logging_enabled = true;
   opts.log_forwarding_enabled = true;
   opts.log_events_max_samples_stored = 10;
-
   opts.log_metrics_enabled = true;
 
   opts.distributed_tracing_enabled = 1; /* for linking meta data */
@@ -8181,7 +8180,7 @@ static void test_record_log_event(void) {
       = "[{"
         "\"message\":\"" LOG_MESSAGE
         "\","
-        "\"log.level\":\"UNKNOWN\","
+        "\"level\":\"UNKNOWN\","
         "\"timestamp\":0,"
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
@@ -8207,12 +8206,11 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
-
   log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
   expected = "[{"
               "\"message\":\"" LOG_MESSAGE "\","
-              "\"log.level\":\"" LOG_LEVEL "\","
+              "\"level\":\"" LOG_LEVEL "\","
               "\"timestamp\":" NR_STR2(LOG_TIMESTAMP)","
               "\"trace.id\":\"0000000000000000\","
               "\"span.id\":\"0000000000000000\","
@@ -8375,112 +8373,6 @@ static void test_txn_log_configuration(void) {
   txn->options.log_events_max_samples_stored = 1;
   tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1 -> off");
   // clang-format on
-}
-
-static void test_txn_log_configuration(void) {
-  nrtxn_t txnv;
-  nrtxn_t* txn = &txnv;
-
-  /* log features globally disabled, high security disabled */
-  txn->options.logging_enabled = false;
-  txn->high_security = false;
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = false;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=0, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=0, metrics=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=0, high_security=0, decorating=0 -> always off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=1, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=0, metrics=1 -> off");
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=0, samples=1 -> off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=1, samples=1 -> off");
-
-  /* log features globally enabled, high security disabled */
-  txn->options.logging_enabled = true;
-  txn->high_security = false;
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = false;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=0, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=0, decorating=0 -> always off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> off");
-  tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=1 -> on");
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=0, samples=1 -> off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_true(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=1 -> on");
-
-  /* log features globally disabled, high security enabled */
-  txn->options.logging_enabled = false;
-  txn->high_security = true;
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = false;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=0, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=1, metrics=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=0, high_security=1, decorating=0 -> always off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=1, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=1, metrics=1 -> off");
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=0, samples=1 -> off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=1, samples=1 -> off");
-
-  /* log features globally enabled, high security enabled */
-  txn->options.logging_enabled = true;
-  txn->high_security = true;
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = false;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=0, samples=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=1, metrics=0 -> off");
-  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=1, decorating=0 -> always off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 0;
-  txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=0 -> off");
-  tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=1, metrics=1 -> on");
-
-  txn->options.log_forwarding_enabled = false;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=0, samples=1 -> off");
-
-  txn->options.log_forwarding_enabled = true;
-  txn->options.log_events_max_samples_stored = 1;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1 -> off");
-
 }
 
 tlib_parallel_info_t parallel_info
