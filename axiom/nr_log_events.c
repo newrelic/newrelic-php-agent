@@ -19,17 +19,10 @@ bool nr_log_events_add_event(nr_analytics_events_t* events,
   char* log_event_json = NULL;
   nr_analytics_event_t* log_event = NULL;
 
-<<<<<<< HEAD
   if (NULL == events) {
     return false;
   }
   if (NULL == event) {
-=======
-  if (0 == events) {
-    return false;
-  }
-  if (0 == event) {
->>>>>>> 25f7831 (feat(axiom): create `Logging/Forwarding/Dropped` metric)
     return false;
   }
 
