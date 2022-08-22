@@ -5,8 +5,11 @@
  */
 
 /*DESCRIPTION
-In a non-web transaction, the agent should NOT send any web transaction
-attributes.
+In a non-web transaction that has no user defined functions, code level metrics (CLM)
+should return the filename as the function name (because we are instrumenting the file)
+and lineno 1.
+The agent should include CLM agent attributes in error traces, error
+events, analytic events and span events.
  */
 
 /*SKIPIF
@@ -37,9 +40,9 @@ newrelic.code_level_metrics.enabled=true
           " in newrelic_notice_error called at __FILE__ (??)"
         ],
         "agentAttributes": {
-          "code.lineno": "??",
+          "code.lineno": 1,
           "code.filepath": "__FILE__",
-          "code.function": "main"
+          "code.function": "__FILE__"
         },
         "intrinsics": "??"
       }
@@ -73,9 +76,9 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 153,
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main"
+        "code.function": "__FILE__"
       }
     ]
   ]
@@ -103,9 +106,9 @@ newrelic.code_level_metrics.enabled=true
       {
       },
       {
-        "code.lineno": "??",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main",
+        "code.function": "__FILE__",
         "errorType": "NoticedError",
         "errorMessage": "I'M COVERED IN BEES!"
       }
@@ -139,9 +142,9 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": "??",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main",
+        "code.function": "__FILE__",
         "error.class": "NoticedError",
         "error.message": "I'M COVERED IN BEES!"
       }

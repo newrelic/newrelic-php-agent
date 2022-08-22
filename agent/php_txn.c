@@ -1074,13 +1074,13 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-extern void nr_php_txn_add_code_level_metrics(nrtxn_t* txn,
+extern void nr_php_txn_add_code_level_metrics(nr_attributes_t* attributes,
                                               NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filepath = NULL;
   const char* namespace = NULL;
   const char* function = NULL;
 
-  if (NULL == txn) {
+  if (NULL == execute_data) {
     return;
   }
 
@@ -1091,7 +1091,6 @@ extern void nr_php_txn_add_code_level_metrics(nrtxn_t* txn,
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
-
   /*
    * At a minimum, at least one of the following attribute combinations MUST be
    * implemented in order for customers to be able to accurately identify their
@@ -1105,22 +1104,77 @@ extern void nr_php_txn_add_code_level_metrics(nrtxn_t* txn,
   filepath = nr_php_zend_execute_data_filename(execute_data);
   namespace = nr_php_zend_execute_data_scope_name(execute_data);
   function = nr_php_zend_execute_data_function_name(execute_data);
+           function, namespace, filepath);
 
-  if (NULL == function) {
-    return;
-  } else if ((NULL == namespace) && (NULL == filepath)) {
-    return;
-  }
+           nrobj_t* agent_attributes;
+           agent_attributes = nr_attributes_agent_to_obj(
+               attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
+           nro_delete(agent_attributes);
 
-  nr_txn_set_string_attribute(txn, nr_txn_clm_code_function, function);
-  if (NULL != filepath) {
-    nr_txn_set_string_attribute(txn, nr_txn_clm_code_filepath, filepath);
-  }
-  if (NULL != namespace) {
-    nr_txn_set_string_attribute(txn, nr_txn_clm_code_namespace, namespace);
-  }
-  nr_txn_set_long_attribute(txn, nr_txn_clm_code_lineno,
-                            nr_php_zend_execute_data_lineno(execute_data));
+           /*
+            * Check if we are getting CLM for a file.
+            */
+           if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+             agent_attributes = nr_attributes_agent_to_obj(
+                 attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
+             nro_delete(agent_attributes);
+
+             if (NULL == filepath || '\0' == filepath[0]) {
+               return;
+             }
+             /*
+              * If instrumenting a file, the filename is the "function" and the
+              * lineno is 1 (i.e., start of the file).
+              */
+             nr_txn_attributes_set_string_attribute(
+                 attributes, nr_txn_clm_code_function, filepath);
+             nr_txn_attributes_set_string_attribute(
+                 attributes, nr_txn_clm_code_filepath, filepath);
+             if (NULL != namespace && '\0' != namespace[0]) {
+               nr_txn_attributes_set_string_attribute(
+                   attributes, nr_txn_clm_code_namespace, namespace);
+             }
+             nr_txn_attributes_set_long_attribute(attributes,
+                                                  nr_txn_clm_code_lineno, 1);
+             agent_attributes = nr_attributes_agent_to_obj(
+                 attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
+             nro_delete(agent_attributes);
+
+             return;
+           }
+
+           /*
+            * We are getting CLM for a function.
+            */
+           if (NULL == function || '\0' == function[0]) {
+             return;
+           } else if ((NULL == namespace || '\0' == namespace[0])
+                      && (NULL == filepath || '\0' == filepath[0])) {
+             /*
+              * CLM MUST have either function+namespace or function+filepath.
+              */
+             return;
+           }
+           nr_txn_attributes_set_string_attribute(
+               attributes, nr_txn_clm_code_function, function);
+
+           if (NULL != filepath && '\0' != filepath[0]) {
+             nr_txn_attributes_set_string_attribute(
+                 attributes, nr_txn_clm_code_filepath, filepath);
+           }
+
+           if (NULL != namespace && '\0' != namespace[0]) {
+             nr_txn_attributes_set_string_attribute(
+                 attributes, nr_txn_clm_code_namespace, namespace);
+           }
+
+           nr_txn_attributes_set_long_attribute(
+               attributes, nr_txn_clm_code_lineno,
+               nr_php_zend_execute_data_lineno(execute_data));
+
+           agent_attributes = nr_attributes_agent_to_obj(
+               attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
+           nro_delete(agent_attributes);
 }
 
 #endif /* PHP 7+ */

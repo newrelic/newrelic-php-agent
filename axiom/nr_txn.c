@@ -169,6 +169,32 @@ void nr_txn_set_long_attribute(nrtxn_t* txn,
                                attribute->name, value);
 }
 
+void nr_txn_attributes_set_string_attribute(nr_attributes_t* attributes,
+                                            const nr_txn_attribute_t* attribute,
+                                            const char* value) {
+  if (NULL == attribute) {
+    return;
+  }
+  if (NULL == value) {
+    return;
+  }
+  if ('\0' == value[0]) {
+    return;
+  }
+  nr_attributes_agent_add_string(attributes, attribute->destinations,
+                                 attribute->name, value);
+}
+
+void nr_txn_attributes_set_long_attribute(nr_attributes_t* attributes,
+                                          const nr_txn_attribute_t* attribute,
+                                          long value) {
+  if (NULL == attribute) {
+    return;
+  }
+  nr_attributes_agent_add_long(attributes, attribute->destinations,
+                               attribute->name, value);
+}
+
 /* These sample options are provided for tests. */
 const nrtxnopt_t nr_txn_test_options = {
     .custom_events_enabled = 0,
@@ -2514,7 +2540,6 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
       nro_set_hash_string(params, "spanId", nr_error_get_span_id(txn->error));
     }
   }
-
   agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
                                                 NR_ATTRIBUTE_DESTINATION_ERROR);
   user_attributes = nr_attributes_user_to_obj(txn->attributes,

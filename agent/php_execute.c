@@ -71,9 +71,9 @@
  * constructions and teardown as reasons to avoid excessive function calls.
  * This too is erroneous. The cost of calling a function is about 4 assembler
  * instructions. This is negligible. Therefore, as a means of reducing stack
- * usage, if you need stack space it is better to put that usage into a static
- * function and call it from the main function, because then that stack space
- * in genuinely only allocated when needed.
+ * usage, if you need stack space it is better to put that usage into a static*
+ * function and call it from the main function, because then that stack space in
+ * genuinely only allocated when needed.
  *
  * A not-insignificant performance boost comes from accurate branch hinting
  * using the nrlikely() and nrunlikely() macros. This prevents pipeline stalls
@@ -1102,12 +1102,14 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
   NRTXNGLOBAL(execute_count) += 1;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-/* Current CLM functionality only works with PHP 7+ */                                            
-  nr_php_txn_add_code_level_metrics(NRPRG(txn), NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-#endif /* PHP 7+ */
-
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+    /* Current CLM functionality only works with PHP 7+ */
+    if (NRPRG(txn)) {
+      nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes,
+                                        NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+#endif /* PHP 7+ */
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
@@ -1162,6 +1164,11 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     txn_start_time = nr_txn_start_time(NRPRG(txn));
 
     segment = nr_php_stacked_segment_init(&stacked TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+    /* Current CLM functionality only works with PHP 7+ */
+    nr_php_txn_add_code_level_metrics(stacked.attributes,
+                                      NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+#endif /* PHP 7+ */
 
     zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -1198,6 +1205,11 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     txn_start_time = nr_txn_start_time(NRPRG(txn));
 
     segment = nr_php_stacked_segment_init(&stacked TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+    /* Current CLM functionality only works with PHP 7+ */
+    nr_php_txn_add_code_level_metrics(stacked.attributes,
+                                      NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+#endif /* PHP 7+ */
 
     zcaught = nr_zend_call_orig_execute_special(wraprec, &stacked,
                                                 NR_EXECUTE_ORIG_ARGS TSRMLS_CC);

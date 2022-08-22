@@ -5,7 +5,9 @@
  */
 
 /*DESCRIPTION
-The agent should include CLM agent attributes in error traces, error
+In a web transaction that has no user defined functions, code level metrics (CLM)
+should return the filename as the function name (because we are instrumenting the file)
+and lineno 1. The agent should include CLM agent attributes in error traces, error
 events, analytic events and span events.
 */
 
@@ -57,9 +59,9 @@ CONTENT_LENGTH=348
           "http.statusCode": 200,
           "httpResponseCode": "200",
           "request.uri": "__FILE__",
-          "code.lineno": "??",
+          "code.lineno": 1,
           "code.filepath": "__FILE__",
-          "code.function": "main",
+          "code.function": "__FILE__",
           "SERVER_NAME": "??",
           "request.headers.userAgent": "Mozilla/5.0",
           "request.headers.User-Agent": "Mozilla/5.0",
@@ -110,9 +112,9 @@ CONTENT_LENGTH=348
         "http.statusCode": 200,
         "httpResponseCode": "200",
         "request.uri": "__FILE__",
-        "code.lineno": "??",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main",
+        "code.function": "__FILE__",
         "SERVER_NAME": "??",
         "request.method": "POST",
         "request.headers.host": "127.0.0.1",
@@ -159,9 +161,9 @@ CONTENT_LENGTH=348
         "http.statusCode": 200,
         "httpResponseCode": "200",
         "request.uri": "__FILE__",
-        "code.lineno": "??",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main",
+        "code.function": "__FILE__",
         "request.method": "POST",
         "request.headers.host": "127.0.0.1",
         "request.headers.contentType": "text/html",
@@ -206,9 +208,9 @@ CONTENT_LENGTH=348
         "http.statusCode": 200,
         "httpResponseCode": "200",
         "request.uri": "__FILE__",
-        "code.lineno": "??",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "main",
+        "code.function": "__FILE__",
         "request.method": "POST",
         "request.headers.host": "127.0.0.1",
         "request.headers.contentType": "text/html",

@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-In a non-web transaction, the agent should NOT send any web transaction
-attributes.
+The agent should send code level metrics (CLM) including function name,
+class name, and lineno.
  */
 
 /*SKIPIF
@@ -47,10 +47,9 @@ newrelic.code_level_metrics.enabled=true
       {
       },
       {
-        "code.lineno": "??",
-        "code.namespace": "Vegetable",
+        "code.lineno": 1,
         "code.filepath": "__FILE__",
-        "code.function": "getColor"
+        "code.function": "__FILE__"
       }
     ]
   ]
@@ -62,7 +61,7 @@ newrelic.code_level_metrics.enabled=true
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 1
+    "events_seen": 3
   },
   [
     [
@@ -82,7 +81,50 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": "??",
+        "code.lineno": 1,
+        "code.filepath": "__FILE__",
+        "code.function": "__FILE__"
+      }
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/Vegetable::__construct",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 144,
+        "code.namespace": "Vegetable",
+        "code.filepath": "__FILE__",
+        "code.function": "__construct"
+      }
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/Vegetable::getColor",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 155,
         "code.namespace": "Vegetable",
         "code.filepath": "__FILE__",
         "code.function": "getColor"
