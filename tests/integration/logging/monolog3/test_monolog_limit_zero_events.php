@@ -63,10 +63,7 @@ monolog3.EMERGENCY: emergency []
 */
 
 /*EXPECT_LOG_EVENTS
-[
-    {
-    }
-]
+null
  */
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
