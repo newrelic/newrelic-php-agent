@@ -402,6 +402,12 @@ static void test_max_events_bad_param(void) {
                          0);
 }
 
+static void test_is_sampling_bad_param(void) {
+  bool is_sampling = nr_analytics_events_is_sampling(NULL);
+  tlib_pass_if_false("not sampling null events", is_sampling,
+                     "nr_analytics_events_is_sampling(NULL)=%d", is_sampling);
+}
+
 static void test_number_seen_bad_param(void) {
   tlib_pass_if_int_equal("null events", nr_analytics_events_number_seen(NULL),
                          0);
@@ -465,6 +471,7 @@ void test_main(void* p NRUNUSED) {
   test_reservoir_replacement();
   test_events_destroy_bad_params();
   test_max_events_bad_param();
+  test_is_sampling_bad_param();
   test_number_seen_bad_param();
   test_number_saved_bad_param();
   test_event_int_long();

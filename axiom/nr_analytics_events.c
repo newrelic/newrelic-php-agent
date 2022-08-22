@@ -215,6 +215,9 @@ const char* nr_analytics_events_get_event_json(nr_analytics_events_t* events,
 }
 
 bool nr_analytics_events_is_sampling(nr_analytics_events_t* events) {
+  if (NULL == events) {
+    return false;
+  }
   if (events->events_used < events->events_allocated) {
     return false;
   }
