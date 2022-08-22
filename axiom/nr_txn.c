@@ -3297,7 +3297,7 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
 }
 
 #define ENSURE_LOG_LEVEL_NAME(level_name) \
-  (NULL == level_name ? "UNKNOWN" : level_name)
+  (nr_strempty(level_name) ? "UNKNOWN" : level_name)
 
 static void log_event_set_linking_metadata(nr_log_event_t* e,
                                            nrtxn_t* txn,
