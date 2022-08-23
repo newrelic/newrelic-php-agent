@@ -21,11 +21,7 @@ extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
 /*
  * Purpose : Our own error callback function, used to capture the PHP stack
  *           trace. This function is bound to zend_error_cb, and is typically
- *           called from within the guts of zend_error.  For PHP8+ the agent no
-longer
- *           needs to overwrite the error handler; instead, it registers our
-error
- *           handler with Observer API error handling notifications.
+ *           called from within the guts of zend_error.
  *
  * Params  : 1. A bitset encoding the type of the error, taken from
  *           E_ERROR ... E_USER_DEPRECATED
