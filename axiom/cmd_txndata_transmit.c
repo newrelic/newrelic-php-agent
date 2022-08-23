@@ -108,6 +108,7 @@ static uint32_t nr_txndata_prepend_custom_events(nr_flatbuffer_t* fb,
 
 static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
                                               const nrtxn_t* txn) {
+#if 0
   uint32_t* offsets;
   uint32_t* offset;
   uint32_t events;
@@ -117,7 +118,7 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   const size_t event_size = sizeof(uint32_t);
   const size_t event_align = sizeof(uint32_t);
 
-  event_count = nr_analytics_events_number_saved(txn->log_events);
+  event_count = nr_log_events_number_saved(txn->log_events);
   if (0 == event_count) {
     return 0;
   }
@@ -145,6 +146,11 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
 
   nr_free(offsets);
   return events;
+#else
+(void)(fb);
+(void)(txn);
+#endif
+return 0;
 }
 
 uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
