@@ -261,6 +261,7 @@ endif
 #
 TEST_LIBS := $(PHP_EMBED_LIBRARY) $(shell $(PHP_CONFIG) --libs)
 TEST_LDFLAGS := $(shell $(PHP_CONFIG) --ldflags) $(EXPORT_DYNAMIC)
+TEST_LDFLAGS += $(USER_LDFLAGS)
 
 #
 # Implicit rule to build test object files with the appropriate flags.
