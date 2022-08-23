@@ -1525,9 +1525,10 @@ end:
  * PH because  zend_execute_ex limits your stack size to whatever your settings
  * are. Observer API bypasses the stack overflow issue that you can run into
  * when intercepting userland calls.  Additionally, with PHP 8.0, JIT
- * optimizations could optimize out a call to zend_execute_ex and our extension
- * would not be able to enter set that call which would lead to segfaults and
- * caused PHP to decide to disable JIT when detecting extensions that overwrote
+ * optimizations could optimize out a call to zend_execute_ex and the agent
+ * would not be able to overwite that call properly as the agent wouldn't have
+ * access to the JITed information.  This could lead to segfaults and caused PHP
+ * to decide to disable JIT when detecting extensions that overwrote
  * zend_execute_ex.
  *
  * It only provides ZEND_USER_FUNCTIONS yet as it was assumed mechanisms already
