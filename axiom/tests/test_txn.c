@@ -8381,7 +8381,7 @@ static void test_txn_log_configuration(void) {
 }
 
 tlib_parallel_info_t parallel_info
-    = {.suggested_nthreads = 1, .state_size = sizeof(test_txn_state_t)};
+    = {.suggested_nthreads = 2, .state_size = sizeof(test_txn_state_t)};
 
 void test_main(void* p NRUNUSED) {
   test_txn_cmp_options();
