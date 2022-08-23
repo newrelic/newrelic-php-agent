@@ -605,6 +605,16 @@ extern char* nr_segment_ensure_id(nr_segment_t* segment, const nrtxn_t* txn);
 extern void nr_segment_set_priority_flag(nr_segment_t* segment, int flag);
 
 /*
+ * Purpose : Get a segment priority flag
+ *
+ * Params  : 1. A pointer to a segment
+ *
+ * Returns : Integer value of the segment's priority flag
+ */
+extern int nr_segment_get_priority_flag(nr_segment_t* segment);
+
+
+/*
  * Purpose : Set the error attributes on a segment.
  *
  * Params  : 1. The pointer to the segment.
