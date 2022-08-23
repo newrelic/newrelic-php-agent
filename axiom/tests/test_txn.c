@@ -35,6 +35,7 @@
 #include "util_strings.h"
 #include "util_text.h"
 #include "util_url.h"
+#include "util_vector.h"
 
 #include "nr_commands_private.h"
 
@@ -8128,8 +8129,11 @@ static void test_record_log_event(void) {
 
   nrapp_t appv = {.host_name = APP_HOST_NAME, .entity_guid = APP_ENTITY_GUID};
   nrtxn_t* txn = NULL;
-  // const char* expected = NULL;
-  // const char* log_event_json = NULL;
+  const char* expected = NULL;
+  char* log_event_json = NULL;
+  nr_vector_t* vector;
+  void* test_e;
+  bool pass;
 
   /*
    * NULL parameters: don't record, don't create metrics, don't blow up!
@@ -8175,8 +8179,13 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("null log level, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
-#if 0   // MSF
-  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
   tlib_pass_if_not_null("null log level, event recorded", log_event_json);
   expected
       = "[{"
@@ -8193,13 +8202,14 @@ static void test_record_log_event(void) {
         "}]";
   tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
                          log_event_json);
-#endif  // MSF
   test_txn_metric_is("null log level, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
                      0, 0, 0, 0);
   test_txn_metric_is("null log level, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
                      1, 0, 0, 0, 0, 0);
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
   nr_txn_destroy(&txn);
 
   /* Happy path - everything initialized: record! */
@@ -8209,8 +8219,14 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
-#if 0   // MSF                         
-  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
+  tlib_fail_if_null("no json", log_event_json);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
   expected = "[{"
               "\"message\":\"" LOG_MESSAGE "\","
@@ -8224,7 +8240,9 @@ static void test_record_log_event(void) {
           "}]";
   tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
                          log_event_json);
-#endif  // MSF
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
+
   test_txn_metric_is("happy path, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
                      0, 0, 0, 0);
