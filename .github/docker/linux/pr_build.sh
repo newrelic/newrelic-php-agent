@@ -77,12 +77,12 @@ if [ "$(uname)" = Linux ] && [ ! -e /etc/alpine-release ] && [ $PHP_SAPIS_EMBED 
   do_valgrind=yes
   printf \\n
   printf 'grinding axiom tests\n'
-  make -r -s -j $(nproc) axiom-valgrind "ARCH=${ARCH}"
+  make -r -j $(nproc) axiom-valgrind "ARCH=${ARCH}"
 else
   do_valgrind=
   printf \\n
   printf 'running axiom tests\n'
-  make -r -s -j $(nproc) axiom-run-tests "ARCH=${ARCH}"
+  make -r -j $(nproc) axiom-run-tests "ARCH=${ARCH}"
 fi
 
 #
@@ -128,7 +128,7 @@ EOF
   printf \\n
   printf "building agent (PHP=%s)\n" "$PHPS"
   make agent-clean
-  make -r -s -j $(nproc) agent "ARCH=${ARCH}"
+  make -r -j $(nproc) agent "ARCH=${ARCH}"
 
 
   printf \\n
@@ -157,10 +157,10 @@ EOF
       *embed*)
         if [ -n "$do_valgrind" ]; then
           printf 'grinding agent unit tests\n'
-          make -r -s -j $(nproc) agent-valgrind "ARCH=${ARCH}"
+          make -r -j $(nproc) agent-valgrind "ARCH=${ARCH}"
         else
           printf 'running agent unit tests\n'
-          make -r -s -j $(nproc) agent-check "ARCH=${ARCH}"
+          make -r -j $(nproc) agent-check "ARCH=${ARCH}"
         fi
 	;;
       *)
