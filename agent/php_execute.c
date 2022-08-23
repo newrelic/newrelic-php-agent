@@ -1509,7 +1509,7 @@ end:
 }
 
 /*
- * nr_php_execute_observer fcall_begin and nr_php_execute_observer_fcall_end
+ * nr_php_execute_observer_fcall_begin and nr_php_execute_observer_fcall_end
  * are Observer API function handlers that should replicate
  * the functionality of nr_php_execute_enabled, nr_php_execute,
  * and nr_php_execute_show that are used when hooking in via zend_execute_ex.
