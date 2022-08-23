@@ -14,6 +14,7 @@
 #include "nr_log_event_private.h"
 #include "util_memory.h"
 #include "util_minmax_heap.h"
+#include "util_vector.h"
 
 bool nr_log_events_is_sampling(nr_log_events_t* events) {
   if (events->events_used < events->events_allocated) {
@@ -40,9 +41,9 @@ bool nr_log_events_is_sampling(nr_log_events_t* events) {
 
 static int nr_log_event_age_comparator(const nr_log_event_t* a,
                                        const nr_log_event_t* b) {
-  if (a->timestamp > b->timestamp) {
+  if (a->timestamp < b->timestamp) {
     return -1;
-  } else if (a->timestamp < b->timestamp) {
+  } else if (a->timestamp > b->timestamp) {
     return 1;
   }
   return 0;
@@ -66,9 +67,9 @@ static int nr_log_event_priority_comparator(const nr_log_event_t* a,
   }
 }
 
-static int nr_log_event_wrapped_priority_comparator(const void* a,
-                                                    const void* b,
-                                                    void* userdata NRUNUSED) {
+int nr_log_event_wrapped_priority_comparator(const void* a,
+                                             const void* b,
+                                             void* userdata NRUNUSED) {
   COMPARATOR_NULL_CHECK(a, b);
 
   return nr_log_event_priority_comparator((const nr_log_event_t*)a,
@@ -151,11 +152,6 @@ int nr_log_events_number_saved(const nr_log_events_t* events) {
   return events->events_used;
 }
 
-// const char* nr_log_events_get_event_json(nr_log_events_t* events,
-//                                                   int i) {
-//   return nr_analytics_events_get_event_json(events, i);
-// }
-
 bool nr_log_events_add_event(nr_log_events_t* events,
                              const nr_log_event_t* event) {
   bool events_sampled = false;
@@ -165,15 +161,14 @@ bool nr_log_events_add_event(nr_log_events_t* events,
     return false;
   }
 
-  // need to increment this if a valid event was sent 
+  // need to increment this if a valid event was sent
   // so take care if it here then sanity check other args
-  if (NULL != events) 
+  if (NULL != events)
     events->events_seen++;
 
   // if no event queue exists or size is 0 then event will be dropped
   if (NULL == events || NULL == events->events
       || 0 == events->events_allocated) {
-
     return true;
   }
 
@@ -189,4 +184,38 @@ bool nr_log_events_add_event(nr_log_events_t* events,
     events->events_used++;
 
   return events_sampled;
+}
+
+/*
+ * Purpose : Place an nr_log_event_t pointer in a heap into a nr_set_t,
+ *             or "heap to set".
+ *
+ * Params  : 1. The log event pointer in the heap.
+ *           2. A void* pointer to be recast as the pointer to the set.
+ *
+ * Note    : This is the callback function supplied to nr_minmax_heap_iterate
+ *           used for iterating over a heap of log events and placing each
+ *           log events into a set.
+ */
+static bool nr_log_event_htov_iterator_callback(void* value, void* userdata) {
+  if (nrlikely(value && userdata)) {
+    nr_vector_t* vector = (nr_vector_t*)userdata;
+    nr_vector_push_back(vector, value);
+  }
+
+  return true;
+}
+
+void nr_log_events_to_vector(nr_log_events_t* events, nr_vector_t* vector) {
+  if (NULL == events || NULL == events->events || NULL == vector) {
+    return;
+  }
+
+  /* Convert the heap to a set */
+  nr_minmax_heap_iterate(
+      events->events,
+      (nr_minmax_heap_iter_t)nr_log_event_htov_iterator_callback,
+      (void*)vector);
+
+  return;
 }
