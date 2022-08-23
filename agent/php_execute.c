@@ -1563,7 +1563,6 @@ void nr_php_execute_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute_enabled
    * nr_php_execute
    * nr_php_execute_show
-   * When fully implemented, remove NRUNUSED from the function sig.
    */
   if ((NULL == execute_data) || (NULL == return_value)) {
     return;
