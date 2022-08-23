@@ -512,8 +512,8 @@ void nr_php_error_cb(int type,
    * For PHP 8+ we have registered our error handler with the Observer
    * API so there is no need to callback to the original.
    */
-  if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+  if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
     (type, error_filename, error_lineno, format, args);
 #endif /* PHP < 8.0 */
