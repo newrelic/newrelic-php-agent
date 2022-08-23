@@ -108,12 +108,12 @@ static uint32_t nr_txndata_prepend_custom_events(nr_flatbuffer_t* fb,
 
 static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
                                               const nrtxn_t* txn) {
-#if 0
   uint32_t* offsets;
   uint32_t* offset;
   uint32_t events;
   int i;
   int event_count;
+  nr_vector_t* events_vec;
 
   const size_t event_size = sizeof(uint32_t);
   const size_t event_align = sizeof(uint32_t);
@@ -126,12 +126,35 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   offsets = (uint32_t*)nr_calloc(event_count, sizeof(uint32_t));
   offset = &offsets[0];
 
-  for (i = 0; i < event_count; i++, offset++) {
-    const char* json;
-    uint32_t data;
+  events_vec = nr_vector_create(event_count, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, events_vec);
 
-    json = nr_analytics_events_get_event_json(txn->log_events, i);
+  for (i = 0; i < event_count; i++, offset++) {
+    void* event;
+    char* json;
+    uint32_t data;
+    bool pass;
+
+    pass = nr_vector_get_element(events_vec, i, &event);
+    if (!pass) {
+      // this should not happen - probably best to just cut bait and run
+      nrl_verbosedebug(NRL_TXN, "failed to retrieve log event from vector!");
+      nr_vector_destroy(&events_vec);
+      return 0;
+    }
+    json = nr_log_event_to_json((nr_log_event_t*)event);
+    if (NULL == json) {
+      // this should not happen - probably best to just cut bait and run
+      nrl_verbosedebug(NRL_TXN, "failed to convert log event to json!");
+      nr_vector_destroy(&events_vec);
+      return 0;
+    }
+
     data = nr_flatbuffers_prepend_string(fb, json);
+
+    nrl_verbosedebug(NRL_TXN, "added log event json = %s", json);
+
+    nr_free(json);
 
     nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
     nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
@@ -144,13 +167,9 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   }
   events = nr_flatbuffers_vector_end(fb, event_count);
 
+  nr_free(events_vec);
   nr_free(offsets);
   return events;
-#else
-(void)(fb);
-(void)(txn);
-#endif
-return 0;
 }
 
 uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
