@@ -18,6 +18,7 @@ struct _nr_log_event_t {
   char* entity_guid;
   char* entity_name;
   char* hostname;
+  int priority;
 };
 
 #endif /* NR_LOG_EVENT_PRIVATE_H */

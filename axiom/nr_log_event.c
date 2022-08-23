@@ -28,13 +28,35 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_free(event->trace_id);
   nr_free(event->log_level);
   nr_free(event->message);
-  nr_free(event->trace_id);
   nr_free(event->span_id);
   nr_free(event->entity_guid);
   nr_free(event->entity_name);
   nr_free(event->hostname);
 
   nr_realfree((void**)ptr);
+}
+
+nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
+  nr_log_event_t *clone = NULL;
+
+  if (NULL == src)
+    return NULL;
+
+  clone = nr_log_event_create();
+  if (NULL == clone)
+    return NULL;
+
+  clone->trace_id = nr_strdup(src->trace_id);
+  clone->log_level = nr_strdup(src->log_level);
+  clone->message = nr_strdup(src->message);
+  clone->span_id = nr_strdup(src->span_id);
+  clone->entity_guid = nr_strdup(src->entity_guid);
+  clone->entity_name = nr_strdup(src->entity_name);
+  clone->hostname = nr_strdup(src->hostname);
+  clone->priority = src->priority;
+  clone->timestamp = src->timestamp;
+
+  return clone;
 }
 
 char* nr_log_event_to_json(const nr_log_event_t* event) {
@@ -193,4 +215,12 @@ void nr_log_event_set_hostname(nr_log_event_t* event, const char* hostname) {
     nr_free(event->hostname);
   }
   event->hostname = nr_strdup(hostname);
+}
+
+void nr_log_event_set_priority(nr_log_event_t* event, int priority) {
+  if (NULL == event) {
+    return;
+  }
+
+  event->priority = priority;
 }
