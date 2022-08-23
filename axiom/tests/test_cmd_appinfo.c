@@ -71,6 +71,10 @@ static void test_create_empty_query(void) {
                               nr_flatbuffers_table_read_u64(
                                   &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
 
+  tlib_pass_if_uint64_t_equal(__func__, 0,
+                              nr_flatbuffers_table_read_u64(
+                                  &app, APP_LOG_EVENTS_MAX_SAMPLES_STORED, 0));
+
   nr_flatbuffers_destroy(&query);
 }
 
@@ -98,6 +102,7 @@ static void test_create_query(void) {
   info.trace_observer_port = 443;
   info.span_queue_size = 10000;
   info.span_events_max_samples_stored = 1234;
+  info.log_events_max_samples_stored = 2345;
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
@@ -151,6 +156,9 @@ static void test_create_query(void) {
   tlib_pass_if_uint64_t_equal(__func__, info.span_events_max_samples_stored,
                               nr_flatbuffers_table_read_u16(
                                   &app, APP_SPAN_EVENTS_MAX_SAMPLES_STORED, 0));
+  tlib_pass_if_uint64_t_equal(__func__, info.log_events_max_samples_stored,
+                              nr_flatbuffers_table_read_u16(
+                                  &app, APP_LOG_EVENTS_MAX_SAMPLES_STORED, 0));
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 0);
@@ -618,7 +626,8 @@ static void test_process_connected_app(void) {
         "\"harvest_limits\":{"
         "\"analytic_event_data\":833,"
         "\"custom_event_data\":0,"
-        "\"error_event_data\":null"
+        "\"error_event_data\":null,"
+        "\"log_event_data\":0"
         "}"
         "}"
         "}";
@@ -648,12 +657,14 @@ static void test_process_connected_app(void) {
    * 4. span_events_limit is 10000 because the field is omitted, so the max
    *    value from the backend is assumed unless the value has been configured
    *    locally.
+   * 5. log_events_limit is 0 because the field is present and set to 0.
    */
   tlib_pass_if_int_equal(__func__, 833, app.limits.analytics_events);
   tlib_pass_if_int_equal(__func__, 0, app.limits.custom_events);
   tlib_pass_if_int_equal(__func__, NR_MAX_ERRORS, app.limits.error_events);
   tlib_pass_if_int_equal(__func__, NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED,
                          app.limits.span_events);
+  tlib_pass_if_int_equal(__func__, 0, app.limits.log_events);
 
   /*
    * Perform same test again to make sure that populated fields are freed
@@ -926,12 +937,14 @@ static void test_process_event_harvest_config(void) {
       .custom_events = 833,
       .error_events = 833,
       .span_events = 833,
+      .log_events = 833,
   };
   nr_app_limits_t app_limits_all_zero = {
       .analytics_events = 0,
       .custom_events = 0,
       .error_events = 0,
       .span_events = 0,
+      .log_events = 0,
   };
   nr_app_limits_t app_limits;
   nrobj_t* array = nro_new_array();
@@ -942,7 +955,8 @@ static void test_process_event_harvest_config(void) {
       "\"analytic_event_data\":0,"
       "\"custom_event_data\":0,"
       "\"error_event_data\":0,"
-      "\"span_event_data\":0"
+      "\"span_event_data\":0,"
+      "\"log_event_data\":0"
       "}"
       "}");
   nrobj_t* limits_enabled = nro_create_from_json(
@@ -951,14 +965,15 @@ static void test_process_event_harvest_config(void) {
       "\"analytic_event_data\":833,"
       "\"custom_event_data\":833,"
       "\"error_event_data\":833,"
-      "\"span_event_data\":833"
+      "\"span_event_data\":833,"
+      "\"log_event_data\":833"
       "}"
       "}");
 
   nr_app_info_t info;
   info.span_events_max_samples_stored
       = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
-
+  info.log_events_max_samples_stored = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
   app_limits = app_limits_all_zero;
   nr_cmd_appinfo_process_event_harvest_config(NULL, &app_limits, info);
   tlib_pass_if_bytes_equal("a NULL config should enable all event types",
@@ -1005,6 +1020,7 @@ static void test_process_get_harvest_limit(void) {
       "{"
       "\"analytic_event_data\":833,"
       "\"custom_event_data\":0,"
+      "\"log_event_data\":0,"
       "\"error_event_data\":null,"
       "\"negative_value\":-42,"
       "\"string_value\":\"foo\""
@@ -1049,6 +1065,9 @@ static void test_process_get_harvest_limit(void) {
                          nr_cmd_appinfo_process_get_harvest_limit(
                              limits, "custom_event_data", 100));
 
+  tlib_pass_if_int_equal(
+      "zero integers for log_event_data should return zero", 0,
+      nr_cmd_appinfo_process_get_harvest_limit(limits, "log_event_data", 100));
   nro_delete(array);
   nro_delete(limits);
 }

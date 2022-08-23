@@ -18,6 +18,7 @@ static inline nr_app_limits_t default_app_limits(void) {
       .custom_events = NR_MAX_CUSTOM_EVENTS,
       .error_events = NR_MAX_ERRORS,
       .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      .log_events = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED,
   };
 }
 

@@ -151,6 +151,7 @@ type ConnectArgs struct {
 	AppKey                       AppKey
 	AgentLanguage                string
 	AgentVersion                 string
+	AgentEventLimits             collector.EventConfigs
 	PayloadPreconnect            []byte
 	AppSupportedSecurityPolicies AgentPolicies
 }
@@ -315,6 +316,7 @@ func (p *Processor) considerConnect(app *App) {
 		AppKey:                       app.Key(),
 		AgentLanguage:                app.info.AgentLanguage,
 		AgentVersion:                 app.info.AgentVersion,
+		AgentEventLimits:             app.info.AgentEventLimits,
 		AppSupportedSecurityPolicies: app.info.SupportedSecurityPolicies,
 	}
 
@@ -440,6 +442,10 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 	app.harvestFrequency = time.Duration(app.connectReply.SamplingFrequency) * time.Second
 	app.samplingTarget = uint16(app.connectReply.SamplingTarget)
 
+	// using information from agent limits and collector response harvest limits choose the
+	// final (lowest) value for the log event limit used by the daemon
+	processLogEventLimits(app)
+
 	if 0 == app.samplingTarget {
 		app.samplingTarget = 10
 	}
@@ -454,6 +460,50 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 
 	p.harvests[*app.connectReply.ID] = NewAppHarvest(*app.connectReply.ID, app,
 		NewHarvest(time.Now(), app.connectReply.EventHarvestConfig.EventConfigs), p.processorHarvestChan)
+}
+
+func processLogEventLimits(app *App) {
+
+	if nil == app {
+		log.Warnf("processLogEventLimits() called with *App == nil")
+		return
+	}
+
+	if nil == app.info {
+		log.Warnf("processLogEventLimits() called with app.info == nil")
+		return
+	}
+
+	if nil == app.connectReply {
+		log.Warnf("processLogEventLimits() called with  app.connectReply == nil")
+		return
+	}
+
+	// need to compare agent limits to limits returned from the collector
+	// and choose the smallest value
+	agentLogLimit := app.info.AgentEventLimits.LogEventConfig.Limit
+	agentReportPeriod := float64(limits.DefaultReportPeriod)
+
+	collectorLogLimit := app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	collectorReportPeriod := float64(app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.ReportPeriod)
+
+	// convert agent log limit to sampling period used for log events
+	agentLogLimit = int((float64(agentLogLimit) * collectorReportPeriod) / agentReportPeriod)
+
+	log.Debugf("handling log limits: agent_report_period = %f collector_report_period = %f", agentReportPeriod, collectorReportPeriod)
+	log.Debugf("handling log limits: agent_log_limit = %d collectorLogLimit = %d", agentLogLimit, collectorLogLimit)
+
+	finalLogLimit := collectorLogLimit
+	if agentLogLimit < collectorLogLimit {
+		finalLogLimit = agentLogLimit
+		log.Debugf("handling log limits: agent_log_limit = %d selected over collectorLogLimit = %d", agentLogLimit, collectorLogLimit)
+	}
+
+	// store final log limit in reply object which is used by rest of code to
+	// establish harvest limits
+	app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit = finalLogLimit
+
+	log.Debugf("handling log limits: finalLogLimit = %d", app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit)
 }
 
 type harvestArgs struct {

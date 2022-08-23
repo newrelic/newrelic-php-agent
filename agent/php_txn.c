@@ -750,6 +750,11 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
+
+  /* Need to initialize log max samples to value negotiated between that
+   * requested in the INI file and the value returned from the daaemon (based in
+   * part on the collector connect response harvest limits) */
+  info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*

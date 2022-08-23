@@ -34,7 +34,7 @@ type Harvest struct {
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
-	return &Harvest{
+	nh := &Harvest{
 		Metrics:           NewMetricTable(limits.MaxMetrics, now),
 		Errors:            NewErrorHeap(limits.MaxErrors),
 		SlowSQLs:          NewSlowSQLs(limits.MaxSlowSQLs),
@@ -48,6 +48,8 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		pidSet:            make(map[int]struct{}),
 		httpErrorSet:      make(map[int]float64),
 	}
+
+	return nh
 }
 
 func (h *Harvest) empty() bool {
