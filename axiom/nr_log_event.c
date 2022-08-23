@@ -46,13 +46,20 @@ nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
   if (NULL == clone)
     return NULL;
 
-  clone->trace_id = nr_strdup(src->trace_id);
-  clone->log_level = nr_strdup(src->log_level);
-  clone->message = nr_strdup(src->message);
-  clone->span_id = nr_strdup(src->span_id);
-  clone->entity_guid = nr_strdup(src->entity_guid);
-  clone->entity_name = nr_strdup(src->entity_name);
-  clone->hostname = nr_strdup(src->hostname);
+  if (NULL != src->trace_id)
+    clone->trace_id = nr_strdup(src->trace_id);
+  if (NULL != src->log_level)
+    clone->log_level = nr_strdup(src->log_level);
+  if (NULL != src->message)  
+    clone->message = nr_strdup(src->message);
+  if (NULL != src->span_id)
+    clone->span_id = nr_strdup(src->span_id);
+  if (NULL != src->entity_guid)
+    clone->entity_guid = nr_strdup(src->entity_guid);
+  if (NULL != src->entity_name)
+    clone->entity_name = nr_strdup(src->entity_name);
+  if (NULL != src->hostname)
+    clone->hostname = nr_strdup(src->hostname);
   clone->priority = src->priority;
   clone->timestamp = src->timestamp;
 
