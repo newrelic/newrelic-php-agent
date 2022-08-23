@@ -1105,19 +1105,10 @@ extern void nr_php_txn_add_code_level_metrics(nr_attributes_t* attributes,
   namespace = nr_php_zend_execute_data_scope_name(execute_data);
   function = nr_php_zend_execute_data_function_name(execute_data);
 
-  nrobj_t* agent_attributes;
-  agent_attributes
-      = nr_attributes_agent_to_obj(attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
-  nro_delete(agent_attributes);
-
   /*
    * Check if we are getting CLM for a file.
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    agent_attributes
-        = nr_attributes_agent_to_obj(attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
-    nro_delete(agent_attributes);
-
     if (NULL == filepath || '\0' == filepath[0]) {
       return;
     }
@@ -1134,9 +1125,6 @@ extern void nr_php_txn_add_code_level_metrics(nr_attributes_t* attributes,
           attributes, nr_txn_clm_code_namespace, namespace);
     }
     nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno, 1);
-    agent_attributes
-        = nr_attributes_agent_to_obj(attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
-    nro_delete(agent_attributes);
 
     return;
   }
@@ -1169,10 +1157,6 @@ extern void nr_php_txn_add_code_level_metrics(nr_attributes_t* attributes,
   nr_txn_attributes_set_long_attribute(
       attributes, nr_txn_clm_code_lineno,
       nr_php_zend_execute_data_lineno(execute_data));
-
-  agent_attributes
-      = nr_attributes_agent_to_obj(attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
-  nro_delete(agent_attributes);
 }
 
 #endif /* PHP 7+ */
