@@ -165,11 +165,16 @@ bool nr_log_events_add_event(nr_log_events_t* events,
     return false;
   }
 
-  events->events_seen++;
+  // need to increment this if a valid event was sent 
+  // so take care if it here then sanity check other args
+  if (NULL != events) 
+    events->events_seen++;
 
   // if no event queue exists or size is 0 then event will be dropped
-  if (NULL == events || NULL == events->events || 0 == events->events_allocated) {
-      return true;
+  if (NULL == events || NULL == events->events
+      || 0 == events->events_allocated) {
+
+    return true;
   }
 
   events_sampled = nr_log_events_is_sampling(events);
