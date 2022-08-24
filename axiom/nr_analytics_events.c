@@ -134,6 +134,10 @@ nr_analytics_events_t* nr_analytics_events_create(int max_events) {
 nr_analytics_events_t* nr_analytics_events_create_ex(int max_events) {
   nr_analytics_events_t* events;
 
+  if (max_events < 0) {
+    return 0;
+  }
+
   if (max_events > NR_ANALYTICS_EVENTS_MAX_EVENTS_SANITY_CHECK) {
     return 0;
   }

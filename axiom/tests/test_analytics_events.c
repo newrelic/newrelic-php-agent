@@ -274,6 +274,9 @@ static void test_events_create_bad_param(void) {
 static void test_events_create_ex(void) {
   nr_analytics_events_t* events;
 
+  events = nr_analytics_events_create_ex(-1);
+  tlib_pass_if_null("max_events < 0", events);
+
   events = nr_analytics_events_create_ex(0);
   tlib_fail_if_null("zero max_events", events);
   tlib_pass_if_int_equal("zero max_events", 0,
