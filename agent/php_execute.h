@@ -75,8 +75,8 @@ extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
  * by the zend engine every time a function begins.  The zend engine directly
  * provides the zend_execute_data which has all details we need to know about
  * the function. This and nr_php_execute_observer_fcall_end sum to provide all
-the functionality of nr_php_execute and nr_php _execute_enabled and as such will
-use all the helper functions they also used.
+ * the functionality of nr_php_execute and nr_php _execute_enabled and as such will
+ * use all the helper functions they also used.
  *
  *
  * Params  : 1. zend_execute_data: everything we need to know about the
