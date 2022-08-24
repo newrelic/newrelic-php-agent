@@ -1078,6 +1078,8 @@ extern void nr_php_txn_add_code_level_metrics(
     nr_attributes_t* attributes,
     const nr_php_execute_metadata_t* metadata) {
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)attributes;
+  (void)metadata;
   return;
 }
 #endif
