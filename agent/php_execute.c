@@ -934,7 +934,11 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 static void nr_php_execute_metadata_add_code_level_metrics(
     nr_php_execute_metadata_t* metadata,
     NR_EXECUTE_PROTO) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  void(metadata);
+  NR_UNUSED_SPECIALFN;
+  return;
+#else
   const char* filepath = NULL;
   const char* namespace = NULL;
   const char* function = NULL;
