@@ -50,9 +50,7 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found traci
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/library/Guzzle 7/detected"},           [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
