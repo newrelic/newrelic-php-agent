@@ -13,10 +13,10 @@
 #include "util_minmax_heap.h"
 
 struct _nr_log_events_t {
-  int events_allocated;     /* Maximum number of events to store in this data
-                               structure. */
-  int events_used;          /* Number of events within this data structure */
-  int events_seen;          /* Number of times "add event" was called */
+  size_t events_allocated;  /* Maximum number of events to store in this data
+                            structure. */
+  size_t events_used;       /* Number of events within this data structure */
+  size_t events_seen;       /* Number of times "add event" was called */
   nr_minmax_heap_t* events; /* heap for log event storeg */
 };
 

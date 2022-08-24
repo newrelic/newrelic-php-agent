@@ -39,7 +39,7 @@ extern bool nr_log_events_add_event(nr_log_events_t* events,
  *
  * Notes   : A pool of size 0 is valid.
  */
-extern nr_log_events_t* nr_log_events_create(int max_events);
+extern nr_log_events_t* nr_log_events_create(size_t max_events);
 
 /*
  * Purpose : Destrory a log event pool.
@@ -57,7 +57,7 @@ extern void nr_log_events_destroy(nr_log_events_t** events);
  * Returns : Maximum number of events held by a event pool.
  *
  */
-extern int nr_log_events_max_events(const nr_log_events_t* events);
+extern size_t nr_log_events_max_events(const nr_log_events_t* events);
 
 /*
  * Purpose : Get the number of log events seen by a event pool.
@@ -67,7 +67,7 @@ extern int nr_log_events_max_events(const nr_log_events_t* events);
  * Returns : Number of log events seen by a event pool.
  *
  */
-extern int nr_log_events_number_seen(const nr_log_events_t* events);
+extern size_t nr_log_events_number_seen(const nr_log_events_t* events);
 
 /*
  * Purpose : Get the number of log events saved by a event pool.
@@ -77,7 +77,7 @@ extern int nr_log_events_number_seen(const nr_log_events_t* events);
  * Returns : Number of log events saved by a event pool.
  *
  */
-extern int nr_log_events_number_saved(const nr_log_events_t* events);
+extern size_t nr_log_events_number_saved(const nr_log_events_t* events);
 
 /*
  * Purpose : See if log events are being sampled by log event pool.

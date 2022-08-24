@@ -90,7 +90,7 @@ static void nr_log_event_discard_wrapper(nr_log_event_t* event,
   nr_log_event_destroy(&event);
 }
 
-nr_log_events_t* nr_log_events_create(int max_events) {
+nr_log_events_t* nr_log_events_create(size_t max_events) {
   nr_log_events_t* events;
 
   if (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < max_events) {
@@ -131,21 +131,21 @@ void nr_log_events_destroy(nr_log_events_t** events_ptr) {
   nr_realfree((void**)events_ptr);
 }
 
-int nr_log_events_max_events(const nr_log_events_t* events) {
+size_t nr_log_events_max_events(const nr_log_events_t* events) {
   if (NULL == events)
     return 0;
 
   return events->events_allocated;
 }
 
-int nr_log_events_number_seen(const nr_log_events_t* events) {
+size_t nr_log_events_number_seen(const nr_log_events_t* events) {
   if (NULL == events)
     return 0;
 
   return events->events_seen;
 }
 
-int nr_log_events_number_saved(const nr_log_events_t* events) {
+size_t nr_log_events_number_saved(const nr_log_events_t* events) {
   if (NULL == events)
     return 0;
 
