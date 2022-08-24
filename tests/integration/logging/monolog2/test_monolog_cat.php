@@ -69,18 +69,8 @@ monolog2.EMERGENCY: emergency []
       },
       "logs": [
         {
-          "message": "emergency",
-          "level": "EMERGENCY",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog2__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "alert",
-          "level": "ALERT",
+          "message": "error",
+          "level": "ERROR",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -99,8 +89,8 @@ monolog2.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "error",
-          "level": "ERROR",
+          "message": "notice",
+          "level": "NOTICE",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -119,16 +109,6 @@ monolog2.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "notice",
-          "level": "NOTICE",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog2__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
           "message": "info",
           "level": "INFO",
           "timestamp": "??",
@@ -138,6 +118,26 @@ monolog2.EMERGENCY: emergency []
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
+        {
+          "message": "alert",
+          "level": "ALERT",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
+          "hostname": "__HOST__"
+        },  
+        {
+          "message": "emergency",
+          "level": "EMERGENCY",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
+          "hostname": "__HOST__"
+        },        
         {
           "message": "debug",
           "level": "DEBUG",
@@ -173,13 +173,25 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
     
+    // insert delays between log messages to allow priority sampling
+    // to resolve that later messages have higher precedence
+    // since timestamps are only millisecond resolution
+    // without delays sometimes order in output will reflect
+    // all having the same timestamp.
     $logger->debug("debug");
+    usleep(10000);
     $logger->info("info");
+    usleep(10000);
     $logger->notice("notice");
+    usleep(10000);
     $logger->warning("warning");
+    usleep(10000);
     $logger->error("error");
+    usleep(10000);
     $logger->critical("critical");
+    usleep(10000);
     $logger->alert("alert");
+    usleep(10000);
     $logger->emergency("emergency");
 }
 

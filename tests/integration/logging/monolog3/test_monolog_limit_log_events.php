@@ -70,8 +70,8 @@ monolog3.EMERGENCY: emergency []
       },
       "logs": [
         {
-          "message": "??",
-          "level": "??",
+          "message": "alert",
+          "level": "ALERT",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -80,8 +80,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "??",
-          "level": "??",
+          "message": "critical",
+          "level": "CRITICAL",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -90,8 +90,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "??",
-          "level": "??",
+          "message": "emergency",
+          "level": "EMERGENCY",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -100,8 +100,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },
         {
-          "message": "??",
-          "level": "??",
+          "message": "error",
+          "level": "ERROR",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
@@ -134,13 +134,25 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
     
+    // insert delays between log messages to allow priority sampling
+    // to resolve that later messages have higher precedence
+    // since timestamps are only millisecond resolution
+    // without delays sometimes order in output will reflect
+    // all having the same timestamp.
     $logger->debug("debug");
+    usleep(10000);
     $logger->info("info");
+    usleep(10000);
     $logger->notice("notice");
+    usleep(10000);
     $logger->warning("warning");
+    usleep(10000);
     $logger->error("error");
+    usleep(10000);
     $logger->critical("critical");
+    usleep(10000);
     $logger->alert("alert");
+    usleep(10000);
     $logger->emergency("emergency");
 }
 
