@@ -516,8 +516,8 @@ void nr_php_error_cb(int type,
   if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
     (type, error_filename, error_lineno, format, args);
-#endif /* PHP < 8.0 */
   }
+#endif /* PHP < 8.0 */
 }
 
 nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
