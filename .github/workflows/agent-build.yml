@@ -18,13 +18,15 @@ on:
   push:
     branches: 
       - main
-      - 'php8'
       - 'dev'
+      - 'dev2'
+      - 'oapi'
   pull_request:
     branches: 
       - main
-      - 'php8'
       - 'dev'
+      - 'dev2'
+      - 'oapi'      
 
 jobs:
   agent_pr:
