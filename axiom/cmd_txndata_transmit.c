@@ -107,13 +107,15 @@ static uint32_t nr_txndata_prepend_custom_events(nr_flatbuffer_t* fb,
 }
 
 static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
-                                              const nrtxn_t* txn) {
+                                              const nrtxn_t* txn,
+                                              size_t log_event_limit) {
   uint32_t* offsets;
   uint32_t* offset;
   uint32_t events;
-  int i;
-  int event_count;
+  size_t i;
+  size_t event_count;
   nr_vector_t* events_vec;
+  nrbuf_t* buf;
 
   const size_t event_size = sizeof(uint32_t);
   const size_t event_align = sizeof(uint32_t);
@@ -121,45 +123,60 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   event_count = nr_log_events_number_saved(txn->log_events);
   if (0 == event_count) {
     return 0;
+  } else if (event_count > log_event_limit) {
+    event_count = log_event_limit;
   }
 
   offsets = (uint32_t*)nr_calloc(event_count, sizeof(uint32_t));
   offset = &offsets[0];
 
+  /* convert log events from heap into a vector */
   events_vec = nr_vector_create(event_count, NULL, NULL);
   nr_log_events_to_vector(txn->log_events, events_vec);
 
+  /* Using a buffer here means we can write the encoded span events into it,
+   * saving a couple of allocations (including at least one full string
+   * duplication) per span event. */
+  buf = nr_buffer_create(0, 0);
+
   for (i = 0; i < event_count; i++, offset++) {
     void* event;
-    char* json;
     uint32_t data;
     bool pass;
 
+    nr_buffer_reset(buf);
     pass = nr_vector_get_element(events_vec, i, &event);
     if (!pass) {
-      // this should not happen - probably best to just cut bait and run
-      nrl_verbosedebug(NRL_TXN, "failed to retrieve log event from vector!");
-      nr_vector_destroy(&events_vec);
-      return 0;
-    }
-    json = nr_log_event_to_json((nr_log_event_t*)event);
-    if (NULL == json) {
-      // this should not happen - probably best to just cut bait and run
-      nrl_verbosedebug(NRL_TXN, "failed to convert log event to json!");
-      nr_vector_destroy(&events_vec);
-      return 0;
+      /* There's really no scenario this should happen, so we won't try to do
+       * anything clever in terms of skipping the event and patching up the
+       * offsets. Let's just assume it's going to be bad and move on. */
+      nrl_error(NRL_TXN,
+                "unable to retrieve log event at index %zu; buffer will be "
+                "malformed",
+                i);
+      continue;
     }
 
-    data = nr_flatbuffers_prepend_string(fb, json);
+    if (!nr_log_event_to_json_buffer(event, buf)) {
+      /* There's really no scenario this should happen, so we won't try to do
+       * anything clever in terms of skipping the event and patching up the
+       * offsets. Let's just assume it's going to be bad and move on. */
+      nrl_error(NRL_TXN,
+                "unable to encode log event at index %zu; buffer will be "
+                "malformed",
+                i);
+      continue;
+    }
 
-    nrl_verbosedebug(NRL_TXN, "added log event json = %s", json);
-
-    nr_free(json);
+    data = nr_flatbuffers_prepend_bytes(fb, nr_buffer_cptr(buf),
+                                        nr_buffer_len(buf));
 
     nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
     nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
     *offset = nr_flatbuffers_object_end(fb);
   }
+
+  nr_buffer_destroy(&buf);
 
   nr_flatbuffers_vector_begin(fb, event_size, event_count, event_align);
   for (i = 0; i < event_count; i++) {
@@ -167,7 +184,7 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   }
   events = nr_flatbuffers_vector_end(fb, event_count);
 
-  nr_free(events_vec);
+  nr_vector_destroy(&events_vec);
   nr_free(offsets);
   return events;
 }
@@ -558,7 +575,8 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   txn_trace = nr_txndata_prepend_trace_to_flatbuffer(fb, txn);
   span_events = nr_txndata_prepend_span_events(fb, txn->final_data.span_events,
                                                txn->app_limits.span_events);
-  log_events = nr_txndata_prepend_log_events(fb, txn);
+  log_events
+      = nr_txndata_prepend_log_events(fb, txn, txn->app_limits.log_events);
   error_events = nr_txndata_prepend_error_events(fb, txn);
   custom_events = nr_txndata_prepend_custom_events(fb, txn);
   slowsqls = nr_txndata_prepend_slowsqls(fb, txn);
