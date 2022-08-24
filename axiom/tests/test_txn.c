@@ -8094,6 +8094,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
   app.entity_name = entity_name;
+  app.limits.log_events = 10;
 
   /* Setup log feature options */
   nr_memset(&opts, 0, sizeof(opts));
