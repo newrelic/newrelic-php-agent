@@ -27,9 +27,6 @@ nr_segment_t* nr_php_stacked_segment_init(nr_segment_t* stacked TSRMLS_DC) {
   }
 
   stacked->txn = NRPRG(txn);
-  if (NULL == stacked->attributes) {
-    stacked->attributes = nr_attributes_create(stacked->txn->attribute_config);
-  }
   NR_PHP_CURRENT_STACKED_PUSH(stacked);
   stacked->start_time = nr_txn_now_rel(stacked->txn);
 

@@ -1074,89 +1074,48 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-extern void nr_php_txn_add_code_level_metrics(nr_attributes_t* attributes,
-                                              NR_EXECUTE_PROTO TSRMLS_DC) {
-  const char* filepath = NULL;
-  const char* namespace = NULL;
-  const char* function = NULL;
+extern void nr_php_txn_add_code_level_metrics(
+    nr_attributes_t* attributes,
+    const nr_php_execute_metadata_t* metadata) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  return;
+}
+#endif
 
-  if (NULL == execute_data) {
-    return;
-  }
+/* Current CLM functionality only works with PHP 7+ */
 
+if (NULL == metadata) {
+  return;
+}
+
+/*
+ * Check if code level metrics are enabled in the ini.
+ * If they aren't, exit and don't add any attributes.
+ */
+if (!NRINI(code_level_metrics_enabled)) {
+  return;
+}
+if (nr_strempty(metadata->function_name)) {
   /*
-   * Check if code level metrics are enabled in the ini.
-   * If they aren't, exit and don't add any attributes.
+   * CLM aren't set so don't do anything
    */
-  if (!NRINI(code_level_metrics_enabled)) {
-    return;
-  }
-  /*
-   * At a minimum, at least one of the following attribute combinations MUST be
-   * implemented in order for customers to be able to accurately identify their
-   * instrumented functions: code.filepath AND code.function code.namespace AND
-   * code.function
-   *
-   * If we don't have the minimum requirements, exit and don't add any
-   * attributes.
-   */
+  return;
+}
 
-  filepath = nr_php_zend_execute_data_filename(execute_data);
-  namespace = nr_php_zend_execute_data_scope_name(execute_data);
-  function = nr_php_zend_execute_data_function_name(execute_data);
-
-  /*
-   * Check if we are getting CLM for a file.
-   */
-  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    if (NULL == filepath || '\0' == filepath[0]) {
-      return;
-    }
-    /*
-     * If instrumenting a file, the filename is the "function" and the
-     * lineno is 1 (i.e., start of the file).
-     */
-    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
-                                           filepath);
-    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
-                                           filepath);
-    if (NULL != namespace && '\0' != namespace[0]) {
-      nr_txn_attributes_set_string_attribute(
-          attributes, nr_txn_clm_code_namespace, namespace);
-    }
-    nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno, 1);
-
-    return;
-  }
-
-  /*
-   * We are getting CLM for a function.
-   */
-  if (NULL == function || '\0' == function[0]) {
-    return;
-  } else if ((NULL == namespace || '\0' == namespace[0])
-             && (NULL == filepath || '\0' == filepath[0])) {
-    /*
-     * CLM MUST have either function+namespace or function+filepath.
-     */
-    return;
-  }
-  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
-                                         function);
-
-  if (NULL != filepath && '\0' != filepath[0]) {
-    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
-                                           filepath);
-  }
-
-  if (NULL != namespace && '\0' != namespace[0]) {
-    nr_txn_attributes_set_string_attribute(
-        attributes, nr_txn_clm_code_namespace, namespace);
-  }
-
-  nr_txn_attributes_set_long_attribute(
-      attributes, nr_txn_clm_code_lineno,
-      nr_php_zend_execute_data_lineno(execute_data));
+nr_txn_attributes_set_string_attribute(attributes,
+                                       nr_txn_clm_code_function,
+                                       metadata->function_name);
+if (!nr_strempty(metadata->function_filepath)) {
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
+                                         metadata->function_filepath);
+}
+if (!nr_strempty(metadata->function_namespace)) {
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_namespace,
+                                         metadata->function_namespace);
+}
+nr_txn_attributes_set_long_attribute(attributes,
+                                     nr_txn_clm_code_lineno,
+                                     metadata->function_lineno);
 }
 
 #endif /* PHP 7+ */

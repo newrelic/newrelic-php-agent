@@ -41,21 +41,15 @@ static void test_add_segment_metric(TSRMLS_D) {
 
   segment_count = NRPRG(txn)->segment_count;
 
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
   /*
    * Call a short function with no segment metrics added. This should not
    * increase the segment count.
-   *
-   * With the addition of CLM, we now automatically initialize an empty agent
-   * on segment even if it is eventually ends up being empty (i.e., CLM is
-   * toggled off).  Therefore there won't be a short segment that doesn't get
-   * counted.
    */
   expr = nr_php_call(NULL, "f1");
   tlib_pass_if_size_t_equal("no segment created", segment_count,
                             NRPRG(txn)->segment_count);
   nr_php_zval_free(&expr);
-#endif
+
   /*
    * Call a short function with segment metrics added. This should increase the
    * segment count.
