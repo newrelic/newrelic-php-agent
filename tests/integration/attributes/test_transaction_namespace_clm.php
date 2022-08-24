@@ -61,7 +61,7 @@ newrelic.code_level_metrics.enabled=true
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 3
+    "events_seen": 2
   },
   [
     [
@@ -93,28 +93,6 @@ newrelic.code_level_metrics.enabled=true
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/Vegetable::__construct",
-        "timestamp": "??",
-        "duration": "??",
-        "priority": "??",
-        "sampled": true,
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 144,
-        "code.namespace": "Vegetable",
-        "code.filepath": "__FILE__",
-        "code.function": "__construct"
-      }
-    ],
-    [
-      {
-        "category": "generic",
-        "type": "Span",
-        "guid": "??",
-        "traceId": "??",
-        "transactionId": "??",
         "name": "Custom\/Vegetable::getColor",
         "timestamp": "??",
         "duration": "??",
@@ -124,7 +102,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 155,
+        "code.lineno": 134,
         "code.namespace": "Vegetable",
         "code.filepath": "__FILE__",
         "code.function": "getColor"
@@ -147,6 +125,7 @@ class Vegetable {
 
     public function isEdible()
     {
+	sleep(10);
         return $this->edible;
     }
 
@@ -156,6 +135,7 @@ class Vegetable {
     }
 }
 
+newrelic_add_custom_tracer("Vegetable::getColor");
 
 $veggie = new Vegetable(true, "blue");
 $veggie->getColor();

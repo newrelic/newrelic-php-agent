@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /*DESCRIPTION
-Test that newrelic_end_transaction() ends all unended segments in the stack.
+Code level metrics should be added to nested functions; however,
+CLM should NOT be added to functions that are so short they will
+normally be ignored.
 */
 
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.code_level_metrics.enabled = 1
 newrelic.appname="clm_test_v1"
-newrelic.loglevel="verbosedebug"
-newrelic.daemon.loglevel="debug"
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -20,7 +20,7 @@ newrelic.daemon.loglevel="debug"
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 4
+    "events_seen": 3
   },
   [
     [
@@ -61,7 +61,7 @@ newrelic.daemon.loglevel="debug"
       },
       {},
       {
-        "code.lineno": "??",
+        "code.lineno": 221,
         "code.filepath": "__FILE__",
         "code.function": "level_2"
       }
@@ -82,35 +82,13 @@ newrelic.daemon.loglevel="debug"
       },
       {},
       {
-        "code.lineno": "??",
+        "code.lineno": 217,
         "code.filepath": "__FILE__",
         "code.function": "level_1"
-      }
-    ],
-    [
-      {
-        "category": "generic",
-        "type": "Span",
-        "guid": "??",
-        "traceId": "??",
-        "transactionId": "??",
-        "name": "Custom\/level_0",
-        "timestamp": "??",
-        "duration": "??",
-        "priority": "??",
-        "sampled": true,
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "level_0"
       }
     ]
   ]
 ]
-
 */
 
 /*EXPECT_ANALYTICS_EVENTS
@@ -169,7 +147,7 @@ newrelic.daemon.loglevel="debug"
                   [
                     "?? start time", "?? end time", "`1",
                             {
-                              "code.lineno": "??",
+                              "code.lineno": 221,
                               "code.filepath": "__FILE__",
                               "code.function": "level_2"
                             },
@@ -177,21 +155,11 @@ newrelic.daemon.loglevel="debug"
                       [
                         "?? start time", "?? end time", "`2",
                             {
-                              "code.lineno": "??",
+                              "code.lineno": 217,
                               "code.filepath": "__FILE__",
                               "code.function": "level_1"
-                            },
-                        [
-                          [
-                            "?? start time", "?? end time", "`3",
-                            {
-                              "code.lineno": "??",
-                              "code.filepath": "__FILE__",
-                              "code.function": "level_0"
-                            },
-                            []
-                          ]
-                        ]
+                        },
+                        []
                       ]
                     ]
                   ]
@@ -220,8 +188,7 @@ newrelic.daemon.loglevel="debug"
         [
           "OtherTransaction\/php__FILE__",
           "Custom\/level_2",
-          "Custom\/level_1",
-          "Custom\/level_0"
+          "Custom\/level_1"
         ]
       ],
       "?? txn guid",
@@ -233,6 +200,14 @@ newrelic.daemon.loglevel="debug"
   ]
 ]
 */
+
+/*
+ * Normally super short duration functions are ignored.
+ * We'll force some to be noticed, while others should
+ * contrinue to be ignored.
+ */
+newrelic_add_custom_tracer("level_1");
+newrelic_add_custom_tracer("level_2");
 
 function level_0() {
     echo "level_0\n";
