@@ -942,15 +942,17 @@ static void nr_php_execute_metadata_add_code_level_metrics(
   const char* function = NULL;
   uint32_t lineno = 1;
 
-  metadata->scope = NULL;
-  metadata->function = NULL;
-  metadata->function_name = NULL;
-  metadata->function_filepath = NULL;
-  metadata->function_namespace = NULL;
+  if (NULL == metadata) {
+    return;
+  }
 
   if (NULL == execute_data) {
     return;
   }
+
+  metadata->function_name = NULL;
+  metadata->function_filepath = NULL;
+  metadata->function_namespace = NULL;
 
   /*
    * Check if code level metrics are enabled in the ini.
@@ -1157,10 +1159,10 @@ static inline void nr_php_execute_segment_end(
 static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   int zcaught = 0;
   nrtime_t txn_start_time;
-  nr_php_execute_metadata_t metadata;
+  nr_php_execute_metadata_t metadata = {0};
   nr_segment_t stacked = {0};
-  nr_segment_t* segment;
-  nruserfn_t* wraprec;
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
 
   NRTXNGLOBAL(execute_count) += 1;
 
@@ -1503,7 +1505,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   nr_segment_set_timing(segment, segment->start_time, duration);
 
   if (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min)) {
-    nr_php_execute_metadata_t metadata;
+    nr_php_execute_metadata_t metadata = {0};
 
     nr_php_execute_metadata_init(&metadata, (zend_op_array*)func);
 
