@@ -424,7 +424,8 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
   app_limits->analytics_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "analytic_event_data", NR_MAX_ANALYTIC_EVENTS);
   app_limits->custom_events = nr_cmd_appinfo_process_get_harvest_limit(
-      harvest_limits, "custom_event_data", NR_MAX_CUSTOM_EVENTS);
+      harvest_limits, "custom_event_data", 
+      NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED);
   app_limits->error_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "error_event_data", NR_MAX_ERRORS);
   app_limits->span_events = nr_cmd_appinfo_process_get_harvest_limit(
