@@ -130,6 +130,22 @@ nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
   return p->txns_app;
 }
 
+const char* nr_app_get_host_name(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->host_name;
+}
+
+const char* nr_app_get_entity_guid(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->entity_guid;
+}
+
 #define test_freeze_name(...) \
   test_freeze_name_fn(__VA_ARGS__, __FILE__, __LINE__)
 
@@ -8068,17 +8084,192 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
+static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
+  nrapp_t app;
+  nrtxnopt_t opts;
+  nrtxn_t* txn;
+  nr_segment_t* segment;
+
+  /* Setup app state */
+  nr_memset(&app, 0, sizeof(app));
+  app.state = NR_APP_OK;
+  app.entity_name = entity_name;
+  app.limits.log_events = 10;
+
+  /* Setup log feature options */
+  nr_memset(&opts, 0, sizeof(opts));
+  opts.logging_enabled = true;
+  opts.log_forwarding_enabled = true;
+  opts.log_events_max_samples_stored = 10;
+  opts.log_metrics_enabled = true;
+
+  opts.distributed_tracing_enabled = 1; /* for linking meta data */
+
+  /* Start txn and segment */
+  txn = nr_txn_begin(&app, &opts, NULL);
+  segment = nr_segment_start(txn, txn->segment_root, NULL);
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+  nr_txn_set_current_segment(txn, segment);
+
+  txn->options.span_events_enabled = 1; /* for linking meta data */
+
+  return txn;
+}
+
 static void test_record_log_event(void) {
-  /* This is the plan for this test:
-      1. Setup state (create transaction with logging options)
-      2. Call nr_txn_record_log_event();
-      3. Check for state:
-        - log_event is added to transaction log events
-        - check if metrics are created
-  */
+#define LOG_LEVEL "INFO"
+#define LOG_MESSAGE "Sample log message"
+#define LOG_TIMESTAMP 1234
+#define LOG_EVENT_PARAMS \
+  LOG_LEVEL, LOG_MESSAGE, LOG_TIMESTAMP* NR_TIME_DIVISOR_MS
+#define APP_HOST_NAME "localhost"
+#define APP_ENTITY_NAME "test_record_log_event"
+#define APP_ENTITY_GUID "guid"
+
+  nrapp_t appv = {.host_name = APP_HOST_NAME, .entity_guid = APP_ENTITY_GUID};
+  nrtxn_t* txn = NULL;
+  const char* expected = NULL;
+  const char* log_event_json = NULL;
+
+  /*
+   * NULL parameters: don't record, don't create metrics, don't blow up!
+   */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(NULL, LOG_EVENT_PARAMS, NULL);
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  /*
+   * Mixed conditions (some NULL parameters): maybe record, create metrics,
+   * don't blow up!
+   */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("null log params, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log params, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  test_txn_metric_is("null log level, event not recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
+                     1, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, NULL, LOG_MESSAGE, 0, NULL);
+  tlib_pass_if_int_equal("null log level, event seen", 1,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log level, event saved", 1,
+                         nr_log_events_number_saved(txn->log_events));
+  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+  tlib_pass_if_not_null("null log level, event recorded", log_event_json);
+  expected
+      = "[{"
+        "\"message\":\"" LOG_MESSAGE
+        "\","
+        "\"log.level\":\"UNKNOWN\","
+        "\"timestamp\":0,"
+        "\"trace.id\":\"0000000000000000\","
+        "\"span.id\":\"0000000000000000\","
+        "\"entity.guid\":\"null\","
+        "\"entity.name\":\"" APP_ENTITY_NAME
+        "\","
+        "\"hostname\":\"null\""
+        "}]";
+  tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
+                         log_event_json);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
+                     1, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  /* Happy path - everything initialized: record! */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  tlib_pass_if_int_equal("happy path, event seen", 1,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, event saved", 1,
+                         nr_log_events_number_saved(txn->log_events));
+  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+  tlib_pass_if_not_null("happy path, event recorded", log_event_json);
+  expected = "[{"
+              "\"message\":\"" LOG_MESSAGE "\","
+              "\"log.level\":\"" LOG_LEVEL "\","
+              "\"timestamp\":" NR_STR2(LOG_TIMESTAMP)","
+              "\"trace.id\":\"0000000000000000\","
+              "\"span.id\":\"0000000000000000\","
+              "\"entity.guid\":\"" APP_ENTITY_GUID "\","
+              "\"entity.name\":\"" APP_ENTITY_NAME "\","
+              "\"hostname\":\"" APP_HOST_NAME "\""
+          "}]";
+  tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
+                         log_event_json);
+  test_txn_metric_is("happy path, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("happy path, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/lines/" LOG_LEVEL, 1, 0, 0, 0, 0, 0);
+  tlib_pass_if_null(
+      "Logging/Forwarding/Dropped not created",
+      nrm_find(txn->unscoped_metrics, "Logging/Forwarding/Dropped"));
+  nr_txn_destroy(&txn);
+
+  /* Happy path with sampling */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  /* fill up events pool to force sampling */
+  for (int i = 0, max_events = nr_log_events_max_events(txn->log_events);
+       i < max_events; i++) {
+    nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  }
+  /* force sampling */
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  test_txn_metric_is("happy path with sampling, events recorded and dropped",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  /* Happy path with log events pool size of 0 */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  /* Force pool size of 0 */
+  nr_log_events_destroy(&txn->log_events);
+  txn->log_events = nr_log_events_create(0);
+  tlib_pass_if_not_null("empty log events pool created", txn->log_events);
+  tlib_pass_if_int_equal("empty log events pool stores 0 events", 0,
+                         nr_log_events_max_events(txn->log_events));
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  /* Events are seen because log forwarding is enabled
+     and txn->options.log_events_max_samples_stored > 0 */
+  tlib_pass_if_int_equal("happy path, event seen", 2,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, event saved", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  test_txn_metric_is("happy path with sampling, events recorded and dropped",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
 }
 
 static void test_txn_log_configuration(void) {
+  // clang-format off
   nrtxn_t txnv;
   nrtxn_t* txn = &txnv;
 
@@ -8121,7 +8312,7 @@ static void test_txn_log_configuration(void) {
   txn->options.log_forwarding_enabled = true;
   txn->options.log_events_max_samples_stored = 0;
   txn->options.log_metrics_enabled = true;
-  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> off");
+  tlib_pass_if_true(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> on");
   tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=1 -> on");
 
   txn->options.log_forwarding_enabled = false;
@@ -8181,7 +8372,7 @@ static void test_txn_log_configuration(void) {
   txn->options.log_forwarding_enabled = true;
   txn->options.log_events_max_samples_stored = 1;
   tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1 -> off");
-
+  // clang-format on
 }
 
 tlib_parallel_info_t parallel_info

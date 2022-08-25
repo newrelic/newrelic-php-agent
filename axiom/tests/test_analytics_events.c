@@ -200,6 +200,9 @@ static void test_events_add_event_success(void) {
   nr_random_t* rnd = nr_random_create_from_seed(12345);
 
   events = nr_analytics_events_create(10);
+  tlib_pass_if_int_equal("10 max_events", 10,
+                         nr_analytics_events_max_events(events));
+
   event = create_sample_event();
   nr_analytics_events_add_event(events, event, rnd);
   json = nr_analytics_events_get_event_json(events, 0);
@@ -268,6 +271,19 @@ static void test_events_create_bad_param(void) {
   tlib_pass_if_true("crazy large max_events", 0 == events, "events=%p", events);
 }
 
+static void test_events_create_ex(void) {
+  nr_analytics_events_t* events;
+
+  events = nr_analytics_events_create_ex(-1);
+  tlib_pass_if_null("max_events < 0", events);
+
+  events = nr_analytics_events_create_ex(0);
+  tlib_fail_if_null("zero max_events", events);
+  tlib_pass_if_int_equal("zero max_events", 0,
+                         nr_analytics_events_max_events(events));
+  nr_analytics_events_destroy(&events);
+}
+
 static void test_events_add_event_failure(void) {
   nr_analytics_events_t* events;
   nr_analytics_event_t* event;
@@ -318,6 +334,7 @@ static void test_reservoir_replacement(void) {
   int seen;
   int saved;
   nr_random_t* rnd = nr_random_create_from_seed(12345);
+  bool is_sampling;
 
   /*
    * This test is non-deterministic: there is some (low) probability that it
@@ -326,15 +343,20 @@ static void test_reservoir_replacement(void) {
    */
 
   for (i = 0; i < max; i++) {
+    is_sampling = nr_analytics_events_is_sampling(events);
     add_event_from_json(events, "[{\"X\":1},{}]", rnd);
     seen = nr_analytics_events_number_seen(events);
     saved = nr_analytics_events_number_saved(events);
     tlib_pass_if_true("number seen", i + 1 == seen, "i=%d seen=%d", i, seen);
     tlib_pass_if_true("number saved", i + 1 == saved, "i=%d saved=%d", i,
                       saved);
+    tlib_pass_if_false("no sampling occured", is_sampling,
+                       "nr_analytics_events_is_sampling: got [%d], want [%d]",
+                       is_sampling, false);
   }
 
   for (i = 0; i < 10 * max; i++) {
+    is_sampling = nr_analytics_events_is_sampling(events);
     add_event_from_json(events, "[{\"X\":1},{}]", rnd);
     add_event_from_json(events, "[{\"Y\":2},{}]", rnd);
     seen = nr_analytics_events_number_seen(events);
@@ -343,6 +365,9 @@ static void test_reservoir_replacement(void) {
                       "max=%d i=%d seen=%d", max, i, seen);
     tlib_pass_if_true("number saved", max == saved, "max=%d saved=%d", max,
                       saved);
+    tlib_pass_if_true("sampling occured", is_sampling,
+                      "nr_analytics_events_is_sampling: got [%d], want [%d]",
+                      is_sampling, true);
   }
 
   count1 = 0;
@@ -373,6 +398,17 @@ static void test_events_destroy_bad_params(void) {
   /* Don't blow up! */
   nr_analytics_events_destroy(0);
   nr_analytics_events_destroy(&null_events);
+}
+
+static void test_max_events_bad_param(void) {
+  tlib_pass_if_int_equal("null events", nr_analytics_events_max_events(NULL),
+                         0);
+}
+
+static void test_is_sampling_bad_param(void) {
+  bool is_sampling = nr_analytics_events_is_sampling(NULL);
+  tlib_pass_if_false("not sampling null events", is_sampling,
+                     "nr_analytics_events_is_sampling(NULL)=%d", is_sampling);
 }
 
 static void test_number_seen_bad_param(void) {
@@ -432,10 +468,13 @@ void test_main(void* p NRUNUSED) {
   test_event_destroy();
   test_events_add_event_success();
   test_events_create_bad_param();
+  test_events_create_ex();
   test_events_add_event_failure();
   test_max_observed();
   test_reservoir_replacement();
   test_events_destroy_bad_params();
+  test_max_events_bad_param();
+  test_is_sampling_bad_param();
   test_number_seen_bad_param();
   test_number_saved_bad_param();
   test_event_int_long();

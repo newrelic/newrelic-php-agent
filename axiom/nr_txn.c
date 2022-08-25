@@ -17,6 +17,7 @@
 #include "nr_guid.h"
 #include "nr_header.h"
 #include "nr_limits.h"
+#include "nr_log_events.h"
 #include "nr_segment.h"
 #include "nr_segment_private.h"
 #include "nr_segment_traces.h"
@@ -531,6 +532,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->intrinsics = nro_new_hash();
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
+  nt->log_events = nr_log_events_create(app->limits.log_events);
 
   /*
    * Set the status fields to their defaults.
@@ -1217,6 +1219,7 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
 }
 
 void nr_txn_destroy_fields(nrtxn_t* txn) {
+  nr_analytics_events_destroy(&txn->log_events);
   nr_analytics_events_destroy(&txn->custom_events);
   nr_attribute_config_destroy(&txn->attribute_config);
   nr_attributes_destroy(&txn->attributes);
@@ -3257,10 +3260,6 @@ bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
     return false;
   }
 
-  if (0 == txn->options.log_events_max_samples_stored) {
-    return false;
-  }
-
   if (txn->high_security) {
     return false;
   }
@@ -3293,28 +3292,123 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
   return false;
 }
 
+#define ENSURE_LOG_LEVEL_NAME(level_name) \
+  (nr_strempty(level_name) ? "UNKNOWN" : level_name)
+
+static void log_event_set_linking_metadata(nr_log_event_t* e,
+                                           nrtxn_t* txn,
+                                           nrapp_t* app) {
+  char* trace_id = NULL;
+  char* span_id = NULL;
+
+  if (NULL == e) {
+    return;
+  }
+
+  if (nrlikely(txn)) {
+    trace_id = nr_txn_get_current_trace_id(txn);
+    nr_log_event_set_trace_id(e, trace_id);
+    nr_free(trace_id);
+
+    span_id = nr_txn_get_current_span_id(txn);
+    nr_log_event_set_span_id(e, span_id);
+    nr_free(span_id);
+
+    nr_log_event_set_entity_name(e, txn->primary_app_name);
+  }
+
+  if (nrlikely(app)) {
+    nr_log_event_set_hostname(e, nr_app_get_host_name(app));
+    nr_log_event_set_guid(e, nr_app_get_entity_guid(app));
+  }
+}
+
+static nr_log_event_t* log_event_create(const char* log_level_name,
+                                        const char* log_message,
+                                        nrtime_t timestamp,
+                                        nrtxn_t* txn,
+                                        nrapp_t* app) {
+  nr_log_event_t* e = nr_log_event_create();
+  if (NULL == e) {
+    return e;
+  }
+  nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
+  nr_log_event_set_message(e, log_message);
+  nr_log_event_set_timestamp(e, timestamp);
+
+  log_event_set_linking_metadata(e, txn, app);
+
+  return e;
+}
+
+static void nr_txn_add_log_event(nrtxn_t* txn,
+                                 const char* log_level_name,
+                                 const char* log_message,
+                                 nrtime_t timestamp,
+                                 nrapp_t* app) {
+  nr_random_t* rnd = NULL;
+  nr_log_event_t* e = NULL;
+  bool event_dropped = false;
+
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
+  if (!nr_txn_log_forwarding_enabled(txn)) {
+    return;
+  }
+
+  if (nr_strempty(log_message)) {
+    return;
+  }
+
+  rnd = nr_random_create();
+  nr_random_seed(rnd, timestamp);
+
+  e = log_event_create(log_level_name, log_message, timestamp, txn, app);
+  if (NULL == e) {
+    nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+    event_dropped = true;
+  } else {
+    event_dropped = nr_log_events_add_event(txn->log_events, e, rnd);
+  }
+  nr_log_event_destroy(&e);
+
+  nr_random_destroy(&rnd);
+
+  if (event_dropped) {
+    nrm_force_add(txn->unscoped_metrics, "Logging/Forwarding/Dropped", 0);
+  }
+}
+
 static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   char* metric_name = NULL;
+
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
 
   if (!nr_txn_log_metrics_enabled(txn)) {
     return;
   }
 
   nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
-  metric_name = nr_formatf("Logging/lines/%s", level_name);
+  metric_name
+      = nr_formatf("Logging/lines/%s", ENSURE_LOG_LEVEL_NAME(level_name));
   nrm_force_add(txn->unscoped_metrics, metric_name, 0);
   nr_free(metric_name);
 }
 
-void nr_txn_record_log_event(NRUNUSED nrtxn_t* txn,
-                             NRUNUSED const char* log_level_name,
-                             NRUNUSED const char* log_message,
-                             NRUNUSED nrtime_t timestamp) {
-  /* This is the plan for this function:
-     1. Create a new log event
-     2. Add the created log event to transaction's log events
-     3. Add logging metrics
-   */
+void nr_txn_record_log_event(nrtxn_t* txn,
+                             const char* log_level_name,
+                             const char* log_message,
+                             nrtime_t timestamp,
+                             nrapp_t* app) {
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
+  nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
 }
