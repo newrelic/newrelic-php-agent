@@ -1803,9 +1803,11 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   return SUCCESS;
 }
 
-static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
+static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
   nriniuint_t* p;
-  int log_level = LOG_LEVEL_DEFAULT;
+  int val = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+  bool err = false;
+  nr_status_t parse_status = NR_SUCCESS;
 
 #ifndef ZTS
   char* base = (char*)mh_arg2;
@@ -1819,27 +1821,35 @@ static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
   (void)mh_arg3;
   NR_UNUSED_TSRMLS;
 
+  /*
+   * -- An invalid value will result in the default value.
+   * -- A value < 0 will result in the default value
+   * -- A value > MAX will result in MAX value
+   */
+
   p->where = 0;
 
-  if (NEW_VALUE_LEN > 0) {
-    nrl_debug(NRL_INIT, "Log Level (PSR-3): %s", NEW_VALUE);
-
-    log_level = nr_log_level_str_to_int(NEW_VALUE);
-    if (LOG_LEVEL_UNKNOWN == log_level) {
-      log_level = LOG_LEVEL_DEFAULT;
-      nrl_warning(NRL_INIT,
-                  "Unknown log forwarding level %s, using %s instead.",
-                  NEW_VALUE, nr_log_level_rfc_to_psr(log_level));
+  if (0 != NEW_VALUE_LEN) {
+    parse_status = nr_strtoi(&val, NEW_VALUE, 0);
+    if (0 > val || NR_FAILURE == parse_status) {
+      val = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    } else if (NR_MAX_CUSTOM_EVENTS_MAX_SAMPLES_STORED < val) {
+      val = NR_MAX_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
     }
-    p->value = log_level;
-    p->where = stage;
-
-    nrl_debug(NRL_INIT, "Log Forwarding Log Level (RFC5424) set to: %d (%s)",
-              p->value, nr_log_level_rfc_to_psr(p->value));
-    return SUCCESS;
+    if (err) {
+      nrl_warning(NRL_INIT,
+                  "Invalid custom_events.max_samples_stored "
+                  "value \"%.8s\"; using "
+                  "%d instead",
+                  NEW_VALUE, val);
+    }
   }
+  p->value = (zend_uint)val;
+  p->where = stage;
 
-  return FAILURE;
+  return SUCCESS;
 }
 
 /*
@@ -2570,6 +2580,14 @@ STD_PHP_INI_ENTRY_EX("newrelic.custom_insights_events.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.custom_events.max_samples_stored",
+                     NR_STR2(NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED),
+                     NR_PHP_REQUEST,
+                     nr_custom_events_max_samples_stored_mh,
+                     custom_events_max_samples_stored,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 /*
  * Synthetics
