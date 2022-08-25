@@ -38,26 +38,7 @@
 #include "fw_laravel.h"
 #include "lib_guzzle4.h"
 
-#include "php_execute.h"
-
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
-/*
- * Register the begin and end function handlers with the Observer API.
- */
-static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
-    zend_execute_data* execute_data) {
-  zend_observer_fcall_handlers handlers = {NULL, NULL};
-  if (NULL == execute_data) {
-    return handlers;
-  }
-  if (NULL == execute_data->func) {
-    return handlers;
-  }
-  handlers.begin = nr_php_execute_observer_fcall_begin;
-  handlers.end = nr_php_execute_observer_fcall_end;
-  return handlers;
-}
-#endif
+#include "nr_php_observer.h"
 
 static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   if (nrunlikely(NULL == nrg)) {
@@ -429,11 +410,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   zend_extension dummy;
 #else
   char dummy[] = "newrelic";
-  /*
-   * Register the Observer API handlers.
-   */
-  zend_observer_fcall_register(nr_php_fcall_register_handlers);
-  zend_observer_error_register(nr_php_error_cb);
+  nr_php_observer_minit();
 #endif
 
   (void)type;

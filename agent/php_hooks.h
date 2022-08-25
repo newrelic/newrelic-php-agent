@@ -38,13 +38,8 @@ extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
  * are strongly encouraged to use the new error notification API instead.
  * Error notification callbacks are guaranteed to be called regardless of the
  * users error_reporting setting or userland error handler return values.
- * Register notification callbacks during MINIT of an extension:
-void my_error_notify_cb(int type,
-                const char *error_filename,
-                        uint32_t error_lineno,
-                        zend_string *message) {
-                }
-                zend_register_error_notify_callback(nr_php_error_cb);
+ * The register notification callbacks during MINIT of an extension are done in
+ * `nr_php_observer.c`.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 extern void nr_php_error_cb(int type,
