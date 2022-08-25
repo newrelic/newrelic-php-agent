@@ -38,6 +38,7 @@ extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
  * are strongly encouraged to use the new error notification API instead.
  * Error notification callbacks are guaranteed to be called regardless of the
  * users error_reporting setting or userland error handler return values.
+ *
  * The register notification callbacks during MINIT of an extension are done in
  * `nr_php_observer.c`.
  */
