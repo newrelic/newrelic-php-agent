@@ -304,6 +304,7 @@ nr_php_ini_attribute_config_t
                                     */
 
 nrinibool_t custom_events_enabled; /* newrelic.custom_insights_events.enabled */
+nrinibool_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored */
 nrinibool_t synthetics_enabled;    /* newrelic.synthetics.enabled */
 
 nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */

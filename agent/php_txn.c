@@ -675,6 +675,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   opts.custom_events_enabled = (int)NRINI(custom_events_enabled);
+  opts.custom_events_max_samples_stored = NRINI(custom_events_max_samples_stored);
   opts.synthetics_enabled = (int)NRINI(synthetics_enabled);
   opts.instance_reporting_enabled = (int)NRINI(instance_reporting_enabled);
   opts.database_name_reporting_enabled
