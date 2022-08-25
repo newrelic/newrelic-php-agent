@@ -93,7 +93,7 @@ newrelic.code_level_metrics.enabled=true
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/Vegetable::getColor",
+        "name": "Custom\/Foo\\Bar\\Vegetable::getColor",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -102,8 +102,8 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 134,
-        "code.namespace": "Vegetable",
+        "code.lineno": 133,
+        "code.namespace": "Foo\\Bar\\Vegetable",
         "code.filepath": "__FILE__",
         "code.function": "getColor"
       }
@@ -111,30 +111,32 @@ newrelic.code_level_metrics.enabled=true
   ]
 ]
  */
+namespace Foo\Bar {
+    class Vegetable {
+        public $edible;
 
-class Vegetable {
-    public $edible;
+        public $color;
 
-    public $color;
+        public function __construct($edible, $color = "green")
+        {
+            $this->edible = $edible;
+            $this->color = $color;
+        }
 
-    public function __construct($edible, $color = "green")
-    {
-        $this->edible = $edible;
-        $this->color = $color;
+        public function isEdible()
+        {
+            return $this->edible;
+        }
+
+        public function getColor()
+        {
+            echo "Yum\n";
+            return $this->color;
+        }
     }
 
-    public function isEdible()
-    {
-	sleep(10);
-        return $this->edible;
-    }
-
-    public function getColor()
-    {
-        echo "Yum\n";
-        return $this->color;
-    }
+    echo "two" . newrelic_add_custom_tracer("Foo\\Bar\\Vegetable::getColor");
+    $veggie = new Vegetable(true, "blue");
+    $veggie->getColor();
 }
-newrelic_add_custom_tracer("Vegetable::getColor");
-$veggie = new Vegetable(true, "blue");
-$veggie->getColor();
+
