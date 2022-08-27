@@ -62,7 +62,7 @@ var (
 
 	sampleCustomEvent = []byte("half birthday")
 	sampleSpanEvent   = []byte("belated birthday")
-	sampleLogEvent    = []byte("log event test birthday")
+	sampleLogEvent    = []byte("[log event test birthday]")
 	sampleErrorEvent  = []byte("forgotten birthday")
 )
 
@@ -272,7 +272,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 	}
 	cp := <-m.clientParams
 	<-m.p.trackProgress // receive harvest notice
-	expected := `["one",{"reservoir_size":5,"events_seen":1},[log event test birthday]]`
+	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
