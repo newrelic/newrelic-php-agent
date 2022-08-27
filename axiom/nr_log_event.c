@@ -28,13 +28,42 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_free(event->trace_id);
   nr_free(event->log_level);
   nr_free(event->message);
-  nr_free(event->trace_id);
   nr_free(event->span_id);
   nr_free(event->entity_guid);
   nr_free(event->entity_name);
   nr_free(event->hostname);
 
   nr_realfree((void**)ptr);
+}
+
+nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
+  nr_log_event_t* clone = NULL;
+
+  if (NULL == src)
+    return NULL;
+
+  clone = nr_log_event_create();
+  if (NULL == clone)
+    return NULL;
+
+  if (NULL != src->trace_id)
+    clone->trace_id = nr_strdup(src->trace_id);
+  if (NULL != src->log_level)
+    clone->log_level = nr_strdup(src->log_level);
+  if (NULL != src->message)
+    clone->message = nr_strdup(src->message);
+  if (NULL != src->span_id)
+    clone->span_id = nr_strdup(src->span_id);
+  if (NULL != src->entity_guid)
+    clone->entity_guid = nr_strdup(src->entity_guid);
+  if (NULL != src->entity_name)
+    clone->entity_name = nr_strdup(src->entity_name);
+  if (NULL != src->hostname)
+    clone->hostname = nr_strdup(src->hostname);
+  clone->priority = src->priority;
+  clone->timestamp = src->timestamp;
+
+  return clone;
 }
 
 char* nr_log_event_to_json(const nr_log_event_t* event) {
@@ -65,7 +94,7 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     nr_buffer_add(buf, event->message, nr_strlen(event->message));
   }
 
-  nr_buffer_add(buf, NR_PSTR("\",\"log.level\":\""));
+  nr_buffer_add(buf, NR_PSTR("\",\"level\":\""));
   if (NULL == event->log_level) {
     nr_buffer_add(buf, NR_PSTR("null"));
   } else {
@@ -122,7 +151,9 @@ void nr_log_event_set_message(nr_log_event_t* event, const char* message) {
   if (NULL != event->message) {
     nr_free(event->message);
   }
-  event->message = nr_strdup(message);
+
+  // spec says to truncate messages over max limit
+  event->message = nr_strndup(message, NR_MAX_LOG_MESSAGE_LEN);
 }
 
 void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level) {
@@ -172,7 +203,8 @@ void nr_log_event_set_guid(nr_log_event_t* event, const char* guid) {
   event->entity_guid = nr_strdup(guid);
 }
 
-void nr_log_event_set_entity_name(nr_log_event_t* event, const char* entity_name) {
+void nr_log_event_set_entity_name(nr_log_event_t* event,
+                                  const char* entity_name) {
   if (NULL == event || NULL == entity_name) {
     return;
   }
@@ -190,4 +222,12 @@ void nr_log_event_set_hostname(nr_log_event_t* event, const char* hostname) {
     nr_free(event->hostname);
   }
   event->hostname = nr_strdup(hostname);
+}
+
+void nr_log_event_set_priority(nr_log_event_t* event, int priority) {
+  if (NULL == event) {
+    return;
+  }
+
+  event->priority = priority;
 }
