@@ -55,7 +55,6 @@ extern char* nr_log_event_to_json(const nr_log_event_t* event);
  */
 extern bool nr_log_event_to_json_buffer(const nr_log_event_t* event,
                                         nrbuf_t* buf);
-
 /*
  * Purpose : Comparator function for use with priority sampling
  *
