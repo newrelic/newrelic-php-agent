@@ -6,6 +6,7 @@
 #include "nr_axiom.h"
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "util_memory.h"
 #include "nr_attributes.h"
@@ -39,27 +40,36 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
 nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
   nr_log_event_t* clone = NULL;
 
-  if (NULL == src)
+  if (NULL == src) {
     return NULL;
+  }
 
   clone = nr_log_event_create();
-  if (NULL == clone)
+  if (NULL == clone) {
     return NULL;
+  }
 
-  if (NULL != src->trace_id)
+  if (NULL != src->trace_id) {
     clone->trace_id = nr_strdup(src->trace_id);
-  if (NULL != src->log_level)
+  }
+  if (NULL != src->log_level) {
     clone->log_level = nr_strdup(src->log_level);
-  if (NULL != src->message)
+  }
+  if (NULL != src->message) {
     clone->message = nr_strdup(src->message);
-  if (NULL != src->span_id)
+  }
+  if (NULL != src->span_id) {
     clone->span_id = nr_strdup(src->span_id);
-  if (NULL != src->entity_guid)
+  }
+  if (NULL != src->entity_guid) {
     clone->entity_guid = nr_strdup(src->entity_guid);
-  if (NULL != src->entity_name)
+  }
+  if (NULL != src->entity_name) {
     clone->entity_name = nr_strdup(src->entity_name);
-  if (NULL != src->hostname)
+  }
+  if (NULL != src->hostname) {
     clone->hostname = nr_strdup(src->hostname);
+  }
   clone->priority = src->priority;
   clone->timestamp = src->timestamp;
 
@@ -70,7 +80,7 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
   char* json = NULL;
 
-  if (nr_log_event_to_json_buffer(event, buf)) {
+  if (nr_log_event_to_json_buffer_ex(event, buf, false)) {
     nr_buffer_add(buf, NR_PSTR("\0"));
     json = nr_strdup(nr_buffer_cptr(buf));
   }
@@ -84,8 +94,20 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     return false;
   }
 
+  return nr_log_event_to_json_buffer_ex(event, buf, false);
+}
+
+bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
+                                    nrbuf_t* buf,
+                                    bool partial) {
+  if (NULL == event || NULL == buf) {
+    return false;
+  }
+
   // We'll build the JSON manually
-  nr_buffer_add(buf, NR_PSTR("["));
+  if (!partial) {
+    nr_buffer_add(buf, NR_PSTR("["));
+  }
   nr_buffer_add(buf, NR_PSTR("{"));
   nr_buffer_add(buf, NR_PSTR("\"message\":\""));
   if (NULL == event->message) {
@@ -139,7 +161,9 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     nr_buffer_add(buf, event->hostname, nr_strlen(event->hostname));
   }
   nr_buffer_add(buf, NR_PSTR("\"}"));
-  nr_buffer_add(buf, NR_PSTR("]"));
+  if (!partial) {
+    nr_buffer_add(buf, NR_PSTR("]"));
+  }
 
   return true;
 }

@@ -155,6 +155,110 @@ static void test_log_event_to_json_buffer(void) {
   nr_buffer_destroy(&buf);
 }
 
+static void test_log_event_to_json_buffer_ex(void) {
+  nrbuf_t* buf = nr_buffer_create(0, 0);
+  nr_log_event_t* log;
+
+  /*
+   * Test : Bad parameters.
+   */
+  log = nr_log_event_create();
+  tlib_pass_if_bool_equal("NULL buffer", false,
+                          nr_log_event_to_json_buffer_ex(log, NULL, false));
+  nr_log_event_destroy(&log);
+
+  tlib_pass_if_bool_equal("NULL log event", false,
+                          nr_log_event_to_json_buffer_ex(NULL, buf, true));
+  tlib_pass_if_size_t_equal("buffer is untouched after a NULL log event", 0,
+                            nr_buffer_len(buf));
+
+  /*
+   * Test : Empty log event.
+   */
+  log = nr_log_event_create();
+  tlib_pass_if_bool_equal("empty log event", true,
+                          nr_log_event_to_json_buffer_ex(log, buf, false));
+  nr_buffer_add(buf, NR_PSTR("\0"));
+  tlib_pass_if_str_equal("empty log event",
+                         "[{"
+                         "\"message\":\"null\","
+                         "\"level\":\"null\","
+                         "\"timestamp\":0,"
+                         "\"trace.id\":\"null\","
+                         "\"span.id\":\"null\","
+                         "\"entity.guid\":\"null\","
+                         "\"entity.name\":\"null\","
+                         "\"hostname\":\"null\""
+                         "}]",
+                         nr_buffer_cptr(buf));
+  nr_buffer_reset(buf);
+  tlib_pass_if_bool_equal("empty log event", true,
+                          nr_log_event_to_json_buffer_ex(log, buf, true));
+  nr_buffer_add(buf, NR_PSTR("\0"));
+  tlib_pass_if_str_equal("empty log event",
+                         "{"
+                         "\"message\":\"null\","
+                         "\"level\":\"null\","
+                         "\"timestamp\":0,"
+                         "\"trace.id\":\"null\","
+                         "\"span.id\":\"null\","
+                         "\"entity.guid\":\"null\","
+                         "\"entity.name\":\"null\","
+                         "\"hostname\":\"null\""
+                         "}",
+                         nr_buffer_cptr(buf));
+  nr_buffer_reset(buf);
+  nr_log_event_destroy(&log);
+
+  /*
+   * Test : Full (ie every hash has at least one attribute) log event.
+   */
+  log = nr_log_event_create();
+  nr_log_event_set_log_level(log, "LOG_LEVEL_TEST_ERROR");
+  nr_log_event_set_message(log, "this is a test log error message");
+  nr_log_event_set_timestamp(log, 12345000);
+  nr_log_event_set_trace_id(log, "test id 1");
+  nr_log_event_set_span_id(log, "test id 2");
+  nr_log_event_set_guid(log, "test id 3");
+  nr_log_event_set_entity_name(log, "entity name here");
+  nr_log_event_set_hostname(log, "host name here");
+  tlib_pass_if_bool_equal("full log event", true,
+                          nr_log_event_to_json_buffer_ex(log, buf, false));
+  nr_buffer_add(buf, NR_PSTR("\0"));
+  tlib_pass_if_str_equal("full log event",
+                         "[{"
+                         "\"message\":\"this is a test log error message\","
+                         "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+                         "\"timestamp\":12345,"
+                         "\"trace.id\":\"test id 1\","
+                         "\"span.id\":\"test id 2\","
+                         "\"entity.guid\":\"test id 3\","
+                         "\"entity.name\":\"entity name here\","
+                         "\"hostname\":\"host name here\""
+                         "}]",
+                         nr_buffer_cptr(buf));
+  nr_buffer_reset(buf);
+  tlib_pass_if_bool_equal("full log event", true,
+                          nr_log_event_to_json_buffer_ex(log, buf, true));
+  nr_buffer_add(buf, NR_PSTR("\0"));
+  tlib_pass_if_str_equal("full log event",
+                         "{"
+                         "\"message\":\"this is a test log error message\","
+                         "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+                         "\"timestamp\":12345,"
+                         "\"trace.id\":\"test id 1\","
+                         "\"span.id\":\"test id 2\","
+                         "\"entity.guid\":\"test id 3\","
+                         "\"entity.name\":\"entity name here\","
+                         "\"hostname\":\"host name here\""
+                         "}",
+                         nr_buffer_cptr(buf));
+
+  nr_log_event_destroy(&log);
+
+  nr_buffer_destroy(&buf);
+}
+
 static void test_log_event_guid(void) {
   nr_log_event_t* event = nr_log_event_create();
 
@@ -423,6 +527,7 @@ void test_main(void* p NRUNUSED) {
   test_log_event_create_destroy();
   test_log_event_to_json();
   test_log_event_to_json_buffer();
+  test_log_event_to_json_buffer_ex();
   test_log_event_guid();
   test_log_event_trace_id();
   test_log_event_entity_name();
