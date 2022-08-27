@@ -62,7 +62,7 @@ var (
 
 	sampleCustomEvent = []byte("half birthday")
 	sampleSpanEvent   = []byte("belated birthday")
-	sampleLogEvent    = []byte("[log event test birthday]")
+	sampleLogEvent    = []byte("log event test birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
 )
 
