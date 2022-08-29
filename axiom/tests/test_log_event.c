@@ -173,12 +173,7 @@ static void test_log_event_to_json_buffer_ex(void) {
                          "[{"
                          "\"message\":\"null\","
                          "\"level\":\"null\","
-                         "\"timestamp\":0,"
-                         "\"trace.id\":\"null\","
-                         "\"span.id\":\"null\","
-                         "\"entity.guid\":\"null\","
-                         "\"entity.name\":\"null\","
-                         "\"hostname\":\"null\""
+                         "\"timestamp\":0"
                          "}]",
                          nr_buffer_cptr(buf));
   nr_buffer_reset(buf);
@@ -189,12 +184,7 @@ static void test_log_event_to_json_buffer_ex(void) {
                          "{"
                          "\"message\":\"null\","
                          "\"level\":\"null\","
-                         "\"timestamp\":0,"
-                         "\"trace.id\":\"null\","
-                         "\"span.id\":\"null\","
-                         "\"entity.guid\":\"null\","
-                         "\"entity.name\":\"null\","
-                         "\"hostname\":\"null\""
+                         "\"timestamp\":0"
                          "}",
                          nr_buffer_cptr(buf));
   nr_buffer_reset(buf);
@@ -219,12 +209,12 @@ static void test_log_event_to_json_buffer_ex(void) {
                          "[{"
                          "\"message\":\"this is a test log error message\","
                          "\"level\":\"LOG_LEVEL_TEST_ERROR\","
-                         "\"timestamp\":12345,"
                          "\"trace.id\":\"test id 1\","
                          "\"span.id\":\"test id 2\","
                          "\"entity.guid\":\"test id 3\","
                          "\"entity.name\":\"entity name here\","
-                         "\"hostname\":\"host name here\""
+                         "\"hostname\":\"host name here\","
+                         "\"timestamp\":12345"
                          "}]",
                          nr_buffer_cptr(buf));
   nr_buffer_reset(buf);
@@ -235,12 +225,12 @@ static void test_log_event_to_json_buffer_ex(void) {
                          "{"
                          "\"message\":\"this is a test log error message\","
                          "\"level\":\"LOG_LEVEL_TEST_ERROR\","
-                         "\"timestamp\":12345,"
                          "\"trace.id\":\"test id 1\","
                          "\"span.id\":\"test id 2\","
                          "\"entity.guid\":\"test id 3\","
                          "\"entity.name\":\"entity name here\","
-                         "\"hostname\":\"host name here\""
+                         "\"hostname\":\"host name here\","
+                         "\"timestamp\":12345"
                          "}",
                          nr_buffer_cptr(buf));
 

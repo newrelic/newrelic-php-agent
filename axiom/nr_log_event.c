@@ -99,6 +99,8 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
 bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
                                     nrbuf_t* buf,
                                     bool partial) {
+  (void) partial;
+
   if (NULL == event || NULL == buf) {
     return false;
   }
