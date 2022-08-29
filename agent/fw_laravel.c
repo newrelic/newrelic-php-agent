@@ -1073,7 +1073,7 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
    * Start by calling the original method, and if it doesn't return a
    * route then we don't need to do any extra work.
    */
-  route = nr_php_get_return_value_ptr(TSRMLS_C);
+  route = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   /* If the method did not return a route, then end gracefully. */
