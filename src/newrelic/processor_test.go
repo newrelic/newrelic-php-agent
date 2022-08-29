@@ -382,8 +382,8 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
