@@ -6,8 +6,8 @@
 /*
  * This file contains exported functions for Guzzle 6.
  */
-#ifndef LIB_GUZZLE7_HDR
-#define LIB_GUZZLE7_HDR
+#ifndef LIB_GUZZLE6_HDR
+#define LIB_GUZZLE6_HDR
 
 #include "php_includes.h"
 
