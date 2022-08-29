@@ -343,6 +343,25 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
                            nr_guzzle6_requesthandler_onrejected_arginfo,
                            ZEND_ACC_PUBLIC) PHP_FE_END};
 
+static void nr_guzzle_minit(const int guzzle_version){
+  zend_class_entry ce;
+  char guzzle_path[] = "newrelic\\Guzzle6\\RequestHandler";
+  if (guzzle_version == 7){
+    nr_strcpy(guzzle_path, "newrelic\\Guzzle7\\RequestHandler");
+  }
+  if (0 == NRINI(guzzle_enabled)) {
+    return;
+  }
+
+  INIT_CLASS_ENTRY(ce, guzzle_path,
+                   nr_guzzle6_requesthandler_functions);
+  nr_guzzle6_requesthandler_ce
+      = nr_php_zend_register_internal_class_ex(&ce, NULL TSRMLS_CC);
+
+  zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
+                             ZEND_ACC_PRIVATE TSRMLS_CC);
+}
+
 /*
  * Guzzle 7 requires PHP 7.2.0 or later, which is why we will not build Guzzle 7
  * support on older versions and will instead provide simple stubs for the two
@@ -468,19 +487,7 @@ void nr_guzzle7_enable(TSRMLS_D) {
 }
 
 void nr_guzzle7_minit(TSRMLS_D) {
-  zend_class_entry ce;
-
-  if (0 == NRINI(guzzle_enabled)) {
-    return;
-  }
-
-  INIT_CLASS_ENTRY(ce, "newrelic\\Guzzle7\\RequestHandler",
-                   nr_guzzle6_requesthandler_functions);
-  nr_guzzle6_requesthandler_ce
-      = nr_php_zend_register_internal_class_ex(&ce, NULL TSRMLS_CC);
-
-  zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
-                             ZEND_ACC_PRIVATE TSRMLS_CC);
+  nr_guzzle_minit(7);
 }
 
 
@@ -597,19 +604,7 @@ void nr_guzzle6_enable(TSRMLS_D) {
 }
 
 void nr_guzzle6_minit(TSRMLS_D) {
-  zend_class_entry ce;
-
-  if (0 == NRINI(guzzle_enabled)) {
-    return;
-  }
-
-  INIT_CLASS_ENTRY(ce, "newrelic\\Guzzle6\\RequestHandler",
-                   nr_guzzle6_requesthandler_functions);
-  nr_guzzle6_requesthandler_ce
-      = nr_php_zend_register_internal_class_ex(&ce, NULL TSRMLS_CC);
-
-  zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
-                             ZEND_ACC_PRIVATE TSRMLS_CC);
+  nr_guzzle_minit(6);
 }
 
 #else /* PHP < 5.5 */
