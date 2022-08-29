@@ -11,13 +11,10 @@ Test that the actually external call is marked as http.
 /*SKIPIF
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
+require("skipif.inc");
 
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");
-}
-
-if (!unpack_guzzle(6)) {
-    die("skip: guzzle 6 installation required\n");
 }
 */
 

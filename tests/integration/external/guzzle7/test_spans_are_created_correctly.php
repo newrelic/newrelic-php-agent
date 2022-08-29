@@ -10,15 +10,7 @@ Test that the actually external call is marked as http.
 
 /*SKIPIF
 <?php
-require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-
-if (version_compare(phpversion(), '7.2.0', '<=')) {
-    die("skip: PHP > 7.2.0 required\n");
-}
-
-if (!unpack_guzzle(7)) {
-    die("skip: guzzle 7 installation required\n");
-}
+require("skipif.inc");
 */
 
 /*INI
