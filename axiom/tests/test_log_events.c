@@ -93,16 +93,13 @@ static void test_events_success(void) {
                       "expected TRUE");                            \
     json = nr_log_event_to_json((nr_log_event_t*)test_e);          \
     tlib_fail_if_null("no json", json);                            \
-    expected = "[{"\
-                     "\"message\":\"" MESSAGE "\"," \
-                 "\"level\":\"" LOG_LEVEL "\"," \
-                 "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "," \
-                 "\"trace.id\":\"null\"," \
-                 "\"span.id\":\"null\"," \
-                 "\"entity.guid\":\"null\"," \
-                 "\"entity.name\":\"null\"," \
-                 "\"hostname\":\"null\"" \
-              "}]";                                               \
+    expected                                                       \
+        = "[{"                                                     \
+          "\"message\":\"" MESSAGE                                 \
+          "\","                                                    \
+          "\"level\":\"" LOG_LEVEL                                 \
+          "\","                                                    \
+          "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";            \
     tlib_pass_if_str_equal("add event", expected, json);           \
     nr_free(json);                                                 \
   } while (0)

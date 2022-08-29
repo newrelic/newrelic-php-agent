@@ -8192,13 +8192,11 @@ static void test_record_log_event(void) {
         "\"message\":\"" LOG_MESSAGE
         "\","
         "\"level\":\"UNKNOWN\","
-        "\"timestamp\":0,"
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
-        "\"entity.guid\":\"null\","
         "\"entity.name\":\"" APP_ENTITY_NAME
         "\","
-        "\"hostname\":\"null\""
+        "\"timestamp\":0"
         "}]";
   tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
                          log_event_json);
@@ -8228,16 +8226,21 @@ static void test_record_log_event(void) {
   log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
   tlib_fail_if_null("no json", log_event_json);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
-  expected = "[{"
-              "\"message\":\"" LOG_MESSAGE "\","
-              "\"level\":\"" LOG_LEVEL "\","
-              "\"timestamp\":" NR_STR2(LOG_TIMESTAMP)","
-              "\"trace.id\":\"0000000000000000\","
-              "\"span.id\":\"0000000000000000\","
-              "\"entity.guid\":\"" APP_ENTITY_GUID "\","
-              "\"entity.name\":\"" APP_ENTITY_NAME "\","
-              "\"hostname\":\"" APP_HOST_NAME "\""
-          "}]";
+  expected
+      = "[{"
+        "\"message\":\"" LOG_MESSAGE
+        "\","
+        "\"level\":\"" LOG_LEVEL
+        "\","
+        "\"trace.id\":\"0000000000000000\","
+        "\"span.id\":\"0000000000000000\","
+        "\"entity.guid\":\"" APP_ENTITY_GUID
+        "\","
+        "\"entity.name\":\"" APP_ENTITY_NAME
+        "\","
+        "\"hostname\":\"" APP_HOST_NAME
+        "\","
+        "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";
   tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
                          log_event_json);
   nr_free(log_event_json);

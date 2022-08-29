@@ -76,6 +76,39 @@ nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
   return clone;
 }
 
+static bool add_log_field_to_buf(nrbuf_t* buf,
+                                 const char* field_name,
+                                 const char* field_value,
+                                 const bool first,
+                                 const bool required) {
+  const char* final_value = field_value;
+
+  if (NULL == buf || nr_strempty(field_name)) {
+    return false;
+  }
+
+  if (nr_strempty(field_value)) {
+    if (!required) {
+      return false;
+    } else {
+      final_value = "null";
+    }
+  }
+
+  if (!first) {
+    nr_buffer_add(buf, NR_PSTR(","));
+  }
+  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add(buf, field_name, nr_strlen(field_name));
+  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add(buf, NR_PSTR(":"));
+  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add(buf, final_value, nr_strlen(final_value));
+  nr_buffer_add(buf, NR_PSTR("\""));
+
+  return true;
+}
+
 char* nr_log_event_to_json(const nr_log_event_t* event) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
   char* json = NULL;
@@ -109,58 +142,21 @@ bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
     nr_buffer_add(buf, NR_PSTR("["));
   }
   nr_buffer_add(buf, NR_PSTR("{"));
-  nr_buffer_add(buf, NR_PSTR("\"message\":\""));
-  if (NULL == event->message) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->message, nr_strlen(event->message));
-  }
 
-  nr_buffer_add(buf, NR_PSTR("\",\"level\":\""));
-  if (NULL == event->log_level) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->log_level, nr_strlen(event->log_level));
-  }
+  // only add non-empty fields
+  add_log_field_to_buf(buf, "message", event->message, true, true);
+  add_log_field_to_buf(buf, "level", event->log_level, false, true);
+  add_log_field_to_buf(buf, "trace.id", event->trace_id, false, false);
+  add_log_field_to_buf(buf, "span.id", event->span_id, false, false);
+  add_log_field_to_buf(buf, "entity.guid", event->entity_guid, false, false);
+  add_log_field_to_buf(buf, "entity.name", event->entity_name, false, false);
+  add_log_field_to_buf(buf, "hostname", event->hostname, false, false);
 
-  nr_buffer_add(buf, NR_PSTR("\",\"timestamp\":"));
+  // timestamp always present
+  nr_buffer_add(buf, NR_PSTR(",\"timestamp\":"));
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
 
-  nr_buffer_add(buf, NR_PSTR(",\"trace.id\":\""));
-  if (NULL == event->trace_id) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->trace_id, nr_strlen(event->trace_id));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"span.id\":\""));
-  if (NULL == event->span_id) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->span_id, nr_strlen(event->span_id));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"entity.guid\":\""));
-  if (NULL == event->entity_guid) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->entity_guid, nr_strlen(event->entity_guid));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"entity.name\":\""));
-  if (NULL == event->entity_name) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->entity_name, nr_strlen(event->entity_name));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"hostname\":\""));
-  if (NULL == event->hostname) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->hostname, nr_strlen(event->hostname));
-  }
-  nr_buffer_add(buf, NR_PSTR("\"}"));
+  nr_buffer_add(buf, NR_PSTR("}"));
   if (!partial) {
     nr_buffer_add(buf, NR_PSTR("]"));
   }

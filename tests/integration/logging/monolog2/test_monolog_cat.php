@@ -72,8 +72,6 @@ monolog2.EMERGENCY: emergency []
           "message": "error",
           "level": "ERROR",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -82,8 +80,6 @@ monolog2.EMERGENCY: emergency []
           "message": "critical",
           "level": "CRITICAL",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -92,8 +88,6 @@ monolog2.EMERGENCY: emergency []
           "message": "notice",
           "level": "NOTICE",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -102,8 +96,6 @@ monolog2.EMERGENCY: emergency []
           "message": "warning",
           "level": "WARNING",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -112,8 +104,6 @@ monolog2.EMERGENCY: emergency []
           "message": "info",
           "level": "INFO",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -122,8 +112,6 @@ monolog2.EMERGENCY: emergency []
           "message": "alert",
           "level": "ALERT",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -132,8 +120,6 @@ monolog2.EMERGENCY: emergency []
           "message": "emergency",
           "level": "EMERGENCY",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
@@ -142,8 +128,6 @@ monolog2.EMERGENCY: emergency []
           "message": "debug",
           "level": "DEBUG",
           "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
