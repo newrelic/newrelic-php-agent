@@ -22,8 +22,6 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
-int php_version_compare(char*, char*);
-
 char* nr_guzzle_create_async_context_name(const char* prefix, const zval* obj) {
   if (!nr_php_is_zval_valid_object(obj)) {
     return NULL;
@@ -313,21 +311,3 @@ char* nr_guzzle_response_get_header(const char* header,
 
   return value;
 }
-
-NR_PHP_WRAPPER_START(nr_guzzle_client_construct) {
-  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  char *version = NULL;
-  version = nr_guzzle_version(this_var TSRMLS_CC);
-
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  nr_php_scope_release(&this_var);
-  if (php_version_compare(version, "7") >= 0){
-    NR_PHP_WRAPPER_DELEGATE(nr_guzzle7_client_construct);
-  } else if (php_version_compare(version, "6") >= 0) {
-    NR_PHP_WRAPPER_DELEGATE(nr_guzzle6_client_construct);
-  } else{
-    NR_PHP_WRAPPER_DELEGATE(nr_guzzle4_client_construct);
-  }
-}
-NR_PHP_WRAPPER_END
