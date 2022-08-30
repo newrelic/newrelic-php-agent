@@ -192,7 +192,7 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	// expects this field value to contain any errors which occurred
 	// during the connect attempt and will not inspect the RawReply
 	// field for an error value
-	rep.RawReply = args.Client.Execute(cmd, cs)
+	rep.RawReply = args.Client.Execute(&cmd, cs)
 
 	if nil != rep.RawReply.Err {
 		rep.Err = rep.RawReply.Err
@@ -262,7 +262,7 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 	cmd.Name = collector.CommandConnect
 
 	// Make call to connect
-	rep.RawReply = args.Client.Execute(cmd, cs)
+	rep.RawReply = args.Client.Execute(&cmd, cs)
 	if nil != rep.RawReply.Err {
 		rep.Err = rep.RawReply.Err
 		return rep
@@ -548,7 +548,7 @@ func harvestPayload(p PayloadCreator, args *harvestArgs) {
 		}),
 	}
 
-	reply := args.client.Execute(cmd, cs)
+	reply := args.client.Execute(&cmd, cs)
 
 	// We don't need to process the response to a harvest command unless an
 	// error happened.  (Note that this may change if we have to support metric
