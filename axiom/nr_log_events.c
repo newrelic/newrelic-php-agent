@@ -140,8 +140,9 @@ size_t nr_log_events_max_events(const nr_log_events_t* events) {
 }
 
 size_t nr_log_events_number_seen(const nr_log_events_t* events) {
-  if (NULL == events)
+  if (NULL == events) {
     return 0;
+  }
 
   return events->events_seen;
 }
@@ -150,7 +151,7 @@ size_t nr_log_events_number_saved(const nr_log_events_t* events) {
   if (NULL == events) {
     return 0;
   }
-  
+
   return events->events_used;
 }
 
