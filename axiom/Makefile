@@ -104,6 +104,7 @@ OBJS := \
 	nr_header.o \
 	nr_log_event.o \
 	nr_log_events.o \
+	nr_log_level.o \
 	nr_mysqli_metadata.o \
 	nr_postgres.o \
 	nr_rules.o \
