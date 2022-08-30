@@ -94,11 +94,4 @@ extern void nr_guzzle_request_set_outbound_headers(zval* request,
 extern char* nr_guzzle_response_get_header(const char* header,
                                            zval* response TSRMLS_DC);
 
-/*
- * Purpose : Wrapper for Client::__construct() that delegates to the correct
- *           Guzzle 4-5 or Guzzle 6 handler based on which version of Guzzle
- *           the Client object comes from.
- */
-extern NR_PHP_WRAPPER_PROTOTYPE(nr_guzzle_client_construct);
-
 #endif /* LIB_GUZZLE_COMMON_HDR */
