@@ -9,7 +9,6 @@
 #ifndef NR_LOG_EVENTS_PRIVATE_HDR
 #define NR_LOG_EVENTS_PRIVATE_HDR
 
-//#include "nr_log_event.h"
 #include "util_minmax_heap.h"
 
 struct _nr_log_events_t {
