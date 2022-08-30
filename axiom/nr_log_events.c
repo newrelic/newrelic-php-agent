@@ -114,7 +114,7 @@ nr_log_events_t* nr_log_events_create(size_t max_events) {
 }
 
 void nr_log_events_destroy(nr_log_events_t** events_ptr) {
-  nr_log_events_t* events;
+  nr_log_events_t* events = NULL;
 
   if (NULL == events_ptr) {
     return;
