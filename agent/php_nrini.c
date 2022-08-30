@@ -13,6 +13,7 @@
 #include "nr_configstrings.h"
 #include "nr_limits.h"
 #include "nr_version.h"
+#include "nr_log_level.h"
 #include "util_buffer.h"
 #include "util_json.h"
 #include "util_logging.h"
@@ -1802,6 +1803,36 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
+  nriniuint_t* p;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  if (NEW_VALUE_LEN > 0) {
+    nrl_debug(NRL_INIT, "Log Level (PSR-3): %s", NEW_VALUE);
+
+    p->value = nr_log_level_str_to_int(NEW_VALUE);
+    p->where = stage;
+
+    nrl_debug(NRL_INIT, "Log Level (RFC5424): %d", p->value);
+    return SUCCESS;
+  }
+
+  return FAILURE;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2851,6 +2882,14 @@ STD_PHP_INI_ENTRY_EX(
     zend_newrelic_globals,
     newrelic_globals,
     0)
+STD_PHP_INI_ENTRY_EX("newerlic.application_logging.forwarding.log_level",
+                     "WARNING",
+                     NR_PHP_REQUEST,
+                     nr_log_forwarding_log_level_mh,
+                     log_forwarding_log_level,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      "1",
                      NR_PHP_REQUEST,
