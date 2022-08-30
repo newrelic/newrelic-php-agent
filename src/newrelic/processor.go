@@ -930,6 +930,7 @@ func (p *Processor) Run() error {
 		}
 
 		// This is only used for testing
+		// During testing, blocks the processor until trackProgress is read
 		if nil != p.trackProgress {
 			p.trackProgress <- struct{}{}
 		}
