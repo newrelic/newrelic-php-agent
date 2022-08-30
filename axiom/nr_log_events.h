@@ -6,7 +6,6 @@
 #ifndef NR_LOG_EVENTS_HDR
 #define NR_LOG_EVENTS_HDR
 
-//#include "nr_analytics_events.h"
 #include "nr_log_event.h"
 #include "util_random.h"
 #include "util_vector.h"
