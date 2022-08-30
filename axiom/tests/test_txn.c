@@ -8292,6 +8292,22 @@ static void test_record_log_event(void) {
                      txn->unscoped_metrics, MET_FORCED,
                      "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
   nr_txn_destroy(&txn);
+
+  /* High_security */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  txn->high_security = 1;
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  tlib_pass_if_int_equal("happy path, hsm, event seen", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, hsm, event saved", 0,
+                         nr_log_events_number_saved(txn->log_events));
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  tlib_pass_if_int_equal("happy path, hsm, 0 len vector", 0,
+                         nr_vector_size(vector));
+  nr_vector_destroy(&vector);
+  nr_txn_destroy(&txn);
 }
 
 static void test_txn_log_configuration(void) {
