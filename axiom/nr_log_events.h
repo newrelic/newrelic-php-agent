@@ -16,6 +16,8 @@ typedef struct _nr_log_events_t nr_log_events_t;
  * Purpose : Add a log event to a log event pool.
  *
  * Params  : 1. Log event pool
+ *           2. Log event (allocated by caller but owned by event pool)
+ *
  *
  * Returns : true if and only if sampling occured (see Notes below)
  *           false otherwise (sampling not occurred; event was not added
@@ -25,9 +27,15 @@ typedef struct _nr_log_events_t nr_log_events_t;
  * Notes   : This function is not guaranteed to add an event: Once the events
  *           data structure is full, this event may replace an existing event
  *           based upon a sampling algorithm.
+ *
+ *           The log event must be allocated by the caller by calling
+ *           nr_log_event_create().  Passing a nr_event_t struct which is
+ *           created any other way will not work.  The log event will be owned
+ *           and disposed of by the log event pool.  The contents of the event
+ *           can not be relied upon once this function is called.
  */
 extern bool nr_log_events_add_event(nr_log_events_t* events,
-                                    const nr_log_event_t* event);
+                                    nr_log_event_t* event);
 
 /*
  * Purpose : Create a log event pool of specified size.

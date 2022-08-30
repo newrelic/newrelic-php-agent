@@ -155,10 +155,8 @@ size_t nr_log_events_number_saved(const nr_log_events_t* events) {
   return events->events_used;
 }
 
-bool nr_log_events_add_event(nr_log_events_t* events,
-                             const nr_log_event_t* event) {
+bool nr_log_events_add_event(nr_log_events_t* events, nr_log_event_t* event) {
   bool events_sampled = false;
-  nr_log_event_t* dup_event;
 
   if (NULL == event) {
     return false;
@@ -172,21 +170,18 @@ bool nr_log_events_add_event(nr_log_events_t* events,
     events->events_seen++;
   }
 
-  // if no event queue exists or size is 0 then event will be dropped
+  /* if no event queue exists or size is 0 then event will be dropped */
   if (NULL == events || NULL == events->events
       || 0 == events->events_allocated) {
+    /* must free event as ownership passes over per API */
+    nr_log_event_destroy(&event);
+
     return true;
   }
 
   events_sampled = nr_log_events_is_sampling(events);
 
-  // make a copy of the event so the heap can control its entire life cycle
-  dup_event = nr_log_event_clone(event);
-  if (NULL == dup_event) {
-    return false;
-  }
-
-  nr_minmax_heap_insert(events->events, (void*)dup_event);
+  nr_minmax_heap_insert(events->events, (void*)event);
   if (!events_sampled) {
     events->events_used++;
   }

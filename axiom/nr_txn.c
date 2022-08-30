@@ -3315,9 +3315,9 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
     segment = nr_txn_get_current_segment(txn, NULL);
     if (NULL != segment) {
       /*
-      * bump segment priority to increase chance it is saved
-      * if sampling occurs
-      */
+       * bump segment priority to increase chance it is saved
+       * if sampling occurs
+       */
       nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_LOG);
       nr_log_event_set_priority(e, nr_segment_get_priority_flag(segment));
     }
@@ -3384,7 +3384,6 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   } else {
     event_dropped = nr_log_events_add_event(txn->log_events, e);
   }
-  nr_log_event_destroy(&e);
 
   if (event_dropped) {
     nrm_force_add(txn->unscoped_metrics, "Logging/Forwarding/Dropped", 0);
