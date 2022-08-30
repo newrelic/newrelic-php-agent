@@ -336,14 +336,13 @@ static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
    * If the agent is still overwriting zend_execute_data extract oldfashioned
    * way; otherwise, pass the observer given return value.
    */
-  if
-    nrunlikely(NULL == execute_data) {
-      /*
-       * Shouldn't theoretically ever have a NULL execute_data with valid
-       * return_value.
-       */
-      return NULL;
-    }
+  if (nrunlikely(NULL == execute_data)) {
+    /*
+     * Shouldn't theoretically ever have a NULL execute_data with valid
+     * return_value.
+     */
+    return NULL;
+  }
   return func_return_value;
 #elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   NR_UNUSED_FUNC_RETURN_VALUE;
