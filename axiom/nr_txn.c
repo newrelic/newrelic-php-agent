@@ -3308,14 +3308,16 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
     return;
   }
 
-  // default priority to lowest value
+  /* default priority to lowest value */
   nr_log_event_set_priority(e, 0);
 
   if (nrlikely(txn)) {
     segment = nr_txn_get_current_segment(txn, NULL);
     if (NULL != segment) {
-      // bump segment priority to increase chance it is saved
-      // if sampling occurs
+      /*
+      * bump segment priority to increase chance it is saved
+      * if sampling occurs
+      */
       nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_LOG);
       nr_log_event_set_priority(e, nr_segment_get_priority_flag(segment));
     }
