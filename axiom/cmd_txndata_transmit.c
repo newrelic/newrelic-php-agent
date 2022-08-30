@@ -134,9 +134,9 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   events_vec = nr_vector_create(event_count, NULL, NULL);
   nr_log_events_to_vector(txn->log_events, events_vec);
 
-  /* Using a buffer here means we can write the encoded span events into it,
+  /* Using a buffer here means we can write the encoded log events into it,
    * saving a couple of allocations (including at least one full string
-   * duplication) per span event. */
+   * duplication) per log event. */
   buf = nr_buffer_create(0, 0);
 
   for (i = 0; i < event_count; i++, offset++) {
