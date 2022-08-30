@@ -110,13 +110,14 @@ static bool add_log_field_to_buf(nrbuf_t* buf,
 }
 
 char* nr_log_event_to_json(const nr_log_event_t* event) {
-  nrbuf_t* buf = nr_buffer_create(0, 0);
+  nrbuf_t* buf = NULL;
   char* json = NULL;
 
   if (NULL == event) {
     return NULL;
   }
-
+  
+  buf = nr_buffer_create(0, 0);
   if (nr_log_event_to_json_buffer_ex(event, buf, false)) {
     nr_buffer_add(buf, NR_PSTR("\0"));
     json = nr_strdup(nr_buffer_cptr(buf));
