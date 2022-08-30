@@ -31,10 +31,12 @@ extern bool nr_log_events_add_event(nr_log_events_t* events,
 
 /*
  * Purpose : Create a log event pool of specified size.
+ *           An event pool allocated using this function must be
+ *           destroyed with nr_log_events_destroy().
  *
  * Params  : 1. Log event pool
  *
- *  * Returns : Allocated log event pool or NULL on failure.
+ * Returns : Allocated log event pool or NULL on failure.
  *
  * Notes   : A pool of size 0 is valid.
  */
@@ -95,7 +97,7 @@ extern bool nr_log_events_is_sampling(nr_log_events_t* events);
  *           2. Vector (must be allocated by caller)
  *
  * Notes   : The vector contains pointers into the log event pool so
- *           the log event pool must not be changed or destroyed
+ *           the log event pool must not be modified or destroyed
  *           while the vector is in use.
  */
 extern void nr_log_events_to_vector(nr_log_events_t* events,
