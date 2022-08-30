@@ -164,8 +164,10 @@ bool nr_log_events_add_event(nr_log_events_t* events,
     return false;
   }
 
-  // need to increment this if a valid event was sent
-  // so take care if it here then sanity check other args
+  /*
+   * need to increment this if a valid event was sent
+   *  so take care if it here then sanity check other args
+   */
   if (NULL != events) {
     events->events_seen++;
   }
