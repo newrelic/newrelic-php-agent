@@ -113,6 +113,10 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
   char* json = NULL;
 
+  if (NULL == event) {
+    return NULL;
+  }
+
   if (nr_log_event_to_json_buffer_ex(event, buf, false)) {
     nr_buffer_add(buf, NR_PSTR("\0"));
     json = nr_strdup(nr_buffer_cptr(buf));
