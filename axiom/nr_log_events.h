@@ -53,7 +53,7 @@ extern void nr_log_events_destroy(nr_log_events_t** events);
  *
  * Params  : 1. Log event pool
  *
- * Returns : Maximum number of events held by a event pool.
+ * Returns : Maximum number of events held by an event pool.
  *
  */
 extern size_t nr_log_events_max_events(const nr_log_events_t* events);
