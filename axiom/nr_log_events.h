@@ -59,11 +59,11 @@ extern void nr_log_events_destroy(nr_log_events_t** events);
 extern size_t nr_log_events_max_events(const nr_log_events_t* events);
 
 /*
- * Purpose : Get the number of log events seen by a event pool.
+ * Purpose : Get the number of log events seen by an event pool.
  *
  * Params  : 1. Log event pool
  *
- * Returns : Number of log events seen by a event pool.
+ * Returns : Number of log events seen by an event pool.
  *
  */
 extern size_t nr_log_events_number_seen(const nr_log_events_t* events);
