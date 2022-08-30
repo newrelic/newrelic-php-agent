@@ -49,7 +49,7 @@ extern nr_log_events_t* nr_log_events_create(size_t max_events);
 extern void nr_log_events_destroy(nr_log_events_t** events);
 
 /*
- * Purpose : Get the maximum number of events held by a event pool.
+ * Purpose : Get the maximum number of events held by an event pool.
  *
  * Params  : 1. Log event pool
  *
