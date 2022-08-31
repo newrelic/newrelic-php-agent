@@ -38,7 +38,7 @@ static void test_events_success(void) {
   nr_log_event_t* e = NULL;
   void* test_e;
   nr_vector_t* vector = NULL;
-  bool pass;
+  bool found;
   char* json;
   const char* expected;
 
@@ -83,22 +83,22 @@ static void test_events_success(void) {
   vector = nr_vector_create(10, NULL, NULL);
   nr_log_events_to_vector(events, vector);
 
-#define TEST_EVENTS_GET(MESSAGE, IDX)                              \
-  do {                                                             \
-    pass = nr_vector_get_element(vector, IDX, &test_e);            \
-    tlib_pass_if_true("retrived log element from vector OK", pass, \
-                      "expected TRUE");                            \
-    json = nr_log_event_to_json((nr_log_event_t*)test_e);          \
-    tlib_fail_if_null("no json", json);                            \
-    expected                                                       \
-        = "[{"                                                     \
-          "\"message\":\"" MESSAGE                                 \
-          "\","                                                    \
-          "\"level\":\"" LOG_LEVEL                                 \
-          "\","                                                    \
-          "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";            \
-    tlib_pass_if_str_equal("add event", expected, json);           \
-    nr_free(json);                                                 \
+#define TEST_EVENTS_GET(MESSAGE, IDX)                               \
+  do {                                                              \
+    found = nr_vector_get_element(vector, IDX, &test_e);            \
+    tlib_pass_if_true("retrived log element from vector OK", found, \
+                      "expected TRUE");                             \
+    json = nr_log_event_to_json((nr_log_event_t*)test_e);           \
+    tlib_fail_if_null("no json", json);                             \
+    expected                                                        \
+        = "[{"                                                      \
+          "\"message\":\"" MESSAGE                                  \
+          "\","                                                     \
+          "\"level\":\"" LOG_LEVEL                                  \
+          "\","                                                     \
+          "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";             \
+    tlib_pass_if_str_equal("add event", expected, json);            \
+    nr_free(json);                                                  \
   } while (0)
 
   /* Test events are stored in order as explained above for minmax heap*/
@@ -122,7 +122,8 @@ static void test_events_sample(void) {
   nr_log_events_t* events = NULL;
   nr_log_event_t* e = NULL;
   bool event_dropped;
-  bool pass;
+  bool found;
+  bool sampling;
   void* test_e;
   nr_vector_t* vector;
 
@@ -130,10 +131,10 @@ static void test_events_sample(void) {
   tlib_fail_if_null("events created", events);
 
   /* verify invalid arguments are handled properly */
-  pass = nr_log_events_is_sampling(NULL);
-  tlib_pass_if_false("NULL event should not crash", pass,
+  sampling = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("NULL event should not crash", sampling,
                      "nr_log_events_is_sampling(NULL): got [%d], want [%d]",
-                     pass, false);
+                     sampling, false);
 
   /* add events and check sampled status */
   e = create_sample_event(LOG_MESSAGE_0);
@@ -150,9 +151,9 @@ static void test_events_sample(void) {
                      "nr_log_events_add_event: got [%d], want [%d]",
                      event_dropped, false);
 
-  pass = nr_log_events_is_sampling(NULL);
-  tlib_pass_if_false("2nd event does not cause sampling", pass,
-                     "nr_log_events_is_sampling: got [%d], want [%d]", pass,
+  sampling = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("2nd event does not cause sampling", sampling,
+                     "nr_log_events_is_sampling: got [%d], want [%d]", sampling,
                      false);
 
   e = create_sample_event(LOG_MESSAGE_2);
@@ -162,9 +163,9 @@ static void test_events_sample(void) {
                     "nr_log_events_add_event: got [%d], want [%d]",
                     event_dropped, true);
 
-  pass = nr_log_events_is_sampling(NULL);
-  tlib_pass_if_false("3rd event does cause sampling", pass,
-                     "nr_log_events_is_sampling: got [%d], want [%d]", pass,
+  sampling = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("3rd event does cause sampling", sampling,
+                     "nr_log_events_is_sampling: got [%d], want [%d]", sampling,
                      true);
 
   e = create_sample_event(LOG_MESSAGE_3);
@@ -183,15 +184,15 @@ static void test_events_sample(void) {
   // convert log event pool to a vector and test
   vector = nr_vector_create(10, NULL, NULL);
   nr_log_events_to_vector(events, vector);
-  pass = nr_vector_get_element(vector, 0, &test_e);
-  tlib_pass_if_true("retrived log element from vector OK", pass,
+  found = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
   tlib_pass_if_str_equal("LOG_MESSAGE_3 log event retained", LOG_MESSAGE_3,
                          ((nr_log_event_t*)test_e)->message);
   tlib_pass_if_int_equal("Priority 50 log event retained", 50,
                          ((nr_log_event_t*)test_e)->priority);
-  pass = nr_vector_get_element(vector, 1, &test_e);
-  tlib_pass_if_true("retrived log element from vector OK", pass,
+  found = nr_vector_get_element(vector, 1, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
   tlib_pass_if_str_equal("LOG_MESSAGE_0 log event retained", LOG_MESSAGE_0,
                          ((nr_log_event_t*)test_e)->message);
@@ -213,15 +214,15 @@ static void test_events_sample(void) {
   // convert log event pool to a vector and test
   vector = nr_vector_create(10, NULL, NULL);
   nr_log_events_to_vector(events, vector);
-  pass = nr_vector_get_element(vector, 0, &test_e);
-  tlib_pass_if_true("retrived log element from vector OK", pass,
+  found = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
   tlib_pass_if_str_equal("LOG_MESSAGE_4 log event retained", LOG_MESSAGE_4,
                          ((nr_log_event_t*)test_e)->message);
   tlib_pass_if_int_equal("Priority 50 log event retained", 50,
                          ((nr_log_event_t*)test_e)->priority);
-  pass = nr_vector_get_element(vector, 1, &test_e);
-  tlib_pass_if_true("retrived log element from vector OK", pass,
+  found = nr_vector_get_element(vector, 1, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
   tlib_pass_if_str_equal("LOG_MESSAGE_0 log event retained", LOG_MESSAGE_0,
                          ((nr_log_event_t*)test_e)->message);
