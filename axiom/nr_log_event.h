@@ -79,6 +79,9 @@ extern bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
  *          2. The field to be set.
  *
  * Returns : Nothing.
+ * 
+ * Notes   : nr_log_event_set_message() truncates the message
+ *           length to NR_MAX_LOG_MESSAGE_LEN.
  */
 extern void nr_log_event_set_message(nr_log_event_t* event,
                                      const char* message);
