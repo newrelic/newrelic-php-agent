@@ -901,14 +901,22 @@ static void nr_execute_handle_logging_framework(
       nr_php_execute_add_library_supportability_metric(
           NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
 
-      char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
-                                 logging_frameworks[i].library_name);
+      if (NRINI(logging_enabled)) {
+        char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
+                                   logging_frameworks[i].library_name);
 
-      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
-      nr_free(metname);
+        nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+        nr_free(metname);
 
-      if (NULL != logging_frameworks[i].enable) {
-        logging_frameworks[i].enable(TSRMLS_C);
+        if (NULL != logging_frameworks[i].enable) {
+          logging_frameworks[i].enable(TSRMLS_C);
+        }
+      } else {
+        char* metname = nr_formatf("Supportability/Logging/PHP/%s/disabled",
+                                   logging_frameworks[i].library_name);
+
+        nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+        nr_free(metname);
       }
     }
   }
