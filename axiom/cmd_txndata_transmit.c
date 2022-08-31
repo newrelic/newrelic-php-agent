@@ -142,11 +142,11 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   for (i = 0; i < event_count; i++, offset++) {
     void* event;
     uint32_t data;
-    bool pass;
+    bool found;
 
     nr_buffer_reset(buf);
-    pass = nr_vector_get_element(events_vec, i, &event);
-    if (!pass) {
+    found = nr_vector_get_element(events_vec, i, &event);
+    if (!found) {
       /* There's really no scenario this should happen, so we won't try to do
        * anything clever in terms of skipping the event and patching up the
        * offsets. Let's just assume it's going to be bad and move on. */
