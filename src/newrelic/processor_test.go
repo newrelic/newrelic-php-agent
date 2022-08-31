@@ -424,12 +424,14 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	m.DoAppInfo(t, nil, AppStateConnected)
 
 	// Harvest enough data that the data usage channel overflows and drops data
+	// Make the harvest blocking so that we are guaranteed channel fills before accessing it
 	for i := 0; i < 30; i++ {
 		m.TxnData(t, idOne, txnEventSample1Times(10))
 		m.processorHarvestChan <- ProcessorHarvest{
 			AppHarvest: m.p.harvests[idOne],
 			ID:         idOne,
 			Type:       HarvestTxnEvents,
+			Blocking:	true,
 		}
 		/* collect txn data */
 		<-m.clientParams
