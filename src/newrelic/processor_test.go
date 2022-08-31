@@ -823,7 +823,6 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	}
 
 	// 8001 events. Split into two payloads of 4000 and 4001.
-	// We do not know which payload arrives first.
 	// Test that data usage metrics count properly in this case
 	m.TxnData(t, idOne, txnEventSample1Times(8001))
 	m.processorHarvestChan <- ProcessorHarvest{
@@ -831,6 +830,8 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		ID:         idOne,
 		// harvest both txn events and metrics
 		Type: HarvestTxnEvents | HarvestDefaultData,
+		// needs to be blocking to know order of clientParams
+		Blocking: true,
 	}
 	/* metrics */
 	<-m.clientParams
