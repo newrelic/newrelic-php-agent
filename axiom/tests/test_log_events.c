@@ -72,6 +72,7 @@ static void test_events_success(void) {
   // LOG_MESSAGE_0 (pri 3)
   // LOG_MESSAGE_1 (pri 2)
   // LOG_MESSAGE_2 (pri 1)
+  // clang-format on
 
   tlib_pass_if_int_equal("events number seen updated", 4,
                          nr_log_events_number_seen(events));
