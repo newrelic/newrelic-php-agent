@@ -624,6 +624,35 @@ static void nr_php_txn_log_error_dt_on_tt_off(void) {
   }
 }
 
+static void nr_php_txn_send_metrics_once(nrtxn_t* txn) {
+  static unsigned int sent = 0;
+  char* metname = NULL;
+
+  if (nrunlikely(NULL == NRPRG(txn))) {
+    return;
+  }
+
+  if (nrlikely(0 != sent)) {
+    return;
+  }
+
+#define FMT_BOOL(v) (v) ? "enabled" : "disabled"
+
+  metname = nr_formatf("Supportability/Logging/Forwarding/PHP/%s",
+                       FMT_BOOL(nr_txn_log_forwarding_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  metname = nr_formatf("Supportability/Logging/Metrics/PHP/%s",
+                       FMT_BOOL(nr_txn_log_metrics_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  sent = 1;
+
+#undef FMT_BOOL
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -783,6 +812,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nrl_debug(NRL_INIT, "no Axiom transaction this time around");
     return NR_FAILURE;
   }
+
+  nr_php_txn_send_metrics_once(NRPRG(txn));
 
   /*
    * Disable automated parenting for the default parent context. See
