@@ -511,7 +511,7 @@ void nr_guzzle4_enable(TSRMLS_D) {
    * for all requests created on that client.
    */
   nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
-                            nr_guzzle_client_construct TSRMLS_CC);
+                            nr_guzzle4_client_construct TSRMLS_CC);
 }
 
 void nr_guzzle4_minit(TSRMLS_D) {
