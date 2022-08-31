@@ -354,6 +354,11 @@ static nrtime_t nr_monolog_get_timestamp(const int monolog_api,
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
+  if (!nr_txn_log_forwarding_enabled(NRPRG(txn))
+      && !nr_txn_log_metrics_enabled(NRPRG(txn))) {
+    goto skip_instrumentation;
+  }
+
   /* Get Monolog API level */
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   int api = nr_monolog_version(this_var TSRMLS_CC);
@@ -381,9 +386,10 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   nr_free(level_name);
   nr_free(message);
 
-  NR_PHP_WRAPPER_CALL
-
   nr_php_scope_release(&this_var);
+
+skip_instrumentation:
+  NR_PHP_WRAPPER_CALL
 }
 NR_PHP_WRAPPER_END
 
