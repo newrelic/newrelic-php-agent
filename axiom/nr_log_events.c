@@ -148,15 +148,15 @@ bool nr_log_events_add_event(nr_log_events_t* events, nr_log_event_t* event) {
 }
 
 /*
- * Purpose : Place an nr_log_event_t pointer in a heap into a nr_set_t,
- *             or "heap to set".
+ * Purpose : Place an nr_log_event_t pointer in a heap into a nr_vector_t,
+ *             or "heap to vector".
  *
  * Params  : 1. The log event pointer in the heap.
- *           2. A void* pointer to be recast as the pointer to the set.
+ *           2. A void* pointer to be recast as the pointer to the vector.
  *
  * Note    : This is the callback function supplied to nr_minmax_heap_iterate
  *           used for iterating over a heap of log events and placing each
- *           log events into a set.
+ *           log events into a vector.
  */
 static bool nr_log_event_htov_iterator_callback(void* value, void* userdata) {
   if (nrlikely(value && userdata)) {
