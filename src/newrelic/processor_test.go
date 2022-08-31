@@ -415,6 +415,52 @@ func TestUsageHarvest(t *testing.T) {
 	m.QuitTestProcessor()
 }
 
+func TestUsageHarvestExceedChannel(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	// Harvest enough data that the data usage channel overflows and drops data
+	for i := 0; i < 30; i++ {
+		m.TxnData(t, idOne, txnEventSample1Times(10))
+		m.processorHarvestChan <- ProcessorHarvest{
+			AppHarvest: m.p.harvests[idOne],
+			ID:         idOne,
+			Type:       HarvestTxnEvents,
+		}
+		/* collect txn data */
+		<-m.clientParams
+		m.clientReturn <- ClientReturn{nil,nil,202}
+		<-m.p.trackProgress // unblock processor after harvest
+	}
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	// No other payloads are sent because the harvest is empty
+	/* collect usage metrics */
+	cp := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil,nil,202}
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	time := strings.Split(string(cp.data), ",")[1]
+	// The data usage channel only holds 25 points until dropping data
+	var expectedJSON = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/c/specific_collector.com/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
+
+	if got, _ := OrderScrubMetrics(cp.data, nil); string(got) != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
+	}
+	m.QuitTestProcessor()
+}
+
 func TestSupportabilityHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
