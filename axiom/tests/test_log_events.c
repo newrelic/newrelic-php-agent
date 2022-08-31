@@ -184,6 +184,8 @@ static void test_events_sample(void) {
   // convert log event pool to a vector and test
   vector = nr_vector_create(10, NULL, NULL);
   nr_log_events_to_vector(events, vector);
+  nr_vector_sort(vector, nr_log_event_wrapped_priority_comparator, NULL);
+
   found = nr_vector_get_element(vector, 0, &test_e);
   tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
