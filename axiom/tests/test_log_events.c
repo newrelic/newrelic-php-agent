@@ -60,7 +60,7 @@ static void test_events_success(void) {
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_event_set_priority(e, 0);
   nr_log_events_add_event(events, e);
-
+// clang-format off
   // minmax heap will store events like this (showing priorities)
   //         0
   //       3   2
