@@ -37,45 +37,6 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_realfree((void**)ptr);
 }
 
-nr_log_event_t* nr_log_event_clone(const nr_log_event_t* src) {
-  nr_log_event_t* clone = NULL;
-
-  if (NULL == src) {
-    return NULL;
-  }
-
-  clone = nr_log_event_create();
-  if (NULL == clone) {
-    return NULL;
-  }
-
-  if (NULL != src->trace_id) {
-    clone->trace_id = nr_strdup(src->trace_id);
-  }
-  if (NULL != src->log_level) {
-    clone->log_level = nr_strdup(src->log_level);
-  }
-  if (NULL != src->message) {
-    clone->message = nr_strdup(src->message);
-  }
-  if (NULL != src->span_id) {
-    clone->span_id = nr_strdup(src->span_id);
-  }
-  if (NULL != src->entity_guid) {
-    clone->entity_guid = nr_strdup(src->entity_guid);
-  }
-  if (NULL != src->entity_name) {
-    clone->entity_name = nr_strdup(src->entity_name);
-  }
-  if (NULL != src->hostname) {
-    clone->hostname = nr_strdup(src->hostname);
-  }
-  clone->priority = src->priority;
-  clone->timestamp = src->timestamp;
-
-  return clone;
-}
-
 static bool add_log_field_to_buf(nrbuf_t* buf,
                                  const char* field_name,
                                  const char* field_value,
@@ -116,7 +77,7 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
   if (NULL == event) {
     return NULL;
   }
-  
+
   buf = nr_buffer_create(0, 0);
   if (nr_log_event_to_json_buffer_ex(event, buf, false)) {
     nr_buffer_add(buf, NR_PSTR("\0"));

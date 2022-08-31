@@ -37,19 +37,6 @@ extern nr_log_event_t* nr_log_event_create(void);
 extern void nr_log_event_destroy(nr_log_event_t** ptr);
 
 /*
- * Purpose : Clone a log event.
- *
- * Params  : A pointer that points at the allocated
- *           nr_log_event_t (created with nr_log_event_create) that
- *           is the source log event.
- *
- * Returns : Pointer to a new log event with all fields copied
- *           from the source with newly allocated memory so
- *           the original log event can be destroyed.
- */
-extern nr_log_event_t* nr_log_event_clone(const nr_log_event_t* event);
-
-/*
  * Purpose : Output New Relic format JSON for the given log event.
  *
  * Params  : 1. The log event.

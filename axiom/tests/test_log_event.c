@@ -426,81 +426,6 @@ static void test_log_event_priority(void) {
   nr_log_event_set_priority(NULL, 0xFFFF);
 }
 
-static void test_log_event_clone(void) {
-  nr_log_event_t* orig;
-  nr_log_event_t* clone;
-
-  // Test : Clone a NULL ptr should return NULL and not crash
-  clone = nr_log_event_clone(NULL);
-  tlib_pass_if_null("cloning a NULL log event ptr should return NULL", clone);
-
-  // Test: Clone a event with NULL string members should copy as NULL and not
-  // creash
-  orig = nr_log_event_create();
-  clone = nr_log_event_clone(orig);
-  tlib_pass_if_null(
-      "cloning a log event with NULL entity_guid should remain NULL",
-      clone->entity_guid);
-  tlib_pass_if_null(
-      "cloning a log event with NULL entity_name should remain NULL",
-      clone->entity_name);
-  tlib_pass_if_null("cloning a log event with NULL hostname should remain NULL",
-                    clone->hostname);
-  tlib_pass_if_null(
-      "cloning a log event with NULL log_level should remain NULL",
-      clone->log_level);
-  tlib_pass_if_null("cloning a log event with NULL message should remain NULL",
-                    clone->message);
-  tlib_pass_if_null("cloning a log event with NULL span_id should remain NULL",
-                    clone->span_id);
-  tlib_pass_if_null("cloning a log event with NULL trace_id should remain NULL",
-                    clone->trace_id);
-  tlib_pass_if_int_equal("cloning a log event with 0 priority should give 0", 0,
-                         clone->priority);
-  tlib_pass_if_int_equal("cloning a log event with 0 timestamp should give 0",
-                         0, clone->timestamp);
-
-  // Free original event first to test if freeing clone double frees or other
-  // mem probs
-  nr_log_event_destroy(&orig);
-  nr_log_event_destroy(&clone);
-
-  // Test: Clone an event with all string members present even after orig freed
-  orig = nr_log_event_create();
-  nr_log_event_set_entity_name(orig, "ENTITY_NAME");
-  nr_log_event_set_guid(orig, "ENTITY_GUID");
-  nr_log_event_set_hostname(orig, "HOSTNAME");
-  nr_log_event_set_log_level(orig, "LOGLEVEL");
-  nr_log_event_set_message(orig, "MESSAGE");
-  nr_log_event_set_span_id(orig, "SPAN_ID");
-  nr_log_event_set_trace_id(orig, "TRACE_ID");
-  nr_log_event_set_timestamp(orig, 553483260);
-  nr_log_event_set_priority(orig, 0x1234);
-  clone = nr_log_event_clone(orig);
-  nr_log_event_destroy(&orig);
-  tlib_pass_if_str_equal(
-      "cloning a log event should create correct entity_guid", "ENTITY_GUID",
-      clone->entity_guid);
-  tlib_pass_if_str_equal(
-      "cloning a log event should create correct entity_name", "ENTITY_NAME",
-      clone->entity_name);
-  tlib_pass_if_str_equal("cloning a log event should create correct hostname",
-                         "HOSTNAME", clone->hostname);
-  tlib_pass_if_str_equal("cloning a log event should create correct log_level",
-                         "LOGLEVEL", clone->log_level);
-  tlib_pass_if_str_equal("cloning a log event should create correct message",
-                         "MESSAGE", clone->message);
-  tlib_pass_if_str_equal("cloning a log event should create correct span_id",
-                         "SPAN_ID", clone->span_id);
-  tlib_pass_if_str_equal("cloning a log event should create correct trace_id",
-                         "TRACE_ID", clone->trace_id);
-  tlib_pass_if_int_equal("cloning a log event should create correct priority",
-                         0x1234, clone->priority);
-  tlib_pass_if_int_equal("cloning a log event should create correct timestamp",
-                         553483260 / NR_TIME_DIVISOR_MS, clone->timestamp);
-  nr_log_event_destroy(&clone);
-}
-
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -517,5 +442,4 @@ void test_main(void* p NRUNUSED) {
   test_log_event_timestamp();
   test_log_event_priority();
   test_log_event_span_id();
-  test_log_event_clone();
 }
