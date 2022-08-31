@@ -10,70 +10,24 @@
 
 #include "nr_limits.h"
 #include "nr_log_events.h"
-#include "nr_log_events_private.h"
-#include "nr_log_event_private.h"
+
 #include "util_memory.h"
 #include "util_minmax_heap.h"
 #include "util_vector.h"
+
+struct _nr_log_events_t {
+  size_t events_allocated;  /* Maximum number of events to store in this data
+                            structure. */
+  size_t events_used;       /* Number of events within this data structure */
+  size_t events_seen;       /* Number of times "add event" was called */
+  nr_minmax_heap_t* events; /* heap for log event storeg */
+};
 
 bool nr_log_events_is_sampling(nr_log_events_t* events) {
   if (events->events_used < events->events_allocated) {
     return false;
   }
   return true;
-}
-
-/*
- * Safety check for comparator functions
- *
- * This avoids NULL checks in each comparator and ensures that NULL
- * elements are consistently considered as smaller.
- */
-#define COMPARATOR_NULL_CHECK(__elem1, __elem2)             \
-  if (nrunlikely(NULL == (__elem1) || NULL == (__elem2))) { \
-    if ((__elem1) < (__elem2)) {                            \
-      return -1;                                            \
-    } else if ((__elem1) > (__elem2)) {                     \
-      return 1;                                             \
-    }                                                       \
-    return 0;                                               \
-  }
-
-static int nr_log_event_age_comparator(const nr_log_event_t* a,
-                                       const nr_log_event_t* b) {
-  if (a->timestamp < b->timestamp) {
-    return -1;
-  } else if (a->timestamp > b->timestamp) {
-    return 1;
-  }
-  return 0;
-}
-
-static int nr_log_event_wrapped_age_comparator(const void* a, const void* b) {
-  COMPARATOR_NULL_CHECK(a, b);
-
-  return nr_log_event_age_comparator((const nr_log_event_t*)a,
-                                     (const nr_log_event_t*)b);
-}
-
-static int nr_log_event_priority_comparator(const nr_log_event_t* a,
-                                            const nr_log_event_t* b) {
-  if (a->priority > b->priority) {
-    return 1;
-  } else if (a->priority < b->priority) {
-    return -1;
-  } else {
-    return nr_log_event_wrapped_age_comparator(a, b);
-  }
-}
-
-int nr_log_event_wrapped_priority_comparator(const void* a,
-                                             const void* b,
-                                             void* userdata NRUNUSED) {
-  COMPARATOR_NULL_CHECK(a, b);
-
-  return nr_log_event_priority_comparator((const nr_log_event_t*)a,
-                                          (const nr_log_event_t*)b);
 }
 
 /* All log events popping out of the segment heap go through this

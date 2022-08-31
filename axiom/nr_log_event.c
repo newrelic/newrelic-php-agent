@@ -217,3 +217,56 @@ void nr_log_event_set_priority(nr_log_event_t* event, int priority) {
 
   event->priority = priority;
 }
+
+/*
+ * Safety check for comparator functions
+ *
+ * This avoids NULL checks in each comparator and ensures that NULL
+ * elements are consistently considered as smaller.
+ */
+#define COMPARATOR_NULL_CHECK(__elem1, __elem2)             \
+  if (nrunlikely(NULL == (__elem1) || NULL == (__elem2))) { \
+    if ((__elem1) < (__elem2)) {                            \
+      return -1;                                            \
+    } else if ((__elem1) > (__elem2)) {                     \
+      return 1;                                             \
+    }                                                       \
+    return 0;                                               \
+  }
+
+static int nr_log_event_age_comparator(const nr_log_event_t* a,
+                                       const nr_log_event_t* b) {
+  if (a->timestamp < b->timestamp) {
+    return -1;
+  } else if (a->timestamp > b->timestamp) {
+    return 1;
+  }
+  return 0;
+}
+
+static int nr_log_event_wrapped_age_comparator(const void* a, const void* b) {
+  COMPARATOR_NULL_CHECK(a, b);
+
+  return nr_log_event_age_comparator((const nr_log_event_t*)a,
+                                     (const nr_log_event_t*)b);
+}
+
+static int nr_log_event_priority_comparator(const nr_log_event_t* a,
+                                            const nr_log_event_t* b) {
+  if (a->priority > b->priority) {
+    return 1;
+  } else if (a->priority < b->priority) {
+    return -1;
+  } else {
+    return nr_log_event_wrapped_age_comparator(a, b);
+  }
+}
+
+int nr_log_event_wrapped_priority_comparator(const void* a,
+                                             const void* b,
+                                             void* userdata NRUNUSED) {
+  COMPARATOR_NULL_CHECK(a, b);
+
+  return nr_log_event_priority_comparator((const nr_log_event_t*)a,
+                                          (const nr_log_event_t*)b);
+}

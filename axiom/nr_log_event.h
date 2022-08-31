@@ -72,6 +72,10 @@ extern bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
                                            nrbuf_t* buf,
                                            bool partial);
 
+int nr_log_event_wrapped_priority_comparator(const void* a,
+                                             const void* b,
+                                             void* userdata NRUNUSED);
+
 /*
  * Purpose : Set the various fields of the log events.
  *
@@ -79,7 +83,7 @@ extern bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
  *          2. The field to be set.
  *
  * Returns : Nothing.
- * 
+ *
  * Notes   : nr_log_event_set_message() truncates the message
  *           length to NR_MAX_LOG_MESSAGE_LEN.
  */

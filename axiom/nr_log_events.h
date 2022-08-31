@@ -111,8 +111,4 @@ extern bool nr_log_events_is_sampling(nr_log_events_t* events);
 extern void nr_log_events_to_vector(nr_log_events_t* events,
                                     nr_vector_t* vector);
 
-int nr_log_event_wrapped_priority_comparator(const void* a,
-                                             const void* b,
-                                             void* userdata NRUNUSED);
-
 #endif /* NR_LOG_EVENTS_HDR */
