@@ -776,22 +776,30 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 
 	// 8001 events. Split into two payloads of 4000 and 4001.
 	// We do not know which payload arrives first.
+	// Test that data usage metrics count properly in this case
 	m.TxnData(t, idOne, txnEventSample1Times(8001))
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
-		Type:       HarvestTxnEvents,
+		// harvest both txn events and metrics
+		Type:       HarvestTxnEvents|HarvestDefaultData,
 	}
+	/* metrics */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{}
 	/* txn events first payload */
 	cp1 = <-m.clientParams
 	m.clientReturn <- ClientReturn{}
 	/* txn events second payload */
 	cp2 = <-m.clientParams
-	<-m.p.trackProgress
+	m.clientReturn <- ClientReturn{}
+	/* usage metrics */
+	cp3 := <-m.clientParams
 	m.clientReturn <- ClientReturn{}
 
 	<-m.p.trackProgress // unblock processor
 
+	// txn events comparison
 	cp1Events = getEventsSeen(cp1.data)
 	cp2Events = getEventsSeen(cp2.data)
 	if cp1Events != 4000 && cp2Events != 4000 {
@@ -799,6 +807,16 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	}
 	if (cp1Events + cp2Events) != 8001 {
 		t.Fatal("Payload sum of 8001 events expected, got ", cp1Events, " and ", cp2Events)
+	}
+	// usage metrics comparison
+	time := strings.Split(string(cp3.data), ",")[1]
+	var expectedJSON = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[6,289522,0,0,0,0]],` +
+		`[{"name":"Supportability/c/specific_collector.com/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
+		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[1,1261,0,0,0,0]]]]`
+
+	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
 	}
 
 	m.QuitTestProcessor()
