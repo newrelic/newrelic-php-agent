@@ -20,6 +20,7 @@
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "php_redis.h"
+#include "php_relay.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "nr_datastore_instance.h"
@@ -1530,48 +1531,6 @@ NR_INNER_WRAPPER(redis_select) {
 
 /*
  * Handle
- *   \Relay\Relay__construct( string $host, | int $port)
- *
- * The Relay class can connect in the constructor if provided a host and/or port
- */
-NR_INNER_WRAPPER(relay_construct) {
-    char* host = NULL;
-    nr_string_len_t host_len = 0;
-    zend_long port = nr_php_redis_default_port;
-    nr_datastore_instance_t* instance = NULL;
-
-    /* Short circuit if we have no arguments, or can't parse them correctly */
-    if (ZEND_NUM_ARGS() < 1 ||
-        zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|l",
-                                 &host, &host_len, &port) != SUCCESS)
-    {
-        return;
-    }
-
-    instance = nr_php_redis_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
-                                                    host, port TSRMLS_CC);
-    nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                               nr_wrapper->extra, instance,
-                                               INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-
-/* Simply pass-through to the PhpRedis handler */
-NR_INNER_WRAPPER(relay_select) {
-  NR_INNER_WRAPPER_NAME(redis_select)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
-}
-
-/* Simply pass-through to the PhpRedis handler */
-NR_INNER_WRAPPER(relay_connect) {
-  NR_INNER_WRAPPER_NAME(redis_connect)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
-}
-
-/* Simply pass-through to the PhpRedis handler */
-NR_INNER_WRAPPER(relay_close) {
-  NR_INNER_WRAPPER_NAME(redis_close)(INTERNAL_FUNCTION_PARAM_PASSTHRU, nr_wrapper);
-}
-
-/*
- * Handle
  *   bool redis::*
  */
 NR_INNER_WRAPPER(redis_function) {
@@ -1587,6 +1546,119 @@ NR_INNER_WRAPPER(redis_function) {
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
+/*
+ * Handle
+ *   \Relay\Relay__construct( string $host, | int $port)
+ *
+ */
+NR_INNER_WRAPPER(relay_construct) {
+    char* host = NULL;
+    nr_string_len_t host_len = 0;
+    zend_long port = nr_php_redis_default_port;
+    nr_datastore_instance_t* instance = NULL;
+
+    /* Short circuit if we have no arguments, or can't parse them correctly */
+    if (ZEND_NUM_ARGS() < 1 ||
+        zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                 "s|l", &host, &host_len, &port) != SUCCESS)
+    {
+        return;
+    }
+
+    instance = nr_php_relay_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
+                                                    host, port TSRMLS_CC);
+    nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
+                                               nr_wrapper->extra, instance,
+                                               INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+/*
+ * Handle
+ *   bool \Relay\Relay::connect ( string $host[, int $port = 6379 ... ] )
+ *   bool \Relay\Relay::pconnect ( string $host[, int $port = 6379 ... ] )
+ *   bool \Relay\Relay::open ( string $host[, int $port = 6379 ... ] )
+ *   bool \Relay\Relay::popen ( string $host[, int $port = 6379 ... ] )
+ */
+NR_INNER_WRAPPER(relay_connect) {
+  char* host = NULL;
+  nr_string_len_t host_len = 0;
+  zend_long port = nr_php_redis_default_port;
+  zval* ignore1 = NULL;
+  zval* ignore2 = NULL;
+  zval* ignore3 = NULL;
+  nr_datastore_instance_t* instance = NULL;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s|lzzz", &host,
+          &host_len, &port, &ignore1, &ignore2, &ignore3)) {
+    instance = nr_php_relay_save_datastore_instance(NR_PHP_INTERNAL_FN_THIS(),
+                                                    host, port TSRMLS_CC);
+  }
+
+  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
+                                             nr_wrapper->extra, instance,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+/*
+ * Handle
+ *   bool \Relay\Relay::select ( int $dbindex )
+ */
+NR_INNER_WRAPPER(relay_select) {
+  zend_long dbindex = 0;
+  zval* this_obj = NULL;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "l", &dbindex)) {
+    nr_datastore_instance_t* instance;
+    char* database = nr_formatf("%ld", (long)dbindex);
+
+    this_obj = NR_PHP_INTERNAL_FN_THIS();
+    instance = nr_php_relay_retrieve_datastore_instance(this_obj TSRMLS_CC);
+    nr_datastore_instance_set_database_name(instance, database);
+    nr_free(database);
+  }
+
+  if (nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                               INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool \Relay\Relay::close ()
+ */
+NR_INNER_WRAPPER(relay_close) {
+  zval* this_obj = NR_PHP_INTERNAL_FN_THIS();
+  nr_php_relay_remove_datastore_instance(this_obj TSRMLS_CC);
+
+  if (nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                               INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool \Relay\Relay::*
+ */
+NR_INNER_WRAPPER(relay_function) {
+  nr_datastore_instance_t* instance;
+  zval* this_obj = NULL;
+
+  this_obj = NR_PHP_INTERNAL_FN_THIS();
+
+  instance = nr_php_relay_retrieve_datastore_instance(this_obj TSRMLS_CC);
+
+  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
+                                             nr_wrapper->extra, instance,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
 static char* nr_php_prepared_statement_make_pgsql_key(
     const zval* conn,
     const char* stmtname,
@@ -3221,6 +3293,7 @@ NR_OUTER_WRAPPER(redis_zunionstore)
 NR_OUTER_WRAPPER(relay_construct)
 NR_OUTER_WRAPPER(relay_connect)
 NR_OUTER_WRAPPER(relay_close)
+NR_OUTER_WRAPPER(relay_function)
 NR_OUTER_WRAPPER(relay_select)
 
 NR_OUTER_WRAPPER(relay_append)
@@ -3785,7 +3858,7 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::xclaim", redis_xclaim, redis_function, 0,
                       "xclaim")
   NR_INTERNAL_WRAPREC("redis::xdel", redis_xdel, redis_function, 0, "xdel")
-  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0,
                       "xgroup")
   NR_INTERNAL_WRAPREC("redis::xinfo", redis_xinfo, redis_function, 0, "xinfo")
   NR_INTERNAL_WRAPREC("redis::xlen", redis_xlen, redis_function, 0, "xlen")
@@ -3835,7 +3908,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       redis_function, 0, "zrevrangebyscore")
   NR_INTERNAL_WRAPREC("redis::zrevrank", redis_zrevrank, redis_function, 0,
                       "zrevrank")
-  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0,
                       "zscore")
   NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
                       0, "zunionstore")
@@ -3857,6 +3930,7 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_RELAY_WRAPREC_EX(construct, relay_construct)
   NR_INTERNAL_RELAY_WRAPREC_EX(connect, relay_connect)
   NR_INTERNAL_RELAY_WRAPREC_EX(close, relay_close)
+  NR_INTERNAL_RELAY_WRAPREC_EX(function, relay_function)
   NR_INTERNAL_RELAY_WRAPREC_EX(select, relay_select)
 
   NR_INTERNAL_RELAY_WRAPREC(append)

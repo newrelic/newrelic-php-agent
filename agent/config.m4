@@ -191,8 +191,8 @@ if test "$PHP_NEWRELIC" = "yes"; then
   php_globals.c php_hash.c php_header.c php_httprequest_send.c \
   php_internal_instrument.c php_minit.c php_mshutdown.c php_mysql.c \
   php_mysqli.c php_newrelic.c php_nrini.c php_output.c php_pdo.c \
-  php_pdo_mysql.c php_pdo_pgsql.c php_pgsql.c php_psr7.c php_redis.c \
-  php_rinit.c php_rshutdown.c php_samplers.c php_stack.c \
+  php_pdo_mysql.c php_pdo_pgsql.c php_pgsql.c php_psr7.c php_relay.c \
+  php_redis.c php_rinit.c php_rshutdown.c php_samplers.c php_stack.c \
   php_stacked_segment.c php_txn.c php_user_instrument.c \
   php_vm.c php_wrapper.c"
   FRAMEWORKS="fw_cakephp.c fw_codeigniter.c fw_drupal8.c \
