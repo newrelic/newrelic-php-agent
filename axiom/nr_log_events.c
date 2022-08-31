@@ -24,6 +24,10 @@ struct _nr_log_events_t {
 };
 
 bool nr_log_events_is_sampling(nr_log_events_t* events) {
+  if (NULL == events) {
+    return false;
+  }
+
   if (events->events_used < events->events_allocated) {
     return false;
   }

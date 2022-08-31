@@ -128,6 +128,13 @@ static void test_events_sample(void) {
   events = nr_log_events_create(2);
   tlib_fail_if_null("events created", events);
 
+  /* verify invalid arguments are handled properly */
+  pass = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("NULL event should not crash", pass,
+                     "nr_log_events_is_sampling(NULL): got [%d], want [%d]",
+                     pass, false);
+
+  /* add events and check sampled status */
   e = create_sample_event(LOG_MESSAGE_0);
   nr_log_event_set_priority(e, 100);
   event_dropped = nr_log_events_add_event(events, e);
@@ -142,12 +149,22 @@ static void test_events_sample(void) {
                      "nr_log_events_add_event: got [%d], want [%d]",
                      event_dropped, false);
 
+  pass = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("2nd event does not cause sampling", pass,
+                     "nr_log_events_is_sampling: got [%d], want [%d]", pass,
+                     false);
+
   e = create_sample_event(LOG_MESSAGE_2);
   nr_log_event_set_priority(e, 2);
   event_dropped = nr_log_events_add_event(events, e);
-  tlib_pass_if_true("3nd event, sampling", event_dropped,
+  tlib_pass_if_true("3rd event, sampling", event_dropped,
                     "nr_log_events_add_event: got [%d], want [%d]",
                     event_dropped, true);
+
+  pass = nr_log_events_is_sampling(NULL);
+  tlib_pass_if_false("3rd event does cause sampling", pass,
+                     "nr_log_events_is_sampling: got [%d], want [%d]", pass,
+                     true);
 
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_event_set_priority(e, 50);
