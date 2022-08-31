@@ -153,10 +153,10 @@ func (m *MockedProcessor) QuitTestProcessor() {
 	// blocking, as a new harvest was triggered and then the trackProgress
 	// channel is waiting to be consumed
 	select {
-		case <-m.p.trackProgress:
-			// receive harvest notice
-		default:
-			// nothing on channel
+	case <-m.p.trackProgress:
+		// receive harvest notice
+	default:
+		// nothing on channel
 	}
 	m.p.quit()
 }
@@ -227,13 +227,13 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	// this code path will trigger three `harvestPayload` calls, so we need
 	// to pluck three items out of the clientParams channels
 	/* collect txn */
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
 	/* collect metrics */
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp2 := <-m.clientParams
 	/* collect usage metrics */
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp3 := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
@@ -273,7 +273,7 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 		Type:       HarvestCustomEvents,
 	}
 	/* collect metrics */
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
@@ -305,7 +305,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 		Type:       HarvestLogEvents,
 	}
 	/* collect logs */
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
@@ -337,8 +337,8 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 
 	m.p.CleanExit()
 
-	<-m.clientParams /* ditch metrics */
-	cp := <-m.clientParams /* custom events */
+	<-m.clientParams        /* ditch metrics */
+	cp := <-m.clientParams  /* custom events */
 	cp2 := <-m.clientParams /* usage metrics */
 
 	expected := `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]`
@@ -373,10 +373,10 @@ func TestUsageHarvest(t *testing.T) {
 	}
 	/* collect metrics */
 	cp1 := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	/* collect usage metrics */
 	cp2 := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 
 	<-m.p.trackProgress // unblock processor after harvest
 
@@ -433,7 +433,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 		}
 		/* collect txn data */
 		<-m.clientParams
-		m.clientReturn <- ClientReturn{nil,nil,202}
+		m.clientReturn <- ClientReturn{nil, nil, 202}
 		<-m.p.trackProgress // unblock processor after harvest
 	}
 
@@ -445,7 +445,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	// No other payloads are sent because the harvest is empty
 	/* collect usage metrics */
 	cp := <-m.clientParams
-	m.clientReturn <- ClientReturn{nil,nil,202}
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 
 	<-m.p.trackProgress // unblock processor after harvest
 
@@ -828,7 +828,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		// harvest both txn events and metrics
-		Type:       HarvestTxnEvents|HarvestDefaultData,
+		Type: HarvestTxnEvents | HarvestDefaultData,
 	}
 	/* metrics */
 	<-m.clientParams
@@ -895,7 +895,7 @@ func TestForceRestart(t *testing.T) {
 		t.Fatal(string(cp.data))
 	}
 
-    // Reconnect after restart exception
+	// Reconnect after restart exception
 	m.DoConnect(t, &idTwo)
 	m.DoAppInfo(t, &idOne, AppStateConnected)
 

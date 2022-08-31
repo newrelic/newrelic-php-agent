@@ -8,8 +8,8 @@ package newrelic
 import (
 	"encoding/json"
 	"strings"
-	"time"
 	"sync"
+	"time"
 
 	"newrelic/collector"
 	"newrelic/infinite_tracing"
@@ -165,7 +165,7 @@ func ConnectApplication(args *ConnectArgs) ConnectAttempt {
 
 	args.Payload, err = EncodePayload(&RawPreconnectPayload{SecurityPolicyToken: args.SecurityPolicyToken, HighSecurity: args.HighSecurity})
 	if err != nil {
-		log.Errorf("unable to connect application: %v", err)
+		log.Errorf("Unable to connect application: %v", err)
 		rep.Err = err
 		return rep
 	}
@@ -533,32 +533,32 @@ type harvestArgs struct {
 // Has all usage stats needed for the spec
 type dataUsageInfo struct {
 	endpoint_name string
-	payloadSize int
-	responseSize int
+	payloadSize   int
+	responseSize  int
 }
 
 type dataUsageController struct {
 	duc chan dataUsageInfo
-	wg *sync.WaitGroup
+	wg  *sync.WaitGroup
 }
 
 func newDataUsageController(du_chan chan dataUsageInfo) dataUsageController {
-	return dataUsageController {
+	return dataUsageController{
 		duc: du_chan,
-		wg: new(sync.WaitGroup),
+		wg:  new(sync.WaitGroup),
 	}
 }
 
 func addDataUsage(duc chan dataUsageInfo, endpoint string, data_stored int, data_received int) {
 	select {
-		case duc <- dataUsageInfo{
-			         endpoint_name: endpoint,
-			         payloadSize: data_stored,
-			         responseSize: data_received,
-			        }:
-			// data stored
-		default:
-			// channel full, don't store
+	case duc <- dataUsageInfo{
+		endpoint_name: endpoint,
+		payloadSize:   data_stored,
+		responseSize:  data_received,
+	}:
+		// data stored
+	default:
+		// channel full, don't store
 	}
 }
 
@@ -758,14 +758,16 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
 	duc.wg.Wait()
-	if len(duc.duc) == 0 {return} // no usage metrics found
+	if len(duc.duc) == 0 {
+		return
+	} // no usage metrics found
 
 	sumPayload := 0
 	sumResponse := 0
 	sumAttempts := 0
 	type dataUsageMetrics struct {
-		attempts int
-		payloadSize int
+		attempts     int
+		payloadSize  int
 		responseSize int
 	}
 	dataUsageMap := make(map[string]dataUsageMetrics)
@@ -790,12 +792,12 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
 	}
 
 	metrics := NewMetricTable(limits.MaxMetrics, time.Now())
-	for name, data := range(dataUsageMap) {
-		metrics.AddRaw([]byte("Supportability/" + args.agentLanguage + "/" + args.collector + "/" + name + "/Output/Bytes"),
-					   "", "", [6]float64{float64(data.attempts), float64(data.payloadSize), float64(data.responseSize), 0.0, 0.0, 0.0}, Forced)
+	for name, data := range dataUsageMap {
+		metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/"+args.collector+"/"+name+"/Output/Bytes"),
+			"", "", [6]float64{float64(data.attempts), float64(data.payloadSize), float64(data.responseSize), 0.0, 0.0, 0.0}, Forced)
 	}
-	metrics.AddRaw([]byte("Supportability/" + args.agentLanguage + "/" + args.collector + "/Output/Bytes"),
-				   "", "", [6]float64{float64(sumAttempts), float64(sumPayload), float64(sumResponse), 0.0, 0.0, 0.0}, Forced)
+	metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/"+args.collector+"/Output/Bytes"),
+		"", "", [6]float64{float64(sumAttempts), float64(sumPayload), float64(sumResponse), 0.0, 0.0, 0.0}, Forced)
 	metrics = metrics.ApplyRules(args.rules)
 	considerHarvestPayload(metrics, args, duc)
 }
@@ -882,9 +884,9 @@ func NewProcessor(cfg ProcessorConfig) *Processor {
 		processorHarvestChan:  make(chan ProcessorHarvest),
 		// We don't want data usage collection to ever block, so we create a
 		// sized buffer that will drop any excess data once filled
-		dataUsageChannel:      make(chan dataUsageInfo, 25),
-		appConnectBackoff:     limits.AppConnectAttemptBackoff,
-		cfg:                   cfg,
+		dataUsageChannel:  make(chan dataUsageInfo, 25),
+		appConnectBackoff: limits.AppConnectAttemptBackoff,
+		cfg:               cfg,
 	}
 }
 
