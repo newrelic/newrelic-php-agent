@@ -14,6 +14,11 @@
 
 int nr_log_level_str_to_int(const char* str) {
   int level;
+  bool err = false;
+
+  if (NULL == str) {
+    err = true;
+  }
 
 #define LEVELCMP(x) (0 == nr_stricmp(str, x))
 
@@ -34,14 +39,18 @@ int nr_log_level_str_to_int(const char* str) {
   } else if (LEVELCMP(LL_DEBU_STR)) {
     level = LOG_LEVEL_DEBUG;
   } else {
+    err = true;
+  }
+
+#undef LEVELCMP
+
+  if (err) {
     nrl_warning(
         NRL_INIT,
         "Unknown Log Forwarding Log Level Specified; Defaulting to \"%s\"",
         nr_log_level_rfc_to_psr(LOG_LEVEL_UNKNOWN));
     level = LOG_LEVEL_UNKNOWN;
   }
-
-#undef LEVELCMP
 
   return level;
 }
