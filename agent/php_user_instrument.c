@@ -47,7 +47,32 @@
  *
  * Many functions here call zend_bailout to continue handling fatal PHP errors,
  * Since zend_bailout calls longjmp it never returns.
+ *
+ * Note: The agent ONLY needs to call this if it has overwritten the original
+ * zend_execute_ex.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+/*
+ * There are a few various places, aside from the php_execute_* family that will
+ * call nr_zend_call_orig_execute_* so make it a noop to handle all cases when
+ * using OAPI.
+ */
+int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
+  NR_UNUSED_EXECUTE_DATA;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  return 0;
+}
+int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
+                                      nr_segment_t* segment,
+                                      NR_EXECUTE_PROTO TSRMLS_DC) {
+  (void)wraprec;
+  (void)segment;
+  NR_UNUSED_EXECUTE_DATA;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  return 0;
+}
+#else
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
   zend_try {
@@ -74,6 +99,7 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
   zend_end_try();
   return zcaught;
 }
+#endif
 
 /*
  * Wrap an existing user-defined (written in PHP) function with an

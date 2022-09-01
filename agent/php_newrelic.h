@@ -38,6 +38,15 @@ extern zend_module_entry newrelic_module_entry;
  * majority of those changes so the rest of the code can simply use the macros
  * and not have to take the different APIs into account.
  */
+/* 
+ * OVERWRITE_ZEND_EXECUTE_DATA allows testing of components with the previous
+ * method of overwriting until the handler functions are complete.
+ * Additionally, gives us flexibility of toggling back to previous method of
+ * instrumentation. When checking in, leave this toggled on to have the CI work
+ * as long as possible until the handler functionality is implemented. 
+ */
+#define OVERWRITE_ZEND_EXECUTE_DATA true
+
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
@@ -465,11 +474,13 @@ nrinitime_t
  * configuration options for handling application logging
  */
 
-nrinibool_t logging_enabled;        /* newrelic.application_logging.enabled */
-nrinibool_t log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
-                                     */
-nriniuint_t log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
-                                            */
+nrinibool_t logging_enabled; /* newrelic.application_logging.enabled */
+nrinibool_t
+    log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
+                             */
+nriniuint_t
+    log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
+                                    */
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
