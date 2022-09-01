@@ -912,11 +912,9 @@ static void nr_execute_handle_logging_framework(
       nr_php_execute_add_library_supportability_metric(
           NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
 
-      if (NRINI(logging_enabled)) {
+      if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
         support_metric_value = "enabled";
-        if (NULL != logging_frameworks[i].enable) {
-          logging_frameworks[i].enable(TSRMLS_C);
-        }
+        logging_frameworks[i].enable(TSRMLS_C);
       }
       nr_php_execute_add_logging_supportability_metric(
           NRTXN(unscoped_metrics), logging_frameworks[i].library_name,
