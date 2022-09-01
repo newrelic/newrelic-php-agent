@@ -867,6 +867,16 @@ static void nr_php_execute_add_library_supportability_metric(
   nr_free(metname);
 }
 
+static void nr_php_execute_add_logging_supportability_metric(
+    nrmtable_t* unscoped_metrics,
+    const char* library_name,
+    const char* instrumentation_status) {
+  char* metname = nr_formatf("Supportability/Logging/PHP/%s/%s", library_name,
+                             instrumentation_status);
+  nrm_force_add(unscoped_metrics, metname, 0);
+  nr_free(metname);
+}
+
 static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
@@ -891,6 +901,7 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
 static void nr_execute_handle_logging_framework(
     const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
+  char* support_metric_value = "disabled";
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
@@ -902,22 +913,14 @@ static void nr_execute_handle_logging_framework(
           NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
 
       if (NRINI(logging_enabled)) {
-        char* metname = nr_formatf("Supportability/Logging/PHP/%s/enabled",
-                                   logging_frameworks[i].library_name);
-
-        nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
-        nr_free(metname);
-
+        support_metric_value = "enabled";
         if (NULL != logging_frameworks[i].enable) {
           logging_frameworks[i].enable(TSRMLS_C);
         }
-      } else {
-        char* metname = nr_formatf("Supportability/Logging/PHP/%s/disabled",
-                                   logging_frameworks[i].library_name);
-
-        nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
-        nr_free(metname);
       }
+      nr_php_execute_add_logging_supportability_metric(
+          NRTXN(unscoped_metrics), logging_frameworks[i].library_name,
+          support_metric_value);
     }
   }
 
