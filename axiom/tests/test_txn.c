@@ -8101,6 +8101,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.logging_enabled = true;
   opts.log_forwarding_enabled = true;
+  opts.log_forwarding_log_level = LOG_LEVEL_WARNING;
   opts.log_events_max_samples_stored = 10;
   opts.log_metrics_enabled = true;
 
@@ -8118,7 +8119,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
 }
 
 static void test_record_log_event(void) {
-#define LOG_LEVEL "INFO"
+#define LOG_LEVEL LL_WARN_STR
 #define LOG_MESSAGE "Sample log message"
 #define LOG_TIMESTAMP 1234
 #define LOG_EVENT_PARAMS \
@@ -8191,7 +8192,9 @@ static void test_record_log_event(void) {
       = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
-        "\"level\":\"UNKNOWN\","
+        "\"log.level\":\"" LL_UNKN_STR
+        "\","
+        "\"timestamp\":0,"
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
         "\"entity.name\":\"" APP_ENTITY_NAME
