@@ -22,24 +22,26 @@ int nr_log_level_str_to_int(const char* str) {
 
 #define LEVELCMP(x) (0 == nr_stricmp(str, x))
 
-  if (LEVELCMP(LL_EMER_STR)) {
-    level = LOG_LEVEL_EMERGENCY;
-  } else if (LEVELCMP(LL_ALER_STR)) {
-    level = LOG_LEVEL_ALERT;
-  } else if (LEVELCMP(LL_CRIT_STR)) {
-    level = LOG_LEVEL_CRITICAL;
-  } else if (LEVELCMP(LL_ERRO_STR)) {
-    level = LOG_LEVEL_ERROR;
-  } else if (LEVELCMP(LL_WARN_STR)) {
-    level = LOG_LEVEL_WARNING;
-  } else if (LEVELCMP(LL_NOTI_STR)) {
-    level = LOG_LEVEL_NOTICE;
-  } else if (LEVELCMP(LL_INFO_STR)) {
-    level = LOG_LEVEL_INFO;
-  } else if (LEVELCMP(LL_DEBU_STR)) {
-    level = LOG_LEVEL_DEBUG;
-  } else {
-    err = true;
+  if (!err) {
+    if (LEVELCMP(LL_EMER_STR)) {
+      level = LOG_LEVEL_EMERGENCY;
+    } else if (LEVELCMP(LL_ALER_STR)) {
+      level = LOG_LEVEL_ALERT;
+    } else if (LEVELCMP(LL_CRIT_STR)) {
+      level = LOG_LEVEL_CRITICAL;
+    } else if (LEVELCMP(LL_ERRO_STR)) {
+      level = LOG_LEVEL_ERROR;
+    } else if (LEVELCMP(LL_WARN_STR)) {
+      level = LOG_LEVEL_WARNING;
+    } else if (LEVELCMP(LL_NOTI_STR)) {
+      level = LOG_LEVEL_NOTICE;
+    } else if (LEVELCMP(LL_INFO_STR)) {
+      level = LOG_LEVEL_INFO;
+    } else if (LEVELCMP(LL_DEBU_STR)) {
+      level = LOG_LEVEL_DEBUG;
+    } else {
+      err = true;
+    }
   }
 
 #undef LEVELCMP
