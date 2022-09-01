@@ -37,8 +37,6 @@
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/info.h"
 
-#include "nr_php_observer.h"
-
 /*
  * Zend Engine API numbers.
  * Find these numbers at: php-src/Zend/zend_modules.h
@@ -57,6 +55,7 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 #include "Zend/zend_observer.h"
+#include "nr_php_observer.h"
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
