@@ -36,19 +36,22 @@
 #define LL_UNKN_STR "UNKNOWN"
 
 /*
- * @brief       Convert PSR-3 string log level to RFC5424 represenation.
+ * Purpose : Convert PSR-3 string log level to RFC5424 represenation.
  *
- * @param       str     String Log Level
- * @return      int     RFC5424 Log Level numerical code
+ * Params  : 1.  str     String Log Level
+ *
+ * Returns : Integer RFC5424 Log Level numerical code
  */
 extern int nr_log_level_str_to_int(const char* str);
 
 /*
- * @brief       Convert RFC5424 log level to PSR-3 string represenation.
+ * Purpose : Convert RFC5424 log level to PSR-3 string represenation.
  *
- * @param       level   RFC5424 Log Level
- * @return      char*   PSR-3 String Log Level
+ * Params  : 1. level   RFC5424 Log Level
+ *
+ * Returns : PSR-3 String Log Level as a const char *
+ *
  */
-extern char* nr_log_level_rfc_to_psr(int level);
+extern const char* nr_log_level_rfc_to_psr(int level);
 
 #endif /* NR_LOG_LEVEL_HDR */
