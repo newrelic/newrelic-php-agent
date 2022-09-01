@@ -57,45 +57,38 @@ int nr_log_level_str_to_int(const char* str) {
   return level;
 }
 
-char* nr_log_level_rfc_to_psr(int level) {
-  char* psr = NULL;
-
-#define COPY(s) (psr = nr_strdup(s));
+const char* nr_log_level_rfc_to_psr(int level) {
+  const char* psr = NULL;
 
   switch (level) {
     case LOG_LEVEL_EMERGENCY:
-      COPY(LL_EMER_STR)
+      psr = LL_EMER_STR;
       break;
     case LOG_LEVEL_ALERT:
-      COPY(LL_ALER_STR)
+      psr = LL_ALER_STR;
       break;
     case LOG_LEVEL_CRITICAL:
-      COPY(LL_CRIT_STR)
+      psr = LL_CRIT_STR;
       break;
     case LOG_LEVEL_ERROR:
-      COPY(LL_ERRO_STR)
+      psr = LL_ERRO_STR;
       break;
     case LOG_LEVEL_WARNING:
-      COPY(LL_WARN_STR)
+      psr = LL_WARN_STR;
       break;
     case LOG_LEVEL_NOTICE:
-      COPY(LL_NOTI_STR)
+      psr = LL_NOTI_STR;
       break;
     case LOG_LEVEL_INFO:
-      COPY(LL_INFO_STR)
+      psr = LL_INFO_STR;
       break;
     case LOG_LEVEL_DEBUG:
-      COPY(LL_DEBU_STR)
+      psr = LL_DEBU_STR;
       break;
     default:
-      nrl_warning(NRL_INIT,
-                  "ERROR converting Log Level rfc to psr; Defaulting to \"%s\"",
-                  LL_UNKN_STR);
-      COPY(LL_UNKN_STR)
+      psr = LL_UNKN_STR;
       break;
   }
-
-#undef COPY
 
   return psr;
 }
