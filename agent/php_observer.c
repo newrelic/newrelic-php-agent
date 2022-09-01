@@ -35,7 +35,7 @@
 #include "util_syscalls.h"
 #include "util_threads.h"
 
-#include "nr_php_observer.h"
+#include "php_observer.h"
 #include "php_execute.h"
 
 /*
@@ -48,8 +48,8 @@
  * significant overhead for doing the call. However, depending on user stack
  * size settings, it could potentially generate an extremely deep call stack in
  * PHP because zend_execute_ex limits stack size to whatever user settings
- * are. Observer API bypasses the stack overflow issue that an agent could run into
- * when intercepting userland calls.  Additionally, with PHP 8.0, JIT
+ * are. Observer API bypasses the stack overflow issue that an agent could run
+ * into when intercepting userland calls.  Additionally, with PHP 8.0, JIT
  * optimizations could optimize out a call to zend_execute_ex and the agent
  * would not be able to overwite that call properly as the agent wouldn't have
  * access to the JITed information.  This could lead to segfaults and caused PHP

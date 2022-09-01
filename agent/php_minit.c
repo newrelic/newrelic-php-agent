@@ -38,7 +38,7 @@
 #include "fw_laravel.h"
 #include "lib_guzzle4.h"
 
-#include "nr_php_observer.h"
+#include "php_observer.h"
 
 static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   if (nrunlikely(NULL == nrg)) {

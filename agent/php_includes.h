@@ -55,7 +55,6 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 #include "Zend/zend_observer.h"
-#include "nr_php_observer.h"
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO

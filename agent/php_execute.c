@@ -31,7 +31,7 @@
 #include "util_number_converter.h"
 #include "fw_support.h"
 #include "fw_hooks.h"
-#include "nr_php_observer.h"
+#include "php_observer.h"
 
 /*
  * This wall of text is important. Read it. Understand it. Really.
