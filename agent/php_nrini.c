@@ -1826,7 +1826,8 @@ static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
     p->value = nr_log_level_str_to_int(NEW_VALUE);
     p->where = stage;
 
-    nrl_debug(NRL_INIT, "Log Level (RFC5424): %d", p->value);
+    nrl_debug(NRL_INIT, "Log Forwarding Log Level (RFC5424) set to: %d",
+              p->value);
     return SUCCESS;
   }
 
