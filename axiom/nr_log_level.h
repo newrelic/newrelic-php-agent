@@ -6,6 +6,8 @@
 #ifndef NR_LOG_LEVEL_HDR
 #define NR_LOG_LEVEL_HDR
 
+#include <stdbool.h>
+
 /*
  *  Implementation Based on:
  *      https://www.php-fig.org/psr/psr-3/#5-psrlogloglevel
