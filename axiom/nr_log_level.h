@@ -25,15 +25,15 @@
 #define LOG_LEVEL_UNKNOWN (8)    // NON PSR- Unknown/Undefined log level
 #define LOG_LEVEL_DEFAULT (LOG_LEVEL_WARNING)
 
-#define LL_EMER_STR ("EMERGENCY")
-#define LL_ALER_STR ("ALERT")
-#define LL_CRIT_STR ("CRITICAL")
-#define LL_ERRO_STR ("ERROR")
-#define LL_WARN_STR ("WARNING")
-#define LL_NOTI_STR ("NOTICE")
-#define LL_INFO_STR ("INFO")
-#define LL_DEBU_STR ("DEBUG")
-#define LL_UNKN_STR ("UNKNOWN")
+#define LL_EMER_STR "EMERGENCY"
+#define LL_ALER_STR "ALERT"
+#define LL_CRIT_STR "CRITICAL"
+#define LL_ERRO_STR "ERROR"
+#define LL_WARN_STR "WARNING"
+#define LL_NOTI_STR "NOTICE"
+#define LL_INFO_STR "INFO"
+#define LL_DEBU_STR "DEBUG"
+#define LL_UNKN_STR "UNKNOWN"
 
 /*
  * @brief       Convert PSR-3 string log level to RFC5424 represenation.
