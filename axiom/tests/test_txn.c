@@ -35,6 +35,7 @@
 #include "util_strings.h"
 #include "util_text.h"
 #include "util_url.h"
+#include "util_vector.h"
 
 #include "nr_commands_private.h"
 
@@ -8094,7 +8095,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
   app.entity_name = entity_name;
-  app.limits.log_events = 10;
+  app.limits = default_app_limits();
 
   /* Setup log feature options */
   nr_memset(&opts, 0, sizeof(opts));
@@ -8129,11 +8130,15 @@ static void test_record_log_event(void) {
   nrapp_t appv = {.host_name = APP_HOST_NAME, .entity_guid = APP_ENTITY_GUID};
   nrtxn_t* txn = NULL;
   const char* expected = NULL;
-  const char* log_event_json = NULL;
+  char* log_event_json = NULL;
+  nr_vector_t* vector;
+  void* test_e;
+  bool pass;
 
   /*
    * NULL parameters: don't record, don't create metrics, don't blow up!
    */
+
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
   nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL);
   tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
@@ -8174,21 +8179,25 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("null log level, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
-  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
   tlib_pass_if_not_null("null log level, event recorded", log_event_json);
   expected
-      = "[{"
+      = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
-        "\"log.level\":\"UNKNOWN\","
-        "\"timestamp\":0,"
+        "\"level\":\"UNKNOWN\","
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
-        "\"entity.guid\":\"null\","
         "\"entity.name\":\"" APP_ENTITY_NAME
         "\","
-        "\"hostname\":\"null\""
-        "}]";
+        "\"timestamp\":0"
+        "}";
   tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
                          log_event_json);
   test_txn_metric_is("null log level, event recorded, metric created",
@@ -8197,6 +8206,8 @@ static void test_record_log_event(void) {
   test_txn_metric_is("null log level, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
                      1, 0, 0, 0, 0, 0);
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
   nr_txn_destroy(&txn);
 
   /* Happy path - everything initialized: record! */
@@ -8206,20 +8217,35 @@ static void test_record_log_event(void) {
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, event saved", 1,
                          nr_log_events_number_saved(txn->log_events));
-  log_event_json = nr_log_events_get_event_json(txn->log_events, 0);
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
+  tlib_fail_if_null("no json", log_event_json);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
-  expected = "[{"
-              "\"message\":\"" LOG_MESSAGE "\","
-              "\"log.level\":\"" LOG_LEVEL "\","
-              "\"timestamp\":" NR_STR2(LOG_TIMESTAMP)","
-              "\"trace.id\":\"0000000000000000\","
-              "\"span.id\":\"0000000000000000\","
-              "\"entity.guid\":\"" APP_ENTITY_GUID "\","
-              "\"entity.name\":\"" APP_ENTITY_NAME "\","
-              "\"hostname\":\"" APP_HOST_NAME "\""
-          "}]";
+  expected
+      = "{"
+        "\"message\":\"" LOG_MESSAGE
+        "\","
+        "\"level\":\"" LOG_LEVEL
+        "\","
+        "\"trace.id\":\"0000000000000000\","
+        "\"span.id\":\"0000000000000000\","
+        "\"entity.guid\":\"" APP_ENTITY_GUID
+        "\","
+        "\"entity.name\":\"" APP_ENTITY_NAME
+        "\","
+        "\"hostname\":\"" APP_HOST_NAME
+        "\","
+        "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}";
   tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
                          log_event_json);
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
+
   test_txn_metric_is("happy path, event recorded, metric created",
                      txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
                      0, 0, 0, 0);

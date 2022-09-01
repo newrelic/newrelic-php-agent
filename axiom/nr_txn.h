@@ -267,8 +267,8 @@ typedef struct _nrtxn_t {
   nr_file_naming_t* match_filenames; /* Filenames to match on for txn naming */
 
   nr_analytics_events_t*
-      custom_events; /* Custom events created through the API. */
-  nr_analytics_events_t* log_events;     /* Log events pool */
+      custom_events;           /* Custom events created through the API. */
+  nr_log_events_t* log_events; /* Log events pool */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 

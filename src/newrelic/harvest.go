@@ -162,8 +162,8 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), h.SpanEvents.analyticsEvents.NumFailedAttempts())
 
 	// Log Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/LogEvent/TotalEventsSeen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/LogEvent/TotalEventsSent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
 	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), h.LogEvents.analyticsEvents.NumFailedAttempts())
 
 	// Certificate supportability metrics.

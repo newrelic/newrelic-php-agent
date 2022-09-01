@@ -54,8 +54,10 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS) \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
+#define NR_TXN_ATTR(X, NAME, DESTS)                     \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
+    (NAME), (DESTS)                                     \
+  }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",
@@ -1219,7 +1221,7 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
 }
 
 void nr_txn_destroy_fields(nrtxn_t* txn) {
-  nr_analytics_events_destroy(&txn->log_events);
+  nr_log_events_destroy(&txn->log_events);
   nr_analytics_events_destroy(&txn->custom_events);
   nr_attribute_config_destroy(&txn->attribute_config);
   nr_attributes_destroy(&txn->attributes);
@@ -3300,12 +3302,26 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
                                            nrapp_t* app) {
   char* trace_id = NULL;
   char* span_id = NULL;
+  nr_segment_t* segment = NULL;
 
   if (NULL == e) {
     return;
   }
 
+  /* default priority to lowest value */
+  nr_log_event_set_priority(e, 0);
+
   if (nrlikely(txn)) {
+    segment = nr_txn_get_current_segment(txn, NULL);
+    if (NULL != segment) {
+      /*
+       * bump segment priority to increase chance it is saved
+       * if sampling occurs
+       */
+      nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_LOG);
+      nr_log_event_set_priority(e, nr_segment_get_priority_flag(segment));
+    }
+
     trace_id = nr_txn_get_current_trace_id(txn);
     nr_log_event_set_trace_id(e, trace_id);
     nr_free(trace_id);
@@ -3346,7 +3362,6 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
                                  const char* log_message,
                                  nrtime_t timestamp,
                                  nrapp_t* app) {
-  nr_random_t* rnd = NULL;
   nr_log_event_t* e = NULL;
   bool event_dropped = false;
 
@@ -3362,19 +3377,13 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     return;
   }
 
-  rnd = nr_random_create();
-  nr_random_seed(rnd, timestamp);
-
   e = log_event_create(log_level_name, log_message, timestamp, txn, app);
   if (NULL == e) {
     nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
     event_dropped = true;
   } else {
-    event_dropped = nr_log_events_add_event(txn->log_events, e, rnd);
+    event_dropped = nr_log_events_add_event(txn->log_events, e);
   }
-  nr_log_event_destroy(&e);
-
-  nr_random_destroy(&rnd);
 
   if (event_dropped) {
     nrm_force_add(txn->unscoped_metrics, "Logging/Forwarding/Dropped", 0);
@@ -3395,6 +3404,7 @@ static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   nrm_force_add(txn->unscoped_metrics, "Logging/lines", 0);
   metric_name
       = nr_formatf("Logging/lines/%s", ENSURE_LOG_LEVEL_NAME(level_name));
+
   nrm_force_add(txn->unscoped_metrics, metric_name, 0);
   nr_free(metric_name);
 }

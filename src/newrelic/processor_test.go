@@ -272,7 +272,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 	}
 	cp := <-m.clientParams
 	<-m.p.trackProgress // receive harvest notice
-	expected := `["one",{"reservoir_size":5,"events_seen":1},[log event test birthday]]`
+	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
@@ -382,8 +382,8 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
