@@ -793,10 +793,10 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
 
 	metrics := NewMetricTable(limits.MaxMetrics, time.Now())
 	for name, data := range dataUsageMap {
-		metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/"+args.collector+"/"+name+"/Output/Bytes"),
+		metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/Collector/"+name+"/Output/Bytes"),
 			"", "", [6]float64{float64(data.attempts), float64(data.payloadSize), float64(data.responseSize), 0.0, 0.0, 0.0}, Forced)
 	}
-	metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/"+args.collector+"/Output/Bytes"),
+	metrics.AddRaw([]byte("Supportability/"+args.agentLanguage+"/Collector/Output/Bytes"),
 		"", "", [6]float64{float64(sumAttempts), float64(sumPayload), float64(sumResponse), 0.0, 0.0, 0.0}, Forced)
 	metrics = metrics.ApplyRules(args.rules)
 	considerHarvestPayload(metrics, args, duc)

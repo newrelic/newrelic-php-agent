@@ -38,7 +38,7 @@ func (ms *mockSpanBatchSender) clone() (spanBatchSender, error) {
 	return ms, nil
 }
 
-func expectSupportabilityMetrics(t *testing.T, to *TraceObserver, expected map[string]float64) {
+func expectSupportabilityMetrics(t *testing.T, to *TraceObserver, expected map[string][6]float64) {
 	t.Helper()
 	actual := to.DumpSupportabilityMetrics()
 	if !reflect.DeepEqual(expected, actual) {
@@ -70,10 +70,10 @@ func TestConnectShutdownTrigger(t *testing.T) {
 		t.Errorf("unrecoverable connect error doesn't trigger a shutdown")
 	}
 
-	expectSupportabilityMetrics(t, to, map[string]float64{
-		"Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED": 1,
-		"Supportability/InfiniteTracing/Span/Response/Error":     1,
-		"Supportability/InfiniteTracing/Span/Sent":               0,
+	expectSupportabilityMetrics(t, to, map[string][6]float64{
+		"Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED": [6]float64{1, 0, 0, 0, 0, 0},
+		"Supportability/InfiniteTracing/Span/Response/Error":     [6]float64{1, 0, 0, 0, 0, 0},
+		"Supportability/InfiniteTracing/Span/Sent":               [6]float64{0, 0, 0, 0, 0, 0},
 	})
 
 	// check that messages don't block the queue after shutdown
@@ -128,10 +128,11 @@ Loop:
 		}
 	}
 
-	expectSupportabilityMetrics(t, to, map[string]float64{
-		"Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED": 1,
-		"Supportability/InfiniteTracing/Span/Response/Error":     1,
-		"Supportability/InfiniteTracing/Span/Sent":               0,
+	expectSupportabilityMetrics(t, to, map[string][6]float64{
+		"Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED": [6]float64{1, 0, 0, 0, 0, 0},
+		"Supportability/InfiniteTracing/Span/Response/Error":     [6]float64{1, 0, 0, 0, 0, 0},
+		"Supportability/InfiniteTracing/Span/Sent":               [6]float64{0, 0, 0, 0, 0, 0},
+		"Supportability/PHP/InfiniteTracing/Output/Bytes":        [6]float64{1, 0, 0, 0, 0, 0},
 	})
 
 	if to.isShutdownComplete() != true {
@@ -282,8 +283,8 @@ func TestSentSpanMetrics(t *testing.T) {
 		worker()
 	}()
 
-	expectSupportabilityMetrics(t, to, map[string]float64{
-		"Supportability/InfiniteTracing/Span/Sent": 0,
+	expectSupportabilityMetrics(t, to, map[string][6]float64{
+		"Supportability/InfiniteTracing/Span/Sent": [6]float64{0, 0, 0, 0, 0, 0},
 	})
 	to.QueueBatch(1, []byte{1, 2, 3})
 	to.QueueBatch(3, []byte{4, 5, 6})
@@ -295,13 +296,14 @@ func TestSentSpanMetrics(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	expectSupportabilityMetrics(t, to, map[string]float64{
-		"Supportability/InfiniteTracing/Span/Sent": 5,
+	expectSupportabilityMetrics(t, to, map[string][6]float64{
+		"Supportability/InfiniteTracing/Span/Sent":        [6]float64{5, 0, 0, 0, 0, 0},
+		"Supportability/PHP/InfiniteTracing/Output/Bytes": [6]float64{3, 9, 0, 0, 0, 0},
 	})
 
 	// Ensure counts are reset
-	expectSupportabilityMetrics(t, to, map[string]float64{
-		"Supportability/InfiniteTracing/Span/Sent": 0,
+	expectSupportabilityMetrics(t, to, map[string][6]float64{
+		"Supportability/InfiniteTracing/Span/Sent": [6]float64{0, 0, 0, 0, 0, 0},
 	})
 }
 

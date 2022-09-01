@@ -23,6 +23,7 @@ const (
 	supportabilitySent        = "Supportability/InfiniteTracing/Span/Sent"
 	supportabilityResponseErr = "Supportability/InfiniteTracing/Span/Response/Error"
 	supportabilityQueueDumped = "Supportability/InfiniteTracing/Span/AgentQueueDumped"
+	supportabilityDataUsage   = "Supportability/PHP/InfiniteTracing/Output/Bytes"
 )
 
 type spanBatch struct {
@@ -112,7 +113,8 @@ type metricIncrement struct {
 type traceObserverSupportability struct {
 	incrementSent chan float64
 	increment     chan metricIncrement
-	dump          chan map[string]float64
+	dataUsage     chan float64
+	dump          chan map[string][6]float64
 }
 
 func newTraceObserverWithWorker(cfg *Config) (*TraceObserver, func()) {
@@ -303,12 +305,15 @@ func (to *TraceObserver) doStreaming() spanBatchSenderStatus {
 				msg.count, to.messagesRemainingCapacity, to.QueueSize)
 			if err, status := to.sender.send(encodedSpanBatch(msg.batch)); err != nil {
 				to.messagesSent <- msg.count
+				// Add 0 to dataUsage channel so that we successfully count the send attempt
+				to.supportability.dataUsage <- 0.0
 				to.supportabilityError(status)
 				log.Errorf("trace observer error while sending span batch:  %v", err)
 				return status
 			} else {
 				to.messagesSent <- msg.count
 				to.supportability.incrementSent <- float64(msg.count)
+				to.supportability.dataUsage <- float64(len(msg.batch))
 			}
 		case status := <-to.responseError:
 			to.supportabilityError(status)
@@ -358,10 +363,29 @@ func (to *TraceObserver) handleSupportability() {
 			// alive when a shutdown was triggered from the sender.
 			return
 		case inc := <-to.supportability.increment:
-			metrics[inc.name] += inc.count
+			v, ok := metrics[inc.name]
+			if !ok {
+				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+			}
+			v[0] += inc.count
+			metrics[inc.name] = v
 		case batchCount := <-to.supportability.incrementSent:
+			v, ok := metrics[supportabilitySent]
+			if !ok {
+				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+			}
 			// Since we're sending span batches, we increment by the number of spans in the batch.
-			metrics[supportabilitySent] += batchCount
+			v[0] += batchCount
+			metrics[supportabilitySent] = v
+		case dataUsage := <-to.supportability.dataUsage:
+			v, ok := metrics[supportabilityDataUsage]
+			if !ok {
+				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+			}
+			v[0] += 1
+			v[1] += dataUsage
+			// There is never a body returned so no need to increment v[2]
+			metrics[supportabilityDataUsage] = v
 		case to.supportability.dump <- metrics:
 			// reset the metrics map
 			metrics = newSupportabilityMetrics()
@@ -369,11 +393,13 @@ func (to *TraceObserver) handleSupportability() {
 	}
 }
 
-func newSupportabilityMetrics() map[string]float64 {
-	// grpc codes, plus 1 for sent, and 1 for response errs
-	metrics := make(map[string]float64, numCodes+2)
+func newSupportabilityMetrics() map[string][6]float64 {
+	// grpc codes, plus 1 for sent, 1 for data usage,  and 1 for response errs
+	// Sending full metrics for AddRaw() (6 floats instead of just for AddCount())
+	// because dataUsage metrics requires multiple fields
+	metrics := make(map[string][6]float64, numCodes+3)
 	// supportabilitySent metric must always be sent
-	metrics[supportabilitySent] = 0
+	metrics[supportabilitySent] = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
 	return metrics
 }
 
@@ -381,13 +407,14 @@ func newTraceObserverSupportability() *traceObserverSupportability {
 	return &traceObserverSupportability{
 		incrementSent: make(chan float64),
 		increment:     make(chan metricIncrement),
-		dump:          make(chan map[string]float64),
+		dataUsage:     make(chan float64),
+		dump:          make(chan map[string][6]float64),
 	}
 }
 
 // dumpSupportabilityMetrics reads the current supportability metrics off of
 // the channel and resets them to 0.
-func (to *TraceObserver) DumpSupportabilityMetrics() map[string]float64 {
+func (to *TraceObserver) DumpSupportabilityMetrics() map[string][6]float64 {
 	if to.isAppShutdownInitiated() {
 		return nil
 	}

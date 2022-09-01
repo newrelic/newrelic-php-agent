@@ -247,9 +247,9 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	}
 	time := strings.Split(string(cp3.data), ",")[1]
 	usageMetrics := `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[2,1335,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[1,1255,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[2,1335,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/metric_data/Output/Bytes"},[1,1255,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != usageMetrics {
 		t.Fatal(string(got))
 	}
@@ -348,9 +348,9 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 
 	time := strings.Split(string(cp2.data), ",")[1]
 	usageMetrics := `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[2,1315,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/custom_event_data/Output/Bytes"},[1,60,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[1,1255,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[2,1315,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/custom_event_data/Output/Bytes"},[1,60,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/metric_data/Output/Bytes"},[1,1255,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp2.data, nil); string(got) != usageMetrics {
 		t.Fatal(string(got))
 	}
@@ -403,8 +403,8 @@ func TestUsageHarvest(t *testing.T) {
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 	time = strings.Split(string(cp2.data), ",")[1]
 	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[1,1255,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[1,1255,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[1,1255,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/metric_data/Output/Bytes"},[1,1255,0,0,0,0]]]]`
 
 	if got1, _ := OrderScrubMetrics(cp1.data, nil); string(got1) != expectedJSON1 {
 		t.Errorf("\ngot=%q \nwant=%q", got1, expectedJSON1)
@@ -454,8 +454,8 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	time := strings.Split(string(cp.data), ",")[1]
 	// The data usage channel only holds 25 points until dropping data
 	var expectedJSON = `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[25,5275,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
@@ -535,8 +535,8 @@ func TestSupportabilityHarvest(t *testing.T) {
 	time = strings.Split(string(cp2.data), ",")[1]
 	// includes usage of the first data usage metrics sent
 	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[2,1612,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[2,1612,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[2,1586,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/metric_data/Output/Bytes"},[2,1586,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp1.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
@@ -860,9 +860,9 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	// usage metrics comparison
 	time := strings.Split(string(cp3.data), ",")[1]
 	var expectedJSON = `["one",` + time + `,` + time + `,` +
-		`[[{"name":"Supportability/c/specific_collector.com/Output/Bytes"},[6,289522,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
-		`[{"name":"Supportability/c/specific_collector.com/metric_data/Output/Bytes"},[1,1261,0,0,0,0]]]]`
+		`[[{"name":"Supportability/c/Collector/Output/Bytes"},[6,289522,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
+		`[{"name":"Supportability/c/Collector/metric_data/Output/Bytes"},[1,1261,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)

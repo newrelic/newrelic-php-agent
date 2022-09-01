@@ -71,7 +71,7 @@ func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *Met
 	}
 
 	for name, val := range to.DumpSupportabilityMetrics() {
-		metrics.AddCount(name, "", val, Forced)
+		metrics.AddRaw([]byte(name), "", "", val, Forced)
 	}
 }
 
