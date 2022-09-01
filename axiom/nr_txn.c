@@ -18,6 +18,7 @@
 #include "nr_header.h"
 #include "nr_limits.h"
 #include "nr_log_events.h"
+#include "nr_log_level.h"
 #include "nr_segment.h"
 #include "nr_segment_private.h"
 #include "nr_segment_traces.h"
@@ -3269,6 +3270,37 @@ bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
   return true;
 }
 
+bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
+                                            const char* log_level_name) {
+  int log_level;
+
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  if (!txn->options.logging_enabled || !txn->options.log_forwarding_enabled) {
+    return false;
+  }
+
+  if (txn->high_security) {
+    return false;
+  }
+
+  log_level = nr_log_level_str_to_int(log_level_name);
+
+  // pass through UNKNOWN by default
+  if (LOG_LEVEL_UNKNOWN == log_level) {
+    return true;
+  }
+
+  // log levels are organized 0 -> 7 in decreasing severity
+  if (log_level > txn->options.log_forwarding_log_level) {
+    return false;
+  }
+
+  return true;
+}
+
 bool nr_txn_log_metrics_enabled(nrtxn_t* txn) {
   if (NULL == txn) { /* more like an assert */
     return false;
@@ -3374,6 +3406,10 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
   }
 
   if (nr_strempty(log_message)) {
+    return;
+  }
+
+  if (!nr_txn_log_forwarding_log_level_verify(txn, log_level_name)) {
     return;
   }
 
