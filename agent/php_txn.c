@@ -708,6 +708,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
+  opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
 
