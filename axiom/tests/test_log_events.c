@@ -60,18 +60,26 @@ static void test_events_success(void) {
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_event_set_priority(e, 0);
   nr_log_events_add_event(events, e);
+
   // clang-format off
-  // minmax heap will store events like this (showing priorities)
-  //         0
-  //       3   2
-  //      1
-  //
-  // so when walking the heap and converting to a vector we expect
-  // the following order:
-  // LOG_MESSAGE_3 (pri 0)
-  // LOG_MESSAGE_0 (pri 3)
-  // LOG_MESSAGE_1 (pri 2)
-  // LOG_MESSAGE_2 (pri 1)
+  /* minmax heap will store events like this (showing priorities)
+  *         0
+  *       3   2
+  *      1
+  *
+  * so when walking the heap and converting to a vector we expect
+  * the following order:
+  * LOG_MESSAGE_3 (pri 0)
+  * LOG_MESSAGE_0 (pri 3)
+  * LOG_MESSAGE_1 (pri 2)
+  * LOG_MESSAGE_2 (pri 1)
+  *
+  * However the documentation for nr_minmax_heap_iterate(), which
+  * is used by the conversion of heap to vector, says the order 
+  * is not guaranteed so instead we sort the vector and verify
+  * the proper events exist as it does not seem possible to 
+  * reliably test the construction of the heap internally.
+  */
   // clang-format on
 
   tlib_pass_if_int_equal("events number seen updated", 4,
@@ -79,9 +87,12 @@ static void test_events_success(void) {
   tlib_pass_if_int_equal("events number saved updated", 4,
                          nr_log_events_number_saved(events));
 
-  // convert log event pool to a vector and test
+  /* convert log event pool to a vector and test */
   vector = nr_vector_create(10, NULL, NULL);
   nr_log_events_to_vector(events, vector);
+
+  /* sort vector and verify all elements present */
+  nr_vector_sort(vector, nr_log_event_wrapped_priority_comparator, NULL);
 
 #define TEST_EVENTS_GET(MESSAGE, IDX)                               \
   do {                                                              \
@@ -103,9 +114,9 @@ static void test_events_success(void) {
 
   /* Test events are stored in order as explained above for minmax heap*/
   TEST_EVENTS_GET(LOG_MESSAGE_3, 0);
-  TEST_EVENTS_GET(LOG_MESSAGE_0, 1);
+  TEST_EVENTS_GET(LOG_MESSAGE_2, 1);
   TEST_EVENTS_GET(LOG_MESSAGE_1, 2);
-  TEST_EVENTS_GET(LOG_MESSAGE_2, 3);
+  TEST_EVENTS_GET(LOG_MESSAGE_0, 3);
 
   nr_vector_destroy(&vector);
 
