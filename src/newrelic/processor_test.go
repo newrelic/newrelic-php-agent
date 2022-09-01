@@ -786,6 +786,8 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
+		// blocking to get data usage correct
+		Blocking: true,
 	}
 	/* txn events */
 	cp1 = <-m.clientParams
@@ -803,6 +805,8 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
+		// blocking to get data usage correct
+		Blocking: true,
 	}
 	/* txn events first payload */
 	cp1 = <-m.clientParams
