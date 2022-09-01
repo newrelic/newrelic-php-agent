@@ -3278,14 +3278,6 @@ bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
     return false;
   }
 
-  if (!txn->options.logging_enabled || !txn->options.log_forwarding_enabled) {
-    return false;
-  }
-
-  if (txn->high_security) {
-    return false;
-  }
-
   log_level = nr_log_level_str_to_int(log_level_name);
 
   // pass through UNKNOWN by default
@@ -3409,16 +3401,19 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     return;
   }
 
+  /* log events filtered out by log level will go into the Dropped metric */
   if (!nr_txn_log_forwarding_log_level_verify(txn, log_level_name)) {
-    return;
-  }
-
-  e = log_event_create(log_level_name, log_message, timestamp, txn, app);
-  if (NULL == e) {
-    nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
     event_dropped = true;
   } else {
-    event_dropped = nr_log_events_add_event(txn->log_events, e);
+    /* event passed log level filter so add it */
+    e = log_event_create(log_level_name, log_message, timestamp, txn, app);
+    if (NULL == e) {
+      nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+      event_dropped = true;
+    } else {
+      event_dropped = nr_log_events_add_event(txn->log_events, e);
+    }
+    nr_log_event_destroy(&e);
   }
 
   if (event_dropped) {
