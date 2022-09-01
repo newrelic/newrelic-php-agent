@@ -57,21 +57,19 @@ extern bool nr_log_event_to_json_buffer(const nr_log_event_t* event,
                                         nrbuf_t* buf);
 
 /*
- * Purpose : Append New Relic format JSON for a log event to a buffer.
+ * Purpose : Comparator function for use with priority sampling
  *
- * Params  : 1. The log event.
- *           2. The buffer to append to.
- *           3. Whether or not to wrap JSON with starting and
- *              ending "[" "]".  If enabled the resulting
- *              JSON is not valid unless enclosed in another
- *              JSON string.
+ * Params  : 1. First log event.
+ *           2. Second log event to compare tofirst.
+ *           3. Possible user data
  *
- * Returns : True on success; false on error.
+ * Returns : Compares events and returns -1, 0, or 1.
+ *
+ * Notes   : This function is used for the minmax heap to
+ *           compare 2 log events.  The function considers
+ *           the priority of the 2 events and if this is
+ *           equal then the ages of the events are compared.
  */
-extern bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
-                                           nrbuf_t* buf,
-                                           bool partial);
-
 int nr_log_event_wrapped_priority_comparator(const void* a,
                                              const void* b,
                                              void* userdata NRUNUSED);

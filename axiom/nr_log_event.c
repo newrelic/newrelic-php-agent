@@ -79,7 +79,7 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
   }
 
   buf = nr_buffer_create(0, 0);
-  if (nr_log_event_to_json_buffer_ex(event, buf, false)) {
+  if (nr_log_event_to_json_buffer(event, buf)) {
     nr_buffer_add(buf, NR_PSTR("\0"));
     json = nr_strdup(nr_buffer_cptr(buf));
   }
@@ -93,20 +93,7 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     return false;
   }
 
-  return nr_log_event_to_json_buffer_ex(event, buf, false);
-}
-
-bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
-                                    nrbuf_t* buf,
-                                    bool partial) {
-  if (NULL == event || NULL == buf) {
-    return false;
-  }
-
   // We'll build the JSON manually
-  if (!partial) {
-    nr_buffer_add(buf, NR_PSTR("["));
-  }
   nr_buffer_add(buf, NR_PSTR("{"));
 
   // only add non-empty fields
@@ -123,9 +110,6 @@ bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
 
   nr_buffer_add(buf, NR_PSTR("}"));
-  if (!partial) {
-    nr_buffer_add(buf, NR_PSTR("]"));
-  }
 
   return true;
 }

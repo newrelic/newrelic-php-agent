@@ -8188,7 +8188,7 @@ static void test_record_log_event(void) {
   log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
   tlib_pass_if_not_null("null log level, event recorded", log_event_json);
   expected
-      = "[{"
+      = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
         "\"level\":\"UNKNOWN\","
@@ -8197,7 +8197,7 @@ static void test_record_log_event(void) {
         "\"entity.name\":\"" APP_ENTITY_NAME
         "\","
         "\"timestamp\":0"
-        "}]";
+        "}";
   tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
                          log_event_json);
   test_txn_metric_is("null log level, event recorded, metric created",
@@ -8227,7 +8227,7 @@ static void test_record_log_event(void) {
   tlib_fail_if_null("no json", log_event_json);
   tlib_pass_if_not_null("happy path, event recorded", log_event_json);
   expected
-      = "[{"
+      = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
         "\"level\":\"" LOG_LEVEL
@@ -8240,7 +8240,7 @@ static void test_record_log_event(void) {
         "\","
         "\"hostname\":\"" APP_HOST_NAME
         "\","
-        "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";
+        "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}";
   tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
                          log_event_json);
   nr_free(log_event_json);

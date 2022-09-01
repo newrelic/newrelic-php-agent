@@ -60,7 +60,7 @@ static void test_events_success(void) {
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_event_set_priority(e, 0);
   nr_log_events_add_event(events, e);
-// clang-format off
+  // clang-format off
   // minmax heap will store events like this (showing priorities)
   //         0
   //       3   2
@@ -91,12 +91,12 @@ static void test_events_success(void) {
     json = nr_log_event_to_json((nr_log_event_t*)test_e);           \
     tlib_fail_if_null("no json", json);                             \
     expected                                                        \
-        = "[{"                                                      \
+        = "{"                                                       \
           "\"message\":\"" MESSAGE                                  \
           "\","                                                     \
           "\"level\":\"" LOG_LEVEL                                  \
           "\","                                                     \
-          "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}]";             \
+          "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}";              \
     tlib_pass_if_str_equal("add event", expected, json);            \
     nr_free(json);                                                  \
   } while (0)
