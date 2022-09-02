@@ -2883,7 +2883,7 @@ STD_PHP_INI_ENTRY_EX(
     zend_newrelic_globals,
     newrelic_globals,
     0)
-STD_PHP_INI_ENTRY_EX("newerlic.application_logging.forwarding.log_level",
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.log_level",
                      "WARNING",
                      NR_PHP_REQUEST,
                      nr_log_forwarding_log_level_mh,
