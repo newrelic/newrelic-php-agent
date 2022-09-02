@@ -365,14 +365,14 @@ func (to *TraceObserver) handleSupportability() {
 		case inc := <-to.supportability.increment:
 			v, ok := metrics[inc.name]
 			if !ok {
-				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+				v = newEmptyMetric()
 			}
 			v[0] += inc.count
 			metrics[inc.name] = v
 		case batchCount := <-to.supportability.incrementSent:
 			v, ok := metrics[supportabilitySent]
 			if !ok {
-				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+				v = newEmptyMetric()
 			}
 			// Since we're sending span batches, we increment by the number of spans in the batch.
 			v[0] += batchCount
@@ -380,7 +380,7 @@ func (to *TraceObserver) handleSupportability() {
 		case dataUsage := <-to.supportability.dataUsage:
 			v, ok := metrics[supportabilityDataUsage]
 			if !ok {
-				v = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+				v = newEmptyMetric()
 			}
 			v[0] += 1
 			v[1] += dataUsage
@@ -393,13 +393,21 @@ func (to *TraceObserver) handleSupportability() {
 	}
 }
 
+func newEmptyMetric() [6]float64 {
+	// [0] count
+	// [1] bytes sent
+	// [2] bytes received
+	// [3:] unused
+	return [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+}
+
 func newSupportabilityMetrics() map[string][6]float64 {
 	// grpc codes, plus 1 for sent, 1 for data usage,  and 1 for response errs
 	// Sending full metrics for AddRaw() (6 floats instead of just for AddCount())
 	// because dataUsage metrics requires multiple fields
 	metrics := make(map[string][6]float64, numCodes+3)
 	// supportabilitySent metric must always be sent
-	metrics[supportabilitySent] = [6]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+	metrics[supportabilitySent] = newEmptyMetric()
 	return metrics
 }
 
