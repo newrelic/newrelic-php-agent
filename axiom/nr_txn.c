@@ -3413,7 +3413,6 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     } else {
       event_dropped = nr_log_events_add_event(txn->log_events, e);
     }
-    nr_log_event_destroy(&e);
   }
 
   if (event_dropped) {
