@@ -74,22 +74,6 @@ int nr_log_event_wrapped_priority_comparator(const void* a,
                                              void* userdata NRUNUSED);
 
 /*
- * Purpose : Append New Relic format JSON for a log event to a buffer.
- *
- * Params  : 1. The log event.
- *           2. The buffer to append to.
- *           3. Whether or not to wrap JSON with starting and
- *              ending "[" "]".  If enabled the resulting
- *              JSON is not valid unless enclosed in another
- *              JSON string.
- *
- * Returns : True on success; false on error.
- */
-extern bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
-                                           nrbuf_t* buf,
-                                           bool partial);
-
-/*
  * Purpose : Set the various fields of the log events.
  *
  * Params : 1. The log event.

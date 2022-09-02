@@ -93,18 +93,6 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
     return false;
   }
 
-  return nr_log_event_to_json_buffer_ex(event, buf, false);
-}
-
-bool nr_log_event_to_json_buffer_ex(const nr_log_event_t* event,
-                                    nrbuf_t* buf,
-                                    bool partial) {
-  (void) partial;
-
-  if (NULL == event || NULL == buf) {
-    return false;
-  }
-
   // We'll build the JSON manually
   nr_buffer_add(buf, NR_PSTR("{"));
 

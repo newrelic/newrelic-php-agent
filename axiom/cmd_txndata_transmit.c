@@ -157,7 +157,7 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
       continue;
     }
 
-    if (!nr_log_event_to_json_buffer_ex(event, buf, true)) {
+    if (!nr_log_event_to_json_buffer(event, buf)) {
       /* There's really no scenario this should happen, so we won't try to do
        * anything clever in terms of skipping the event and patching up the
        * offsets. Let's just assume it's going to be bad and move on. */
