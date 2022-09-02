@@ -8230,9 +8230,8 @@ static void test_record_log_event(void) {
       = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
-        "\"log.level\":\"" LL_UNKN_STR
+        "\"level\":\"" LL_UNKN_STR
         "\","
-        "\"timestamp\":0,"
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
         "\"entity.name\":\"" APP_ENTITY_NAME
