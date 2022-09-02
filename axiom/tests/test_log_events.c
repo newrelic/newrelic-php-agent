@@ -82,7 +82,6 @@ static void test_events_success(void) {
   */
   // clang-format on
 
-
   tlib_pass_if_int_equal("events number seen updated", 4,
                          nr_log_events_number_seen(events));
   tlib_pass_if_int_equal("events number saved updated", 4,
@@ -136,7 +135,6 @@ static void test_events_sample(void) {
   bool event_dropped;
   bool found;
   bool sampling;
-
   void* test_e;
   nr_vector_t* vector;
 
@@ -184,7 +182,6 @@ static void test_events_sample(void) {
   e = create_sample_event(LOG_MESSAGE_3);
   nr_log_event_set_priority(e, 50);
   event_dropped = nr_log_events_add_event(events, e);
-
   tlib_pass_if_true("4th event, sampling", event_dropped,
                     "nr_log_events_add_event: got [%d], want [%d]",
                     event_dropped, true);
@@ -207,7 +204,6 @@ static void test_events_sample(void) {
                          ((nr_log_event_t*)test_e)->message);
   tlib_pass_if_int_equal("Priority 50 log event retained", 50,
                          ((nr_log_event_t*)test_e)->priority);
-
   found = nr_vector_get_element(vector, 1, &test_e);
   tlib_pass_if_true("retrived log element from vector OK", found,
                     "expected TRUE");
@@ -223,7 +219,6 @@ static void test_events_sample(void) {
   nr_log_event_set_priority(e, 50);
   nr_log_event_set_timestamp(e, (LOG_TIMESTAMP + 100) * NR_TIME_DIVISOR_MS);
   event_dropped = nr_log_events_add_event(events, e);
-
   tlib_pass_if_true("final event caused drop", event_dropped,
                     "nr_log_events_add_event: got [%d], want [%d]",
                     event_dropped, true);

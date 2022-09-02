@@ -110,6 +110,7 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
 
   nr_buffer_add(buf, NR_PSTR("}"));
+  
   return true;
 }
 
