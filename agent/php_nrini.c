@@ -1805,6 +1805,7 @@ static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
 
 static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
   nriniuint_t* p;
+  int log_level = LOG_LEVEL_DEFAULT;
 
 #ifndef ZTS
   char* base = (char*)mh_arg2;
@@ -1823,11 +1824,17 @@ static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
   if (NEW_VALUE_LEN > 0) {
     nrl_debug(NRL_INIT, "Log Level (PSR-3): %s", NEW_VALUE);
 
-    p->value = nr_log_level_str_to_int(NEW_VALUE);
+    log_level = nr_log_level_str_to_int(NEW_VALUE);
+    if (LOG_LEVEL_UNKNOWN ==  log_level) {
+      log_level = LOG_LEVEL_DEFAULT;
+      nrl_warning(NRL_INIT, "Unknown log forwarding level %s, using %s instead.",
+      NEW_VALUE, nr_log_level_rfc_to_psr(log_level));
+    }
+    p->value = log_level;
     p->where = stage;
 
-    nrl_debug(NRL_INIT, "Log Forwarding Log Level (RFC5424) set to: %d",
-              p->value);
+    nrl_debug(NRL_INIT, "Log Forwarding Log Level (RFC5424) set to: %d (%s)",
+              p->value, nr_log_level_rfc_to_psr(p->value));
     return SUCCESS;
   }
 
