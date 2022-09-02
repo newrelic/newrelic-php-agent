@@ -5,7 +5,8 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation works with CAT.
+Test that Monolog2 instrumentation uses default log level filter
+if an invalid log level is passed to config option.
 */
 
 /*SKIPIF
@@ -20,20 +21,18 @@ newrelic.application_logging.enabled = true
 newrelic.application_logging.forwarding.enabled = true
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
-newrelic.distributed_tracing_enabled=0
-newrelic.cross_application_tracer.enabled = true
-newrelic.application_logging.forwarding.log_level = DEBUG
+newrelic.application_logging.forwarding.log_level = INVALID
 */
 
 /*EXPECT
-monolog3.DEBUG: debug []
-monolog3.INFO: info []
-monolog3.NOTICE: notice []
-monolog3.WARNING: warning []
-monolog3.ERROR: error []
-monolog3.CRITICAL: critical []
-monolog3.ALERT: alert []
-monolog3.EMERGENCY: emergency []
+monolog2.DEBUG: debug []
+monolog2.INFO: info []
+monolog2.NOTICE: notice []
+monolog2.WARNING: warning []
+monolog2.ERROR: error []
+monolog2.CRITICAL: critical []
+monolog2.ALERT: alert []
+monolog2.EMERGENCY: emergency []
 */
 
 /*EXPECT_METRICS
@@ -42,6 +41,9 @@ monolog3.EMERGENCY: emergency []
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/Forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines"},                                                   [8, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/ALERT"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/CRITICAL"},                                          [1, "??", "??", "??", "??", "??"]],
@@ -70,67 +72,53 @@ monolog3.EMERGENCY: emergency []
       },
       "logs": [
         {
+          "message": "alert",
+          "level": "ALERT",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
           "message": "error",
           "level": "ERROR",
           "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
           "message": "critical",
           "level": "CRITICAL",
           "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
-        },
-        {
-          "message": "notice",
-          "level": "NOTICE",
-          "timestamp": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "warning",
-          "level": "WARNING",
-          "timestamp": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "info",
-          "level": "INFO",
-          "timestamp": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },  
+        }, 
         {
           "message": "emergency",
           "level": "EMERGENCY",
           "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },        
         {
-          "message": "debug",
-          "level": "DEBUG",
+          "message": "warning",
+          "level": "WARNING",
           "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         }
       ]
@@ -140,7 +128,7 @@ monolog3.EMERGENCY: emergency []
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
-require_monolog(3);
+require_monolog(2);
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -148,7 +136,7 @@ use Monolog\Formatter\LineFormatter;
 
 
 function test_logging() {
-    $logger = new Logger('monolog3');
+    $logger = new Logger('monolog2');
 
     $logfmt = "%channel%.%level_name%: %message% %context%\n";
     $formatter = new LineFormatter($logfmt);
