@@ -83,6 +83,7 @@ TEST_BINARIES = \
 	tests/test_environment \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
+	tests/test_fw_support \
 	tests/test_fw_wordpress \
 	tests/test_globals \
 	tests/test_internal_instrument \

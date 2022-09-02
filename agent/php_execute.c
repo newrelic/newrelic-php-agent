@@ -857,26 +857,6 @@ static nrframework_t nr_try_force_framework(
   return NR_FW_UNSET;
 }
 
-static void nr_php_execute_add_library_supportability_metric(
-    nrmtable_t* unscoped_metrics,
-    const char* library_name) {
-  char* metname
-      = nr_formatf("Supportability/library/%s/detected", library_name);
-  nrm_force_add(unscoped_metrics, metname, 0);
-
-  nr_free(metname);
-}
-
-static void nr_php_execute_add_logging_supportability_metric(
-    nrmtable_t* unscoped_metrics,
-    const char* library_name,
-    const char* instrumentation_status) {
-  char* metname = nr_formatf("Supportability/Logging/PHP/%s/%s", library_name,
-                             instrumentation_status);
-  nrm_force_add(unscoped_metrics, metname, 0);
-  nr_free(metname);
-}
-
 static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
@@ -886,8 +866,8 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
-      nr_php_execute_add_library_supportability_metric(
-          NRTXN(unscoped_metrics), libraries[i].library_name);
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), libraries[i].library_name);
 
       if (NULL != libraries[i].enable) {
         libraries[i].enable(TSRMLS_C);
@@ -901,7 +881,7 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
 static void nr_execute_handle_logging_framework(
     const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
-  char* support_metric_value = "disabled";
+  bool is_enabled = false;
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
@@ -909,16 +889,15 @@ static void nr_execute_handle_logging_framework(
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
-      nr_php_execute_add_library_supportability_metric(
-          NRTXN(unscoped_metrics), logging_frameworks[i].library_name);
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name);
 
       if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
-        support_metric_value = "enabled";
+        is_enabled = true;
         logging_frameworks[i].enable(TSRMLS_C);
       }
-      nr_php_execute_add_logging_supportability_metric(
-          NRTXN(unscoped_metrics), logging_frameworks[i].library_name,
-          support_metric_value);
+      nr_fw_support_add_logging_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
 
