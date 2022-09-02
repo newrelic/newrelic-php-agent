@@ -42,12 +42,15 @@ monolog2.EMERGENCY: emergency []
   [
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/Forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines"},                                                   [8, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/ALERT"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/CRITICAL"},                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/lines/DEBUG"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/EMERGENCY"},                                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/ERROR"},                                             [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/lines/INFO"},                                              [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/lines/NOTICE"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/WARNING"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
@@ -68,6 +71,16 @@ monolog2.EMERGENCY: emergency []
       },
       "logs": [
         {
+          "message": "alert",
+          "level": "ALERT",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
           "message": "error",
           "level": "ERROR",
           "timestamp": "??",
@@ -86,30 +99,20 @@ monolog2.EMERGENCY: emergency []
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
+        }, 
+        {
+          "message": "emergency",
+          "level": "EMERGENCY",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
+          "hostname": "__HOST__"
         },        
         {
           "message": "warning",
           "level": "WARNING",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog2__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog2__FILE__",
-          "hostname": "__HOST__"
-        },  
-        {
-          "message": "emergency",
-          "level": "EMERGENCY",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",
