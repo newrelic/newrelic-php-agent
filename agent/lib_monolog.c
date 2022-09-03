@@ -19,6 +19,19 @@
 #include "util_strings.h"
 #include "util_sleep.h"
 
+// clang-format off
+/*
+ * This macro affects how instrumentation $context argument of
+ * Monolog\Logger::addRecord works:
+ *
+ * 0 - $context argument will not be instrumented: its existance and value
+ *     are ignored 
+ * 1 - the message of the log record forwarded by the agent will have the value
+ *     of $context appended to the value of $message.
+ */
+// clang-format on
+#define HAVE_CONTEXT_IN_MESSAGE 0
+
 /*
  * Purpose : Convert Monolog\Logger::API to integer
  *
@@ -134,6 +147,7 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
   return message;
 }
 
+#if HAVE_CONTEXT_IN_MESSAGE
 /*
  * Purpose : Format key of $context array's element as string
  *
@@ -282,6 +296,7 @@ return_context:
   nr_php_arg_release(&context_arg);
   return context;
 }
+#endif
 
 /*
  * Purpose : Combine $message and $context arguments of
@@ -295,17 +310,23 @@ return_context:
  */
 static char* nr_monolog_build_message(const size_t argc,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
+#if !HAVE_CONTEXT_IN_MESSAGE
+  /* Make the compiler happy - argc is not used when $context is ignored */
+  (void)argc;
+#endif
   char* message_and_context = nr_strdup("");
 
   char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   message_and_context = nr_str_append(message_and_context, message, "");
   nr_free(message);
 
+#if HAVE_CONTEXT_IN_MESSAGE
   char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_strempty(context)) {
     message_and_context = nr_str_append(message_and_context, context, " ");
   }
   nr_free(context);
+#endif
 
   return message_and_context;
 }
@@ -386,7 +407,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   }
 
   /* Record the log event */
-  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp, NRPRG(app));
+  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
+                          NRPRG(app));
 
   nr_free(level_name);
   nr_free(message);
