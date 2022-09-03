@@ -13,6 +13,9 @@ value, the agent does not limit the number of segments created.
 newrelic.transaction_tracer.max_segments_cli=0
 newrelic.transaction_tracer.threshold=0
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -63,6 +66,8 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function"},                     [1000, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function",
      "scope":"OtherTransaction/php__FILE__" },          [1000, "??", "??", "??", "??", "??"]],

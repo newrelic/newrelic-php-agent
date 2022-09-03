@@ -16,6 +16,9 @@ are created when DT headers are inserted into an array via the PHP API
 newrelic.distributed_tracing_enabled = true
 newrelic.distributed_tracing_exclude_newrelic_header = false
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -32,6 +35,8 @@ newrelic.cross_application_tracer.enabled = false
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/DistributedTrace/CreatePayload/Success"},
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/Create/Success"},

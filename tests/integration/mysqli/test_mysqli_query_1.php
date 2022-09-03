@@ -20,6 +20,9 @@ error_reporting = E_ALL & ~E_DEPRECATED
 newrelic.transaction_tracer.explain_enabled = true
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = "obfuscated"
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -32,6 +35,8 @@ key=TABLE_NAME value=STATISTICS
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},

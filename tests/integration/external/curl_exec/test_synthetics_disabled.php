@@ -20,6 +20,9 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
 newrelic.distributed_tracing_enabled=0
 newrelic.synthetics.enabled = false
 newrelic.cross_application_tracer.enabled = true
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*
@@ -52,6 +55,8 @@ X-NewRelic-App-Data=??
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
     [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
     [{"name":"External/all"},                             [   1, "??", "??", "??", "??", "??"]],

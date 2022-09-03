@@ -11,6 +11,9 @@ CodeIgniter or Drupal is detected/forced.
 
 /*INI
 newrelic.framework=codeigniter   ; cause agent to hook call_user_func_array
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -33,6 +36,8 @@ foo=17
     [{"name":"OtherTransaction/php__FILE__"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/CodeIgniter/forced"},              [1, "??", "??", "??", "??", "??"]]
   ]

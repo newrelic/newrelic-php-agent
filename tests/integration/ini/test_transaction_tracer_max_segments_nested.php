@@ -13,6 +13,9 @@ the agent limits the number of segments created, even in a nested scenario.
 newrelic.transaction_tracer.max_segments_cli=10
 newrelic.transaction_tracer.threshold=0
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -100,6 +103,8 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/great_grandmother"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/great_grandmother",
      "scope":"OtherTransaction/php__FILE__" },          [1, "??", "??", "??", "??", "??"]],

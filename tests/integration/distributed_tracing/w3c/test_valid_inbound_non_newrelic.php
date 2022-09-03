@@ -18,6 +18,9 @@ if (!isset($_ENV["ACCOUNT_supportability_trusted"])) {
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -34,6 +37,8 @@ newrelic.cross_application_tracer.enabled = false
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/DistributedTrace/AcceptPayload/Success"},
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/Accept/Success"},

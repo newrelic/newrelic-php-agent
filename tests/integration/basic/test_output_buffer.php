@@ -11,6 +11,9 @@ Exercise the wrappers for the various output buffer functions.
 
 /*INI
 error_reporting = E_ERROR | E_CORE_ERROR | E_RECOVERABLE_ERROR
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -40,7 +43,9 @@ block4 <br>
     [{"name":"OtherTransaction/all"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},            [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
