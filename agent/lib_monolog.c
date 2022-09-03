@@ -354,26 +354,36 @@ static nrtime_t nr_monolog_get_timestamp(const int monolog_api,
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
-  /* Get Monolog API level */
+  if (!nr_txn_log_forwarding_enabled(NRPRG(txn))
+      && !nr_txn_log_metrics_enabled(NRPRG(txn))) {
+    goto skip_instrumentation;
+  }
+
+  /* This code executes when at least one logging feature is enabled and
+   * log level is neeeded in both features so agent will always need
+   * to get the log level value */
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  int api = nr_monolog_version(this_var TSRMLS_CC);
-
-  /* Get values of $level and $message arguments */
-
   char* level_name
       = nr_monolog_get_level_name(this_var, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  int api = 0;
+  size_t argc = 0;
+  char* message = NULL;
+  nrtime_t timestamp = nr_get_time();
 
-  size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  char* message
-      = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  /* Values of $message and $timestamp arguments are needed only if log
+   * forwarding is enabled so agent will get them conditionally */
+  if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
+    argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    message = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    api = nr_monolog_version(this_var TSRMLS_CC);
+    timestamp
+        = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
-  nrtime_t timestamp
-      = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  nrl_verbosedebug(NRL_INSTRUMENT,
-                   "%s: #args = %zu, Monolog API: [%d], level=[%s], "
-                   "message=[%s], timestamp=[%" PRIu64 "]",
-                   __func__, argc, api, level_name, message, timestamp);
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: #args = %zu, Monolog API: [%d], level=[%s], "
+                     "message=[%s], timestamp=[%" PRIu64 "]",
+                     __func__, argc, api, level_name, message, timestamp);
+  }
 
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp, NRPRG(app));
@@ -381,9 +391,10 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   nr_free(level_name);
   nr_free(message);
 
-  NR_PHP_WRAPPER_CALL
-
   nr_php_scope_release(&this_var);
+
+skip_instrumentation:
+  NR_PHP_WRAPPER_CALL
 }
 NR_PHP_WRAPPER_END
 
