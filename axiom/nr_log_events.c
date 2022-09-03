@@ -10,7 +10,6 @@
 
 #include "nr_limits.h"
 #include "nr_log_events.h"
-
 #include "util_memory.h"
 #include "util_minmax_heap.h"
 #include "util_vector.h"
