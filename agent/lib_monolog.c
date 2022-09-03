@@ -378,13 +378,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: #args = %zu, Monolog API: [%d], level=[%s], "
-                     "message=[%s], timestamp=[%" PRIu64 "]",
-                     __func__, argc, api, level_name, message, timestamp);
   }
-
+  
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp, NRPRG(app));
 
