@@ -77,7 +77,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   if (NULL == execute_data) {
     return handlers;
   }
-  if (NULL == execute_data->func) {
+  if ((NULL == execute_data->func)
+      || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
     return handlers;
   }
   handlers.begin = nr_php_observer_fcall_begin;
