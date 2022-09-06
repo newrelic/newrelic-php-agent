@@ -9,6 +9,12 @@ Test that newrelic_set_appname works as expected when the transmit bool is
 set to a value that is of type int or float.
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT
 ok - newrelic_set_appname transmit=1
 ok - newrelic_set_appname transmit=1
@@ -28,6 +34,8 @@ ok - newrelic_set_appname transmit=1
     [{"name":"OtherTransaction/php__FILE__"},           [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},  [3, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/set_appname/after"},   [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/set_appname/before"},  [2, 0, 0, 0, 0, 0]]
   ]

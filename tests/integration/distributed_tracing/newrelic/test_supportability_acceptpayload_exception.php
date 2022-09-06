@@ -13,6 +13,9 @@ by setting distributed_trace_enabled to false.
 
 /*INI
 newrelic.distributed_tracing_enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -28,6 +31,8 @@ newrelic.distributed_tracing_enabled = false
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/DistributedTrace/AcceptPayload/Exception"},
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/create_distributed_trace_payload"},
