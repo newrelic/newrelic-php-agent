@@ -624,7 +624,7 @@ static void nr_php_txn_log_error_dt_on_tt_off(void) {
   }
 }
 
-static void nr_php_txn_send_metrics_once(nrtxn_t* txn) {
+static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
   static unsigned int sent = 0;
   char* metname = NULL;
 
@@ -813,7 +813,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     return NR_FAILURE;
   }
 
-  nr_php_txn_send_metrics_once(NRPRG(txn));
+  nr_php_txn_send_metrics_once(NRPRG(txn) TSRMLS_CC);
 
   /*
    * Disable automated parenting for the default parent context. See
