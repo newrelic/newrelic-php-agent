@@ -23,6 +23,7 @@ newrelic.application_logging.enabled = true
 newrelic.application_logging.forwarding.enabled = true
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 100100
+newrelic.application_logging.forwarding.log_level = DEBUG
 */
 
 

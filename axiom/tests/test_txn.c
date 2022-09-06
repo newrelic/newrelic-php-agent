@@ -8101,6 +8101,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.logging_enabled = true;
   opts.log_forwarding_enabled = true;
+  opts.log_forwarding_log_level = LOG_LEVEL_WARNING;
   opts.log_events_max_samples_stored = 10;
   opts.log_metrics_enabled = true;
 
@@ -8117,8 +8118,46 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   return txn;
 }
 
+static void test_log_level_verify(void) {
+  nrtxn_t* txn = NULL;
+  txn = new_txn_for_record_log_event_test("test_log_level_verify");
+
+  /* Test NULL values */
+  tlib_pass_if_false("NULL txn ok",
+                     nr_txn_log_forwarding_log_level_verify(NULL, LL_NOTI_STR),
+                     "expected false");
+  tlib_pass_if_true("NULL log level ok",
+                    nr_txn_log_forwarding_log_level_verify(txn, NULL),
+                    "expected true");
+
+  /* Test known values */
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_false("INFO not passed for log level = WARNING",
+                     nr_txn_log_forwarding_log_level_verify(txn, LL_INFO_STR),
+                     "expected false");
+  tlib_pass_if_false("DEBUG not passed for log level = WARNING",
+                     nr_txn_log_forwarding_log_level_verify(txn, LL_INFO_STR),
+                     "expected false");
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_true("ALERT  passed for log level = WARNING",
+                    nr_txn_log_forwarding_log_level_verify(txn, LL_ALER_STR),
+                    "expected true");
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_true("EMERGENCY  passed for log level = WARNING",
+                    nr_txn_log_forwarding_log_level_verify(txn, LL_EMER_STR),
+                    "expected true");
+
+  /* Test unknown level passed even if threshold set to EMERGENCY */
+  txn->options.log_forwarding_log_level = LOG_LEVEL_EMERGENCY;
+  tlib_pass_if_true("Unknown log level passed for log level = EMERGENCY",
+                    nr_txn_log_forwarding_log_level_verify(txn, "APPLES"),
+                    "expected true");
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_record_log_event(void) {
-#define LOG_LEVEL "INFO"
+#define LOG_LEVEL LL_WARN_STR
 #define LOG_MESSAGE "Sample log message"
 #define LOG_TIMESTAMP 1234
 #define LOG_EVENT_PARAMS \
@@ -8191,7 +8230,8 @@ static void test_record_log_event(void) {
       = "{"
         "\"message\":\"" LOG_MESSAGE
         "\","
-        "\"level\":\"UNKNOWN\","
+        "\"level\":\"" LL_UNKN_STR
+        "\","
         "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
         "\"entity.name\":\"" APP_ENTITY_NAME
@@ -8307,6 +8347,45 @@ static void test_record_log_event(void) {
   tlib_pass_if_int_equal("happy path, hsm, 0 len vector", 0,
                          nr_vector_size(vector));
   nr_vector_destroy(&vector);
+  nr_txn_destroy(&txn);
+
+  /* Happy path but log level causes some message to be ignored */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+
+  /* default filter log level is LOG_LEVEL_WARNING */
+  /* these messages should be accepted */
+  nr_txn_record_log_event(txn, LL_ALER_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_CRIT_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_WARN_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_EMER_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_UNKN_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, "APPLES", LOG_MESSAGE, 0, NULL);
+
+  /* these messages will be dropped */
+  nr_txn_record_log_event(txn, LL_INFO_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_DEBU_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_NOTI_STR, LOG_MESSAGE, 0, NULL);
+
+  /* events seen and saved are both 6 because the filtering occurs before
+   * log forwarding handles the messages.
+   */
+  tlib_pass_if_int_equal(
+      "happy path with WARNING log level threshold, events seen", 6,
+      nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal(
+      "happy path with WARNING log level threshold, events saved", 6,
+      nr_log_events_number_saved(txn->log_events));
+
+  /* should see 9 messages in Logging/lines metric */
+  test_txn_metric_is(
+      "happy path with WARNING log level threshold, events total",
+      txn->unscoped_metrics, MET_FORCED, "Logging/lines", 9, 0, 0, 0, 0, 0);
+
+  /* Dropped metric should show all the 3 messages were not considered */
+  test_txn_metric_is(
+      "happy path with WARNING log level threshold, events dropped",
+      txn->unscoped_metrics, MET_FORCED, "Logging/Forwarding/Dropped", 3, 0, 0,
+      0, 0, 0);
   nr_txn_destroy(&txn);
 }
 
@@ -8515,6 +8594,7 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
+  test_log_level_verify();
   test_record_log_event();
   test_txn_log_configuration();
 }

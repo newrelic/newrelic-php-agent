@@ -18,6 +18,7 @@
 #include "nr_header.h"
 #include "nr_limits.h"
 #include "nr_log_events.h"
+#include "nr_log_level.h"
 #include "nr_segment.h"
 #include "nr_segment_private.h"
 #include "nr_segment_traces.h"
@@ -3269,6 +3270,29 @@ bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
   return true;
 }
 
+bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
+                                            const char* log_level_name) {
+  int log_level;
+
+  if (NULL == txn) { /* more like an assert */
+    return false;
+  }
+
+  log_level = nr_log_level_str_to_int(log_level_name);
+
+  // pass through UNKNOWN by default
+  if (LOG_LEVEL_UNKNOWN == log_level) {
+    return true;
+  }
+
+  // log levels are organized 0 -> 7 in decreasing severity
+  if (log_level > txn->options.log_forwarding_log_level) {
+    return false;
+  }
+
+  return true;
+}
+
 bool nr_txn_log_metrics_enabled(nrtxn_t* txn) {
   if (NULL == txn) { /* more like an assert */
     return false;
@@ -3377,12 +3401,18 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     return;
   }
 
-  e = log_event_create(log_level_name, log_message, timestamp, txn, app);
-  if (NULL == e) {
-    nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+  /* log events filtered out by log level will go into the Dropped metric */
+  if (!nr_txn_log_forwarding_log_level_verify(txn, log_level_name)) {
     event_dropped = true;
   } else {
-    event_dropped = nr_log_events_add_event(txn->log_events, e);
+    /* event passed log level filter so add it */
+    e = log_event_create(log_level_name, log_message, timestamp, txn, app);
+    if (NULL == e) {
+      nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
+      event_dropped = true;
+    } else {
+      event_dropped = nr_log_events_add_event(txn->log_events, e);
+    }
   }
 
   if (event_dropped) {
