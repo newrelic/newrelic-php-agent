@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -181,6 +182,18 @@ var (
 	}
 )
 
+func NewAppInfoWithLogEventLimit(limit int) AppInfo {
+	appInfo := sampleAppInfo
+	appInfo.AgentEventLimits = collector.EventConfigs{
+		LogEventConfig: collector.Event{
+			Limit:        limit,
+			ReportPeriod: 5000,
+		},
+	}
+
+	return appInfo
+}
+
 func TestProcessorHarvestDefaultData(t *testing.T) {
 	m := NewMockedProcessor(2)
 
@@ -242,10 +255,13 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 func TestProcessorHarvestLogEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	m.DoAppInfo(t, nil, AppStateUnknown)
+	appInfo := NewAppInfoWithLogEventLimit(1000)
+
+	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
 	m.DoConnect(t, &idOne)
-	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.DoAppInfoCustom(t, nil, AppStateConnected, &appInfo)
 
 	m.TxnData(t, idOne, txnLogEventSample)
 
@@ -256,7 +272,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 	}
 	cp := <-m.clientParams
 	<-m.p.trackProgress // receive harvest notice
-	expected := `["one",{"reservoir_size":5,"events_seen":1},[log event test birthday]]`
+	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
@@ -294,10 +310,13 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 func TestSupportabilityHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
-	m.DoAppInfo(t, nil, AppStateUnknown)
+	appInfo := NewAppInfoWithLogEventLimit(1000)
+
+	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 
 	m.DoConnect(t, &idOne)
-	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.DoAppInfoCustom(t, nil, AppStateConnected, &appInfo)
 
 	m.TxnData(t, idOne, txnErrorEventSample)
 
@@ -363,8 +382,8 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -1138,4 +1157,154 @@ func TestShouldConnect(t *testing.T) {
 	if p.shouldConnect(&App{state: AppStateConnected, lastConnectAttempt: now}, now.Add(3*time.Second)) {
 		t.Error("Shouldn't connect app if app is already connected.")
 	}
+}
+
+// runs a mocked test of resolution of agent harvest limit request and value returned by collector
+// Notes:
+//   eventType:     "log_event_data" for log events (no others supported currently)
+//   agentLimit:     Harvest limit from agent (INI file) for a 60 second harvest period
+//   collectorLimit: Harvest limit sent from collector for a 5 second harvest period
+//
+// Be aware the agentLimit will be scaled down by 12 (60/5) before being compared to the
+// collectorLimit.
+func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLimit uint64, collectorLimit uint64, testName string) {
+
+	// setup non-zero agent limits for log events
+	// NOTE: This limit is based on a 60 second harvest period!
+	//       So the actual value used to compare to the collector
+	//       limit will be 1/12th (5s/60s) smaller
+	var appInfo AppInfo = AppInfo{}
+	logHarvestLimit := 833
+
+	switch eventType {
+	case "log_event_data":
+		logHarvestLimit = int(collectorLimit)
+		appInfo = NewAppInfoWithLogEventLimit(int(agentLimit))
+
+	default:
+		t.Fatalf("%s: runMockedCollectorHarvestLimitTest() invalid eventType \"%s\" specified", testName, eventType)
+	}
+
+	m := NewMockedProcessor(1)
+
+	id := AgentRunID("log")
+
+	reply := m.p.IncomingAppInfo(nil, &appInfo)
+	<-m.p.trackProgress // receive app info
+	if reply.State != AppStateUnknown {
+		t.Fatal("\"", testName, "\": expected ", AppStateUnknown, " got ", reply.State)
+	}
+
+	// mock collector response specifying non-zero log harvest limit
+	mockedReply := `{"agent_run_id":"` + id.String() +
+		`","zip":"zap",` +
+		`"span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":166},` +
+		`"event_harvest_config":{"report_period_ms":5000,` +
+		`"harvest_limits":{"analytics_event_data":833,"custom_event_data":833,"error_event_data":833,` +
+		`"log_event_data":` + strconv.Itoa(logHarvestLimit) + `}}}`
+	m.DoConnectConfiguredReply(t, mockedReply)
+
+	reply = m.p.IncomingAppInfo(nil, &appInfo)
+	<-m.p.trackProgress // receive app info
+	if reply.State != AppStateConnected {
+		t.Fatal("\"", testName, "\": expected ", AppStateConnected, " got ", reply.State)
+	}
+
+	// should be 1 app in processor map and name should match that in appinfo
+	if 1 != len(m.p.apps) {
+		t.Error("\"", testName, "\": Exactly one application should be created.")
+	}
+
+	app, found := m.p.apps[appInfo.Key()]
+	if !found {
+		t.Error("\"", testName, "\":Expected application not found in processor map.")
+	}
+
+	// verify the client value was choosen
+	scaledAgentLimit := uint64(agentLimit / 12)
+	expectedLimit := uint64(collectorLimit)
+	if scaledAgentLimit < collectorLimit {
+		expectedLimit = scaledAgentLimit
+	}
+	finalLimit := app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	if int(expectedLimit) != finalLimit {
+		t.Errorf("\" %s \": Expected %d to be choosen but %d was instead", testName, expectedLimit, finalLimit)
+	}
+
+	m.p.quit()
+}
+
+func TestConnectNegotiateLogEventLimits(t *testing.T) {
+
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 90*12, 100, "agent limit smaller than collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 110*12, 100, "agent limit larger than collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 100, "agent limit equal to collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 0, 100, "agent limit == 0, collector != 0")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 0, "agent limit != 0, collector == 0")
+
+}
+
+func TestProcessLogEventLimit(t *testing.T) {
+	// nil as argument should just return
+	processLogEventLimits(nil)
+
+	// empty App should just return (no info or connectReply)
+	emptyApp := App{}
+	processLogEventLimits(&emptyApp)
+
+	// only info defined should just return (no connectReply)
+	infoOnlyApp := App{info: &AppInfo{}}
+	processLogEventLimits(&infoOnlyApp)
+
+	// only connectReply defined should just return (no info)
+	connectReplyOnlyApp := App{connectReply: &ConnectReply{}}
+	processLogEventLimits(&connectReplyOnlyApp)
+}
+
+func TestMissingAgentAndCollectorHarvestLimit(t *testing.T) {
+
+	// tests missing agent and collector harvest limits will not crash daemon
+	// and results in empty final harvest values
+	appInfo := sampleAppInfo
+
+	m := NewMockedProcessor(1)
+
+	id := AgentRunID("log")
+
+	reply := m.p.IncomingAppInfo(nil, &appInfo)
+	<-m.p.trackProgress // receive app info
+	if reply.State != AppStateUnknown {
+		t.Fatal("Expected ", AppStateUnknown, " got ", reply.State)
+	}
+
+	// mock collector response specifying no harvest limit and test
+	// code handles it gravefully
+	mockedReply := `{"agent_run_id":"` + id.String() + `","zip":"zap"}`
+	m.DoConnectConfiguredReply(t, mockedReply)
+
+	reply = m.p.IncomingAppInfo(nil, &appInfo)
+	<-m.p.trackProgress // receive app info
+	if reply.State != AppStateConnected {
+		t.Fatal("Expected ", AppStateConnected, " got ", reply.State)
+	}
+
+	// should be 1 app in processor map and name should match that in appinfo
+	if 1 != len(m.p.apps) {
+		t.Error("Exactly one application should be created.")
+	}
+
+	app, found := m.p.apps[appInfo.Key()]
+	if !found {
+		t.Error("Expected application not found in processor map.")
+	}
+
+	expected := collector.EventHarvestConfig{}
+
+	if expected != app.connectReply.EventHarvestConfig {
+		actualStr, _ := json.MarshalIndent(app.connectReply.EventHarvestConfig, "", "\t")
+		expectedStr, _ := json.MarshalIndent(expected, "", "\t")
+		t.Errorf("Expected %s got %s", string(expectedStr), string(actualStr))
+	}
+
+	m.p.quit()
 }

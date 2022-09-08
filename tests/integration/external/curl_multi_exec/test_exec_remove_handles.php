@@ -20,6 +20,9 @@ newrelic.transaction_tracer.detail = 0
 newrelic.transaction_tracer.threshold = 0
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -119,6 +122,8 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                                [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                           [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                      [3, "??", "??", "??", "??", "??"]],

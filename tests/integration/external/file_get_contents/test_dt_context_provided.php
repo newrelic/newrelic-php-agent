@@ -13,6 +13,9 @@ call.
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -40,6 +43,8 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                             [13, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                        [13, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                   [13, "??", "??", "??", "??", "??"]],

@@ -10,6 +10,9 @@ Test the agent's handling of malformed urls passed to curl_multi_exec().
 
 /*INI
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*SKIPIF
@@ -31,6 +34,8 @@ ok - no more errors
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/<unknown>/all"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/<unknown>/all",
       "scope":"OtherTransaction/php__FILE__"},                   [1, "??", "??", "??", "??", "??"]],

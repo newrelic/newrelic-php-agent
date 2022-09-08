@@ -15,6 +15,9 @@ The agent should report Redis metrics for Redis increment operations.
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -33,16 +36,24 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                         [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                    [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                   [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},              [10, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
+      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/expire"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/expire",
       "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
@@ -80,8 +91,7 @@ function test_redis() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($redis->exists($key)) {
-    echo "key already exists: ${key}\n";
-    exit(1);
+    die("skip: key already exists: ${key}\n");
   }
 
   /* Ensure the key doesn't persist (too much) longer than the test. */
