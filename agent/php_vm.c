@@ -133,6 +133,15 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
   }
 
   /*
+   * If we are using Observer API, the user function will already be instrumented
+   * via the normal mechanisms, and we do not want to set an opcode handler
+   */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+      && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  goto call_previous_and_return;
+#endif
+
+  /*
    * To actually determine whether this is a call_user_func_array() call we
    * have to look at one of the previous opcodes. ZEND_DO_FCALL will never be
    * the first opcode in an op array -- minimally, there is always at least a
