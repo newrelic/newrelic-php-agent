@@ -35,7 +35,7 @@
 #include "util_syscalls.h"
 #include "util_threads.h"
 
-#include "nr_php_observer.h"
+#include "php_observer.h"
 #include "php_execute.h"
 
 /*
@@ -45,11 +45,11 @@
  * function begin and end.  The handlers provide all zend_execute_data and the
  * end handler provides the return value pointer. The previous way to hook into
  * PHP was via zend_execute_ex which will hook all userland function calls with
- * significant overhead for doing the call . However, depending on your stack
+ * significant overhead for doing the call. However, depending on user stack
  * size settings, it could potentially generate an extremely deep call stack in
- * PH because  zend_execute_ex limits your stack size to whatever your settings
- * are. Observer API bypasses the stack overflow issue that you can run into
- * when intercepting userland calls.  Additionally, with PHP 8.0, JIT
+ * PHP because zend_execute_ex limits stack size to whatever user settings
+ * are. Observer API bypasses the stack overflow issue that an agent could run
+ * into when intercepting userland calls.  Additionally, with PHP 8.0, JIT
  * optimizations could optimize out a call to zend_execute_ex and the agent
  * would not be able to overwite that call properly as the agent wouldn't have
  * access to the JITed information.  This could lead to segfaults and caused PHP
@@ -77,7 +77,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   if (NULL == execute_data) {
     return handlers;
   }
-  if (NULL == execute_data->func) {
+  if ((NULL == execute_data->func)
+      || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
     return handlers;
   }
   handlers.begin = nr_php_observer_fcall_begin;
@@ -91,15 +92,15 @@ void nr_php_observer_minit() {
   /*
    * Register the Observer API handlers.
    */
+  zend_observer_fcall_register(nr_php_fcall_register_handlers);
+  zend_observer_error_register(nr_php_error_cb);
+
   /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
    * execute hook.  orig_execute is called various ways in various places, so
    * turn it into a no_op when using OAPI.
    */
   NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
-
-  zend_observer_fcall_register(nr_php_fcall_register_handlers);
-  zend_observer_error_register(nr_php_error_cb);
 }
 
 #endif

@@ -11,12 +11,12 @@
  * required to monitor PHP.
  */
 
-//#include "php_newrelic.h"
-
 #ifndef NEWRELIC_PHP_AGENT_PHP_OBSERVER_H
 #define NEWRELIC_PHP_AGENT_PHP_OBSERVER_H
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+
+#include "Zend/zend_observer.h"
 
 /*
  * Purpose: There are a few various places, aside from the php_execute_* family
@@ -34,7 +34,7 @@ extern void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED);
  *
  * Params  : None
  *
- * Returns : Void
+ * Returns : Void.
  */
 void nr_php_observer_minit();
 
@@ -76,4 +76,4 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* return_value);
 #endif /* PHP8+ */
 
-#endif /* NEWRELIC_PHP_AGENT_PHP_OBSERVER_H */
+#endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H

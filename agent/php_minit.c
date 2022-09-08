@@ -38,7 +38,7 @@
 #include "fw_laravel.h"
 #include "lib_guzzle4.h"
 
-#include "nr_php_observer.h"
+#include "php_observer.h"
 
 static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   if (nrunlikely(NULL == nrg)) {
@@ -410,7 +410,6 @@ PHP_MINIT_FUNCTION(newrelic) {
   zend_extension dummy;
 #else
   char dummy[] = "newrelic";
-  nr_php_observer_minit();
 #endif
 
   (void)type;
@@ -633,7 +632,8 @@ PHP_MINIT_FUNCTION(newrelic) {
     || defined OVERWRITE_ZEND_EXECUTE_DATA
   NR_PHP_PROCESS_GLOBALS(orig_execute) = NR_ZEND_EXECUTE_HOOK;
   NR_ZEND_EXECUTE_HOOK = nr_php_execute;
-
+#else
+  nr_php_observer_minit();
 #endif
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_internal)) {
