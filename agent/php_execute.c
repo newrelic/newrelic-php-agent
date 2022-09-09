@@ -29,9 +29,9 @@
 #include "util_url.h"
 #include "util_metrics.h"
 #include "util_number_converter.h"
-#include "php_execute.h"
 #include "fw_support.h"
 #include "fw_hooks.h"
+#include "php_observer.h"
 
 /*
  * This wall of text is important. Read it. Understand it. Really.
@@ -71,9 +71,9 @@
  * constructions and teardown as reasons to avoid excessive function calls.
  * This too is erroneous. The cost of calling a function is about 4 assembler
  * instructions. This is negligible. Therefore, as a means of reducing stack
- * usage, if you need stack space it is better to put that usage into a static
- * function and call it from the main function, because then that stack space
- * in genuinely only allocated when needed.
+ * usage, if you need stack space it is better to put that usage into a static*
+ * function and call it from the main function, because then that stack space in
+ * genuinely only allocated when needed.
  *
  * A not-insignificant performance boost comes from accurate branch hinting
  * using the nrlikely() and nrunlikely() macros. This prevents pipeline stalls
@@ -569,6 +569,13 @@ static nr_library_table_t libraries[] = {
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+static nr_library_table_t logging_frameworks[] = {
+    /* Monolog - Logging for PHP */
+    {"Monolog", "monolog/logger.php", nr_monolog_enable},
+};
+
+static size_t num_logging_frameworks
+    = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
@@ -856,18 +863,41 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
 
   for (i = 0; i < num_libraries; i++) {
     if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
-      char* metname = nr_formatf("Supportability/library/%s/detected",
-                                 libraries[i].library_name);
-
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
-      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), libraries[i].library_name);
 
       if (NULL != libraries[i].enable) {
         libraries[i].enable(TSRMLS_C);
       }
+    }
+  }
 
-      nr_free(metname);
+  nr_free(filename_lower);
+}
+
+static void nr_execute_handle_logging_framework(
+    const char* filename TSRMLS_DC) {
+  char* filename_lower = nr_string_to_lowercase(filename);
+  bool is_enabled = false;
+  size_t i;
+
+  for (i = 0; i < num_logging_frameworks; i++) {
+    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+                logging_frameworks[i].library_name);
+
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name);
+
+      if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
+        is_enabled = true;
+        logging_frameworks[i].enable(TSRMLS_C);
+      }
+      nr_fw_support_add_logging_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
 
@@ -887,6 +917,7 @@ static void nr_php_user_instrumentation_from_file(
   nr_execute_handle_framework(all_frameworks, num_all_frameworks,
                               filename TSRMLS_CC);
   nr_execute_handle_library(filename TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename TSRMLS_CC);
 }
 
 /*
@@ -897,6 +928,8 @@ static void nr_php_user_instrumentation_from_file(
 static void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
+
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
     nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
@@ -909,7 +942,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_txn_match_file(NRPRG(txn), filename);
 
-  NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  NR_PHP_PROCESS_GLOBALS(orig_execute)
+  (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
 
   if (0 == nr_php_recording(TSRMLS_C)) {
     return;
@@ -919,40 +953,98 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 }
 
 /*
- * Version specific metadata that we have to gather before we call the original
- * execute_ex handler, as different versions of PHP behave differently in terms
- * of what you can do with the op array after making that call. This structure
- * and the functions immediately below are helpers for
- * nr_php_execute_enabled(), which is the user function execution function.
+ * Purpose : Add Code Level Metrics (CLM) to a metadata structure from
+ * zend_execute_data.
  *
- * In PHP 7, it is possible that the op array will be destroyed if the function
- * being called is a __call() magic method (in which case a trampoline is
- * created and destroyed). We increment the reference counts on the scope and
- * function strings and keep pointers to them in this structure, then release
- * them once we've named the trace node and/or metric (if required).
+ * Params  : 1. A pointer to a metadata structure.
+ *           2. The zend_execute_data
  *
- * In PHP 5, execute_data->op_array may be set to NULL if we make a subsequent
- * user function call in an exec callback (which occurs before we decide
- * whether to create a metric and/or trace node), so we keep a copy of the
- * pointer here. The op array itself won't be destroyed from under us, as it's
- * owned by the request and not the specific function call (unlike the
- * trampoline case above).
- *
- * Note that, while op arrays are theoretically reference counted themselves,
- * we cannot take the simple approach of incrementing that reference count due
- * to not all Zend Engine functions using init_op_array() and
- * destroy_op_array(): one example is that PHP 7 trampoline op arrays are
- * simply emalloc() and efree()'d without even setting the reference count.
- * Therefore we have to be more selective in our approach.
+ * Note    : It is the responsibility of the caller to allocate the metadata
+ *           structure. In general, it's expected that this will be a pointer
+ *           to a stack variable.
  */
-typedef struct {
-#ifdef PHP7
-  zend_string* scope;
-  zend_string* function;
+static void nr_php_execute_metadata_add_code_level_metrics(
+    nr_php_execute_metadata_t* metadata,
+    NR_EXECUTE_PROTO) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)metadata;
+  NR_UNUSED_SPECIALFN;
+  return;
 #else
-  zend_op_array* op_array;
+  const char* filepath = NULL;
+  const char* namespace = NULL;
+  const char* function = NULL;
+  uint32_t lineno = 1;
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  if (NULL == execute_data) {
+    return;
+  }
+
+  metadata->function_name = NULL;
+  metadata->function_filepath = NULL;
+  metadata->function_namespace = NULL;
+
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't update CLM.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions:
+   *  - code.filepath AND code.function
+   *  - code.namespace AND code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   */
+
+  filepath = nr_php_zend_execute_data_filename(execute_data);
+  namespace = nr_php_zend_execute_data_scope_name(execute_data);
+  function = nr_php_zend_execute_data_function_name(execute_data);
+  lineno = nr_php_zend_execute_data_lineno(execute_data);
+
+  /*
+   * Check if we are getting CLM for a file.
+   */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    /*
+     * If instrumenting a file, the filename is the "function" and the
+     * lineno is 1 (i.e., start of the file).
+     */
+    function = filepath;
+    lineno = 1;
+  } else {
+    /*
+     * We are getting CLM for a function.
+     */
+    lineno = nr_php_zend_execute_data_lineno(execute_data);
+  }
+  if (nr_strempty(function)) {
+    return;
+  }
+  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+    /*
+     * CLM MUST have either function+namespace or function+filepath.
+     */
+    return;
+  }
+
+  metadata->function_lineno = lineno;
+  metadata->function_name = nr_strdup(function);
+  metadata->function_namespace = nr_strdup(namespace);
+  metadata->function_filepath = nr_strdup(filepath);
+
 #endif /* PHP7 */
-} nr_php_execute_metadata_t;
+}
 
 /*
  * Purpose : Initialise a metadata structure from an op array.
@@ -1032,6 +1124,9 @@ static void nr_php_execute_metadata_release(
     zend_string_release(metadata->function);
     metadata->function = NULL;
   }
+  nr_free(metadata->function_name);
+  nr_free(metadata->function_namespace);
+  nr_free(metadata->function_filepath);
 #else
   metadata->op_array = NULL;
 #endif /* PHP7 */
@@ -1079,6 +1174,10 @@ static inline void nr_php_execute_segment_end(
       || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
+    if (NULL == s->attributes) {
+      s->attributes = nr_attributes_create(s->txn->attribute_config);
+    }
+    nr_php_txn_add_code_level_metrics(s->attributes, metadata);
     nr_segment_end(&s);
   } else {
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
@@ -1095,15 +1194,22 @@ static inline void nr_php_execute_segment_end(
 static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   int zcaught = 0;
   nrtime_t txn_start_time;
-  nr_php_execute_metadata_t metadata;
+  nr_php_execute_metadata_t metadata = {0};
   nr_segment_t stacked = {0};
-  nr_segment_t* segment;
-  nruserfn_t* wraprec;
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
 
   NRTXNGLOBAL(execute_count) += 1;
 
+  nr_php_execute_metadata_add_code_level_metrics(&metadata,
+                                                 NR_EXECUTE_ORIG_ARGS);
+
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    if (NRPRG(txn)) {
+      nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
+    }
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nr_php_execute_metadata_release(&metadata);
     return;
   }
 
@@ -1157,7 +1263,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     txn_start_time = nr_txn_start_time(NRPRG(txn));
 
     segment = nr_php_stacked_segment_init(&stacked TSRMLS_CC);
-
     zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
@@ -1176,8 +1281,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
 
     nr_php_execute_segment_end(segment, &metadata, create_metric TSRMLS_CC);
-
-    nr_php_execute_metadata_release(&metadata);
 
     if (nrunlikely(zcaught)) {
       zend_bailout();
@@ -1240,8 +1343,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
     nr_php_execute_segment_end(segment, &metadata, false TSRMLS_CC);
 
-    nr_php_execute_metadata_release(&metadata);
-
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
@@ -1249,8 +1350,10 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     /*
      * This is the case for New Relic is enabled, but we're not recording.
      */
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
+  nr_php_execute_metadata_release(&metadata);
 }
 
 static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
@@ -1302,7 +1405,7 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
  * the presence of longjmp as from zend_bailout when processing zend internal
  * errors, as for example when calling php_error.
  */
-void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
+void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
   /*
    * We do not use zend_try { ... } mechanisms here because zend_try
    * involves a setjmp, and so may be too expensive along this oft-used
@@ -1319,6 +1422,10 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
    * zend_catch is called to avoid catastrophe on the way to a premature
    * exit, maintaining this counter perfectly is not a necessity.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  zval* func_return_value = NULL;
+#endif
 
   NRPRG(php_cur_stack_depth) += 1;
 
@@ -1328,7 +1435,8 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   } else {
     int show_executes
         = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
@@ -1345,12 +1453,17 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   return;
 }
 
-static void nr_php_show_exec_internal(NR_EXECUTE_PROTO,
+static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
   char argstr[NR_EXECUTE_DEBUG_STRBUFSZ] = {'\0'};
   const char* name = nr_php_function_debug_name(func);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  zval* func_return_value = NULL;
+#endif
 
   nr_show_execute_params(NR_EXECUTE_ORIG_ARGS, argstr TSRMLS_CC);
+
   nrl_verbosedebug(
       NRL_AGENT,
       "execute: %.*s function={" NRP_FMT_UQ "} params={" NRP_FMT_UQ "}",
@@ -1418,7 +1531,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
    */
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS, func TSRMLS_CC);
+    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
 #else
     /*
      * We're passing the same pointer twice. This is inefficient. However, no
@@ -1438,7 +1551,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   nr_segment_set_timing(segment, segment->start_time, duration);
 
   if (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min)) {
-    nr_php_execute_metadata_t metadata;
+    nr_php_execute_metadata_t metadata = {0};
 
     nr_php_execute_metadata_init(&metadata, (zend_op_array*)func);
 
@@ -1507,3 +1620,47 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
 end:
   nr_php_zval_free(&status);
 }
+
+/*
+ * nr_php_observer_fcall_begin and nr_php_observer_fcall_end
+ * are Observer API function handlers that are the entry point to instrumenting
+ * userland code and should replicate the functionality of
+ * nr_php_execute_enabled, nr_php_execute, and nr_php_execute_show that are used
+ * when hooking in via zend_execute_ex.
+ *
+ * Observer API functionality was added with PHP 8.0.
+ * See nr_php_observer.h/c for more information.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+
+  if (NULL == execute_data) {
+    return;
+  }
+}
+
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                               zval* func_return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  if ((NULL == execute_data) || (NULL == func_return_value)) {
+    return;
+  }
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    return;
+  }
+}
+#endif

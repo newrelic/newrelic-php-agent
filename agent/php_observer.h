@@ -73,7 +73,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data);
  * Returns : Void.
  */
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
-                               zval* return_value);
+                               zval* func_return_value);
 #endif /* PHP8+ */
 
 #endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H

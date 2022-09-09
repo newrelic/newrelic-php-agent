@@ -624,6 +624,35 @@ static void nr_php_txn_log_error_dt_on_tt_off(void) {
   }
 }
 
+static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
+  static unsigned int sent = 0;
+  char* metname = NULL;
+
+  if (nrunlikely(NULL == NRPRG(txn))) {
+    return;
+  }
+
+  if (nrlikely(0 != sent)) {
+    return;
+  }
+
+#define FMT_BOOL(v) (v) ? "enabled" : "disabled"
+
+  metname = nr_formatf("Supportability/Logging/Forwarding/PHP/%s",
+                       FMT_BOOL(nr_txn_log_forwarding_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  metname = nr_formatf("Supportability/Logging/Metrics/PHP/%s",
+                       FMT_BOOL(nr_txn_log_metrics_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  sent = 1;
+
+#undef FMT_BOOL
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -708,6 +737,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
+  opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
 
@@ -750,6 +780,11 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
+
+  /* Need to initialize log max samples to value negotiated between that
+   * requested in the INI file and the value returned from the daaemon (based in
+   * part on the collector connect response harvest limits) */
+  info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*
@@ -778,6 +813,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nrl_debug(NRL_INIT, "no Axiom transaction this time around");
     return NR_FAILURE;
   }
+
+  nr_php_txn_send_metrics_once(NRPRG(txn) TSRMLS_CC);
 
   /*
    * Disable automated parenting for the default parent context. See
@@ -874,7 +911,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nr_php_txn_log_error_dt_on_tt_off();
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   if (nr_php_ini_setting_is_set_by_user("opcache.enable")
       && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
     nr_php_user_instrumentation_from_opcache(TSRMLS_C);
@@ -1072,3 +1110,47 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   return NR_SUCCESS;
 }
+
+extern void nr_php_txn_add_code_level_metrics(
+    nr_attributes_t* attributes,
+    const nr_php_execute_metadata_t* metadata) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)attributes;
+  (void)metadata;
+  return;
+}
+#else
+  /* Current CLM functionality only works with PHP 7+ */
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+  if (nr_strempty(metadata->function_name)) {
+    /*
+     * CLM aren't set so don't do anything
+     */
+    return;
+  }
+
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         metadata->function_name);
+  if (!nr_strempty(metadata->function_filepath)) {
+    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
+                                           metadata->function_filepath);
+  }
+  if (!nr_strempty(metadata->function_namespace)) {
+    nr_txn_attributes_set_string_attribute(
+        attributes, nr_txn_clm_code_namespace, metadata->function_namespace);
+  }
+  nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
+                                       metadata->function_lineno);
+}
+#endif
