@@ -55,6 +55,6 @@
 /*
  * The maximum number of log events in a transaction.
  */
-#define NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED 10000
+#define NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED 20000
 
 #endif /* NR_LIMITS_HDR */
