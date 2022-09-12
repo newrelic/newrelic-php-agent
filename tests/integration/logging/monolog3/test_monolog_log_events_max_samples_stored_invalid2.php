@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 When the log events max_samples_stored limit is set to any integer 
-less than 1 or greater than 10000 (max value)
+less than 1 or greater than 20000 (max value)
 the max_samples_stored value should be treated as the default (10000) value.
 Setting a invalid value should result in the default value of 10000 being seen.
 */
