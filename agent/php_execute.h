@@ -64,6 +64,8 @@ extern void nr_framework_create_metric(TSRMLS_D);
  *           This is necessary to correctly instrument frameworks and libraries
  *           that are preloaded.
  */
+
 extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
 
+#include "php_observer.h"
 #endif /* PHP_EXECUTE_HDR */
