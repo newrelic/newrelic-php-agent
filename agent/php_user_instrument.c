@@ -51,32 +51,12 @@
  * Note: The agent ONLY needs to call this if it has overwritten the original
  * zend_execute_ex.
  */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-/*
- * There are a few various places, aside from the php_execute_* family that will
- * call nr_zend_call_orig_execute_* so make it a noop to handle all cases when
- * using OAPI.
- */
-int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
-  NR_UNUSED_EXECUTE_DATA;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  return 0;
-}
-int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
-                                      nr_segment_t* segment,
-                                      NR_EXECUTE_PROTO TSRMLS_DC) {
-  (void)wraprec;
-  (void)segment;
-  NR_UNUSED_EXECUTE_DATA;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  return 0;
-}
-#else
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
   zend_try {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
   zend_catch { zcaught = 1; }
   zend_end_try();
@@ -87,19 +67,20 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                       nr_segment_t* segment,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
   zend_try {
     if (wraprec && wraprec->special_instrumentation) {
       wraprec->special_instrumentation(wraprec, segment,
                                        NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     } else {
-      NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      NR_PHP_PROCESS_GLOBALS(orig_execute)
+      (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
   zend_catch { zcaught = 1; }
   zend_end_try();
   return zcaught;
 }
-#endif
 
 /*
  * Wrap an existing user-defined (written in PHP) function with an
@@ -405,7 +386,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
   }
 }
@@ -414,7 +395,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->create_metric = 1;
     wraprec->is_user_added = 1;
   }
@@ -461,6 +442,10 @@ void nr_php_destroy_user_wrap_records(void) {
  */
 nruserfn_t* nr_wrapped_user_functions = 0;
 
+/*
+ * nr_php_user_function_add_declared_callback is ONLY called from drupal for
+ * PHP < 7.3.  It does not need to be adjusted for OAPI.
+ */
 void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
