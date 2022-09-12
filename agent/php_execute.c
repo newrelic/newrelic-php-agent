@@ -29,9 +29,9 @@
 #include "util_url.h"
 #include "util_metrics.h"
 #include "util_number_converter.h"
-#include "php_execute.h"
 #include "fw_support.h"
 #include "fw_hooks.h"
+#include "php_observer.h"
 
 /*
  * This wall of text is important. Read it. Understand it. Really.
@@ -1557,3 +1557,43 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
 end:
   nr_php_zval_free(&status);
 }
+
+/*
+ * nr_php_observer_fcall_begin and nr_php_observer_fcall_end
+ * are Observer API function handlers that are the entry point to instrumenting
+ * userland code and should replicate the functionality of
+ * nr_php_execute_enabled, nr_php_execute, and nr_php_execute_show that are used
+ * when hooking in via zend_execute_ex.
+ *
+ * Observer API functionality was added with PHP 8.0.
+ * See nr_php_observer.h/c for more information.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+
+  if (NULL == execute_data) {
+    return;
+  }
+}
+
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                               zval* return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  if ((NULL == execute_data) || (NULL == return_value)) {
+    return;
+  }
+}
+#endif
