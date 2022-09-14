@@ -1273,6 +1273,13 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
+  if [ "${pi_zts}" = "yes" ]; then
+    echo "An unsupported PHP ZTS build has been detected. Please refer to this link: "
+    echo "https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/ "
+    echo "to view compatibilty requirements for the the New Relic PHP agent. Thank you."
+    exit 1
+  fi
+
 #
 # This is where we figure out where to put the ini file, if at all. We only do
 # this if there is a scan directory defined. If the particular PHP installation
