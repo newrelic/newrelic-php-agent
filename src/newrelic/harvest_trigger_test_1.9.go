@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+//go:build go1.9
 // +build go1.9
 
 package newrelic
@@ -28,16 +29,16 @@ func TestHarvestTriggerCustomBuilder(t *testing.T) {
 	reply.EventHarvestConfig = collector.EventHarvestConfig{
 		ReportPeriod: 60000,
 		EventConfigs: collector.EventConfigs{
-			ErrorEventConfig:    collector.Event{
+			ErrorEventConfig: collector.Event{
 				Limit: errorEventData,
 			},
 			AnalyticEventConfig: collector.Event{
 				Limit: txnEventData,
 			},
-			CustomEventConfig:   collector.Event{
+			CustomEventConfig: collector.Event{
 				Limit: customEventData,
 			},
-			SpanEventConfig:     collector.Event{
+			SpanEventConfig: collector.Event{
 				Limit: spanEventData,
 			},
 		}}

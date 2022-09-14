@@ -12,6 +12,9 @@ Test that the agent instruments curl_multi_exec.
 newrelic.transaction_tracer.threshold=0
 newrelic.distributed_tracing_enabled = false
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -124,6 +127,8 @@ Hello world!
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                          ["??", "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                     ["??", "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                ["??", "??", "??", "??", "??", "??"]],

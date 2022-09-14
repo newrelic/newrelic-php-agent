@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+//go:build ignore
 // +build ignore
 
 // compile-certs generates the New Relic Root CA Bundle.

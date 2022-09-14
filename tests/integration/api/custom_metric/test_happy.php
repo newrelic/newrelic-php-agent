@@ -10,6 +10,12 @@ the agent should correctly calculate the count, sum, min, max and sum-of-
 squares.
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT
 ok - min added successfully
 ok - max added successfully
@@ -31,6 +37,8 @@ ok - median added successfully
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/custom_metric"},       [3, "??", "??", "??", "??", "??"]]
   ]
 ]

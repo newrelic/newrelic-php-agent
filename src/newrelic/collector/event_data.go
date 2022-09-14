@@ -8,6 +8,7 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"newrelic/limits"
@@ -21,6 +22,7 @@ type rawHarvestLimits struct {
 	AnalyticEventData *int `json:"analytic_event_data"`
 	CustomEventData   *int `json:"custom_event_data"`
 	SpanEventData     *int `json:"span_event_data"`
+	LogEventData      *int `json:"log_event_data"`
 }
 
 // rawEventHarvestConfig is the wire representation of the event_harvest_config,
@@ -39,8 +41,8 @@ type rawEventHarvestConfig struct {
 // event_harvest_config; HOWEVER, they are still eventually added to EventConfigs for the daemon
 // to use.
 type rawSpanEventHarvestConfig struct {
-	ReportPeriodMS uint64           `json:"report_period_ms"`
-	SpanEventData    *int           `json:"harvest_limit"`
+	ReportPeriodMS uint64 `json:"report_period_ms"`
+	SpanEventData  *int   `json:"harvest_limit"`
 }
 
 // Event lets you specify the limit and report period for each event type, this
@@ -58,6 +60,7 @@ type EventConfigs struct {
 	AnalyticEventConfig Event
 	CustomEventConfig   Event
 	SpanEventConfig     Event
+	LogEventConfig      Event
 }
 
 // EventHarvestConfig represents the event_harvest_config object used by the daemon
@@ -72,7 +75,7 @@ type EventHarvestConfig struct {
 // EventHarvestConfig holds the span_event_harvest_config object
 // specified in connect messages.
 type SpanEventHarvestConfig struct {
-	SpanEventConfig     Event
+	SpanEventConfig Event
 }
 
 // durationToMilliseconds converts a report period duration to a raw number of
@@ -86,6 +89,7 @@ func durationToMilliseconds(d time.Duration) (uint64, error) {
 
 	return uint64(d / time.Millisecond), nil
 }
+
 // MarshalJSON marshals an EventHarvestConfig into (effectively) a marshalled
 // rawEventHarvestConfig, which is the wire format expected by the collector.
 func (daemonConfig EventHarvestConfig) MarshalJSON() ([]byte, error) {
@@ -94,14 +98,15 @@ func (daemonConfig EventHarvestConfig) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-    // The daemon event_harvest_config contains per-event report periods that
-    // were inferred based on the connect message. We need to remove these for
-    // the collector.
-	collectorConfig := rawHarvestLimits {
-		ErrorEventData: &daemonConfig.EventConfigs.ErrorEventConfig.Limit,
+	// The daemon event_harvest_config contains per-event report periods that
+	// were inferred based on the connect message. We need to remove these for
+	// the collector.
+	collectorConfig := rawHarvestLimits{
+		ErrorEventData:    &daemonConfig.EventConfigs.ErrorEventConfig.Limit,
 		AnalyticEventData: &daemonConfig.EventConfigs.AnalyticEventConfig.Limit,
-		CustomEventData: &daemonConfig.EventConfigs.CustomEventConfig.Limit,
-		SpanEventData: &daemonConfig.EventConfigs.SpanEventConfig.Limit,
+		CustomEventData:   &daemonConfig.EventConfigs.CustomEventConfig.Limit,
+		SpanEventData:     &daemonConfig.EventConfigs.SpanEventConfig.Limit,
+		LogEventData:      &daemonConfig.EventConfigs.LogEventConfig.Limit,
 	}
 
 	rawConfig := rawEventHarvestConfig{
@@ -123,11 +128,11 @@ func getEventConfig(rawLimit *int, collectorRate time.Duration, defaultLimit int
 		err = fmt.Errorf("getEventConfig: event limit negative %d", rawLimit)
 		return 0, 0, err
 	} else {
-	    	if *rawLimit > defaultLimit {
-	        	limit = defaultLimit
-	    	} else {
-	    		limit = *rawLimit
-	    	}
+		if *rawLimit > defaultLimit {
+			limit = defaultLimit
+		} else {
+			limit = *rawLimit
+		}
 		period = collectorRate
 	}
 	return limit, period, nil
@@ -168,10 +173,10 @@ func (daemonConfig *SpanEventHarvestConfig) UnmarshalJSON(b []byte) error {
 	var harvestConfig Event
 
 	// Check the span event value to see what the report period and limit should be.
-        // getEventConfig will do additional data verification.
+	// getEventConfig will do additional data verification.
 	harvestConfig.Limit,
-	harvestConfig.ReportPeriod,
-	err = getEventConfig(
+		harvestConfig.ReportPeriod,
+		err = getEventConfig(
 		rawConfig.SpanEventData,
 		daemonConfig.SpanEventConfig.ReportPeriod,
 		limits.MaxSpanMaxEvents,
@@ -219,10 +224,16 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 	rawLimits := rawConfig.HarvestLimits
 	var harvestConfig EventConfigs
 
+	if rawLimits.LogEventData != nil {
+		log.Debugf("unmarshal response collector suggested eventharvestconfig rawLimits (logging) = " + strconv.Itoa(*rawLimits.LogEventData))
+	} else {
+		log.Debugf("unmarshal response collector did not supply suggested eventharvestconfig rawLimits (logging)!")
+	}
+
 	// Check each event value to see what the report period and limit should be.
 	harvestConfig.ErrorEventConfig.Limit,
-	harvestConfig.ErrorEventConfig.ReportPeriod,
-	err = getEventConfig(
+		harvestConfig.ErrorEventConfig.ReportPeriod,
+		err = getEventConfig(
 		rawLimits.ErrorEventData,
 		daemonConfig.ReportPeriod,
 		limits.MaxErrorEvents,
@@ -233,8 +244,8 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	harvestConfig.AnalyticEventConfig.Limit,
-	harvestConfig.AnalyticEventConfig.ReportPeriod,
-	err = getEventConfig(
+		harvestConfig.AnalyticEventConfig.ReportPeriod,
+		err = getEventConfig(
 		rawLimits.AnalyticEventData,
 		daemonConfig.ReportPeriod,
 		limits.MaxTxnEvents,
@@ -245,8 +256,8 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	harvestConfig.CustomEventConfig.Limit,
-	harvestConfig.CustomEventConfig.ReportPeriod,
-	err = getEventConfig(
+		harvestConfig.CustomEventConfig.ReportPeriod,
+		err = getEventConfig(
 		rawLimits.CustomEventData,
 		daemonConfig.ReportPeriod,
 		limits.MaxCustomEvents,
@@ -257,8 +268,8 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	harvestConfig.SpanEventConfig.Limit,
-	harvestConfig.SpanEventConfig.ReportPeriod,
-	err = getEventConfig(
+		harvestConfig.SpanEventConfig.ReportPeriod,
+		err = getEventConfig(
 		rawLimits.SpanEventData,
 		daemonConfig.ReportPeriod,
 		limits.MaxSpanMaxEvents,
@@ -268,42 +279,61 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	harvestConfig.LogEventConfig.Limit,
+		harvestConfig.LogEventConfig.ReportPeriod,
+		err = getEventConfig(
+		rawLimits.LogEventData,
+		daemonConfig.ReportPeriod,
+		limits.MaxLogMaxEvents,
+		limits.DefaultReportPeriod)
+	if err != nil {
+		log.Infof("Unexpected negative Log event limit %d", rawLimits.LogEventData)
+		return err
+	}
+
 	// Copy the harvest limits in.
 	daemonConfig.EventConfigs = harvestConfig
 
 	return nil
 }
 
-
 // NewHarvestLimits creates a EventConfigs with the correct default limits. The
 // collector should not know about our per-event report period.  If we get
 // per app config limits from the agent(s), we need to honor that.
 // It takes an EventConfig variable so that if the agent has configured
 // any limits, we can also incorporate those here.
-func NewHarvestLimits(agentLimits * EventConfigs) EventConfigs {
+func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 
-    // Check if we have agent limits to incorporate.
-    // Currently only max span events is configurable via the agent.
-    spanEventLimit := limits.MaxSpanMaxEvents
-    if agentLimits != nil {
-        if (agentLimits.SpanEventConfig.Limit < limits.MaxSpanMaxEvents) &&
-            (agentLimits.SpanEventConfig.Limit >= 0) {
-                spanEventLimit = agentLimits.SpanEventConfig.Limit
-        }
-    }
+	// Check if we have agent limits to incorporate.
+	// Currently only max span events and max log events are configurable via the agent.
+	spanEventLimit := limits.MaxSpanMaxEvents
+	logEventLimit := limits.MaxLogMaxEvents
+	if agentLimits != nil {
+		if (agentLimits.SpanEventConfig.Limit < limits.MaxSpanMaxEvents) &&
+			(agentLimits.SpanEventConfig.Limit >= 0) {
+			spanEventLimit = agentLimits.SpanEventConfig.Limit
+		}
+		if (agentLimits.LogEventConfig.Limit < limits.MaxLogMaxEvents) &&
+			(agentLimits.LogEventConfig.Limit >= 0) {
+			logEventLimit = agentLimits.LogEventConfig.Limit
+		}
+	}
 
 	return EventConfigs{
-		ErrorEventConfig:    Event {
+		ErrorEventConfig: Event{
 			Limit: limits.MaxErrorEvents,
 		},
-		AnalyticEventConfig: Event {
+		AnalyticEventConfig: Event{
 			Limit: limits.MaxTxnEvents,
 		},
-		CustomEventConfig:   Event {
+		CustomEventConfig: Event{
 			Limit: limits.MaxCustomEvents,
 		},
-		SpanEventConfig:     Event {
+		SpanEventConfig: Event{
 			Limit: spanEventLimit,
+		},
+		LogEventConfig: Event{
+			Limit: logEventLimit,
 		},
 	}
 }
@@ -314,10 +344,9 @@ func NewHarvestLimits(agentLimits * EventConfigs) EventConfigs {
 // the collector. We should never send per-event report periods.
 // It takes an EventConfig variable so that if the agent has configured
 // any limits, we can also incorporate those here.
-func NewEventHarvestConfig(agentLimits * EventConfigs) EventHarvestConfig {
+func NewEventHarvestConfig(agentLimits *EventConfigs) EventHarvestConfig {
 	return EventHarvestConfig{
 		ReportPeriod: limits.DefaultReportPeriod,
 		EventConfigs: NewHarvestLimits(agentLimits),
 	}
 }
-

@@ -18,6 +18,9 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 display_errors=1
 log_errors=0
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -26,6 +29,8 @@ newrelic.distributed_tracing_enabled=0
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                  [1, "??", "??", "??", "??", "??"]],

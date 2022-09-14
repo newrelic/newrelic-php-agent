@@ -55,10 +55,6 @@ int nr_get_daemon_fd(void) {
   return 0;
 }
 
-nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
-                          const char* agent_run_id NRUNUSED) {
-  return 0;
-}
 
 static void test_encode_errors(void) {
   nrtxn_t txn;

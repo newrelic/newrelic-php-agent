@@ -17,6 +17,12 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
 }
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT
 ok - setByKey
 ok - getByKey
@@ -33,6 +39,8 @@ ok - deleteByKey
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},

@@ -31,12 +31,12 @@ func (id AgentRunID) String() string {
 type AppState int
 
 const (
-    AppStateUnknown AppState = iota
-    AppStateConnected
-    AppStateDisconnected
-    AppStateRestart
-    AppStateInvalidLicense
-    AppStateInvalidSecurityPolicies
+	AppStateUnknown AppState = iota
+	AppStateConnected
+	AppStateDisconnected
+	AppStateRestart
+	AppStateInvalidLicense
+	AppStateInvalidSecurityPolicies
 )
 
 // An AppKey uniquely identifies an application.
@@ -120,14 +120,14 @@ type PreconnectReply struct {
 // that are used in the daemon.  The reply contains many more fields, but most
 // of them are used in the agent.
 type ConnectReply struct {
-	ID                 *AgentRunID                          `json:"agent_run_id"`
-	MetricRules        MetricRules                          `json:"metric_name_rules"`
-	SamplingFrequency  int                                  `json:"sampling_target_period_in_seconds"`
-	SamplingTarget     int                                  `json:"sampling_target"`
-	EventHarvestConfig collector.EventHarvestConfig         `json:"event_harvest_config"`
+	ID                     *AgentRunID                      `json:"agent_run_id"`
+	MetricRules            MetricRules                      `json:"metric_name_rules"`
+	SamplingFrequency      int                              `json:"sampling_target_period_in_seconds"`
+	SamplingTarget         int                              `json:"sampling_target"`
+	EventHarvestConfig     collector.EventHarvestConfig     `json:"event_harvest_config"`
 	SpanEventHarvestConfig collector.SpanEventHarvestConfig `json:"span_event_harvest_config"`
-	RequestHeadersMap map[string]string                     `json:"request_headers_map"`
-	MaxPayloadSizeInBytes int                               `json:"max_payload_size_in_bytes"`
+	RequestHeadersMap      map[string]string                `json:"request_headers_map"`
+	MaxPayloadSizeInBytes  int                              `json:"max_payload_size_in_bytes"`
 }
 
 // An App represents the state of an application.
@@ -296,10 +296,10 @@ func (app *App) NeedsConnectAttempt(now time.Time, backoff time.Duration) bool {
 //about downsampling within a distributed trace, the report period and harvest
 //limit are reported separately in span_event_harvest_config instead of
 //event_harvest_config.  Combine them both into EventHarvestConfig here.
-func combineEventConfig (ehc collector.EventHarvestConfig, sehc collector.SpanEventHarvestConfig) collector.EventHarvestConfig {
-    ehc.EventConfigs.SpanEventConfig.Limit = sehc.SpanEventConfig.Limit
-    ehc.EventConfigs.SpanEventConfig.ReportPeriod = sehc.SpanEventConfig.ReportPeriod
-    return ehc
+func combineEventConfig(ehc collector.EventHarvestConfig, sehc collector.SpanEventHarvestConfig) collector.EventHarvestConfig {
+	ehc.EventConfigs.SpanEventConfig.Limit = sehc.SpanEventConfig.Limit
+	ehc.EventConfigs.SpanEventConfig.ReportPeriod = sehc.SpanEventConfig.ReportPeriod
+	return ehc
 }
 
 func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
@@ -313,8 +313,8 @@ func parseConnectReply(rawConnectReply []byte) (*ConnectReply, error) {
 		return nil, errors.New("missing agent run id")
 	}
 
-    // Since the collector now sends seperately, we need to internally combine the limits.
-    c.EventHarvestConfig = combineEventConfig(c.EventHarvestConfig, c.SpanEventHarvestConfig)
+	// Since the collector now sends seperately, we need to internally combine the limits.
+	c.EventHarvestConfig = combineEventConfig(c.EventHarvestConfig, c.SpanEventHarvestConfig)
 
 	return &c, nil
 }

@@ -13,6 +13,9 @@ happens. For the list of files, we reference ourself with a pcre.
 /*INI
 newrelic.webtransaction.name.functions = CLI/PHP_FLAGS_ARGS,Foobar::interesting_method,bar,baz,,,
 newrelic.webtransaction.name.files = .*exercise_ini_3.php,**,[,bat/,baz,,,
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -25,6 +28,8 @@ Foobar::interesting_method() called
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},

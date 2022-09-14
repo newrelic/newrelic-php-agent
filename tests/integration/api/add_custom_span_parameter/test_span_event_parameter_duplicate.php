@@ -16,6 +16,9 @@ newrelic.transaction_tracer.threshold = 0
 newrelic.transaction_tracer.detail = false
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -129,6 +132,8 @@ ok - double attribute added
                                                                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
                                                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},               [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_span_parameter"},       [3, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_parameter"},            [5, 0, 0, 0, 0, 0]]

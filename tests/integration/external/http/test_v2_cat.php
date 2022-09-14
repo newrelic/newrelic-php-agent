@@ -23,6 +23,9 @@ if (version_compare(phpversion('http'), '2.0.0', '<')) {
 /*INI
 newrelic.distributed_tracing_enabled=0
 newrelic.cross_application_tracer.enabled = true
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -38,6 +41,8 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],

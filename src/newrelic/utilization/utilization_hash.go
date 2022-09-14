@@ -154,7 +154,7 @@ func Gather(config Config) *Data {
 
 	if config.DetectKubernetes {
 		if err_k8s := GatherKubernetes(uDat.Vendors, os.Getenv); err_k8s != nil {
-		    log.Debugf("%s", err_k8s)
+			log.Debugf("%s", err_k8s)
 		}
 	}
 

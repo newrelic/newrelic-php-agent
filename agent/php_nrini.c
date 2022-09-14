@@ -13,6 +13,7 @@
 #include "nr_configstrings.h"
 #include "nr_limits.h"
 #include "nr_version.h"
+#include "nr_log_level.h"
 #include "util_buffer.h"
 #include "util_json.h"
 #include "util_logging.h"
@@ -253,6 +254,29 @@ static void check_ini_int_min_max(int* var, int minval, int maxval) {
   } else if ((*var > maxval) && (maxval > 0)) {
     *var = maxval;
   }
+}
+
+/*
+ * @brief error handling for strtoimax() functionality
+ *
+ * @param val_p   pointer to store the parsed value; remains undefined when
+ *                function returns NR_FAILURE
+ * @param str     string to parse
+ * @param base    base to be used for number conversion
+ * @return nr_status_t NR_SUCCESS || NR_FAILURE
+ */
+static nr_status_t nr_strtoi(int* val_p, const char* str, int base) {
+  int val;
+  char* endptr_p;
+  errno = 0;
+
+  val = strtoimax(str, &endptr_p, base);
+  if (0 != errno || '\0' != *endptr_p) {
+    return NR_FAILURE;
+  }
+
+  *val_p = val;
+  return NR_SUCCESS;
 }
 
 #ifdef PHP7
@@ -1730,6 +1754,93 @@ static PHP_INI_MH(nr_unsigned_int_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_log_events_max_samples_stored_mh) {
+  nriniuint_t* p;
+  int val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+  bool err = false;
+  nr_status_t parse_status = NR_SUCCESS;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  /*
+   * -- An invalid value will result in the default value.
+   * -- A value < 0 will result in the default value
+   * -- A value > MAX will result in MAX value
+   */
+
+  p->where = 0;
+
+  if (0 != NEW_VALUE_LEN) {
+    parse_status = nr_strtoi(&val, NEW_VALUE, 0);
+    if (0 > val || NR_FAILURE == parse_status) {
+      val = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    } else if (NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED < val) {
+      val = NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    }
+    if (err) {
+      nrl_warning(NRL_INIT,
+                  "Invalid application_logging.forwarding.max_samples_stored "
+                  "value \"%.8s\"; using "
+                  "%d instead",
+                  NEW_VALUE, val);
+    }
+  }
+  p->value = (zend_uint)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
+  nriniuint_t* p;
+  int log_level = LOG_LEVEL_DEFAULT;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  if (NEW_VALUE_LEN > 0) {
+    nrl_debug(NRL_INIT, "Log Level (PSR-3): %s", NEW_VALUE);
+
+    log_level = nr_log_level_str_to_int(NEW_VALUE);
+    if (LOG_LEVEL_UNKNOWN ==  log_level) {
+      log_level = LOG_LEVEL_DEFAULT;
+      nrl_warning(NRL_INIT, "Unknown log forwarding level %s, using %s instead.",
+      NEW_VALUE, nr_log_level_rfc_to_psr(log_level));
+    }
+    p->value = log_level;
+    p->where = stage;
+
+    nrl_debug(NRL_INIT, "Log Forwarding Log Level (RFC5424) set to: %d (%s)",
+              p->value, nr_log_level_rfc_to_psr(p->value));
+    return SUCCESS;
+  }
+
+  return FAILURE;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2750,6 +2861,51 @@ STD_PHP_INI_ENTRY_EX(
     zend_newrelic_globals,
     newrelic_globals,
     0)
+
+/*
+ * Logging
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     logging_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_forwarding_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.max_samples_stored",
+    NR_STR2(NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED),
+    NR_PHP_REQUEST,
+    nr_log_events_max_samples_stored_mh,
+    log_events_max_samples_stored,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.log_level",
+                     "WARNING",
+                     NR_PHP_REQUEST,
+                     nr_log_forwarding_log_level_mh,
+                     log_forwarding_log_level,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_metrics_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 PHP_INI_END() /* } */
 

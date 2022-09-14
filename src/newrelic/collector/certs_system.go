@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+//go:build use_system_certs
 // +build use_system_certs
 
 package collector

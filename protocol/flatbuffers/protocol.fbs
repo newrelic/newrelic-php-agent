@@ -8,7 +8,7 @@ namespace protocol;
 //
 // How to Regenerate:
 //
-//   cd src/newrelic
+//   cd protocol/flatbuffers
 //   flatc -g protocol.fbs
 //   cd protocol
 //   go fmt
@@ -33,6 +33,7 @@ table App {
   span_queue_size:                  uint64; // added for PHP agent release 9.11
   span_events_max_samples_stored:   uint64; // added for PHP agent release 9.21
   metadata:                         string; // pre-computed json, added for PHP agent release 10.0
+  log_events_max_samples_stored:    uint64; // added for PHP agent release 10.1
 }
 
 enum AppStatus : byte { Unknown = 0, Disconnected = 1, InvalidLicense = 2,
@@ -114,6 +115,7 @@ table Transaction {
   error_events:           [Event]; // added in the 5.1 PHP agent release
   sampling_priority:      double;  // added in the 8.2 PHP agent release
   span_events:            [Event];
+  log_events:             [Event]; // added in the 10.1 PHP agent release
 }
 
 union MessageBody { App, AppReply, Transaction, SpanBatch }

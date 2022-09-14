@@ -19,6 +19,9 @@ newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = obfuscated
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -32,6 +35,8 @@ pg_roles
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},

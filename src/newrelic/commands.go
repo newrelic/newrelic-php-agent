@@ -41,13 +41,13 @@ func aggregateMetrics(txn protocol.Transaction, h *Harvest, txnName string) {
 		d[5] = data.SumSquares()
 
 		forced := Unforced
-		if data.Forced() != 0 {
+		if data.Forced() != false {
 			forced = Forced
 		}
 
 		metricName := m.Name()
 		h.Metrics.AddRaw(metricName, "", "", d, forced)
-		if data.Scoped() != 0 {
+		if data.Scoped() != false {
 			h.Metrics.AddRaw(metricName, "", txnName, d, forced)
 		}
 	}
@@ -157,6 +157,16 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 		}
 	}
 
+	if n := txn.LogEventsLength(); n > 0 {
+		var e protocol.Event
+
+		for i := 0; i < n; i++ {
+			txn.LogEvents(&e, i)
+			data := copySlice(e.Data())
+			h.LogEvents.AddEventFromData(data, samplingPriority)
+		}
+	}
+
 	if trace := txn.Trace(nil); trace != nil {
 		data := trace.Data()
 		tt := &TxnTrace{
@@ -164,7 +174,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 			DurationMillis:       trace.Duration(),
 			GUID:                 string(trace.Guid()),
 			SyntheticsResourceID: syntheticsResourceID,
-			ForcePersist:         trace.ForcePersist() != 0,
+			ForcePersist:         trace.ForcePersist() != false,
 			MetricName:           txnName,
 			RequestURI:           requestURI,
 		}
@@ -265,15 +275,15 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 		TraceObserverPort:         app.TraceObserverPort(),
 		SpanQueueSize:             app.SpanQueueSize(),
 		HighSecurity:              app.HighSecurity(),
-
 	}
 
 	info.initSettings(app.Settings())
 
 	// Of the four Event Limits (span, custom, analytic and error),
-	// only span events is configurable from the agent.
+	// only span events and log events are configurable from the agent.
 	// If this changes in the future, the other values can be added here.
 	info.AgentEventLimits.SpanEventConfig.Limit = int(app.SpanEventsMaxSamplesStored())
+	info.AgentEventLimits.LogEventConfig.Limit = int(app.LogEventsMaxSamplesStored())
 
 	return info
 }

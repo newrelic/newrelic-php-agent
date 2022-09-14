@@ -7,9 +7,9 @@ package newrelic
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
-	"strconv"
 
 	"newrelic/limits"
 	"newrelic/sysinfo"
@@ -217,7 +217,6 @@ func TestPreconnectPayloadEncoded(t *testing.T) {
 	}
 }
 
-
 func TestNeedsConnectAttempt(t *testing.T) {
 	var app App
 
@@ -356,9 +355,13 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		Hostname:          "some_host",
 	}
 
-    // A valid span event max samples stored value configured from the agent should
-    // propagate through and be sent to the collector
+	// A valid span event max samples stored value configured from the agent should
+	// propagate through and be sent to the collector
 	info.AgentEventLimits.SpanEventConfig.Limit = 2323
+
+	// A valid log event max samples stored value configured from the agent should
+	// propagate through and be sent to the collector
+	info.AgentEventLimits.LogEventConfig.Limit = 4545
 
 	pid := 123
 	expected := `[` +
@@ -376,7 +379,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":2323}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":2323,"log_event_data":4545}}` +
 		`}` +
 		`]`
 
@@ -387,9 +390,13 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		t.Errorf("expected: %s\nactual: %s", expected, string(b))
 	}
 
-    // An invalid span event max samples stored value configured from the agent should
-    // propagate defaults through and be sent to the collector
+	// An invalid span event max samples stored value configured from the agent should
+	// propagate defaults through and be sent to the collector
 	info.AgentEventLimits.SpanEventConfig.Limit = 12345
+
+	// An invalid log event max samples stored value configured from the agent should
+	// propagate defaults through and be sent to the collector
+	info.AgentEventLimits.LogEventConfig.Limit = 45678
 
 	pid = 123
 	expected = `[` +
@@ -407,7 +414,9 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":`+strconv.Itoa(limits.MaxSpanMaxEvents)+`}}`+
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,` +
+		`"span_event_data":` + strconv.Itoa(limits.MaxSpanMaxEvents) + `,` +
+		`"log_event_data":` + strconv.Itoa(limits.MaxLogMaxEvents) + `}}` +
 		`}` +
 		`]`
 
@@ -420,6 +429,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 
 	// an empty string for the HostDisplayName should not produce JSON
 	info.AgentEventLimits.SpanEventConfig.Limit = 1001
+	info.AgentEventLimits.LogEventConfig.Limit = 1002
 	info.HostDisplayName = ""
 	expected = `[` +
 		`{` +
@@ -435,7 +445,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 
@@ -445,7 +455,6 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	} else if string(b) != expected {
 		t.Errorf("expected: %s\nactual: %s", expected, string(b))
 	}
-
 
 	// an empty JSON for the Metadata should be sent
 	info.Metadata = JSONString(`{}`)
@@ -463,7 +472,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 
@@ -490,7 +499,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 
@@ -517,7 +526,7 @@ func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
 
 func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 	expectedMaxPayloadSizeInBytes := 1000
-	cannedConnectReply := []byte(`{"agent_run_id":"1", "max_payload_size_in_bytes":`+fmt.Sprint(expectedMaxPayloadSizeInBytes)+`}`)
+	cannedConnectReply := []byte(`{"agent_run_id":"1", "max_payload_size_in_bytes":` + fmt.Sprint(expectedMaxPayloadSizeInBytes) + `}`)
 
 	c, err := parseConnectReply(cannedConnectReply)
 	if err != nil {

@@ -35,8 +35,9 @@ func (reply *ConnectReply) isHarvestAll() bool {
 	if eventsConfig.ErrorEventConfig.ReportPeriod != collectorReportPeriod ||
 		eventsConfig.AnalyticEventConfig.ReportPeriod != collectorReportPeriod ||
 		eventsConfig.CustomEventConfig.ReportPeriod != collectorReportPeriod ||
-		eventsConfig.SpanEventConfig.ReportPeriod != collectorReportPeriod {
-			return false
+		eventsConfig.SpanEventConfig.ReportPeriod != collectorReportPeriod ||
+		eventsConfig.LogEventConfig.ReportPeriod != collectorReportPeriod {
+		return false
 	}
 
 	return reply.EventHarvestConfig.ReportPeriod == limits.DefaultReportPeriod
@@ -74,7 +75,7 @@ func startGroupMember(f HarvestTriggerFunc, trigger chan HarvestType) chan bool 
 	return cancel
 }
 
-func checkReportPeriod(period time.Duration, defaultPeriod time.Duration, event string) time.Duration{
+func checkReportPeriod(period time.Duration, defaultPeriod time.Duration, event string) time.Duration {
 	if period == 0 {
 		log.Debugf("%s report period not received", event)
 		return defaultPeriod
@@ -101,12 +102,15 @@ func customTriggerBuilder(reply *ConnectReply) HarvestTriggerFunc {
 		eventConfig.ErrorEventConfig.ReportPeriod, defaultPeriod, "Error Events")
 	eventConfig.SpanEventConfig.ReportPeriod = checkReportPeriod(
 		eventConfig.SpanEventConfig.ReportPeriod, defaultPeriod, "Span Events")
+	eventConfig.LogEventConfig.ReportPeriod = checkReportPeriod(
+		eventConfig.LogEventConfig.ReportPeriod, defaultPeriod, "Log Events")
 
 	defaultTrigger := triggerBuilder(HarvestDefaultData, defaultPeriod)
 	analyticTrigger := triggerBuilder(HarvestTxnEvents, eventConfig.AnalyticEventConfig.ReportPeriod)
 	customTrigger := triggerBuilder(HarvestCustomEvents, eventConfig.CustomEventConfig.ReportPeriod)
 	errorTrigger := triggerBuilder(HarvestErrorEvents, eventConfig.ErrorEventConfig.ReportPeriod)
 	spanTrigger := triggerBuilder(HarvestSpanEvents, eventConfig.SpanEventConfig.ReportPeriod)
+	logTrigger := triggerBuilder(HarvestLogEvents, eventConfig.LogEventConfig.ReportPeriod)
 
 	return func(trigger chan HarvestType, cancel chan bool) {
 		broadcastGroup := []chan bool{
@@ -115,6 +119,7 @@ func customTriggerBuilder(reply *ConnectReply) HarvestTriggerFunc {
 			startGroupMember(customTrigger, trigger),
 			startGroupMember(errorTrigger, trigger),
 			startGroupMember(spanTrigger, trigger),
+			startGroupMember(logTrigger, trigger),
 		}
 
 		// This function listens for the cancel message and then broadcasts it

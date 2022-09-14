@@ -29,6 +29,7 @@ var (
 		"EXPECT_CUSTOM_EVENTS":    parseCustomEvents,
 		"EXPECT_ERROR_EVENTS":     parseErrorEvents,
 		"EXPECT_SPAN_EVENTS":      parseSpanEvents,
+		"EXPECT_LOG_EVENTS":       parseLogEvents,
 		"EXPECT_METRICS":          parseMetrics,
 		"EXPECT":                  parseExpect,
 		"EXPECT_REGEX":            parseExpectRegex,
@@ -64,6 +65,8 @@ func parsePHPTestFile(test *Test) *Test {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	scanner.Split(splitDirectives)
 	for scanner.Scan() {
 		p := scanner.Text()
@@ -208,6 +211,10 @@ func parseSpanEvents(test *Test, content []byte) error {
 	test.spanEvents = content
 	return nil
 }
+func parseLogEvents(test *Test, content []byte) error {
+	test.logEvents = content
+	return nil
+}
 func parseMetrics(test *Test, content []byte) error {
 	test.metrics = content
 	return nil
@@ -230,9 +237,9 @@ func parseDescription(test *Test, content []byte) error {
 }
 func parseXFail(test *Test, content []byte) error {
 	test.Xfail = string(bytes.TrimSpace(content))
-    if test.Xfail == "" { // add a default comment incase test is missing a comment after XFAIL directive
-        test.Xfail = "expected failure"
-    }
+	if test.Xfail == "" { // add a default comment incase test is missing a comment after XFAIL directive
+		test.Xfail = "expected failure"
+	}
 	return nil
 }
 func parseExpect(test *Test, content []byte) error {
