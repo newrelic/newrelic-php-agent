@@ -443,6 +443,11 @@ echo "NRVERSION: ${nrversion}" >> $nrilog
 # Gather system information and store it in the sysinfo file.
 #
 echo "NR_INSTALL_LOCATION: ${NR_INSTALL_LOCATION}" >> $nrsysinfo
+if [ "${arch}" = "x86" ]; then
+  echo "An unsupported architecture "${arch}" detected."
+  echo "The install will now exit."
+  exit 1
+fi
 echo "ARCH: ${arch}" >> $nrsysinfo
 nruname=`uname -a 2>/dev/null`
 echo "UNAME: $nruname" >> $nrsysinfo
@@ -1094,7 +1099,7 @@ Ignoring this particular instance of PHP.
 
   # Check if this is a supported arch
   # Should be caught on startup but add check here to be sure
-  if [ "${pi_arch}" != "x86" -a "${pi_arch}" != "x64" ]; then
+  if [ "${pi_arch}" != "x64" ]; then
     error "An unsupported architecture "${pi_arch}" detected."
     echo "The install will now exit."
     exit 1
