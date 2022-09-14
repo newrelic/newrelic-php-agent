@@ -298,13 +298,6 @@ for d in "${ilibdir}/scripts" "${ilibdir}/agent" "${xtradir}"; do
 done
 
 check_dir "${ilibdir}/agent/${arch}"
-if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ]; then
-  # Only check for x86 directory on supported platforms.
-  case "$ostype" in
-    alpine|darwin|freebsd) ;;
-    *) check_dir "${ilibdir}/agent/x86" ;;
-  esac
-fi
 
 if [ -n "${dmissing}" ]; then
   echo "ERROR: the following directories could not be found:" >&2
@@ -336,19 +329,7 @@ for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
   if [ "${arch}" = "x64" ]; then
     if [ "${pmv}" -lt "20200930" ]; then
       check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
-      check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
     fi
-  fi
-
-  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ] && [ "${pmv}" -lt "20200930" ]; then
-    # Only check for x86 agent files on supported platforms.
-    case "$ostype" in
-      alpine|darwin|freebsd) ;;
-      *)
-	check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
-	check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
-	;;
-    esac
   fi
 done
 
@@ -1135,7 +1116,6 @@ Ignoring this particular instance of PHP.
       for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" \
       "20190902" "20200930" "20210902"; do
         check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
-        check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
       done
       if [ -n "${fmissing}" ]; then
         echo "ERROR: the following files could not be found:" >&2
