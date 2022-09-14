@@ -136,7 +136,7 @@ if [ -z "${ostype}" ]; then
   tus=`uname -s 2> /dev/null`
   case "${tus}" in
     [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=unsupported_os ;;
-    [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=freebsd ;;
+    [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=unsupported_os ;;
     [Ss][Uu][Nn][Oo][Ss])         ostype=unsupported_os ;;
     [Ss][Mm][Aa][Rr][Tt][Oo][Ss]) ostype=unsupported_os ;;
   esac
