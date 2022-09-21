@@ -412,6 +412,8 @@ static void nr_guzzle_enable(const int guzzle_version){
 
   char *guzzle_ver = nr_formatf("newrelic/Guzzle%d", guzzle_version);
   _retval = zend_eval_string(eval, NULL, guzzle_ver TSRMLS_CC);
+  nr_free(eval);
+  nr_free(guzzle_ver);
 
   if (SUCCESS == _retval && guzzle_version == 6) {
     nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
@@ -446,6 +448,9 @@ NR_PHP_WRAPPER_START(nr_guzzle_client_construct_helper){
                                     guzzle_version);
   zval* middleware = nr_php_zval_alloc();
   nr_php_zval_str(middleware, str_middleware);
+  nr_free(str_middleware);
+  nr_free(version);
+
   if (!nr_php_is_zval_valid_callable(middleware TSRMLS_CC)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: middleware string is not considered callable",
@@ -454,6 +459,7 @@ NR_PHP_WRAPPER_START(nr_guzzle_client_construct_helper){
     char* error_message = nr_formatf(
       "Supportability/library/Guzzle %d/MiddlewareNotCallable", guzzle_version);
     nrm_force_add(NRTXN(unscoped_metrics), error_message, 0);
+    nr_free(error_message);
     goto end;
   }
 
