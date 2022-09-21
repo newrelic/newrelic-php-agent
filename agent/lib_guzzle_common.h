@@ -35,7 +35,8 @@ extern int nr_guzzle_in_call_stack(TSRMLS_D);
  *
  * Params  : 1. The object to check.
  * 
- * Returns : A string indicating the guzzle version being used
+ * Returns : A string indicating the guzzle version being used. This string needs
+ *           to be freed by the caller when it is no longer needed.
  */
 extern char* nr_guzzle_version(zval* obj TSRMLS_DC);
 
