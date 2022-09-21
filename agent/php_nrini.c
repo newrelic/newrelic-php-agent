@@ -1825,10 +1825,11 @@ static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
     nrl_debug(NRL_INIT, "Log Level (PSR-3): %s", NEW_VALUE);
 
     log_level = nr_log_level_str_to_int(NEW_VALUE);
-    if (LOG_LEVEL_UNKNOWN ==  log_level) {
+    if (LOG_LEVEL_UNKNOWN == log_level) {
       log_level = LOG_LEVEL_DEFAULT;
-      nrl_warning(NRL_INIT, "Unknown log forwarding level %s, using %s instead.",
-      NEW_VALUE, nr_log_level_rfc_to_psr(log_level));
+      nrl_warning(NRL_INIT,
+                  "Unknown log forwarding level %s, using %s instead.",
+                  NEW_VALUE, nr_log_level_rfc_to_psr(log_level));
     }
     p->value = log_level;
     p->where = stage;
@@ -2872,7 +2873,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.enabled",
                      logging_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
-                     0)
+                     nr_enabled_disabled_dh)
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.enabled",
                      "0",
                      NR_PHP_REQUEST,
@@ -2880,7 +2881,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.enabled",
                      log_forwarding_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
-                     0)
+                     nr_enabled_disabled_dh)
 STD_PHP_INI_ENTRY_EX(
     "newrelic.application_logging.forwarding.max_samples_stored",
     NR_STR2(NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED),
@@ -2905,7 +2906,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      log_metrics_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
-                     0)
+                     nr_enabled_disabled_dh)
 
 PHP_INI_END() /* } */
 
