@@ -416,6 +416,12 @@ static void nr_guzzle_enable(){
   }
 }
 
+/*
+ * This function checks if the guzzle middleware is callable and adds the 
+ * middleware (newrelic\Guzzle\middleware) to the GuzzleHttp\Client
+ * handler stack by invoking push(). If the middleware is not callable, the
+ * function exits by using the goto jump statement
+ */
 NR_PHP_WRAPPER_START(nr_guzzle_client_construct_helper){
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   zval* retval;
