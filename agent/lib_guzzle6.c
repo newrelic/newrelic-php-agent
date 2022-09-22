@@ -339,26 +339,21 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
                            nr_guzzle6_requesthandler_onrejected_arginfo,
                            ZEND_ACC_PUBLIC) PHP_FE_END};
 
-static void nr_guzzle_minit(const int guzzle_version){
+static void nr_guzzle_minit(){
   zend_class_entry ce;
-  char guzzle_path[] = "newrelic\\Guzzle6\\RequestHandler";
-  if (guzzle_version == 7){
-    nr_strcpy(guzzle_path, "newrelic\\Guzzle7\\RequestHandler");
-  }
+  char nr_guzzle_request_handler[] = "newrelic\\Guzzle\\RequestHandler";
   if (0 == NRINI(guzzle_enabled)) {
     return;
   }
-
-  INIT_CLASS_ENTRY(ce, guzzle_path,
+  INIT_CLASS_ENTRY(ce, nr_guzzle_request_handler, 
                    nr_guzzle6_requesthandler_functions);
   nr_guzzle6_requesthandler_ce
       = nr_php_zend_register_internal_class_ex(&ce, NULL TSRMLS_CC);
-
   zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
                              ZEND_ACC_PRIVATE TSRMLS_CC);
 }
 
-static void nr_guzzle_enable(const int guzzle_version){
+static void nr_guzzle_enable(){
   int _retval;
 
   if (0 == NRINI(guzzle_enabled)) {
@@ -379,20 +374,20 @@ static void nr_guzzle_enable(const int guzzle_version){
    * as a standalone file, so we can use a normal namespace declaration to
    * avoid possible clashes.
    */
-  char *eval = nr_formatf(
-      "namespace newrelic\\Guzzle%d;"
+  _retval = zend_eval_string(
+      "namespace newrelic\\Guzzle;"
 
       "use Psr\\Http\\Message\\RequestInterface;"
 
       /*
        * Start by adding the outbound CAT/DT/Synthetics headers to the request.
        */
-      "if (!function_exists('newrelic\\Guzzle%d\\middleware')) {"
+      "if (!function_exists('newrelic\\Guzzle\\middleware')) {"
       "  function middleware(callable $handler) {"
       "    return function (RequestInterface $request, array $options) use "
       "($handler) {"
 
-      "      foreach (newrelic_get_request_metadata('Guzzle %d') as $k => $v) {"
+      "      foreach (newrelic_get_request_metadata('Guzzle') as $k => $v) {"
       "        $request = $request->withHeader($k, $v);"
       "      }"
 
@@ -408,19 +403,12 @@ static void nr_guzzle_enable(const int guzzle_version){
       "      return $promise;"
       "    };"
       "  }"
-      "}", guzzle_version, guzzle_version, guzzle_version);
+      "}",
+      NULL, "newrelic/Guzzle" TSRMLS_CC);
 
-  char *guzzle_ver = nr_formatf("newrelic/Guzzle%d", guzzle_version);
-  _retval = zend_eval_string(eval, NULL, guzzle_ver TSRMLS_CC);
-  nr_free(eval);
-  nr_free(guzzle_ver);
-
-  if (SUCCESS == _retval && guzzle_version == 6) {
+  if (SUCCESS == _retval) {
     nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
-                              nr_guzzle6_client_construct TSRMLS_CC);
-  }else if (SUCCESS == _retval && guzzle_version == 7){
-    nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
-                              nr_guzzle7_client_construct TSRMLS_CC);
+                              nr_guzzle_client_construct_helper TSRMLS_CC);
   }else {
     nrl_warning(NRL_FRAMEWORK,
                 "%s: error evaluating PHP code; not installing handler",
@@ -436,6 +424,7 @@ NR_PHP_WRAPPER_START(nr_guzzle_client_construct_helper){
   if (php_version_compare(version, "7") >= 0){
     guzzle_version = 7;
   }
+  nr_free(version);
 
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
@@ -444,18 +433,14 @@ NR_PHP_WRAPPER_START(nr_guzzle_client_construct_helper){
    * Get our middleware callable (which is just a string), and make sure it's
    * actually callable before we invoke push(). (See also PHP-1184.)
    */
-  char *str_middleware = nr_formatf("newrelic\\Guzzle%d\\middleware", 
-                                    guzzle_version);
+  char *str_middleware = "newrelic\\Guzzle\\middleware";
   zval* middleware = nr_php_zval_alloc();
   nr_php_zval_str(middleware, str_middleware);
-  nr_free(str_middleware);
-  nr_free(version);
 
   if (!nr_php_is_zval_valid_callable(middleware TSRMLS_CC)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: middleware string is not considered callable",
                      __func__);
-
     char* error_message = nr_formatf(
       "Supportability/library/Guzzle %d/MiddlewareNotCallable", guzzle_version);
     nrm_force_add(NRTXN(unscoped_metrics), error_message, 0);
@@ -501,65 +486,27 @@ NR_PHP_WRAPPER_END
  */
 #if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO
 
-NR_PHP_WRAPPER_START(nr_guzzle7_client_construct){
-  NR_PHP_WRAPPER_DELEGATE(nr_guzzle_client_construct_helper);
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
-
 void nr_guzzle7_enable(TSRMLS_D) {
-  nr_guzzle_enable(7);
-}
-
-void nr_guzzle7_minit(TSRMLS_D) {
-  nr_guzzle_minit(7);
+  nr_guzzle_enable();
 }
 
 #else /* PHP < 7.2 */
-
-NR_PHP_WRAPPER_START(nr_guzzle7_client_construct) {
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_TSRMLS;
-}
-NR_PHP_WRAPPER_END
 
 void nr_guzzle7_enable(TSRMLS_D) {
   NR_UNUSED_TSRMLS
 }
 
-void nr_guzzle7_minit(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-
 #endif /* 7.2.x */
 
-NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
-  NR_PHP_WRAPPER_DELEGATE(nr_guzzle_client_construct_helper);
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
-
 void nr_guzzle6_enable(TSRMLS_D) {
-  nr_guzzle_enable(6);
+  nr_guzzle_enable();
 }
 
 void nr_guzzle6_minit(TSRMLS_D) {
-  nr_guzzle_minit(6);
+  nr_guzzle_minit();
 }
 
 #else /* PHP < 5.5 */
-
-NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_TSRMLS;
-}
-NR_PHP_WRAPPER_END
 
 void nr_guzzle6_enable(TSRMLS_D) {
   NR_UNUSED_TSRMLS
