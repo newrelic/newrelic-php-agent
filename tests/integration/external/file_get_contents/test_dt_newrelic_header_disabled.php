@@ -11,6 +11,9 @@ Test that distributed tracing works with file_get_contents without a context.
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.distributed_tracing_exclude_newrelic_header = true
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -30,6 +33,8 @@ traceparent=found tracestate=found X-NewRelic-ID=missing X-NewRelic-Transaction=
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                             [5, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                        [5, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all", 

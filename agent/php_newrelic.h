@@ -465,13 +465,18 @@ nrinitime_t
  * configuration options for handling application logging
  */
 
-nrinibool_t logging_enabled;        /* newrelic.application_logging.enabled */
-nrinibool_t log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
-                                     */
-nriniuint_t log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
-                                            */
+nrinibool_t logging_enabled; /* newrelic.application_logging.enabled */
+nrinibool_t
+    log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
+                             */
+nriniuint_t
+    log_events_max_samples_stored; /* newrelic.application_logging.forwarding.max_samples_stored
+                                    */
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
+
+nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
+                                       */
 
 /*
  * pid and user_function_wrappers are used to store user function wrappers.

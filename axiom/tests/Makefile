@@ -149,6 +149,7 @@ TESTS := \
   test_labels \
   test_log_event \
   test_log_events \
+  test_log_level \
   test_logging \
   test_math \
   test_memory \

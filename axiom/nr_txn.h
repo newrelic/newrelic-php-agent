@@ -23,6 +23,7 @@
 #include "nr_errors.h"
 #include "nr_file_naming.h"
 #include "nr_log_events.h"
+#include "nr_log_level.h"
 #include "nr_segment.h"
 #include "nr_slowsqls.h"
 #include "nr_span_queue.h"
@@ -117,7 +118,9 @@ typedef struct _nrtxnopt_t {
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
   bool logging_enabled; /* An overall configuration for enabling/disabling all
                            application logging features */
-  bool log_forwarding_enabled;          /* Whether log forwarding is enabled */
+  bool log_forwarding_enabled;  /* Whether log forwarding is enabled */
+  int log_forwarding_log_level; /* minimum log level to forward to the collector
+                                 */
   size_t log_events_max_samples_stored; /* The maximum number of log events per
                                            transaction */
   bool log_metrics_enabled;             /* Whether log metrics are enabled */
@@ -267,8 +270,8 @@ typedef struct _nrtxn_t {
   nr_file_naming_t* match_filenames; /* Filenames to match on for txn naming */
 
   nr_analytics_events_t*
-      custom_events; /* Custom events created through the API. */
-  nr_analytics_events_t* log_events;     /* Log events pool */
+      custom_events;           /* Custom events created through the API. */
+  nr_log_events_t* log_events; /* Log events pool */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -616,6 +619,12 @@ extern void nr_txn_record_custom_event(nrtxn_t* txn,
  * Purpose : Check log forwarding configuration
  */
 extern bool nr_txn_log_forwarding_enabled(nrtxn_t* txn);
+
+/*
+ * Purpose : Check log forwarding log level configuration
+ */
+extern bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
+                                                   const char* log_level_name);
 
 /*
  * Purpose : Check logging metrics configuration

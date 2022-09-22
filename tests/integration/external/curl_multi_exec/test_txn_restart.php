@@ -20,6 +20,9 @@ if (!extension_loaded("curl")) {
 newrelic.transaction_tracer.threshold=0
 newrelic.cross_application_tracer.enabled = false
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT

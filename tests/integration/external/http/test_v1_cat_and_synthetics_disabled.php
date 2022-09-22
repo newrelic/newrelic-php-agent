@@ -31,6 +31,9 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 newrelic.cross_application_tracer.enabled = false
 newrelic.synthetics.enabled = false
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*
@@ -61,6 +64,8 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Apdex"},                                  ["??", "??", "??", "??", "??",    0]],
     [{"name":"Apdex/Uri__FILE__"},                      ["??", "??", "??", "??", "??",    0]],
     [{"name":"External/all"},                           [   1, "??", "??", "??", "??", "??"]],

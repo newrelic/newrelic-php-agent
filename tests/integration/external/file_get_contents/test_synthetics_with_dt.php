@@ -12,6 +12,9 @@ enabled.
 
 /*INI
 newrelic.distributed_tracing_enabled = true
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*
@@ -51,6 +54,8 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
     [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
     [{"name":"External/all"},                             [  3, "??", "??", "??", "??", "??"]],

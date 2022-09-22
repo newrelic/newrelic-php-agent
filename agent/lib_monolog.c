@@ -19,6 +19,19 @@
 #include "util_strings.h"
 #include "util_sleep.h"
 
+// clang-format off
+/*
+ * This macro affects how instrumentation $context argument of
+ * Monolog\Logger::addRecord works:
+ *
+ * 0 - $context argument will not be instrumented: its existance and value
+ *     are ignored 
+ * 1 - the message of the log record forwarded by the agent will have the value
+ *     of $context appended to the value of $message.
+ */
+// clang-format on
+#define HAVE_CONTEXT_IN_MESSAGE 0
+
 /*
  * Purpose : Convert Monolog\Logger::API to integer
  *
@@ -134,6 +147,7 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
   return message;
 }
 
+#if HAVE_CONTEXT_IN_MESSAGE
 /*
  * Purpose : Format key of $context array's element as string
  *
@@ -282,6 +296,7 @@ return_context:
   nr_php_arg_release(&context_arg);
   return context;
 }
+#endif
 
 /*
  * Purpose : Combine $message and $context arguments of
@@ -295,17 +310,23 @@ return_context:
  */
 static char* nr_monolog_build_message(const size_t argc,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
+#if !HAVE_CONTEXT_IN_MESSAGE
+  /* Make the compiler happy - argc is not used when $context is ignored */
+  (void)argc;
+#endif
   char* message_and_context = nr_strdup("");
 
   char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   message_and_context = nr_str_append(message_and_context, message, "");
   nr_free(message);
 
+#if HAVE_CONTEXT_IN_MESSAGE
   char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_strempty(context)) {
     message_and_context = nr_str_append(message_and_context, context, " ");
   }
   nr_free(context);
+#endif
 
   return message_and_context;
 }
@@ -354,36 +375,43 @@ static nrtime_t nr_monolog_get_timestamp(const int monolog_api,
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
-  /* Get Monolog API level */
+  if (!nr_txn_log_forwarding_enabled(NRPRG(txn))
+      && !nr_txn_log_metrics_enabled(NRPRG(txn))) {
+    goto skip_instrumentation;
+  }
+
+  /* This code executes when at least one logging feature is enabled and
+   * log level is neeeded in both features so agent will always need
+   * to get the log level value */
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  int api = nr_monolog_version(this_var TSRMLS_CC);
-
-  /* Get values of $level and $message arguments */
-
   char* level_name
       = nr_monolog_get_level_name(this_var, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  int api = 0;
+  size_t argc = 0;
+  char* message = NULL;
+  nrtime_t timestamp = nr_get_time();
 
-  size_t argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  char* message
-      = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  nrtime_t timestamp
-      = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  nrl_verbosedebug(NRL_INSTRUMENT,
-                   "%s: #args = %zu, Monolog API: [%d], level=[%s], "
-                   "message=[%s], timestamp=[%" PRIu64 "]",
-                   __func__, argc, api, level_name, message, timestamp);
-
+  /* Values of $message and $timestamp arguments are needed only if log
+   * forwarding is enabled so agent will get them conditionally */
+  if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
+    argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    message = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    api = nr_monolog_version(this_var TSRMLS_CC);
+    timestamp
+        = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  }
+  
   /* Record the log event */
-  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp, NRPRG(app));
+  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
+                          NRPRG(app));
 
   nr_free(level_name);
   nr_free(message);
 
-  NR_PHP_WRAPPER_CALL
-
   nr_php_scope_release(&this_var);
+
+skip_instrumentation:
+  NR_PHP_WRAPPER_CALL
 }
 NR_PHP_WRAPPER_END
 
