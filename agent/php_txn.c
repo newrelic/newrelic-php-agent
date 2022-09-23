@@ -751,6 +751,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
+  info.custom_events_max_samples_stored = NRINI(custom_events_max_samples_stored);
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*

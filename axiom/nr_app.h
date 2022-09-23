@@ -77,6 +77,7 @@ typedef struct _nr_app_info_t {
   uint64_t span_queue_size;        /* 8T span queue size (for the daemon) */
   uint64_t span_events_max_samples_stored; /* maximum number of spans (for the
                                               daemon) */
+  uint64_t custom_events_max_samples_stored; 
 } nr_app_info_t;
 
 /*
