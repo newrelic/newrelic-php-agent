@@ -272,3 +272,6 @@ func AppAddLogEventsMaxSamplesStored(builder *flatbuffers.Builder, logEventsMaxS
 func AppEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()
 }
+func AppAddCustomEventsMaxSamplesStored(builder *flatbuffers.Builder, spanEventsMaxSamplesStored uint64) {
+	builder.PrependUint64Slot(18, spanEventsMaxSamplesStored, 0)
+}

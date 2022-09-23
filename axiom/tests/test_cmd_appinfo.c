@@ -74,6 +74,9 @@ static void test_create_empty_query(void) {
   tlib_pass_if_uint64_t_equal(__func__, 0,
                               nr_flatbuffers_table_read_u64(
                                   &app, APP_LOG_EVENTS_MAX_SAMPLES_STORED, 0));
+  tlib_pass_if_uint64_t_equal(__func__, 0,
+                              nr_flatbuffers_table_read_u64(                                  
+                                  &app, APP_CUSTOM_EVENTS_MAX_SAMPLES_STORED, 0));
 
   nr_flatbuffers_destroy(&query);
 }
@@ -103,6 +106,7 @@ static void test_create_query(void) {
   info.span_queue_size = 10000;
   info.span_events_max_samples_stored = 1234;
   info.log_events_max_samples_stored = 2345;
+  info.custom_events_max_samples_stored = 345;
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
@@ -159,6 +163,9 @@ static void test_create_query(void) {
   tlib_pass_if_uint64_t_equal(__func__, info.log_events_max_samples_stored,
                               nr_flatbuffers_table_read_u16(
                                   &app, APP_LOG_EVENTS_MAX_SAMPLES_STORED, 0));
+  tlib_pass_if_uint64_t_equal(__func__, info.custom_events_max_samples_stored,
+                              nr_flatbuffers_table_read_u16(
+                                  &app, APP_CUSTOM_EVENTS_MAX_SAMPLES_STORED, 0));
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 0);
@@ -974,6 +981,9 @@ static void test_process_event_harvest_config(void) {
   info.span_events_max_samples_stored
       = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED;
   info.log_events_max_samples_stored = NR_DEFAULT_LOG_EVENTS_MAX_SAMPLES_STORED;
+  info.custom_events_max_samples_stored
+      = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+
   app_limits = app_limits_all_zero;
   nr_cmd_appinfo_process_event_harvest_config(NULL, &app_limits, info);
   tlib_pass_if_bytes_equal("a NULL config should enable all event types",

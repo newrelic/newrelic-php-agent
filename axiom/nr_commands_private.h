@@ -15,7 +15,7 @@
  * The minimum size of a flatbuffer message (no agent run or message body).
  * This should be updated when new fields are added.
  */
-#define MIN_FLATBUFFER_SIZE 20
+#define MIN_FLATBUFFER_SIZE 21
 
 /*
  * Purpose : Check that the first offset is actually within the bounds of the
@@ -82,7 +82,8 @@ enum {
   APP_SPAN_EVENTS_MAX_SAMPLES_STORED = 16,
   APP_METADATA = 17,
   APP_LOG_EVENTS_MAX_SAMPLES_STORED = 18,
-  APP_NUM_FIELDS = 19,
+  APP_CUSTOM_EVENTS_MAX_SAMPLES_STORED = 19,
+  APP_NUM_FIELDS = 20,
 };
 
 /* Generated from: table AppReply */

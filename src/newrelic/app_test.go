@@ -414,7 +414,9 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,` +
+		`"event_harvest_config":{"report_period_ms":60000,` +
+		`"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,` +
+		`"custom_event_data":` + strconv.Itoa(limits.MaxCustomMaxEvents) + `,` +
 		`"span_event_data":` + strconv.Itoa(limits.MaxSpanMaxEvents) + `,` +
 		`"log_event_data":` + strconv.Itoa(limits.MaxLogMaxEvents) + `}}` +
 		`}` +

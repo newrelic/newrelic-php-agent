@@ -79,6 +79,8 @@ typedef struct _nr_app_info_t {
                                               daemon) */
   uint64_t log_events_max_samples_stored;  /* maximum number of log events (for
                                               the  daemon) */
+  uint64_t custom_events_max_samples_stored; /* maximum number of custom events (for
+                                              the  daemon) */
 } nr_app_info_t;
 
 /*
