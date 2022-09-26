@@ -654,6 +654,12 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// function harvests by type.
 	harvest := ah.Harvest
 
+	// This needs to be determined here, as even an empty harvest needs
+	// to be overwritten with new containers for the next harvest.
+	skip_data_usage := false
+	if (harvest.empty()) {
+		skip_data_usage = true
+	}
 	// In many cases, all types are harvested
 	//    at the same time
 	//       at the same rate.
@@ -748,10 +754,12 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	}
 	// Only harvest data usage metrics if metrics are being harvested
 	if ht&HarvestDefaultData == HarvestDefaultData {
-		if args.blocking {
-			harvestDataUsage(args, duc)
-		} else {
-			go harvestDataUsage(args, duc)
+		if !skip_data_usage {
+			if args.blocking {
+				harvestDataUsage(args, duc)
+			} else {
+				go harvestDataUsage(args, duc)
+			}
 		}
 	}
 }
