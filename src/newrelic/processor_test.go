@@ -439,12 +439,16 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 		<-m.p.trackProgress // unblock processor after harvest
 	}
 
+	m.TxnData(t, idOne, txnEventSample1Times(10))
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestDefaultData,
 	}
-	// No other payloads are sent because the harvest is empty
+	// Need to have other data, because data usage is not harvested on empty harvest
+	/* collect txn data */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	/* collect usage metrics */
 	cp := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
