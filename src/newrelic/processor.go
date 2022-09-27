@@ -366,7 +366,6 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	}
 
 	numapps := len(p.apps)
-	log.Debugf("number of apps is %d", numapps)
 	if numapps > limits.AppLimit {
 		log.Errorf("unable to add app '%s', limit of %d applications reached",
 			m.Info, limits.AppLimit)
@@ -713,7 +712,6 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 	if p.cfg.AppTimeout > 0 && app.Inactive(p.cfg.AppTimeout) {
 		log.Infof("removing %q with run id %q for lack of activity within %v",
 			app, id, p.cfg.AppTimeout)
-		log.Debugf("number of apps is %d", len(p.apps))
 		if len(p.apps) == limits.AppLimitNotifyLow {
 			log.Infof("current number of apps is %d",
 				limits.AppLimitNotifyLow)
