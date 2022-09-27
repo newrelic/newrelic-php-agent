@@ -412,7 +412,7 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
         || (Z_CE(execute_data->This))) {
       return &execute_data->This;
     } else if (execute_data->func) {
-      if (execute_data->func->type != ZEND_INTERNAL_FUNCTION
+      if (ZEND_USER_CODE(execute_data->func->type)
           || execute_data->func->common.scope) {
         return NULL;
       }
