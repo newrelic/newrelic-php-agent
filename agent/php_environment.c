@@ -479,8 +479,8 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
    * it.
    */
   if (NULL == environ) {
-    nrl_warning(NRL_AGENT, "%s: Unable to access environmental variables.",
-                __func__);
+    nrl_verbosedebug(NRL_AGENT, "%s: Unable to access environmental variables.",
+                     __func__);
     return;
   }
 
