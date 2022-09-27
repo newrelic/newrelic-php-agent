@@ -71,8 +71,8 @@
  * constructions and teardown as reasons to avoid excessive function calls.
  * This too is erroneous. The cost of calling a function is about 4 assembler
  * instructions. This is negligible. Therefore, as a means of reducing stack
- * usage, if you need stack space it is better to put that usage into a static*
- * function and call it from the main function, because then that stack space in
+ * usage, if you need stack space it is better to put that usage into a static
+ * function and call it from the main function, because then that stack space is
  * genuinely only allocated when needed.
  *
  * A not-insignificant performance boost comes from accurate branch hinting
