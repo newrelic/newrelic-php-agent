@@ -77,6 +77,44 @@ static void test_log_event_to_json(void) {
                          json);
   nr_free(json);
   nr_log_event_destroy(&log);
+
+  /*
+   * Test message with characters which require JSON escaping
+   * "
+   * \
+   * /
+   * \b
+   * \f
+   * \n
+   * \r
+   * \t
+   * GB pound sign (example of unicode)
+   */
+  log = nr_log_event_create();
+  nr_log_event_set_log_level(log, "LOG_LEVEL_TEST_ERROR");
+  nr_log_event_set_message(log, "\" \\ / \b \f \n \r \t GBP sign \xc2\xa3xxx");
+  nr_log_event_set_timestamp(log, 12345000);
+  nr_log_event_set_trace_id(log, "test id 1");
+  nr_log_event_set_span_id(log, "test id 2");
+  nr_log_event_set_guid(log, "test id 3");
+  nr_log_event_set_entity_name(log, "entity name here");
+  nr_log_event_set_hostname(log, "host name here");
+  json = nr_log_event_to_json(log);
+  tlib_pass_if_str_equal(
+      "requires escaping for JSON event",
+      "{"
+      "\"message\":\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t GBP sign \\u00a3xxx\","
+      "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+      "\"trace.id\":\"test id 1\","
+      "\"span.id\":\"test id 2\","
+      "\"entity.guid\":\"test id 3\","
+      "\"entity.name\":\"entity name here\","
+      "\"hostname\":\"host name here\","
+      "\"timestamp\":12345"
+      "}",
+      json);
+  nr_free(json);
+  nr_log_event_destroy(&log);
 }
 
 static void test_log_event_to_json_buffer(void) {
