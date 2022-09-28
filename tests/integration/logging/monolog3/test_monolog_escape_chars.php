@@ -7,12 +7,11 @@
 /*DESCRIPTION
 Test that Monolog3 instrumentation escapes characters
 properly when encoding to JSON
+*/
 
 /*SKIPIF
 <?php
-
 require('skipif.inc');
-
 */
 
 /*INI
