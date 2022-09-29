@@ -318,7 +318,7 @@ nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
   if (NULL != func->common.function_name) {
     funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
   }
-  if (NULL != func->common.scope) {
+  if (NULL != func->common.scope && NULL != func->common.scope->name) {
     klassLC = nr_string_to_lowercase(ZSTR_VAL(func->common.scope->name));
   }
 
