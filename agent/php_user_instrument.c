@@ -336,11 +336,14 @@ nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
   while (NULL != p) {
     if (0 == nr_strcmp(p->funcnameLC, funcnameLC)
         && 0 == nr_strcmp(p->classnameLC, klassLC)) {
+      nr_free(funcnameLC);
+      nr_free(klassLC);
       return p;
     }
     p = p->next;
   }
-
+  nr_free(funcnameLC);
+  nr_free(klassLC);
   return NULL;
 #endif
 }
