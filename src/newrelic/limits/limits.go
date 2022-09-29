@@ -16,7 +16,13 @@ import (
 const (
 	// AppLimit is the maximum number of applications that the daemon will
 	// support.  The agent's limit is in nr_app.h.
+	// AppLimitNotifyHigh is the limit at which a notification will be output that
+	// the number of applications connected has reached this value from below.
+	// AppLimitNotifyLow is the lower limit at which a notification will be
+	// output that the number of applications has dropped to this point.
 	AppLimit                 = 250
+	AppLimitNotifyHigh       = 200
+	AppLimitNotifyLow        = 25
 	AppConnectAttemptBackoff = 30 * time.Second
 
 	// DefaultAppTimeout specifies the elapsed time after which an application
@@ -31,7 +37,7 @@ const (
 	MaxCustomEvents              = 10 * 1000
 	MaxErrorEvents               = 100
 	MaxSpanMaxEvents             = 10000
-	MaxLogMaxEvents              = 10 * 1000
+	MaxLogMaxEvents              = 20 * 1000
 	MaxErrors                    = 20
 	MaxSlowSQLs                  = 10
 	MaxRegularTraces             = 1
