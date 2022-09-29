@@ -21,12 +21,11 @@ static void test_op_array_wraprec(TSRMLS_D) {
   zend_function zend_func = {0};
   zend_string* scope_name = NULL;
   zend_class_entry ce = {0};
-  nruserfn_t * wraprec = NULL;
-  char * name_str = "my_func_name";
+  nruserfn_t* wraprec = NULL;
+  char* name_str = "my_func_name";
 #endif
 
   tlib_php_request_start();
-
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
@@ -37,42 +36,65 @@ static void test_op_array_wraprec(TSRMLS_D) {
                          nr_php_op_array_get_wraprec(&oparray TSRMLS_CC),
                          &func);
 #else
-  wraprec = nr_php_add_custom_tracer_named(name_str, nr_strlen(name_str));
   /*
-   * NULL if there's no match.
+   * NULL if there's no wraprecs in the internal list.
    */
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), NULL);
 
-  zend_func.common.function_name = zend_string_init(name_str,
-                                                    strlen(name_str), 0);
+  wraprec = nr_php_add_custom_tracer_named(
+      "ClassNoMatch::functionNoMatch",
+      nr_strlen("ClassNoMatch::functionNoMatch"));
+  wraprec = nr_php_add_custom_tracer_named("functionNoMatch2",
+                                           nr_strlen("functionNoMatch2"));
+  wraprec = nr_php_add_custom_tracer_named(name_str, nr_strlen(name_str));
+
   /*
-   * NULL if name is correct but type is wrong.
+   * NULL if zend_function is NULL.
+   */
+  tlib_pass_if_ptr_equal("obtain instrumented function",
+                         nr_php_get_wraprec_by_name(NULL), NULL);
+
+  /*
+   * NULL if function name is NULL.
    */
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), NULL);
+
   /*
-   * Valid if function name and type match.
+   * NULL if name is correct but type is wrong.
+   */
+  zend_func.common.function_name
+      = zend_string_init(name_str, strlen(name_str), 0);
+  tlib_pass_if_ptr_equal("obtain instrumented function",
+                         nr_php_get_wraprec_by_name(&zend_func), NULL);
+  /*
+   * Valid if function name matches and type is user function.
    */
   zend_func.type = ZEND_USER_FUNCTION;
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), wraprec);
   /*
-   * Null if function name matches, but class name doesn't.
+   * NULL if function name matches, but class name doesn't.
    */
-  scope_name = zend_string_init("ClassName",
-                                strlen("ClassName"), 0);
+  scope_name = zend_string_init("ClassName", strlen("ClassName"), 0);
   ce.name = scope_name;
   zend_func.common.scope = &ce;
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), NULL);
   /*
+   * NULL if function name doesn't match and class name matches.
+   */
+
+  wraprec = nr_php_add_custom_tracer_named(
+      "ClassName::my_func_name2", nr_strlen("ClassName::my_func_name"));
+  tlib_pass_if_ptr_equal("obtain instrumented function",
+                         nr_php_get_wraprec_by_name(&zend_func), wraprec);
+  /*
    * Valid if function name matches and class name matches.
    */
-  scope_name = zend_string_init("ClassName",
-                                strlen("ClassName"), 0);
-
-  wraprec = nr_php_add_custom_tracer_named("ClassName::my_func_name", nr_strlen("ClassName::my_func_name"));
+  wraprec = nr_php_add_custom_tracer_named(
+      "ClassName::my_func_name", nr_strlen("ClassName::my_func_name"));
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), wraprec);
 #endif
@@ -92,7 +114,6 @@ static void test_op_array_wraprec(TSRMLS_D) {
    */
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_name(&zend_func), wraprec);
-
 
 #endif
       /*
