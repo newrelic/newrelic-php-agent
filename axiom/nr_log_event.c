@@ -37,6 +37,18 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_realfree((void**)ptr);
 }
 
+/*
+ * Purpose : Adds a field to jsonified log event
+ *
+ * Params  :
+ *           1. Pointer to buffer (nrbuf_t*)
+ *           2. Name of the field (JSON key)
+ *           3. Value of the field (JSON value)
+ *           4. Boolean indicating if this is the first field
+ *           5. Boolean indicating if this field is required
+ *
+ * Returns : True is data was added to buf.
+ */
 static bool add_log_field_to_buf(nrbuf_t* buf,
                                  const char* field_name,
                                  const char* field_value,
@@ -63,9 +75,7 @@ static bool add_log_field_to_buf(nrbuf_t* buf,
   nr_buffer_add(buf, field_name, nr_strlen(field_name));
   nr_buffer_add(buf, NR_PSTR("\""));
   nr_buffer_add(buf, NR_PSTR(":"));
-  nr_buffer_add(buf, NR_PSTR("\""));
-  nr_buffer_add(buf, final_value, nr_strlen(final_value));
-  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add_escape_json(buf, final_value);
 
   return true;
 }
