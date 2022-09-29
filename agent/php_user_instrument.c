@@ -308,6 +308,13 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
 }
 
 nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  /*
+   * Not compatible with PHP less than 7.
+   */
+  (void)func;
+  return NULL;
+#else  
   nruserfn_t* p = NULL;
   char* funcnameLC = NULL;
   char* klassLC = NULL;
@@ -335,6 +342,7 @@ nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
   }
 
   return NULL;
+#endif
 }
 
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
