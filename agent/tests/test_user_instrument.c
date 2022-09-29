@@ -53,7 +53,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 
 static void test_get_wraprec_by_name() {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+#if ZEND_MODULE_API_NO < ZEND_7_3_X_API_NO
   return;
 #else
   zend_op_array oparray = {.function_name = (void*)1};
