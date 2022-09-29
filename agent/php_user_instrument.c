@@ -314,7 +314,7 @@ nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
    */
   (void)func;
   return NULL;
-#else  
+#else
   nruserfn_t* p = NULL;
   char* funcnameLC = NULL;
   char* klassLC = NULL;
