@@ -118,7 +118,7 @@ static void test_get_wraprec_by_name() {
   wraprec = nr_php_add_custom_tracer_named(
       "ClassName::my_func_name2", nr_strlen("ClassName::my_func_name2"));
   tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_name(&zend_func), wraprec);
+                         nr_php_get_wraprec_by_name(&zend_func), NULL);
   /*
    * Valid if function name matches and class name matches.
    */
