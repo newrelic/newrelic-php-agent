@@ -1143,7 +1143,7 @@ bool nr_php_function_is_static_method(const zend_function* func) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-extern const char* nr_php_zend_execute_data_function_name(
+const char* nr_php_zend_execute_data_function_name(
     const zend_execute_data* execute_data) {
   zend_string* function_name = NULL;
 
@@ -1160,7 +1160,7 @@ extern const char* nr_php_zend_execute_data_function_name(
   return function_name ? ZSTR_VAL(function_name) : NULL;
 }
 
-extern const char* nr_php_zend_execute_data_filename(
+const char* nr_php_zend_execute_data_filename(
     const zend_execute_data* execute_data) {
   zend_string* filename = NULL;
   while (
@@ -1174,7 +1174,7 @@ extern const char* nr_php_zend_execute_data_filename(
   return filename ? ZSTR_VAL(filename) : NULL;
 }
 
-extern const char* nr_php_zend_execute_data_scope_name(
+const char* nr_php_zend_execute_data_scope_name(
     const zend_execute_data* execute_data) {
   zend_class_entry* ce = NULL;
 
@@ -1191,7 +1191,7 @@ extern const char* nr_php_zend_execute_data_scope_name(
   return ce ? ZSTR_VAL(ce->name) : NULL;
 }
 
-extern uint32_t nr_php_zend_execute_data_lineno(
+uint32_t nr_php_zend_execute_data_lineno(
     const zend_execute_data* execute_data) {
   while (
       execute_data
