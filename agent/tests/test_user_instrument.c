@@ -93,6 +93,7 @@ static void test_get_wraprec_by_name() {
   /*
    * NULL if name is correct but type is wrong.
    */
+  zend_func.type = ZEND_INTERNAL_FUNCTION;
   zend_func.common.function_name
       = zend_string_init(name_str, strlen(name_str), 0);
   tlib_pass_if_ptr_equal("obtain instrumented function",
