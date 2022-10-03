@@ -2272,12 +2272,27 @@ static void test_segment_set_priority_flag(void) {
    * Don't blow up when passed a NULL segment.
    */
   nr_segment_set_priority_flag(NULL, NR_SEGMENT_PRIORITY_ROOT);
+  nr_segment_get_priority_flag(NULL);
 
   nr_segment_set_priority_flag(&root, NR_SEGMENT_PRIORITY_ROOT);
+  tlib_pass_if_int_equal("Get priority should return NR_SEGMENT_PRIORITY_ROOT",
+                         NR_SEGMENT_PRIORITY_ROOT,
+                         nr_segment_get_priority_flag(&root));
   nr_segment_set_priority_flag(&dt, NR_SEGMENT_PRIORITY_DT);
+  tlib_pass_if_int_equal("Get priority should return NR_SEGMENT_PRIORITY_DT",
+                         NR_SEGMENT_PRIORITY_DT,
+                         nr_segment_get_priority_flag(&dt));
   nr_segment_set_priority_flag(&log, NR_SEGMENT_PRIORITY_LOG);
+  tlib_pass_if_int_equal("Get priority should return NR_SEGMENT_PRIORITY_LOG",
+                         NR_SEGMENT_PRIORITY_LOG,
+                         nr_segment_get_priority_flag(&log));
   nr_segment_set_priority_flag(
       &dt_log, NR_SEGMENT_PRIORITY_DT | NR_SEGMENT_PRIORITY_LOG);
+  tlib_pass_if_int_equal(
+      "Get priority should return NR_SEGMENT_PRIORITY_DT | "
+      "NR_SEGMENT_PRIORITY_LOG",
+      NR_SEGMENT_PRIORITY_DT | NR_SEGMENT_PRIORITY_LOG,
+      nr_segment_get_priority_flag(&dt_log));
 
   /*
    * The impact of different priority flags is tested by sorting a

@@ -9,6 +9,12 @@ The agent should not remove a custom tracer from a function when it is no longer
 used as an exception handler.
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT
 NULL
 */
@@ -30,7 +36,9 @@ NULL
     [{"name":"Supportability/api/add_custom_tracer"},   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/handler"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/handler",
-      "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

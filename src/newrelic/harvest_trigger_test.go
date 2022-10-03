@@ -19,6 +19,7 @@ func TestHarvestTriggerGet(t *testing.T) {
 	txnEventData := 10000
 	customEventConfig := 10000
 	spanEventConfig := 1000
+	logEventConfig := 1000
 
 	reply.EventHarvestConfig = collector.EventHarvestConfig{
 		ReportPeriod: 60000,
@@ -37,6 +38,10 @@ func TestHarvestTriggerGet(t *testing.T) {
 			},
 			SpanEventConfig: collector.Event{
 				Limit:        spanEventConfig,
+				ReportPeriod: 60000,
+			},
+			LogEventConfig: collector.Event{
+				Limit:        logEventConfig,
 				ReportPeriod: 60000,
 			},
 		}}
@@ -56,6 +61,7 @@ func TestHarvestTriggerGetCustom(t *testing.T) {
 	txnEventData := 10000
 	customEventConfig := 10000
 	spanEventConfig := 1000
+	logEventConfig := 1000
 
 	reply.EventHarvestConfig = collector.EventHarvestConfig{
 		ReportPeriod: 60000,
@@ -74,6 +80,10 @@ func TestHarvestTriggerGetCustom(t *testing.T) {
 			},
 			SpanEventConfig: collector.Event{
 				Limit:        spanEventConfig,
+				ReportPeriod: 60000,
+			},
+			LogEventConfig: collector.Event{
+				Limit:        logEventConfig,
 				ReportPeriod: 60000,
 			},
 		}}

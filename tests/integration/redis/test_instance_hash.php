@@ -25,9 +25,15 @@ ok - delete existing hash key
 ok - delete missing hash key
 ok - re-use deleted hash key
 ok - duplicate hash key
+ok - get all hash keys
+ok - get all hash values
+ok - get the string length of a hash value
+ok - get number of hash fields
 ok - set multiple hash keys
 ok - increment hash key by int
+ok - increment hash key by float
 ok - get multiple hash keys
+ok - test that field exists
 ok - delete hash
 ok - trace nodes match
 ok - datastore instance metric exists
@@ -49,8 +55,7 @@ function test_redis() {
   /* Generate a unique key to use for this test run. */
   $hash = randstr(16);
   if ($redis->exists($hash)) {
-    echo "hash already exists: ${hash}\n";
-    exit(1);
+    die("skip: key already exists: ${hash}\n");
   }
 
   /* Ensure the hash doesn't persist longer than the test. */
@@ -67,12 +72,20 @@ function test_redis() {
   tap_assert($redis->hSetnx($hash, $key, $value), 're-use deleted hash key');
   tap_refute($redis->hSetnx($hash, $key, $value), 'duplicate hash key');
 
+  tap_equal_unordered(['foo'], $redis->hKeys($hash), 'get all hash keys');
+  tap_equal_unordered(['aaa'], $redis->hVals($hash), 'get all hash values');
+  tap_equal(3, $redis->hstrlen($hash, 'foo'), 'get the string length of a hash value');
+  tap_equal_unordered(1, $redis->hlen($hash), 'get number of hash fields');
+
   tap_assert($redis->hMset($hash, array('dval' => 1.5, 'ival' => 30)), 'set multiple hash keys');
   tap_equal(32, $redis->hIncrBy($hash, 'ival', 2), 'increment hash key by int');
+  tap_equal(3.5, $redis->hIncrByFloat($hash, 'dval', 2.0), 'increment hash key by float');
 
-  $want = array('dval' => '1.5', 'ival' => '32');
+  $want = array('dval' => '3.5', 'ival' => '32');
   $got = $redis->hMget($hash, array('dval', 'ival'));
   tap_equal_unordered($want, $got, 'get multiple hash keys');
+
+  tap_equal(true, $redis->hexists($hash, 'ival'), 'test that field exists');
 
   /* Cleanup the key used by this test run. */
   tap_equal(1, $redis->del($hash), 'delete hash');
@@ -86,8 +99,19 @@ $txn = new Transaction;
 
 redis_trace_nodes_match($txn, array(
   'Datastore/operation/Redis/connect',
+  'Datastore/operation/Redis/exists',
+  'Datastore/operation/Redis/expire',
   'Datastore/operation/Redis/del',
+  'Datastore/operation/Redis/hexists',
+  'Datastore/operation/Redis/hdel',
   'Datastore/operation/Redis/hget',
+  'Datastore/operation/Redis/hgetall',
+  'Datastore/operation/Redis/hincrby',
+  'Datastore/operation/Redis/hincrbyfloat',
+  'Datastore/operation/Redis/hkeys',
+  'Datastore/operation/Redis/hlen',
+  'Datastore/operation/Redis/hstrlen',
+  'Datastore/operation/Redis/hvals',
   'Datastore/operation/Redis/hmget',
   'Datastore/operation/Redis/hmset',
   'Datastore/operation/Redis/hset',

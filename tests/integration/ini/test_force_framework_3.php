@@ -11,6 +11,9 @@ map newrelic.framework names to enums.
 
 /*INI
 newrelic.framework = cakephp
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*XFAIL
@@ -26,6 +29,8 @@ which causes the metric to be generated.
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},               [1, "??", "??", "??", "??", "??"]],
