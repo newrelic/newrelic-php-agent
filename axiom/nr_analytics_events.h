@@ -10,6 +10,8 @@
 #ifndef NR_ANALYTICS_EVENTS_HDR
 #define NR_ANALYTICS_EVENTS_HDR
 
+#include <stdbool.h>
+
 #include "util_object.h"
 #include "util_random.h"
 
@@ -57,6 +59,17 @@ extern void nr_analytics_event_destroy(nr_analytics_event_t** event_ptr);
 extern nr_analytics_events_t* nr_analytics_events_create(int max_events);
 
 /*
+ * Purpose : Create a data structure to hold analytics event data.
+ *
+ * Params  : 1. The total number of events that will be recorded (0 is allowd).
+ *              After this maximum is reached, events will be saved/replaced
+ *              using a sampling algorithm.
+ *
+ * Returns : A newly allocated events structure, or NULL on error.
+ */
+extern nr_analytics_events_t* nr_analytics_events_create_ex(int max_events);
+
+/*
  * Purpose : Get the number of events that were attempted to be put in the
  *           structure using add_event.
  */
@@ -73,6 +86,18 @@ extern int nr_analytics_events_number_saved(
  *           associated memory.
  */
 extern void nr_analytics_events_destroy(nr_analytics_events_t** events_ptr);
+
+/*
+ * Purpose : Inform the outside world if events are being sampled when adding
+             them to the event pool.
+ */
+extern bool nr_analytics_events_is_sampling(nr_analytics_events_t* events);
+
+/*
+ * Purpose : Inform the outside world about maximum number of events that can be
+ *           stored.
+ */
+extern int nr_analytics_events_max_events(const nr_analytics_events_t* events);
 
 /*
  * Purpose : Add an event to an event pool.

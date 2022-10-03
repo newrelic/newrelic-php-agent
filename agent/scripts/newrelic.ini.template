@@ -1174,6 +1174,29 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.application_logging.forwarding.max_samples_stored = 10000
 
+; Setting: newrelic.application_logging.forwarding.log_level
+; Type   : string
+; Scope  : per-directory
+; Default: "WARNING"
+; Info   : Sets the minimum log level to be collected when log forwarding
+;          is enabled. 
+;
+;          Based on
+;           https://www.php-fig.org/psr/psr-3/#5-psrlogloglevel
+;           https://datatracker.ietf.org/doc/html/rfc5424
+;
+;          Valid settings (ordered highest to lowest):
+;           "EMERGENCY"
+;           "ALERT"
+;           "CRITICAL"
+;           "ERROR"
+;           "WARNING"
+;           "NOTICE"
+;           "INFO"
+;           "DEBUG"
+;          
+;newrelic.application_logging.forwarding.log_level = "WARNING"
+
 ; Setting: newrelic.application_logging.metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory

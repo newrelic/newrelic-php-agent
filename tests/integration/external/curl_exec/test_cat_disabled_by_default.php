@@ -12,6 +12,9 @@ supposed to be disabled by default.
 
 /*INI
 newrelic.distributed_tracing_enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -28,6 +31,8 @@ ok - execute request
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                [1, "??", "??", "??", "??", "??"]],

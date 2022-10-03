@@ -8,6 +8,12 @@
 Test that no apdex metrics are created after calling newrelic_ignore_apdex.
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",
@@ -23,6 +29,8 @@ Test that no apdex metrics are created after calling newrelic_ignore_apdex.
     [{"name":"WebTransaction/Uri__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/background_job"},      [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/ignore_apdex"},        [1, 0, 0, 0, 0, 0]]
   ]

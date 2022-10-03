@@ -23,6 +23,9 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.stack_trace_threshold = 0
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = raw
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -31,6 +34,8 @@ newrelic.transaction_tracer.record_sql = raw
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Postgres/other"},    [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Postgres/other",
       "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],

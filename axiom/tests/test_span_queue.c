@@ -112,7 +112,7 @@ static void test_flush(void) {
 static void test_push(void) {
   uint64_t flush_count = 0;
   size_t i;
-  nr_span_queue_t* queue = nr_span_queue_create(10, 1 * NR_TIME_DIVISOR_MS,
+  nr_span_queue_t* queue = nr_span_queue_create(10, 3 * NR_TIME_DIVISOR_MS,
                                                 failure_handler, &flush_count);
 
   /*
@@ -137,7 +137,7 @@ static void test_push(void) {
    * Test : Timeout hit.
    */
   flush_count = 0;
-  nr_msleep(2);
+  nr_msleep(3);
   tlib_pass_if_bool_equal("another push after the timeout should return true",
                           true,
                           nr_span_queue_push(queue, nr_span_event_create()));

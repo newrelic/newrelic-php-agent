@@ -27,3 +27,28 @@ void nr_php_framework_add_supportability_metric(const char* framework_name,
 
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
+
+void nr_fw_support_add_library_supportability_metric(nrtxn_t* txn,
+                                                     const char* library_name) {
+  if (NULL == txn || NULL == library_name) {
+    return;
+  }
+
+  char* metname
+      = nr_formatf("Supportability/library/%s/detected", library_name);
+  nrm_force_add(txn->unscoped_metrics, metname, 0);
+  nr_free(metname);
+}
+
+void nr_fw_support_add_logging_supportability_metric(nrtxn_t* txn,
+                                                     const char* library_name,
+                                                     const bool is_enabled) {
+  if (NULL == txn || NULL == library_name) {
+    return;
+  }
+
+  char* metname = nr_formatf("Supportability/Logging/PHP/%s/%s", library_name,
+                             is_enabled ? "enabled" : "disabled");
+  nrm_force_add(txn->unscoped_metrics, metname, 0);
+  nr_free(metname);
+}

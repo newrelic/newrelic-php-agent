@@ -100,6 +100,13 @@ struct _nr_analytics_events_t {
   nr_analytics_event_t** events; /* Array of events */
 };
 
+int nr_analytics_events_max_events(const nr_analytics_events_t* events) {
+  if (NULL == events) {
+    return 0;
+  }
+  return events->events_allocated;
+}
+
 int nr_analytics_events_number_seen(const nr_analytics_events_t* events) {
   if (0 == events) {
     return 0;
@@ -117,11 +124,20 @@ int nr_analytics_events_number_saved(const nr_analytics_events_t* events) {
 #define NR_ANALYTICS_EVENTS_MAX_EVENTS_SANITY_CHECK (10 * 1000 * 1000)
 
 nr_analytics_events_t* nr_analytics_events_create(int max_events) {
+  if (max_events <= 0) {
+    return NULL;
+  }
+
+  return nr_analytics_events_create_ex(max_events);
+}
+
+nr_analytics_events_t* nr_analytics_events_create_ex(int max_events) {
   nr_analytics_events_t* events;
 
-  if (max_events <= 0) {
+  if (max_events < 0) {
     return 0;
   }
+
   if (max_events > NR_ANALYTICS_EVENTS_MAX_EVENTS_SANITY_CHECK) {
     return 0;
   }
@@ -170,7 +186,7 @@ void nr_analytics_events_add_event(nr_analytics_events_t* events,
 
   events->events_seen++;
 
-  if (events->events_used < events->events_allocated) {
+  if (!nr_analytics_events_is_sampling(events)) {
     events->events[events->events_used] = nr_analytics_event_duplicate(event);
     events->events_used++;
   } else {
@@ -200,4 +216,14 @@ const char* nr_analytics_events_get_event_json(nr_analytics_events_t* events,
   }
 
   return nr_analytics_event_json(events->events[i]);
+}
+
+bool nr_analytics_events_is_sampling(nr_analytics_events_t* events) {
+  if (NULL == events) {
+    return false;
+  }
+  if (events->events_used < events->events_allocated) {
+    return false;
+  }
+  return true;
 }
