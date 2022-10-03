@@ -32,8 +32,9 @@
  *   buttercup          26Apr2022 (9.21)
  *   cosmos		29Jun2022 (10.0)
  *   dahlia		19Sep2022 (10.1)
+ *   echinacea		03Oct2022 (10.2)
  */
-#define NR_CODENAME "echinacea"
+#define NR_CODENAME "freesia"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
