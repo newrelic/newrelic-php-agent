@@ -6,6 +6,7 @@
 #include "nr_axiom.h"
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "util_memory.h"
 #include "nr_attributes.h"
@@ -28,7 +29,6 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_free(event->trace_id);
   nr_free(event->log_level);
   nr_free(event->message);
-  nr_free(event->trace_id);
   nr_free(event->span_id);
   nr_free(event->entity_guid);
   nr_free(event->entity_name);
@@ -37,10 +37,58 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_realfree((void**)ptr);
 }
 
+/*
+ * Purpose : Adds a field to jsonified log event
+ *
+ * Params  :
+ *           1. Pointer to buffer (nrbuf_t*)
+ *           2. Name of the field (JSON key)
+ *           3. Value of the field (JSON value)
+ *           4. Boolean indicating if this is the first field
+ *           5. Boolean indicating if this field is required
+ *
+ * Returns : True is data was added to buf.
+ */
+static bool add_log_field_to_buf(nrbuf_t* buf,
+                                 const char* field_name,
+                                 const char* field_value,
+                                 const bool first,
+                                 const bool required) {
+  const char* final_value = field_value;
+
+  if (NULL == buf || nr_strempty(field_name)) {
+    return false;
+  }
+
+  if (nr_strempty(field_value)) {
+    if (!required) {
+      return false;
+    } else {
+      final_value = "null";
+    }
+  }
+
+  if (!first) {
+    nr_buffer_add(buf, NR_PSTR(","));
+  }
+  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add(buf, field_name, nr_strlen(field_name));
+  nr_buffer_add(buf, NR_PSTR("\""));
+  nr_buffer_add(buf, NR_PSTR(":"));
+  nr_buffer_add_escape_json(buf, final_value);
+
+  return true;
+}
+
 char* nr_log_event_to_json(const nr_log_event_t* event) {
-  nrbuf_t* buf = nr_buffer_create(0, 0);
+  nrbuf_t* buf = NULL;
   char* json = NULL;
 
+  if (NULL == event) {
+    return NULL;
+  }
+
+  buf = nr_buffer_create(0, 0);
   if (nr_log_event_to_json_buffer(event, buf)) {
     nr_buffer_add(buf, NR_PSTR("\0"));
     json = nr_strdup(nr_buffer_cptr(buf));
@@ -56,61 +104,22 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
   }
 
   // We'll build the JSON manually
-  nr_buffer_add(buf, NR_PSTR("["));
   nr_buffer_add(buf, NR_PSTR("{"));
-  nr_buffer_add(buf, NR_PSTR("\"message\":\""));
-  if (NULL == event->message) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->message, nr_strlen(event->message));
-  }
 
-  nr_buffer_add(buf, NR_PSTR("\",\"log.level\":\""));
-  if (NULL == event->log_level) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->log_level, nr_strlen(event->log_level));
-  }
+  // only add non-empty fields
+  add_log_field_to_buf(buf, "message", event->message, true, true);
+  add_log_field_to_buf(buf, "level", event->log_level, false, true);
+  add_log_field_to_buf(buf, "trace.id", event->trace_id, false, false);
+  add_log_field_to_buf(buf, "span.id", event->span_id, false, false);
+  add_log_field_to_buf(buf, "entity.guid", event->entity_guid, false, false);
+  add_log_field_to_buf(buf, "entity.name", event->entity_name, false, false);
+  add_log_field_to_buf(buf, "hostname", event->hostname, false, false);
 
-  nr_buffer_add(buf, NR_PSTR("\",\"timestamp\":"));
+  // timestamp always present
+  nr_buffer_add(buf, NR_PSTR(",\"timestamp\":"));
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
 
-  nr_buffer_add(buf, NR_PSTR(",\"trace.id\":\""));
-  if (NULL == event->trace_id) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->trace_id, nr_strlen(event->trace_id));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"span.id\":\""));
-  if (NULL == event->span_id) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->span_id, nr_strlen(event->span_id));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"entity.guid\":\""));
-  if (NULL == event->entity_guid) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->entity_guid, nr_strlen(event->entity_guid));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"entity.name\":\""));
-  if (NULL == event->entity_name) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->entity_name, nr_strlen(event->entity_name));
-  }
-
-  nr_buffer_add(buf, NR_PSTR("\",\"hostname\":\""));
-  if (NULL == event->hostname) {
-    nr_buffer_add(buf, NR_PSTR("null"));
-  } else {
-    nr_buffer_add(buf, event->hostname, nr_strlen(event->hostname));
-  }
-  nr_buffer_add(buf, NR_PSTR("\"}"));
-  nr_buffer_add(buf, NR_PSTR("]"));
+  nr_buffer_add(buf, NR_PSTR("}"));
 
   return true;
 }
@@ -122,7 +131,9 @@ void nr_log_event_set_message(nr_log_event_t* event, const char* message) {
   if (NULL != event->message) {
     nr_free(event->message);
   }
-  event->message = nr_strdup(message);
+
+  // spec says to truncate messages over max limit
+  event->message = nr_strndup(message, NR_MAX_LOG_MESSAGE_LEN);
 }
 
 void nr_log_event_set_log_level(nr_log_event_t* event, const char* log_level) {
@@ -172,7 +183,8 @@ void nr_log_event_set_guid(nr_log_event_t* event, const char* guid) {
   event->entity_guid = nr_strdup(guid);
 }
 
-void nr_log_event_set_entity_name(nr_log_event_t* event, const char* entity_name) {
+void nr_log_event_set_entity_name(nr_log_event_t* event,
+                                  const char* entity_name) {
   if (NULL == event || NULL == entity_name) {
     return;
   }
@@ -190,4 +202,65 @@ void nr_log_event_set_hostname(nr_log_event_t* event, const char* hostname) {
     nr_free(event->hostname);
   }
   event->hostname = nr_strdup(hostname);
+}
+
+void nr_log_event_set_priority(nr_log_event_t* event, int priority) {
+  if (NULL == event) {
+    return;
+  }
+
+  event->priority = priority;
+}
+
+/*
+ * Safety check for comparator functions
+ *
+ * This avoids NULL checks in each comparator and ensures that NULL
+ * elements are consistently considered as smaller.
+ */
+#define COMPARATOR_NULL_CHECK(__elem1, __elem2)             \
+  if (nrunlikely(NULL == (__elem1) || NULL == (__elem2))) { \
+    if ((__elem1) < (__elem2)) {                            \
+      return -1;                                            \
+    } else if ((__elem1) > (__elem2)) {                     \
+      return 1;                                             \
+    }                                                       \
+    return 0;                                               \
+  }
+
+static int nr_log_event_age_comparator(const nr_log_event_t* a,
+                                       const nr_log_event_t* b) {
+  if (a->timestamp < b->timestamp) {
+    return -1;
+  } else if (a->timestamp > b->timestamp) {
+    return 1;
+  }
+  return 0;
+}
+
+static int nr_log_event_wrapped_age_comparator(const void* a, const void* b) {
+  COMPARATOR_NULL_CHECK(a, b);
+
+  return nr_log_event_age_comparator((const nr_log_event_t*)a,
+                                     (const nr_log_event_t*)b);
+}
+
+static int nr_log_event_priority_comparator(const nr_log_event_t* a,
+                                            const nr_log_event_t* b) {
+  if (a->priority > b->priority) {
+    return 1;
+  } else if (a->priority < b->priority) {
+    return -1;
+  } else {
+    return nr_log_event_wrapped_age_comparator(a, b);
+  }
+}
+
+int nr_log_event_wrapped_priority_comparator(const void* a,
+                                             const void* b,
+                                             void* userdata NRUNUSED) {
+  COMPARATOR_NULL_CHECK(a, b);
+
+  return nr_log_event_priority_comparator((const nr_log_event_t*)a,
+                                          (const nr_log_event_t*)b);
 }

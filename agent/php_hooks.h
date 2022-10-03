@@ -40,7 +40,7 @@ extern void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC);
  * users error_reporting setting or userland error handler return values.
  *
  * The register notification callbacks during MINIT of an extension are done in
- * `nr_php_observer.c`.
+ * `php_observer.c/h`.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 extern void nr_php_error_cb(int type,

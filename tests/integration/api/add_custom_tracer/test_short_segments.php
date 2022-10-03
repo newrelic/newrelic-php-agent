@@ -10,6 +10,9 @@ Test that traces will be generated even for very short segments.
 
 /*INI
 newrelic.transaction_tracer.threshold=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -75,6 +78,8 @@ newrelic.transaction_tracer.threshold=0
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},   [1, "??", "??", "??", "??", "??"]]
   ]
 ]

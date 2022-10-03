@@ -22,6 +22,9 @@ newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = obfuscated
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -37,6 +40,8 @@ pg_stats
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                              [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                         [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Postgres/all"},                     [4, "??", "??", "??", "??", "??"]],

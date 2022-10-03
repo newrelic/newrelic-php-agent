@@ -20,10 +20,6 @@
 
 #include "tlib_main.h"
 
-nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
-                          const char* agent_run_id NRUNUSED) {
-  return 0;
-}
 
 static void test_create(void) {
   nr_synthetics_t* synthetics;

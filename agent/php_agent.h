@@ -420,7 +420,23 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  while (execute_data) {
+    if ((Z_TYPE(execute_data->This) == IS_OBJECT)
+        || (Z_CE(execute_data->This))) {
+      return &execute_data->This;
+    } else if (execute_data->func) {
+      if (execute_data->func->type != ZEND_INTERNAL_FUNCTION
+          || execute_data->func->common.scope) {
+        return NULL;
+      }
+    }
+    execute_data = execute_data->prev_execute_data;
+  }
+  return NULL;
+
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
+    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
   return &execute_data->This;
 #else
   return execute_data->object;
@@ -731,7 +747,10 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 
 #define NR_PHP_INTERNAL_FN_THIS() getThis()
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+#define NR_PHP_USER_FN_THIS() nr_php_execute_scope(execute_data)
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
+    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
 #define NR_PHP_USER_FN_THIS() getThis()
 #else
 #define NR_PHP_USER_FN_THIS() EG(This)
@@ -806,5 +825,57 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  *           (current_execute_path).
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+/*
+ * Purpose : Return a pointer to the function name of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_function_name(
+    const zend_execute_data* execute_data);
+/*
+ * Purpose : Return a pointer to the filename of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_filename(
+    const zend_execute_data* execute_data);
+
+/*
+ * Purpose : Return a pointer to the scope(i.e., class) name of
+ * zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_scope_name(
+    const zend_execute_data* execute_data);
+
+/*
+ * Purpose : Return a uint32_t line number value of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : uint32_t lineno value
+ *
+ */
+extern uint32_t nr_php_zend_execute_data_lineno(
+    const zend_execute_data* execute_data);
+#endif /* PHP 7+ */
 
 #endif /* PHP_AGENT_HDR */

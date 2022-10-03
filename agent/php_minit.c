@@ -38,6 +38,8 @@
 #include "fw_laravel.h"
 #include "lib_guzzle4.h"
 
+#include "php_observer.h"
+
 static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   if (nrunlikely(NULL == nrg)) {
     return;
@@ -408,6 +410,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   zend_extension dummy;
 #else
   char dummy[] = "newrelic";
+  nr_php_observer_minit();
 #endif
 
   (void)type;
@@ -723,6 +726,7 @@ void nr_php_late_initialization(void) {
    * forward the errors, so if a user has Xdebug loaded, we do not install
    * our own error callback handler. Otherwise, we do.
    */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* < PHP8 */
   if (0 == zend_get_extension("Xdebug")) {
     NR_PHP_PROCESS_GLOBALS(orig_error_cb) = zend_error_cb;
     zend_error_cb = nr_php_error_cb;
@@ -731,6 +735,7 @@ void nr_php_late_initialization(void) {
                 "the Xdebug extension prevents the New Relic agent from "
                 "gathering errors. No errors will be recorded.");
   }
+#endif /* end of < PHP8 */
 
   /*
    * Install our signal handler, unless the user has set a special flag

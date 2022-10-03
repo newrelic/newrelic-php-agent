@@ -13,6 +13,9 @@ happens. For the list of files, we reference ourself with a pcre.
 /*INI
 newrelic.webtransaction.name.functions = f_0,f_1,bogus_f_0,,,
 newrelic.webtransaction.name.files = .*test_ini_003.php,**,[,bat/,baz,,,
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -33,6 +36,8 @@ f_3() called
   "?? timeframe start",
   "?? timeframe stop",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
                                                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},

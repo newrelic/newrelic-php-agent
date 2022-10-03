@@ -31,6 +31,7 @@
 #include "util_number_converter.h"
 #include "fw_support.h"
 #include "fw_hooks.h"
+#include "php_observer.h"
 
 /*
  * This wall of text is important. Read it. Understand it. Really.
@@ -568,6 +569,13 @@ static nr_library_table_t libraries[] = {
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+static nr_library_table_t logging_frameworks[] = {
+    /* Monolog - Logging for PHP */
+    {"Monolog", "monolog/logger.php", nr_monolog_enable},
+};
+
+static size_t num_logging_frameworks
+    = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
@@ -855,18 +863,41 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
 
   for (i = 0; i < num_libraries; i++) {
     if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
-      char* metname = nr_formatf("Supportability/library/%s/detected",
-                                 libraries[i].library_name);
-
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
-      nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), libraries[i].library_name);
 
       if (NULL != libraries[i].enable) {
         libraries[i].enable(TSRMLS_C);
       }
+    }
+  }
 
-      nr_free(metname);
+  nr_free(filename_lower);
+}
+
+static void nr_execute_handle_logging_framework(
+    const char* filename TSRMLS_DC) {
+  char* filename_lower = nr_string_to_lowercase(filename);
+  bool is_enabled = false;
+  size_t i;
+
+  for (i = 0; i < num_logging_frameworks; i++) {
+    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+                logging_frameworks[i].library_name);
+
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name);
+
+      if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
+        is_enabled = true;
+        logging_frameworks[i].enable(TSRMLS_C);
+      }
+      nr_fw_support_add_logging_supportability_metric(
+          NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
 
@@ -886,6 +917,7 @@ static void nr_php_user_instrumentation_from_file(
   nr_execute_handle_framework(all_frameworks, num_all_frameworks,
                               filename TSRMLS_CC);
   nr_execute_handle_library(filename TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename TSRMLS_CC);
 }
 
 /*
@@ -1520,3 +1552,43 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
 end:
   nr_php_zval_free(&status);
 }
+
+/*
+ * nr_php_observer_fcall_begin and nr_php_observer_fcall_end
+ * are Observer API function handlers that are the entry point to instrumenting
+ * userland code and should replicate the functionality of
+ * nr_php_execute_enabled, nr_php_execute, and nr_php_execute_show that are used
+ * when hooking in via zend_execute_ex.
+ *
+ * Observer API functionality was added with PHP 8.0.
+ * See nr_php_observer.h/c for more information.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+
+  if (NULL == execute_data) {
+    return;
+  }
+}
+
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                               zval* return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  if ((NULL == execute_data) || (NULL == return_value)) {
+    return;
+  }
+}
+#endif

@@ -12,6 +12,9 @@ have children.
 /*INI
 newrelic.transaction_tracer.detail = 1
 newrelic.transaction_tracer.threshold = 0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -37,6 +40,8 @@ newrelic.transaction_tracer.threshold = 0
     [{"name":"OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_span_parameter"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/record_datastore_segment"},  [1, "??", "??", "??", "??", "??"]]
   ]
