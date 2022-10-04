@@ -972,7 +972,10 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    * attributes.
    */
 
-#define CHK_CLM_STRLEN(s) if (CLM_STRLEN_MAX > NRSAFELEN(sizeof(s) - 1)) return;
+#define CHK_CLM_STRLEN(s)                          \
+  if (CLM_STRLEN_MAX > NRSAFELEN(sizeof(s) - 1)) { \
+    return;                                        \
+  }
 
   filepath = nr_php_zend_execute_data_filename(execute_data);
   CHK_CLM_STRLEN(filepath)
@@ -1006,7 +1009,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
 
 #define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
 
-  if (CHK_CLM_EMPTY(function)){
+  if (CHK_CLM_EMPTY(function)) {
     return;
   }
   if (CHK_CLM_EMPTY(namespace) && CHK_CLM_EMPTY(filepath)) {
