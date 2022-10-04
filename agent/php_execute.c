@@ -1004,8 +1004,8 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    */
 
 #define CHK_CLM_STRLEN(s)                          \
-  if (CLM_STRLEN_MAX > NRSAFELEN(sizeof(s) - 1)) { \
-    return;                                        \
+  if (CLM_STRLEN_MAX < NRSAFELEN(sizeof(s) - 1)) { \
+    s = NULL;                                      \
   }
 
   filepath = nr_php_zend_execute_data_filename(execute_data);
