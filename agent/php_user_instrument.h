@@ -60,6 +60,9 @@ typedef struct _nruserfn_t {
    */
   nrspecialfn_t special_instrumentation;
 
+  /*
+   * Only for PHP < 7.3
+   */
   nruserfn_declared_t declared_callback;
 
   int is_method;
@@ -81,6 +84,17 @@ typedef struct _nruserfn_t {
 } nruserfn_t;
 
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
+
+/*
+ * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
+ *           with a function name/class.
+ *
+ * Params  : 1. The zend function to find in a wraprec
+ *
+ * Returns : The function wrapper that matches the function/class combination.
+ *            NULL if no function wrapper matches the function/class combo.
+ */
+extern nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func);
 
 /*
  * Purpose : Get the wraprec associated with a user function op_array.
