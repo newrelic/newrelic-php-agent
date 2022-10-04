@@ -1134,6 +1134,14 @@ void nr_segment_set_priority_flag(nr_segment_t* segment, int flag) {
   segment->priority |= flag;
 }
 
+int nr_segment_get_priority_flag(nr_segment_t* segment) {
+  if (NULL == segment) {
+    return 0;
+  }
+
+  return segment->priority;
+}
+
 void nr_segment_record_exception(nr_segment_t* segment,
                                  const char* error_message,
                                  const char* error_class) {

@@ -3026,34 +3026,155 @@ NR_OUTER_WRAPPER(memcached_setbykey)
 NR_OUTER_WRAPPER(memcached_setmulti)
 NR_OUTER_WRAPPER(memcached_setmultibykey)
 
-NR_OUTER_WRAPPER(redis_connect)
-NR_OUTER_WRAPPER(redis_pconnect)
-NR_OUTER_WRAPPER(redis_open)
-NR_OUTER_WRAPPER(redis_popen)
+NR_OUTER_WRAPPER(redis_append)
+NR_OUTER_WRAPPER(redis_bitcount)
+NR_OUTER_WRAPPER(redis_bitop)
+NR_OUTER_WRAPPER(redis_bitpos)
 NR_OUTER_WRAPPER(redis_close)
-NR_OUTER_WRAPPER(redis_select)
-NR_OUTER_WRAPPER(redis_del)
-NR_OUTER_WRAPPER(redis_delete)
-NR_OUTER_WRAPPER(redis_get)
-NR_OUTER_WRAPPER(redis_set)
-NR_OUTER_WRAPPER(redis_mget)
-NR_OUTER_WRAPPER(redis_mset)
-NR_OUTER_WRAPPER(redis_setex)
-NR_OUTER_WRAPPER(redis_setnx)
-NR_OUTER_WRAPPER(redis_incr)
-NR_OUTER_WRAPPER(redis_incrby)
+NR_OUTER_WRAPPER(redis_connect)
+NR_OUTER_WRAPPER(redis_dbsize)
 NR_OUTER_WRAPPER(redis_decr)
 NR_OUTER_WRAPPER(redis_decrby)
-NR_OUTER_WRAPPER(redis_lset)
-NR_OUTER_WRAPPER(redis_lget)
-NR_OUTER_WRAPPER(redis_lrem)
-NR_OUTER_WRAPPER(redis_lremove)
-NR_OUTER_WRAPPER(redis_lindex)
+NR_OUTER_WRAPPER(redis_del)
+NR_OUTER_WRAPPER(redis_delete)
+NR_OUTER_WRAPPER(redis_eval)
+NR_OUTER_WRAPPER(redis_evalsha)
+NR_OUTER_WRAPPER(redis_exec)
+NR_OUTER_WRAPPER(redis_exists)
+NR_OUTER_WRAPPER(redis_expire)
+NR_OUTER_WRAPPER(redis_expireat)
+NR_OUTER_WRAPPER(redis_flushall)
+NR_OUTER_WRAPPER(redis_flushdb)
+NR_OUTER_WRAPPER(redis_geoadd)
+NR_OUTER_WRAPPER(redis_geodist)
+NR_OUTER_WRAPPER(redis_geohash)
+NR_OUTER_WRAPPER(redis_geopos)
+NR_OUTER_WRAPPER(redis_georadius)
+NR_OUTER_WRAPPER(redis_georadius_ro)
+NR_OUTER_WRAPPER(redis_georadiusbymember)
+NR_OUTER_WRAPPER(redis_georadiusbymember_ro)
+NR_OUTER_WRAPPER(redis_get)
+NR_OUTER_WRAPPER(redis_getbit)
+NR_OUTER_WRAPPER(redis_getrange)
+NR_OUTER_WRAPPER(redis_getset)
+NR_OUTER_WRAPPER(redis_hdel)
+NR_OUTER_WRAPPER(redis_hexists)
+NR_OUTER_WRAPPER(redis_hget)
+NR_OUTER_WRAPPER(redis_hgetall)
+NR_OUTER_WRAPPER(redis_hincrby)
+NR_OUTER_WRAPPER(redis_hincrbyfloat)
+NR_OUTER_WRAPPER(redis_hkeys)
+NR_OUTER_WRAPPER(redis_hlen)
+NR_OUTER_WRAPPER(redis_hmget)
+NR_OUTER_WRAPPER(redis_hmset)
 NR_OUTER_WRAPPER(redis_hset)
 NR_OUTER_WRAPPER(redis_hsetnx)
-NR_OUTER_WRAPPER(redis_hget)
-NR_OUTER_WRAPPER(redis_hmset)
-NR_OUTER_WRAPPER(redis_hmget)
+NR_OUTER_WRAPPER(redis_hstrlen)
+NR_OUTER_WRAPPER(redis_hvals)
+NR_OUTER_WRAPPER(redis_incr)
+NR_OUTER_WRAPPER(redis_incrby)
+NR_OUTER_WRAPPER(redis_incrbyfloat)
+NR_OUTER_WRAPPER(redis_keys)
+NR_OUTER_WRAPPER(redis_lget)
+NR_OUTER_WRAPPER(redis_lindex)
+NR_OUTER_WRAPPER(redis_linsert)
+NR_OUTER_WRAPPER(redis_llen)
+NR_OUTER_WRAPPER(redis_lpop)
+NR_OUTER_WRAPPER(redis_lpush)
+NR_OUTER_WRAPPER(redis_lpushx)
+NR_OUTER_WRAPPER(redis_lrange)
+NR_OUTER_WRAPPER(redis_lrem)
+NR_OUTER_WRAPPER(redis_lremove)
+NR_OUTER_WRAPPER(redis_lset)
+NR_OUTER_WRAPPER(redis_ltrim)
+NR_OUTER_WRAPPER(redis_mget)
+NR_OUTER_WRAPPER(redis_migrate)
+NR_OUTER_WRAPPER(redis_move)
+NR_OUTER_WRAPPER(redis_mset)
+NR_OUTER_WRAPPER(redis_msetnx)
+NR_OUTER_WRAPPER(redis_open)
+NR_OUTER_WRAPPER(redis_pconnect)
+NR_OUTER_WRAPPER(redis_persist)
+NR_OUTER_WRAPPER(redis_pexpire)
+NR_OUTER_WRAPPER(redis_pexpireat)
+NR_OUTER_WRAPPER(redis_pfadd)
+NR_OUTER_WRAPPER(redis_pfcount)
+NR_OUTER_WRAPPER(redis_pfmerge)
+NR_OUTER_WRAPPER(redis_ping)
+NR_OUTER_WRAPPER(redis_popen)
+NR_OUTER_WRAPPER(redis_psetex)
+NR_OUTER_WRAPPER(redis_pttl)
+NR_OUTER_WRAPPER(redis_publish)
+NR_OUTER_WRAPPER(redis_randomkey)
+NR_OUTER_WRAPPER(redis_rawcommand)
+NR_OUTER_WRAPPER(redis_rename)
+NR_OUTER_WRAPPER(redis_renamenx)
+NR_OUTER_WRAPPER(redis_rpop)
+NR_OUTER_WRAPPER(redis_rpoplpush)
+NR_OUTER_WRAPPER(redis_rpush)
+NR_OUTER_WRAPPER(redis_rpushx)
+NR_OUTER_WRAPPER(redis_sadd)
+NR_OUTER_WRAPPER(redis_scard)
+NR_OUTER_WRAPPER(redis_sdiff)
+NR_OUTER_WRAPPER(redis_sdiffstore)
+NR_OUTER_WRAPPER(redis_select)
+NR_OUTER_WRAPPER(redis_set)
+NR_OUTER_WRAPPER(redis_setbit)
+NR_OUTER_WRAPPER(redis_setex)
+NR_OUTER_WRAPPER(redis_setnx)
+NR_OUTER_WRAPPER(redis_setrange)
+NR_OUTER_WRAPPER(redis_sinter)
+NR_OUTER_WRAPPER(redis_sinterstore)
+NR_OUTER_WRAPPER(redis_sismember)
+NR_OUTER_WRAPPER(redis_smembers)
+NR_OUTER_WRAPPER(redis_smismember)
+NR_OUTER_WRAPPER(redis_smove)
+NR_OUTER_WRAPPER(redis_spop)
+NR_OUTER_WRAPPER(redis_srandmember)
+NR_OUTER_WRAPPER(redis_srem)
+NR_OUTER_WRAPPER(redis_strlen)
+NR_OUTER_WRAPPER(redis_sunion)
+NR_OUTER_WRAPPER(redis_sunionstore)
+NR_OUTER_WRAPPER(redis_swapdb)
+NR_OUTER_WRAPPER(redis_time)
+NR_OUTER_WRAPPER(redis_ttl)
+NR_OUTER_WRAPPER(redis_type)
+NR_OUTER_WRAPPER(redis_unlink)
+NR_OUTER_WRAPPER(redis_xack)
+NR_OUTER_WRAPPER(redis_xadd)
+NR_OUTER_WRAPPER(redis_xclaim)
+NR_OUTER_WRAPPER(redis_xdel)
+NR_OUTER_WRAPPER(redis_xgroup)
+NR_OUTER_WRAPPER(redis_xinfo)
+NR_OUTER_WRAPPER(redis_xlen)
+NR_OUTER_WRAPPER(redis_xpending)
+NR_OUTER_WRAPPER(redis_xrange)
+NR_OUTER_WRAPPER(redis_xread)
+NR_OUTER_WRAPPER(redis_xreadgroup)
+NR_OUTER_WRAPPER(redis_xrevrange)
+NR_OUTER_WRAPPER(redis_xtrim)
+NR_OUTER_WRAPPER(redis_zadd)
+NR_OUTER_WRAPPER(redis_zcard)
+NR_OUTER_WRAPPER(redis_zcount)
+NR_OUTER_WRAPPER(redis_zincrby)
+NR_OUTER_WRAPPER(redis_zinterstore)
+NR_OUTER_WRAPPER(redis_zlexcount)
+NR_OUTER_WRAPPER(redis_zpopmax)
+NR_OUTER_WRAPPER(redis_zpopmin)
+NR_OUTER_WRAPPER(redis_zrange)
+NR_OUTER_WRAPPER(redis_zrangebylex)
+NR_OUTER_WRAPPER(redis_zrangebyscore)
+NR_OUTER_WRAPPER(redis_zrank)
+NR_OUTER_WRAPPER(redis_zrem)
+NR_OUTER_WRAPPER(redis_zremrangebylex)
+NR_OUTER_WRAPPER(redis_zremrangebyrank)
+NR_OUTER_WRAPPER(redis_zremrangebyscore)
+NR_OUTER_WRAPPER(redis_zrevrange)
+NR_OUTER_WRAPPER(redis_zrevrangebylex)
+NR_OUTER_WRAPPER(redis_zrevrangebyscore)
+NR_OUTER_WRAPPER(redis_zrevrank)
+NR_OUTER_WRAPPER(redis_zscore)
+NR_OUTER_WRAPPER(redis_zunionstore)
 
 NR_OUTER_WRAPPER(pg_close)
 NR_OUTER_WRAPPER(pg_connect)
@@ -3326,34 +3447,239 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::popen", redis_popen, redis_connect, 0, "popen")
   NR_INTERNAL_WRAPREC("redis::close", redis_close, redis_close, 0, "close")
   NR_INTERNAL_WRAPREC("redis::select", redis_select, redis_select, 0, "select")
-  NR_INTERNAL_WRAPREC("redis::del", redis_del, redis_function, 0, "del")
-  NR_INTERNAL_WRAPREC("redis::delete", redis_delete, redis_function, 0,
-                      "delete")
-  NR_INTERNAL_WRAPREC("redis::get", redis_get, redis_function, 0, "get")
-  NR_INTERNAL_WRAPREC("redis::set", redis_set, redis_function, 0, "set")
-  NR_INTERNAL_WRAPREC("redis::mget", redis_mget, redis_function, 0, "mget")
-  NR_INTERNAL_WRAPREC("redis::mset", redis_mset, redis_function, 0, "mset")
-  NR_INTERNAL_WRAPREC("redis::setex", redis_setex, redis_function, 0, "setex")
-  NR_INTERNAL_WRAPREC("redis::setnx", redis_setnx, redis_function, 0, "setnx")
-  NR_INTERNAL_WRAPREC("redis::incr", redis_incr, redis_function, 0, "incr")
-  NR_INTERNAL_WRAPREC("redis::incrby", redis_incrby, redis_function, 0,
-                      "incrby")
+
+  NR_INTERNAL_WRAPREC("redis::append", redis_append, redis_function, 0,
+                      "append")
+  NR_INTERNAL_WRAPREC("redis::bitcount", redis_bitcount, redis_function, 0,
+                      "bitcount")
+  NR_INTERNAL_WRAPREC("redis::bitop", redis_bitop, redis_function, 0, "bitop")
+  NR_INTERNAL_WRAPREC("redis::bitpos", redis_bitpos, redis_function, 0,
+                      "bitpos")
   NR_INTERNAL_WRAPREC("redis::decr", redis_decr, redis_function, 0, "decr")
   NR_INTERNAL_WRAPREC("redis::decrby", redis_decrby, redis_function, 0,
                       "decrby")
-  NR_INTERNAL_WRAPREC("redis::lset", redis_lset, redis_function, 0, "lset")
-  NR_INTERNAL_WRAPREC("redis::lget", redis_lget, redis_function, 0, "lget")
-  NR_INTERNAL_WRAPREC("redis::lrem", redis_lrem, redis_function, 0, "lrem")
-  NR_INTERNAL_WRAPREC("redis::lremove", redis_lremove, redis_function, 0,
-                      "lremove")
-  NR_INTERNAL_WRAPREC("redis::lindex", redis_lindex, redis_function, 0,
-                      "lindex")
+  NR_INTERNAL_WRAPREC("redis::del", redis_del, redis_function, 0, "del")
+  NR_INTERNAL_WRAPREC("redis::delete", redis_delete, redis_function, 0,
+                      "delete")
+  NR_INTERNAL_WRAPREC("redis::dbsize", redis_dbsize, redis_function, 0,
+                      "dbsize")
+  NR_INTERNAL_WRAPREC("redis::eval", redis_eval, redis_function, 0, "eval")
+  NR_INTERNAL_WRAPREC("redis::evalsha", redis_evalsha, redis_function, 0,
+                      "evalsha")
+  NR_INTERNAL_WRAPREC("redis::exec", redis_exec, redis_function, 0, "exec")
+  NR_INTERNAL_WRAPREC("redis::exists", redis_exists, redis_function, 0,
+                      "exists")
+  NR_INTERNAL_WRAPREC("redis::expire", redis_expire, redis_function, 0,
+                      "expire")
+  NR_INTERNAL_WRAPREC("redis::expireat", redis_expireat, redis_function, 0,
+                      "expireat")
+  NR_INTERNAL_WRAPREC("redis::flushall", redis_flushall, redis_function, 0,
+                      "flushall")
+  NR_INTERNAL_WRAPREC("redis::flushdb", redis_flushdb, redis_function, 0,
+                      "flushdb")
+  NR_INTERNAL_WRAPREC("redis::geoadd", redis_geoadd, redis_function, 0,
+                      "geoadd")
+  NR_INTERNAL_WRAPREC("redis::geodist", redis_geodist, redis_function, 0,
+                      "geodist")
+  NR_INTERNAL_WRAPREC("redis::geohash", redis_geohash, redis_function, 0,
+                      "geohash")
+  NR_INTERNAL_WRAPREC("redis::geopos", redis_geopos, redis_function, 0,
+                      "geopos")
+  NR_INTERNAL_WRAPREC("redis::georadius", redis_georadius, redis_function, 0,
+                      "georadius")
+  NR_INTERNAL_WRAPREC("redis::georadius_ro", redis_georadius_ro, redis_function,
+                      0, "georadius_ro")
+  NR_INTERNAL_WRAPREC("redis::georadiusbymember", redis_georadiusbymember,
+                      redis_function, 0, "georadiusbymember")
+  NR_INTERNAL_WRAPREC("redis::georadiusbymember_ro", redis_georadiusbymember_ro,
+                      redis_function, 0, "georadiusbymember_ro")
+  NR_INTERNAL_WRAPREC("redis::get", redis_get, redis_function, 0, "get")
+  NR_INTERNAL_WRAPREC("redis::getbit", redis_getbit, redis_function, 0,
+                      "getbit")
+  NR_INTERNAL_WRAPREC("redis::getrange", redis_getrange, redis_function, 0,
+                      "getrange")
+  NR_INTERNAL_WRAPREC("redis::getset", redis_getset, redis_function, 0,
+                      "getset")
+  NR_INTERNAL_WRAPREC("redis::hdel", redis_hdel, redis_function, 0, "hdel")
+  NR_INTERNAL_WRAPREC("redis::hexists", redis_hexists, redis_function, 0,
+                      "hexists")
+  NR_INTERNAL_WRAPREC("redis::hget", redis_hget, redis_function, 0, "hget")
+  NR_INTERNAL_WRAPREC("redis::hgetall", redis_hgetall, redis_function, 0,
+                      "hgetall")
+  NR_INTERNAL_WRAPREC("redis::hincrby", redis_hincrby, redis_function, 0,
+                      "hincrby")
+  NR_INTERNAL_WRAPREC("redis::hincrbyfloat", redis_hincrbyfloat, redis_function,
+                      0, "hincrbyfloat")
+  NR_INTERNAL_WRAPREC("redis::hkeys", redis_hkeys, redis_function, 0, "hkeys")
+  NR_INTERNAL_WRAPREC("redis::hlen", redis_hlen, redis_function, 0, "hlen")
+  NR_INTERNAL_WRAPREC("redis::hmget", redis_hmget, redis_function, 0, "hmget")
+  NR_INTERNAL_WRAPREC("redis::hmset", redis_hmset, redis_function, 0, "hmset")
   NR_INTERNAL_WRAPREC("redis::hset", redis_hset, redis_function, 0, "hset")
   NR_INTERNAL_WRAPREC("redis::hsetnx", redis_hsetnx, redis_function, 0,
                       "hsetnx")
-  NR_INTERNAL_WRAPREC("redis::hget", redis_hget, redis_function, 0, "hget")
-  NR_INTERNAL_WRAPREC("redis::hmset", redis_hmset, redis_function, 0, "hmset")
-  NR_INTERNAL_WRAPREC("redis::hmget", redis_hmget, redis_function, 0, "hmget")
+  NR_INTERNAL_WRAPREC("redis::hstrlen", redis_hstrlen, redis_function, 0,
+                      "hstrlen")
+  NR_INTERNAL_WRAPREC("redis::hvals", redis_hvals, redis_function, 0, "hvals")
+  NR_INTERNAL_WRAPREC("redis::incr", redis_incr, redis_function, 0, "incr")
+  NR_INTERNAL_WRAPREC("redis::incrby", redis_incrby, redis_function, 0,
+                      "incrby")
+  NR_INTERNAL_WRAPREC("redis::incrbyfloat", redis_incrbyfloat, redis_function,
+                      0, "incrbyfloat")
+  NR_INTERNAL_WRAPREC("redis::keys", redis_keys, redis_function, 0, "keys")
+  NR_INTERNAL_WRAPREC("redis::lget", redis_lget, redis_function, 0, "lget")
+  NR_INTERNAL_WRAPREC("redis::lindex", redis_lindex, redis_function, 0,
+                      "lindex")
+  NR_INTERNAL_WRAPREC("redis::linsert", redis_linsert, redis_function, 0,
+                      "linsert")
+  NR_INTERNAL_WRAPREC("redis::llen", redis_llen, redis_function, 0, "llen")
+  NR_INTERNAL_WRAPREC("redis::lpop", redis_lpop, redis_function, 0, "lpop")
+  NR_INTERNAL_WRAPREC("redis::lpush", redis_lpush, redis_function, 0, "lpush")
+  NR_INTERNAL_WRAPREC("redis::lpushx", redis_lpushx, redis_function, 0,
+                      "lpushx")
+  NR_INTERNAL_WRAPREC("redis::lrange", redis_lrange, redis_function, 0,
+                      "lrange")
+  NR_INTERNAL_WRAPREC("redis::lrem", redis_lrem, redis_function, 0, "lrem")
+  NR_INTERNAL_WRAPREC("redis::lremove", redis_lremove, redis_function, 0,
+                      "lremove")
+  NR_INTERNAL_WRAPREC("redis::lset", redis_lset, redis_function, 0, "lset")
+  NR_INTERNAL_WRAPREC("redis::ltrim", redis_ltrim, redis_function, 0, "ltrim")
+  NR_INTERNAL_WRAPREC("redis::mget", redis_mget, redis_function, 0, "mget")
+  NR_INTERNAL_WRAPREC("redis::migrate", redis_migrate, redis_function, 0,
+                      "migrate")
+  NR_INTERNAL_WRAPREC("redis::move", redis_move, redis_function, 0, "move")
+  NR_INTERNAL_WRAPREC("redis::mset", redis_mset, redis_function, 0, "mset")
+  NR_INTERNAL_WRAPREC("redis::msetnx", redis_msetnx, redis_function, 0,
+                      "msetnx")
+  NR_INTERNAL_WRAPREC("redis::persist", redis_persist, redis_function, 0,
+                      "persist")
+  NR_INTERNAL_WRAPREC("redis::pexpire", redis_pexpire, redis_function, 0,
+                      "pexpire")
+  NR_INTERNAL_WRAPREC("redis::pexpireat", redis_pexpireat, redis_function, 0,
+                      "pexpireat")
+  NR_INTERNAL_WRAPREC("redis::pfadd", redis_pfadd, redis_function, 0, "pfadd")
+  NR_INTERNAL_WRAPREC("redis::pfcount", redis_pfcount, redis_function, 0,
+                      "pfcount")
+  NR_INTERNAL_WRAPREC("redis::pfmerge", redis_pfmerge, redis_function, 0,
+                      "pfmerge")
+  NR_INTERNAL_WRAPREC("redis::ping", redis_ping, redis_function, 0, "ping")
+  NR_INTERNAL_WRAPREC("redis::psetex", redis_psetex, redis_function, 0,
+                      "psetex")
+  NR_INTERNAL_WRAPREC("redis::pttl", redis_pttl, redis_function, 0, "pttl")
+  NR_INTERNAL_WRAPREC("redis::publish", redis_publish, redis_function, 0,
+                      "publish")
+  NR_INTERNAL_WRAPREC("redis::randomkey", redis_randomkey, redis_function, 0,
+                      "randomkey")
+  NR_INTERNAL_WRAPREC("redis::rawcommand", redis_rawcommand, redis_function, 0,
+                      "rawcommand")
+  NR_INTERNAL_WRAPREC("redis::rename", redis_rename, redis_function, 0,
+                      "rename")
+  NR_INTERNAL_WRAPREC("redis::renamenx", redis_renamenx, redis_function, 0,
+                      "renamenx")
+  NR_INTERNAL_WRAPREC("redis::rpop", redis_rpop, redis_function, 0, "rpop")
+  NR_INTERNAL_WRAPREC("redis::rpoplpush", redis_rpoplpush, redis_function, 0,
+                      "rpoplpush")
+  NR_INTERNAL_WRAPREC("redis::rpush", redis_rpush, redis_function, 0, "rpush")
+  NR_INTERNAL_WRAPREC("redis::rpushx", redis_rpushx, redis_function, 0,
+                      "rpushx")
+  NR_INTERNAL_WRAPREC("redis::sadd", redis_sadd, redis_function, 0, "sadd")
+  NR_INTERNAL_WRAPREC("redis::scard", redis_scard, redis_function, 0, "scard")
+  NR_INTERNAL_WRAPREC("redis::sdiff", redis_sdiff, redis_function, 0, "sdiff")
+  NR_INTERNAL_WRAPREC("redis::sdiffstore", redis_sdiffstore, redis_function, 0,
+                      "sdiffstore")
+  NR_INTERNAL_WRAPREC("redis::set", redis_set, redis_function, 0, "set")
+  NR_INTERNAL_WRAPREC("redis::setbit", redis_setbit, redis_function, 0,
+                      "setbit")
+  NR_INTERNAL_WRAPREC("redis::setex", redis_setex, redis_function, 0, "setex")
+  NR_INTERNAL_WRAPREC("redis::setnx", redis_setnx, redis_function, 0, "setnx")
+  NR_INTERNAL_WRAPREC("redis::setrange", redis_setrange, redis_function, 0,
+                      "setrange")
+  NR_INTERNAL_WRAPREC("redis::sinter", redis_sinter, redis_function, 0,
+                      "sinter")
+  NR_INTERNAL_WRAPREC("redis::sinterstore", redis_sinterstore, redis_function,
+                      0, "sinterstore")
+  NR_INTERNAL_WRAPREC("redis::sismember", redis_sismember, redis_function, 0,
+                      "sismember")
+  NR_INTERNAL_WRAPREC("redis::smembers", redis_smembers, redis_function, 0,
+                      "smembers")
+  NR_INTERNAL_WRAPREC("redis::smismember", redis_smismember, redis_function, 0,
+                      "smismember")
+  NR_INTERNAL_WRAPREC("redis::smove", redis_smove, redis_function, 0, "smove")
+  NR_INTERNAL_WRAPREC("redis::spop", redis_spop, redis_function, 0, "spop")
+  NR_INTERNAL_WRAPREC("redis::srandmember", redis_srandmember, redis_function,
+                      0, "srandmember")
+  NR_INTERNAL_WRAPREC("redis::srem", redis_srem, redis_function, 0, "srem")
+  NR_INTERNAL_WRAPREC("redis::strlen", redis_strlen, redis_function, 0,
+                      "strlen")
+  NR_INTERNAL_WRAPREC("redis::sunion", redis_sunion, redis_function, 0,
+                      "sunion")
+  NR_INTERNAL_WRAPREC("redis::sunionstore", redis_sunionstore, redis_function,
+                      0, "sunionstore")
+  NR_INTERNAL_WRAPREC("redis::swapdb", redis_swapdb, redis_function, 0,
+                      "swapdb")
+  NR_INTERNAL_WRAPREC("redis::time", redis_time, redis_function, 0, "time")
+  NR_INTERNAL_WRAPREC("redis::ttl", redis_ttl, redis_function, 0, "ttl")
+  NR_INTERNAL_WRAPREC("redis::type", redis_type, redis_function, 0, "type")
+  NR_INTERNAL_WRAPREC("redis::unlink", redis_unlink, redis_function, 0,
+                      "unlink")
+  NR_INTERNAL_WRAPREC("redis::xack", redis_xack, redis_function, 0, "xack")
+  NR_INTERNAL_WRAPREC("redis::xadd", redis_xadd, redis_function, 0, "xadd")
+  NR_INTERNAL_WRAPREC("redis::xclaim", redis_xclaim, redis_function, 0,
+                      "xclaim")
+  NR_INTERNAL_WRAPREC("redis::xdel", redis_xdel, redis_function, 0, "xdel")
+  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0, 
+                      "xgroup")
+  NR_INTERNAL_WRAPREC("redis::xinfo", redis_xinfo, redis_function, 0, "xinfo")
+  NR_INTERNAL_WRAPREC("redis::xlen", redis_xlen, redis_function, 0, "xlen")
+  NR_INTERNAL_WRAPREC("redis::xpending", redis_xpending, redis_function, 0,
+                      "xpending")
+  NR_INTERNAL_WRAPREC("redis::xrange", redis_xrange, redis_function, 0,
+                      "xrange")
+  NR_INTERNAL_WRAPREC("redis::xread", redis_xread, redis_function, 0, "xread")
+  NR_INTERNAL_WRAPREC("redis::xreadgroup", redis_xreadgroup, redis_function, 0,
+                      "xreadgroup")
+  NR_INTERNAL_WRAPREC("redis::xrevrange", redis_xrevrange, redis_function, 0,
+                      "xrevrange")
+  NR_INTERNAL_WRAPREC("redis::xtrim", redis_xtrim, redis_function, 0, "xtrim")
+  NR_INTERNAL_WRAPREC("redis::zadd", redis_zadd, redis_function, 0, "zadd")
+  NR_INTERNAL_WRAPREC("redis::zcard", redis_zcard, redis_function, 0, "zcard")
+  NR_INTERNAL_WRAPREC("redis::zcount", redis_zcount, redis_function, 0,
+                      "zcount")
+  NR_INTERNAL_WRAPREC("redis::zincrby", redis_zincrby, redis_function, 0,
+                      "zincrby")
+  NR_INTERNAL_WRAPREC("redis::zinterstore", redis_zinterstore, redis_function,
+                      0, "zinterstore")
+  NR_INTERNAL_WRAPREC("redis::zlexcount", redis_zlexcount, redis_function, 0,
+                      "zlexcount")
+  NR_INTERNAL_WRAPREC("redis::zpopmax", redis_zpopmax, redis_function, 0,
+                      "zpopmax")
+  NR_INTERNAL_WRAPREC("redis::zpopmin", redis_zpopmin, redis_function, 0,
+                      "zpopmin")
+  NR_INTERNAL_WRAPREC("redis::zrange", redis_zrange, redis_function, 0,
+                      "zrange")
+  NR_INTERNAL_WRAPREC("redis::zrangebylex", redis_zrangebylex, redis_function,
+                      0, "zrangebylex")
+  NR_INTERNAL_WRAPREC("redis::zrangebyscore", redis_zrangebyscore,
+                      redis_function, 0, "zrangebyscore")
+  NR_INTERNAL_WRAPREC("redis::zrank", redis_zrank, redis_function, 0, "zrank")
+  NR_INTERNAL_WRAPREC("redis::zrem", redis_zrem, redis_function, 0, "zrem")
+  NR_INTERNAL_WRAPREC("redis::zremrangebylex", redis_zremrangebylex,
+                      redis_function, 0, "zremrangebylex")
+  NR_INTERNAL_WRAPREC("redis::zremrangebyrank", redis_zremrangebyrank,
+                      redis_function, 0, "zremrangebyrank")
+  NR_INTERNAL_WRAPREC("redis::zremrangebyscore", redis_zremrangebyscore,
+                      redis_function, 0, "zremrangebyscore")
+  NR_INTERNAL_WRAPREC("redis::zrevrange", redis_zrevrange, redis_function, 0,
+                      "zrevrange")
+  NR_INTERNAL_WRAPREC("redis::zrevrangebylex", redis_zrevrangebylex,
+                      redis_function, 0, "zrevrangebylex")
+  NR_INTERNAL_WRAPREC("redis::zrevrangebyscore", redis_zrevrangebyscore,
+                      redis_function, 0, "zrevrangebyscore")
+  NR_INTERNAL_WRAPREC("redis::zrevrank", redis_zrevrank, redis_function, 0,
+                      "zrevrank")
+  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0, 
+                      "zscore")
+  NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
+                      0, "zunionstore")
 
   NR_INTERNAL_WRAPREC("pg_close", pg_close, pg_close, 0, 0)
   NR_INTERNAL_WRAPREC("pg_connect", pg_connect, pg_connect, 0, 0)

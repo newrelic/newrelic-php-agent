@@ -694,7 +694,7 @@ static void test_nr_php_zend_execute_data_lineno() {
       nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
 }
 
-#endif /* PHP 8+ */
+#endif /* PHP 7+ */
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)

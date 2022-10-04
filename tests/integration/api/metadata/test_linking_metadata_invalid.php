@@ -17,6 +17,9 @@ if (version_compare(PHP_VERSION, "7.4", ">")) {
 
 /*INI
 newrelic.distributed_tracing_enabled = false
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
  */
 
 /*EXPECT_REGEX
@@ -37,6 +40,8 @@ ok - empty metadata
     [{"name":"Errors/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/get_linking_metadata"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]

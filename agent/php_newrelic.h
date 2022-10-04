@@ -475,6 +475,9 @@ nriniuint_t
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
+nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
+                                       */
+
 /*
  * Configuration option to toggle code level metrics collection.
  */

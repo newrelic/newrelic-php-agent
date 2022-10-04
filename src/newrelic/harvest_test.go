@@ -111,8 +111,8 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 		`[{"name":"Supportability/Events/Customer/Sent"},[8,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[28,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[28,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[48,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[48,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[48,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[24,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[24,0,0,0,0,0]]]]`
 
@@ -164,8 +164,8 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/LogEvent/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
