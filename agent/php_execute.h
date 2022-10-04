@@ -24,6 +24,8 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
+#define CLM_STRLEN_MAX (255)
+
 /*
  * Version specific metadata that we have to gather before we call the original
  * execute_ex handler, as different versions of PHP behave differently in terms

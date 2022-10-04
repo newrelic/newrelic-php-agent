@@ -971,10 +971,20 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    * If we don't have the minimum requirements, exit and don't add any
    * attributes.
    */
+  
+#define CHK_CLM_STRLEN(s) if (CLM_STRLEN_MAX > NRSAFELEN(sizeof(s) - 1)) return;
 
   filepath = nr_php_zend_execute_data_filename(execute_data);
+  CHK_CLM_STRLEN(filepath)
+
   namespace = nr_php_zend_execute_data_scope_name(execute_data);
+  CHK_CLM_STRLEN(namespace)
+
   function = nr_php_zend_execute_data_function_name(execute_data);
+  CHK_CLM_STRLEN(function)
+
+#undef CHK_CLM_STRLEN
+
   lineno = nr_php_zend_execute_data_lineno(execute_data);
 
   /*
