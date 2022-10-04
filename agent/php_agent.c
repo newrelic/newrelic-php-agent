@@ -1169,9 +1169,7 @@ const char* nr_php_zend_execute_data_function_name(
 const char* nr_php_zend_execute_data_filename(
     const zend_execute_data* execute_data) {
   zend_string* filename = NULL;
-  while (
-      execute_data
-      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+  while (NR_ZEND_USER_FUNC_EXISTS(execute_data)) {
     execute_data = execute_data->prev_execute_data;
   }
   if (execute_data) {
@@ -1199,9 +1197,7 @@ const char* nr_php_zend_execute_data_scope_name(
 
 uint32_t nr_php_zend_execute_data_lineno(
     const zend_execute_data* execute_data) {
-  while (
-      execute_data
-      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+  while (NR_ZEND_USER_FUNC_EXISTS(execute_data)) {
     execute_data = execute_data->prev_execute_data;
   }
   if (execute_data) {

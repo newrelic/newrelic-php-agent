@@ -834,6 +834,10 @@ extern void nr_php_txn_add_code_level_metrics(
     const nr_php_execute_metadata_t* metadata);
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+#define NR_ZEND_USER_FUNC_EXISTS(x) \
+  (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
+
 /*
  * Purpose : Return a pointer to the function name of zend_execute_data.
  *
