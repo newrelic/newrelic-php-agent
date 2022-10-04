@@ -33,8 +33,8 @@ typedef enum _nr_zend_http_adapter {
  */
 #define LIB_NAME_Z "Zend"
 #define CURL_ADAPTER_Z "Zend_Http_Client_Adapter_Curl"
-#define URI_HTTP_Z  "Zend_Uri_Http"
-#define HTTP_CLIENT_Z  "Zend_Http_Client"
+#define URI_HTTP_Z "Zend_Uri_Http"
+#define HTTP_CLIENT_Z "Zend_Http_Client"
 #define HTTP_CLIENT_REQUEST_Z "Zend_Http_Client::request"
 
 #define LIB_NAME_L "Laminas"
@@ -338,7 +338,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
   (void)wraprec;
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   /* Avoid double counting if CURL is used. */
   adapter = nr_zend_check_adapter(this_var TSRMLS_CC);
@@ -456,4 +456,3 @@ void nr_laminas_http_enable(TSRMLS_D) {
                               nr_zend_http_client_request TSRMLS_CC);
   }
 }
-

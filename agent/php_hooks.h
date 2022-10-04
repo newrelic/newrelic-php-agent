@@ -16,7 +16,7 @@
  *           See http://www.php.net/manual/en/migration55.internals.php
  *           for a discussion of what/how to override.
  */
-extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
+extern void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC);
 
 /*
  * Purpose : Our own error callback function, used to capture the PHP stack
