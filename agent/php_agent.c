@@ -275,6 +275,18 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
 }
 
 zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+
+  /*
+   * There is no other recourse.  We must return what OAPI gave us.  This should
+   * theoretically never be NULL since we check for NULL before calling the
+   * handlers; however, if it was NULL, there is nothing we can do about it.
+   */
+  return execute_data;
+#endif
   zend_execute_data* ptrg
       = EG(current_execute_data); /* via zend engine global data structure */
   NR_UNUSED_SPECIALFN;
