@@ -971,7 +971,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    * If we don't have the minimum requirements, exit and don't add any
    * attributes.
    */
-  
+
 #define CHK_CLM_STRLEN(s) if (CLM_STRLEN_MAX > NRSAFELEN(sizeof(s) - 1)) return;
 
   filepath = nr_php_zend_execute_data_filename(execute_data);
@@ -1003,15 +1003,20 @@ static void nr_php_execute_metadata_add_code_level_metrics(
      */
     lineno = nr_php_zend_execute_data_lineno(execute_data);
   }
-  if (nr_strempty(function)) {
+
+#define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
+
+  if (CHK_CLM_EMPTY(function)){
     return;
   }
-  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+  if (CHK_CLM_EMPTY(namespace) && CHK_CLM_EMPTY(filepath)) {
     /*
      * CLM MUST have either function+namespace or function+filepath.
      */
     return;
   }
+
+#undef CHK_CLM_EMPTY
 
   metadata->function_lineno = lineno;
   metadata->function_name = nr_strdup(function);
