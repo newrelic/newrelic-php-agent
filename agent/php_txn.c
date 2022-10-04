@@ -1109,3 +1109,47 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   return NR_SUCCESS;
 }
+
+extern void nr_php_txn_add_code_level_metrics(
+    nr_attributes_t* attributes,
+    const nr_php_execute_metadata_t* metadata) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)attributes;
+  (void)metadata;
+  return;
+}
+#else
+  /* Current CLM functionality only works with PHP 7+ */
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+  if (nr_strempty(metadata->function_name)) {
+    /*
+     * CLM aren't set so don't do anything
+     */
+    return;
+  }
+
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         metadata->function_name);
+  if (!nr_strempty(metadata->function_filepath)) {
+    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
+                                           metadata->function_filepath);
+  }
+  if (!nr_strempty(metadata->function_namespace)) {
+    nr_txn_attributes_set_string_attribute(
+        attributes, nr_txn_clm_code_namespace, metadata->function_namespace);
+  }
+  nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
+                                       metadata->function_lineno);
+}
+#endif

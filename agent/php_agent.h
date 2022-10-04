@@ -41,6 +41,7 @@
 #include "php_zval.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "php_execute.h"
 
 /*
  * The default connection mechanism to the daemon is:
@@ -79,6 +80,7 @@
  * Returns : A newly allocated JSON stack trace string or NULL on error.
  */
 #define NR_PHP_STACKTRACE_LIMIT 300
+
 extern char* nr_php_backtrace_to_json(zval* itrace TSRMLS_DC);
 
 /*
@@ -410,7 +412,7 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
         || (Z_CE(execute_data->This))) {
       return &execute_data->This;
     } else if (execute_data->func) {
-      if (execute_data->func->type != ZEND_INTERNAL_FUNCTION
+      if (ZEND_USER_CODE(execute_data->func->type)
           || execute_data->func->common.scope) {
         return NULL;
       }
@@ -809,6 +811,26 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  *           (current_execute_path).
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
+
+/*
+ * Purpose : If code level metrics are enabled, extract the data from the OAPI
+ *           given zend_execute_data.  Add the CLM as agent attributes to the
+ *           attributes data structure.
+ *
+ * Params  : 1. attributes data structure to add the CLM to
+ *           2. The zend_execute_data given by OAPI
+ *
+ * Returns : void
+ *
+ * Note: PHP has a concept of calling files with no function names.  In the
+ *       case of a file being called when there is no function name, the agent
+ *       instruments the file.  In this case, we provide the filename to CLM
+ *       as the "function" name.
+ *       Current CLM functionality only works with PHP 7+
+ */
+extern void nr_php_txn_add_code_level_metrics(
+    nr_attributes_t* attributes,
+    const nr_php_execute_metadata_t* metadata);
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 /*

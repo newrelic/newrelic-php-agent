@@ -1155,7 +1155,12 @@ const char* nr_php_zend_execute_data_function_name(
 
   if ((NULL == function_name)
       && (ZEND_USER_FUNCTION == execute_data->func->type)) {
-    return "main";
+    /*
+     * This is the case of a filename being called so there is no function name.
+     * It is broken out separately here in case we need to do something special
+     * with it in the future.
+     */
+    return NULL;
   }
   return function_name ? ZSTR_VAL(function_name) : NULL;
 }
