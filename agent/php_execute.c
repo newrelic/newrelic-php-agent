@@ -966,6 +966,7 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 static void nr_php_execute_metadata_add_code_level_metrics(
     nr_php_execute_metadata_t* metadata,
     NR_EXECUTE_PROTO) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
   (void)metadata;
   NR_UNUSED_SPECIALFN;
@@ -1646,7 +1647,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 }
 
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
-                               zval* return_value) {
+                               zval* func_return_value) {
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -1654,7 +1655,11 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute
    * nr_php_execute_show
    */
-  if ((NULL == execute_data) || (NULL == return_value)) {
+  if ((NULL == execute_data) || (NULL == func_return_value)) {
+    return;
+  }
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
 }
