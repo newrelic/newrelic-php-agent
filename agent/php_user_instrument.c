@@ -95,17 +95,17 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * we're dealing with a callable rather than a name.)
  *
  * There are two main structures containing `wraprecs`.
- * `nr_php_op_array_set_wraprec` is a list of pointers to `wraprecs` that will
+ * `nr_wrapped_user_functions` is a list of pointers to `wraprecs` that will
  * contain all our custom instrumentation and all the user specified
  * instrumentation they want to monitor. `user_function_wrappers` is a vector of
  * pointers to wrappers, after the zend function represented by a wraprec has
  * the reserved field modified, the pointer to the wraprec (which again, exists
- * in `nr_php_op_array_set_wraprec`) goes into the vector.
- * `nr_php_op_array_set_wraprec` is always a superset of
+ * in `nr_wrapped_user_functions`) goes into the vector.
+ * `nr_wrapped_user_functions` is always a superset of
  * `user_function_wrappers` and the wraprec pointers that exist in
- * `user_function_wrappers` always exist in `nr_php_op_array_set_wraprec`.
+ * `user_function_wrappers` always exist in `nr_wrapped_user_functions`.
  *
- * `nr_php_op_array_set_wraprec` is populated a few different ways.
+ * `nr_wrapped_user_functions` is populated a few different ways.
  * 1)from function `nr_php_add_transaction_naming_function` called from
  * `php_nrini.c` to set the naming for all the transactions the user  set in the
  * ini with `newrelic.webtransaction.name.functions` 2) from function
