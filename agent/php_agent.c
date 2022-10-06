@@ -275,17 +275,29 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
 }
 
 zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+
+  /*
+   * There is no other recourse.  We must return what OAPI gave us.  This should
+   * theoretically never be NULL since we check for NULL before calling the
+   * handlers; however, if it was NULL, there is nothing we can do about it.
+   */
+  return execute_data;
+#endif
   zend_execute_data* ptrg
       = EG(current_execute_data); /* via zend engine global data structure */
-
   NR_UNUSED_SPECIALFN;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   {
     /*
      * ptra is argument passed in to us, it might be NULL if the caller doesn't
      * have that info.
      */
-    zend_execute_data* ptra = NR_EXECUTE_ORIG_ARGS;
+    zend_execute_data* ptra = execute_data;
     if (NULL != ptra) {
       return ptra;
     } else {
@@ -419,6 +431,8 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
   zval* arg_via_h = 0;
   int arg_count_via_h = -1;
 
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
   if (requested_arg_index < 1) {
     return NULL;
   }
@@ -441,6 +455,7 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
 
 size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+  NR_UNUSED_FUNC_RETURN_VALUE;
   return (size_t)ZEND_CALL_NUM_ARGS(execute_data);
 #else
   int arg_count_via_h = -1;
@@ -1141,3 +1156,67 @@ bool nr_php_function_is_static_method(const zend_function* func) {
 
   return (func->common.fn_flags & ZEND_ACC_STATIC);
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+const char* nr_php_zend_execute_data_function_name(
+    const zend_execute_data* execute_data) {
+  zend_string* function_name = NULL;
+
+  if ((NULL == execute_data) || (NULL == execute_data->func)) {
+    return NULL;
+  }
+
+  function_name = execute_data->func->common.function_name;
+
+  if ((NULL == function_name)
+      && (ZEND_USER_FUNCTION == execute_data->func->type)) {
+    return "main";
+  }
+  return function_name ? ZSTR_VAL(function_name) : NULL;
+}
+
+const char* nr_php_zend_execute_data_filename(
+    const zend_execute_data* execute_data) {
+  zend_string* filename = NULL;
+  while (
+      execute_data
+      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+    execute_data = execute_data->prev_execute_data;
+  }
+  if (execute_data) {
+    filename = execute_data->func->op_array.filename;
+  }
+  return filename ? ZSTR_VAL(filename) : NULL;
+}
+
+const char* nr_php_zend_execute_data_scope_name(
+    const zend_execute_data* execute_data) {
+  zend_class_entry* ce = NULL;
+
+  while (execute_data) {
+    if (execute_data->func
+        && (ZEND_USER_CODE(execute_data->func->type)
+            || execute_data->func->common.scope)) {
+      ce = execute_data->func->common.scope;
+      execute_data = NULL;
+    } else {
+      execute_data = execute_data->prev_execute_data;
+    }
+  }
+  return ce ? ZSTR_VAL(ce->name) : NULL;
+}
+
+uint32_t nr_php_zend_execute_data_lineno(
+    const zend_execute_data* execute_data) {
+  while (
+      execute_data
+      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+    execute_data = execute_data->prev_execute_data;
+  }
+  if (execute_data) {
+    return execute_data->opline ? execute_data->opline->lineno : 0;
+  }
+  return 0;
+}
+
+#endif /* PHP 7+ */

@@ -6,7 +6,6 @@
 #ifndef NR_LOG_EVENT_PRIVATE_H
 #define NR_LOG_EVENT_PRIVATE_H
 
-#include "nr_log_event.h"
 #include "util_object.h"
 
 struct _nr_log_event_t {
@@ -18,6 +17,7 @@ struct _nr_log_event_t {
   char* entity_guid;
   char* entity_name;
   char* hostname;
+  int priority;
 };
 
 #endif /* NR_LOG_EVENT_PRIVATE_H */

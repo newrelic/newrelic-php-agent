@@ -11,6 +11,9 @@ protocol is used.
 
 /*INI
 newrelic.distributed_tracing_enabled=0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*SKIPIF
@@ -30,6 +33,8 @@ ok - execute request
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                       [1, "??", "??", "??", "??", "??"]],

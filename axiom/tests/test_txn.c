@@ -35,6 +35,7 @@
 #include "util_strings.h"
 #include "util_text.h"
 #include "util_url.h"
+#include "util_vector.h"
 
 #include "nr_commands_private.h"
 
@@ -128,6 +129,22 @@ nrapp_t* nr_app_verify_id(nrapplist_t* applist NRUNUSED,
   rv = nrt_mutex_lock(&p->txns_app->app_lock);
   tlib_pass_if_true("app locked", NR_SUCCESS == rv, "rv=%d", (int)rv);
   return p->txns_app;
+}
+
+const char* nr_app_get_host_name(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->host_name;
+}
+
+const char* nr_app_get_entity_guid(const nrapp_t* app) {
+  if (NULL == app) {
+    return NULL;
+  }
+
+  return app->entity_guid;
 }
 
 #define test_freeze_name(...) \
@@ -8068,6 +8085,417 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
+static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
+  nrapp_t app;
+  nrtxnopt_t opts;
+  nrtxn_t* txn;
+  nr_segment_t* segment;
+
+  /* Setup app state */
+  nr_memset(&app, 0, sizeof(app));
+  app.state = NR_APP_OK;
+  app.entity_name = entity_name;
+  app.limits = default_app_limits();
+
+  /* Setup log feature options */
+  nr_memset(&opts, 0, sizeof(opts));
+  opts.logging_enabled = true;
+  opts.log_forwarding_enabled = true;
+  opts.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  opts.log_events_max_samples_stored = 10;
+  opts.log_metrics_enabled = true;
+
+  opts.distributed_tracing_enabled = 1; /* for linking meta data */
+
+  /* Start txn and segment */
+  txn = nr_txn_begin(&app, &opts, NULL);
+  segment = nr_segment_start(txn, txn->segment_root, NULL);
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+  nr_txn_set_current_segment(txn, segment);
+
+  txn->options.span_events_enabled = 1; /* for linking meta data */
+
+  return txn;
+}
+
+static void test_log_level_verify(void) {
+  nrtxn_t* txn = NULL;
+  txn = new_txn_for_record_log_event_test("test_log_level_verify");
+
+  /* Test NULL values */
+  tlib_pass_if_false("NULL txn ok",
+                     nr_txn_log_forwarding_log_level_verify(NULL, LL_NOTI_STR),
+                     "expected false");
+  tlib_pass_if_true("NULL log level ok",
+                    nr_txn_log_forwarding_log_level_verify(txn, NULL),
+                    "expected true");
+
+  /* Test known values */
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_false("INFO not passed for log level = WARNING",
+                     nr_txn_log_forwarding_log_level_verify(txn, LL_INFO_STR),
+                     "expected false");
+  tlib_pass_if_false("DEBUG not passed for log level = WARNING",
+                     nr_txn_log_forwarding_log_level_verify(txn, LL_INFO_STR),
+                     "expected false");
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_true("ALERT  passed for log level = WARNING",
+                    nr_txn_log_forwarding_log_level_verify(txn, LL_ALER_STR),
+                    "expected true");
+  txn->options.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  tlib_pass_if_true("EMERGENCY  passed for log level = WARNING",
+                    nr_txn_log_forwarding_log_level_verify(txn, LL_EMER_STR),
+                    "expected true");
+
+  /* Test unknown level passed even if threshold set to EMERGENCY */
+  txn->options.log_forwarding_log_level = LOG_LEVEL_EMERGENCY;
+  tlib_pass_if_true("Unknown log level passed for log level = EMERGENCY",
+                    nr_txn_log_forwarding_log_level_verify(txn, "APPLES"),
+                    "expected true");
+
+  nr_txn_destroy(&txn);
+}
+
+static void test_record_log_event(void) {
+#define LOG_LEVEL LL_WARN_STR
+#define LOG_MESSAGE "Sample log message"
+#define LOG_TIMESTAMP 1234
+#define LOG_EVENT_PARAMS \
+  LOG_LEVEL, LOG_MESSAGE, LOG_TIMESTAMP* NR_TIME_DIVISOR_MS
+#define APP_HOST_NAME "localhost"
+#define APP_ENTITY_NAME "test_record_log_event"
+#define APP_ENTITY_GUID "guid"
+
+  nrapp_t appv = {.host_name = APP_HOST_NAME, .entity_guid = APP_ENTITY_GUID};
+  nrtxn_t* txn = NULL;
+  const char* expected = NULL;
+  char* log_event_json = NULL;
+  nr_vector_t* vector;
+  void* test_e;
+  bool pass;
+
+  /*
+   * NULL parameters: don't record, don't create metrics, don't blow up!
+   */
+
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(NULL, LOG_EVENT_PARAMS, NULL);
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  nr_txn_destroy(&txn);
+
+  /*
+   * Mixed conditions (some NULL parameters): maybe record, create metrics,
+   * don't blow up!
+   */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, NULL, NULL, 0, NULL);
+  tlib_pass_if_int_equal("null log params, event not recorded", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log params, event not recorded", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  test_txn_metric_is("null log level, event not recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
+                     1, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, NULL, LOG_MESSAGE, 0, NULL);
+  tlib_pass_if_int_equal("null log level, event seen", 1,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("null log level, event saved", 1,
+                         nr_log_events_number_saved(txn->log_events));
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
+  tlib_pass_if_not_null("null log level, event recorded", log_event_json);
+  expected
+      = "{"
+        "\"message\":\"" LOG_MESSAGE
+        "\","
+        "\"level\":\"" LL_UNKN_STR
+        "\","
+        "\"trace.id\":\"0000000000000000\","
+        "\"span.id\":\"0000000000000000\","
+        "\"entity.name\":\"" APP_ENTITY_NAME
+        "\","
+        "\"timestamp\":0"
+        "}";
+  tlib_pass_if_str_equal("null log level, event recorded, json ok", expected,
+                         log_event_json);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("null log level, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines/UNKNOWN",
+                     1, 0, 0, 0, 0, 0);
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
+  nr_txn_destroy(&txn);
+
+  /* Happy path - everything initialized: record! */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  tlib_pass_if_int_equal("happy path, event seen", 1,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, event saved", 1,
+                         nr_log_events_number_saved(txn->log_events));
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  pass = nr_vector_get_element(vector, 0, &test_e);
+  tlib_pass_if_true("retrived log element from vector OK", pass,
+                    "expected TRUE");
+  log_event_json = nr_log_event_to_json((nr_log_event_t*)test_e);
+  tlib_fail_if_null("no json", log_event_json);
+  tlib_pass_if_not_null("happy path, event recorded", log_event_json);
+  expected
+      = "{"
+        "\"message\":\"" LOG_MESSAGE
+        "\","
+        "\"level\":\"" LOG_LEVEL
+        "\","
+        "\"trace.id\":\"0000000000000000\","
+        "\"span.id\":\"0000000000000000\","
+        "\"entity.guid\":\"" APP_ENTITY_GUID
+        "\","
+        "\"entity.name\":\"" APP_ENTITY_NAME
+        "\","
+        "\"hostname\":\"" APP_HOST_NAME
+        "\","
+        "\"timestamp\":" NR_STR2(LOG_TIMESTAMP) "}";
+  tlib_pass_if_str_equal("happy path, event recorded, json ok", expected,
+                         log_event_json);
+  nr_free(log_event_json);
+  nr_vector_destroy(&vector);
+
+  test_txn_metric_is("happy path, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED, "Logging/lines", 1, 0,
+                     0, 0, 0, 0);
+  test_txn_metric_is("happy path, event recorded, metric created",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/lines/" LOG_LEVEL, 1, 0, 0, 0, 0, 0);
+  tlib_pass_if_null(
+      "Logging/Forwarding/Dropped not created",
+      nrm_find(txn->unscoped_metrics, "Logging/Forwarding/Dropped"));
+  nr_txn_destroy(&txn);
+
+  /* Happy path with sampling */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  /* fill up events pool to force sampling */
+  for (int i = 0, max_events = nr_log_events_max_events(txn->log_events);
+       i < max_events; i++) {
+    nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  }
+  /* force sampling */
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  test_txn_metric_is("happy path with sampling, events recorded and dropped",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  /* Happy path with log events pool size of 0 */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  /* Force pool size of 0 */
+  nr_log_events_destroy(&txn->log_events);
+  txn->log_events = nr_log_events_create(0);
+  tlib_pass_if_not_null("empty log events pool created", txn->log_events);
+  tlib_pass_if_int_equal("empty log events pool stores 0 events", 0,
+                         nr_log_events_max_events(txn->log_events));
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  /* Events are seen because log forwarding is enabled
+     and txn->options.log_events_max_samples_stored > 0 */
+  tlib_pass_if_int_equal("happy path, event seen", 2,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, event saved", 0,
+                         nr_log_events_number_saved(txn->log_events));
+  test_txn_metric_is("happy path with sampling, events recorded and dropped",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
+  nr_txn_destroy(&txn);
+
+  /* High_security */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+  txn->high_security = 1;
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  tlib_pass_if_int_equal("happy path, hsm, event seen", 0,
+                         nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal("happy path, hsm, event saved", 0,
+                         nr_log_events_number_saved(txn->log_events));
+
+  vector = nr_vector_create(10, NULL, NULL);
+  nr_log_events_to_vector(txn->log_events, vector);
+  tlib_pass_if_int_equal("happy path, hsm, 0 len vector", 0,
+                         nr_vector_size(vector));
+  nr_vector_destroy(&vector);
+  nr_txn_destroy(&txn);
+
+  /* Happy path but log level causes some message to be ignored */
+  txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
+
+  /* default filter log level is LOG_LEVEL_WARNING */
+  /* these messages should be accepted */
+  nr_txn_record_log_event(txn, LL_ALER_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_CRIT_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_WARN_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_EMER_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_UNKN_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, "APPLES", LOG_MESSAGE, 0, NULL);
+
+  /* these messages will be dropped */
+  nr_txn_record_log_event(txn, LL_INFO_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_DEBU_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_NOTI_STR, LOG_MESSAGE, 0, NULL);
+
+  /* events seen and saved are both 6 because the filtering occurs before
+   * log forwarding handles the messages.
+   */
+  tlib_pass_if_int_equal(
+      "happy path with WARNING log level threshold, events seen", 6,
+      nr_log_events_number_seen(txn->log_events));
+  tlib_pass_if_int_equal(
+      "happy path with WARNING log level threshold, events saved", 6,
+      nr_log_events_number_saved(txn->log_events));
+
+  /* should see 9 messages in Logging/lines metric */
+  test_txn_metric_is(
+      "happy path with WARNING log level threshold, events total",
+      txn->unscoped_metrics, MET_FORCED, "Logging/lines", 9, 0, 0, 0, 0, 0);
+
+  /* Dropped metric should show all the 3 messages were not considered */
+  test_txn_metric_is(
+      "happy path with WARNING log level threshold, events dropped",
+      txn->unscoped_metrics, MET_FORCED, "Logging/Forwarding/Dropped", 3, 0, 0,
+      0, 0, 0);
+  nr_txn_destroy(&txn);
+}
+
+static void test_txn_log_configuration(void) {
+  // clang-format off
+  nrtxn_t txnv;
+  nrtxn_t* txn = &txnv;
+
+  /* log features globally disabled, high security disabled */
+  txn->options.logging_enabled = false;
+  txn->high_security = false;
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = false;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=0, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=0, metrics=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=0, high_security=0, decorating=0 -> always off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = true;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=1, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=0, metrics=1 -> off");
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=0, samples=1 -> off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=0, forwarding=1, samples=1 -> off");
+
+  /* log features globally enabled, high security disabled */
+  txn->options.logging_enabled = true;
+  txn->high_security = false;
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = false;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=0, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=0, decorating=0 -> always off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = true;
+  tlib_pass_if_true(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=0 -> on");
+  tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=0, metrics=1 -> on");
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=0, samples=1 -> off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_true(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=0, forwarding=1, samples=1 -> on");
+
+  /* log features globally disabled, high security enabled */
+  txn->options.logging_enabled = false;
+  txn->high_security = true;
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = false;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=0, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=1, metrics=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=0, high_security=1, decorating=0 -> always off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = true;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=1, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=0, high_security=1, metrics=1 -> off");
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=0, samples=1 -> off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=0, high_security=1, forwarding=1, samples=1 -> off");
+
+  /* log features globally enabled, high security enabled */
+  txn->options.logging_enabled = true;
+  txn->high_security = true;
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = false;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=0, samples=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=1, metrics=0 -> off");
+  tlib_pass_if_false(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=1, decorating=0 -> always off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 0;
+  txn->options.log_metrics_enabled = true;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=0 -> off");
+  tlib_pass_if_true(__func__, nr_txn_log_metrics_enabled(txn),    "global=1, high_security=1, metrics=1 -> on");
+
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=0, samples=1 -> off");
+
+  txn->options.log_forwarding_enabled = true;
+  txn->options.log_events_max_samples_stored = 1;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1 -> off");
+  // clang-format on
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 2, .state_size = sizeof(test_txn_state_t)};
 
@@ -8166,4 +8594,7 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
+  test_log_level_verify();
+  test_record_log_event();
+  test_txn_log_configuration();
 }

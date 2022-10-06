@@ -19,17 +19,6 @@
 #include "Zend/zend_observer.h"
 
 /*
- * Purpose: There are a few various places, aside from the php_execute_* family
- * that will call NR_PHP_PROCESS_GLOBALS(orig_execute) so make it a noop to
- * handle all cases.
- *
- * Params:  NR_EXECUTE_PROTO_OVERWRITE which is not used.
- *
- * Returns : Void
- */
-extern void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED);
-
-/*
  * Purpose : Register the OAPI function handlers and any other minit actions.
  *
  * Params  : None
@@ -74,6 +63,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data);
  */
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value);
+
 #endif /* PHP8+ */
 
 #endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H

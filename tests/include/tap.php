@@ -54,6 +54,24 @@ function tap_equal_unordered($expect, $actual, $msg) {
   tap_equal($expect, $actual, $msg);
 }
 
+function tap_matches($pattern, $actual, $ok_msg) {
+  if (preg_match($pattern, $actual)) {
+    tap_ok($ok_msg);
+  } else {
+    tap_not_ok("value does not match pattern", $pattern, $actual);
+  }
+}
+
+// Assert the elements of $actual are the same as the elements in $expect
+// regarless of the values order
+function tap_equal_unordered_values($expect, $actual, $msg) {
+  if (is_array($expect) && is_array($actual)) {
+    sort($expect);
+    sort($actual);
+  }
+  tap_equal($expect, $actual, $msg);
+}
+
 // Prints a test pass in TAP format.
 function tap_ok($msg) {
   echo "ok - ${msg}\n";

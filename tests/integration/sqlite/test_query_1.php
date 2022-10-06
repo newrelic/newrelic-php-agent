@@ -12,6 +12,12 @@ The agent should report Datastore metrics for sqlite_query() and sqlite_exec().
 <?php require("skipif.inc");
 */
 
+/*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
+*/
+
 /*EXPECT
 Array
 (
@@ -42,6 +48,8 @@ Array
   "?? start time",
   "?? stop time",
   [
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                          [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/allOther"},                     [6, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/SQLite/all"},                   [6, "??", "??", "??", "??", "??"]],

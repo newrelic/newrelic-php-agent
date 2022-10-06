@@ -77,7 +77,7 @@ inline static void release_zval(zval** ppzv) {
 
 zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* arg;
-
+  NR_UNUSED_FUNC_RETURN_VALUE;
 #ifdef PHP7
   {
     zval* orig;
@@ -203,6 +203,7 @@ void nr_php_arg_release(zval** ppzv) {
 zval* nr_php_scope_get(NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* this_obj;
   zval* this_copy;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
   this_obj = NR_PHP_USER_FN_THIS();
   if (NULL == this_obj) {

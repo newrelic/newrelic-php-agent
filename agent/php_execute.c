@@ -1644,6 +1644,10 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   if (NULL == execute_data) {
     return;
   }
+    if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    return;
+  }
 }
 
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
@@ -1656,10 +1660,6 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute_show
    */
   if ((NULL == execute_data) || (NULL == func_return_value)) {
-    return;
-  }
-  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
 }

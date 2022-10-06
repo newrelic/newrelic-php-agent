@@ -34,7 +34,7 @@ type Harvest struct {
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
-	return &Harvest{
+	nh := &Harvest{
 		Metrics:           NewMetricTable(limits.MaxMetrics, now),
 		Errors:            NewErrorHeap(limits.MaxErrors),
 		SlowSQLs:          NewSlowSQLs(limits.MaxSlowSQLs),
@@ -48,6 +48,8 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		pidSet:            make(map[int]struct{}),
 		httpErrorSet:      make(map[int]float64),
 	}
+
+	return nh
 }
 
 func (h *Harvest) empty() bool {
@@ -160,8 +162,8 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), h.SpanEvents.analyticsEvents.NumFailedAttempts())
 
 	// Log Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/LogEvent/TotalEventsSeen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/LogEvent/TotalEventsSent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
 	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), h.LogEvents.analyticsEvents.NumFailedAttempts())
 
 	// Certificate supportability metrics.

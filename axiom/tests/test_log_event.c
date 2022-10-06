@@ -21,6 +21,9 @@ static void test_log_event_create_destroy(void) {
 
   nr_log_event_destroy(&ev);
   nr_log_event_destroy(&null_ev);
+
+  // Test: passing NULL pointer should not cause crash
+  nr_log_event_destroy(NULL);
 }
 
 static void test_log_event_to_json(void) {
@@ -38,16 +41,11 @@ static void test_log_event_to_json(void) {
   log = nr_log_event_create();
   json = nr_log_event_to_json(log);
   tlib_pass_if_str_equal("empty log event",
-                         "[{"
+                         "{"
                          "\"message\":\"null\","
-                         "\"log.level\":\"null\","
-                         "\"timestamp\":0,"
-                         "\"trace.id\":\"null\","
-                         "\"span.id\":\"null\","
-                         "\"entity.guid\":\"null\","
-                         "\"entity.name\":\"null\","
-                         "\"hostname\":\"null\""
-                         "}]",
+                         "\"level\":\"null\","
+                         "\"timestamp\":0"
+                         "}",
                          json);
   nr_free(json);
   nr_log_event_destroy(&log);
@@ -66,17 +64,55 @@ static void test_log_event_to_json(void) {
   nr_log_event_set_hostname(log, "host name here");
   json = nr_log_event_to_json(log);
   tlib_pass_if_str_equal("populated log event",
-                         "[{"
+                         "{"
                          "\"message\":\"this is a test log error message\","
-                         "\"log.level\":\"LOG_LEVEL_TEST_ERROR\","
-                         "\"timestamp\":12345,"
+                         "\"level\":\"LOG_LEVEL_TEST_ERROR\","
                          "\"trace.id\":\"test id 1\","
                          "\"span.id\":\"test id 2\","
                          "\"entity.guid\":\"test id 3\","
                          "\"entity.name\":\"entity name here\","
-                         "\"hostname\":\"host name here\""
-                         "}]",
+                         "\"hostname\":\"host name here\","
+                         "\"timestamp\":12345"
+                         "}",
                          json);
+  nr_free(json);
+  nr_log_event_destroy(&log);
+
+  /*
+   * Test message with characters which require JSON escaping
+   * "
+   * \
+   * /
+   * \b
+   * \f
+   * \n
+   * \r
+   * \t
+   * GB pound sign (example of unicode)
+   */
+  log = nr_log_event_create();
+  nr_log_event_set_log_level(log, "LOG_LEVEL_TEST_ERROR");
+  nr_log_event_set_message(log, "\" \\ / \b \f \n \r \t GBP sign \xc2\xa3xxx");
+  nr_log_event_set_timestamp(log, 12345000);
+  nr_log_event_set_trace_id(log, "test id 1");
+  nr_log_event_set_span_id(log, "test id 2");
+  nr_log_event_set_guid(log, "test id 3");
+  nr_log_event_set_entity_name(log, "entity name here");
+  nr_log_event_set_hostname(log, "host name here");
+  json = nr_log_event_to_json(log);
+  tlib_pass_if_str_equal(
+      "requires escaping for JSON event",
+      "{"
+      "\"message\":\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t GBP sign \\u00a3xxx\","
+      "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+      "\"trace.id\":\"test id 1\","
+      "\"span.id\":\"test id 2\","
+      "\"entity.guid\":\"test id 3\","
+      "\"entity.name\":\"entity name here\","
+      "\"hostname\":\"host name here\","
+      "\"timestamp\":12345"
+      "}",
+      json);
   nr_free(json);
   nr_log_event_destroy(&log);
 }
@@ -106,16 +142,11 @@ static void test_log_event_to_json_buffer(void) {
                           nr_log_event_to_json_buffer(log, buf));
   nr_buffer_add(buf, NR_PSTR("\0"));
   tlib_pass_if_str_equal("empty log event",
-                         "[{"
+                         "{"
                          "\"message\":\"null\","
-                         "\"log.level\":\"null\","
-                         "\"timestamp\":0,"
-                         "\"trace.id\":\"null\","
-                         "\"span.id\":\"null\","
-                         "\"entity.guid\":\"null\","
-                         "\"entity.name\":\"null\","
-                         "\"hostname\":\"null\""
-                         "}]",
+                         "\"level\":\"null\","
+                         "\"timestamp\":0"
+                         "}",
                          nr_buffer_cptr(buf));
   nr_buffer_reset(buf);
   nr_log_event_destroy(&log);
@@ -135,19 +166,18 @@ static void test_log_event_to_json_buffer(void) {
   tlib_pass_if_bool_equal("full log event", true,
                           nr_log_event_to_json_buffer(log, buf));
   nr_buffer_add(buf, NR_PSTR("\0"));
-  tlib_pass_if_str_equal(
-      "full log event",
-      "[{"
-      "\"message\":\"this is a test log error message\","
-      "\"log.level\":\"LOG_LEVEL_TEST_ERROR\","
-      "\"timestamp\":12345,"
-      "\"trace.id\":\"test id 1\","
-      "\"span.id\":\"test id 2\","
-      "\"entity.guid\":\"test id 3\","
-      "\"entity.name\":\"entity name here\","
-      "\"hostname\":\"host name here\""
-      "}]",
-      nr_buffer_cptr(buf));
+  tlib_pass_if_str_equal("full log event",
+                         "{"
+                         "\"message\":\"this is a test log error message\","
+                         "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+                         "\"trace.id\":\"test id 1\","
+                         "\"span.id\":\"test id 2\","
+                         "\"entity.guid\":\"test id 3\","
+                         "\"entity.name\":\"entity name here\","
+                         "\"hostname\":\"host name here\","
+                         "\"timestamp\":12345"
+                         "}",
+                         nr_buffer_cptr(buf));
   nr_log_event_destroy(&log);
 
   nr_buffer_destroy(&buf);
@@ -162,18 +192,15 @@ static void test_log_event_guid(void) {
 
   // Test : should set the guid to an empty string
   nr_log_event_set_guid(event, "");
-  tlib_pass_if_str_equal("empty string guid", "",
-                         event->entity_guid);
+  tlib_pass_if_str_equal("empty string guid", "", event->entity_guid);
 
   // Test : should set the guid
   nr_log_event_set_guid(event, "wombat");
-  tlib_pass_if_str_equal("set the guid", "wombat",
-                         event->entity_guid);
+  tlib_pass_if_str_equal("set the guid", "wombat", event->entity_guid);
 
   // Test : One more set
   nr_log_event_set_guid(event, "Kangaroo");
-  tlib_pass_if_str_equal("set a new guid", "Kangaroo",
-                         event->entity_guid);
+  tlib_pass_if_str_equal("set a new guid", "Kangaroo", event->entity_guid);
 
   nr_log_event_destroy(&event);
 }
@@ -184,8 +211,7 @@ static void test_log_event_trace_id(void) {
   // Test : that is does not blow up when we give the setter a NULL pointer
   nr_log_event_set_trace_id(event, NULL);
   nr_log_event_set_trace_id(NULL, "wallaby");
-  tlib_pass_if_null("the trace should still be NULL",
-                    event->trace_id);
+  tlib_pass_if_null("the trace should still be NULL", event->trace_id);
 
   // Test : setting the trace id back and forth behaves as expected
   nr_log_event_set_trace_id(event, "Florance");
@@ -204,8 +230,7 @@ static void test_log_event_entity_name(void) {
   // Test : that is does not blow up when we give the setter a NULL pointer
   nr_log_event_set_entity_name(event, NULL);
   nr_log_event_set_entity_name(NULL, "wallaby");
-  tlib_pass_if_null("the entity_name should still be NULL",
-                    event->entity_name);
+  tlib_pass_if_null("the entity_name should still be NULL", event->entity_name);
 
   // Test : setting the entity_name back and forth behaves as expected
   nr_log_event_set_entity_name(event, "Florance");
@@ -233,11 +258,9 @@ static void test_log_event_message(void) {
    * Test : Valid message.
    */
   nr_log_event_set_message(event, "test message");
-  tlib_pass_if_str_equal("Valid message set", "test message",
-                         event->message);
+  tlib_pass_if_str_equal("Valid message set", "test message", event->message);
   nr_log_event_set_message(event, "another test message");
-  tlib_pass_if_str_equal("Another valid message set",
-                         "another test message",
+  tlib_pass_if_str_equal("Another valid message set", "another test message",
                          event->message);
 
   nr_log_event_destroy(&event);
@@ -262,8 +285,7 @@ static void test_log_event_log_level(void) {
                          event->log_level);
   nr_log_event_set_log_level(event, "another test log_level");
   tlib_pass_if_str_equal("Another valid log_level set",
-                         "another test log_level",
-                         event->log_level);
+                         "another test log_level", event->log_level);
 
   nr_log_event_destroy(&event);
 }
@@ -286,8 +308,7 @@ static void test_log_event_hostname(void) {
   tlib_pass_if_str_equal("Valid hostname set", "test hostname",
                          event->hostname);
   nr_log_event_set_hostname(event, "another test hostname");
-  tlib_pass_if_str_equal("Another valid hostname set",
-                         "another test hostname",
+  tlib_pass_if_str_equal("Another valid hostname set", "another test hostname",
                          event->hostname);
 
   nr_log_event_destroy(&event);
@@ -297,18 +318,15 @@ static void test_log_event_timestamp(void) {
   nr_log_event_t* event = nr_log_event_create();
 
   // Test : Get timestamp with a NULL event
-  tlib_pass_if_time_equal("NULL event should give zero", 0,
-                          event->timestamp);
+  tlib_pass_if_time_equal("NULL event should give zero", 0, event->timestamp);
 
   // Test : Set the timestamp a couple times
   nr_log_event_set_timestamp(event, 553483260);
   tlib_pass_if_time_equal("Get timestamp should equal 553483260",
-                          553483260 / NR_TIME_DIVISOR_MS,
-                          event->timestamp);
+                          553483260 / NR_TIME_DIVISOR_MS, event->timestamp);
   nr_log_event_set_timestamp(event, 853483260);
   tlib_pass_if_time_equal("Get timestamp should equal 853483260",
-                          853483260 / NR_TIME_DIVISOR_MS,
-                          event->timestamp);
+                          853483260 / NR_TIME_DIVISOR_MS, event->timestamp);
 
   nr_log_event_destroy(&event);
 }
@@ -319,8 +337,7 @@ static void test_log_event_span_id(void) {
   // Test : that is does not blow up when we give the setter a NULL pointer
   nr_log_event_set_span_id(event, NULL);
   nr_log_event_set_span_id(NULL, "wallaby");
-  tlib_pass_if_null("the span should still be NULL",
-                    event->span_id);
+  tlib_pass_if_null("the span should still be NULL", event->span_id);
 
   // Test : setting the span id back and forth behaves as expected
   nr_log_event_set_span_id(event, "Florance");
@@ -331,6 +348,26 @@ static void test_log_event_span_id(void) {
                          event->span_id);
 
   nr_log_event_destroy(&event);
+}
+
+static void test_log_event_priority(void) {
+  nr_log_event_t* event = nr_log_event_create();
+
+  // Test : Get priority with a NULL event
+  tlib_pass_if_int_equal("NULL event should give zero", 0, event->priority);
+
+  // Test : Set the priority a couple times
+  nr_log_event_set_priority(event, 12345);
+  tlib_pass_if_int_equal("Get priority should equal 12345", 12345,
+                         event->priority);
+  nr_log_event_set_priority(event, 0xFFFF);
+  tlib_pass_if_time_equal("Get priority should equal 0xFFFF", 0xFFFF,
+                          event->priority);
+
+  nr_log_event_destroy(&event);
+
+  // setting priority on NULL event ptr should not crash
+  nr_log_event_set_priority(NULL, 0xFFFF);
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
@@ -346,5 +383,6 @@ void test_main(void* p NRUNUSED) {
   test_log_event_message();
   test_log_event_hostname();
   test_log_event_timestamp();
+  test_log_event_priority();
   test_log_event_span_id();
 }

@@ -430,7 +430,8 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
 			cmd.Name, err.Error(), cleanURL)
 	}
 
-	log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, string(resp.Body))
-	log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, string(resp.Body))
+	log.Audit("command='%s' url='%s', status=%d, response={%s}", cmd.Name, url, resp.StatusCode, string(resp.Body))
+	log.Debugf("command='%s' url='%s', status=%d, response={%s}", cmd.Name, cleanURL, resp.StatusCode, string(resp.Body))
+
 	return resp
 }

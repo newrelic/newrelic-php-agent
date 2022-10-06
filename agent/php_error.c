@@ -449,14 +449,20 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+/* Prior to PHP8 these error_filename and error_lineno were only used to pass
+ * on to the error handler that the agent overwrote.  With PHP8+, these values
+ * are currently unused since the agent is already recording the stack trace.
+ * HOWEVER, when code level metrics(CLM) are incorporated, these values can be
+ * used to add lineno and filename to error traces.
+ */
 void nr_php_error_cb(int type,
-                     zend_string* error_filename,
-                     uint error_lineno,
+                     zend_string* error_filename NRUNUSED,
+                     uint error_lineno NRUNUSED,
                      zend_string* message) {
 #elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
 void nr_php_error_cb(int type,
-                     const char* error_filename,
-                     uint error_lineno,
+                     const char* error_filename NRUNUSED,
+                     uint error_lineno NRUNUSED,
                      zend_string* message) {
 #else
 void nr_php_error_cb(int type,
@@ -502,17 +508,16 @@ void nr_php_error_cb(int type,
   }
 
   /*
-   * Call through to the actual error handler.
+   * Call through to the actual error handler for PHP 7.4 and below.
+   * For PHP 8+ we have registered our error handler with the Observer
+   * API so there is no need to callback to the original.
    */
-  if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+  if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
     (type, error_filename, error_lineno, format, args);
-#else
-    NR_PHP_PROCESS_GLOBALS(orig_error_cb)
-    (type, error_filename, error_lineno, message);
-#endif /* PHP < 8.0 */
   }
+#endif /* PHP < 8.0 */
 }
 
 nr_status_t nr_php_error_record_exception(nrtxn_t* txn,

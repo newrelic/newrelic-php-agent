@@ -254,7 +254,7 @@ func TestUnmarshalJSONEventSuccess(t *testing.T) {
 		},
 		{
 			name: "valid harvest limits and report period",
-			json: `{"report_period_ms":42,"harvest_limits":{"error_event_data":21,"analytic_event_data":22,"custom_event_data":23,"span_event_data":24,"log_event_data": 25}}`,
+			json: `{"report_period_ms":42,"harvest_limits":{"error_event_data":21,"analytic_event_data":22,"custom_event_data":23,"span_event_data":24,"log_event_data":25}}`,
 			expected: EventHarvestConfig{
 				ReportPeriod: 42 * time.Millisecond,
 				EventConfigs: EventConfigs{

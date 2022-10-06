@@ -75,8 +75,10 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 #else
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
   zend_try {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
   zend_catch { zcaught = 1; }
   zend_end_try();
@@ -87,12 +89,14 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                       nr_segment_t* segment,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
   zend_try {
     if (wraprec && wraprec->special_instrumentation) {
       wraprec->special_instrumentation(wraprec, segment,
                                        NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     } else {
-      NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      NR_PHP_PROCESS_GLOBALS(orig_execute)
+      (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
   zend_catch { zcaught = 1; }

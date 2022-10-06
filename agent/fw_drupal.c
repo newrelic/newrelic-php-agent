@@ -216,7 +216,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
     goto end;
   }
 
-  return_value = nr_php_get_return_value_ptr(TSRMLS_C);
+  return_value = NR_GET_RETURN_VALUE_PTR;
 
   /*
    * We only want to create a metric here if this isn't a recursive call to
@@ -230,20 +230,6 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
         = {.library = "Drupal",
            .uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1))};
 
-    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-
-    /*
-     * Our wrapper for drupal_http_request (which we installed in
-     * nr_drupal_replace_http_request()) will take care of adding the request
-     * headers, so let's just go ahead and call the function.
-     */
-    NR_PHP_WRAPPER_CALL;
-
-    external_params.encoded_response_header
-        = nr_drupal_http_request_get_response_header(return_value TSRMLS_CC);
-
-    external_params.status
-        = nr_drupal_http_request_get_response_code(return_value TSRMLS_CC);
     /*
      * Drupal 6 will have a third argument with the method, Drupal 7 will not
      * have a third argument it must be parsed from the second.
@@ -269,6 +255,20 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
       external_params.procedure = nr_strdup("GET");
     }
 
+    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
+    /*
+     * Our wrapper for drupal_http_request (which we installed in
+     * nr_drupal_replace_http_request()) will take care of adding the request
+     * headers, so let's just go ahead and call the function.
+     */
+    NR_PHP_WRAPPER_CALL;
+
+    external_params.encoded_response_header
+        = nr_drupal_http_request_get_response_header(return_value TSRMLS_CC);
+
+    external_params.status
+        = nr_drupal_http_request_get_response_code(return_value TSRMLS_CC);
     if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
       nrl_verbosedebug(
           NRL_CAT, "CAT: outbound response: transport='Drupal 6-7' %s=" NRP_FMT,
