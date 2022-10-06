@@ -259,7 +259,10 @@ void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
     caller = prev_execute_data->function_state.function;
 #endif /* PHP7 */
   } else {
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    caller = nr_php_get_caller(EG(current_execute_data), NULL, 1 TSRMLS_CC);
+#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
     caller = nr_php_get_caller(EG(current_execute_data), 1 TSRMLS_CC);
 #else
     caller = nr_php_get_caller(NULL, 1 TSRMLS_CC);

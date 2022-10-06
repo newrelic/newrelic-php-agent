@@ -54,7 +54,7 @@ NR_PHP_WRAPPER(nr_slim2_route_dispatch) {
   txn_name = nr_slim_path_from_route(this_var TSRMLS_CC);
   nr_php_scope_release(&this_var);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 

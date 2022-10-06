@@ -543,7 +543,7 @@ static void nr_wordpress_name_the_wt(const zval* tag,
  */
 NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
   zval* tag = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
