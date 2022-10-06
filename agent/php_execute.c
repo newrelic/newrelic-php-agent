@@ -929,6 +929,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
 
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
     nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
   }
@@ -940,7 +942,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_txn_match_file(NRPRG(txn), filename);
 
-  NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  NR_PHP_PROCESS_GLOBALS(orig_execute)
+  (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
 
   if (0 == nr_php_recording(TSRMLS_C)) {
     return;
@@ -1280,7 +1283,8 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     /*
      * This is the case for New Relic is enabled, but we're not recording.
      */
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
 }
 
@@ -1333,7 +1337,7 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
  * the presence of longjmp as from zend_bailout when processing zend internal
  * errors, as for example when calling php_error.
  */
-void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
+void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
   /*
    * We do not use zend_try { ... } mechanisms here because zend_try
    * involves a setjmp, and so may be too expensive along this oft-used
@@ -1350,6 +1354,10 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
    * zend_catch is called to avoid catastrophe on the way to a premature
    * exit, maintaining this counter perfectly is not a necessity.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  zval* func_return_value = NULL;
+#endif
 
   NRPRG(php_cur_stack_depth) += 1;
 
@@ -1359,7 +1367,8 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   } else {
     int show_executes
         = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
@@ -1376,12 +1385,17 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   return;
 }
 
-static void nr_php_show_exec_internal(NR_EXECUTE_PROTO,
+static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
   char argstr[NR_EXECUTE_DEBUG_STRBUFSZ] = {'\0'};
   const char* name = nr_php_function_debug_name(func);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  zval* func_return_value = NULL;
+#endif
 
   nr_show_execute_params(NR_EXECUTE_ORIG_ARGS, argstr TSRMLS_CC);
+
   nrl_verbosedebug(
       NRL_AGENT,
       "execute: %.*s function={" NRP_FMT_UQ "} params={" NRP_FMT_UQ "}",
@@ -1449,7 +1463,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
    */
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS, func TSRMLS_CC);
+    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
 #else
     /*
      * We're passing the same pointer twice. This is inefficient. However, no

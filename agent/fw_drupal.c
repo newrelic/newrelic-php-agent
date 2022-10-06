@@ -216,7 +216,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
     goto end;
   }
 
-  return_value = nr_php_get_return_value_ptr(TSRMLS_C);
+  return_value = NR_GET_RETURN_VALUE_PTR;
 
   /*
    * We only want to create a metric here if this isn't a recursive call to

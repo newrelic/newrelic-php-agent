@@ -596,7 +596,7 @@ end:
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   (void)wraprec;
 
