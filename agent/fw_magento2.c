@@ -129,7 +129,7 @@ NR_PHP_WRAPPER(nr_magento2_pagecache_kernel_load) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  response = nr_php_get_return_value_ptr(TSRMLS_C);
+  response = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 
@@ -167,7 +167,7 @@ NR_PHP_WRAPPER(nr_magento2_objectmanager_get) {
      */
     goto leave;
   }
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if ((NULL == retval_ptr) || !nr_php_is_zval_valid_object(*retval_ptr)) {
@@ -251,7 +251,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdlrequest) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if (retval_ptr && nr_php_is_zval_true(*retval_ptr)) {
@@ -268,7 +268,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdllistrequest) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if (retval_ptr && nr_php_is_zval_true(*retval_ptr)) {
@@ -322,7 +322,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_handler_prepareoperationinput) {
 
   svc_class = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   method_metadata = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  /* 
+  /*
    * We expect method_metadata to be an array.  At index 'method', if we see
    * a method name, we'll pass it to the transaction naming.
    * See:
