@@ -695,7 +695,7 @@ static char* nr_laravel_get_payload_header_mq(char* header) {
 NR_PHP_WRAPPER(nr_laravel_queue_queue_createpayload) {
   zval* json = NULL;
   zval* payload = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   nr_hashmap_t* outbound_headers = NULL;
   nr_vector_t* header_keys = NULL;
   char* header = NULL;

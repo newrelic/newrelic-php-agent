@@ -330,7 +330,22 @@ extern zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC);
  *           won't help you!
  */
 static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if (ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA) /* PHP 8.0+ and OAPI */
+  /*
+   * If the agent is still overwriting zend_execute_data extract oldfashioned
+   * way; otherwise, pass the observer given return value.
+   */
+  if (nrunlikely(NULL == execute_data)) {
+    /*
+     * Shouldn't theoretically ever have a NULL execute_data with valid
+     * return_value.
+     */
+    return NULL;
+  }
+  return func_return_value;
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+  NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data) {
     /*
      * This function shouldn't be called from outside a function context, so
@@ -378,6 +393,7 @@ extern size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC);
 static inline zend_function* nr_php_execute_function(
     NR_EXECUTE_PROTO TSRMLS_DC) {
   NR_UNUSED_TSRMLS;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   if (NULL == execute_data) {

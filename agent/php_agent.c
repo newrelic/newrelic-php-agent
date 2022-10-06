@@ -277,15 +277,15 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
 zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
   zend_execute_data* ptrg
       = EG(current_execute_data); /* via zend engine global data structure */
-
   NR_UNUSED_SPECIALFN;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   {
     /*
      * ptra is argument passed in to us, it might be NULL if the caller doesn't
      * have that info.
      */
-    zend_execute_data* ptra = NR_EXECUTE_ORIG_ARGS;
+    zend_execute_data* ptra = execute_data;
     if (NULL != ptra) {
       return ptra;
     } else {
@@ -419,6 +419,8 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
   zval* arg_via_h = 0;
   int arg_count_via_h = -1;
 
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
   if (requested_arg_index < 1) {
     return NULL;
   }
@@ -441,6 +443,7 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
 
 size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+  NR_UNUSED_FUNC_RETURN_VALUE;
   return (size_t)ZEND_CALL_NUM_ARGS(execute_data);
 #else
   int arg_count_via_h = -1;

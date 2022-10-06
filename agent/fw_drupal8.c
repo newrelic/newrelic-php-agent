@@ -156,7 +156,7 @@ out:
  *           ControllerResolver::getControllerFromDefinition().
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt) {
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -205,7 +205,7 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   const char* name = "page_cache";
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   (void)wraprec;
 
@@ -304,7 +304,7 @@ static int nr_drupal8_apply_hook(zval* element,
  */
 NR_PHP_WRAPPER(nr_drupal8_post_get_implementations) {
   zval* hook = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   (void)wraprec;
 
@@ -338,7 +338,7 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_drupal8_post_implements_hook) {
   zval* hook = NULL;
   zval* module = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   (void)wraprec;
 
@@ -371,7 +371,7 @@ NR_PHP_WRAPPER_END
  */
 NR_PHP_WRAPPER(nr_drupal8_module_handler) {
   zend_class_entry* ce = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
