@@ -54,8 +54,7 @@
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
   zend_try {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)
-    (NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
   zend_catch { zcaught = 1; }
   zend_end_try();
