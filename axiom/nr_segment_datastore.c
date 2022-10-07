@@ -77,7 +77,7 @@ static char* create_metrics(nr_segment_t* segment,
 
 bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
                               nr_segment_datastore_params_t* params) {
-  nrtxn_t* txn;
+  nrtxn_t* txn = NULL;
   bool is_sql = false;
   const char* datastore_string = NULL;
   const char* collection = NULL;
@@ -89,7 +89,7 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
   nr_slowsqls_labelled_query_t input_query_allocated = {NULL, NULL};
   char* input_query_query = NULL;
   nr_segment_datastore_t datastore = {0};
-  nr_segment_t* segment;
+  nr_segment_t* segment = NULL;
   bool rv = false;
 
   if (NULL == segment_ptr) {
@@ -106,6 +106,19 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
   }
 
   txn = segment->txn;
+
+  /*
+   * We don't want datastore segments to have any children, as
+   * this would scramble the exclusive time calculation.
+   *
+   * Therefore, we delete all children of the segment.
+   */
+  if (segment) {
+    for (size_t i = 0; i < nr_segment_children_size(&segment->children); i++) {
+      nr_segment_t* child = nr_segment_children_get(&segment->children, i);
+      nr_segment_discard(&child);
+    }
+  }
 
   if (nr_datastore_is_sql(params->datastore.type)) {
     /*
@@ -275,6 +288,7 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
   }
 
   nr_segment_set_datastore(segment, &datastore);
+
   rv = nr_segment_end(&segment);
 
 end:

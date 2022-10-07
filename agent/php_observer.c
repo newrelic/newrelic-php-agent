@@ -86,6 +86,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   return handlers;
 }
 
+
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 
 void nr_php_observer_minit() {
