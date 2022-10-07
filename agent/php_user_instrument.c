@@ -75,7 +75,6 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
     } else {
       NR_PHP_PROCESS_GLOBALS(orig_execute)
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
-
     }
   }
   zend_catch { zcaught = 1; }
