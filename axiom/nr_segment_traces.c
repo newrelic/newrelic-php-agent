@@ -228,7 +228,8 @@ static void nr_segment_iteration_pass_trace(nr_segment_t* segment,
   nrbuf_t* buf = userdata->trace.buf;
   int idx;
   nr_segment_t* parent = NULL;
-  nrobj_t* user_attributes;
+  nrobj_t* user_attributes = NULL;
+  nrobj_t* agent_attributes = NULL;
 
   uint64_t start_ms;
   uint64_t stop_ms;
@@ -298,6 +299,13 @@ static void nr_segment_iteration_pass_trace(nr_segment_t* segment,
         segment->attributes, NR_ATTRIBUTE_DESTINATION_TXN_TRACE);
     add_attribute_hash_to_buffer(buf, user_attributes);
     nro_delete(user_attributes);
+    /*
+     *  Add segment attributes to transaction trace.
+     */
+    agent_attributes = nr_attributes_agent_to_obj(
+        segment->attributes, NR_ATTRIBUTE_DESTINATION_TXN_TRACE);
+    add_attribute_hash_to_buffer(buf, agent_attributes);
+    nro_delete(agent_attributes);
   }
 
   nr_buffer_add(buf, "}", 1);
