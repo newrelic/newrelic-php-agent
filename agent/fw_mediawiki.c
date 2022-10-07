@@ -142,7 +142,7 @@ NR_PHP_WRAPPER(nr_mediawiki_getaction) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MEDIAWIKI);
 
-  return_value = nr_php_get_return_value_ptr(TSRMLS_C);
+  return_value = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 
