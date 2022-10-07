@@ -1158,6 +1158,7 @@ bool nr_php_function_is_static_method(const zend_function* func) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
 const char* nr_php_zend_execute_data_function_name(
     const zend_execute_data* execute_data) {
   zend_string* function_name = NULL;
@@ -1170,7 +1171,12 @@ const char* nr_php_zend_execute_data_function_name(
 
   if ((NULL == function_name)
       && (ZEND_USER_FUNCTION == execute_data->func->type)) {
-    return "main";
+    /*
+     * This is the case of a filename being called so there is no function name.
+     * It is broken out separately here in case we need to do something special
+     * with it in the future.
+     */
+    return NULL;
   }
   return function_name ? ZSTR_VAL(function_name) : NULL;
 }
@@ -1178,9 +1184,8 @@ const char* nr_php_zend_execute_data_function_name(
 const char* nr_php_zend_execute_data_filename(
     const zend_execute_data* execute_data) {
   zend_string* filename = NULL;
-  while (
-      execute_data
-      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+  
+  while (NR_ZEND_USER_FUNC_EXISTS(execute_data)) {
     execute_data = execute_data->prev_execute_data;
   }
   if (execute_data) {
@@ -1208,9 +1213,7 @@ const char* nr_php_zend_execute_data_scope_name(
 
 uint32_t nr_php_zend_execute_data_lineno(
     const zend_execute_data* execute_data) {
-  while (
-      execute_data
-      && (!execute_data->func || !ZEND_USER_CODE(execute_data->func->type))) {
+  while (NR_ZEND_USER_FUNC_EXISTS(execute_data)) {
     execute_data = execute_data->prev_execute_data;
   }
   if (execute_data) {

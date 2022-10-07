@@ -525,6 +525,12 @@ nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding
                                        */
 
 /*
+ * Configuration option to toggle code level metrics collection.
+ */
+nrinibool_t
+    code_level_metrics_enabled; /* newrelic.code_level_metrics.enabled */
+
+/*
  * pid and user_function_wrappers are used to store user function wrappers.
  * Storing this on a request level (as opposed to storing it on transaction
  * level) is more robust when using multiple transactions in one request.
