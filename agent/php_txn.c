@@ -1109,3 +1109,91 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   return NR_SUCCESS;
 }
+
+extern void nr_php_txn_add_code_level_metrics(
+    nr_attributes_t* attributes,
+    const nr_php_execute_metadata_t* metadata) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)attributes;
+  (void)metadata;
+  return;
+}
+#else
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+
+  /* Current CLM functionality only works with PHP 7+ */
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions:
+   *  - code.filepath AND code.function
+   *  - code.namespace AND code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   *
+   * Additionally, none of the needed attributes can exceed 255 characters.
+   */
+
+  const char* filepath = metadata->function_filepath;
+  const char* namespace = metadata->function_namespace;
+  const char* function = metadata->function_name;
+
+#define CHK_CLM_STRLEN(s)                         \
+  if (CLM_STRLEN_MAX < NRSAFELEN(nr_strlen(s))) { \
+    s = NULL;                                     \
+  }
+
+  CHK_CLM_STRLEN(filepath)
+  CHK_CLM_STRLEN(namespace)
+  CHK_CLM_STRLEN(function)
+
+#undef CHK_CLM_STRLEN
+
+  if (1 == metadata->function_lineno) {
+    /*
+     * It's a file.  For CLM purposes, the "function" name is the filepath.
+     */
+    function = filepath;
+  }
+
+  if (nr_strempty(function)) {
+    /*
+     * Name isn't set so don't do anything
+     */
+    return;
+  }
+  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+    /*
+     * CLM MUST have either function+namespace or function+filepath.
+     */
+    return;
+  }
+
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         function);
+
+  if (!nr_strempty(metadata->function_filepath)) {
+    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
+                                           filepath);
+  }
+  if (!nr_strempty(metadata->function_namespace)) {
+    nr_txn_attributes_set_string_attribute(
+        attributes, nr_txn_clm_code_namespace, namespace);
+  }
+
+  nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
+                                       metadata->function_lineno);
+}
+#endif
