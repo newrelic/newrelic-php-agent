@@ -182,6 +182,14 @@ typedef struct _nr_segment_t {
                                                       external or datastore
                                                       segments. */
   nr_segment_error_t* error; /* segment error attributes */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  nrtime_t txn_start_time; /* To doublecheck the txn is correct when it is time
+                              to add the segment to the txn. */
+  void* wraprec;           /* wraprec, if one is associated with this segment */
+
+#endif
+
 } nr_segment_t;
 
 /*

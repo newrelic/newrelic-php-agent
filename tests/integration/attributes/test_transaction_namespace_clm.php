@@ -102,7 +102,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 134,
+        "code.lineno": 135,
         "code.namespace": "Vegetable",
         "code.filepath": "__FILE__",
         "code.function": "getColor"

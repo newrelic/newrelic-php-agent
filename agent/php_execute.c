@@ -1105,7 +1105,7 @@ static void nr_php_execute_metadata_metric(
   const char* function_name;
   const char* scope_name;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   scope_name = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
   function_name = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
 #else
@@ -1124,7 +1124,7 @@ static void nr_php_execute_metadata_metric(
  */
 static void nr_php_execute_metadata_release(
     nr_php_execute_metadata_t* metadata) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   if (NULL != metadata->scope) {
     zend_string_release(metadata->scope);
     metadata->scope = NULL;
@@ -1175,7 +1175,12 @@ static inline void nr_php_execute_segment_end(
     return;
   }
 
-  stacked->stop_time = nr_txn_now_rel(NRPRG(txn));
+  if (0 == stacked->stop_time) {
+    /*
+     * Only set if it wasn't set already.
+     */
+    stacked->stop_time = nr_txn_now_rel(NRPRG(txn));
+  }
 
   duration = nr_time_duration(stacked->start_time, stacked->stop_time);
 
@@ -1646,6 +1651,218 @@ end:
  * See nr_php_observer.h/c for more information.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+
+static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
+  int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+
+  NRTXNGLOBAL(execute_count) += 1;
+
+  /*
+   * Wait to do this handling in the end function handler when all the files
+   * have been loaded; otherwise, the classes might not be loaded yet.
+   */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    return;
+  }
+  wraprec = nr_php_get_wraprec_by_name(execute_data->func);
+  /*
+   * If there is custom instrumentation or tt detail is more than 0, start the
+   * segment.
+   */
+  if ((NULL != wraprec) || (NRINI(tt_detail) && NR_OP_ARRAY->function_name)) {
+    /*
+     * If a function needs to have arguments modified before it's executed this
+     * may/may not be the place to do it. As soon as the begin function handler
+     * is called, PHP may start the actual function execution.
+     */
+    segment = nr_php_stacked_segment_init(segment);
+    if (NULL == segment) {
+      nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
+      return;
+    }
+    segment->txn_start_time = nr_txn_start_time(NRPRG(txn));
+    segment->wraprec = wraprec;
+    zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
+                                               NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    if (nrunlikely(zcaught)) {
+      zend_bailout();
+    }
+  }
+  return;
+}
+
+static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
+  int zcaught = 0;
+  nr_php_execute_metadata_t metadata = {0};
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
+
+  /*
+   * Let's get the framework info.  
+   */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    if (NRPRG(txn)) {
+      nr_php_execute_metadata_add_code_level_metrics(&metadata,
+                                                     NR_EXECUTE_ORIG_ARGS);
+      nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
+      nr_php_execute_metadata_release(&metadata);
+    }
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    return;
+  }
+
+  /*
+   * Get the current segment and return if null.  The segment would only have
+   * been created if we are recording and if wraprec is set or if tt is greater
+   * than 0.
+   */
+  segment = NRTXN(force_current_segment);
+  if (NULL == segment) {
+    return;
+  }
+  if (0 == segment->txn_start_time) {
+    /*
+     * The begin function handler always sets segment-txn_start_time.  If it is
+     * not set, something else put the segment up and we are out of synch.
+     */
+    return;
+  }
+
+  /*
+   * Check if we have special instrumentation for this function or if the user
+   * has specifically requested it.
+   */
+  wraprec = (nruserfn_t*)(segment->wraprec);
+
+  /*
+   * Do a sanity check to make sure the names match.
+   */
+  if (NULL != wraprec && nr_php_wraprec_matches(wraprec, execute_data->func)) {
+    /*
+     * This is the case for specifically requested custom instrumentation.
+     */
+    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+
+    bool create_metric = wraprec->create_metric;
+    nr_php_execute_metadata_add_code_level_metrics(&metadata,
+                                                   NR_EXECUTE_ORIG_ARGS);
+    nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
+
+    /*
+     * Check for, and handle, frameworks.
+     */
+    if (wraprec->is_names_wt_simple) {
+      nr_txn_name_from_function(NRPRG(txn), wraprec->funcname,
+                                wraprec->classname);
+    }
+
+    /*
+     * The nr_txn_should_create_span_events() check is there so we don't
+     * record error attributes on the txn (and root segment) because it should
+     * already be recorded on the span that exited unhandled.
+     */
+    if (wraprec->is_exception_handler
+        && !nr_txn_should_create_span_events(NRPRG(txn))) {
+      zval* exception
+          = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+      /*
+       * The choice of E_ERROR for the error level is basically arbitrary, but
+       * matches the error level PHP uses if there isn't an exception handler,
+       * so this should give more consistency for the user in terms of what
+       * they'll see with and without an exception handler installed.
+       */
+      nr_php_error_record_exception(
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
+          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+    }
+
+    zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
+                                                NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+    /*
+     * During this call, the transaction may have been ended and/or a new
+     * transaction may have started.  To detect this, we compare the
+     * currently active transaction's start time with the transaction
+     * start time we saved before.
+     *
+     * Just comparing the transaction pointer is not enough, as a newly
+     * started transaction might actually obtain the same address as a
+     * transaction freed before.
+     */
+    if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != segment->txn_start_time)) {
+      nr_php_stacked_segment_deinit(segment);
+    } else {
+      nr_php_execute_segment_end(segment, &metadata, create_metric TSRMLS_CC);
+    }
+    nr_php_execute_metadata_release(&metadata);
+    if (nrunlikely(zcaught)) {
+      zend_bailout();
+    }
+  } else if (NRINI(tt_detail) && NR_OP_ARRAY->function_name) {
+    /*
+     * This is the case for transaction_tracer.detail >= 1 requested custom
+     * instrumentation.
+     */
+    segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+
+    nr_php_execute_metadata_add_code_level_metrics(&metadata,
+                                                   NR_EXECUTE_ORIG_ARGS);
+    nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
+                                                NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+    if (nr_txn_should_create_span_events(NRPRG(txn))) {
+      if (EG(exception)) {
+        zval* exception_zval = NULL;
+        nr_status_t status;
+
+        /*
+         * On PHP 7+, EG(exception) is stored as a zend_object, and is only
+         * wrapped in a zval when it actually needs to be.
+         */
+        zval exception;
+
+        ZVAL_OBJ(&exception, EG(exception));
+        exception_zval = &exception;
+
+        status = nr_php_error_record_exception_segment(
+            NRPRG(txn), exception_zval, &NRPRG(exception_filters) TSRMLS_CC);
+
+        if (NR_FAILURE == status) {
+          nrl_verbosedebug(
+              NRL_AGENT, "%s: unable to record exception on segment", __func__);
+        }
+      }
+    }
+
+    /*
+     * During this call, the transaction may have been ended and/or a new
+     * transaction may have started.  To detect this, we compare the
+     * currently active transaction's start time with the transaction
+     * start time we saved before.
+     */
+    if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != segment->txn_start_time)) {
+      nr_php_stacked_segment_deinit(segment);
+    } else {
+      nr_php_execute_segment_end(segment, &metadata, false TSRMLS_CC);
+    }
+    nr_php_execute_metadata_release(&metadata);
+    if (nrunlikely(zcaught)) {
+      zend_bailout();
+    }
+  }
+  return;
+}
+
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   /*
    * Instrument the function.
@@ -1654,10 +1871,37 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
    * nr_php_execute
    * nr_php_execute_show
    */
-
+  zval* func_return_value = NULL;
   if (NULL == execute_data) {
     return;
   }
+
+  NRPRG(php_cur_stack_depth) += 1;
+
+  if (((int)NRINI(max_nesting_level) > 0)
+      && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+    nr_php_max_nesting_level_reached(TSRMLS_C);
+  }
+
+  if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
+    return;
+  } else {
+    int show_executes
+        = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
+          || NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
+
+    if (nrunlikely(show_executes)) {
+      nrl_verbosedebug(NRL_AGENT, "zend_execute_data as function begins.");
+      /*
+       * For OAPI don't call nr_php_execute_enabled from execute_show.
+       * nr_php_execute_show updated in another ticket.
+       * Can show execute but CANNOT show returns here.
+       */
+      // nr_php_execute_show(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+    nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
+  }
+  return;
 }
 
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
@@ -1672,9 +1916,27 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
   if ((NULL == execute_data) || (NULL == func_return_value)) {
     return;
   }
-  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
     return;
   }
+
+  int show_executes
+      = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
+        || NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
+
+  if (nrunlikely(show_executes)) {
+    /*
+     * For OAPI don't call nr_php_execute_enabled from execute_show.
+     * nr_php_execute_show updated in another ticket.
+     * Can show execute and returns here.
+     */
+    // nr_php_execute_show(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  }
+  nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
+
+  NRPRG(php_cur_stack_depth) -= 1;
+
+  return;
 }
+
 #endif

@@ -55,10 +55,36 @@ typedef struct _nruserfn_t {
   char* funcnameLC;
 
   /*
+   * Internally, there are cases where the zend_function reports it is one
+   * class; however, the zend_function is also contained in another class_entry
+   * table.
+   * For an example, see tests/integration/laravel
+   * A lookup for the class = Illuminate\Console\Application returns the class
+   * entry named classname = Illuminate\Console\Application
+   * So far so good!
+   * Lookup Illuminate\Console\Application method doRun and a zend_function is
+   * returned.  Ask that zend_func what its classname is and it says:
+   * Symfony\Component\Console\Application.
+   * Okay.
+   * Track both pieces of info for any wraprecs.
+   */
+  char* reportedclassLC;
+  /*
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
+  /*
+   * This is the callback that legacy instrumentation uses and that the majority
+   * of OAPI special instrumentation will use and it will be called at the END
+   * of a function.
+   */
   nrspecialfn_t special_instrumentation;
+  /*
+   * Only used by OAPI, PHP 8+.  Used to do any special instrumentation actions
+   * before a function is executed.  Both callbacks can bet set.  Use the
+   * `nr_php_wrap_user_function_after_before` to set both.
+   */
+  nrspecialfn_t special_instrumentation_before;
 
   /*
    * Only for PHP < 7.3
@@ -86,13 +112,24 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 /*
+ * Purpose : Determine if a func matches a wraprec.
+ *
+ * Params  : 1. The wraprec to match to a zend function
+ *           2. The zend function to match to a wraprec
+ *
+ * Returns : True if the class/function of a wraprec match the class function
+ *           of a zend function.
+ */
+extern bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func);
+
+/*
  * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
  *           with a function name/class.
  *
  * Params  : 1. The zend function to find in a wraprec
  *
  * Returns : The function wrapper that matches the function/class combination.
- *            NULL if no function wrapper matches the function/class combo.
+ *           NULL if no function wrapper matches the function/class combo.
  */
 extern nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func);
 
@@ -171,7 +208,11 @@ extern int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC);
 extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                              nr_segment_t* segment,
                                              NR_EXECUTE_PROTO TSRMLS_DC);
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
+                                            nr_segment_t* segment,
+                                            NR_EXECUTE_PROTO TSRMLS_DC);
+#endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing
  *           associated memory.

@@ -9,7 +9,6 @@ CLM should NOT be added to functions that are so short they will
 normally be ignored.
 */
 
-
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "7.0", "<")) {

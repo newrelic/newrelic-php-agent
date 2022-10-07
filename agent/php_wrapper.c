@@ -8,6 +8,43 @@
 #include "php_wrapper.h"
 #include "util_logging.h"
 
+nruserfn_t* nr_php_wrap_user_function_before_after(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback) {
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen TSRMLS_CC);
+
+  if (wraprec) {
+    if (after_callback) {
+      if ((NULL != wraprec->special_instrumentation)
+          && (after_callback != wraprec->special_instrumentation)) {
+        nrl_verbosedebug(
+            NRL_INSTRUMENT,
+            "%s: attempting to set special_instrumentation for %.*s, but "
+            "it is already set",
+            __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+      } else {
+        wraprec->special_instrumentation = after_callback;
+      }
+    }
+    if (before_callback) {
+      if ((NULL != wraprec->special_instrumentation)
+          && (before_callback != wraprec->special_instrumentation)) {
+        nrl_verbosedebug(NRL_INSTRUMENT,
+                         "%s: attempting to set special_instrumentation_before "
+                         "for %.*s, but "
+                         "it is already set",
+                         __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+      } else {
+        wraprec->special_instrumentation_before = before_callback;
+      }
+    }
+  }
+
+  return wraprec;
+}
+
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
