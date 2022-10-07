@@ -72,8 +72,8 @@
  * This too is erroneous. The cost of calling a function is about 4 assembler
  * instructions. This is negligible. Therefore, as a means of reducing stack
  * usage, if you need stack space it is better to put that usage into a static
- * function and call it from the main function, because then that stack space
- * in genuinely only allocated when needed.
+ * function and call it from the main function, because then that stack space is
+ * genuinely only allocated when needed.
  *
  * A not-insignificant performance boost comes from accurate branch hinting
  * using the nrlikely() and nrunlikely() macros. This prevents pipeline stalls
@@ -966,40 +966,64 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 }
 
 /*
- * Version specific metadata that we have to gather before we call the original
- * execute_ex handler, as different versions of PHP behave differently in terms
- * of what you can do with the op array after making that call. This structure
- * and the functions immediately below are helpers for
- * nr_php_execute_enabled(), which is the user function execution function.
+ * Purpose : Populate metadata structure from zend_execute_data.
  *
- * In PHP 7, it is possible that the op array will be destroyed if the function
- * being called is a __call() magic method (in which case a trampoline is
- * created and destroyed). We increment the reference counts on the scope and
- * function strings and keep pointers to them in this structure, then release
- * them once we've named the trace node and/or metric (if required).
+ * Params  : 1. A pointer to a metadata structure.
+ *           2. The zend_execute_data
  *
- * In PHP 5, execute_data->op_array may be set to NULL if we make a subsequent
- * user function call in an exec callback (which occurs before we decide
- * whether to create a metric and/or trace node), so we keep a copy of the
- * pointer here. The op array itself won't be destroyed from under us, as it's
- * owned by the request and not the specific function call (unlike the
- * trampoline case above).
- *
- * Note that, while op arrays are theoretically reference counted themselves,
- * we cannot take the simple approach of incrementing that reference count due
- * to not all Zend Engine functions using init_op_array() and
- * destroy_op_array(): one example is that PHP 7 trampoline op arrays are
- * simply emalloc() and efree()'d without even setting the reference count.
- * Therefore we have to be more selective in our approach.
+ * Note    : It is the responsibility of the caller to allocate the metadata
+ *           structure. In general, it's expected that this will be a pointer
+ *           to a stack variable.
  */
-typedef struct {
-#ifdef PHP7
-  zend_string* scope;
-  zend_string* function;
+static inline void nr_php_observer_metadata_init(
+    nr_php_execute_metadata_t* metadata,
+    NR_EXECUTE_PROTO) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+  (void)metadata;
+  NR_UNUSED_SPECIALFN;
+  return;
 #else
-  zend_op_array* op_array;
+  const char* filepath = NULL;
+  const char* namespace = NULL;
+  const char* function = NULL;
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't update CLM.
+   */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+#endif
+  if (nrunlikely(NULL == metadata)) {
+    return;
+  }
+
+  if (nrunlikely(NULL == execute_data)) {
+    return;
+  }
+
+  filepath = nr_php_zend_execute_data_filename(execute_data);
+  namespace = nr_php_zend_execute_data_scope_name(execute_data);
+  function = nr_php_zend_execute_data_function_name(execute_data);
+
+  metadata->function_lineno = nr_php_zend_function_lineno(execute_data->func);
+
+  if (!nr_strempty(function)) {
+    metadata->function_name = nr_strdup(function);
+  }
+
+  if (!nr_strempty(namespace)) {
+    metadata->function_namespace = nr_strdup(namespace);
+  }
+
+  if (!nr_strempty(filepath)) {
+    metadata->function_filepath = nr_strdup(filepath);
+  }
+
 #endif /* PHP7 */
-} nr_php_execute_metadata_t;
+}
 
 /*
  * Purpose : Initialise a metadata structure from an op array.
@@ -1067,9 +1091,10 @@ static void nr_php_execute_metadata_metric(
  *
  * Params  : 1. A pointer to the metadata.
  */
-static void nr_php_execute_metadata_release(
+static inline void nr_php_execute_metadata_release(
     nr_php_execute_metadata_t* metadata) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+
   if (NULL != metadata->scope) {
     zend_string_release(metadata->scope);
     metadata->scope = NULL;
@@ -1079,6 +1104,10 @@ static void nr_php_execute_metadata_release(
     zend_string_release(metadata->function);
     metadata->function = NULL;
   }
+
+  nr_free(metadata->function_name);
+  nr_free(metadata->function_namespace);
+  nr_free(metadata->function_filepath);
 #else
   metadata->op_array = NULL;
 #endif /* PHP7 */
@@ -1126,6 +1155,10 @@ static inline void nr_php_execute_segment_end(
       || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
+    if (NULL == s->attributes) {
+      s->attributes = nr_attributes_create(s->txn->attribute_config);
+    }
+    nr_php_txn_add_code_level_metrics(s->attributes, metadata);
     nr_segment_end(&s);
   } else {
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
@@ -1142,10 +1175,10 @@ static inline void nr_php_execute_segment_end(
 static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   int zcaught = 0;
   nrtime_t txn_start_time;
-  nr_php_execute_metadata_t metadata;
+  nr_php_execute_metadata_t metadata = {0};
   nr_segment_t stacked = {0};
-  nr_segment_t* segment;
-  nruserfn_t* wraprec;
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
 
   NRTXNGLOBAL(execute_count) += 1;
 
@@ -1171,6 +1204,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     bool create_metric = wraprec->create_metric;
 
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
 
@@ -1207,7 +1241,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     txn_start_time = nr_txn_start_time(NRPRG(txn));
 
     segment = nr_php_stacked_segment_init(&stacked TSRMLS_CC);
-
     zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
@@ -1226,7 +1259,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
 
     nr_php_execute_segment_end(segment, &metadata, create_metric TSRMLS_CC);
-
     nr_php_execute_metadata_release(&metadata);
 
     if (nrunlikely(zcaught)) {
@@ -1234,6 +1266,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
   } else if (NRINI(tt_detail) && NR_OP_ARRAY->function_name) {
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     /*
      * This is the case for transaction_tracer.detail >= 1 requested custom
@@ -1289,7 +1322,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
 
     nr_php_execute_segment_end(segment, &metadata, false TSRMLS_CC);
-
     nr_php_execute_metadata_release(&metadata);
 
     if (nrunlikely(zcaught)) {
@@ -1488,7 +1520,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   nr_segment_set_timing(segment, segment->start_time, duration);
 
   if (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min)) {
-    nr_php_execute_metadata_t metadata;
+    nr_php_execute_metadata_t metadata = {0};
 
     nr_php_execute_metadata_init(&metadata, (zend_op_array*)func);
 
