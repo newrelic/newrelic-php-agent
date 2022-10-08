@@ -410,7 +410,6 @@ PHP_MINIT_FUNCTION(newrelic) {
   zend_extension dummy;
 #else
   char dummy[] = "newrelic";
-  nr_php_observer_minit();
 #endif
 
   (void)type;
