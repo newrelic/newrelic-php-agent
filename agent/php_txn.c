@@ -912,7 +912,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && defined OVERWRITE_ZEND_EXECUTE_DATA
   if (nr_php_ini_setting_is_set_by_user("opcache.enable")
       && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
     nr_php_user_instrumentation_from_opcache(TSRMLS_C);
