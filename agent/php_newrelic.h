@@ -45,6 +45,7 @@ extern zend_module_entry newrelic_module_entry;
  * instrumentation. When checking in, leave this toggled on to have the CI work
  * as long as possible until the handler functionality is implemented.*/
 #define OVERWRITE_ZEND_EXECUTE_DATA true
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
 #define NR_SPECIALFNPTR_PROTO                              \
@@ -521,8 +522,9 @@ nriniuint_t
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
-nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
-                                       */
+nriniuint_t
+    log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
+                               */
 
 /*
  * Configuration option to toggle code level metrics collection.

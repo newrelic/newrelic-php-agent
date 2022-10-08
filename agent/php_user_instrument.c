@@ -34,7 +34,7 @@
  *     (1) bad code byte;
  *     (2) corrupted APC cache;
  *   (b) the PHP program calls exit.
- *   (c) An internall call to zend_error_cb, as for example empirically due to
+ *   (c) An internal call to zend_error_cb, as for example empirically due to
  * one of: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING, E_COMPILE_ERROR,
  * E_COMPILE_WARNING Cases (b) and (c) are interesting, as it is not
  * really an error condition, but merely a fast path out of the interpreter.
@@ -47,6 +47,9 @@
  *
  * Many functions here call zend_bailout to continue handling fatal PHP errors,
  * Since zend_bailout calls longjmp it never returns.
+ *
+ * Note: The agent ONLY needs to call this if it has overwritten the original
+ * zend_execute_ex.
  */
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
@@ -92,10 +95,64 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * (or can't) match by name and have the zend_function available. (The main use
  * case for this is to allow instrumenting closures, but it's useful anywhere
  * we're dealing with a callable rather than a name.)
+ *
+ * There are two main structures containing `wraprecs`.
+ * `nr_wrapped_user_functions` is a list of pointers to `wraprecs` that will
+ * contain all our custom instrumentation and all the user specified
+ * instrumentation they want to monitor. `user_function_wrappers` is a vector of
+ * pointers to wrappers, after the zend function represented by a wraprec has
+ * the reserved field modified, the pointer to the wraprec (which again, exists
+ * in `nr_wrapped_user_functions`) goes into the vector.
+ * `nr_wrapped_user_functions` is always a superset of
+ * `user_function_wrappers` and the wraprec pointers that exist in
+ * `user_function_wrappers` always exist in `nr_wrapped_user_functions`.
+ *
+ * `nr_wrapped_user_functions` is populated a few different ways.
+ * 1)from function `nr_php_add_transaction_naming_function` called from
+ * `php_nrini.c` to set the naming for all the transactions the user  set in the
+ * ini with `newrelic.webtransaction.name.functions` 2) from function
+ * `nr_php_add_custom_tracer` from `php_nrini.c` to set the naming for all the
+ * transactions the user set in the ini with
+ * `newrelic.transaction_tracer.custom` 3)
+ * nr_php_user_function_add_declared_callback (prior to PHP 7.3) 4) from
+ * function `nr_php_wrap_user_function` called from php_wrapper sets the wraprec
+ * with framework specific instrumentation. 5) from function
+ * `nr_php_wrap_callable` (in `php_wrapper.c`) used only by Wordpress and predis
+ * for custom instrumentation that adds `is_transient` wrappers that get cleaned
+ * up with each shutdown.
+ *
+ * When overwriting the zend_execute_ex function, every effort was made to
+ * reduce performance overhead because until the agent returns control, we are
+ * the bottleneck of PHP execution on a customer's machine.  Overwriting the
+ * reserved field was seen as a quick way to check if a function is instrumented
+ * or not.
+ *
+ * However, with PHP 8+, we've begun noticing more conflicts with the reserved
+ * fields.  Additionally, as we are no longer halting execution while we
+ * process, we can search through `nr_php_op_array_set_wraprec` instead of
+ * setting reserved field and getting from the `user_function_wrappers` vector.
+ * This stops the issues (segfaults, incorrect naming in laravel, etc) that we
+ * were observing, especially with PHP 8.1.
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+  if (ZEND_USER_FUNCTION != func->type) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
+                     wraprec->classname ? wraprec->classname : "",
+                     wraprec->classname ? "::" : "", wraprec->funcname);
+
+    /*
+     * Prevent future wrap attempts for performance and to prevent spamming the
+     * logs with this message.
+     */
+    wraprec->is_disabled = 1;
+    return;
+  }
+#else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
+#endif
   wraprec->is_wrapped = 1;
 
   if (wraprec->declared_callback) {
@@ -113,6 +170,12 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
   if (wraprec->is_wrapped) {
     return;
   }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+  wraprec->is_wrapped = 1;
+  return;
+#endif
 
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
     return;
@@ -246,6 +309,47 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   nr_wrapped_user_functions = wraprec;
 }
 
+nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  /*
+   * Not compatible with PHP less than 7.
+   */
+  (void)func;
+  return NULL;
+#else
+  nruserfn_t* p = NULL;
+  char* funcnameLC = NULL;
+  char* klassLC = NULL;
+
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
+    return NULL;
+  }
+  if (NULL != func->common.function_name) {
+    funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
+  } else {
+    return NULL;
+  }
+  if (NULL != func->common.scope && NULL != func->common.scope->name) {
+    klassLC = nr_string_to_lowercase(ZSTR_VAL(func->common.scope->name));
+  }
+
+  p = nr_wrapped_user_functions;
+
+  while (NULL != p) {
+    if (0 == nr_strcmp(p->funcnameLC, funcnameLC)
+        && 0 == nr_strcmp(p->classnameLC, klassLC)) {
+      nr_free(funcnameLC);
+      nr_free(klassLC);
+      return p;
+    }
+    p = p->next;
+  }
+  nr_free(funcnameLC);
+  nr_free(klassLC);
+  return NULL;
+#endif
+}
+
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
 nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   char* name = NULL;
@@ -266,7 +370,13 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
    * nr_php_op_array_get_wraprec does basic sanity checks on the stored
    * wraprec.
    */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_get_wraprec_by_name(func);
+#endif
+
   if (wraprec) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
                      name);
@@ -383,7 +493,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
   }
 }
@@ -392,7 +502,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->create_metric = 1;
     wraprec->is_user_added = 1;
   }
@@ -413,7 +523,12 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_get_wraprec_by_name(func);
+#endif
   if (wraprec) {
     wraprec->is_exception_handler = 0;
   }
@@ -439,6 +554,10 @@ void nr_php_destroy_user_wrap_records(void) {
  */
 nruserfn_t* nr_wrapped_user_functions = 0;
 
+/*
+ * nr_php_user_function_add_declared_callback is ONLY called from drupal for
+ * PHP < 7.3.  It does not need to be adjusted for OAPI.
+ */
 void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
