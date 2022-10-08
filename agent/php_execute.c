@@ -977,6 +977,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
     nr_php_execute_metadata_t* metadata,
     NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
+  
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
   (void)metadata;
   NR_UNUSED_SPECIALFN;
@@ -1017,9 +1018,22 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    * attributes.
    */
 
+#define CHK_CLM_STRLEN(s)                          \
+  if (CLM_STRLEN_MAX < NRSAFELEN(sizeof(s) - 1)) { \
+    s = NULL;                                      \
+  }
+
   filepath = nr_php_zend_execute_data_filename(execute_data);
+  CHK_CLM_STRLEN(filepath)
+
   namespace = nr_php_zend_execute_data_scope_name(execute_data);
+  CHK_CLM_STRLEN(namespace)
+
   function = nr_php_zend_execute_data_function_name(execute_data);
+  CHK_CLM_STRLEN(function)
+
+#undef CHK_CLM_STRLEN
+
   lineno = nr_php_zend_execute_data_lineno(execute_data);
 
   /*
@@ -1038,15 +1052,20 @@ static void nr_php_execute_metadata_add_code_level_metrics(
      */
     lineno = nr_php_zend_execute_data_lineno(execute_data);
   }
-  if (nr_strempty(function)) {
+
+#define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
+
+  if (CHK_CLM_EMPTY(function)) {
     return;
   }
-  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+  if (CHK_CLM_EMPTY(namespace) && CHK_CLM_EMPTY(filepath)) {
     /*
      * CLM MUST have either function+namespace or function+filepath.
      */
     return;
   }
+
+#undef CHK_CLM_EMPTY
 
   metadata->function_lineno = lineno;
   metadata->function_name = nr_strdup(function);

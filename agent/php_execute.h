@@ -24,6 +24,48 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
+#define CLM_STRLEN_MAX (255)
+
+/*
+ * Version specific metadata that we have to gather before we call the original
+ * execute_ex handler, as different versions of PHP behave differently in terms
+ * of what you can do with the op array after making that call. This structure
+ * and the functions immediately below are helpers for
+ * nr_php_execute_enabled(), which is the user function execution function.
+ *
+ * In PHP 7, it is possible that the op array will be destroyed if the function
+ * being called is a __call() magic method (in which case a trampoline is
+ * created and destroyed). We increment the reference counts on the scope and
+ * function strings and keep pointers to them in this structure, then release
+ * them once we've named the trace node and/or metric (if required).
+ *
+ * In PHP 5, execute_data->op_array may be set to NULL if we make a subsequent
+ * user function call in an exec callback (which occurs before we decide
+ * whether to create a metric and/or trace node), so we keep a copy of the
+ * pointer here. The op array itself won't be destroyed from under us, as it's
+ * owned by the request and not the specific function call (unlike the
+ * trampoline case above).
+ *
+ * Note that, while op arrays are theoretically reference counted themselves,
+ * we cannot take the simple approach of incrementing that reference count due
+ * to not all Zend Engine functions using init_op_array() and
+ * destroy_op_array(): one example is that PHP 7 trampoline op arrays are
+ * simply emalloc() and efree()'d without even setting the reference count.
+ * Therefore we have to be more selective in our approach.
+ */
+typedef struct {
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+  zend_string* scope;
+  zend_string* function;
+  char* function_name;
+  char* function_filepath;
+  char* function_namespace;
+  uint32_t function_lineno;
+#else
+  zend_op_array* op_array;
+#endif /* PHP7 */
+} nr_php_execute_metadata_t;
+
 /*
  * Version specific metadata that we have to gather before we call the original
  * execute_ex handler, as different versions of PHP behave differently in terms

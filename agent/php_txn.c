@@ -1133,7 +1133,10 @@ extern void nr_php_txn_add_code_level_metrics(
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
-  if (nr_strempty(metadata->function_name)) {
+
+#define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
+
+  if (CHK_CLM_EMPTY(metadata->function_name)) {
     /*
      * CLM aren't set so don't do anything
      */
@@ -1142,14 +1145,18 @@ extern void nr_php_txn_add_code_level_metrics(
 
   nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
                                          metadata->function_name);
-  if (!nr_strempty(metadata->function_filepath)) {
+
+  if (!CHK_CLM_EMPTY(metadata->function_filepath)) {
     nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
                                            metadata->function_filepath);
   }
-  if (!nr_strempty(metadata->function_namespace)) {
+  if (!CHK_CLM_EMPTY(metadata->function_namespace)) {
     nr_txn_attributes_set_string_attribute(
         attributes, nr_txn_clm_code_namespace, metadata->function_namespace);
   }
+
+#undef CHK_CLM_EMPTY
+
   nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
                                        metadata->function_lineno);
 }
