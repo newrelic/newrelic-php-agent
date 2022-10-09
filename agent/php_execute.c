@@ -988,18 +988,6 @@ static void nr_php_execute_metadata_add_code_level_metrics(
   const char* function = NULL;
   uint32_t lineno = 1;
 
-  if (NULL == metadata) {
-    return;
-  }
-
-  if (NULL == execute_data) {
-    return;
-  }
-
-  metadata->function_name = NULL;
-  metadata->function_filepath = NULL;
-  metadata->function_namespace = NULL;
-
   /*
    * Check if code level metrics are enabled in the ini.
    * If they aren't, exit and don't update CLM.
@@ -1007,6 +995,19 @@ static void nr_php_execute_metadata_add_code_level_metrics(
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
+
+  if (nrunlikely(NULL == metadata)) {
+    return;
+  }
+
+  if (nrunlikely(NULL == execute_data)) {
+    return;
+  }
+
+  metadata->function_name = NULL;
+  metadata->function_filepath = NULL;
+  metadata->function_namespace = NULL;
+
   /*
    * At a minimum, at least one of the following attribute combinations MUST be
    * implemented in order for customers to be able to accurately identify their
@@ -1710,7 +1711,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
      * is called, PHP may start the actual function execution.
      */
     segment = nr_php_stacked_segment_init(segment);
-    if (NULL == segment) {
+    if (nrunlikely(NULL == segment)) {
       nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
       return;
     }
@@ -1732,16 +1733,20 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
 
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
   /*
    * Let's get the framework info.
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    if (NRPRG(txn)) {
-      nr_php_execute_metadata_add_code_level_metrics(&metadata,
-                                                     NR_EXECUTE_ORIG_ARGS);
-      nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
-      nr_php_execute_metadata_release(&metadata);
-    }
+    /*
+     * Optimization option: could remove code level metrics for filenames.
+     */
+    nr_php_execute_metadata_add_code_level_metrics(&metadata,
+                                                   NR_EXECUTE_ORIG_ARGS);
+    nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
+    nr_php_execute_metadata_release(&metadata);
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
@@ -1755,7 +1760,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   if (NULL == segment) {
     return;
   }
-  if (0 == segment->txn_start_time) {
+  if (nrunlikely(0 == segment->txn_start_time)) {
     /*
      * The begin function handler always sets segment-txn_start_time.  If it is
      * not set, something else put the segment up and we are out of synch.
@@ -1900,7 +1905,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
    * nr_php_execute_show
    */
   zval* func_return_value = NULL;
-  if (NULL == execute_data) {
+  if (nrunlikely(NULL == execute_data)) {
     return;
   }
 
@@ -1919,7 +1924,6 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
           || NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
 
     if (nrunlikely(show_executes)) {
-      nrl_verbosedebug(NRL_AGENT, "zend_execute_data as function begins.");
       /*
        * For OAPI don't call nr_php_execute_enabled from execute_show.
        * nr_php_execute_show updated in another ticket.
@@ -1941,7 +1945,8 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute
    * nr_php_execute_show
    */
-  if ((NULL == execute_data) || (NULL == func_return_value)) {
+  if (nrunlikely((NULL == execute_data))
+      || nrunlikely((NULL == func_return_value))) {
     return;
   }
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {

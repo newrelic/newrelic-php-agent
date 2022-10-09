@@ -284,6 +284,8 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
+    wraprec->reportedclassLC
+        = wraprec->classnameLC; /* Change it later if it is different */
     wraprec->is_method = 1;
   }
 
@@ -349,7 +351,15 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
 #else
   char* funcnameLC = NULL;
   char* klassLC = NULL;
+  char* klass = NULL;
   bool retval = false;
+
+  /*
+   * Optimize out string manipulations; don't do them if you don't have to.
+   * For instance, if funcname doesn't match, no use comparing the classname.
+   * Not the most elegant solution, but the one that involves the least string
+   * manipulation.
+   */
 
   if (NULL == p) {
     return retval;
@@ -357,18 +367,22 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
     return retval;
   }
-  if (NULL != func->common.function_name) {
-    funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
-  } else {
+  if (NULL == func->common.function_name) {
     return retval;
   }
   if (NULL != func->common.scope && NULL != func->common.scope->name) {
-    klassLC = nr_string_to_lowercase(ZSTR_VAL(func->common.scope->name));
+    klass = ZSTR_VAL(func->common.scope->name);
   }
-  if (0 == nr_strcmp(p->funcnameLC, funcnameLC)
-      && ((0 == nr_strcmp(p->classnameLC, klassLC))
-          || (0 == nr_strcmp(p->reportedclassLC, klassLC)))) {
-    retval = true;
+  if ((NULL == p->reportedclassLC && NULL != klass)
+      || (NULL != p->reportedclassLC && NULL == klass)) {
+    return retval;
+  }
+  funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
+  if (0 == nr_strcmp(p->funcnameLC, funcnameLC)) {
+    klassLC = nr_string_to_lowercase(klass);
+    if (0 == nr_strcmp(p->reportedclassLC, klassLC)) {
+      retval = true;
+    }
   }
   nr_free(funcnameLC);
   nr_free(klassLC);
