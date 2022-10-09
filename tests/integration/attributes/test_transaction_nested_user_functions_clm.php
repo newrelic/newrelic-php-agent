@@ -16,6 +16,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
 }
 */
 
+
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.code_level_metrics.enabled = 1
