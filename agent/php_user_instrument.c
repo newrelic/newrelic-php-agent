@@ -284,8 +284,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
-    wraprec->reportedclassLC
-        = wraprec->classnameLC; /* Change it later if it is different */
+    wraprec->reportedclassLC = nr_string_to_lowercase(wraprec->classname);
     wraprec->is_method = 1;
   }
 
