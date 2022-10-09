@@ -977,7 +977,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
     nr_php_execute_metadata_t* metadata,
     NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
-  
+
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
   (void)metadata;
   NR_UNUSED_SPECIALFN;
@@ -1050,7 +1050,15 @@ static void nr_php_execute_metadata_add_code_level_metrics(
     /*
      * We are getting CLM for a function.
      */
-    lineno = nr_php_zend_execute_data_lineno(execute_data);
+    if (0 == metadata->function_lineno) {
+      lineno = nr_php_zend_execute_data_lineno(execute_data);
+    } else {
+      /*
+       * If the metadata was already set (in the case of OAPI where we need to
+       * get it preemptively, use that value for lineno instead.
+       */
+      lineno = metadata->function_lineno;
+    }
   }
 
 #define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
@@ -1708,6 +1716,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     }
     segment->txn_start_time = nr_txn_start_time(NRPRG(txn));
     segment->wraprec = wraprec;
+    segment->lineno = nr_php_zend_execute_data_lineno(execute_data);
     zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
                                                NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (nrunlikely(zcaught)) {
@@ -1724,7 +1733,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   nruserfn_t* wraprec = NULL;
 
   /*
-   * Let's get the framework info.  
+   * Let's get the framework info.
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     if (NRPRG(txn)) {
@@ -1759,7 +1768,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * has specifically requested it.
    */
   wraprec = (nruserfn_t*)(segment->wraprec);
-
+  metadata.function_lineno = segment->lineno;
   /*
    * Do a sanity check to make sure the names match.
    */
