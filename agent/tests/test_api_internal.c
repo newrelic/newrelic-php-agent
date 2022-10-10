@@ -55,7 +55,7 @@ static void test_invalid_parameters(TSRMLS_D) {
   tlib_php_request_start();
 
   /* Literally any parameter should cause this to bail. */
-#ifdef PHP8
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   tlib_php_request_eval(
       "$exception = false;"
       "try {"
