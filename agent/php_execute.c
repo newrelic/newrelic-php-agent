@@ -1911,10 +1911,10 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 
   NRPRG(php_cur_stack_depth) += 1;
 
-  if (0 < ((int)NRINI(max_nesting_level)))
+  if ((0 < ((int)NRINI(max_nesting_level)))
       && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
-    nr_php_max_nesting_level_reached(TSRMLS_C);
-  }
+        nr_php_max_nesting_level_reached(TSRMLS_C);
+      }
 
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
     return;
