@@ -264,4 +264,13 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     was_executed = 1;                                                \
   }
 
+static inline bool is_instrumentation_set(nrspecialfn_t instrumentation,
+                                          nrspecialfn_t callback) {
+  if ((NULL != instrumentation) && (callback != instrumentation)) {
+    return true;
+  }
+
+  return false;
+}
+
 #endif /* PHP_WRAPPER_HDR */

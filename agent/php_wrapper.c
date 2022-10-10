@@ -15,30 +15,33 @@ nruserfn_t* nr_php_wrap_user_function_before_after(
     nrspecialfn_t after_callback) {
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen TSRMLS_CC);
 
-  if (wraprec) {
-    if (after_callback) {
-      if ((NULL != wraprec->special_instrumentation)
-          && (after_callback != wraprec->special_instrumentation)) {
-        nrl_verbosedebug(
-            NRL_INSTRUMENT,
-            "%s: attempting to set special_instrumentation for %.*s, but "
-            "it is already set",
-            __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-      } else {
-        wraprec->special_instrumentation = after_callback;
-      }
+  if (NULL == wraprec) {
+    return wraprec;
+  }
+
+  if (after_callback) {
+    if (is_instrumentation_set(wraprec->special_instrumentation,
+                               after_callback)) {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT,
+          "%s: attempting to set special_instrumentation for %.*s, but "
+          "it is already set",
+          __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    } else {
+      wraprec->special_instrumentation = after_callback;
     }
-    if (before_callback) {
-      if ((NULL != wraprec->special_instrumentation_before)
-          && (before_callback != wraprec->special_instrumentation_before)) {
-        nrl_verbosedebug(NRL_INSTRUMENT,
-                         "%s: attempting to set special_instrumentation_before "
-                         "for %.*s, but "
-                         "it is already set",
-                         __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-      } else {
-        wraprec->special_instrumentation_before = before_callback;
-      }
+  }
+
+  if (before_callback) {
+    if (is_instrumentation_set(wraprec->special_instrumentation_before,
+                               before_callback)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: attempting to set special_instrumentation_before "
+                       "for %.*s, but "
+                       "it is already set",
+                       __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    } else {
+      wraprec->special_instrumentation_before = before_callback;
     }
   }
 
