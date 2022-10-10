@@ -29,8 +29,8 @@ nruserfn_t* nr_php_wrap_user_function_before_after(
       }
     }
     if (before_callback) {
-      if ((NULL != wraprec->special_instrumentation)
-          && (before_callback != wraprec->special_instrumentation)) {
+      if ((NULL != wraprec->special_instrumentation_before)
+          && (before_callback != wraprec->special_instrumentation_before)) {
         nrl_verbosedebug(NRL_INSTRUMENT,
                          "%s: attempting to set special_instrumentation_before "
                          "for %.*s, but "
