@@ -155,17 +155,11 @@ static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-  if (ZEND_USER_FUNCTION != func->type) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
-                     wraprec->classname ? wraprec->classname : "",
-                     wraprec->classname ? "::" : "", wraprec->funcname);
-
-    /*
-     * Prevent future wrap attempts for performance and to prevent spamming the
-     * logs with this message.
-     */
-    wraprec->is_disabled = 1;
-    return;
+  if ((NULL != func) && (NULL != func->common.scope)) {
+    if ((NULL != func->common.scope->name)
+        && (NULL == wraprec->reportedclass)) {
+      wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
+    }
   }
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
@@ -188,27 +182,12 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     return;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-  if (NULL != wraprec->classname) {
-    zend_class_entry* orig_class = 0;
-    orig_class = nr_php_find_class(wraprec->classnameLC TSRMLS_CC);
-    if (NULL != orig_class) {
-      orig_func = nr_php_find_class_method(orig_class, wraprec->funcnameLC);
-      if ((NULL != orig_func) && (NULL != orig_func->common.scope)) {
-        wraprec->reportedclassLC
-            = nr_string_to_lowercase(ZSTR_VAL(orig_func->common.scope->name));
-      }
-    }
-  }
-  wraprec->is_wrapped = 1;
-  return;
-#endif
-
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
     return;
   }
-
+#endif
   if (0 == wraprec->classname) {
     orig_func = nr_php_find_function(wraprec->funcnameLC TSRMLS_CC);
   } else {
@@ -284,7 +263,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
-    wraprec->reportedclassLC = nr_string_to_lowercase(wraprec->classname);
+    wraprec->reportedclass = NULL;
     wraprec->is_method = 1;
   }
 
@@ -312,7 +291,7 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nr_free(wraprec->funcname);
   nr_free(wraprec->classnameLC);
   nr_free(wraprec->funcnameLC);
-  nr_free(wraprec->reportedclassLC);
+  nr_free(wraprec->reportedclass);
   nr_realfree((void**)wraprec_ptr);
 }
 
@@ -348,44 +327,33 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
   (void)p;
   return false;
 #else
-  char* funcnameLC = NULL;
-  char* klassLC = NULL;
   char* klass = NULL;
-  bool retval = false;
 
   /*
    * Optimize out string manipulations; don't do them if you don't have to.
    * For instance, if funcname doesn't match, no use comparing the classname.
-   * Not the most elegant solution, but the one that involves the least string
-   * manipulation.
    */
 
   if (NULL == p) {
-    return retval;
+    return false;
   }
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
-    return retval;
+    return false;
   }
   if (NULL == func->common.function_name) {
-    return retval;
+    return false;
   }
-  if (NULL != func->common.scope && NULL != func->common.scope->name) {
-    klass = ZSTR_VAL(func->common.scope->name);
-  }
-  if ((NULL == p->reportedclassLC && NULL != klass)
-      || (NULL != p->reportedclassLC && NULL == klass)) {
-    return retval;
-  }
-  funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
-  if (0 == nr_strcmp(p->funcnameLC, funcnameLC)) {
-    klassLC = nr_string_to_lowercase(klass);
-    if (0 == nr_strcmp(p->reportedclassLC, klassLC)) {
-      retval = true;
+
+  if (0 == nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
+    if (NULL != func->common.scope && NULL != func->common.scope->name) {
+      klass = ZSTR_VAL(func->common.scope->name);
+    }
+    if ((0 == nr_strcmp(p->reportedclass, klass))
+        || (0 == nr_stricmp(p->classname, klass))) {
+      return true;
     }
   }
-  nr_free(funcnameLC);
-  nr_free(klassLC);
-  return retval;
+  return false;
 #endif
 }
 

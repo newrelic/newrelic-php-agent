@@ -68,7 +68,7 @@ typedef struct _nruserfn_t {
    * Okay.
    * Track both pieces of info for any wraprecs.
    */
-  char* reportedclassLC;
+  char* reportedclass;
   /*
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
