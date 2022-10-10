@@ -338,6 +338,8 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
 "20180731" "20190902" "20200930" "20210902"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
+  # remove following line when ZTS removed from releases
+  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
 done
 
 if [ -n "${fmissing}" ]; then
@@ -1275,19 +1277,20 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
-  if [ "${pi_zts}" = "yes" ]; then
-    msg=$(
-    cat << EOF
- 
-An unsupported PHP ZTS build has been detected. Please refer to this link:
-  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
-to view compatibilty requirements for the the New Relic PHP agent.
-The install will now exit.
-EOF
-)
-    error "${msg}"
-    exit 1
-  fi
+# uncomment when ZTS binaries are removed
+#  if [ "${pi_zts}" = "yes" ]; then
+#    msg=$(
+#    cat << EOF
+#
+#An unsupported PHP ZTS build has been detected. Please refer to this link:
+#  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+#to view compatibilty requirements for the the New Relic PHP agent.
+#The install will now exit.
+#EOF
+#)
+#    error "${msg}"
+#    exit 1
+#  fi
 
 #
 # This is where we figure out where to put the ini file, if at all. We only do
@@ -1409,6 +1412,11 @@ install_agent_here() {
   istat=
   if [ "${pi_zts}" = "yes" ]; then
     zts="-zts"
+
+    # Force copy of zts files as it is EOL so this will
+    # prevent future eraseure of linked to file from
+    # leading to a dangling symlink
+    NR_INSTALL_USE_CP_NOT_LN=1
   fi
   srcf="${ilibdir}/agent/${pi_arch}/newrelic-${pi_modver}${zts}.so"
   destf="${pi_extdir}/newrelic.so"
@@ -1907,6 +1915,14 @@ do_uninstall() {
     for pdir in $phpulist; do
       IFS="${ioIFS}"
       gather_info "${pdir}" || continue
+
+      # keep deprecated/eol module if requested
+      if [ -n "${NR_UNINSTALL_KEEP_ZTS}" ]; then
+        if [ -z "${NR_INSTALL_SILENT}" ]; then
+          echo "Keeping module in ${pdir} because NR_UNINSTALL_KEEP_ZTS set."
+        fi
+        continue
+      fi
 
       if [ -z "${NR_INSTALL_SILENT}" ]; then
         echo "Removing from this PHP : ${pdir}"
