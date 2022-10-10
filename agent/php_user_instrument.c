@@ -65,7 +65,7 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                      nr_segment_t* segment,
-                                     NR_EXECUTE_PROTO TSRMLS_DC) {
+                                     NR_EXECUTE_PROTO) {
   volatile int zcaught = 0;
   NR_UNUSED_FUNC_RETURN_VALUE;
   NR_UNUSED_SPECIALFN;
