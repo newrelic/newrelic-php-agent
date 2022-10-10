@@ -211,7 +211,7 @@ extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                             nr_segment_t* segment,
-                                            NR_EXECUTE_PROTO TSRMLS_DC);
+                                            NR_EXECUTE_PROTO);
 #endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing
