@@ -58,7 +58,9 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -75,7 +77,9 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                               NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -94,7 +98,9 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -155,11 +161,8 @@ static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-  if ((NULL != func) && (NULL != func->common.scope)) {
-    if ((NULL != func->common.scope->name)
-        && (NULL == wraprec->reportedclass)) {
-      wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
-    }
+  if (chk_reported_class(func, wraprec)) {
+    wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
   }
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);

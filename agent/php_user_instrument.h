@@ -236,4 +236,15 @@ extern void nr_php_user_function_add_declared_callback(
     int namestrlen,
     nruserfn_declared_t callback TSRMLS_DC);
 
+static inline bool chk_reported_class(zend_function* func, nruserfn_t* wraprec) {
+  if ((NULL == func) || (NULL == func->common.scope)) {
+    return false;
+  }
+
+  if ((NULL == func->common.scope->name) || (NULL != wraprec->reportedclass)) {
+    return false;
+  }
+  return true;
+}
+
 #endif /* PHP_USER_INSTRUMENT_HDR */
