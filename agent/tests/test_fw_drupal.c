@@ -370,15 +370,6 @@ static void test_drupal_http_request_drupal_6(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-/*
-DO NOT LEAVE THIS.
-When drupal_http_request header functionality is refactored,
-please put the tests back in!
-*/
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  return;
-#endif
 
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;

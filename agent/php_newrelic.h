@@ -409,7 +409,10 @@ size_t drupal_module_invoke_all_hook_len; /* The length of the current Drupal
                                              hook */
 size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
                                      calls */
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+nr_segment_t* drupal_http_request_segment;
+#endif
 int symfony1_in_dispatch; /* Whether we are currently within a
                              sfFrontWebController::dispatch() frame */
 int symfony1_in_error404; /* Whether we are currently within a
