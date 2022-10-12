@@ -253,7 +253,6 @@ An unsupported architecture detected.
 Please visit:
   https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
 to view compatibilty requirements for the the New Relic PHP agent.
-The install will now exit.
 EOF
 )
 
