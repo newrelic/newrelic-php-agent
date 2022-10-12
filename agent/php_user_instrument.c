@@ -347,14 +347,16 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
     return false;
   }
 
-  if (0 == nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
-    if (NULL != func->common.scope && NULL != func->common.scope->name) {
-      klass = ZSTR_VAL(func->common.scope->name);
-    }
-    if ((0 == nr_strcmp(p->reportedclass, klass))
-        || (0 == nr_stricmp(p->classname, klass))) {
-      return true;
-    }
+  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
+    return false;
+  }
+  if (NULL == func->common.scope || NULL == func->common.scope->name) {
+    return false;
+  }
+  klass = ZSTR_VAL(func->common.scope->name);
+  if ((0 == nr_strcmp(p->reportedclass, klass))
+      || (0 == nr_stricmp(p->classname, klass))) {
+    return true;
   }
   return false;
 #endif
