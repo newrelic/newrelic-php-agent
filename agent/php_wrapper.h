@@ -85,6 +85,12 @@
  *    already been called.
  */
 
+extern nruserfn_t* nr_php_wrap_user_function_before_after(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback);
+
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
                                              nrspecialfn_t callback TSRMLS_DC);
@@ -257,5 +263,14 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     zcaught = ((name)(NR_SPECIALFNPTR_ORIG_ARGS TSRMLS_CC)).zcaught; \
     was_executed = 1;                                                \
   }
+
+static inline bool is_instrumentation_set(nrspecialfn_t instrumentation,
+                                          nrspecialfn_t callback) {
+  if ((NULL != instrumentation) && (callback != instrumentation)) {
+    return true;
+  }
+
+  return false;
+}
 
 #endif /* PHP_WRAPPER_HDR */

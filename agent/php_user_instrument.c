@@ -56,11 +56,32 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
+                                     nr_segment_t* segment,
+                                     NR_EXECUTE_PROTO) {
+  volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  NR_UNUSED_SPECIALFN;
+  zend_try {
+    if (wraprec && wraprec->special_instrumentation_before) {
+      wraprec->special_instrumentation_before(wraprec, segment,
+                                              NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+  }
+  zend_catch {
+    zcaught = 1;
+  }
+  zend_end_try();
+  return zcaught;
+}
+#endif
 int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                       nr_segment_t* segment,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
@@ -75,7 +96,9 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -174,10 +197,12 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     return;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
     return;
   }
-
+#endif
   if (0 == wraprec->classname) {
     orig_func = nr_php_find_function(wraprec->funcnameLC TSRMLS_CC);
   } else {
@@ -313,99 +338,6 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-/*
- * Purpose : Determine if a func matches a wraprec.
- *
- * Params  : 1. The wraprec to match to a zend function
- *           2. The zend function to match to a wraprec
- *
- * Returns : True if the class/function of a wraprec match the class function
- *           of a zend function.
- */
-static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
-  char* klass = NULL;
-  const char* filename = NULL;
-
-  /*
-   * We are able to match either by lineno/filename pair or funcname/classname
-   * pair.
-   */
-
-  /*
-   * Optimize out string manipulations; don't do them if you don't have to.
-   * For instance, if funcname doesn't match, no use comparing the classname.
-   */
-
-  if (NULL == p) {
-    return false;
-  }
-  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
-    return false;
-  }
-
-  if (0 != p->lineno) {
-    /*
-     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
-     * going on to the funcname/classname pair comparison.
-     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
-     * we must do the funcname/classname compare.
-     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
-     * we can exit without doing the funcname/classname compare.
-     */
-    if (p->lineno != nr_php_zend_function_lineno(func)) {
-      return false;
-    } 
-    /*
-     * lineno matched, let's check the filename
-     */
-    filename = nr_php_function_filename(func);
-
-    /*
-     * If p->filename isn't NULL, we know the comparison is accurate;
-     * otherwise, it's inconclusive even if we have a lineno because it
-     * could be a cli call or evaluated expression that has no filename.
-     */
-    if (NULL != p->filename) {
-      if (0 == nr_strcmp(p->filename, filename)) {
-        return true;
-      }
-      return false;
-    }
-  }
-
-  if (NULL == func->common.function_name) {
-    return false;
-  }
-
-  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
-    return false;
-  }
-  if (NULL != func->common.scope && NULL != func->common.scope->name) {
-    klass = ZSTR_VAL(func->common.scope->name);
-  }
-
-  if ((0 == nr_strcmp(p->reportedclass, klass))
-      || (0 == nr_stricmp(p->classname, klass))) {
-    /*
-     * If we get here it means lineno/filename weren't initially set.
-     * Set it now so we can do the optimized compare next time.
-     * lineno/filename is usually not set if the func wasn't loaded when we
-     * created the initial wraprec and we had to use the more difficult way to
-     * set, update it with lineno/filename now.
-     */
-    if (NULL == p->filename) {
-      filename = nr_php_function_filename(func);
-      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
-        p->filename = nr_strdup(filename);
-      }
-    }
-    if (0 == p->lineno) {
-      p->lineno = nr_php_zend_function_lineno(func);
-    }
-    return true;
-  }
-  return false;
-}
 
 nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
   nruserfn_t* p = NULL;

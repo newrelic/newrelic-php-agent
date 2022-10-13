@@ -95,6 +95,27 @@ static void test_txn_restart_in_callstack(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_php_cur_stack_depth(TSRMLS_D) {
+  zval* expr;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval("function f1() { return 4; }" TSRMLS_CC);
+  tlib_php_request_eval("function f2() { newrelic_ignore_transaction(); return 4; }" TSRMLS_CC);
+
+  expr = nr_php_call(NULL, "f1");
+  nr_php_zval_free(&expr);
+
+  tlib_pass_if_int_equal("PHP stack depth tracking when recording", 0, NRPRG(php_cur_stack_depth));
+
+  expr = nr_php_call(NULL, "f2");
+  nr_php_zval_free(&expr);
+
+  tlib_pass_if_int_equal("PHP stack depth tracking when ignoring", 0, NRPRG(php_cur_stack_depth));
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -102,5 +123,6 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
   test_add_segment_metric(TSRMLS_C);
   test_txn_restart_in_callstack(TSRMLS_C);
+  test_php_cur_stack_depth();
   tlib_php_engine_destroy(TSRMLS_C);
 }

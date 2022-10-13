@@ -79,7 +79,18 @@ typedef struct _nruserfn_t {
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
+  /*
+   * This is the callback that legacy instrumentation uses and that the majority
+   * of OAPI special instrumentation will use and it will be called at the END
+   * of a function.
+   */
   nrspecialfn_t special_instrumentation;
+  /*
+   * Only used by OAPI, PHP 8+.  Used to do any special instrumentation actions
+   * before a function is executed.  Both callbacks can bet set.  Use the
+   * `nr_php_wrap_user_function_after_before` to set both.
+   */
+  nrspecialfn_t special_instrumentation_before;
 
   nruserfn_declared_t declared_callback;
 
@@ -104,6 +115,100 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Purpose : Determine if a func matches a wraprec.
+ *
+ * Params  : 1. The wraprec to match to a zend function
+ *           2. The zend function to match to a wraprec
+ *
+ * Returns : True if the class/function of a wraprec match the class function
+ *           of a zend function.
+ */
+static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
+  char* klass = NULL;
+  const char* filename = NULL;
+
+  /*
+   * We are able to match either by lineno/filename pair or funcname/classname
+   * pair.
+   */
+
+  /*
+   * Optimize out string manipulations; don't do them if you don't have to.
+   * For instance, if funcname doesn't match, no use comparing the classname.
+   */
+
+  if (NULL == p) {
+    return false;
+  }
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
+    return false;
+  }
+
+  if (0 != p->lineno) {
+    /*
+     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
+     * going on to the funcname/classname pair comparison.
+     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
+     * we must do the funcname/classname compare.
+     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
+     * we can exit without doing the funcname/classname compare.
+     */
+    if (p->lineno != nr_php_zend_function_lineno(func)) {
+      return false;
+    } 
+    /*
+     * lineno matched, let's check the filename
+     */
+    filename = nr_php_function_filename(func);
+
+    /*
+     * If p->filename isn't NULL, we know the comparison is accurate;
+     * otherwise, it's inconclusive even if we have a lineno because it
+     * could be a cli call or evaluated expression that has no filename.
+     */
+    if (NULL != p->filename) {
+      if (0 == nr_strcmp(p->filename, filename)) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  if (NULL == func->common.function_name) {
+    return false;
+  }
+
+  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
+    return false;
+  }
+  if (NULL != func->common.scope && NULL != func->common.scope->name) {
+    klass = ZSTR_VAL(func->common.scope->name);
+  }
+
+  if ((0 == nr_strcmp(p->reportedclass, klass))
+      || (0 == nr_stricmp(p->classname, klass))) {
+    /*
+     * If we get here it means lineno/filename weren't initially set.
+     * Set it now so we can do the optimized compare next time.
+     * lineno/filename is usually not set if the func wasn't loaded when we
+     * created the initial wraprec and we had to use the more difficult way to
+     * set, update it with lineno/filename now.
+     */
+    if (NULL == p->filename) {
+      filename = nr_php_function_filename(func);
+      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
+        p->filename = nr_strdup(filename);
+      }
+    }
+    if (0 == p->lineno) {
+      p->lineno = nr_php_zend_function_lineno(func);
+    }
+    return true;
+  }
+  return false;
+}
+
 /*
  * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
  *           with a zend_function.
@@ -193,7 +298,11 @@ extern int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC);
 extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                              nr_segment_t* segment,
                                              NR_EXECUTE_PROTO TSRMLS_DC);
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
+                                            nr_segment_t* segment,
+                                            NR_EXECUTE_PROTO);
+#endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing
  *           associated memory.

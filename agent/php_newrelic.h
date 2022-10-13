@@ -44,7 +44,9 @@ extern zend_module_entry newrelic_module_entry;
  * Additionally, gives us flexibility of toggling back to previous method of
  * instrumentation. When checking in, leave this toggled on to have the CI work
  * as long as possible until the handler functionality is implemented.*/
-#define OVERWRITE_ZEND_EXECUTE_DATA true
+
+//#define OVERWRITE_ZEND_EXECUTE_DATA true
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
 #define NR_SPECIALFNPTR_PROTO                              \

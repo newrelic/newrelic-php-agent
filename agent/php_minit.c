@@ -410,7 +410,6 @@ PHP_MINIT_FUNCTION(newrelic) {
   zend_extension dummy;
 #else
   char dummy[] = "newrelic";
-  nr_php_observer_minit();
 #endif
 
   (void)type;
@@ -628,8 +627,14 @@ PHP_MINIT_FUNCTION(newrelic) {
    * tasks are run only once the PHP VM engine is ticking over fully.
    */
 
+/* PHP 5.x,7.x or not OAPI */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
   NR_PHP_PROCESS_GLOBALS(orig_execute) = NR_ZEND_EXECUTE_HOOK;
   NR_ZEND_EXECUTE_HOOK = nr_php_execute;
+#else
+  nr_php_observer_minit();
+#endif
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_internal)) {
     nrl_info(
