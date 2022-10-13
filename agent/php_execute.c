@@ -1949,6 +1949,9 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
       || nrunlikely((NULL == func_return_value))) {
     return;
   }
+
+  NRPRG(php_cur_stack_depth) -= 1;
+
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
     return;
   }
@@ -1967,7 +1970,6 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
   }
   nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
 
-  NRPRG(php_cur_stack_depth) -= 1;
 
   return;
 }
