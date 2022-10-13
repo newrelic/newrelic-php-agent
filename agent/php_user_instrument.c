@@ -58,11 +58,32 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
+                                     nr_segment_t* segment,
+                                     NR_EXECUTE_PROTO) {
+  volatile int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  NR_UNUSED_SPECIALFN;
+  zend_try {
+    if (wraprec && wraprec->special_instrumentation_before) {
+      wraprec->special_instrumentation_before(wraprec, segment,
+                                              NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+  }
+  zend_catch {
+    zcaught = 1;
+  }
+  zend_end_try();
+  return zcaught;
+}
+#endif
 int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                       nr_segment_t* segment,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
@@ -77,7 +98,9 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -138,17 +161,8 @@ static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-  if (ZEND_USER_FUNCTION != func->type) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
-                     wraprec->classname ? wraprec->classname : "",
-                     wraprec->classname ? "::" : "", wraprec->funcname);
-
-    /*
-     * Prevent future wrap attempts for performance and to prevent spamming the
-     * logs with this message.
-     */
-    wraprec->is_disabled = 1;
-    return;
+  if (chk_reported_class(func, wraprec)) {
+    wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
   }
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
@@ -171,16 +185,12 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     return;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-  wraprec->is_wrapped = 1;
-  return;
-#endif
-
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
     return;
   }
-
+#endif
   if (0 == wraprec->classname) {
     orig_func = nr_php_find_function(wraprec->funcnameLC TSRMLS_CC);
   } else {
@@ -256,6 +266,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
+    wraprec->reportedclass = NULL;
     wraprec->is_method = 1;
   }
 
@@ -283,6 +294,7 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nr_free(wraprec->funcname);
   nr_free(wraprec->classnameLC);
   nr_free(wraprec->funcnameLC);
+  nr_free(wraprec->reportedclass);
   nr_realfree((void**)wraprec_ptr);
 }
 
@@ -309,6 +321,46 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   nr_wrapped_user_functions = wraprec;
 }
 
+bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  /*
+   * Not compatible with PHP less than 7.
+   */
+  (void)func;
+  (void)p;
+  return false;
+#else
+  char* klass = NULL;
+
+  /*
+   * Optimize out string manipulations; don't do them if you don't have to.
+   * For instance, if funcname doesn't match, no use comparing the classname.
+   */
+
+  if (NULL == p) {
+    return false;
+  }
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
+    return false;
+  }
+  if (NULL == func->common.function_name) {
+    return false;
+  }
+
+  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
+    return false;
+  }
+  if (NULL != func->common.scope && NULL != func->common.scope->name) {
+    klass = ZSTR_VAL(func->common.scope->name);
+  }
+  if ((0 == nr_strcmp(p->reportedclass, klass))
+      || (0 == nr_stricmp(p->classname, klass))) {
+    return true;
+  }
+  return false;
+#endif
+}
+
 nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
   /*
@@ -318,34 +370,19 @@ nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func) {
   return NULL;
 #else
   nruserfn_t* p = NULL;
-  char* funcnameLC = NULL;
-  char* klassLC = NULL;
 
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
     return NULL;
-  }
-  if (NULL != func->common.function_name) {
-    funcnameLC = nr_string_to_lowercase(ZSTR_VAL(func->common.function_name));
-  } else {
-    return NULL;
-  }
-  if (NULL != func->common.scope && NULL != func->common.scope->name) {
-    klassLC = nr_string_to_lowercase(ZSTR_VAL(func->common.scope->name));
   }
 
   p = nr_wrapped_user_functions;
 
   while (NULL != p) {
-    if (0 == nr_strcmp(p->funcnameLC, funcnameLC)
-        && 0 == nr_strcmp(p->classnameLC, klassLC)) {
-      nr_free(funcnameLC);
-      nr_free(klassLC);
+    if (nr_php_wraprec_matches(p, func)) {
       return p;
     }
     p = p->next;
   }
-  nr_free(funcnameLC);
-  nr_free(klassLC);
   return NULL;
 #endif
 }

@@ -86,12 +86,22 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   return handlers;
 }
 
+
+void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
+
 void nr_php_observer_minit() {
   /*
    * Register the Observer API handlers.
    */
   zend_observer_fcall_register(nr_php_fcall_register_handlers);
   zend_observer_error_register(nr_php_error_cb);
+
+  /*
+   * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
+   * execute hook.  orig_execute is called various ways in various places, so
+   * turn it into a no_op when using OAPI.
+   */
+  NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
 }
 
 #endif

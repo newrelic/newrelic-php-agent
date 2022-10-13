@@ -911,7 +911,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nr_php_txn_log_error_dt_on_tt_off();
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO \
+    && defined OVERWRITE_ZEND_EXECUTE_DATA
   if (nr_php_ini_setting_is_set_by_user("opcache.enable")
       && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
     nr_php_user_instrumentation_from_opcache(TSRMLS_C);
@@ -1144,6 +1145,7 @@ extern void nr_php_txn_add_code_level_metrics(
 
   nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
                                          metadata->function_name);
+
   if (!CHK_CLM_EMPTY(metadata->function_filepath)) {
     nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
                                            metadata->function_filepath);
