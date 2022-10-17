@@ -1928,10 +1928,6 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
 
   if (nrunlikely(show_executes)) {
-    /*
-     * For OAPI don't call nr_php_execute_enabled from execute_show.
-     * Can show execute but CANNOT show returns here.
-     */
     nr_php_show_exec(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
