@@ -166,6 +166,11 @@ RUN php composer.phar require "predis/predis"
 RUN php composer.phar update
 
 #
+# install composer and make executable so it can be used in dev env
+#
+RUN cp composer.phar /usr/local/bin/composer && chmod +x /usr/local/bin/composer
+
+#
 # These args need to be repeated so we can propagate the VARS within this build context.
 #
 ARG PHP_VER
