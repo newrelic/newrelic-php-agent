@@ -545,6 +545,9 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   }
 }
 
+#define NAME_EXCEPTION_HANDLER 1
+
+#if defined NAME_EXCEPTION_HANDLER && NAME_EXCEPTION_HANDLER == 1
 static const char* get_scope_name(const zend_function* func) {
   if (NULL == func || NULL == func->common.scope) {
     return NULL;
@@ -577,13 +580,16 @@ static void nr_php_wraprec_add_name(nruserfn_t *wraprec, const zend_function* fu
 #undef SET_NAME_PART
 
 }
+#endif
 
 void nr_php_add_exception_function(zend_function* func TSRMLS_DC) {
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(func TSRMLS_CC);
 
   if (wraprec) {
     wraprec->is_exception_handler = 1;
+#if defined NAME_EXCEPTION_HANDLER && NAME_EXCEPTION_HANDLER == 1
     nr_php_wraprec_add_name(wraprec, func);
+#endif
   }
 }
 
