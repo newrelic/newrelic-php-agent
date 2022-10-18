@@ -568,6 +568,7 @@ static void nr_php_wraprec_add_name(nruserfn_t *wraprec, const zend_function* fu
 
 #define SET_NAME_PART(name_part, value) do { \
   if (value) { \
+    nrl_verbosedebug(NRL_DEBUG, "%s:%d %s: set '%s' to '%s'", __FILE__, __LINE__, __func__, #name_part, value); \
     wraprec->name_part = nr_strdup(value); \
     wraprec->name_part##len = nr_strlen(wraprec->name_part); \
     wraprec->name_part##LC = nr_string_to_lowercase(wraprec->name_part); \
