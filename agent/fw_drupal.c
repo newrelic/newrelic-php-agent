@@ -67,6 +67,54 @@ NR_PHP_WRAPPER(nr_drupal_qdrupal_name_the_wt) {
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
+static void nr_drupal_http_request_ensure_second_arg(NR_EXECUTE_PROTO) {
+  zval* arg = NULL;
+
+  /*
+   * If only one argument is given, an empty list is inserted as second
+   * argument. NR headers are added during a later step.
+   */
+  if (ZEND_NUM_ARGS() == 1) {
+    arg = nr_php_zval_alloc();
+    array_init(arg);
+
+    nr_php_arg_add(NR_EXECUTE_ORIG_ARGS, arg);
+
+    nr_php_zval_free(&arg);
+  }
+}
+
+static zval* nr_drupal_http_request_add_headers(NR_EXECUTE_PROTO TSRMLS_DC) {
+  bool is_drupal_7;
+  zval* second_arg = NULL;
+  zend_execute_data* ex = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS);
+
+  if (nrunlikely(NULL == ex)) {
+    return NULL;
+  }
+
+  /* Ensure second argument exists in the call frame */
+  nr_drupal_http_request_ensure_second_arg(NR_EXECUTE_ORIG_ARGS);
+
+  is_drupal_7 = (ex->func->common.num_args == 2);
+
+  /*
+   * nr_php_get_user_func_arg is used, as nr_php_arg_get calls ZVAL_DUP
+   * on the argument zval and thus doesn't allow us to change the
+   * original argument.
+   */
+  second_arg = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
+
+  /*
+   * Add NR headers.
+   */
+  nr_drupal_headers_add(second_arg, is_drupal_7 TSRMLS_CC);
+
+  return second_arg;
+}
+#endif
+
 static uint64_t nr_drupal_http_request_get_response_code(
     zval** return_value TSRMLS_DC) {
   zval* code = NULL;
@@ -143,40 +191,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
    * (nr_php_swap_user_functions), which breaks as since PHP 7.3 user
    * functions are stored in shared memory.
    */
-  bool is_drupal_7;
-  zval* arg = NULL;
-  zend_execute_data* ex = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS);
-
-  if (NULL == ex) {
-    NR_PHP_WRAPPER_LEAVE
-  }
-
-  is_drupal_7 = (ex->func->common.num_args == 2);
-
-  /*
-   * If only one argument is given, an empty list is inserted as second
-   * argument. NR headers are added during a later step.
-   */
-  if (ZEND_NUM_ARGS() == 1) {
-    arg = nr_php_zval_alloc();
-    array_init(arg);
-
-    nr_php_arg_add(NR_EXECUTE_ORIG_ARGS, arg);
-
-    nr_php_zval_free(&arg);
-  }
-
-  /*
-   * nr_php_get_user_func_arg is used, as nr_php_arg_get calls ZVAL_DUP
-   * on the argument zval and thus doesn't allow us to change the
-   * original argument.
-   */
-  arg = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
-
-  /*
-   * Add NR headers.
-   */
-  nr_drupal_headers_add(arg, is_drupal_7 TSRMLS_CC);
+  nr_drupal_http_request_add_headers(NR_EXECUTE_ORIG_ARGS);
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
@@ -305,40 +320,8 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
    * (nr_php_swap_user_functions), which breaks as since PHP 7.3 user
    * functions are stored in shared memory.
    */
-  bool is_drupal_7;
-  zval* arg = NULL;
-  zend_execute_data* ex = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS);
-
-  if (NULL == ex) {
-    NR_PHP_WRAPPER_LEAVE
-  }
-
-  is_drupal_7 = (ex->func->common.num_args == 2);
-
-  /*
-   * If only one argument is given, an empty list is inserted as second
-   * argument. NR headers are added during a later step.
-   */
-  if (ZEND_NUM_ARGS() == 1) {
-    arg = nr_php_zval_alloc();
-    array_init(arg);
-
-    nr_php_arg_add(NR_EXECUTE_ORIG_ARGS, arg);
-
-    nr_php_zval_free(&arg);
-  }
-
-  /*
-   * nr_php_get_user_func_arg is used, as nr_php_arg_get calls ZVAL_DUP
-   * on the argument zval and thus doesn't allow us to change the
-   * original argument.
-   */
-  arg = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
-
-  /*
-   * Add NR headers.
-   */
-  nr_drupal_headers_add(arg, is_drupal_7 TSRMLS_CC);
+  zval* arg
+      = nr_drupal_http_request_add_headers(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   /*
    * If an invalid argument was given for the second argument ($headers
