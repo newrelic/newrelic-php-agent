@@ -115,6 +115,42 @@ static zval* nr_drupal_http_request_add_headers(NR_EXECUTE_PROTO TSRMLS_DC) {
 }
 #endif
 
+static char* nr_drupal_http_request_get_method(NR_EXECUTE_PROTO TSRMLS_DC) {
+  zval* arg2 = NULL;
+  zval* arg3 = NULL;
+  zval* method = NULL;
+  char* http_request_method = NULL;
+
+  /*
+   * Drupal 6 will have a third argument with the method, Drupal 7 will not
+   * have a third argument it must be parsed from the second.
+   */
+  arg3 = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  // There is no third arg, this is drupal 7
+  if (0 == arg3) {
+    arg2 = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    if (NULL != arg2) {
+      method = nr_php_zend_hash_find(Z_ARRVAL_P(arg2), "method");
+      if (nr_php_is_zval_valid_string(method)) {
+        http_request_method
+            = nr_strndup(Z_STRVAL_P(method), Z_STRLEN_P(method));
+      }
+    }
+  } else if (nr_php_is_zval_valid_string(arg3)) {
+    // This is drupal 6, the method is the third arg.
+    http_request_method = nr_strndup(Z_STRVAL_P(arg3), Z_STRLEN_P(arg3));
+  }
+  // If the method is not set, Drupal will default to GET
+  if (NULL == http_request_method) {
+    http_request_method = nr_strdup("GET");
+  }
+
+  nr_php_arg_release(&arg2);
+  nr_php_arg_release(&arg3);
+
+  return http_request_method;
+}
+
 static uint64_t nr_drupal_http_request_get_response_code(
     zval** return_value TSRMLS_DC) {
   zval* code = NULL;
@@ -212,9 +248,6 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal_http_request_after) {
   zval* arg1 = NULL;
-  zval* arg2 = NULL;
-  zval* arg3 = NULL;
-  zval* method = NULL;
 
   (void)wraprec;
 
@@ -240,30 +273,9 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
         = {.library = "Drupal",
            .uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1))};
 
-    /*
-     * Drupal 6 will have a third argument with the method, Drupal 7 will not
-     * have a third argument it must be parsed from the second.
-     */
-    arg3 = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    // There is no third arg, this is drupal 7
-    if (0 == arg3) {
-      arg2 = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-      if (NULL != arg2) {
-        method = nr_php_zend_hash_find(Z_ARRVAL_P(arg2), "method");
-        if (nr_php_is_zval_valid_string(method)) {
-          external_params.procedure
-              = nr_strndup(Z_STRVAL_P(method), Z_STRLEN_P(method));
-        }
-      }
-    } else if (nr_php_is_zval_valid_string(arg3)) {
-      // This is drupal 6, the method is the third arg.
-      external_params.procedure
-          = nr_strndup(Z_STRVAL_P(arg3), Z_STRLEN_P(arg3));
-    }
-    // If the method is not set, Drupal will default to GET
-    if (NULL == external_params.procedure) {
-      external_params.procedure = nr_strdup("GET");
-    }
+    external_params.procedure
+        = nr_drupal_http_request_get_method(NR_EXECUTE_ORIG_ARGS);
+
     external_params.encoded_response_header
         = nr_drupal_http_request_get_response_header(&func_return_value);
 
@@ -286,8 +298,6 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
 
 end:
   nr_php_arg_release(&arg1);
-  nr_php_arg_release(&arg2);
-  nr_php_arg_release(&arg3);
   NRPRG(drupal_http_request_depth) -= 1;
 }
 NR_PHP_WRAPPER_END
@@ -305,9 +315,6 @@ NR_PHP_WRAPPER_END
  */
 NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
   zval* arg1 = NULL;
-  zval* arg2 = NULL;
-  zval* arg3 = NULL;
-  zval* method = NULL;
   zval** return_value = NULL;
 
 #if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
@@ -363,30 +370,8 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
         = {.library = "Drupal",
            .uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1))};
 
-    /*
-     * Drupal 6 will have a third argument with the method, Drupal 7 will not
-     * have a third argument it must be parsed from the second.
-     */
-    arg3 = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    // There is no third arg, this is drupal 7
-    if (0 == arg3) {
-      arg2 = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-      if (NULL != arg2) {
-        method = nr_php_zend_hash_find(Z_ARRVAL_P(arg2), "method");
-        if (nr_php_is_zval_valid_string(method)) {
-          external_params.procedure
-              = nr_strndup(Z_STRVAL_P(method), Z_STRLEN_P(method));
-        }
-      }
-    } else if (nr_php_is_zval_valid_string(arg3)) {
-      // This is drupal 6, the method is the third arg.
-      external_params.procedure
-          = nr_strndup(Z_STRVAL_P(arg3), Z_STRLEN_P(arg3));
-    }
-    // If the method is not set, Drupal will default to GET
-    if (NULL == external_params.procedure) {
-      external_params.procedure = nr_strdup("GET");
-    }
+    external_params.procedure
+        = nr_drupal_http_request_get_method(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
     segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
@@ -420,8 +405,6 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
 
 end:
   nr_php_arg_release(&arg1);
-  nr_php_arg_release(&arg2);
-  nr_php_arg_release(&arg3);
   NRPRG(drupal_http_request_depth) -= 1;
 }
 NR_PHP_WRAPPER_END
