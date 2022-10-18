@@ -545,11 +545,45 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   }
 }
 
+static const char* get_scope_name(const zend_function* func) {
+  if (NULL == func || NULL == func->common.scope) {
+    return NULL;
+  }
+  return nr_php_class_entry_name(func->common.scope);
+}
+
+static const char* get_function_name(const zend_function* func) {
+  if (NULL == func) {
+    return NULL;
+  }
+  return nr_php_function_name(func);
+}
+
+static void nr_php_wraprec_add_name(nruserfn_t *wraprec, const zend_function* func) {
+  const char* scope_name = get_scope_name(func);
+  const char* function_name = get_function_name(func);
+
+#define SET_NAME_PART(name_part, value) do { \
+  if (value) { \
+    wraprec->name_part = nr_strdup(value); \
+    wraprec->name_part##len = nr_strlen(wraprec->name_part); \
+    wraprec->name_part##LC = nr_string_to_lowercase(wraprec->name_part); \
+  } \
+} while(0)
+
+  SET_NAME_PART(classname, scope_name);
+  SET_NAME_PART(funcname, function_name);
+
+#undef SET_NAME_PART
+
+}
+
 void nr_php_add_exception_function(zend_function* func TSRMLS_DC) {
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(func TSRMLS_CC);
 
   if (wraprec) {
     wraprec->is_exception_handler = 1;
+    nr_php_wraprec_add_name(wraprec, func);
   }
 }
 
