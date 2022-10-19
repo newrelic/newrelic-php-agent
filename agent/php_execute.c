@@ -640,7 +640,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
     || defined OVERWRITE_ZEND_EXECUTE_DATA
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_name(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
@@ -662,7 +662,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
     || defined OVERWRITE_ZEND_EXECUTE_DATA
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_name(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
@@ -1035,7 +1035,8 @@ static void nr_php_execute_metadata_add_code_level_metrics(
 
 #undef CHK_CLM_STRLEN
 
-  lineno = nr_php_zend_execute_data_lineno(execute_data);
+  // lineno = nr_php_zend_execute_data_lineno(execute_data);
+  lineno = nr_php_zend_function_lineno(execute_data->func);
 
   /*
    * Check if we are getting CLM for a file.
@@ -1051,15 +1052,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
     /*
      * We are getting CLM for a function.
      */
-    if (0 == metadata->function_lineno) {
-      lineno = nr_php_zend_execute_data_lineno(execute_data);
-    } else {
-      /*
-       * If the metadata was already set (in the case of OAPI where we need to
-       * get it preemptively, use that value for lineno instead.
-       */
-      lineno = metadata->function_lineno;
-    }
+    lineno = nr_php_zend_function_lineno(execute_data->func);
   }
 
 #define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
@@ -1264,7 +1257,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     || defined OVERWRITE_ZEND_EXECUTE_DATA
   wraprec = nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC);
 #else
-  wraprec = nr_php_get_wraprec_by_name(execute_data->func);
+  wraprec = nr_php_get_wraprec_by_func(execute_data->func);
 #endif
 
   if (NULL != wraprec) {
@@ -1699,7 +1692,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     return;
   }
-  wraprec = nr_php_get_wraprec_by_name(execute_data->func);
+  wraprec = nr_php_get_wraprec_by_func(execute_data->func);
   /*
    * If there is custom instrumentation or tt detail is more than 0, start the
    * segment.
@@ -1717,7 +1710,6 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     }
     segment->txn_start_time = nr_txn_start_time(NRPRG(txn));
     segment->wraprec = wraprec;
-    segment->lineno = nr_php_zend_execute_data_lineno(execute_data);
     zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
                                                NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (nrunlikely(zcaught)) {
@@ -1773,9 +1765,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * has specifically requested it.
    */
   wraprec = (nruserfn_t*)(segment->wraprec);
-  metadata.function_lineno = segment->lineno;
   /*
-   * Do a sanity check to make sure the names match.
+   * Do a sanity check to make sure the wraprec info matches the func info.
    */
   if (NULL != wraprec && nr_php_wraprec_matches(wraprec, execute_data->func)) {
     /*
@@ -1913,8 +1904,8 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 
   if ((0 < ((int)NRINI(max_nesting_level)))
       && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
-        nr_php_max_nesting_level_reached(TSRMLS_C);
-      }
+    nr_php_max_nesting_level_reached(TSRMLS_C);
+  }
 
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
     return;
@@ -1969,7 +1960,6 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     // nr_php_execute_show(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
   nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
-
 
   return;
 }
