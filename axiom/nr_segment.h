@@ -182,6 +182,20 @@ typedef struct _nr_segment_t {
                                                       external or datastore
                                                       segments. */
   nr_segment_error_t* error; /* segment error attributes */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+
+  /*
+   * Because of the access to the segment is now split between functions, we
+   * need to pass a certain amount of data between the functions that use the
+   * segment.
+   */
+  nrtime_t txn_start_time; /* To doublecheck the txn is correct when it is time
+                              to add the segment to the txn. */
+  void* wraprec; /* wraprec, if one is associated with this segment, to reduce
+                    wraprec lookups */
+
+#endif
+
 } nr_segment_t;
 
 /*

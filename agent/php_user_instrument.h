@@ -55,6 +55,27 @@ typedef struct _nruserfn_t {
   char* funcnameLC;
 
   /*
+   * Internally, there are cases where the zend_function reports it is one
+   * class; however, the zend_function is also contained in another class_entry
+   * table.
+   * For an example, see tests/integration/laravel
+   * A lookup for the class = Illuminate\Console\Application returns the class
+   * entry named classname = Illuminate\Console\Application
+   * So far so good!
+   * Lookup Illuminate\Console\Application method doRun and a zend_function is
+   * returned.  Ask that zend_func what its classname is and it says:
+   * Symfony\Component\Console\Application.
+   * Okay.
+   * Track both pieces of info for any wraprecs.
+   */
+  char* reportedclass;
+  /*
+   * These are helpful to compare the wraprec more quickly and to differentiate
+   * between closures.
+   */
+  char* filename;
+  uint32_t lineno;
+  /*
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
@@ -87,14 +108,17 @@ extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 /*
  * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
- *           with a function name/class.
+ *           with a zend_function.
  *
  * Params  : 1. The zend function to find in a wraprec
  *
- * Returns : The function wrapper that matches the function/class combination.
- *            NULL if no function wrapper matches the function/class combo.
+ * Returns : The function wrapper that matches the zend_function.
+ *           This will first try to match the lineno/filename.  If we don't have
+ *           that for any reason (maybe the func didn't exist in the function
+ *           table when we first added), it will match by function name/class.
+ *           NULL if no function wrapper matches the zend_function.
  */
-extern nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func);
+extern nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func);
 
 /*
  * Purpose : Get the wraprec associated with a user function op_array.
@@ -194,5 +218,17 @@ extern void nr_php_user_function_add_declared_callback(
     const char* namestr,
     int namestrlen,
     nruserfn_declared_t callback TSRMLS_DC);
+
+static inline bool chk_reported_class(zend_function* func,
+                                      nruserfn_t* wraprec) {
+  if ((NULL == func) || (NULL == func->common.scope)) {
+    return false;
+  }
+
+  if ((NULL == func->common.scope->name) || (NULL != wraprec->reportedclass)) {
+    return false;
+  }
+  return true;
+}
 
 #endif /* PHP_USER_INSTRUMENT_HDR */

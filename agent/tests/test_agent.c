@@ -557,6 +557,168 @@ static void test_default_address() {
 #endif
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+static void test_nr_php_zend_execute_data_function_name() {
+  zend_function* func;
+  zend_execute_data execute_data = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_null("NULL zend_execute_data should return NULL",
+                    nr_php_zend_execute_data_function_name(NULL));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_null("NULL zend_function should return NULL",
+                    nr_php_zend_execute_data_function_name(&execute_data));
+
+  /*
+   * Test : Normal operation.
+   */
+  func = nr_php_find_function("newrelic_get_request_metadata");
+  execute_data.func = func;
+  tlib_pass_if_str_equal(
+      "Unexpected function name", "newrelic_get_request_metadata",
+      nr_php_zend_execute_data_function_name(&execute_data TSRMLS_CC));
+}
+
+static void test_nr_php_zend_execute_data_filename() {
+  zend_function func = {0};
+  zend_string* filename = NULL;
+  zend_execute_data execute_data = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_null("NULL zend_execute_data should return NULL",
+                    nr_php_zend_execute_data_filename(NULL TSRMLS_CC));
+
+  /*
+   * Test : Null function.
+   */
+  tlib_pass_if_null("NULL zend_function should return NULL",
+                    nr_php_zend_execute_data_filename(&execute_data TSRMLS_CC));
+
+  /*
+   * Test : Function exists, op_array doesn't.
+   */
+  execute_data.func = &func;
+  tlib_pass_if_null("NULL op_array should return NULL",
+                    nr_php_zend_execute_data_filename(&execute_data TSRMLS_CC));
+
+  /*
+   * Test : Function exists, op_array exists.
+   */
+  filename = zend_string_init("myfilename\\is\\here",
+                              strlen("myfilename\\is\\here"), 0);
+  func.op_array.filename = filename;
+  execute_data.func = &func;
+  tlib_pass_if_str_equal(
+      "Filename should be displayed", ZSTR_VAL(filename),
+      nr_php_zend_execute_data_filename(&execute_data TSRMLS_CC));
+  zend_string_release(filename);
+}
+
+static void test_nr_php_zend_execute_data_scope_name() {
+  zend_function func = {0};
+  zend_string* scope_name = NULL;
+  zend_execute_data execute_data = {0};
+  zend_class_entry ce = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_null("NULL zend_execute_data should return NULL",
+                    nr_php_zend_execute_data_scope_name(NULL TSRMLS_CC));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_null(
+      "NULL zend_function should return NULL",
+      nr_php_zend_execute_data_scope_name(&execute_data TSRMLS_CC));
+
+  /*
+   * Test : Function exists, but no class scope.
+   */
+  execute_data.func = &func;
+  tlib_pass_if_null(
+      "NULL op_array should return NULL",
+      nr_php_zend_execute_data_scope_name(&execute_data TSRMLS_CC));
+
+  /*
+   * Test : Function exists, class scope exists.
+   */
+  execute_data.func = &func;
+  scope_name = zend_string_init("NewRelic\\Integration",
+                                strlen("NewRelic\\Integration"), 0);
+  ce.name = scope_name;
+  execute_data.func->common.scope = &ce;
+  tlib_pass_if_str_equal(
+      "Unexpected scope name", ZSTR_VAL(scope_name),
+      nr_php_zend_execute_data_scope_name(&execute_data TSRMLS_CC));
+  zend_string_release(scope_name);
+}
+
+static void test_nr_php_zend_execute_data_lineno() {
+  zend_function func = {0};
+  zend_op opline = {0};
+  zend_execute_data execute_data = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_uint32_t_equal("NULL zend_execute_data should return 0", 0,
+                              nr_php_zend_execute_data_lineno(NULL TSRMLS_CC));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_uint32_t_equal(
+      "NULL zend_function should return 0", 0,
+      nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
+
+  /*
+   * Test : Normal operation.
+   */
+  execute_data.func = &func;
+
+  opline.lineno = 4;
+  execute_data.opline = &opline;
+  tlib_pass_if_uint32_t_equal(
+      "Unexpected lineno name", 4,
+      nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
+}
+
+static void test_nr_php_zend_function_lineno() {
+  zend_function func = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_uint32_t_equal("NULL zend_execute_data should return 0", 0,
+                              nr_php_zend_function_lineno(NULL));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_uint32_t_equal("uninitialized zend_function should return 0", 0,
+                              nr_php_zend_function_lineno(&func));
+
+  /*
+   * Test : Normal operation.
+   */
+
+  func.op_array.line_start = 4;
+  tlib_pass_if_uint32_t_equal("Unexpected lineno name", 4,
+                              nr_php_zend_function_lineno(&func));
+}
+
+#endif /* PHP 7+ */
+
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -580,6 +742,14 @@ void test_main(void* p NRUNUSED) {
    * Tests that require state and will handle their own request startup and
    * shutdown.
    */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+  test_nr_php_zend_execute_data_function_name();
+  test_nr_php_zend_execute_data_filename();
+  test_nr_php_zend_execute_data_lineno();
+  test_nr_php_zend_execute_data_scope_name();
+  test_nr_php_zend_function_lineno();
+#endif /* PHP 7+ */
+
   test_function_debug_name(TSRMLS_C);
   test_get_zval_object_property(TSRMLS_C);
   test_get_zval_object_property_with_class(TSRMLS_C);

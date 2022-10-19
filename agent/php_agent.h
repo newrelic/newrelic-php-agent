@@ -791,4 +791,76 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+#define NR_ZEND_USER_FUNC_EXISTS(x) \
+  (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
+
+/*
+ * Purpose : Return a pointer to the function name of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_function_name(
+    const zend_execute_data* execute_data);
+/*
+ * Purpose : Return a pointer to the filename of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_filename(
+    const zend_execute_data* execute_data);
+
+/*
+ * Purpose : Return a pointer to the scope(i.e., class) name of
+ * zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : A pointer to string, ownership of does NOT pass to the caller and
+ *           string must be dupped if it needs to persist,
+ *           or NULL if the zend_execute_data is invalid.
+ *
+ */
+extern const char* nr_php_zend_execute_data_scope_name(
+    const zend_execute_data* execute_data);
+
+/*
+ * Purpose : Return a uint32_t line number value of zend_execute_data.
+ *
+ * Params  : 1. zend_execute_data.
+ *
+ * Returns : uint32_t lineno value
+ *
+ */
+extern uint32_t nr_php_zend_execute_data_lineno(
+    const zend_execute_data* execute_data);
+
+/*
+ * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.
+ *
+ * Params  : 1. zend_function.
+ *
+ * Returns : uint32_t lineno value
+ *
+ */
+static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
+  if (NULL != func) {
+    return func->op_array.line_start;
+  }
+  return 0;
+}
+
+#endif /* PHP 7+ */
+
 #endif /* PHP_AGENT_HDR */
