@@ -1216,7 +1216,10 @@ static inline void nr_php_execute_segment_end(
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
+#endif
     if (NULL == s->attributes) {
       s->attributes = nr_attributes_create(s->txn->attribute_config);
     }
@@ -1687,6 +1690,8 @@ end:
 
 static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
+  nr_php_execute_metadata_t metadata = {0};
+
   nruserfn_t* wraprec = NULL;
   int zcaught = 0;
   NR_UNUSED_FUNC_RETURN_VALUE;
@@ -1723,6 +1728,10 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     segment->txn_start_time = nr_txn_start_time(NRPRG(txn));
     segment->wraprec = wraprec;
     segment->lineno = nr_php_zend_execute_data_lineno(execute_data);
+    nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    nr_php_execute_segment_add_metric(segment, &metadata,
+                                      wraprec->create_metric);
+    nr_php_execute_metadata_release(&metadata);
     zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
                                                NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (nrunlikely(zcaught)) {
