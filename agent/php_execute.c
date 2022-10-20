@@ -1035,7 +1035,6 @@ static void nr_php_execute_metadata_add_code_level_metrics(
 
 #undef CHK_CLM_STRLEN
 
-  // lineno = nr_php_zend_execute_data_lineno(execute_data);
   lineno = nr_php_zend_function_lineno(execute_data->func);
 
   /*
