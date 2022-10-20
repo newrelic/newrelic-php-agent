@@ -1227,6 +1227,8 @@ static inline void nr_php_execute_segment_end(
   }
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 /*
  * This is the user function execution hook. Hook the user-defined (PHP)
  * function execution. For speed, we have a pointer that we've installed in the
@@ -1402,7 +1404,10 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
   nr_php_execute_metadata_release(&metadata);
 }
+#endif
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
     nr_php_show_exec(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -1414,6 +1419,7 @@ static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 }
+#endif
 
 static void nr_php_max_nesting_level_reached(TSRMLS_D) {
   /*
@@ -1446,6 +1452,8 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
             (int)NRINI(max_nesting_level));
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 /*
  * This function is single entry, single exit, so that we can keep track
  * of the PHP stack depth. NOTE: the stack depth is not maintained in
@@ -1469,10 +1477,6 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
    * zend_catch is called to avoid catastrophe on the way to a premature
    * exit, maintaining this counter perfectly is not a necessity.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  zval* func_return_value = NULL;
-#endif
 
   NRPRG(php_cur_stack_depth) += 1;
 
@@ -1499,6 +1503,7 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
 
   return;
 }
+#endif
 
 static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
@@ -1913,26 +1918,20 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 
   if ((0 < ((int)NRINI(max_nesting_level)))
       && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
-        nr_php_max_nesting_level_reached(TSRMLS_C);
-      }
-
-  if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
-    return;
-  } else {
-    int show_executes
-        = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
-          || NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
-
-    if (nrunlikely(show_executes)) {
-      /*
-       * For OAPI don't call nr_php_execute_enabled from execute_show.
-       * nr_php_execute_show updated in another ticket.
-       * Can show execute but CANNOT show returns here.
-       */
-      // nr_php_execute_show(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    }
-    nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
+    nr_php_max_nesting_level_reached();
   }
+
+  if (nrunlikely(0 == nr_php_recording())) {
+    return;
+  }
+
+  int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
+
+  if (nrunlikely(show_executes)) {
+    nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
+  }
+  nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
+
   return;
 }
 
@@ -1950,26 +1949,18 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     return;
   }
 
+  if (nrlikely(1 == nr_php_recording())) {
+    int show_executes_return
+        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
+
+    if (nrunlikely(show_executes_return)) {
+      nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
+  }
+
   NRPRG(php_cur_stack_depth) -= 1;
-
-  if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
-    return;
-  }
-
-  int show_executes
-      = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
-        || NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
-
-  if (nrunlikely(show_executes)) {
-    /*
-     * For OAPI don't call nr_php_execute_enabled from execute_show.
-     * nr_php_execute_show updated in another ticket.
-     * Can show execute and returns here.
-     */
-    // nr_php_execute_show(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  }
-  nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
-
 
   return;
 }
