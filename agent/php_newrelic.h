@@ -404,9 +404,17 @@ nrframework_t
     current_framework; /* Current request framework (forced or detected) */
 int framework_version; /* Current framework version */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/* Without OAPI, we are able to utilize the call stack to keep track
+ * of the previous hooks. With OAPI, we can no longer do this so
+ * we track the stack manually */
+nr_stack_t drupal_module_invoke_all_hooks; /* stack of Drupal hooks */
+#else
 char* drupal_module_invoke_all_hook;      /* The current Drupal hook */
 size_t drupal_module_invoke_all_hook_len; /* The length of the current Drupal
                                              hook */
+#endif //OAPI
 size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
                                      calls */
 
