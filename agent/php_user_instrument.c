@@ -366,8 +366,12 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
 
   if (0 != p->lineno) {
     /*
-     * We have lineno/filename pair.  If this doesn't match, we can exit without
+     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
      * going on to the funcname/classname pair comparison.
+     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
+     * we must do the funcname/classname compare.
+     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
+     * we can exit without doing the funcname/classname compare.
      */
     if (p->lineno != nr_php_zend_function_lineno(func)) {
       return false;
