@@ -112,6 +112,10 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(mysql_last_conn));
   nr_free(NRPRG(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG(datastore_connections));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_stack_destroy_fields(&NRPRG(drupal_module_invoke_all_hooks));
+#endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA

@@ -116,7 +116,9 @@ PHP_RINIT_FUNCTION(newrelic) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
   NRPRG(predis_ctxs).dtor = str_stack_dtor;
+  nr_stack_init(&NRPRG(drupal_module_invoke_all_hooks), 32);
 #endif
+
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
   NRPRG(datastore_connections) = nr_hashmap_create(
