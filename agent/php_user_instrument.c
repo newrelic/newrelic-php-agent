@@ -375,23 +375,22 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
      */
     if (p->lineno != nr_php_zend_function_lineno(func)) {
       return false;
-    } else {
-      /*
-       * lineno matched, let's check the filename
-       */
-      filename = nr_php_function_filename(func);
+    } 
+    /*
+     * lineno matched, let's check the filename
+     */
+    filename = nr_php_function_filename(func);
 
-      /*
-       * If p->filename isn't NULL, we know the comparison is accurate;
-       * otherwise, it's inconclusive even if we have a lineno because it
-       * could be a cli call or evaluated expression that has no filename.
-       */
-      if (NULL != p->filename) {
-        if (0 == nr_strcmp(p->filename, filename)) {
-          return true;
-        }
-        return false;
+    /*
+     * If p->filename isn't NULL, we know the comparison is accurate;
+     * otherwise, it's inconclusive even if we have a lineno because it
+     * could be a cli call or evaluated expression that has no filename.
+     */
+    if (NULL != p->filename) {
+      if (0 == nr_strcmp(p->filename, filename)) {
+        return true;
       }
+      return false;
     }
   }
 
