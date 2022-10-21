@@ -427,7 +427,15 @@ int symfony1_in_dispatch; /* Whether we are currently within a
 int symfony1_in_error404; /* Whether we are currently within a
                              sfError404Exception::printStackTrace() frame */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/* Without OAPI, we are able to utilize the call stack to keep track
+ * of the previous tags. With OAPI, we can no longer do this so
+ * we track the stack manually */
+nr_stack_t wordpress_tags;
+#else
 char* wordpress_tag;                   /* The current WordPress tag */
+#endif //OAPI
 nr_regex_t* wordpress_hook_regex;      /* Regex to sanitize hook names */
 nr_regex_t* wordpress_plugin_regex;    /* Regex for plugin filenames */
 nr_regex_t* wordpress_theme_regex;     /* Regex for theme filenames */
