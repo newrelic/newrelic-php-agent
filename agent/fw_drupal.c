@@ -607,39 +607,22 @@ NR_PHP_WRAPPER_END
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
   (void)wraprec;
-  zval* hook = NULL;
+  zval* hook_copy = NULL;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
-  hook = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_php_is_zval_non_empty_string(hook)) {
-    goto leave;
+  hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (nr_php_is_zval_non_empty_string(hook_copy)) {
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks),
+                  hook_copy);
   }
-
-  zval* hook_copy = nr_php_zval_alloc();
-  if (NULL == hook_copy) {
-    goto leave;
-  }
-
-  ZVAL_DUP(hook_copy, hook);
-  if (!nr_php_is_zval_non_empty_string(hook_copy)) {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "%s: could not copy hook zval",
-                     __func__);
-    goto leave;
-  }
-
-  nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks),
-                hook_copy);
-leave:
-  nr_php_arg_release(&hook);
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
     (void)wraprec;
     zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
-    nr_php_zval_free(&hook_copy);
+    nr_php_arg_release(&hook_copy);
 }
 NR_PHP_WRAPPER_END
 
