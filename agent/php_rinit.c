@@ -93,6 +93,11 @@ PHP_RINIT_FUNCTION(newrelic) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /*
+   * Pre-OAPI, this variables were kept on the call stack and
+   * therefore had no need to be in an nr_stack
+   */
+  nr_stack_init(&NRPRG(wordpress_tags), 32);
   nr_stack_init(&NRPRG(drupal_module_invoke_all_hooks), 32);
 #endif
 
