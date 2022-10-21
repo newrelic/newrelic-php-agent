@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that distributed tracing works with guzzle 6.
+Test that distributed tracing works with guzzle 7.
 */
 
 /*SKIPIF
@@ -20,9 +20,6 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
  */
 
 /*
@@ -56,8 +53,6 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
     [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
     [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
@@ -70,7 +65,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"WebTransactionTotalTime"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 6/detected"}, [1,    0,    0,    0,    0,    0]],
+    [{"name":"Supportability/library/Guzzle 7/detected"}, [1,    0,    0,    0,    0,    0]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
                                                           [3,    0,    0,    0,    0,    0]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, 
@@ -89,12 +84,12 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
 /* Create URL. */
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+/* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
 
 $client = new Client();

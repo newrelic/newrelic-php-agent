@@ -36,7 +36,6 @@
 #include "util_threads.h"
 
 #include "fw_laravel.h"
-#include "lib_guzzle4.h"
 
 static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   if (nrunlikely(NULL == nrg)) {
@@ -675,7 +674,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_set_opcode_handlers();
 
   nrl_debug(NRL_INIT, "MINIT processing done");
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(dummy);
 #else
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(&dummy);

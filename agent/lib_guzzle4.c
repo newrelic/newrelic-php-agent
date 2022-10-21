@@ -445,12 +445,6 @@ NR_PHP_WRAPPER_START(nr_guzzle4_client_construct) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  /* This is how we distinguish Guzzle 4/5 from other versions. */
-  if (0 == nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC)) {
-    NR_PHP_WRAPPER_CALL;
-    goto end;
-  }
-
   NR_PHP_WRAPPER_CALL;
 
   /*
@@ -517,7 +511,7 @@ void nr_guzzle4_enable(TSRMLS_D) {
    * for all requests created on that client.
    */
   nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
-                            nr_guzzle_client_construct TSRMLS_CC);
+                            nr_guzzle4_client_construct TSRMLS_CC);
 }
 
 void nr_guzzle4_minit(TSRMLS_D) {

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that Distributed Tracing works with guzzle 6.
+Test that DT works with guzzle 7.
  */
 
 /*SKIPIF
@@ -16,15 +16,13 @@ require("skipif.inc");
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
+newrelic.distributed_tracing_exclude_newrelic_header = true
  */
 
 /*EXPECT
-traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
+traceparent=found tracestate=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+traceparent=found tracestate=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+traceparent=found tracestate=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
 */
 
 /*EXPECT_RESPONSE_HEADERS
@@ -36,8 +34,6 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all", 
       "scope":"OtherTransaction/php__FILE__"},            [3, "??", "??", "??", "??", "??"]],
@@ -47,7 +43,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 6/detected"}, [1,    0,    0,    0,    0,    0]],
+    [{"name":"Supportability/library/Guzzle 7/detected"}, [1,    0,    0,    0,    0,    0]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
                                                           [3,    0,    0,    0,    0,    0]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, 
@@ -55,9 +51,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, 
                                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/Create/Success"},    
-							  [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, 
-                                                          [3, "??", "??", "??", "??", "??"]]
+							  [3, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -66,12 +60,12 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
-/* Create URL. */
+// create URL
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+//and now use guzzle 7 to make an http request
 use GuzzleHttp\Client;
 
 $client = new Client();
