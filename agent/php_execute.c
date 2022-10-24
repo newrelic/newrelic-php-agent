@@ -1697,11 +1697,10 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
 
   NRTXNGLOBAL(execute_count) += 1;
 
-  /*
-   * Wait to do this handling in the end function handler when all the files
-   * have been loaded; otherwise, the classes might not be loaded yet.
-   */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+    nr_execute_handle_framework(all_frameworks, num_all_frameworks,
+                              filename TSRMLS_CC);
     return;
   }
   wraprec = nr_php_get_wraprec_by_name(execute_data->func);
