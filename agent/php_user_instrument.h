@@ -70,6 +70,12 @@ typedef struct _nruserfn_t {
    */
   char* reportedclass;
   /*
+   * These are helpful to compare the wraprec more quickly and to differentiate
+   * between closures.
+   */
+  char* filename;
+  uint32_t lineno;
+  /*
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
@@ -124,14 +130,17 @@ extern bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func);
 
 /*
  * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
- *           with a function name/class.
+ *           with a zend_function.
  *
  * Params  : 1. The zend function to find in a wraprec
  *
- * Returns : The function wrapper that matches the function/class combination.
- *           NULL if no function wrapper matches the function/class combo.
+ * Returns : The function wrapper that matches the zend_function.
+ *           This will first try to match the lineno/filename.  If we don't have
+ *           that for any reason (maybe the func didn't exist in the function
+ *           table when we first added), it will match by function name/class.
+ *           NULL if no function wrapper matches the zend_function.
  */
-extern nruserfn_t* nr_php_get_wraprec_by_name(zend_function* func);
+extern nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func);
 
 /*
  * Purpose : Get the wraprec associated with a user function op_array.
@@ -236,7 +245,8 @@ extern void nr_php_user_function_add_declared_callback(
     int namestrlen,
     nruserfn_declared_t callback TSRMLS_DC);
 
-static inline bool chk_reported_class(zend_function* func, nruserfn_t* wraprec) {
+static inline bool chk_reported_class(zend_function* func,
+                                      nruserfn_t* wraprec) {
   if ((NULL == func) || (NULL == func->common.scope)) {
     return false;
   }

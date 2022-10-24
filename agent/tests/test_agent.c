@@ -694,6 +694,30 @@ static void test_nr_php_zend_execute_data_lineno() {
       nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
 }
 
+static void test_nr_php_zend_function_lineno() {
+  zend_function func = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_uint32_t_equal("NULL zend_execute_data should return 0", 0,
+                              nr_php_zend_function_lineno(NULL));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_uint32_t_equal("uninitialized zend_function should return 0", 0,
+                              nr_php_zend_function_lineno(&func));
+
+  /*
+   * Test : Normal operation.
+   */
+
+  func.op_array.line_start = 4;
+  tlib_pass_if_uint32_t_equal("Unexpected lineno name", 4,
+                              nr_php_zend_function_lineno(&func));
+}
+
 #endif /* PHP 7+ */
 
 void test_main(void* p NRUNUSED) {
@@ -724,6 +748,7 @@ void test_main(void* p NRUNUSED) {
   test_nr_php_zend_execute_data_filename();
   test_nr_php_zend_execute_data_lineno();
   test_nr_php_zend_execute_data_scope_name();
+  test_nr_php_zend_function_lineno();
 #endif /* PHP 7+ */
 
   test_function_debug_name(TSRMLS_C);

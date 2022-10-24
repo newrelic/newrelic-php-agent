@@ -68,7 +68,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 228,
+        "code.lineno": 227,
         "code.filepath": "__FILE__",
         "code.function": "level_2"
       }
@@ -89,7 +89,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 224,
+        "code.lineno": 223,
         "code.filepath": "__FILE__",
         "code.function": "level_1"
       }
@@ -154,7 +154,7 @@ newrelic.code_level_metrics.enabled = 1
                   [
                     "?? start time", "?? end time", "`1",
                             {
-                              "code.lineno": 228,
+                              "code.lineno": 227,
                               "code.filepath": "__FILE__",
                               "code.function": "level_2"
                             },
@@ -162,7 +162,7 @@ newrelic.code_level_metrics.enabled = 1
                       [
                         "?? start time", "?? end time", "`2",
                             {
-                              "code.lineno": 224,
+                              "code.lineno": 223,
                               "code.filepath": "__FILE__",
                               "code.function": "level_1"
                         },
