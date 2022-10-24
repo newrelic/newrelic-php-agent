@@ -104,6 +104,15 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(mysql_last_conn));
   nr_free(NRPRG(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG(datastore_connections));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /*
+   * Pre-OAPI, this variables were kept on the call stack and
+   * therefore had no need to be in an nr_stack
+   */
+  nr_stack_destroy_fields(&NRPRG(wordpress_tags));
+  nr_stack_destroy_fields(&NRPRG(drupal_module_invoke_all_hooks));
+#endif
 
   nr_free(NRPRG(predis_ctx));
   nr_hashmap_destroy(&NRPRG(predis_commands));
