@@ -21,9 +21,6 @@ if (version_compare(PHP_VERSION, '7.1', '>=')) {
 */
 
 /*INI
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -36,24 +33,24 @@ newrelic.application_logging.metrics.enabled = false
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/xrange"},                              [11, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                       [1,  "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},               [1,  "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                  [1,  "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},      [1,  "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/xrange","scope":"OtherTransaction/php__FILE__"},
-                                                            [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/InstrumentedFunction/xrange"}, [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},       [1,  "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/xrange"},                                        [11, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/xrange",
+      "scope":"OtherTransaction/php__FILE__"},                        [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/InstrumentedFunction/xrange"},           [11, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function factorial($n)
 {

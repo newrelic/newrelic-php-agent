@@ -15,9 +15,6 @@
 newrelic.cross_application_tracer.enabled = false
 newrelic.synthetics.enabled = false
 newrelic.distributed_tracing_enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*
@@ -57,23 +54,25 @@ ok - execute request
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Apdex"},                                  ["??", "??", "??", "??", "??",    0]],
-    [{"name":"Apdex/Uri__FILE__"},                      ["??", "??", "??", "??", "??",    0]],
-    [{"name":"External/all"},                           [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allWeb"},                        [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                 [   1, "??", "??", "??", "??", "??"]],
+    [{"name":"Apdex"},                                              ["??", "??", "??", "??", "??", 0]],
+    [{"name":"Apdex/Uri__FILE__"},                                  ["??", "??", "??", "??", "??", 0]],
+    [{"name":"External/all"},                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allWeb"},                                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                             [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all",
-      "scope":"WebTransaction/Uri__FILE__"},            [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"HttpDispatcher"},                         [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction"},                         [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction/Uri__FILE__"},             [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime"},                [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime/Uri__FILE__"},    [   1, "??", "??", "??", "??", "??"]]
+      "scope":"WebTransaction/Uri__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");

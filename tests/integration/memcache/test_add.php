@@ -13,9 +13,6 @@ The agent should report metrics for Memcache::add().
 */
 
 /*INI
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -36,35 +33,35 @@ ok - delete key 3
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                          [9, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                     [9, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Memcached/all"},                [9, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Memcached/allOther"},           [9, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/add"},      [4, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/all"},                              [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/allOther"},                         [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/add"},                    [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/add",
-      "scope":"OtherTransaction/php__FILE__"},          [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/connect"},  [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/connect"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/connect",
-      "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/delete"},   [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/delete"},                 [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete",
-      "scope":"OtherTransaction/php__FILE__"},          [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/get"},      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/get"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get",
-      "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');

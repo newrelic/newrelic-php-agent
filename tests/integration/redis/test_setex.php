@@ -15,9 +15,6 @@ The agent should report Redis metrics for Redis increment operations.
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -46,59 +43,59 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [19, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [19, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [19, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [19, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                  [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                             [19, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/connect"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},         [2, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},                        [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
-      "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/expireat"},    [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/expireat"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/expireat",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get"},         [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get",
-      "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/persist"},     [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/persist"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/persist",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pexpire"},     [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpire"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/pexpire",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pexpireat"},   [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pexpireat"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/pexpireat",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/psetex"},      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/psetex"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/psetex",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/pttl"},        [2, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/pttl"},                       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/pttl",
-      "scope":"OtherTransaction/php__FILE__"},         [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/setex"},       [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/setex"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/setex",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/ttl"},         [4, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ttl"},                        [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/ttl",
-      "scope":"OtherTransaction/php__FILE__"},         [4, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
