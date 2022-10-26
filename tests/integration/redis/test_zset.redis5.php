@@ -20,9 +20,6 @@ require("skipif.inc");
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -38,41 +35,41 @@ ok - we deleted our test key
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                              [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                         [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                        [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                   [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/connect"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                  [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                             [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/connect"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},              [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},           [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/zadd"},             [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/zadd"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/zadd",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/zpopmax"},          [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/zpopmax"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/zpopmax",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/zpopmin"},          [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/zpopmin"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/zpopmin",
-      "scope":"OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},      [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 use NewRelic\Integration\Transaction;
 

@@ -13,9 +13,6 @@ the agent limits the number of segments created, even in a nested scenario.
 newrelic.transaction_tracer.max_segments_cli=10
 newrelic.transaction_tracer.threshold=0
 newrelic.distributed_tracing_enabled=0
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_TXN_TRACES
@@ -103,25 +100,27 @@ newrelic.application_logging.metrics.enabled = false
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/great_grandmother"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/great_grandmother"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/great_grandmother",
-     "scope":"OtherTransaction/php__FILE__" },          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/grandmother"},                     [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/grandmother"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/grandmother",
-     "scope":"OtherTransaction/php__FILE__" },          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/my_function"},                     [1000, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function"},                                 [1000, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function",
-     "scope":"OtherTransaction/php__FILE__" },          [1000, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},   [3, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                      [1000, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},               [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function my_function() {
     printf('');

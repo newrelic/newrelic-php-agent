@@ -11,9 +11,6 @@ CodeIgniter or Drupal is detected/forced.
 
 /*INI
 newrelic.framework=codeigniter   ; cause agent to hook call_user_func_array
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -26,23 +23,24 @@ foo=17
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/foo"},                                               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/foo", "scope":"OtherTransaction/php__FILE__"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/CodeIgniter/forced"},              [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/foo"},                                                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/foo",
+      "scope":"OtherTransaction/php__FILE__"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/CodeIgniter/forced"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function foo($n) {
   printf("foo=%d\n", $n);

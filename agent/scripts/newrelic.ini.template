@@ -1160,10 +1160,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.application_logging.forwarding.enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: false
+; Default: true
 ; Info   : Toggles whether the agent gathers log records for sending to New Relic.
 ;
-;newrelic.application_logging.forwarding.enabled = false
+;newrelic.application_logging.forwarding.enabled = true
 
 ; Setting: newrelic.application_logging.forwarding.max_samples_stored
 ; Type   : integer
