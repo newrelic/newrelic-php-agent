@@ -749,9 +749,9 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
-    (void)wraprec;
-    zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
-    nr_php_arg_release(&hook_copy);
+  (void)wraprec;
+  zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
+  nr_php_arg_release(&hook_copy);
 }
 NR_PHP_WRAPPER_END
 
