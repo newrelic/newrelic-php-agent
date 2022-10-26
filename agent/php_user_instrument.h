@@ -107,6 +107,17 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 /*
+ * Purpose : Determine if a func matches a wraprec.
+ *
+ * Params  : 1. The wraprec to match to a zend function
+ *           2. The zend function to match to a wraprec
+ *
+ * Returns : True if the class/function of a wraprec match the class function
+ *           of a zend function.
+ */
+extern bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func);
+
+/*
  * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
  *           with a zend_function.
  *

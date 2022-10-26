@@ -443,6 +443,7 @@ nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
   }
 
   return NULL;
+#endif
 }
 
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"

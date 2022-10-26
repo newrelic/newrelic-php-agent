@@ -151,8 +151,7 @@ static void test_get_wraprec_by_func() {
     oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)(pval * 2);
   }
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_op_array_get_wraprec(&oparray TSRMLS_CC), NULL)
 #else
