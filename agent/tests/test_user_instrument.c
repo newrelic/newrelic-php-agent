@@ -128,7 +128,6 @@ static void test_get_wraprec_by_func() {
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_func(&zend_func), wraprec);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_3_X_API_NO
   /*
    * Invalidate the cached pid.
    */
@@ -216,10 +215,7 @@ static void test_get_wraprec_by_func() {
                          nr_php_get_wraprec_by_func(&zend_func), NULL);
 
   tlib_php_request_end();
-#endif
 #endif /* PHP >= 7.3 */
-
-      tlib_php_request_end();
 }
 
 void test_main(void* p NRUNUSED) {
