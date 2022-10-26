@@ -381,7 +381,8 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  if ((0 == NRINI(wordpress_hooks)) || (NULL == nr_stack_get_top(&NRPRG(wordpress_tags)))) {
+  char* tag = nr_stack_get_top(&NRPRG(wordpress_tags));
+  if ((0 == NRINI(wordpress_hooks)) || (NULL == tag)) {
 #else
   if ((0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
 #endif //OAPI
@@ -394,8 +395,7 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                             nr_stack_get_top(&NRPRG(wordpress_tags)));
+  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
 #else
   nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
                              NRPRG(wordpress_tag));
