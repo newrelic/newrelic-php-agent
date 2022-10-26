@@ -127,7 +127,7 @@ static char* nr_drupal_http_request_get_method(NR_EXECUTE_PROTO TSRMLS_DC) {
    */
   arg3 = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   // There is no third arg, this is drupal 7
-  if (0 == arg3) {
+  if (NULL == arg3) {
     arg2 = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (NULL != arg2) {
       method = nr_php_zend_hash_find(Z_ARRVAL_P(arg2), "method");
