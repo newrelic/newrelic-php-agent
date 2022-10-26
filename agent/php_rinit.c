@@ -37,7 +37,10 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(sapi_headers) = NULL;
   NRPRG(pid) = getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRPRG(drupal_http_request_segment) = NULL;
+#endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
     return SUCCESS;
