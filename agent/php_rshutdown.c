@@ -118,6 +118,7 @@ int nr_php_post_deactivate(void) {
 
   NRPRG(current_framework) = NR_FW_UNSET;
   NRPRG(framework_version) = 0;
+  NRPRG(drupal_http_request_segment) = NULL;
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");
   return SUCCESS;

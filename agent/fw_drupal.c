@@ -290,6 +290,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
 
     nr_segment_external_end(&NRPRG(drupal_http_request_segment),
                             &external_params);
+    NRPRG(drupal_http_request_segment) = NULL;
 
     nr_free(external_params.encoded_response_header);
     nr_free(external_params.procedure);
