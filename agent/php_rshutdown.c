@@ -86,9 +86,10 @@ int nr_php_post_deactivate(void) {
    * executor (which, in non-ZTS mode, is the life of the process). We need to
    * ensure that it goes back to having a NULL wraprec, lest we accidentally try
    * to dereference a transient wraprec that is about to be destroyed.
+   *
+   * For PHP 7.4+ we are not using the op_array for wraprecs
    */
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   EG(trampoline).op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = NULL;
 #endif /* PHP7 */
 #endif

@@ -134,8 +134,7 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   if (ZEND_USER_FUNCTION != func->type) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
                      wraprec->classname ? wraprec->classname : "",
@@ -169,8 +168,7 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     return;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   wraprec->is_wrapped = 1;
   return;
 #endif
@@ -355,8 +353,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
    * nr_php_op_array_get_wraprec does basic sanity checks on the stored
    * wraprec.
    */
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
 #else
   wraprec = nr_php_get_wraprec_by_name(func);
@@ -508,8 +505,7 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
 #else
   wraprec = nr_php_get_wraprec_by_name(func);
