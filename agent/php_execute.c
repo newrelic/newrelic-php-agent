@@ -572,6 +572,14 @@ static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
     {"Monolog", "monolog/logger.php", nr_monolog_enable},
+    /* Consolidation/Log - Logging for PHP */
+    {"Consolidation/Log", "consolidation/log/src/logger.php", NULL},
+    /* laminas-log - Logging for PHP */
+    {"laminas-log", "laminas-log/src/logger.php", NULL},
+    /* cakephp-log - Logging for PHP */
+    {"cakephp-log", "cakephp/log/log.php", NULL},
+    /* Analog - Logging for PHP */
+    {"Analog", "analog/analog.php", NULL},
 };
 
 static size_t num_logging_frameworks
