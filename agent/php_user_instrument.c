@@ -318,7 +318,7 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
  * Returns : True if the class/function of a wraprec match the class function
  *           of a zend function.
  */
-static bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
+static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
   char* klass = NULL;
   const char* filename = NULL;
 
