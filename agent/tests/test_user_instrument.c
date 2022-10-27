@@ -51,10 +51,9 @@ static void test_op_array_wraprec(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 static void test_get_wraprec_by_func() {
-#if ZEND_MODULE_API_NO < ZEND_7_3_X_API_NO
   return;
-#else
   zend_op_array oparray = {.function_name = (void*)1};
   zend_function zend_func = {0};
   zend_string* scope_name = NULL;
@@ -150,17 +149,12 @@ static void test_get_wraprec_by_func() {
     oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)(pval * 2);
   }
 
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_op_array_get_wraprec(&oparray TSRMLS_CC), NULL)
-#else
   /*
    * Not NULL because we don't care about the reserved array anymore.
    */
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_func(&zend_func), wraprec);
 
-#endif /* PHP >= 7.3 */
   /*
    * Valid if lineno/filename match.
    */
@@ -215,8 +209,8 @@ static void test_get_wraprec_by_func() {
                          nr_php_get_wraprec_by_func(&zend_func), NULL);
 
   tlib_php_request_end();
-#endif /* PHP >= 7.3 */
 }
+#endif /* PHP >= 7.4 */
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -226,7 +220,9 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_op_array_wraprec(TSRMLS_C);
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   test_get_wraprec_by_func();
+#endif /* PHP >= 7.4 */
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
