@@ -81,9 +81,6 @@ typedef struct _nruserfn_t {
    */
   nrspecialfn_t special_instrumentation;
 
-  /*
-   * Only for PHP < 7.3
-   */
   nruserfn_declared_t declared_callback;
 
   int is_method;

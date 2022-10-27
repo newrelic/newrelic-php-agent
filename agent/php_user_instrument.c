@@ -48,14 +48,11 @@
  * Many functions here call zend_bailout to continue handling fatal PHP errors,
  * Since zend_bailout calls longjmp it never returns.
  *
- * Note: The agent ONLY needs to call this if it has overwritten the original
- * zend_execute_ex.
  */
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
   zend_try {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)
-    (NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
   zend_catch { zcaught = 1; }
   zend_end_try();
@@ -71,8 +68,7 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       wraprec->special_instrumentation(wraprec, segment,
                                        NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     } else {
-      NR_PHP_PROCESS_GLOBALS(orig_execute)
-      (NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
   }
   zend_catch { zcaught = 1; }
@@ -635,10 +631,6 @@ void nr_php_destroy_user_wrap_records(void) {
  */
 nruserfn_t* nr_wrapped_user_functions = 0;
 
-/*
- * nr_php_user_function_add_declared_callback is ONLY called from drupal for
- * PHP < 7.3.  It does not need to be adjusted for OAPI.
- */
 void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
