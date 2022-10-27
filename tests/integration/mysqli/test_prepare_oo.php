@@ -14,9 +14,6 @@ The agent should report Datastore metrics for mysqli::prepare.
 
 /*INI
 newrelic.transaction_tracer.explain_enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -108,25 +105,25 @@ ok - iteration 39
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [40, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [40, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/all"},                   [40, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/allOther"},              [40, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/MySQL/select"},      [40, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [40, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [40, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/all"},                                [40, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/allOther"},                           [40, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/MySQL/select"},                   [40, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/MySQL/select",
-      "scope":"OtherTransaction/php__FILE__"},         [40, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [ 1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [ 1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [ 1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [ 1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                      [40, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
-]*/
+]
+*/
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/mysqli.inc');
