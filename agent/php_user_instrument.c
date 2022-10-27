@@ -308,15 +308,17 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   nr_wrapped_user_functions = wraprec;
 }
 
-bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-  /*
-   * Not compatible with PHP less than 7.
-   */
-  (void)func;
-  (void)p;
-  return false;
-#else
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Purpose : Determine if a func matches a wraprec.
+ *
+ * Params  : 1. The wraprec to match to a zend function
+ *           2. The zend function to match to a wraprec
+ *
+ * Returns : True if the class/function of a wraprec match the class function
+ *           of a zend function.
+ */
+static bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
   char* klass = NULL;
   const char* filename = NULL;
 
@@ -399,17 +401,9 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
     return true;
   }
   return false;
-#endif
 }
 
 nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-  /*
-   * Not compatible with PHP less than 7.
-   */
-  (void)func;
-  return NULL;
-#else
   nruserfn_t* p = NULL;
 
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
@@ -426,8 +420,8 @@ nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
   }
 
   return NULL;
-#endif
 }
+#endif
 
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
 nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
