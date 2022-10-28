@@ -139,6 +139,11 @@ var (
 		// Ensure that we get Javascript agent code in the reply
 		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
 		SecurityPolicyToken: "",
+		AgentEventLimits: collector.EventConfigs{
+			LogEventConfig: collector.Event{
+				Limit: 10000,
+			},
+		},
 	}
 
 	// Integration tests have this mock cross process id hard coded into

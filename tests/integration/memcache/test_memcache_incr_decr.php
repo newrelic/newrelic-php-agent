@@ -14,9 +14,6 @@ decremented using the Memcache procedural api.
 */
 
 /*INI
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -34,41 +31,41 @@ ok - delete key
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                          [6 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/allOther"},                     [6 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/Memcached/all"},                [6 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/Memcached/allOther"},           [6 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/connect"},  [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/all"},                              [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/allOther"},                         [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/connect"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/connect",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/decr"},     [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/decr"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/decr",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/delete"},   [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/delete"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/get"},      [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/get"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/incr"},     [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/incr"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/incr",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"Datastore/operation/Memcached/set"},      [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/set"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/set",
-      "scope":"OtherTransaction/php__FILE__"},          [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"OtherTransaction/all"},                   [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1 ,"??" ,"??" ,"??" ,"??" ,"??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1 ,"??" ,"??" ,"??" ,"??" ,"??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');

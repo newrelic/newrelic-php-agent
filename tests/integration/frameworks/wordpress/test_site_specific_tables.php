@@ -19,9 +19,6 @@ if (!extension_loaded("sqlite3")) {
 
 /*INI
 newrelic.framework = wordpress
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -30,54 +27,54 @@ newrelic.application_logging.metrics.enabled = false
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Datastore/SQLite/all"},                            [9,"??","??","??","??","??"]],
-    [{"name": "Datastore/SQLite/allOther"},                       [9,"??","??","??","??","??"]],
-    [{"name": "Datastore/all"},                                   [9,"??","??","??","??","??"]],
-    [{"name": "Datastore/allOther"},                              [9,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/create"},               [3,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/drop"},                 [3,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/insert"},               [3,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_*_comments/create"}, [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_*_comments/drop"},   [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_*_comments/insert"}, [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/create"},           [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/drop"},             [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/insert"},           [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/create"},          [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/drop"},            [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/insert"},          [1,"??","??","??","??","??"]],
-   [{"name": "OtherTransaction/all"},                             [1,"??","??","??","??","??"]],
-    [{"name": "OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name":"OtherTransactionTotalTime"},                        [1,"??","??","??","??","??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},            [1,"??","??","??","??","??"]],
-    [{"name": "Supportability/framework/WordPress/forced"},       [1,   0,   0,   0,   0,   0]],
-     [{"name": "Datastore/statement/SQLite/wp_*_comments/create",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_*_comments/drop",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_*_comments/insert",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/create",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/drop",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_/insert",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/create",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/drop",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/wp_2/insert",
-      "scope":"OtherTransaction/php__FILE__"},                    [1,"??","??","??","??","??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/all"},                                 [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/allOther"},                            [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [9, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/create"},                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/drop"},                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/insert"},                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/create"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/drop"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/insert"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/create"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/drop"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/insert"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/create"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/drop"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/insert"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/WordPress/forced"},            [1, 0, 0, 0, 0, 0]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/create",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/drop",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_*_comments/insert",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/create",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/drop",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_/insert",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/create",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/drop",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/wp_2/insert",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function test_wordpress_site_specific_tables()
 {

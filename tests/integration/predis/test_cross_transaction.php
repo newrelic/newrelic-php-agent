@@ -10,9 +10,6 @@ client initialization happens in a different transaction than the connection.
 */
 
 /*INI
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -27,31 +24,36 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/all/"},                                                           [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/allOther/"},                                                      [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/Redis/all/"},                                                     [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/Redis/allOther/"},                                                [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/instance/Redis/__HOST__/[0-9]{1,5}/"},                            [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/del/"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/del/","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/exists/"},                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/exists/","scope":"OtherTransaction/php__FILE__"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/get/"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/get/","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/set/"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/set/","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransaction/all/"},                                                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransaction/php__FILE__/"},                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransactionTotalTime/"},                                               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransactionTotalTime/php__FILE__/"},                                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Supportability/api/set_appname/after/"},                                    [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/all/"},                                    [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/allOther/"},                               [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/Redis/all/"},                              [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/Redis/allOther/"},                         [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/instance/Redis/__HOST__/[0-9]{1,5}/"},     [4, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/del/"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/del/",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/exists/"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/exists/",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/get/"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/get/",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/set/"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Datastore/operation/Redis/set/",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/OtherTransaction/all/"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/OtherTransaction/php__FILE__/"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/OtherTransactionTotalTime/"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/OtherTransactionTotalTime/php__FILE__/"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"/Supportability/api/set_appname/after/"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 /*EXPECT_TRACED_ERRORS null */
 

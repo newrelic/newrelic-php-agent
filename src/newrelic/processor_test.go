@@ -41,10 +41,10 @@ const (
 
 // These clients exist for testing.
 var (
-	DisconnectClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+	DisconnectClient = collector.ClientFn(func(cmd *collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		return collector.RPMResponse{Body: nil, Err: SampleDisonnectException, StatusCode: 410}
 	})
-	LicenseInvalidClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+	LicenseInvalidClient = collector.ClientFn(func(cmd *collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		return collector.RPMResponse{Body: nil, Err: SampleLicenseInvalidException, StatusCode: 401}
 	})
 	SampleRestartException        = &rpmException{ErrorType: forceRestartType}
@@ -89,8 +89,9 @@ func NewMockedProcessor(numberOfHarvestPayload int) *MockedProcessor {
 	clientReturn := make(chan ClientReturn, numberOfHarvestPayload)
 	clientParams := make(chan ClientParams, numberOfHarvestPayload)
 
-	client := collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+	client := collector.ClientFn(func(cmd *collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		data, err := cs.Collectible.CollectorJSON(false)
+		cmd.Data = data
 		if nil != err {
 			return collector.RPMResponse{Err: err}
 		}
@@ -145,6 +146,19 @@ func (m *MockedProcessor) DoConnectConfiguredReply(t *testing.T, reply string) {
 func (m *MockedProcessor) TxnData(t *testing.T, id AgentRunID, sample AggregaterInto) {
 	m.p.IncomingTxnData(id, sample)
 	<-m.p.trackProgress
+}
+
+func (m *MockedProcessor) QuitTestProcessor() {
+	// If the test took a while to run, it's possible that the processor is
+	// blocking, as a new harvest was triggered and then the trackProgress
+	// channel is waiting to be consumed
+	select {
+	case <-m.p.trackProgress:
+		// receive harvest notice
+	default:
+		// nothing on channel
+	}
+	m.p.quit()
 }
 
 type AggregaterIntoFn func(*Harvest)
@@ -210,11 +224,19 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 		Type:       HarvestDefaultData,
 	}
 
-	// this code path will trigger two `harvestPayload` calls, so we need
-	// to pluck two items out of the clientParams channels
+	// this code path will trigger three `harvestPayload` calls, so we need
+	// to pluck three items out of the clientParams channels
+	/* collect txn */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
+	/* collect metrics */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp2 := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+	/* collect usage metrics */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp3 := <-m.clientParams
+
+	<-m.p.trackProgress // unblock processor after harvest
 
 	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
 
@@ -223,8 +245,16 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 			t.Fatal(string(append(cp.data, cp2.data...)))
 		}
 	}
+	time := strings.Split(string(cp3.data), ",")[1]
+	usageMetrics := `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1333,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
+	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != usageMetrics {
+		t.Fatal(string(got))
+	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestCustomEvents(t *testing.T) {
@@ -242,14 +272,18 @@ func TestProcessorHarvestCustomEvents(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestCustomEvents,
 	}
+	/* collect metrics */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+
+	<-m.p.trackProgress // unblock processor after harvest
+
 	expected := `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestLogEvents(t *testing.T) {
@@ -270,14 +304,18 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestLogEvents,
 	}
+	/* collect logs */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+
+	<-m.p.trackProgress // unblock processor after harvest
+
 	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestCleanExit(t *testing.T) {
@@ -295,16 +333,138 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 	// supportability and reporting metrics are added
 	m.clientReturn <- ClientReturn{} /* metrics */
 	m.clientReturn <- ClientReturn{} /* events */
+	m.clientReturn <- ClientReturn{} /* usage metrics */
 
 	m.p.CleanExit()
 
-	<-m.clientParams /* ditch metrics */
-	cp := <-m.clientParams
+	<-m.clientParams        /* ditch metrics */
+	cp := <-m.clientParams  /* custom events */
+	cp2 := <-m.clientParams /* usage metrics */
 
 	expected := `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
+
+	time := strings.Split(string(cp2.data), ",")[1]
+	usageMetrics := `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1313,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/custom_event_data/Output/Bytes"},[1,60,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
+	if got, _ := OrderScrubMetrics(cp2.data, nil); string(got) != usageMetrics {
+		t.Fatal(string(got))
+	}
+}
+
+func TestUsageHarvest(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnErrorEventSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	/* collect metrics */
+	cp1 := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	/* collect usage metrics */
+	cp2 := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
+	//   of harvests. So we extract the time from what we receive
+	time := strings.Split(string(cp1.data), ",")[1]
+	var expectedJSON1 = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+	time = strings.Split(string(cp2.data), ",")[1]
+	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[1,1253,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
+
+	if got1, _ := OrderScrubMetrics(cp1.data, nil); string(got1) != expectedJSON1 {
+		t.Errorf("\ngot=%q \nwant=%q", got1, expectedJSON1)
+	}
+	if got2, _ := OrderScrubMetrics(cp2.data, nil); string(got2) != expectedJSON2 {
+		t.Errorf("\ngot=%q \nwant=%q", got2, expectedJSON2)
+	}
+	m.QuitTestProcessor()
+}
+
+func TestUsageHarvestExceedChannel(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	// Harvest enough data that the data usage channel overflows and drops data
+	// Make the harvest blocking so that we are guaranteed channel fills before accessing it
+	for i := 0; i < 30; i++ {
+		m.TxnData(t, idOne, txnEventSample1Times(10))
+		m.processorHarvestChan <- ProcessorHarvest{
+			AppHarvest: m.p.harvests[idOne],
+			ID:         idOne,
+			Type:       HarvestTxnEvents,
+			Blocking:	true,
+		}
+		/* collect txn data */
+		<-m.clientParams
+		m.clientReturn <- ClientReturn{nil, nil, 202}
+		<-m.p.trackProgress // unblock processor after harvest
+	}
+
+	m.TxnData(t, idOne, txnEventSample1Times(10))
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+	// Need to have other data, because data usage is not harvested on empty harvest
+	/* collect txn data */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	/* collect usage metrics */
+	cp := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	time := strings.Split(string(cp.data), ",")[1]
+	// The data usage channel only holds 25 points until dropping data
+	var expectedJSON = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
+
+	if got, _ := OrderScrubMetrics(cp.data, nil); string(got) != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
+	}
+	m.QuitTestProcessor()
 }
 
 func TestSupportabilityHarvest(t *testing.T) {
@@ -325,59 +485,49 @@ func TestSupportabilityHarvest(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestDefaultData,
 	}
-	<-m.p.trackProgress              // receive harvest notice
-	m.clientReturn <- ClientReturn{} /* metrics */
-	//<-m.p.trackProgress // receive harvest
+
+	<-m.p.trackProgress // unblock processor after harvest to receive error
+
+	/* metrics */
+	// Add timeout error response code
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
+	/* usage metrics */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+
+	<-m.p.trackProgress // unblock processor after harvest error
 
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestDefaultData,
 	}
-	<-m.p.trackProgress // receive harvest notice
 
-	cp := <-m.clientParams
-	// Add timeout error response code for second harvest
-	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
-	<-m.p.trackProgress // receive harvest error
+	/* error event */
+	cp1 := <-m.clientParams
+	m.clientReturn <- ClientReturn{}
+	/* usage metrics */
+	cp2 := <-m.clientParams
+	m.clientReturn <- ClientReturn{}
 
-	harvest := m.p.harvests[idOne]
-	limits := collector.EventHarvestConfig{
-		ReportPeriod: 1234,
-		EventConfigs: collector.EventConfigs{
-			ErrorEventConfig: collector.Event{
-				Limit: 1,
-			},
-			AnalyticEventConfig: collector.Event{
-				Limit: 2,
-			},
-			CustomEventConfig: collector.Event{
-				Limit: 3,
-			},
-			SpanEventConfig: collector.Event{
-				Limit: 4,
-			},
-			LogEventConfig: collector.Event{
-				Limit: 5,
-			},
-		},
-	}
-	harvest.createFinalMetrics(limits, nil)
+	<-m.p.trackProgress // unblock processor after harvest
+
 	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
 	//   of harvests. So we extract the time from what we receive
-	time := strings.Split(string(cp.data), ",")[1]
-	var expectedJSON = `["one",` + time + `,1417136520,` +
+	time := strings.Split(string(cp1.data), ",")[1]
+	var expectedJSON = `["one",` + time + `,` + time + `,` +
 		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
 		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10002,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[6,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[20000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000001234,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[10000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
@@ -386,15 +536,19 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+	time = strings.Split(string(cp2.data), ",")[1]
+	// includes usage of the first data usage metrics sent
+	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1584,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[2,1584,0,0,0,0]]]]`
 
-	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(idOne), end)
-	if nil != err {
-		t.Fatal(err)
-	}
-	if got := string(json); got != expectedJSON {
+	if got, _ := OrderScrubMetrics(cp1.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
 	}
-	m.p.quit()
+	if got2, _ := OrderScrubMetrics(cp2.data, nil); string(got2) != expectedJSON2 {
+		t.Errorf("\ngot=%q \nwant=%q", got2, expectedJSON2)
+	}
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestErrorEvents(t *testing.T) {
@@ -412,13 +566,17 @@ func TestProcessorHarvestErrorEvents(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestErrorEvents,
 	}
+
+	<-m.p.trackProgress // unblock processor after harvest
+	/* error events */
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+
 	if string(cp.data) != `["one",{"reservoir_size":5,"events_seen":1},[forgotten birthday]]` {
 		t.Fatal(string(cp.data))
 	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestSpanEvents(t *testing.T) {
@@ -440,13 +598,15 @@ func TestProcessorHarvestSpanEvents(t *testing.T) {
 		Type:       HarvestSpanEvents,
 	}
 
+	<-m.p.trackProgress // unblock processor after harvest
+	/* span events */
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice, two span events in the data
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+
 	if string(cp.data) != `["one",{"reservoir_size":7,"events_seen":2},[belated birthday,belated birthday]]` {
 		t.Fatal(string(cp.data))
 	}
-	m.p.quit()
-
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestSpanEventsZeroReservoir(t *testing.T) {
@@ -472,7 +632,7 @@ func TestProcessorHarvestSpanEventsZeroReservoir(t *testing.T) {
 
 	// No check of m.clientParams here because we expect no harvest to occur
 	// due to the zero error_event_data limit.
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock processor after harvest
 
 	// Now we'll force a harvest for a different event type, and make sure we
 	// receive that harvest (and not a span event harvest).
@@ -481,14 +641,16 @@ func TestProcessorHarvestSpanEventsZeroReservoir(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestCustomEvents,
 	}
+	<-m.p.trackProgress // unblock processor after harvest
 
+	/* custom events */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+
 	if string(cp.data) != `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]` {
 		t.Fatal(string(cp.data))
 	}
-	m.p.quit()
-
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestSpanEventsExceedReservoir(t *testing.T) {
@@ -510,13 +672,16 @@ func TestProcessorHarvestSpanEventsExceedReservoir(t *testing.T) {
 		Type:       HarvestSpanEvents,
 	}
 
+	<-m.p.trackProgress // unblock processor after harvest, with 2 span events seen, but only one span sent
+
+	/* span event */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice with 2 span events seen, but only one span sent
+
 	if string(cp.data) != `["one",{"reservoir_size":1,"events_seen":2},[belated birthday]]` {
 		t.Fatal(string(cp.data))
 	}
-	m.p.quit()
-
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
@@ -539,7 +704,7 @@ func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
 	}
 	// No check of m.clientParams here because we expect no harvest to occur
 	// due to the zero error_event_data limit.
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock processor
 
 	// Now we'll force a harvest for a different event type, and make sure we
 	// receive that harvest (and not an error event harvest).
@@ -548,14 +713,16 @@ func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestCustomEvents,
 	}
+	<-m.p.trackProgress // unblock processor
 
+	/* custom events */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+
 	if string(cp.data) != `["one",{"reservoir_size":5,"events_seen":1},[half birthday]]` {
 		t.Fatal(string(cp.data))
 	}
-	m.p.quit()
-
+	m.QuitTestProcessor()
 }
 
 func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
@@ -591,14 +758,18 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
+
+	<-m.p.trackProgress // unblock processor
+	/* txn events */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp1 := <-m.clientParams
-	<-m.p.trackProgress
+
 	cp1Events := getEventsSeen(cp1.data)
 	if cp1Events != 9000 {
 		t.Fatal("Expected 9000 events")
 	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 
 	// Distributed tracing activated.
 	// ------------------------------
@@ -619,9 +790,14 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
+		// blocking to get data usage correct
+		Blocking: true,
 	}
+	/* txn events */
 	cp1 = <-m.clientParams
-	<-m.p.trackProgress
+	m.clientReturn <- ClientReturn{}
+	<-m.p.trackProgress // unblock processor
+
 	cp1Events = getEventsSeen(cp1.data)
 	if cp1Events != 4999 {
 		t.Fatal("Expected 4999 events")
@@ -633,10 +809,18 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
+		// blocking to get data usage correct
+		Blocking: true,
 	}
+	/* txn events first payload */
 	cp1 = <-m.clientParams
+	m.clientReturn <- ClientReturn{}
+	/* txn events second payload */
 	cp2 := <-m.clientParams
-	<-m.p.trackProgress
+	m.clientReturn <- ClientReturn{}
+
+	<-m.p.trackProgress // unblock processor
+
 	cp1Events = getEventsSeen(cp1.data)
 	cp2Events := getEventsSeen(cp2.data)
 	if cp1Events != 2500 {
@@ -647,16 +831,32 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	}
 
 	// 8001 events. Split into two payloads of 4000 and 4001.
-	// We do not know which payload arrives first.
+	// Test that data usage metrics count properly in this case
 	m.TxnData(t, idOne, txnEventSample1Times(8001))
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
-		Type:       HarvestTxnEvents,
+		// harvest both txn events and metrics
+		Type: HarvestTxnEvents | HarvestDefaultData,
+		// needs to be blocking to know order of clientParams
+		Blocking: true,
 	}
+	/* metrics */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{}
+	/* txn events first payload */
 	cp1 = <-m.clientParams
+	m.clientReturn <- ClientReturn{}
+	/* txn events second payload */
 	cp2 = <-m.clientParams
-	<-m.p.trackProgress
+	m.clientReturn <- ClientReturn{}
+	/* usage metrics */
+	cp3 := <-m.clientParams
+	m.clientReturn <- ClientReturn{}
+
+	<-m.p.trackProgress // unblock processor
+
+	// txn events comparison
 	cp1Events = getEventsSeen(cp1.data)
 	cp2Events = getEventsSeen(cp2.data)
 	if cp1Events != 4000 && cp2Events != 4000 {
@@ -665,8 +865,18 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	if (cp1Events + cp2Events) != 8001 {
 		t.Fatal("Payload sum of 8001 events expected, got ", cp1Events, " and ", cp2Events)
 	}
+	// usage metrics comparison
+	time := strings.Split(string(cp3.data), ",")[1]
+	var expectedJSON = `["one",` + time + `,` + time + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[6,289520,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1259,0,0,0,0]]]]`
 
-	m.p.quit()
+	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != expectedJSON {
+		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
+	}
+
+	m.QuitTestProcessor()
 }
 
 func TestForceRestart(t *testing.T) {
@@ -684,17 +894,20 @@ func TestForceRestart(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
+	<-m.p.trackProgress // unblock processor
+
+	// Test processor receiving restart exception
+	/* txn events */
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+	m.clientReturn <- ClientReturn{nil, SampleRestartException, 401}
+	<-m.p.trackProgress // unblock processor after handling harvest restart error
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
 
-	m.clientReturn <- ClientReturn{nil, SampleRestartException, 401}
-	<-m.p.trackProgress // receive harvest error
-
+	// Reconnect after restart exception
 	m.DoConnect(t, &idTwo)
-
 	m.DoAppInfo(t, &idOne, AppStateConnected)
 
 	m.TxnData(t, idOne, txnEventSample1)
@@ -706,13 +919,16 @@ func TestForceRestart(t *testing.T) {
 		Type:       HarvestTxnEvents,
 	}
 
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock processor after  harvest notice
+	/* txn events */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp = <-m.clientParams
+
 	if string(cp.data) != `["two",{"reservoir_size":10000,"events_seen":1},[[{"x":2},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestDisconnectAtPreconnect(t *testing.T) {
@@ -726,7 +942,7 @@ func TestDisconnectAtPreconnect(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestLicenseExceptionAtPreconnect(t *testing.T) {
@@ -740,7 +956,7 @@ func TestLicenseExceptionAtPreconnect(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateInvalidLicense)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestDisconnectAtConnect(t *testing.T) {
@@ -756,7 +972,7 @@ func TestDisconnectAtConnect(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestDisconnectAtHarvest(t *testing.T) {
@@ -777,19 +993,26 @@ func TestDisconnectAtHarvest(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestAll,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn data */
 	<-m.clientParams
 	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
-	<-m.p.trackProgress // receive harvest error
+	<-m.p.trackProgress // unblock after harvest error
 
+	/* metrics */
 	<-m.clientParams
 	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
-	<-m.p.trackProgress // receive harvest error
+	<-m.p.trackProgress // unblock after harvest error
+
+	/* usage metrics */
+	<-m.clientParams
+	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
+	<-m.p.trackProgress // unblock after harvest error
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestLicenseExceptionAtHarvest(t *testing.T) {
@@ -807,19 +1030,21 @@ func TestLicenseExceptionAtHarvest(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
+	<-m.p.trackProgress // unblock after harvest notice
+
+	/* txn */
 	cp := <-m.clientParams
-	<-m.p.trackProgress // receive harvest notice
+	m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
+	<-m.p.trackProgress // unblock after harvest error
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
 
-	m.clientReturn <- ClientReturn{nil, SampleLicenseInvalidException, 401}
-	<-m.p.trackProgress // receive harvest error
-
 	// Unknown app state triggered immediately following AppStateRestart
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestMalformedConnectReply(t *testing.T) {
@@ -835,7 +1060,7 @@ func TestMalformedConnectReply(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestMalformedCollector(t *testing.T) {
@@ -849,7 +1074,7 @@ func TestMalformedCollector(t *testing.T) {
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
 
-	m.p.quit()
+	m.QuitTestProcessor()
 }
 
 func TestDataSavedOnHarvestError(t *testing.T) {
@@ -867,24 +1092,28 @@ func TestDataSavedOnHarvestError(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, errors.New("unusual error"), 500}
+	<-m.p.trackProgress // unblock after harvest error
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
-	<-m.p.trackProgress // receive harvest error
 
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp = <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -905,14 +1134,15 @@ func TestNoDataSavedOnPayloadTooLarge(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, ErrPayloadTooLarge, 413}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
-	<-m.p.trackProgress // receive harvest error
+	<-m.p.trackProgress // unblock after harvest error
 
 	m.TxnData(t, idOne, txnEventSample2)
 
@@ -921,10 +1151,12 @@ func TestNoDataSavedOnPayloadTooLarge(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp = <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":2},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -945,14 +1177,15 @@ func TestNoDataSavedOnErrUnsupportedMedia(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 415}
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":1},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
-	<-m.p.trackProgress // receive harvest error
+	<-m.p.trackProgress // unblock after harvest error
 
 	m.TxnData(t, idOne, txnEventSample2)
 
@@ -961,10 +1194,12 @@ func TestNoDataSavedOnErrUnsupportedMedia(t *testing.T) {
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
 	}
-	<-m.p.trackProgress // receive harvest notice
+	<-m.p.trackProgress // unblock after harvest notice
 
+	/* txn events */
 	cp = <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
+
 	if string(cp.data) != `["one",{"reservoir_size":10000,"events_seen":1},[[{"x":2},{},{}]]]` {
 		t.Fatal(string(cp.data))
 	}
@@ -986,7 +1221,7 @@ var (
 		HighSecurity:      true,
 		Hostname:          "agent-hostname",
 	}
-	connectClient = collector.ClientFn(func(cmd collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
+	connectClient = collector.ClientFn(func(cmd *collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		if cmd.Name == collector.CommandPreconnect {
 			return collector.RPMResponse{Body: []byte(`{"redirect_host":"specific_collector.com"}`), Err: nil, StatusCode: 202}
 		}

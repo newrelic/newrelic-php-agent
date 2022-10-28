@@ -19,9 +19,6 @@ if (version_compare(PHP_VERSION, "8.1", ">=")) {
 
 /*INI
 newrelic.transaction_tracer.explain_enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -34,27 +31,27 @@ STATISTICS
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/all"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/allOther"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/MySQL/select"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/all"},                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/allOther"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/MySQL/select"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/tables/select"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/MySQL/tables/select",
-      "scope":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},   [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_TRACED_ERRORS
 null

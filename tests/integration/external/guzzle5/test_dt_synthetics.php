@@ -26,10 +26,7 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
- */
+*/
 
 /*
  * The synthetics header contains the following JSON.
@@ -68,35 +65,30 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
-    [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
-    [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all", 
-      "scope":"WebTransaction/Uri__FILE__"},              [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                             [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allWeb"},                          [3, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction/Uri__FILE__"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime/Uri__FILE__"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"HttpDispatcher"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},
-                                                          [1,    0,    0,    0,    0,    0]],
-    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
-                                                          [3,    0,    0,    0,    0,    0]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, 
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, 
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},
-							  ["??", "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, 
-                                                          ["??", "??", "??", "??", "??", "??"]]
+    [{"name":"Apdex"},                                              ["??", "??", "??", "??", "??", 0]],
+    [{"name":"Apdex/Uri__FILE__"},                                  ["??", "??", "??", "??", "??", 0]],
+    [{"name":"External/127.0.0.1/all"},                             [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all",
+      "scope":"WebTransaction/Uri__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                                       [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allWeb"},                                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Create/Success"},         ["??", "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, ["??", "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
- */
+*/
+
 
 ?>
 <?php

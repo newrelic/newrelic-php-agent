@@ -19,9 +19,6 @@ require("skipif.inc");
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -43,53 +40,53 @@ ok - query cities within 5000mi of seattle by member [readonly cmd]
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                  [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                             [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                            [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                       [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/connect"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                  [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                             [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/connect"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},               [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/geoadd"},               [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/geoadd"},                     [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/geoadd",
-      "scope":"OtherTransaction/php__FILE__"},                  [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/geodist"},              [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/geodist"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/geodist",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/geohash"},              [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/geohash"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/geohash",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/geopos"},               [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/geopos"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/geopos",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/georadius"},            [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/georadius"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/georadius",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/georadius_ro"},         [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/georadius_ro"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/georadius_ro",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/georadiusbymember"},    [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/georadiusbymember"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/georadiusbymember",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/georadiusbymember_ro"}, [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/georadiusbymember_ro"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/georadiusbymember_ro",
-      "scope":"OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},          [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');

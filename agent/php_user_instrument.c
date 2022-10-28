@@ -34,7 +34,7 @@
  *     (1) bad code byte;
  *     (2) corrupted APC cache;
  *   (b) the PHP program calls exit.
- *   (c) An internall call to zend_error_cb, as for example empirically due to
+ *   (c) An internal call to zend_error_cb, as for example empirically due to
  * one of: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING, E_COMPILE_ERROR,
  * E_COMPILE_WARNING Cases (b) and (c) are interesting, as it is not
  * really an error condition, but merely a fast path out of the interpreter.
@@ -47,6 +47,7 @@
  *
  * Many functions here call zend_bailout to continue handling fatal PHP errors,
  * Since zend_bailout calls longjmp it never returns.
+ *
  */
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
@@ -88,10 +89,69 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * (or can't) match by name and have the zend_function available. (The main use
  * case for this is to allow instrumenting closures, but it's useful anywhere
  * we're dealing with a callable rather than a name.)
+ *
+ * There are two main structures containing `wraprecs`.
+ * `nr_php_op_array_set_wraprec` is a list of pointers to `wraprecs` that will
+ * contain all our custom instrumentation and all the user specified
+ * instrumentation they want to monitor. `user_function_wrappers` is a vector of
+ * pointers to wrappers, after the zend function represented by a wraprec has
+ * the reserved field modified, the pointer to the wraprec (which again, exists
+ * in `nr_php_op_array_set_wraprec`) goes into the vector.
+ * `nr_php_op_array_set_wraprec` is always a superset of
+ * `user_function_wrappers` and the wraprec pointers that exist in
+ * `user_function_wrappers` always exist in `nr_php_op_array_set_wraprec`.
+ *
+ * `nr_php_op_array_set_wraprec` is populated a few different ways.
+ * 1)from function `nr_php_add_transaction_naming_function` called from
+ * `php_nrini.c` to set the naming for all the transactions the user  set in the
+ * ini with `newrelic.webtransaction.name.functions` 2) from function
+ * `nr_php_add_custom_tracer` from `php_nrini.c` to set the naming for all the
+ * transactions the user set in the ini with
+ * `newrelic.transaction_tracer.custom` 3)
+ * nr_php_user_function_add_declared_callback (prior to PHP 7.3) 4) from
+ * function `nr_php_wrap_user_function` called from php_wrapper sets the wraprec
+ * with framework specific instrumentation. 5) from function
+ * `nr_php_wrap_callable` (in `php_wrapper.c`) used only by Wordpress and predis
+ * for custom instrumentation that adds `is_transient` wrappers that get cleaned
+ * up with each shutdown.
+ *
+ * When overwriting the zend_execute_ex function, every effort was made to
+ * reduce performance overhead because until the agent returns control, we are
+ * the bottleneck of PHP execution on a customer's machine.  Overwriting the
+ * reserved field was seen as a quick way to check if a function is instrumented
+ * or not.
+ *
+ * However, with PHP 8+, we've begun noticing more conflicts with the reserved
+ * fields.  Additionally, as we are no longer halting execution while we
+ * process, we can search through `nr_php_op_array_set_wraprec` instead of
+ * setting reserved field and getting from the `user_function_wrappers` vector.
+ * This stops the issues (segfaults, incorrect naming in laravel, etc) that we
+ * were observing, especially with PHP 8.1.
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  const char* filename = nr_php_function_filename(func);
+  /*
+   * Before setting a filename, ensure it is not NULL and it doesn't equal the
+   * "special" designation given to funcs without filenames. If the function is
+   * an evaluated expression or called directly from the CLI there is no
+   * filename, but the function says the filename is "-". Avoid setting in this
+   * case; otherwise, all the evaluated/cli calls would match.
+   */
+  if ((NULL == wraprec->filename) && (NULL != filename)
+      && (0 != nr_strcmp("-", filename))) {
+    wraprec->filename = nr_strdup(filename);
+  }
+
+  wraprec->lineno = nr_php_zend_function_lineno(func);
+
+  if (chk_reported_class(func, wraprec)) {
+    wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
+  }
+#else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
+#endif
   wraprec->is_wrapped = 1;
 
   if (wraprec->declared_callback) {
@@ -189,8 +249,12 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
+    wraprec->reportedclass = NULL;
     wraprec->is_method = 1;
   }
+
+  wraprec->lineno = 0;
+  wraprec->filename = NULL;
 
   wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
       wraprec->funcname, wraprec->classname);
@@ -216,6 +280,8 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nr_free(wraprec->funcname);
   nr_free(wraprec->classnameLC);
   nr_free(wraprec->funcnameLC);
+  nr_free(wraprec->reportedclass);
+  nr_free(wraprec->filename);
   nr_realfree((void**)wraprec_ptr);
 }
 
@@ -242,6 +308,121 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   nr_wrapped_user_functions = wraprec;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Purpose : Determine if a func matches a wraprec.
+ *
+ * Params  : 1. The wraprec to match to a zend function
+ *           2. The zend function to match to a wraprec
+ *
+ * Returns : True if the class/function of a wraprec match the class function
+ *           of a zend function.
+ */
+static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
+  char* klass = NULL;
+  const char* filename = NULL;
+
+  /*
+   * We are able to match either by lineno/filename pair or funcname/classname
+   * pair.
+   */
+
+  /*
+   * Optimize out string manipulations; don't do them if you don't have to.
+   * For instance, if funcname doesn't match, no use comparing the classname.
+   */
+
+  if (NULL == p) {
+    return false;
+  }
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
+    return false;
+  }
+
+  if (0 != p->lineno) {
+    /*
+     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
+     * going on to the funcname/classname pair comparison.
+     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
+     * we must do the funcname/classname compare.
+     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
+     * we can exit without doing the funcname/classname compare.
+     */
+    if (p->lineno != nr_php_zend_function_lineno(func)) {
+      return false;
+    } 
+    /*
+     * lineno matched, let's check the filename
+     */
+    filename = nr_php_function_filename(func);
+
+    /*
+     * If p->filename isn't NULL, we know the comparison is accurate;
+     * otherwise, it's inconclusive even if we have a lineno because it
+     * could be a cli call or evaluated expression that has no filename.
+     */
+    if (NULL != p->filename) {
+      if (0 == nr_strcmp(p->filename, filename)) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  if (NULL == func->common.function_name) {
+    return false;
+  }
+
+  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
+    return false;
+  }
+  if (NULL != func->common.scope && NULL != func->common.scope->name) {
+    klass = ZSTR_VAL(func->common.scope->name);
+  }
+
+  if ((0 == nr_strcmp(p->reportedclass, klass))
+      || (0 == nr_stricmp(p->classname, klass))) {
+    /*
+     * If we get here it means lineno/filename weren't initially set.
+     * Set it now so we can do the optimized compare next time.
+     * lineno/filename is usually not set if the func wasn't loaded when we
+     * created the initial wraprec and we had to use the more difficult way to
+     * set, update it with lineno/filename now.
+     */
+    if (NULL == p->filename) {
+      filename = nr_php_function_filename(func);
+      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
+        p->filename = nr_strdup(filename);
+      }
+    }
+    if (0 == p->lineno) {
+      p->lineno = nr_php_zend_function_lineno(func);
+    }
+    return true;
+  }
+  return false;
+}
+
+nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
+  nruserfn_t* p = NULL;
+
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
+    return NULL;
+  }
+
+  p = nr_wrapped_user_functions;
+
+  while (NULL != p) {
+    if (nr_php_wraprec_matches(p, func)) {
+      return p;
+    }
+    p = p->next;
+  }
+
+  return NULL;
+}
+#endif
+
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
 nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   char* name = NULL;
@@ -262,7 +443,12 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
    * nr_php_op_array_get_wraprec does basic sanity checks on the stored
    * wraprec.
    */
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_get_wraprec_by_func(func);
+#endif
+
   if (wraprec) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
                      name);
@@ -379,7 +565,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
   }
 }
@@ -388,7 +574,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->create_metric = 1;
     wraprec->is_user_added = 1;
   }
@@ -409,7 +595,11 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_get_wraprec_by_func(func);
+#endif
   if (wraprec) {
     wraprec->is_exception_handler = 0;
   }
@@ -509,6 +699,7 @@ void nr_php_op_array_set_wraprec(zend_op_array* op_array,
   op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
 }
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 nruserfn_t* nr_php_op_array_get_wraprec(
     const zend_op_array* op_array TSRMLS_DC) {
   uintptr_t index;
@@ -538,3 +729,4 @@ nruserfn_t* nr_php_op_array_get_wraprec(
 
   return (nruserfn_t*)nr_vector_get(NRPRG(user_function_wrappers), index);
 }
+#endif /* PHP < 7.4 */

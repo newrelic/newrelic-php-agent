@@ -45,7 +45,7 @@ PHPS?=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
 # Set the PHP versions we support on 64-bit OSs.
 SUPPORTED_64=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
 # Set the PHP versions we support on 32-bit OSs.
-SUPPORTED_32=7.4 7.3 7.2 7.1 7.0 5.6 5.5
+SUPPORTED_32=
 # Of the PHP versions we want to build, determine which are supported on the detected OS.
 ifeq (x64,$(ARCH))
   SUPPORTED_PHP = $(filter $(SUPPORTED_64),$(PHPS))

@@ -22,9 +22,6 @@ if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"
 /*INI
 newrelic.distributed_tracing_enabled=0
 newrelic.cross_application_tracer.enabled = true
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT
@@ -49,24 +46,24 @@ null
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                                [2, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                           [2, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                      [2, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"},
-                                                             [2, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"},
-                                                             [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                                       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                                  [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                             [2, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"}, [2, "??", "??", "??", "??", "??"]],
     [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
-      "scope":"OtherTransaction/php__FILE__"},               [2, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},       [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');

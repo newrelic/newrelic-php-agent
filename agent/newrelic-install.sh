@@ -136,7 +136,7 @@ if [ -z "${ostype}" ]; then
   tus=`uname -s 2> /dev/null`
   case "${tus}" in
     [Dd][Aa][Rr][Ww][Ii][Nn])     ostype=unsupported_os ;;
-    [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=freebsd ;;
+    [Ff][Rr][Ee][Ee][Bb][Ss][Dd]) ostype=unsupported_os ;;
     [Ss][Uu][Nn][Oo][Ss])         ostype=unsupported_os ;;
     [Ss][Mm][Aa][Rr][Tt][Oo][Ss]) ostype=unsupported_os ;;
   esac
@@ -158,7 +158,10 @@ if [ "${ostype}" = "unsupported_os" ] ; then
 Your operating system is not supported by the New Relic PHP
 agent. If you have any questions or believe you reached this
 message in error, please file a ticket with New Relic support.
-
+Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+The install will now exit.
 EOF
 )
 
@@ -239,12 +242,21 @@ case "${arch}" in
 esac
 
 # allow override of detected arch
-[ "${NR_INSTALL_ARCH}" = "x86" -o "${NR_INSTALL_ARCH}" = "x64" -o "${NR_INSTALL_ARCH}" = "x86_64" ] && arch="${NR_INSTALL_ARCH}"
+[ "${NR_INSTALL_ARCH}" = "x64" -o "${NR_INSTALL_ARCH}" = "x86_64" ] && arch="${NR_INSTALL_ARCH}"
 
 # exit if arch is unsupported
-if [ "${arch}" != "x86" -a "${arch}" != "x64" ]; then
-  error "An unsupported architecture "${arch}" detected."
+if [ "${arch}" != "x64" ]; then
+    msg=$(
+    cat << EOF
 
+An unsupported architecture detected.
+Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+EOF
+)
+
+  error "${msg}"
   if [ "${arch}" = "aarch64" ]; then
   cat << EOF
 
@@ -298,13 +310,6 @@ for d in "${ilibdir}/scripts" "${ilibdir}/agent" "${xtradir}"; do
 done
 
 check_dir "${ilibdir}/agent/${arch}"
-if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ]; then
-  # Only check for x86 directory on supported platforms.
-  case "$ostype" in
-    alpine|darwin|freebsd) ;;
-    *) check_dir "${ilibdir}/agent/x86" ;;
-  esac
-fi
 
 if [ -n "${dmissing}" ]; then
   echo "ERROR: the following directories could not be found:" >&2
@@ -332,24 +337,9 @@ fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
 "20180731" "20190902" "20200930" "20210902"; do
-  # If on a 32-bit system, don't look for a PHP 8.0 build.
-  if [ "${arch}" = "x64" ]; then
-    if [ "${pmv}" -lt "20200930" ]; then
-      check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
-      check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
-    fi
-  fi
-
-  if [ -z "${ispkg}" ] && [ "${arch}" = "x64" ] && [ "${pmv}" -lt "20200930" ]; then
-    # Only check for x86 agent files on supported platforms.
-    case "$ostype" in
-      alpine|darwin|freebsd) ;;
-      *)
-	check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
-	check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
-	;;
-    esac
-  fi
+  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
+  # remove following line when ZTS removed from releases
+  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
 done
 
 if [ -n "${fmissing}" ]; then
@@ -419,7 +409,7 @@ fi
 #   automated installations via tools like Puppet.
 #
 # NR_INSTALL_ARCH
-#   If not empty MUST be one of x86 or x64. This overrides the attempt to
+#   If not empty MUST be one of x64. This overrides the attempt to
 #   detect the architecture on which the installation is taking place. This
 #   needs to be accurate. If you are installing on a 64-bit system this MUST
 #   be set to x64 so that the script can correctly check for whether or not
@@ -462,6 +452,21 @@ echo "NRVERSION: ${nrversion}" >> $nrilog
 # Gather system information and store it in the sysinfo file.
 #
 echo "NR_INSTALL_LOCATION: ${NR_INSTALL_LOCATION}" >> $nrsysinfo
+if [ "${arch}" = "x86" ]; then
+  msg=$(
+  cat << EOF
+
+An unsupported architecture detected.
+Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+The install will now exit.
+EOF
+)
+
+  error "${msg}"
+  exit 1
+fi
 echo "ARCH: ${arch}" >> $nrsysinfo
 nruname=`uname -a 2>/dev/null`
 echo "UNAME: $nruname" >> $nrsysinfo
@@ -1111,16 +1116,28 @@ Ignoring this particular instance of PHP.
     pi_arch="${arch}"
   fi
 
+  log "${pdir}: pi_arch=${pi_arch}"
+
   # Check if this is a supported arch
   # Should be caught on startup but add check here to be sure
-  if [ "${pi_arch}" != "x86" -a "${pi_arch}" != "x64" ]; then
-    error "An unsupported architecture "${pi_arch}" detected."
-    echo "The install will now exit."
+  if [ "${pi_arch}" != "x64" ]; then
+    msg=$(
+    cat << EOF
+
+An unsupported architecture detected.
+Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+The install will now exit.
+EOF
+)
+
+    error "${msg}"
     exit 1
   fi
 
   # This handles both 32-bit on 64-bit systems and 32-bit only systems
-  if [ "${pi_arch}" = "x86" -a "${pi_php8}" = "yes" ]; then
+  if [ "${pi_arch}" = "x86" ]; then
     error "unsupported 32-bit version '${pi_ver}' of PHP found at:
     ${pdir}
 Ignoring this particular instance of PHP.
@@ -1128,34 +1145,6 @@ Ignoring this particular instance of PHP.
     log "${pdir}: unsupported 32-bit version '${pi_ver}'"
     unsupported_php=1
     return 1
-  fi
-
-  if [ -n "${ispkg}" -a "${arch}" = "x64" ]; then
-    if [ "${pi_arch}" = "x86" ]; then
-      for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" "20180731" \
-      "20190902" "20200930" "20210902"; do
-        check_file "${ilibdir}/agent/x86/newrelic-${pmv}.so"
-        check_file "${ilibdir}/agent/x86/newrelic-${pmv}-zts.so"
-      done
-      if [ -n "${fmissing}" ]; then
-        echo "ERROR: the following files could not be found:" >&2
-        echo "${fmissing}" | sed -e 's/^/   /' >&1
-      fi
-
-      if [ -n "${dmissing}" -o -n "${fmissing}" ]; then
-        cat <<EOF
-
-You appear to be running on a 64-bit system and attempting to install
-the 32-bit version of the agent, which is not present. Starting with
-release 3.0 of the PHP agent, the 64-bit package no longer includes
-the 32-bit version of the agent, and you need to explicitly install
-the 32-bit version of the newrelic-php5 package. Please contact
-${bold}http://support.newrelic.com${rmso} if you need assistance.
-
-EOF
-        exit 1
-      fi
-    fi
   fi
 
   log "${pdir}: pi_inidir_cli=${pi_inidir_cli}"
@@ -1288,6 +1277,21 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
+# uncomment when ZTS binaries are removed
+#  if [ "${pi_zts}" = "yes" ]; then
+#    msg=$(
+#    cat << EOF
+#
+#An unsupported PHP ZTS build has been detected. Please refer to this link:
+#  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+#to view compatibilty requirements for the the New Relic PHP agent.
+#The install will now exit.
+#EOF
+#)
+#    error "${msg}"
+#    exit 1
+#  fi
+
 #
 # This is where we figure out where to put the ini file, if at all. We only do
 # this if there is a scan directory defined. If the particular PHP installation
@@ -1408,6 +1412,11 @@ install_agent_here() {
   istat=
   if [ "${pi_zts}" = "yes" ]; then
     zts="-zts"
+
+    # Force copy of zts files as it is EOL so this will
+    # prevent future eraseure of linked to file from
+    # leading to a dangling symlink
+    NR_INSTALL_USE_CP_NOT_LN=1
   fi
   srcf="${ilibdir}/agent/${pi_arch}/newrelic-${pi_modver}${zts}.so"
   destf="${pi_extdir}/newrelic.so"
@@ -1906,6 +1915,14 @@ do_uninstall() {
     for pdir in $phpulist; do
       IFS="${ioIFS}"
       gather_info "${pdir}" || continue
+
+      # keep deprecated/eol module if requested
+      if [ -n "${NR_UNINSTALL_KEEP_ZTS}" ]; then
+        if [ -z "${NR_INSTALL_SILENT}" ]; then
+          echo "Keeping module in ${pdir} because NR_UNINSTALL_KEEP_ZTS set."
+        fi
+        continue
+      fi
 
       if [ -z "${NR_INSTALL_SILENT}" ]; then
         echo "Removing from this PHP : ${pdir}"

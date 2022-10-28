@@ -19,9 +19,6 @@ if (!extension_loaded("sqlite3")) {
 
 /*INI
 newrelic.framework = magento2
-newrelic.application_logging.enabled = false
-newrelic.application_logging.forwarding.enabled = false
-newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_METRICS
@@ -30,54 +27,53 @@ newrelic.application_logging.metrics.enabled = false
   "?? start time",
   "?? stop time",
   [
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Datastore/SQLite/all"},                            [12,"??","??","??","??","??"]],
-    [{"name": "Datastore/SQLite/allOther"},                       [12,"??","??","??","??","??"]],
-    [{"name": "Datastore/all"},                                   [12,"??","??","??","??","??"]],
-    [{"name": "Datastore/allOther"},                              [12,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/create"},               [4,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/drop"},                 [4,"??","??","??","??","??"]],
-    [{"name": "Datastore/operation/SQLite/insert"},               [4,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/create"},       [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/drop"},         [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/insert"},       [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/create"}, [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/drop"},   [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/insert"}, [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/create"},   [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/drop"},     [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/insert"},   [1,"??","??","??","??","??"]],
-    [{"name": "OtherTransaction/Action/unknown"},                 [1,"??","??","??","??","??"]],
-    [{"name": "OtherTransaction/all"},                            [1,"??","??","??","??","??"]],
-    [{"name": "OtherTransactionTotalTime"},                       [1,"??","??","??","??","??"]],
-    [{"name": "OtherTransactionTotalTime/Action/unknown"},        [1,"??","??","??","??","??"]],
-    [{"name": "Supportability/framework/Magento2/forced"},        [1,   0,   0,   0,   0,   0]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/create",
-      "scope": "OtherTransaction/Action/unknown"},                [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/drop",
-      "scope": "OtherTransaction/Action/unknown"},                [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_*\/insert",
-      "scope": "OtherTransaction/Action/unknown"},                [2,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/create",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/drop",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_/insert",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/create",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/drop",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]],
-    [{"name": "Datastore/statement/SQLite/search_tmp_/insert",
-      "scope": "OtherTransaction/Action/unknown"},                [1,"??","??","??","??","??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/all"},                               [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/allOther"},                          [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/create"},                  [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/drop"},                    [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/insert"},                  [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/create"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/drop"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/insert"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/create"},     [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/drop"},       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/insert"},     [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/create"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/drop"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/insert"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/Action/unknown"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/Action/unknown"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/Magento2/forced"},           [1, 0, 0, 0, 0, 0]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/create",
+      "scope":"OtherTransaction/Action/unknown"},                   [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/drop",
+      "scope":"OtherTransaction/Action/unknown"},                   [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/insert",
+      "scope":"OtherTransaction/Action/unknown"},                   [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/create",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/drop",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_/insert",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/create",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/drop",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_/insert",
+      "scope":"OtherTransaction/Action/unknown"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 function test_magento_temp_tables()
 {

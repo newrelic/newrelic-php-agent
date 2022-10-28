@@ -123,7 +123,7 @@ func TestExecuteWhenMaxPayloadSizeExceeded(t *testing.T) {
 		},
 	}
 
-	resp := client.Execute(cmd, cs)
+	resp := client.Execute(&cmd, cs)
 	if resp.Body != nil {
 		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Body, wantResponseBody)
 	} else if resp.Err == nil {
@@ -167,7 +167,7 @@ func TestExecuteWhenMaxPayloadSizeNotExceeded(t *testing.T) {
 	// This test ensures there's no error if payload does
 	// not exceed configured max_payload_size_in_bytes.
 	// That's why the body is ignored here.
-	resp := client.Execute(cmd, cs)
+	resp := client.Execute(&cmd, cs)
 	if resp.Err != nil {
 		t.Errorf("%s, got [%v], want [%v]", testedFn, resp.Err, wantErr)
 	}

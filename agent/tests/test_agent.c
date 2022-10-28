@@ -557,6 +557,34 @@ static void test_default_address() {
 #endif
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+static void test_nr_php_zend_function_lineno() {
+  zend_function func = {0};
+
+  /*
+   * Test : Invalid arguments, NULL zend_execute_data
+   */
+  tlib_pass_if_uint32_t_equal("NULL zend_execute_data should return 0", 0,
+                              nr_php_zend_function_lineno(NULL));
+
+  /*
+   * Test : Invalid arguments.
+   */
+  tlib_pass_if_uint32_t_equal("uninitialized zend_function should return 0", 0,
+                              nr_php_zend_function_lineno(&func));
+
+  /*
+   * Test : Normal operation.
+   */
+
+  func.op_array.line_start = 4;
+  tlib_pass_if_uint32_t_equal("Unexpected lineno name", 4,
+                              nr_php_zend_function_lineno(&func));
+}
+
+#endif /* PHP 7+ */
+
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -580,6 +608,10 @@ void test_main(void* p NRUNUSED) {
    * Tests that require state and will handle their own request startup and
    * shutdown.
    */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+  test_nr_php_zend_function_lineno();
+#endif /* PHP 7+ */
+
   test_function_debug_name(TSRMLS_C);
   test_get_zval_object_property(TSRMLS_C);
   test_get_zval_object_property_with_class(TSRMLS_C);
