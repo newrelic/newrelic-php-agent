@@ -30,7 +30,7 @@ newrelic.application_logging.enabled = true
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/cakephp-log/disabled"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/cakephp-log/detected"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
