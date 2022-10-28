@@ -12,6 +12,7 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 static void test_op_array_wraprec(TSRMLS_D) {
   zend_op_array oparray = {.function_name = (void*)1};
   nruserfn_t func = {0};
@@ -50,6 +51,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 
   tlib_php_request_end();
 }
+#endif /* PHP < 7.4 */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 static void test_get_wraprec_by_func() {
@@ -219,8 +221,9 @@ void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   test_op_array_wraprec(TSRMLS_C);
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#else
   test_get_wraprec_by_func();
 #endif /* PHP >= 7.4 */
 
