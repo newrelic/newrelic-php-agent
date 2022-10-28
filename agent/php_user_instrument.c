@@ -699,6 +699,7 @@ void nr_php_op_array_set_wraprec(zend_op_array* op_array,
   op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
 }
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 nruserfn_t* nr_php_op_array_get_wraprec(
     const zend_op_array* op_array TSRMLS_DC) {
   uintptr_t index;
@@ -728,3 +729,4 @@ nruserfn_t* nr_php_op_array_get_wraprec(
 
   return (nruserfn_t*)nr_vector_get(NRPRG(user_function_wrappers), index);
 }
+#endif /* PHP < 7.4 */
