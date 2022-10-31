@@ -405,27 +405,27 @@ bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
     klass = ZSTR_VAL(func->common.scope->name);
   }
 
-  if ((0 == nr_strcmp(p->reportedclass, klass))
-      || (0 == nr_stricmp(p->classname, klass))) {
-    /*
-     * If we get here it means lineno/filename weren't initially set.
-     * Set it now so we can do the optimized compare next time.
-     * lineno/filename is usually not set if the func wasn't loaded when we
-     * created the initial wraprec and we had to use the more difficult way to
-     * set, update it with lineno/filename now.
-     */
-    if (NULL == p->filename) {
-      filename = nr_php_function_filename(func);
-      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
-        p->filename = nr_strdup(filename);
-      }
-    }
-    if (0 == p->lineno) {
-      p->lineno = nr_php_zend_function_lineno(func);
-    }
-    return true;
+  if ((0 != nr_strcmp(p->reportedclass, klass))
+      && (0 != nr_stricmp(p->classname, klass))) {
+        return false;
   }
-  return false;
+  /*
+   * If we get here it means lineno/filename weren't initially set.
+   * Set it now so we can do the optimized compare next time.
+   * lineno/filename is usually not set if the func wasn't loaded when we
+   * created the initial wraprec and we had to use the more difficult way to
+   * set, update it with lineno/filename now.
+   */
+  if (NULL == p->filename) {
+    filename = nr_php_function_filename(func);
+    if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
+      p->filename = nr_strdup(filename);
+    }
+  }
+  if (0 == p->lineno) {
+    p->lineno = nr_php_zend_function_lineno(func);
+  }
+  return true;
 #endif
 }
 
