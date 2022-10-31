@@ -1020,7 +1020,7 @@ static void nr_php_execute_metadata_add_code_level_metrics(
    */
 
 #define CHK_CLM_STRLEN(s)                          \
-  if (CLM_STRLEN_MAX < NRSAFELEN(sizeof(s) - 1)) { \
+  if (CLM_STRLEN_MAX < NRSAFELEN(nr_strlen(s))) {  \
     s = NULL;                                      \
   }
 
