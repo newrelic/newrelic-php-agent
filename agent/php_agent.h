@@ -912,7 +912,7 @@ extern uint32_t nr_php_zend_execute_data_lineno(
  *
  */
 static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
-  if (NULL != func) {
+  if ((NULL != func) && (func->type == ZEND_USER_FUNCTION)) {
     return func->op_array.line_start;
   }
   return 0;
