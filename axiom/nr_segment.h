@@ -185,19 +185,18 @@ typedef struct _nr_segment_t {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
 
-/*
- * Because of the access to the segment is now split between functions, we
- * need to pass a certain amount of data between the functions that use the
- * segment.
- */
+  /*
+   * Because of the access to the segment is now split between functions, we
+   * need to pass a certain amount of data between the functions that use the
+   * segment.
+   */
   nrtime_t txn_start_time; /* To doublecheck the txn is correct when it is time
                               to add the segment to the txn. */
-  void* wraprec;           /* wraprec, if one is associated with this segment */
-  uint32_t
-      lineno; /* Keep lineno information.  When a function begins, the
-                 zend_execute_data lineno shows the ENTRY point of the function,
-                 when a function ends, the zend_execute_data lineno CHANGES and
-                 shows the EXIT point of the function.  */
+  void* wraprec; /* wraprec, if one is associated with this segment, to reduce
+                    wraprec lookups */
+
+  void* metadata; /* Persist data for OAPI for when exceptions prevent fcall_end
+                     from being called */
 
 #endif
 
