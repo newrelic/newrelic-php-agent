@@ -9,14 +9,18 @@
 #include <dlfcn.h>
 #include <signal.h>
 
+#include <Zend/zend_exceptions.h>
+
 #include "php_api_distributed_trace.h"
 #include "php_environment.h"
 #include "php_error.h"
+#include "php_execute.h"
 #include "php_extension.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_hooks.h"
 #include "php_internal_instrument.h"
+#include "php_observer.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
 #include "php_vm.h"
@@ -34,9 +38,6 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 #include "util_threads.h"
-
-#include "php_observer.h"
-#include "php_execute.h"
 
 /*
  * Observer API functionality was added with PHP 8.0.
@@ -86,8 +87,9 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   return handlers;
 }
 
-
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
+
+static void (*original_zend_throw_exception_hook)(zend_object* ex);
 
 void nr_php_observer_minit() {
   /*
@@ -97,11 +99,37 @@ void nr_php_observer_minit() {
   zend_observer_error_register(nr_php_error_cb);
 
   /*
+   * Overwrite the exception_hook.  Note: This ONLY notifies when an exception
+   * is thrown.  It gives no indication if that exception was subsequently
+   * caught or not.
+   */
+  original_zend_throw_exception_hook = zend_throw_exception_hook;
+  zend_throw_exception_hook = nr_throw_exception_hook;
+  /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
    * execute hook.  orig_execute is called various ways in various places, so
    * turn it into a no_op when using OAPI.
    */
   NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
+}
+
+void nr_throw_exception_hook(zend_object* exception) {
+  zval new_exception;
+  zval* exception_zval = NULL;
+
+  /*
+   * On PHP 7, EG(exception) is stored as a zend_object, and is only
+   * wrapped in a zval when it actually needs to be.
+   */
+  ZVAL_OBJ(&new_exception, exception);
+  exception_zval = &new_exception;
+
+  php_observer_handle_exception_hook(exception_zval,
+                                     &(EG(current_execute_data)->This));
+
+  if (original_zend_throw_exception_hook != NULL) {
+    original_zend_throw_exception_hook(exception);
+  }
 }
 
 #endif
