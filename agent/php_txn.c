@@ -1169,7 +1169,7 @@ extern void nr_php_txn_add_code_level_metrics(
     function = filepath;
   }
 
-#define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
+#define CHK_CLM_EMPTY(s) (nr_strempty(s)) ? true : false)
 
   if (CHK_CLM_EMPTY(function)) {
     /*
