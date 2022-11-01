@@ -102,7 +102,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 127,
+        "code.lineno": 125,
         "code.filepath":  "__FILE__",
         "code.function":  "getLap"
       }
