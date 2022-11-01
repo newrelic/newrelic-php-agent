@@ -740,7 +740,7 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
-  hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
   if (nr_php_is_zval_non_empty_string(hook_copy)) {
     nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks),
                   hook_copy);
