@@ -9,12 +9,15 @@
 #ifndef PHP_EXECUTE_HDR
 #define PHP_EXECUTE_HDR
 
+#include "php_observer.h"
+#include "util_logging.h"
+
 /*
  * An op_array is for a file rather than a function if it has a file name
  * and no function name.
  */
 #define OP_ARRAY_IS_A_FILE(OP) \
-  ((0 == nr_php_op_array_function_name(OP)) && nr_php_op_array_file_name(OP))
+  ((NULL == nr_php_op_array_function_name(OP)) && nr_php_op_array_file_name(OP))
 #define OP_ARRAY_IS_A_FUNCTION(OP) \
   (nr_php_op_array_function_name(OP) && (0 == (OP)->scope))
 #define OP_ARRAY_IS_FUNCTION(OP, FNAME) \
@@ -55,12 +58,13 @@
  */
 typedef struct {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-  zend_string* scope;
-  zend_string* function;
   char* function_name;
   char* function_filepath;
   char* function_namespace;
   uint32_t function_lineno;
+  zend_string* scope;
+  zend_string* function;
+  zval* execute_data_this;
 #else
   zend_op_array* op_array;
 #endif /* PHP7 */
@@ -79,6 +83,14 @@ typedef enum {
 } nr_framework_classification_t;
 typedef nr_framework_classification_t (*nr_framework_special_fn_t)(
     const char* filename TSRMLS_DC);
+
+/*
+ * Purpose : Release any cached metadata.
+ *
+ * Params  : 1. A pointer to the metadata.
+ */
+extern void nr_php_execute_metadata_release(
+    nr_php_execute_metadata_t* metadata);
 
 extern nrframework_t nr_php_framework_from_config(const char* config_name);
 
@@ -109,5 +121,33 @@ extern void nr_framework_create_metric(TSRMLS_D);
 
 extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
 
-#include "php_observer.h"
+extern void nr_php_observer_handle_uncaught_exception(zval* exception_this);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+static inline void php_observer_clear_uncaught_exception_globals() {
+  /*
+   * Clear the uncaught exception global variables.
+   */
+  if (NULL != NRPRG(uncaught_exception)) {
+    nr_php_zval_free(&NRPRG(uncaught_exception));
+  }
+  NRPRG(uncaught_exeption_execute_data_this) = NULL;
+}
+
+static inline void php_observer_set_uncaught_exception_globals(
+    zval* exception,
+    zval* exception_this) {
+  /*
+   * Set the uncaught exception global variables
+   */
+  if (nrunlikely(NULL != NRPRG(uncaught_exception))) {
+    return;
+  }
+  NRPRG(uncaught_exception) = nr_php_zval_alloc();
+  ZVAL_DUP(NRPRG(uncaught_exception), exception);
+  NRPRG(uncaught_exeption_execute_data_this) = exception_this;
+}
+#endif
+
 #endif /* PHP_EXECUTE_HDR */
