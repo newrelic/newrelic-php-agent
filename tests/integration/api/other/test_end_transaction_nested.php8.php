@@ -5,16 +5,19 @@
  */
 /*DESCRIPTION
 Test that newrelic_end_transaction() ends all unended segments in the stack.
+Additionally, unlike previously, we can gracefully close the segments with 
+their proper names and parenting.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
 }
 */
 
 /*INI
+newrelic.special.expensive_node_min = 0
 newrelic.transaction_tracer.threshold = 0
 */
 
@@ -40,10 +43,10 @@ newrelic.transaction_tracer.threshold = 0
                     "?? start time", "?? end time", "`1", "?? node attributes",
                     [
                       [
-                        "?? start time", "?? end time", "`1", "?? node attributes",
+                        "?? start time", "?? end time", "`2", "?? node attributes",
                         [ 
                           [
-                            "?? start time", "?? end time", "`2", "?? node attributes",
+                            "?? start time", "?? end time", "`3", "?? node attributes",
                             []
                           ]
                         ]
@@ -68,9 +71,10 @@ newrelic.transaction_tracer.threshold = 0
           }
         ],
         [
-          "OtherTransaction/php__FILE__",
-          "<unknown>",
-          "Custom/level_0"
+          "OtherTransaction\/php__FILE__",
+          "Custom\/level_2",
+          "Custom\/level_1",
+          "Custom\/level_0"
         ]
       ],
       "?? txn guid",
