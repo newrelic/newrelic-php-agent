@@ -9,6 +9,13 @@ Tests newrelic_create_distributed_trace_payload() on an uncaught exception,  nes
 We can ensure the payloads were associated with the correct segment by using the INI settings to limit the spans it saves to only those with payloads (and the root).  Because the payload call isn't made in `b` we don't expect to see `b` with the other error spans to grab.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0.0 not supported\n");
+}
+*/
+
 /*INI
 error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true

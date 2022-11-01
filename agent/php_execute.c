@@ -991,7 +991,6 @@ static inline void nr_php_observer_metadata_init(
   const char* filepath = NULL;
   const char* namespace = NULL;
   const char* function = NULL;
-
   /*
    * Check if code level metrics are enabled in the ini.
    * If they aren't, exit and don't update CLM.
@@ -1002,7 +1001,6 @@ static inline void nr_php_observer_metadata_init(
     return;
   }
 #endif
-
   if (nrunlikely(NULL == metadata)) {
     return;
   }
@@ -1120,8 +1118,6 @@ static void nr_php_execute_metadata_metric(
 void nr_php_execute_metadata_release(nr_php_execute_metadata_t* metadata) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   if (NULL != metadata->scope) {
     zend_string_release(metadata->scope);
     metadata->scope = NULL;
@@ -1131,7 +1127,7 @@ void nr_php_execute_metadata_release(nr_php_execute_metadata_t* metadata) {
     zend_string_release(metadata->function);
     metadata->function = NULL;
   }
-#endif
+
   nr_free(metadata->function_name);
   nr_free(metadata->function_namespace);
   nr_free(metadata->function_filepath);
@@ -1229,10 +1225,9 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
   NRTXNGLOBAL(execute_count) += 1;
 
-  nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
-
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     if (NRPRG(txn)) {
+      nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
       nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
     }
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -1257,6 +1252,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     bool create_metric = wraprec->create_metric;
 
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
 
@@ -1311,11 +1307,13 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
 
     nr_php_execute_segment_end(segment, &metadata, create_metric TSRMLS_CC);
+    nr_php_execute_metadata_release(&metadata);
 
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
   } else if (NRINI(tt_detail) && NR_OP_ARRAY->function_name) {
+    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
 
     /*
@@ -1372,6 +1370,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
 
     nr_php_execute_segment_end(segment, &metadata, false TSRMLS_CC);
+    nr_php_execute_metadata_release(&metadata);
 
     if (nrunlikely(zcaught)) {
       zend_bailout();
@@ -1383,7 +1382,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  nr_php_execute_metadata_release(&metadata);
 }
 
 static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
