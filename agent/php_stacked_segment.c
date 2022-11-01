@@ -2,10 +2,11 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "php_error.h"
-#include "php_execute.h"
+
 #include "php_stacked_segment.h"
 #include "util_logging.h"
+#include "php_execute.h"
+#include "php_error.h"
 
 /*
  * Purpose : Add a stacked segment to the stacked segment stack. The top
@@ -85,14 +86,14 @@ void nr_php_stacked_segment_unwind(TSRMLS_D) {
      * their naming contexts.
      */
     nr_php_observer_segment_end(NRPRG(uncaught_exception));
-  }
+
 #else
     stacked = NRTXN(force_current_segment);
     segment = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_segment_end(&segment);
-  }
-#endif
 
+#endif
+  }
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
