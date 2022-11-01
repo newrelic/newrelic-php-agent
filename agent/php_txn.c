@@ -1169,15 +1169,13 @@ extern void nr_php_txn_add_code_level_metrics(
     function = filepath;
   }
 
-#define CHK_CLM_EMPTY(s) (nr_strempty(s)) ? true : false)
-
-  if (CHK_CLM_EMPTY(function)) {
+  if (nr_strempty(function)) {
     /*
      * Name isn't set so don't do anything
      */
     return;
   }
-  if (CHK_CLM_EMPTY(namespace) && CHK_CLM_EMPTY(filepath)) {
+  if (nr_strempty(namespace) && nr_strempty(filepath)) {
     /*
      * CLM MUST have either function+namespace or function+filepath.
      */
@@ -1187,16 +1185,14 @@ extern void nr_php_txn_add_code_level_metrics(
   nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
                                          function);
 
-  if (!CHK_CLM_EMPTY(metadata->function_filepath)) {
+  if (!nr_strempty(metadata->function_filepath)) {
     nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
                                            filepath);
   }
-  if (!CHK_CLM_EMPTY(metadata->function_namespace)) {
+  if (!nr_strempty(metadata->function_namespace)) {
     nr_txn_attributes_set_string_attribute(
         attributes, nr_txn_clm_code_namespace, namespace);
   }
-
-#undef CHK_CLM_EMPTY
 
   nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
                                        metadata->function_lineno);
