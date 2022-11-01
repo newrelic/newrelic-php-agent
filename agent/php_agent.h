@@ -956,23 +956,4 @@ static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
 
 #endif /* PHP 7+ */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-
-/*
- * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.
- *
- * Params  : 1. zend_function.
- *
- * Returns : uint32_t lineno value
- *
- */
-static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
-  if (NULL != func) {
-    return func->op_array.line_start;
-  }
-  return 0;
-}
-
-#endif /* PHP 7+ */
-
 #endif /* PHP_AGENT_HDR */
