@@ -1033,15 +1033,15 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     return NR_SUCCESS;
   }
 
-  /* Stop all recording although we shouldn't be getting anything */
-  NRTXN(status.recording) = 0;
-
   /*
    * If a transaction is ended while stacked segments are active (e. g.
    * by calling newrelic_end_transaction inside nested function scopes)
    * the stack of stacked segments has to be cleaned up.
    */
   nr_php_stacked_segment_unwind(TSRMLS_C);
+
+  /* Stop all recording although we shouldn't be getting anything */
+  NRTXN(status.recording) = 0;
 
   ignoretxn = nr_php_txn_should_ignore(ignoretxn TSRMLS_CC);
 
@@ -1120,12 +1120,6 @@ extern void nr_php_txn_add_code_level_metrics(
   return;
 }
 #else
-  /* Current CLM functionality only works with PHP 7+ */
-
-  if (NULL == metadata) {
-    return;
-  }
-
   /*
    * Check if code level metrics are enabled in the ini.
    * If they aren't, exit and don't add any attributes.
@@ -1134,25 +1128,72 @@ extern void nr_php_txn_add_code_level_metrics(
     return;
   }
 
+  /* Current CLM functionality only works with PHP 7+ */
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions:
+   *  - code.filepath AND code.function
+   *  - code.namespace AND code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   *
+   * Additionally, none of the needed attributes can exceed 255 characters.
+   */
+
+  const char* filepath = metadata->function_filepath;
+  const char* namespace = metadata->function_namespace;
+  const char* function = metadata->function_name;
+
+#define CHK_CLM_STRLEN(s)                         \
+  if (CLM_STRLEN_MAX < NRSAFELEN(nr_strlen(s))) { \
+    s = NULL;                                     \
+  }
+
+  CHK_CLM_STRLEN(filepath)
+  CHK_CLM_STRLEN(namespace)
+  CHK_CLM_STRLEN(function)
+
+#undef CHK_CLM_STRLEN
+
+  if (1 == metadata->function_lineno) {
+    /*
+     * It's a file.  For CLM purposes, the "function" name is the filepath.
+     */
+    function = filepath;
+  }
+
 #define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
 
-  if (CHK_CLM_EMPTY(metadata->function_name)) {
+  if (CHK_CLM_EMPTY(function)) {
     /*
-     * CLM aren't set so don't do anything
+     * Name isn't set so don't do anything
+     */
+    return;
+  }
+  if (CHK_CLM_EMPTY(namespace) && CHK_CLM_EMPTY(filepath)) {
+    /*
+     * CLM MUST have either function+namespace or function+filepath.
      */
     return;
   }
 
   nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
-                                         metadata->function_name);
+                                         function);
 
   if (!CHK_CLM_EMPTY(metadata->function_filepath)) {
     nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
-                                           metadata->function_filepath);
+                                           filepath);
   }
   if (!CHK_CLM_EMPTY(metadata->function_namespace)) {
     nr_txn_attributes_set_string_attribute(
-        attributes, nr_txn_clm_code_namespace, metadata->function_namespace);
+        attributes, nr_txn_clm_code_namespace, namespace);
   }
 
 #undef CHK_CLM_EMPTY
