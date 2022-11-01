@@ -654,19 +654,19 @@ void nr_wordpress_enable(TSRMLS_D) {
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters,
-                            nr_wordpress_apply_filters_after TSRMLS_CC);
+                            nr_wordpress_apply_filters_after);
 
   nr_php_wrap_user_function_before_after(NR_PSTR("apply_filters_ref_array"),
                             nr_wordpress_exec_handle_tag,
-                            nr_wordpress_handle_tag_stack_after TSRMLS_CC);
+                            nr_wordpress_handle_tag_stack_after);
 
   nr_php_wrap_user_function_before_after(NR_PSTR("do_action"),
                             nr_wordpress_exec_handle_tag,
-                            nr_wordpress_handle_tag_stack_after TSRMLS_CC);
+                            nr_wordpress_handle_tag_stack_after);
 
   nr_php_wrap_user_function_before_after(NR_PSTR("do_action_ref_array"),
                             nr_wordpress_exec_handle_tag,
-                            nr_wordpress_handle_tag_stack_after TSRMLS_CC);
+                            nr_wordpress_handle_tag_stack_after);
 
 #else
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
