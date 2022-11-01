@@ -88,8 +88,9 @@ void nr_php_stacked_segment_unwind(TSRMLS_D) {
     nr_php_observer_segment_end(NRPRG(uncaught_exception));
 
 #else
-    stacked = NRTXN(force_current_segment);
-    segment = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
+    nr_segment_t* stacked = NRTXN(force_current_segment);
+    nr_segment_t* segment
+        = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_segment_end(&segment);
 
 #endif
