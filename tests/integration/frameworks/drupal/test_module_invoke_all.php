@@ -18,6 +18,7 @@ require("skipif.inc");
 */
 
 /*EXPECT
+module_hook_with_arg(arg=[arg_value])
 g
 f
 f
@@ -35,9 +36,10 @@ f
                                                                     [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Hook/hook_with_arg"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/f"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/g"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Module/module"},         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Module/module"},         [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
@@ -50,7 +52,9 @@ f
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function module_invoke_all($f) {
-    call_user_func_array("module_" . $f, array());
+    $args = func_get_args();
+    unset($args[0]);
+    call_user_func_array("module_" . $f, $args);
 }
 
 function module_f() {
@@ -62,5 +66,10 @@ function module_g() {
     module_f();
 }
 
+function module_hook_with_arg($arg) {
+        echo "module_hook_with_arg(arg=[$arg])\n";
+}
+
+module_invoke_all("hook_with_arg", "arg_value");
 module_invoke_all("g");
 module_invoke_all("f");
