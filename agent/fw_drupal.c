@@ -750,8 +750,13 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
   (void)wraprec;
-  zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
-  nr_php_arg_release(&hook_copy);
+  /* using nr_php_get_user_func_arg() so that we don't perform another copy
+   * when all we want to do is check the string length */
+  zval* orig = nr_php_get_user_func_arg((zend_uint)1, NR_EXECUTE_ORIG_ARGS);
+  if (nr_php_is_zval_non_empty_string(orig)) {
+      zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
+      nr_php_arg_release(&hook_copy);
+  }
 }
 NR_PHP_WRAPPER_END
 
