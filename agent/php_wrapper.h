@@ -84,13 +84,13 @@
  *    NR_PHP_WRAPPER_DELEGATE (foo), provided the original function hasn't
  *    already been called.
  */
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 extern nruserfn_t* nr_php_wrap_user_function_before_after(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback);
-
+#endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
                                              nrspecialfn_t callback TSRMLS_DC);

@@ -8,12 +8,13 @@
 #include "php_wrapper.h"
 #include "util_logging.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 nruserfn_t* nr_php_wrap_user_function_before_after(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback) {
-  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
   if (NULL == wraprec) {
     return wraprec;
@@ -47,7 +48,7 @@ nruserfn_t* nr_php_wrap_user_function_before_after(
 
   return wraprec;
 }
-
+#endif
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
