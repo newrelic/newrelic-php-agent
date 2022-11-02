@@ -506,7 +506,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
   tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   if (1 == nr_php_is_zval_non_empty_string(tag)
-      || (0 != NRINI(wordpress_hooks))) {
+      && (0 != NRINI(wordpress_hooks))) {
     /*
      * Our general approach here is to set the wordpress_tag global, then let
      * the call_user_func_array instrumentation take care of actually timing
@@ -630,18 +630,25 @@ NR_PHP_WRAPPER_END
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_after) {
   (void)wraprec;
-  char* cleaned_tag = nr_stack_pop(&NRPRG(wordpress_tags));
-  nr_free(cleaned_tag);
+  /* using nr_php_get_user_func_arg() so that we don't perform another copy
+   * when all we want to do is check the string length */
+  zval* tag = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (1 == nr_php_is_zval_non_empty_string(tag)
+      && (0 != NRINI(wordpress_hooks))) {
+      char* cleaned_tag = nr_stack_pop(&NRPRG(wordpress_tags));
+      nr_free(cleaned_tag);
+  }
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
-  zval* tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  /* using nr_php_get_user_func_arg() so that we don't perform another copy
+   * when all we want to do is check the string length */
+  zval* tag = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (1 == nr_php_is_zval_non_empty_string(tag)) {
     zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
     nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
   }
-  nr_php_arg_release(&tag);
 
   nr_wordpress_handle_tag_stack_after(NR_SPECIALFNPTR_ORIG_ARGS);
 }
