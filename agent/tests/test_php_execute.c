@@ -123,6 +123,6 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
   test_add_segment_metric(TSRMLS_C);
   test_txn_restart_in_callstack(TSRMLS_C);
-  test_php_cur_stack_depth();
+  test_php_cur_stack_depth(TSRMLS_C);
   tlib_php_engine_destroy(TSRMLS_C);
 }
