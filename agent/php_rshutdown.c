@@ -122,6 +122,8 @@ int nr_php_post_deactivate(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRPRG(drupal_http_request_segment) = NULL;
+  NRPRG(drupal_http_request_depth) = 0;
+
 #endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");
