@@ -295,6 +295,12 @@ typedef struct _nrtxn_t {
   nr_span_queue_t* span_queue; /* span queue when 8T is enabled */
 
   /*
+   * flag to indicate if one time (per transaction) logging metrics
+   * have been created
+   */
+  bool created_logging_onetime_metrics;
+
+  /*
    * Special control variables derived from named bits in
    * nrphpglobals_t.special_flags These are used to debug the agent, possibly in
    * the field.

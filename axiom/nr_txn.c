@@ -447,7 +447,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_sampling_priority_t priority;
   nr_slab_t* segment_slab;
 
-  if (0 == app) {
+  if (NULL == app) {
     return 0;
   }
 
@@ -536,6 +536,11 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
   nt->log_events = nr_log_events_create(app->limits.log_events);
+
+  /*
+   * reset flag for creation of one-time logging metrics
+   */
+  nt->created_logging_onetime_metrics = false;
 
   /*
    * Set the status fields to their defaults.
