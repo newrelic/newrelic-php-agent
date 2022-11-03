@@ -106,7 +106,12 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG(datastore_connections));
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_stack_destroy_fields(&NRPRG(predis_ctxs));
+#else
   nr_free(NRPRG(predis_ctx));
+#endif /* OAPI */
   nr_hashmap_destroy(&NRPRG(predis_commands));
 
   nr_vector_destroy(&NRPRG(user_function_wrappers));
