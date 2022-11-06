@@ -190,8 +190,6 @@ typedef struct _nr_segment_t {
    * need to pass a certain amount of data between the functions that use the
    * segment.
    */
-  nrtime_t txn_start_time; /* To doublecheck the txn is correct when it is time
-                              to add the segment to the txn. */
   void* wraprec; /* wraprec, if one is associated with this segment, to reduce
                     wraprec lookups */
 

@@ -1886,7 +1886,6 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
       nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
       return;
     }
-    segment->txn_start_time = nr_txn_start_time(NRPRG(txn));
 
     nr_php_observer_metadata_init(segment->metadata, NR_EXECUTE_ORIG_ARGS);
     metadata = segment->metadata;
@@ -1954,20 +1953,18 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    */
   segment = NRTXN(force_current_segment);
   if (nrunlikely(NULL == segment)) {
-    return;
-  }
-  if (0 == segment->txn_start_time) {
     /*
-     * If this value isn't set, it is not a stacked segment so ignore it.
+     * Most likely caused by txn ending prematurely and closing all segments. We
+     * can only exit since the segments were already closed.
      */
     return;
   }
-  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != segment->txn_start_time)) {
+  if (nrunlikely(NULL == segment->metadata)) {
     /*
-     * The stacked segment no longer belongs to a valid txn, we can only
-     * discard.
+     * If this value isn't set, it is either the root segment not a stacked
+     * segment set or not set by the instrument_begin_func, but in all we we
+     * should only ignore it.
      */
-    nr_php_stacked_segment_deinit(segment);
     return;
   }
   /*
@@ -1975,8 +1972,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * doesn't call fcall_end.
    */
   metadata = segment->metadata;
-  if ((NULL != metadata)
-      && (metadata->execute_data_this != &execute_data->This)) {
+  if ((metadata->execute_data_this != &execute_data->This)) {
     /*
      * Close all previous segments, attaching the uncaught exception as
      * necessary.
@@ -2023,22 +2019,9 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
       zend_bailout();
     }
   }
-  /*
-   * During this call, the transaction may have been ended and/or a new
-   * transaction may have started.  To detect this, we compare the
-   * currently active transaction's start time with the transaction
-   * start time we saved before.
-   *
-   * Just comparing the transaction pointer is not enough, as a newly
-   * started transaction might actually obtain the same address as a
-   * transaction freed before.
-   */
 
-  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != segment->txn_start_time)) {
-    nr_php_stacked_segment_deinit(segment);
-  } else {
-    nr_php_execute_segment_end(segment, segment->metadata, create_metric);
-  }
+  nr_php_execute_segment_end(segment, segment->metadata, create_metric);
+
   /*
    * Clear the uncaught exception globals.  This will also take care of the case
    * of an exception that was thrown for this segment but then was caught as
