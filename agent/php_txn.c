@@ -635,7 +635,6 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
     return;
   }
 
-  nrl_verbosedebug(NRL_TXN, "creating one time logging metrics");
 #define FMT_BOOL(v) (v) ? "enabled" : "disabled"
 
   metname = nr_formatf("Supportability/Logging/Forwarding/PHP/%s",
@@ -648,7 +647,7 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
   nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
   nr_free(metname);
 
-  txn->created_logging_onetime_metrics = 1;
+  txn->created_logging_onetime_metrics = true;
 
 #undef FMT_BOOL
 }
