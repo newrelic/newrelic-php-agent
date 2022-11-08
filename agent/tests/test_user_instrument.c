@@ -56,7 +56,6 @@ static void test_op_array_wraprec(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 static void test_get_wraprec_by_func() {
   return;
-  zend_op_array oparray = {.function_name = (void*)1};
   zend_function zend_func = {0};
   zend_string* scope_name = NULL;
   zend_class_entry ce = {0};
@@ -130,27 +129,10 @@ static void test_get_wraprec_by_func() {
                          nr_php_get_wraprec_by_func(&zend_func), wraprec);
 
   /*
-   * Invalidate the cached pid.
-   */
-  NRPRG(pid) -= 1;
-
-  /*
    * Not NULL because we don't care about the reserved array anymore.
    */
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_get_wraprec_by_func(&zend_func), wraprec);
-  /*
-   * Restore the cached pid and invalidate the mangled pid/index value.
-   */
-  NRPRG(pid) += 1;
-
-  {
-    unsigned long pval;
-
-    pval = (unsigned long)oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)];
-    oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)(pval * 2);
-  }
-
   /*
    * Not NULL because we don't care about the reserved array anymore.
    */

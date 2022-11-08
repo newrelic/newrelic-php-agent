@@ -13,6 +13,69 @@
 #include "util_strings.h"
 
 /*
+ * This function will allocate memory for the generated key. The caller is
+ * responsible for freeing memory allocated for the key.
+ *
+ * The key generation method is based on nr_php_function_debug_name:
+ *
+ * - for user function: combine scope (if any) with function name
+ * - for closure: cobine filename with line number
+ *
+ * This guarantees uniqueness in most cases. zf2key will generate the same
+ * key only closures declared on the same line in the same file, e.g:
+ *
+ * $g = function () { $l = function() {echo "in l\n";}; echo "in g\n"; $f();};
+ *
+ * $g and $l are closures (aka lambdas, aka unnamed functions) and zf2key
+ * will generate the same key for both of them.
+ *
+ */
+static inline char* zf2key(size_t* key_len, const zend_function* zf) {
+  char* key = NULL;
+
+  if (nrunlikely(NULL == key_len || NULL == zf
+                 || ZEND_USER_FUNCTION != zf->type)) {
+    return NULL;
+  }
+
+  if (zf->common.fn_flags & ZEND_ACC_CLOSURE) {
+    key = nr_formatf("%s:%d",
+                     NRSAFESTR(nr_php_op_array_file_name(&zf->op_array)),
+                     zf->op_array.line_start);
+  } else {
+    const zend_class_entry* scope = zf->common.scope;
+    key = nr_formatf("%s%s%s",
+                     (scope ? NRSAFESTR(nr_php_class_entry_name(scope)) : ""),
+                     (scope ? "::" : ""), NRSAFESTR(nr_php_function_name(zf)));
+  }
+
+  if (NULL != key_len) {
+    *key_len = nr_strlen(key);
+  }
+
+  return key;
+}
+
+static nr_status_t nr_php_user_instrument_set_wraprec(const zend_function* zf,
+                                                      nruserfn_t* wraprec) {
+  size_t key_len = 0;
+  char* key = zf2key(&key_len, zf);
+  nr_status_t result;
+  result = nr_hashmap_set(NRPRG(user_function_wrappers), key, key_len, wraprec);
+  nr_free(key);
+  return result;
+}
+
+static nruserfn_t* nr_php_user_instrument_get_wraprec(zend_function* zf) {
+  size_t key_len = 0;
+  char* key = zf2key(&key_len, zf);
+  nruserfn_t* wraprec = NULL;
+  wraprec = nr_hashmap_get(NRPRG(user_function_wrappers), key, key_len);
+  nr_free(key);
+  return wraprec;
+}
+
+/*
  * The mechanism of zend_try .. zend_catch .. zend_end_try
  * is isolated into a handful of functions below.
  *
@@ -149,6 +212,7 @@ static void nr_php_wrap_zend_function(zend_function* func,
   if (chk_reported_class(func, wraprec)) {
     wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
   }
+  nr_php_user_instrument_set_wraprec(func, wraprec);
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
 #endif
@@ -404,22 +468,12 @@ static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
 }
 
 nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
-  nruserfn_t* p = NULL;
 
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
     return NULL;
   }
 
-  p = nr_wrapped_user_functions;
-
-  while (NULL != p) {
-    if (nr_php_wraprec_matches(p, func)) {
-      return p;
-    }
-    p = p->next;
-  }
-
-  return NULL;
+  return nr_php_user_instrument_get_wraprec(func);
 }
 #endif
 
@@ -679,7 +733,7 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
  *     id. If they match, the index in the lower 16 bits is considered safe and
  *     is used. Otherwise the function is considered as uninstrumented.
  */
-
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 void nr_php_op_array_set_wraprec(zend_op_array* op_array,
                                  nruserfn_t* func TSRMLS_DC) {
   uintptr_t index;
@@ -699,7 +753,6 @@ void nr_php_op_array_set_wraprec(zend_op_array* op_array,
   op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
 }
 
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 nruserfn_t* nr_php_op_array_get_wraprec(
     const zend_op_array* op_array TSRMLS_DC) {
   uintptr_t index;
