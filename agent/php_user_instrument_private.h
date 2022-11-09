@@ -4,7 +4,7 @@
  */
 
 /*
- * This file contains php_user_instrument.c helper functions. 
+ * This file contains php_user_instrument.c helper functions.
  * They're extracted here so that they're available for unit
  * tests in test_user_instrument.c. This header file should
  * not be included anywhere else than in php_user_instrument.c.
@@ -19,6 +19,8 @@
  * Params  : 1. A number
  *
  * Returns : Number of decimal digits
+ *
+ * This is a zf2key helper function to increase z2fkey clarity.
  */
 static inline size_t number_of_digits(uint32_t lineno) {
   size_t n = 0;
@@ -30,12 +32,41 @@ static inline size_t number_of_digits(uint32_t lineno) {
 }
 
 /*
+ * Purpose : Convert an integer (line number) to a string
+ *
+ * Params  : 1. Pointer to destination
+ *           2. The number to be converted (line number)
+ *           3. Number of digits in a number
+ *
+ * Returns : Pointer to terminating NUL
+ *
+ * This is a zf2key helper function to increase zf2key clarity.
+ * This code replaces nr_format("%d", lineno) to increase zf2key
+ * performance but is placed in helper function to maintain zf2key
+ * clarity. Because of that asserts about dst pointer are skipped.
+ */
+static inline char* nr_itoa(char* dst, uint32_t lineno, size_t ndigits) {
+  char* buf = nr_alloca(ndigits);
+  uint32_t r;
+  for (size_t i = 0; i < ndigits; i++) {
+    r = lineno % 10;
+    buf[i] = '0' + r;
+    lineno /= 10;
+  }
+  for (int i = ndigits - 1; i >= 0; i--) {
+    *dst++ = buf[i];
+  }
+  *dst = '\0';
+  return dst;
+}
+
+/*
  * Purpose : Create a key for the wraprecs hash map from zend_function
              metadata (scope, function name, filename, line number).
  *
  * Params  : 1. Pointer to storage for key length [output]
  *           2. Pointer to zend_function [input]
- * 
+ *
  * Returns : A pointer to allocated memory with the generated key for the
  *           wraprecs hash map - caller must free memory.
  *
@@ -55,7 +86,9 @@ static inline size_t number_of_digits(uint32_t lineno) {
  */
 static inline char* zf2key(size_t* key_len, const zend_function* zf) {
   char* key = NULL;
+  char* cp;
   size_t len = 0;
+  size_t ndigits = 0;
 
   if (nrunlikely(NULL == key_len || NULL == zf
                  || ZEND_USER_FUNCTION != zf->type)) {
@@ -63,20 +96,27 @@ static inline char* zf2key(size_t* key_len, const zend_function* zf) {
   }
 
   if (zf->common.fn_flags & ZEND_ACC_CLOSURE) {
-    key = nr_formatf("%s:%d",
-                     NRSAFESTR(nr_php_op_array_file_name(&zf->op_array)),
-                     zf->op_array.line_start);
+    ndigits = number_of_digits(zf->op_array.line_start);
     len = nr_php_op_array_file_name_length(&zf->op_array);
     len += 1; /* colon */
-    len += number_of_digits(zf->op_array.line_start);
+    len += ndigits;
+    len += 1; /* NUL terminator */
+    cp = key = nr_malloc(len);
+    cp = nr_strcpy(cp, nr_php_op_array_file_name(&zf->op_array));
+    cp = nr_strcpy(cp, ":");
+    cp = nr_itoa(cp, zf->op_array.line_start, ndigits);
   } else {
     const zend_class_entry* scope = zf->common.scope;
-    key = nr_formatf("%s%s%s",
-                     (scope ? NRSAFESTR(nr_php_class_entry_name(scope)) : ""),
-                     (scope ? "::" : ""), NRSAFESTR(nr_php_function_name(zf)));
     len = (scope ? nr_php_class_entry_name_length(scope) : 0);
     len += (scope ? 2 : 0); /* double colon */
     len += nr_php_function_name_length(zf);
+    len += 1; /* NUL terminator */
+    cp = key = nr_malloc(len);
+    if (scope) {
+      cp = nr_strcpy(cp, nr_php_class_entry_name(scope));
+      cp = nr_strcpy(cp, "::");
+    }
+    cp = nr_strcpy(cp, nr_php_function_name(zf));
   }
 
   if (NULL != key_len) {
