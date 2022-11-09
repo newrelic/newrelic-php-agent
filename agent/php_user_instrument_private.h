@@ -1,0 +1,90 @@
+/*
+ * Copyright 2022 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This file contains php_user_instrument.c helper functions. 
+ * They're extracted here so that they're available for unit
+ * tests in test_user_instrument.c. This header file should
+ * not be included anywhere else than in php_user_instrument.c.
+ */
+#ifndef PHP_USER_INSTRUMENT_PRIVATE_HDR
+#define PHP_USER_INSTRUMENT_PRIVATE_HDR
+
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Purpose : Return number of digits in a number (line number)
+ *
+ * Params  : 1. A number
+ *
+ * Returns : Number of decimal digits
+ */
+static inline size_t number_of_digits(uint32_t lineno) {
+  size_t n = 0;
+  while (lineno > 0) {
+    lineno /= 10;
+    n++;
+  }
+  return n;
+}
+
+/*
+ * Purpose : Create a key for the wraprecs hash map from zend_function
+             metadata (scope, function name, filename, line number).
+ *
+ * Params  : 1. Pointer to storage for key length [output]
+ *           2. Pointer to zend_function [input]
+ * 
+ * Returns : A pointer to allocated memory with the generated key for the
+ *           wraprecs hash map - caller must free memory.
+ *
+ * The key generation method is based on nr_php_function_debug_name:
+ *
+ * - for user function: combine scope (if any) with function name
+ * - for closure: cobine filename with line number
+ *
+ * This guarantees uniqueness in most cases. zf2key will generate the same
+ * key only closures declared on the same line in the same file, e.g:
+ *
+ * $g = function () { $l = function() {echo "in l\n";}; echo "in g\n"; $f();};
+ *
+ * $g and $l are closures (aka lambdas, aka unnamed functions) and zf2key
+ * will generate the same key for both of them.
+ *
+ */
+static inline char* zf2key(size_t* key_len, const zend_function* zf) {
+  char* key = NULL;
+  size_t len = 0;
+
+  if (nrunlikely(NULL == key_len || NULL == zf
+                 || ZEND_USER_FUNCTION != zf->type)) {
+    return NULL;
+  }
+
+  if (zf->common.fn_flags & ZEND_ACC_CLOSURE) {
+    key = nr_formatf("%s:%d",
+                     NRSAFESTR(nr_php_op_array_file_name(&zf->op_array)),
+                     zf->op_array.line_start);
+    len = nr_php_op_array_file_name_length(&zf->op_array);
+    len += 1; /* colon */
+    len += number_of_digits(zf->op_array.line_start);
+  } else {
+    const zend_class_entry* scope = zf->common.scope;
+    key = nr_formatf("%s%s%s",
+                     (scope ? NRSAFESTR(nr_php_class_entry_name(scope)) : ""),
+                     (scope ? "::" : ""), NRSAFESTR(nr_php_function_name(zf)));
+    len = (scope ? nr_php_class_entry_name_length(scope) : 0);
+    len += (scope ? 2 : 0); /* double colon */
+    len += nr_php_function_name_length(zf);
+  }
+
+  if (NULL != key_len) {
+    *key_len = len;
+  }
+
+  return key;
+}
+#endif
+
+#endif

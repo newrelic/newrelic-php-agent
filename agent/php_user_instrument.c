@@ -6,71 +6,13 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_private.h"
 #include "php_wrapper.h"
 #include "lib_guzzle_common.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
 
-static inline size_t number_of_digits(uint32_t lineno) {
-  size_t n = 1;
-  while (lineno > 0) {
-    lineno /= 10;
-    n++;
-  }
-  return n;
-}
-
-/*
- * This function will allocate memory for the generated key. The caller is
- * responsible for freeing memory allocated for the key.
- *
- * The key generation method is based on nr_php_function_debug_name:
- *
- * - for user function: combine scope (if any) with function name
- * - for closure: cobine filename with line number
- *
- * This guarantees uniqueness in most cases. zf2key will generate the same
- * key only closures declared on the same line in the same file, e.g:
- *
- * $g = function () { $l = function() {echo "in l\n";}; echo "in g\n"; $f();};
- *
- * $g and $l are closures (aka lambdas, aka unnamed functions) and zf2key
- * will generate the same key for both of them.
- *
- */
-static inline char* zf2key(size_t* key_len, const zend_function* zf) {
-  char* key = NULL;
-  size_t len = 0;
-
-  if (nrunlikely(NULL == key_len || NULL == zf
-                 || ZEND_USER_FUNCTION != zf->type)) {
-    return NULL;
-  }
-
-  if (zf->common.fn_flags & ZEND_ACC_CLOSURE) {
-    key = nr_formatf("%s:%d",
-                     NRSAFESTR(nr_php_op_array_file_name(&zf->op_array)),
-                     zf->op_array.line_start);
-    len = nr_php_op_array_file_name_length(&zf->op_array);
-    len += 1; /* colon */
-    len += number_of_digits(zf->op_array.line_start);
-  } else {
-    const zend_class_entry* scope = zf->common.scope;
-    key = nr_formatf("%s%s%s",
-                     (scope ? NRSAFESTR(nr_php_class_entry_name(scope)) : ""),
-                     (scope ? "::" : ""), NRSAFESTR(nr_php_function_name(zf)));
-    len = (scope ? nr_php_class_entry_name_length(scope) : 0);
-    len += (scope ? 2 : 0); /* double colon */
-    len += nr_php_function_name_length(zf);
-  }
-
-  if (NULL != key_len) {
-    *key_len = len;
-  }
-
-  return key;
-}
 
 static nr_status_t nr_php_user_instrument_set_wraprec(const zend_function* zf,
                                                       nruserfn_t* wraprec) {

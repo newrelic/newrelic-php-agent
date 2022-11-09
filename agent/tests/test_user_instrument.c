@@ -8,6 +8,7 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_private.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
@@ -54,6 +55,103 @@ static void test_op_array_wraprec(TSRMLS_D) {
 #endif /* PHP < 7.4 */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+
+#define STRING_SZ(s) (s), nr_strlen(s)
+
+static void mock_zend_function(zend_function* zf,
+                               zend_uchar type,
+                               const char* file_name,
+                               const uint32_t line_no,
+                               const char* func_name) {
+  zf->type = type;
+  zf->common.function_name = zend_string_init(STRING_SZ(func_name), 0);
+  if (type == ZEND_USER_FUNCTION && NULL != file_name) {
+    zf->op_array.filename = zend_string_init(STRING_SZ(file_name), 0);
+    zf->op_array.line_start = line_no;
+  }
+}
+
+static void mock_internal_function(zend_function* zf, const char* func_name) {
+  mock_zend_function(zf, ZEND_INTERNAL_FUNCTION, NULL, 0, func_name);
+}
+
+static void mock_user_function(zend_function* zf,
+                               const char* file_name,
+                               const uint32_t line_no,
+                               const char* func_name) {
+  mock_zend_function(zf, ZEND_USER_FUNCTION, file_name, line_no, func_name);
+}
+
+static void mock_user_function_with_scope(zend_function* zf,
+                                          const char* file_name,
+                                          const uint32_t line_no,
+                                          const char* scope_name,
+                                          const char* func_name) {
+  mock_user_function(zf, file_name, line_no, func_name);
+
+  zend_class_entry* ce = nr_calloc(1, sizeof(zend_class_entry));
+  ce->name = zend_string_init(STRING_SZ(scope_name), 0);
+  zf->common.scope = ce;
+}
+
+static void mock_user_closure(zend_function* zf,
+                              const char* file_name,
+                              const uint32_t line_no) {
+  mock_user_function(zf, file_name, line_no, "{closure}");
+  zf->common.fn_flags |= ZEND_ACC_CLOSURE;
+}
+
+static void mock_zend_function_destroy(zend_function* zf) {
+  zend_string_release(zf->common.function_name);
+  if (zf->op_array.filename) {
+    zend_string_release(zf->op_array.filename);
+  }
+  if (zf->common.scope) {
+    if (zf->common.scope->name) {
+      zend_string_release(zf->common.scope->name);
+    }
+    nr_realfree((void**)&zf->common.scope);
+  }
+}
+
+static void test_user_instrument_hashmap() {
+  char* key;
+  size_t key_len;
+#define FILE_NAME "/some/random/path/to/a_file.php"
+#define LINE_NO 10
+#define SCOPE_NAME "a_scope"
+#define FUNC_NAME "a_function"
+
+  zend_function user_closure = {0};
+  zend_function user_function = {0};
+  zend_function user_function_with_scope = {0};
+  zend_function internal_function = {0};
+
+  mock_user_closure(&user_closure, FILE_NAME, LINE_NO);
+  mock_user_function(&user_function, FILE_NAME, LINE_NO, FUNC_NAME);
+  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME, LINE_NO,
+                                SCOPE_NAME, FUNC_NAME);
+  mock_internal_function(&internal_function, FUNC_NAME);
+
+  /* Do asserts work? (don't blow up on invalid input) */
+  tlib_pass_if_null("NULL args for z2fkey", zf2key(NULL, NULL));
+  tlib_pass_if_null("NULL key_len for z2fkey", zf2key(NULL, &user_function));
+  tlib_pass_if_null("NULL zend_function for z2fkey", zf2key(&key_len, NULL));
+  tlib_pass_if_null("zf2key must not work for internal functions",
+                    zf2key(&key_len, &internal_function));
+
+  /* Happy path */
+  key = zf2key(&key_len, &user_function);
+  tlib_pass_if_not_null("key was generated for user_function", key);
+  key = zf2key(&key_len, &user_closure);
+  tlib_pass_if_not_null("key was generated for user_closure", key);
+
+  mock_zend_function_destroy(&user_closure);
+  mock_zend_function_destroy(&user_function);
+  mock_zend_function_destroy(&user_function_with_scope);
+  mock_zend_function_destroy(&internal_function);
+}
+
 static void test_get_wraprec_by_func() {
   return;
   zend_function zend_func = {0};
@@ -207,6 +305,8 @@ void test_main(void* p NRUNUSED) {
   test_op_array_wraprec(TSRMLS_C);
 #else
   test_get_wraprec_by_func();
+  test_user_instrument_hashmap();
+  test_user_instrument_lookup_performance();
 #endif /* PHP >= 7.4 */
 
   tlib_php_engine_destroy(TSRMLS_C);
