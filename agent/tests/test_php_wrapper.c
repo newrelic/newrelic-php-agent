@@ -597,7 +597,10 @@ void test_main(void* p NRUNUSED) {
 #endif /* ZTS && !PHP7 */
   tlib_php_engine_create("" PTSRMLS_CC);
   test_add_arg();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   test_before_after_clean();
+#endif
   tlib_php_engine_destroy(TSRMLS_C);
 }
 #else  /* PHP 7.3 */
