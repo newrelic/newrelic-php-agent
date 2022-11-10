@@ -1704,8 +1704,12 @@ void nr_php_observer_segment_end(zval* exception) {
   }
   segment = NRTXN(force_current_segment);
   if (NULL != segment) {
+    bool create_metric = false;
     wraprec = (nruserfn_t*)(segment->wraprec);
-    bool create_metric = (wraprec ? wraprec->create_metric : false);
+    if (NULL != wraprec) {
+      create_metric = wraprec->create_metric;
+      nr_zend_call_oapi_special_clean(wraprec, segment, NULL, NULL);
+    }
     nr_php_execute_segment_end(segment, segment->metadata, create_metric);
   }
   return;
