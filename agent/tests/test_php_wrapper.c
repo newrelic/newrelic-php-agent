@@ -20,6 +20,8 @@ tlib_parallel_info_t parallel_info
  * a variable, and not used in any other way in this test.
  *
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
 NR_PHP_WRAPPER(test_before) {
   (void)wraprec;
@@ -50,6 +52,7 @@ NR_PHP_WRAPPER(test_clean) {
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
+#endif
 
 NR_PHP_WRAPPER(test_add_array) {
   zval* arg = nr_php_zval_alloc();
