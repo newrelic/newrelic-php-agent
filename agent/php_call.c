@@ -53,7 +53,8 @@ zval* nr_php_call_user_func(zval* object_ptr,
   /*
    * With PHP8, `call_user_function_ex` was removed and `call_user_function`
    * became the recommended function.  This does't return a FAILURE for
-   * exceptions and needs to be in a try/catch block.
+   * exceptions and needs to be in a try/catch block in order to clean up
+   * properly.
    */
   zend_try {
     zend_result = call_user_function(EG(function_table), object_ptr, fname,
