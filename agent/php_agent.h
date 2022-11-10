@@ -794,9 +794,9 @@ static inline void nr_php_api_ensure_current_segment() {
    * should never be null, but doublecheck for it anyway.
    */
   if (NULL != EG(current_execute_data)->prev_execute_data) {
-    zval* exception_this = &EG(current_execute_data)->prev_execute_data->This;
+    zval* prev_this = &EG(current_execute_data)->prev_execute_data->This;
 
-    nr_php_observer_handle_uncaught_exception(exception_this);
+    nr_php_observer_handle_uncaught_exception(prev_this);
   }
 
 #endif
