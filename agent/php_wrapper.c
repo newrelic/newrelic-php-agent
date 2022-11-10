@@ -9,11 +9,12 @@
 #include "util_logging.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-nruserfn_t* nr_php_wrap_user_function_before_after(
+nruserfn_t* nr_php_wrap_user_function_before_after_clean(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback) {
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
   if (NULL == wraprec) {
@@ -43,6 +44,19 @@ nruserfn_t* nr_php_wrap_user_function_before_after(
                        __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
     } else {
       wraprec->special_instrumentation_before = before_callback;
+    }
+  }
+
+  if (clean_callback) {
+    if (is_instrumentation_set(wraprec->special_instrumentation_clean,
+                               clean_callback)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: attempting to set special_instrumentation_clean "
+                       "for %.*s, but "
+                       "it is already set",
+                       __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    } else {
+      wraprec->special_instrumentation_clean = clean_callback;
     }
   }
 

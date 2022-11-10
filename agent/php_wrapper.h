@@ -83,13 +83,22 @@
  * 3. Delegation: you can delegate from any wrapper to another wrapper with
  *    NR_PHP_WRAPPER_DELEGATE (foo), provided the original function hasn't
  *    already been called.
+ *
+ *    OAPI updates:
+ *    There are now before, after, and clean callbacks.
+ *    1) before_callback gets called when OAPI triggers the begin function hook.
+ *    2) after_callback gets called when OAPI triggers the end function hook.
+ *    3) clean_callback gets called in the case of dangling segments that occur
+ * because an exception causes the end function hook to NOT be called and thus
+ * the clean function resets any variables.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-extern nruserfn_t* nr_php_wrap_user_function_before_after(
+extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback);
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback);
 #endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
