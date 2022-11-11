@@ -35,14 +35,16 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(php_cur_stack_depth) = 0;
   NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG(sapi_headers) = NULL;
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  /* This hashmap will store pointers to wraprecs. Since wraprecs 
-   * are persistent (they're not destroyed between requests), 
-   * there's no need for hashmap value destructor. */
-  NRPRG(user_function_wrappers) = nr_hashmap_create(NULL);
-#else
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
   NRPRG(pid) = getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+  /* This hashmap will store pointers to wraprecs. Since wraprecs
+   * are persistent (they're not destroyed between requests),
+   * there's no need for hashmap value destructor. */
+  NRPRG(user_function_wrappers) = nr_hashmap_create(NULL);
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+  NRPRG(user_function_wrappers) = nr_php_wraprec_hashmap_create();
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {

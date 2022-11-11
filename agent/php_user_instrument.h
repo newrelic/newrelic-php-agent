@@ -12,6 +12,7 @@
 
 #include "nr_segment.h"
 
+
 struct _nruserfn_t;
 
 /*
@@ -103,40 +104,11 @@ typedef struct _nruserfn_t {
 
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-/*
- * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
- *           with a zend_function.
- *
- * Params  : 1. The zend function to find in a wraprec
- *
- * Returns : The function wrapper that matches the zend_function.
- *           This will first try to match the lineno/filename.  If we don't have
- *           that for any reason (maybe the func didn't exist in the function
- *           table when we first added), it will match by function name/class.
- *           NULL if no function wrapper matches the zend_function.
- */
-extern nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func);
-#endif
-/*
- * Purpose : Get the wraprec associated with a user function op_array.
- *
- * Params  : 1. The zend function's oparray.
- *
- * Returns : The function wrapper. NULL if no function wrapper was registered
- *           or if the registered function wrapper is invalid.
- */
-extern nruserfn_t* nr_php_op_array_get_wraprec(
-    const zend_op_array* op_array TSRMLS_DC);
-
-/*
- * Purpose : Set the wraprec associated with a user function op_array.
- *
- * Params  : 1. The zend function's oparray.
- *	     2. The function wrapper.
- */
-extern void nr_php_op_array_set_wraprec(zend_op_array* op_array,
-                                        nruserfn_t* func TSRMLS_DC);
+// clang-format off
+/* Wrappers around different implementations of enabling and retrieving instrumentation */
+extern void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec);
+extern nruserfn_t* nr_php_user_instrument_get(zend_function* func);
+// clang-format on
 
 /*
  * Purpose : Name a transaction
@@ -217,7 +189,7 @@ extern void nr_php_user_function_add_declared_callback(
     int namestrlen,
     nruserfn_declared_t callback TSRMLS_DC);
 
-static inline bool chk_reported_class(zend_function* func,
+static inline bool chk_reported_class(const zend_function* func,
                                       nruserfn_t* wraprec) {
   if ((NULL == func) || (NULL == func->common.scope)) {
     return false;

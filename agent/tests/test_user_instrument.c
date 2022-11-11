@@ -8,12 +8,15 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
-#include "php_user_instrument_private.h"
+#include "util_hash.h"
+#include "util_logging.h"
+#define DECLARE_nr_php_wraprec_hashmap_API
+#include "php_user_instrument_lookup.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 static void test_op_array_wraprec(TSRMLS_D) {
   zend_op_array oparray = {.function_name = (void*)1};
   nruserfn_t func = {0};
@@ -54,7 +57,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 #endif /* PHP < 7.4 */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
 
 #define STRING_SZ(s) (s), nr_strlen(s)
 
@@ -143,8 +146,10 @@ static void test_user_instrument_hashmap() {
   /* Happy path */
   key = zf2key(&key_len, &user_function);
   tlib_pass_if_not_null("key was generated for user_function", key);
+  printf("user function key = %s\n", key);
   key = zf2key(&key_len, &user_closure);
   tlib_pass_if_not_null("key was generated for user_closure", key);
+  printf("user closure key = %s\n", key);
 
   mock_zend_function_destroy(&user_closure);
   mock_zend_function_destroy(&user_function);
@@ -152,6 +157,50 @@ static void test_user_instrument_hashmap() {
   mock_zend_function_destroy(&internal_function);
 }
 
+static void test_user_instrument_lookup_performance() {
+#define FILE_NAME "/some/random/path/to/a_file.php"
+#define LINE_NO 10
+#define SCOPE_NAME "a_scope"
+#define FUNC_NAME "a_function"
+  zend_function user_function = {0};
+
+  mock_user_function(&user_function, FILE_NAME, LINE_NO, FUNC_NAME);
+
+  nrtime_t start, stop, duration;
+  start = nr_get_time();
+  for (int i = 0; i < 100000; i++) {
+    char* key;
+    size_t key_len;
+    key = zf2key(&key_len, &user_function);
+    tlib_pass_if_not_null("key was generated for user_function", key);
+    //int len;
+    //len = key_len;
+    //nr_mkhash(key, &len);
+  }
+  stop = nr_get_time();
+  duration = nr_time_duration(start, stop);
+  printf("zf2key elapsed time: " NR_TIME_FMT "\n", duration);
+
+  start = nr_get_time();
+  for (int i = 0; i < 100000; i++) {
+    char* key;
+    size_t key_len;
+    int len;
+    key = zf2key(&key_len, &user_function);
+    tlib_pass_if_not_null("key was generated for user_function", key);
+    len = key_len;
+    nr_mkhash(key, &len);
+  }
+  stop = nr_get_time();
+  duration = nr_time_duration(start, stop);
+  printf("zf2key + nr_mkhash elapsed time: " NR_TIME_FMT "\n", duration);
+
+  mock_zend_function_destroy(&user_function);
+}
+
+#endif
+
+#if LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
 static void test_get_wraprec_by_func() {
   return;
   zend_function zend_func = {0};
@@ -292,7 +341,13 @@ static void test_get_wraprec_by_func() {
 
   tlib_php_request_end();
 }
-#endif /* PHP >= 7.4 */
+#endif
+
+#if LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+static void test_wraprec_hashmap() {
+  tlib_pass_if_null("change me", NULL);
+}
+#endif
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -301,13 +356,20 @@ void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
   test_op_array_wraprec(TSRMLS_C);
-#else
+#elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
   test_get_wraprec_by_func();
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
   test_user_instrument_hashmap();
   test_user_instrument_lookup_performance();
-#endif /* PHP >= 7.4 */
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+  test_wraprec_hashmap();
+#else
+
+#error "Unknown wraprec lookup method"
+
+#endif
 
   tlib_php_engine_destroy(TSRMLS_C);
 }

@@ -1,18 +1,5 @@
-/*
- * Copyright 2022 New Relic Corporation. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
+#if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
 
-/*
- * This file contains php_user_instrument.c helper functions.
- * They're extracted here so that they're available for unit
- * tests in test_user_instrument.c. This header file should
- * not be included anywhere else than in php_user_instrument.c.
- */
-#ifndef PHP_USER_INSTRUMENT_PRIVATE_HDR
-#define PHP_USER_INSTRUMENT_PRIVATE_HDR
-
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 /*
  * Purpose : Return number of digits in a number (line number)
  *
@@ -125,6 +112,24 @@ static inline char* zf2key(size_t* key_len, const zend_function* zf) {
 
   return key;
 }
-#endif
+
+static nr_status_t util_hashmap_set_wraprec(const zend_function* zf,
+                                                      nruserfn_t* wraprec) {
+  size_t key_len = 0;
+  char* key = zf2key(&key_len, zf);
+  nr_status_t result;
+  result = nr_hashmap_set(NRPRG(user_function_wrappers), key, key_len, wraprec);
+  nr_free(key);
+  return result;
+}
+
+static nruserfn_t* util_hashmap_get_wraprec(zend_function* zf) {
+  size_t key_len = 0;
+  char* key = zf2key(&key_len, zf);
+  nruserfn_t* wraprec = NULL;
+  wraprec = nr_hashmap_get(NRPRG(user_function_wrappers), key, key_len);
+  nr_free(key);
+  return wraprec;
+}
 
 #endif

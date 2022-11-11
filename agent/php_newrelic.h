@@ -14,6 +14,7 @@
 #include "nr_segment.h"
 #include "nr_txn.h"
 #include "php_extension.h"
+#include "php_wraprec_hashmap.h"
 #include "util_hashmap.h"
 #include "util_vector.h"
 
@@ -478,9 +479,7 @@ nrinibool_t
 nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
                                        */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-nr_hashmap_t* user_function_wrappers;
-#else
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 /*
  * pid and user_function_wrappers are used to store user function wrappers.
  * Storing this on a request level (as opposed to storing it on transaction
@@ -488,6 +487,15 @@ nr_hashmap_t* user_function_wrappers;
  */
 uint64_t pid;
 nr_vector_t* user_function_wrappers;
+
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+
+nr_hashmap_t* user_function_wrappers;
+
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+
+nr_php_wraprec_hashmap_t* user_function_wrappers;
+
 #endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a

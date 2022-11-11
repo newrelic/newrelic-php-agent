@@ -31,6 +31,22 @@
 #include "config.h"
 #endif
 
+#define LOOKUP_USE_OP_ARRAY 0
+#define LOOKUP_USE_LINKED_LIST 1
+#define LOOKUP_USE_UTIL_HASHMAP 2
+#define LOOKUP_USE_WRAPREC_HASHMAP 3
+
+//#define LOOKUP_METHOD LOOKUP_USE_OP_ARRAY
+#ifndef LOOKUP_METHOD
+
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#define LOOKUP_METHOD LOOKUP_USE_WRAPREC_HASHMAP
+#else
+#define LOOKUP_METHOD LOOKUP_USE_OP_ARRAY
+#endif
+
+#endif
+
 #include "nr_axiom.h"
 #include "nr_agent.h"
 #include "nr_app.h"
@@ -595,7 +611,7 @@ extern char* nr_php_function_debug_name(const zend_function* func);
  * Returns : A pointer to the filename or NULL if the callable was not a user
  *           function or if no filename was found.
  */
-extern const char* nr_php_function_filename(zend_function* func);
+extern const char* nr_php_function_filename(const zend_function* func);
 
 static inline zend_class_entry* nr_php_zend_register_internal_class_ex(
     zend_class_entry* ce,

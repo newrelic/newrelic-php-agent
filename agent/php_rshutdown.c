@@ -109,10 +109,12 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(predis_ctx));
   nr_hashmap_destroy(&NRPRG(predis_commands));
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  nr_hashmap_destroy(&NRPRG(user_function_wrappers));
-#else
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
   nr_vector_destroy(&NRPRG(user_function_wrappers));
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+  nr_hashmap_destroy(&NRPRG(user_function_wrappers));
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+  nr_php_wraprec_hashmap_destroy(&NRPRG(user_function_wrappers));
 #endif
 
   NRPRG(cufa_callback) = NULL;

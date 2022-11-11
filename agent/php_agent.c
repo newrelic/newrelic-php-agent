@@ -1055,7 +1055,7 @@ char* nr_php_function_debug_name(const zend_function* func) {
   return name;
 }
 
-const char* nr_php_function_filename(zend_function* func) {
+const char* nr_php_function_filename(const zend_function* func) {
   /*
    * zend_function is a union and therefore may point to a zend_op_array or a
    * zend_internal_function. Checking the type weeds out ZEND_INTERNAL_FUNCTION,

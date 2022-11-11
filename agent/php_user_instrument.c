@@ -6,32 +6,13 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
-#include "php_user_instrument_private.h"
 #include "php_wrapper.h"
 #include "lib_guzzle_common.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "php_user_instrument_lookup.h"
 
-
-static nr_status_t nr_php_user_instrument_set_wraprec(const zend_function* zf,
-                                                      nruserfn_t* wraprec) {
-  size_t key_len = 0;
-  char* key = zf2key(&key_len, zf);
-  nr_status_t result;
-  result = nr_hashmap_set(NRPRG(user_function_wrappers), key, key_len, wraprec);
-  nr_free(key);
-  return result;
-}
-
-static nruserfn_t* nr_php_user_instrument_get_wraprec(zend_function* zf) {
-  size_t key_len = 0;
-  char* key = zf2key(&key_len, zf);
-  nruserfn_t* wraprec = NULL;
-  wraprec = nr_hashmap_get(NRPRG(user_function_wrappers), key, key_len);
-  nr_free(key);
-  return wraprec;
-}
 
 /*
  * The mechanism of zend_try .. zend_catch .. zend_end_try
@@ -151,29 +132,8 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  const char* filename = nr_php_function_filename(func);
-  /*
-   * Before setting a filename, ensure it is not NULL and it doesn't equal the
-   * "special" designation given to funcs without filenames. If the function is
-   * an evaluated expression or called directly from the CLI there is no
-   * filename, but the function says the filename is "-". Avoid setting in this
-   * case; otherwise, all the evaluated/cli calls would match.
-   */
-  if ((NULL == wraprec->filename) && (NULL != filename)
-      && (0 != nr_strcmp("-", filename))) {
-    wraprec->filename = nr_strdup(filename);
-  }
+  nr_php_user_instrument_set(func, wraprec);
 
-  wraprec->lineno = nr_php_zend_function_lineno(func);
-
-  if (chk_reported_class(func, wraprec)) {
-    wraprec->reportedclass = nr_strdup(ZSTR_VAL(func->common.scope->name));
-  }
-  nr_php_user_instrument_set_wraprec(func, wraprec);
-#else
-  nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
-#endif
   wraprec->is_wrapped = 1;
 
   if (wraprec->declared_callback) {
@@ -330,111 +290,6 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   nr_wrapped_user_functions = wraprec;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-/*
- * Purpose : Determine if a func matches a wraprec.
- *
- * Params  : 1. The wraprec to match to a zend function
- *           2. The zend function to match to a wraprec
- *
- * Returns : True if the class/function of a wraprec match the class function
- *           of a zend function.
- */
-static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
-  char* klass = NULL;
-  const char* filename = NULL;
-
-  /*
-   * We are able to match either by lineno/filename pair or funcname/classname
-   * pair.
-   */
-
-  /*
-   * Optimize out string manipulations; don't do them if you don't have to.
-   * For instance, if funcname doesn't match, no use comparing the classname.
-   */
-
-  if (NULL == p) {
-    return false;
-  }
-  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
-    return false;
-  }
-
-  if (0 != p->lineno) {
-    /*
-     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
-     * going on to the funcname/classname pair comparison.
-     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
-     * we must do the funcname/classname compare.
-     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
-     * we can exit without doing the funcname/classname compare.
-     */
-    if (p->lineno != nr_php_zend_function_lineno(func)) {
-      return false;
-    } 
-    /*
-     * lineno matched, let's check the filename
-     */
-    filename = nr_php_function_filename(func);
-
-    /*
-     * If p->filename isn't NULL, we know the comparison is accurate;
-     * otherwise, it's inconclusive even if we have a lineno because it
-     * could be a cli call or evaluated expression that has no filename.
-     */
-    if (NULL != p->filename) {
-      if (0 == nr_strcmp(p->filename, filename)) {
-        return true;
-      }
-      return false;
-    }
-  }
-
-  if (NULL == func->common.function_name) {
-    return false;
-  }
-
-  if (0 != nr_stricmp(p->funcnameLC, ZSTR_VAL(func->common.function_name))) {
-    return false;
-  }
-  if (NULL != func->common.scope && NULL != func->common.scope->name) {
-    klass = ZSTR_VAL(func->common.scope->name);
-  }
-
-  if ((0 == nr_strcmp(p->reportedclass, klass))
-      || (0 == nr_stricmp(p->classname, klass))) {
-    /*
-     * If we get here it means lineno/filename weren't initially set.
-     * Set it now so we can do the optimized compare next time.
-     * lineno/filename is usually not set if the func wasn't loaded when we
-     * created the initial wraprec and we had to use the more difficult way to
-     * set, update it with lineno/filename now.
-     */
-    if (NULL == p->filename) {
-      filename = nr_php_function_filename(func);
-      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
-        p->filename = nr_strdup(filename);
-      }
-    }
-    if (0 == p->lineno) {
-      p->lineno = nr_php_zend_function_lineno(func);
-    }
-    return true;
-  }
-  return false;
-}
-
-nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func) {
-
-  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
-    return NULL;
-  }
-
-  return nr_php_user_instrument_get_wraprec(func);
-}
-#endif
-
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
 nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   char* name = NULL;
@@ -451,15 +306,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
     name = nr_php_function_debug_name(func);
   }
 
-  /*
-   * nr_php_op_array_get_wraprec does basic sanity checks on the stored
-   * wraprec.
-   */
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-  wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
-#else
-  wraprec = nr_php_get_wraprec_by_func(func);
-#endif
+  wraprec = nr_php_user_instrument_get(func);
 
   if (wraprec) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
@@ -607,11 +454,8 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-  wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
-#else
-  wraprec = nr_php_get_wraprec_by_func(func);
-#endif
+  wraprec = nr_php_user_instrument_get(func);
+
   if (wraprec) {
     wraprec->is_exception_handler = 0;
   }
@@ -656,88 +500,66 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
   }
 }
 
-/*
- * The functions nr_php_op_array_set_wraprec and
- * nr_php_op_array_get_wraprec set and retrieve pointers to function wrappers
- * (wraprecs) stored in the oparray of zend functions.
- *
- * There's the danger that other PHP modules or even other PHP processes
- * overwrite those pointers. We try to detect that by validating the
- * stored pointers.
- *
- * Since PHP 7.3, OpCache stores functions and oparrays in shared
- * memory. Consequently, the wraprec pointers we store in the oparray
- * might be overwritten by other processes. Dereferencing an overwritten
- * wraprec pointer will most likely cause a crash.
- *
- * The remedy, applied for all PHP versions:
- *
- *  1. All wraprec pointers are stored in a global vector.
- *
- *  2. The index of the wraprec pointer in the vector is mangled with
- *     the current process id. This results in a value with the lower 16 bits
- *     holding the vector index (i) and the higher bits holding the process
- *     id (p):
- *
- *       0xppppiiii (32 bit)
- *       0xppppppppppppiiii (64 bit)
- *
- *     This supports a maximum of 65536 instrumented functions.
- *
- *  3. This mangled value is stored in the oparray.
- *
- *  4. When a zend function is called and the agent tries to obtain the
- *     wraprec, the upper bits of the value are compared to the current process
- *     id. If they match, the index in the lower 16 bits is considered safe and
- *     is used. Otherwise the function is considered as uninstrumented.
- */
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-void nr_php_op_array_set_wraprec(zend_op_array* op_array,
-                                 nruserfn_t* func TSRMLS_DC) {
-  uintptr_t index;
+void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec) {
 
-  if (NULL == op_array || NULL == func) {
-    return;
-  }
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 
-  if (!nr_vector_push_back(NRPRG(user_function_wrappers), func)) {
-    return;
-  }
+  nr_php_op_array_set_wraprec(&func->op_array, wraprec);
 
-  index = nr_vector_size(NRPRG(user_function_wrappers)) - 1;
+#elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
 
-  index |= (NRPRG(pid) << 16);
+  wraprec_metadata_set(wraprec, func);
 
-  op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+
+  util_hashmap_set_wraprec(func, wraprec);
+
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+
+  wraprec_hashmap_set(NRPRG(user_function_wrappers), wraprec, func);
+
+#else
+
+#error "Unknown wraprec lookup method"
+
+#endif
 }
 
-nruserfn_t* nr_php_op_array_get_wraprec(
-    const zend_op_array* op_array TSRMLS_DC) {
-  uintptr_t index;
-  uint64_t pid;
+nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
+  nruserfn_t* p = NULL;
+  unsigned n = 0;
+  struct timespec tstart={0,0}, tend={0,0};
+  clock_gettime(CLOCK_MONOTONIC, &tstart);
 
-  if (nrunlikely(NULL == op_array)) {
+  if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
     return NULL;
   }
 
-  index = (uintptr_t)op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)];
+#if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 
-  if (0 == index) {
-    return NULL;
-  }
+  n++;
+  p = nr_php_op_array_get_wraprec(&func->op_array);
 
-  pid = index >> 16;
-  index &= 0xffff;
+#elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
 
-  if (pid != NRPRG(pid)) {
-    nrl_verbosedebug(
-        NRL_INSTRUMENT,
-        "Skipping instrumented function: pid mismatch, got " NR_INT64_FMT
-        ", expected " NR_INT64_FMT,
-        pid, NRPRG(pid));
-    return NULL;
-  }
+  p = nr_php_get_wraprec_by_func(&n, func);
 
-  return (nruserfn_t*)nr_vector_get(NRPRG(user_function_wrappers), index);
+#elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+
+  n++;
+  p = util_hashmap_get_wraprec(func);
+
+#elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+
+  p = wraprec_hashmap_get(&n, NRPRG(user_function_wrappers), func);
+
+#else
+
+#error "Unknown wraprec lookup method"
+
+#endif
+
+  clock_gettime(CLOCK_MONOTONIC, &tend);
+  printf("%d, %ld\n", n, (tend.tv_sec * 1000000000 + tend.tv_nsec) - (tstart.tv_sec * 1000000000 + tstart.tv_nsec));
+  return p;
 }
-#endif /* PHP < 7.4 */
