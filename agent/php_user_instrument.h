@@ -27,6 +27,18 @@ typedef struct nrspecialfn_return_t (*nrspecialfn_t)(
 
 typedef void (*nruserfn_declared_t)(TSRMLS_D);
 
+typedef struct {
+  bool is_set;
+  uint32_t len;
+  char *value;
+} zf_metadata_t;
+typedef struct _nruserfn_metadata {
+  uint32_t lineno;
+  zf_metadata_t filename;
+  zf_metadata_t scope;
+  zf_metadata_t function_name;
+} nruserfn_metadata;
+
 /*
  * An equivalent data structure for user functions.
  *
@@ -36,6 +48,8 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
  */
 typedef struct _nruserfn_t {
   struct _nruserfn_t* next; /* singly linked list next pointer */
+
+  nruserfn_metadata id;
 
   const char* extra; /* extra naming information about the function */
 

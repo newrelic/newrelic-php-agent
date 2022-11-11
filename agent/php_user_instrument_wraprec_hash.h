@@ -26,7 +26,7 @@ nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create() {
     /*
      * Encode the default value in one place: namely, here.
      */
-  hashmap->hash_modulo = 53; // or 97 or other prime number
+  hashmap->hash_modulo = 257; //521 or 509 //53; // or 97 or other prime number
   hashmap->buckets = (nr_wraprec_hashmap_bucket_t**)nr_calloc(
       hashmap->hash_modulo, sizeof(nr_wraprec_hashmap_bucket_t*));
   hashmap->elements = 0;
@@ -63,8 +63,65 @@ void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
 }
 #endif
 
-static inline void wraprec_metadata_set(nruserfn_t* wraprec, const zend_function* zf) {
-    const char* filename = nr_php_function_filename(zf);
+static inline void set_filename(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
+  const char *filename = nr_php_op_array_file_name(&zf->op_array);
+
+  if (NULL != filename) {
+    id->filename.is_set = true;
+    id->filename.len = zf->op_array.function_name->len;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    id->filename.value = no_copy? filename : nr_strdup(filename);
+#pragma GCC diagnostic pop
+  } else {
+    id->filename.is_set = false;
+  }
+}
+static inline void set_scope(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
+  const char *scope_name = nr_php_op_array_scope_name(&zf->op_array);
+
+  if (NULL != scope_name) {
+    id->scope.is_set = true;
+    id->scope.len = zf->op_array.scope->name->len;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    id->scope.value = no_copy? scope_name : nr_strdup(scope_name);
+#pragma GCC diagnostic pop
+  } else {
+    id->scope.is_set = false;
+  }
+}
+static inline void set_function_name(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
+  const char *function_name = nr_php_op_array_function_name(&zf->op_array);
+
+  if (NULL != function_name) {
+    id->function_name.is_set = true;
+    id->function_name.len = zf->op_array.function_name->len;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    id->function_name.value = no_copy? function_name : nr_strdup(function_name);
+#pragma GCC diagnostic pop
+  } else {
+    id->function_name.is_set = false;
+  }
+}
+
+static inline void wraprec_metadata_set_internal(nruserfn_metadata* id, const zend_function* zf, bool no_copy) {
+  id->lineno = nr_php_zend_function_lineno(zf);
+  set_filename(id, zf, no_copy);
+  set_scope(id, zf, no_copy);
+  set_function_name(id, zf, no_copy);
+
+}
+
+static inline void wraprec_metadata_set(nruserfn_metadata* id, const zend_function* zf) {
+  if (nrunlikely(NULL == id || NULL == zf)) {
+    return;
+  }
+
+  wraprec_metadata_set_internal(id, zf, false);
+
+#if 0
   /*
    * Before setting a filename, ensure it is not NULL and it doesn't equal the
    * "special" designation given to funcs without filenames. If the function is
@@ -82,9 +139,70 @@ static inline void wraprec_metadata_set(nruserfn_t* wraprec, const zend_function
   if (chk_reported_class(zf, wraprec)) {
     wraprec->reportedclass = nr_strdup(ZSTR_VAL(zf->common.scope->name));
   }
+#endif
+}
+
+static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t* zf_id) {
+
+  if (!wr_id->is_set || zf_id->is_set) {
+    return false;
+  }
+
+  /* This is an assert - it's already been checked */
+  if (wr_id->len != zf_id->len) {
+    return false;
+  }
+
+  /* compare from the back */
+  for (int i = wr_id->len; i >= 0; i--) {
+    if (wr_id->value[i] != zf_id->value[i]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static inline bool wraprec_metadata_is_match(const nruserfn_t* wraprec, const zend_function* zf) {
+  const nruserfn_metadata *id;
+  nruserfn_metadata zf_id;
+
+  if (nrunlikely(NULL == wraprec || NULL == zf)) {
+    return false;
+  }
+
+  id = &wraprec->id;
+
+  wraprec_metadata_set_internal(&zf_id, zf, true);
+
+  if (id->lineno != zf_id.lineno) {
+    return false;
+  }
+
+  if (id->function_name.len != zf_id.function_name.len) {
+    return false;
+  }
+
+  if (id->filename.len != zf_id.filename.len) {
+    return false;
+  }
+
+  if (id->scope.len != zf_id.scope.len) {
+    return false;
+  }
+
+  if (!wraprec_streq(&id->function_name, &zf_id.function_name)) {
+    return false;
+  }
+
+  if (!wraprec_streq(&id->filename, &zf_id.filename)) {
+    return false;
+  }
+
+  /* No need to check scope - function has the same name is at the same location in the same file */
+  return true;
+
+#if 0
   char* klass = NULL;
   const char* filename = NULL;
 
@@ -169,7 +287,7 @@ static inline bool wraprec_metadata_is_match(const nruserfn_t* wraprec, const ze
     return true;
   }
   return false;
-
+#endif
 }
 
 static inline size_t zf2hash(const nr_php_wraprec_hashmap_t* hashmap, const zend_function* zf) {
@@ -217,7 +335,7 @@ static inline nr_status_t wraprec_hashmap_set(nr_php_wraprec_hashmap_t* hashmap,
     return NR_FAILURE;
   }
 
-  wraprec_metadata_set(wraprec, zf);
+  wraprec_metadata_set(&wraprec->id, zf);
 
   bucket = (nr_wraprec_hashmap_bucket_t*)nr_malloc(sizeof(nr_wraprec_hashmap_bucket_t));
   bucket->prev = NULL;
