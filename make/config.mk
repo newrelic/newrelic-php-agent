@@ -160,3 +160,14 @@ endif
 ifneq (,$(GO_TAGS))
 	GO_TAGS := -tags='$(GO_TAGS)'
 endif
+
+#
+# Other build time configuration.
+#
+
+# Select different lookup method: 0, 1, 2, 3 (see php_agent.h)
+# Read about each lookup method in php_user_instrument_lookup.h
+ifneq (,$(LOOKUP_METHOD))
+  CPPFLAGS += -DLOOKUP_METHOD=$(LOOKUP_METHOD)
+  CFLAGS += -DLOOKUP_METHOD=$(LOOKUP_METHOD)
+endif

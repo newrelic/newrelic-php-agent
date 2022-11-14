@@ -284,6 +284,17 @@ static void nr_php_check_high_security_log_forwarding(TSRMLS_D) {
   }
 }
 
+static char *lookup_method_str(int m) {
+  switch (m) {
+    case LOOKUP_USE_OP_ARRAY: return "op_array";
+    case LOOKUP_USE_LINKED_LIST: return "llist";
+    case LOOKUP_USE_UTIL_HASHMAP: return "util_hashmap";
+    case LOOKUP_USE_WRAPREC_HASHMAP: return "wraprec_hashmap";
+    default: return "unknown";
+  }
+  return "unknown";
+}
+
 static char* nr_php_get_agent_specific_info(void) {
   const char* php_version;
   const char* zend_type;
@@ -315,8 +326,8 @@ static char* nr_php_get_agent_specific_info(void) {
 #endif
 
   buf[0] = '\0';
-  snprintf(buf, sizeof(buf), " php='%s' zts=%s sapi='%s' %s", php_version,
-           zend_type, sapi_module.name, web_server_info);
+  snprintf(buf, sizeof(buf), " php='%s' zts=%s sapi='%s' lookup='%s' %s", php_version,
+           zend_type, sapi_module.name, lookup_method_str(LOOKUP_METHOD), web_server_info);
 
   return nr_strdup(buf);
 }
