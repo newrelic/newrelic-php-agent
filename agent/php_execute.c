@@ -1707,7 +1707,6 @@ void nr_php_observer_segment_end(zval* exception) {
     bool create_metric = false;
     wraprec = (nruserfn_t*)(segment->wraprec);
     create_metric = (wraprec ? wraprec->create_metric : false);
-    /*
     if (NULL != wraprec) {
       create_metric = wraprec->create_metric;
 
@@ -1716,7 +1715,6 @@ void nr_php_observer_segment_end(zval* exception) {
         zend_bailout();
       }
     }
-       */
     nr_php_execute_segment_end(segment, segment->metadata, create_metric);
   }
   return;

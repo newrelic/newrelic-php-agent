@@ -65,8 +65,7 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                      nr_segment_t* segment,
                                      NR_EXECUTE_PROTO) {
   volatile int zcaught = 0;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  NR_UNUSED_SPECIALFN;
+
   zend_try {
     if (wraprec && wraprec->special_instrumentation_before) {
       wraprec->special_instrumentation_before(wraprec, segment,
@@ -82,8 +81,6 @@ int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
                                     nr_segment_t* segment,
                                     NR_EXECUTE_PROTO) {
   volatile int zcaught = 0;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  NR_UNUSED_SPECIALFN;
 
   zend_try {
     if (wraprec && wraprec->special_instrumentation_clean) {
