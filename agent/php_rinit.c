@@ -105,12 +105,12 @@ PHP_RINIT_FUNCTION(newrelic) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /* Stack needs to have a dtor set so that when we free it
    * during rshutdown, all elements are properly freed */
-  void stack_dtor(void* e, NRUNUSED void* d) {
+  void str_stack_dtor(void* e, NRUNUSED void* d) {
     char* str = (char*)e;
     nr_free(str);
   }
   nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
-  NRPRG(predis_ctxs).dtor = stack_dtor;
+  NRPRG(predis_ctxs).dtor = str_stack_dtor;
 #endif
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;

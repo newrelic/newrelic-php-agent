@@ -546,7 +546,7 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  char* ctx = (char *)nr_stack_pop(&NRPRG(predis_ctxs));
+  char* ctx = (char *)nr_stack_get_top(&NRPRG(predis_ctxs));
 #else
   char* ctx = NRPRG(predis_ctx);
 #endif /* OAPI */
@@ -716,6 +716,9 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
 
   /*
    * Restore any previous context on the way out.
+   *
+   * If not using OAPI, we can simply free the value after the NR_PHP_WRAPPER_CALL.
+   * Otherwise, we need an "after function" to do the freeing
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
@@ -779,21 +782,25 @@ void nr_predis_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
       nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after.
       nr_predis_pipeline_executePipeline_after);
-  nr_php_wrap_user_function_before_after(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\Atomic::executePipeline"),
       nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after.
       nr_predis_pipeline_executePipeline_after);
-  nr_php_wrap_user_function_before_after(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\ConnectionErrorProof::executePipeline"),
       nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after.
       nr_predis_pipeline_executePipeline_after);
-  nr_php_wrap_user_function_before_after(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after.
       nr_predis_pipeline_executePipeline_after);
 #else
   nr_php_wrap_user_function(
