@@ -1708,7 +1708,12 @@ void nr_php_observer_segment_end(zval* exception) {
     wraprec = (nruserfn_t*)(segment->wraprec);
     if (NULL != wraprec) {
       create_metric = wraprec->create_metric;
-      nr_zend_call_oapi_special_clean(wraprec, segment, NULL, NULL);
+      /*
+      int zcaught = nr_zend_call_oapi_special_clean(wraprec, segment, NULL, NULL);
+      if (nrunlikely(zcaught)) {
+        zend_bailout();
+      }
+       */
     }
     nr_php_execute_segment_end(segment, segment->metadata, create_metric);
   }
