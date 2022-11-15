@@ -537,7 +537,10 @@ nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
   nruserfn_t* p = NULL;
   unsigned n = 0;
   struct timespec tstart={0,0}, tend={0,0};
-  clock_gettime(CLOCK_MONOTONIC, &tstart);
+
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).debug_user_instrument_lookup)) {
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
+  }
 
   if ((NULL == func) || (ZEND_USER_FUNCTION != func->type)) {
     return NULL;
@@ -567,7 +570,9 @@ nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
 
 #endif
 
-  clock_gettime(CLOCK_MONOTONIC, &tend);
-  printf("%d, %ld\n", n, (tend.tv_sec * 1000000000 + tend.tv_nsec) - (tstart.tv_sec * 1000000000 + tstart.tv_nsec));
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).debug_user_instrument_lookup)) {
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    printf("%d, %ld\n", n, (tend.tv_sec * 1000000000 + tend.tv_nsec) - (tstart.tv_sec * 1000000000 + tstart.tv_nsec));
+  }
   return p;
 }

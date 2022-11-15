@@ -100,6 +100,7 @@ typedef struct _nrphpglobals_t {
     uint8_t show_loaded_files;
     uint8_t debug_cat;
     uint8_t disable_laravel_queue;
+    uint8_t debug_user_instrument_lookup;
   } special_flags; /* special control options */
 } nrphpglobals_t;
 
