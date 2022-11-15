@@ -93,6 +93,13 @@ int nr_php_post_deactivate(void) {
   EG(trampoline).op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = NULL;
 #endif /* PHP7 */
 #endif
+  /*
+   * End the txn before we clean up all the globals it might need.
+   */
+  if (nrlikely(0 != NRPRG(txn))) {
+    (void)nr_php_txn_end(0, 1 TSRMLS_CC);
+  }
+
   nr_php_remove_transient_user_instrumentation();
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
@@ -112,10 +119,6 @@ int nr_php_post_deactivate(void) {
   nr_vector_destroy(&NRPRG(user_function_wrappers));
 
   NRPRG(cufa_callback) = NULL;
-
-  if (nrlikely(0 != NRPRG(txn))) {
-    (void)nr_php_txn_end(0, 1 TSRMLS_CC);
-  }
 
   NRPRG(current_framework) = NR_FW_UNSET;
   NRPRG(framework_version) = 0;
