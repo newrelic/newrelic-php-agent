@@ -398,6 +398,10 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	// propagate defaults through and be sent to the collector
 	info.AgentEventLimits.LogEventConfig.Limit = 45678
 
+	// An invalid custom event max samples stored value configured from the agent should
+	// propagate defaults through and be sent to the collector
+	info.AgentEventLimits.LogEventConfig.Limit = 456780
+
 	pid = 123
 	expected = `[` +
 		`{` +
