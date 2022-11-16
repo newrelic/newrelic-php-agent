@@ -74,6 +74,7 @@ static void test_create_empty_query(void) {
   tlib_pass_if_uint64_t_equal(__func__, 0,
                               nr_flatbuffers_table_read_u64(
                                   &app, APP_LOG_EVENTS_MAX_SAMPLES_STORED, 0));
+                                  
   tlib_pass_if_uint64_t_equal(__func__, 0,
                               nr_flatbuffers_table_read_u64(                                  
                                   &app, APP_CUSTOM_EVENTS_MAX_SAMPLES_STORED, 0));
