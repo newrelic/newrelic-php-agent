@@ -34,7 +34,7 @@ const (
 	DefaultReportPeriod          = 60 * time.Second
 	MaxMetrics                   = 2 * 1000
 	MaxTxnEvents                 = 10 * 1000
-	MaxCustomMaxEvents           = 10 * 1000
+	MaxCustomMaxEvents           = 100 * 1000
 	MaxErrorEvents               = 100
 	MaxSpanMaxEvents             = 10000
 	MaxLogMaxEvents              = 20 * 1000
