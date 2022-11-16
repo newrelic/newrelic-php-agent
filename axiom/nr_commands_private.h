@@ -15,7 +15,7 @@
  * The minimum size of a flatbuffer message (no agent run or message body).
  * This should be updated when new fields are added.
  */
-#define MIN_FLATBUFFER_SIZE 21
+#define MIN_FLATBUFFER_SIZE 20
 
 /*
  * Purpose : Check that the first offset is actually within the bounds of the
