@@ -638,10 +638,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;          Must be one of the following values:
 ;          cakephp, codeigniter, drupal, drupal8, joomla, kohana, laravel,
-;          magento, magento2, mediawiki, silex, slim, symfony1, symfony2,
+;          magento, magento2, mediawiki, slim, symfony2, symfony4,
 ;          wordpress, yii, zend, zend2, no_framework
 ;
-;          Note that "drupal" covers only Drupal 6 and 7.
+;          Note that "drupal" covers only Drupal 6 and 7 and "symfony2"
+;          now only supports Symfony 3.x.
 ;
 ;newrelic.framework = ""
 
