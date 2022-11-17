@@ -139,9 +139,13 @@ var (
 		// Ensure that we get Javascript agent code in the reply
 		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
 		SecurityPolicyToken: "",
+		// Set log and customer event limits to non-zero values or else collector will return 0.
 		AgentEventLimits: collector.EventConfigs{
 			LogEventConfig: collector.Event{
 				Limit: 10000,
+			},
+			CustomEventConfig: collector.Event{
+				Limit: 30000,
 			},
 		},
 	}
