@@ -140,12 +140,14 @@ var (
 		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
 		SecurityPolicyToken: "",
 		// Set log and customer event limits to non-zero values or else collector will return 0.
+		// Use default value for logging.
+		// Use max value for custom event so integration tests can exercise full range of values for max to record.
 		AgentEventLimits: collector.EventConfigs{
 			LogEventConfig: collector.Event{
 				Limit: 10000,
 			},
 			CustomEventConfig: collector.Event{
-				Limit: 30000,
+				Limit: 100000,
 			},
 		},
 	}
