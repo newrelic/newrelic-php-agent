@@ -431,7 +431,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 			AppHarvest: m.p.harvests[idOne],
 			ID:         idOne,
 			Type:       HarvestTxnEvents,
-			Blocking:	true,
+			Blocking:   true,
 		}
 		/* collect txn data */
 		<-m.clientParams

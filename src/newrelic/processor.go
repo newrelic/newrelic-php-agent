@@ -657,7 +657,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// This needs to be determined here, as even an empty harvest needs
 	// to be overwritten with new containers for the next harvest.
 	skip_data_usage := false
-	if (harvest.empty()) {
+	if harvest.empty() {
 		skip_data_usage = true
 	}
 	// In many cases, all types are harvested
