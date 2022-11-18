@@ -18,6 +18,7 @@ newrelic.framework = wordpress
 
 /*EXPECT
 f
+h
 g
 */
 
@@ -47,13 +48,22 @@ function do_action($tag, ...$args) {
     call_user_func_array($tag, $args);
 }
 
+function h() {
+    echo "h\n";
+    throw new Exception("Test Exception");
+}
+
 function g() {
     echo "g\n";
 }
 
 function f() {
     echo "f\n";
-    do_action("g");
+    try {
+        do_action("h");
+    } catch (Exception $e){
+        do_action("g");
+    }
 }
 
 do_action("f");

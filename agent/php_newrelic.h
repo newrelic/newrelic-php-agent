@@ -411,6 +411,9 @@ int framework_version; /* Current framework version */
  * of the previous hooks. With OAPI, we can no longer do this so
  * we track the stack manually */
 nr_stack_t drupal_module_invoke_all_hooks; /* stack of Drupal hooks */
+nr_stack_t drupal_module_invoke_all_states; /* stack of bools indicating
+                                               whether the current hook
+                                               needs to be released */
 #else
 char* drupal_module_invoke_all_hook;      /* The current Drupal hook */
 size_t drupal_module_invoke_all_hook_len; /* The length of the current Drupal
@@ -433,6 +436,9 @@ int symfony1_in_error404; /* Whether we are currently within a
  * of the previous tags. With OAPI, we can no longer do this so
  * we track the stack manually */
 nr_stack_t wordpress_tags;
+nr_stack_t wordpress_tag_states; /* stack of bools indicating
+                                    whether the current tag
+                                    needs to be released */
 #else
 char* wordpress_tag;                   /* The current WordPress tag */
 #endif //OAPI

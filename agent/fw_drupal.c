@@ -744,19 +744,33 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
   if (nr_php_is_zval_non_empty_string(hook_copy)) {
     nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks),
                   hook_copy);
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_states),
+                  (void*)!NULL);
+  } else {
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_states),
+                  NULL);
   }
 }
 NR_PHP_WRAPPER_END
 
+static void module_invoke_all_clean_stacks() {
+  if((bool)nr_stack_pop(&NRPRG(drupal_module_invoke_all_states))) {
+    zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
+    nr_php_arg_release(&hook_copy);
+  }
+}
+
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
   (void)wraprec;
-  /* using nr_php_get_user_func_arg() so that we don't perform another copy
-   * when all we want to do is check the string length */
-  zval* orig = nr_php_get_user_func_arg((zend_uint)1, NR_EXECUTE_ORIG_ARGS);
-  if (nr_php_is_zval_non_empty_string(orig)) {
-      zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
-      nr_php_arg_release(&hook_copy);
-  }
+  module_invoke_all_clean_stacks();
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_clean) {
+  NR_UNUSED_SPECIALFN;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  (void)wraprec;
+  module_invoke_all_clean_stacks();
 }
 NR_PHP_WRAPPER_END
 
@@ -792,7 +806,7 @@ leave:
   nr_php_arg_release(&hook);
 }
 NR_PHP_WRAPPER_END
-#endif //OAPI
+#endif /* OAPI */
 
 /*
  * Enable the drupal instrumentation.
@@ -828,11 +842,11 @@ void nr_drupal_enable(TSRMLS_D) {
     nr_php_wrap_user_function_before_after_clean(NR_PSTR("module_invoke_all"),
                                                  nr_drupal_wrap_module_invoke_all_before,
                                                  nr_drupal_wrap_module_invoke_all_after,
-                                                 nr_drupal_wrap_module_invoke_all_after);
+                                                 nr_drupal_wrap_module_invoke_all_clean);
 #else
     nr_php_wrap_user_function(NR_PSTR("module_invoke_all"),
                               nr_drupal_wrap_module_invoke_all TSRMLS_CC);
-#endif //OAPI
+#endif /* OAPI */
     nr_php_wrap_user_function(NR_PSTR("view::execute"),
                               nr_drupal_wrap_view_execute TSRMLS_CC);
   }

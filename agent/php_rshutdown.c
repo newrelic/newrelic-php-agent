@@ -119,7 +119,9 @@ int nr_php_post_deactivate(void) {
    * therefore had no need to be in an nr_stack
    */
   nr_stack_destroy_fields(&NRPRG(wordpress_tags));
+  nr_stack_destroy_fields(&NRPRG(wordpress_tag_states));
   nr_stack_destroy_fields(&NRPRG(drupal_module_invoke_all_hooks));
+  nr_stack_destroy_fields(&NRPRG(drupal_module_invoke_all_states));
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \

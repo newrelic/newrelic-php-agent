@@ -20,7 +20,9 @@ require("skipif.inc");
 /*EXPECT
 module_hook_with_arg(arg=[arg_value])
 g
+h
 f
+h
 f
 */
 
@@ -57,8 +59,17 @@ function module_invoke_all($f) {
     call_user_func_array("module_" . $f, $args);
 }
 
+function module_h() {
+    echo "h\n";
+    throw new Exception("Test Exception");
+}
+
 function module_f() {
-    echo "f\n";
+    try {
+        module_invoke_all("h");
+    } catch (Exception $e) {
+        echo "f\n";
+    }
 }
 
 function module_g() {
