@@ -785,22 +785,22 @@ void nr_predis_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after.
+      nr_predis_pipeline_executePipeline_after,
       nr_predis_pipeline_executePipeline_after);
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\Atomic::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after.
+      nr_predis_pipeline_executePipeline_after,
       nr_predis_pipeline_executePipeline_after);
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\ConnectionErrorProof::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after.
+      nr_predis_pipeline_executePipeline_after,
       nr_predis_pipeline_executePipeline_after);
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after.
+      nr_predis_pipeline_executePipeline_after,
       nr_predis_pipeline_executePipeline_after);
 #else
   nr_php_wrap_user_function(
