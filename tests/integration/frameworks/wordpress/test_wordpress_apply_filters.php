@@ -18,6 +18,7 @@ newrelic.framework = wordpress
 
 /*EXPECT
 f: string1
+h: string3
 g: string2
 */
 
@@ -47,6 +48,13 @@ function apply_filters($tag, ...$args) {
     call_user_func_array($tag, $args);
 }
 
+function h($str) {
+    echo "h: ";
+    echo $str;
+    echo "\n";
+    throw new Exception("Test Exception");
+}
+
 function g($str) {
     echo "g: ";
     echo $str;
@@ -57,7 +65,11 @@ function f($str) {
     echo "f: ";
     echo $str;
     echo "\n";
-    apply_filters("g", "string2");
+    try {
+        apply_filters("h", "string3");
+    } catch (Exception $e) {
+        apply_filters("g", "string2");
+    }
 }
 
 apply_filters("f", "string1");
