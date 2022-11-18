@@ -315,12 +315,65 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 #
 
 .PHONY: integration
-integration: Makefile daemon lasp-test-all
+integration: Makefile daemon lasp-test-all integration-events-limits
 	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
           echo; echo "# PHP=$${PHP}"; \
 	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
 	  echo "# PHP=$${PHP}"; \
 	done
+
+#
+# Agent event limits integration testing
+#
+.PHONY: integration-events-limits
+integration-events-limits: daemon
+	# create array with the collector response for each agent requested custom events max samples
+	# currently based on fast harvest cycle being 5 seconds so ratio is 12:1
+	declare -A custom_limits_tests; \
+	custom_limits_tests[240]=20; \
+	custom_limits_tests[7000]=583; \
+	custom_limits_tests[30000]=2500; \
+	custom_limits_tests[100000]=8333; \
+	custom_limits_tests[1000000]=8333; \
+	php_test_file=$$(mktemp php_custom_event_test_XXXXXXXX.php); \
+	if [ -z "$${php_test_file}" ]; then \
+	    echo "mktemp failed!"; \
+	    exit 1; \
+	fi; \
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+          echo; echo "# PHP=$${PHP}"; \
+	      for custom_max in "$${!custom_limits_tests[@]}"; do \
+	          collector_limit=$${custom_limits_tests[$$custom_max]}; \
+	          echo; echo "# custom events test agent limit = $${custom_max} collector = $${collector_limit}"; \
+	          sed \
+	            -e "s/CUSTOM_EVENTS_MAX_SAMPLES_PER_MIN/$${custom_max}/" \
+	            -e "s/CUSTOM_EVENTS_MAX_SAMPLES_PER_HARVEST/$${collector_limit}/" \
+	            tests/event_limits/custom/test_custom_events_max_samples_stored.php.template \
+	             > $${php_test_file}; \
+	          env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
+	            -max_custom_events $${custom_max} $${php_test_file} || exit 1; \
+	      done; \
+	      echo "# PHP=$${PHP}"; \
+	done; \
+	rm $${php_test_file}
+
+	# also run a test where limit is set to 0
+	# default value is used
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
+	        -max_custom_events 0 \
+	        tests/event_limits/custom/test_custom_events_max_samples_stored_0_limit.php || exit 1; \
+	    echo "# PHP=$${PHP}"; \
+	done;
+
+	# also run a test where no agent custom event limit is specified and verify
+	# default value is used
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
+	        -max_custom_events 30000 \
+	        tests/event_limits/custom/test_custom_events_max_samples_stored_not_specified.php || exit 1; \
+	    echo "# PHP=$${PHP}"; \
+	done;
 
 #
 # Code profiling
