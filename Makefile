@@ -325,6 +325,14 @@ integration: Makefile daemon lasp-test-all integration-events-limits
 #
 # Agent event limits integration testing
 #
+# Because of how the integration_runner connects to the collector once before
+# running any tests we have to tell the runner the value the agent would
+# have passed to it for each test.  This means these tests are not testing
+# the agent <-> daemon communcations of the agent's requested custom event limit
+# via the daemon to the collector and daemon sending back the collectors harvest
+# limit value.
+#
+
 .PHONY: integration-events-limits
 integration-events-limits: daemon
 	# create array with the collector response for each agent requested custom events max samples
@@ -334,28 +342,28 @@ integration-events-limits: daemon
 	custom_limits_tests[7000]=583; \
 	custom_limits_tests[30000]=2500; \
 	custom_limits_tests[100000]=8333; \
-	custom_limits_tests[1000000]=8333; \
-	php_test_file=$$(mktemp php_custom_event_test_XXXXXXXX.php); \
-	if [ -z "$${php_test_file}" ]; then \
-	    echo "mktemp failed!"; \
-	    exit 1; \
-	fi; \
 	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
           echo; echo "# PHP=$${PHP}"; \
 	      for custom_max in "$${!custom_limits_tests[@]}"; do \
 	          collector_limit=$${custom_limits_tests[$$custom_max]}; \
-	          echo; echo "# custom events test agent limit = $${custom_max} collector = $${collector_limit}"; \
-	          sed \
-	            -e "s/CUSTOM_EVENTS_MAX_SAMPLES_PER_MIN/$${custom_max}/" \
-	            -e "s/CUSTOM_EVENTS_MAX_SAMPLES_PER_HARVEST/$${collector_limit}/" \
-	            tests/event_limits/custom/test_custom_events_max_samples_stored.php.template \
-	             > $${php_test_file}; \
+			  php_test_file="tests/event_limits/custom/test_custom_events_max_samples_stored_$${custom_max}_limit.php"; \
 	          env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	            -max_custom_events $${custom_max} $${php_test_file} || exit 1; \
 	      done; \
 	      echo "# PHP=$${PHP}"; \
-	done; \
-	rm $${php_test_file}
+	done;
+
+	# test for invalid value (-1) and (1000000)
+	# Should use default (30000) for -1 and max (100000) for 1000000
+	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
+	        -max_custom_events 100000 \
+	        tests/event_limits/custom/test_custom_events_max_samples_stored_invalid_toolarge_limit.php || exit 1; \
+	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
+	        -max_custom_events 30000 \
+	        tests/event_limits/custom/test_custom_events_max_samples_stored_invalid_toosmall_limit.php || exit 1; \
+	    echo "# PHP=$${PHP}"; \
+	done;	
 
 	# also run a test where limit is set to 0
 	# default value is used
