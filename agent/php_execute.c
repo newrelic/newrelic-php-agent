@@ -990,12 +990,9 @@ static inline void nr_php_observer_metadata_init(
    * Check if code level metrics are enabled in the ini.
    * If they aren't, exit and don't update CLM.
    */
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
-#endif
   if (nrunlikely(NULL == metadata)) {
     return;
   }
