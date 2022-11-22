@@ -1030,6 +1030,7 @@ static void test_process_get_harvest_limit(void) {
   nrobj_t* limits = nro_create_from_json(
       "{"
       "\"analytic_event_data\":833,"
+      "\"span_event_data\":0,"
       "\"custom_event_data\":0,"
       "\"log_event_data\":0,"
       "\"error_event_data\":null,"
@@ -1053,7 +1054,7 @@ static void test_process_get_harvest_limit(void) {
 
   tlib_pass_if_int_equal(
       "missing keys should return the default value", 100,
-      nr_cmd_appinfo_process_get_harvest_limit(limits, "span_event_data", 100));
+      nr_cmd_appinfo_process_get_harvest_limit(limits, "missing_event_data", 100));
 
   tlib_pass_if_int_equal("null values should return the default value", 100,
                          nr_cmd_appinfo_process_get_harvest_limit(
@@ -1077,8 +1078,17 @@ static void test_process_get_harvest_limit(void) {
                              limits, "custom_event_data", 100));
 
   tlib_pass_if_int_equal(
+      "zero integers for span_event_data should return zero", 0,
+      nr_cmd_appinfo_process_get_harvest_limit(limits, "span_event_data", 100));
+
+  tlib_pass_if_int_equal(
+      "zero integers for custom_event_data should return zero", 0,
+      nr_cmd_appinfo_process_get_harvest_limit(limits, "custom_event_data", 100));
+
+  tlib_pass_if_int_equal(
       "zero integers for log_event_data should return zero", 0,
       nr_cmd_appinfo_process_get_harvest_limit(limits, "log_event_data", 100));
+
   nro_delete(array);
   nro_delete(limits);
 }
