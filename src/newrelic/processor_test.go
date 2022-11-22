@@ -208,6 +208,18 @@ func NewAppInfoWithLogEventLimit(limit int) AppInfo {
 	return appInfo
 }
 
+func NewAppInfoWithCustomEventLimit(limit int) AppInfo {
+	appInfo := sampleAppInfo
+	appInfo.AgentEventLimits = collector.EventConfigs{
+		CustomEventConfig: collector.Event{
+			Limit:        limit,
+			ReportPeriod: 5000,
+		},
+	}
+
+	return appInfo
+}
+
 func TestProcessorHarvestDefaultData(t *testing.T) {
 	m := NewMockedProcessor(2)
 
@@ -1409,13 +1421,18 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 	//       So the actual value used to compare to the collector
 	//       limit will be 1/12th (5s/60s) smaller
 	var appInfo AppInfo = AppInfo{}
+
+	// defaults that collector will send if no harvest limit requested in connect request
 	logHarvestLimit := 833
+	customHarvestLimit := 2500
 
 	switch eventType {
 	case "log_event_data":
 		logHarvestLimit = int(collectorLimit)
 		appInfo = NewAppInfoWithLogEventLimit(int(agentLimit))
-
+	case "custom_event_data":
+		customHarvestLimit = int(collectorLimit)
+		appInfo = NewAppInfoWithCustomEventLimit(int(agentLimit))
 	default:
 		t.Fatalf("%s: runMockedCollectorHarvestLimitTest() invalid eventType \"%s\" specified", testName, eventType)
 	}
@@ -1435,7 +1452,8 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 		`","zip":"zap",` +
 		`"span_event_harvest_config":{"report_period_ms":5000,"harvest_limit":166},` +
 		`"event_harvest_config":{"report_period_ms":5000,` +
-		`"harvest_limits":{"analytics_event_data":833,"custom_event_data":833,"error_event_data":833,` +
+		`"harvest_limits":{"analytics_event_data":833, "error_event_data":833,` +
+		`"custom_event_data":` + strconv.Itoa(customHarvestLimit) + `,` +
 		`"log_event_data":` + strconv.Itoa(logHarvestLimit) + `}}}`
 	m.DoConnectConfiguredReply(t, mockedReply)
 
@@ -1461,7 +1479,15 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 	if scaledAgentLimit < collectorLimit {
 		expectedLimit = scaledAgentLimit
 	}
-	finalLimit := app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	finalLimit := -1
+	switch eventType {
+	case "log_event_data":
+		finalLimit = app.connectReply.EventHarvestConfig.EventConfigs.LogEventConfig.Limit
+	case "custom_event_data":
+		finalLimit = app.connectReply.EventHarvestConfig.EventConfigs.CustomEventConfig.Limit
+	default:
+		t.Fatalf("%s: runMockedCollectorHarvestLimitTest() invalid eventType \"%s\" specified", testName, eventType)
+	}
 	if int(expectedLimit) != finalLimit {
 		t.Errorf("\" %s \": Expected %d to be choosen but %d was instead", testName, expectedLimit, finalLimit)
 	}
@@ -1471,11 +1497,31 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 
 func TestConnectNegotiateLogEventLimits(t *testing.T) {
 
-	runMockedCollectorHarvestLimitTest(t, "log_event_data", 90*12, 100, "agent limit smaller than collector")
-	runMockedCollectorHarvestLimitTest(t, "log_event_data", 110*12, 100, "agent limit larger than collector")
-	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 100, "agent limit equal to collector")
-	runMockedCollectorHarvestLimitTest(t, "log_event_data", 0, 100, "agent limit == 0, collector != 0")
-	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 0, "agent limit != 0, collector == 0")
+	// these tests exist for the log events (TestConnectNegotiateLogEventsLimit()) because at some point
+	// the collector would return the default limit (833) if 0 was passed as the log limit.  These tests
+	// exercise logic in the daemon to enforce the smaller agent value
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 90*12, 100, "agent log limit smaller than collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 110*12, 100, "agent log limit larger than collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 100, "agent log limit equal to collector")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 0, 100, "agent log limit == 0, collector != 0")
+	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 0, "agent log limit != 0, collector == 0")
+
+}
+
+func TestConnectNegotiateCustomEventLimits(t *testing.T) {
+
+	runMockedCollectorHarvestLimitTest(t, "custom_event_data", 110*12, 100, "agent custom limit larger than collector")
+	runMockedCollectorHarvestLimitTest(t, "custom_event_data", 100*12, 100, "agent custom limit equal to collector")
+
+	// these tests exist for the log events (TestConnectNegotiateLogEventsLimit()) because at some point
+	// the collector would return the default limit (833) if 0 was passed as the log limit.  These tests
+	// exercise logic in the daemon to enforce the smaller agent value
+	// currently the collector appears to honor a 0 limit for the custom event limit so the logic for log
+	// events has not been duplicated for custom event.
+	// tests left here for reference.
+	//runMockedCollectorHarvestLimitTest(t, "custom_event_data", 90*12, 100, "agent custom limit smaller than collector")
+	//runMockedCollectorHarvestLimitTest(t, "custom_event_data", 0, 100, "agent custom limit == 0, collector != 0")
+	//runMockedCollectorHarvestLimitTest(t, "custom_event_data", 100*12, 0, "agent custom limit != 0, collector == 0")
 
 }
 
