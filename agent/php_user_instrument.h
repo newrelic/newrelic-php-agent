@@ -123,7 +123,25 @@ extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 // clang-format off
 /* Wrappers around different implementations of enabling and retrieving instrumentation */
+
+/*
+ * Purpose : Enable instrumentation for user function. Functionality depends
+             on implementation. See php_user_instrument_lookup.h for more
+             details.
+ *
+ * Params  : 1. The zend_function object with user function to be instrumented
+ *           2. wraprec object to instrument user function with
+ */
 extern void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec);
+
+/*
+ * Purpose : Lookup instrumentation for user function. Functionality depends
+             on implementation. See php_user_instrument_lookup.h for more
+             details.
+ *
+ * Params  : 1. The zend_function object with user function to look instrumentation for
+ *
+ */
 extern nruserfn_t* nr_php_user_instrument_get(zend_function* func);
 // clang-format on
 
