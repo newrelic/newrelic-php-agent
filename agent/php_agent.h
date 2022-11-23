@@ -675,9 +675,7 @@ nr_php_op_array_file_name(const zend_op_array* op_array) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 static inline size_t NRPURE
 nr_php_op_array_file_name_length(const zend_op_array* op_array) {
-  return (op_array->filename && op_array->filename->len)
-             ? op_array->filename->len
-             : 0;
+  return (op_array->filename? op_array->filename->len : 0);
 }
 #endif
 
@@ -691,6 +689,13 @@ nr_php_op_array_function_name(const zend_op_array* op_array) {
   return op_array->function_name;
 #endif
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+static inline size_t NRPURE
+nr_php_op_array_function_name_length(const zend_op_array* op_array) {
+  return (op_array->function_name? op_array->function_name->len : 0);
+}
+#endif
 
 static inline const char* NRPURE
 nr_php_op_array_scope_name(const zend_op_array* op_array) {
@@ -706,6 +711,13 @@ nr_php_op_array_scope_name(const zend_op_array* op_array) {
 
   return NULL;
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+static inline size_t NRPURE
+nr_php_op_array_scope_name_length(const zend_op_array* op_array) {
+  return (op_array->scope && op_array->scope->name)? op_array->scope->name->len : 0;
+}
+#endif
 
 static inline const char* NRPURE
 nr_php_ini_entry_name(const zend_ini_entry* entry) {

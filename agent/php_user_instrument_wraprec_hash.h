@@ -68,83 +68,49 @@ void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
 }
 #endif
 
-static inline void set_filename(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
-  const char *filename = nr_php_op_array_file_name(&zf->op_array);
+#define SET_META_COMMON(id, zf) do { \
+  if (nrunlikely(NULL == id || NULL == zf)) { \
+    return; \
+  } \
+  id->lineno = nr_php_zend_function_lineno(zf); \
+} while(0)
 
-  if (NULL != filename) {
-    id->filename.is_set = true;
-    id->filename.len = zf->op_array.function_name->len;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    id->filename.value = no_copy? filename : nr_strdup(filename);
-#pragma GCC diagnostic pop
-  } else {
-    id->filename.is_set = false;
-  }
-}
-static inline void set_scope(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
-  const char *scope_name = nr_php_op_array_scope_name(&zf->op_array);
+#define SET_META_STRING(id, nr_metaname, zf, zf_metaname, method) do { \
+  const char *metavalue = nr_php_op_array_ ## zf_metaname(&zf->op_array); \
+  const size_t metavaluelen = nr_php_op_array_ ## zf_metaname ## _length(&zf->op_array); \
+  if (NULL != metavalue) { \
+    id->nr_metaname.is_set = true; \
+    id->nr_metaname.len = metavaluelen; \
+    if (NULL == method) { \
+      id->nr_metaname.value.ccp = metavalue; \
+    } else { \
+      id->nr_metaname.value.cp = nr_strdup(metavalue); \
+    } \
+  } else { \
+    id->nr_metaname.is_set = true; \
+  } \
+} while (0)
 
-  if (NULL != scope_name) {
-    id->scope.is_set = true;
-    id->scope.len = zf->op_array.scope->name->len;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    id->scope.value = no_copy? scope_name : nr_strdup(scope_name);
-#pragma GCC diagnostic pop
-  } else {
-    id->scope.is_set = false;
-  }
-}
-static inline void set_function_name(nruserfn_metadata *id, const zend_function* zf, bool no_copy) {
-  const char *function_name = nr_php_op_array_function_name(&zf->op_array);
-
-  if (NULL != function_name) {
-    id->function_name.is_set = true;
-    id->function_name.len = zf->op_array.function_name->len;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    id->function_name.value = no_copy? function_name : nr_strdup(function_name);
-#pragma GCC diagnostic pop
-  } else {
-    id->function_name.is_set = false;
-  }
+/* Cast zend_function to nruserfn_metadata - id will point to metadata in zf.
+ * Cast does not make any memory allocation but makes the code more readable */
+static inline void zf_as_id(nruserfn_metadata* id, const zend_function* zf) {
+  SET_META_COMMON(id, zf);
+  SET_META_STRING(id, filename, zf, file_name, NULL);
+  SET_META_STRING(id, scope, zf, scope_name, NULL);
+  SET_META_STRING(id, function_name, zf, function_name, NULL);
 }
 
-static inline void wraprec_metadata_set_internal(nruserfn_metadata* id, const zend_function* zf, bool no_copy) {
-  id->lineno = nr_php_zend_function_lineno(zf);
-  set_filename(id, zf, no_copy);
-  set_scope(id, zf, no_copy);
-  set_function_name(id, zf, no_copy);
-
+/* Copy zend_function metadata to nruserfn_metadata - id will have copy zf's
+ * metadata. Copy allocates memory that the caller must free. */
+static inline void zf_to_id(nruserfn_metadata* id, const zend_function* zf) {
+  SET_META_COMMON(id, zf);
+  SET_META_STRING(id, filename, zf, file_name, nr_strdup);
+  SET_META_STRING(id, scope, zf, scope_name, nr_strdup);
+  SET_META_STRING(id, function_name, zf, function_name, nr_strdup);
 }
 
 static inline void wraprec_metadata_set(nruserfn_metadata* id, const zend_function* zf) {
-  if (nrunlikely(NULL == id || NULL == zf)) {
-    return;
-  }
-
-  wraprec_metadata_set_internal(id, zf, false);
-
-#if 0
-  /*
-   * Before setting a filename, ensure it is not NULL and it doesn't equal the
-   * "special" designation given to funcs without filenames. If the function is
-   * an evaluated expression or called directly from the CLI there is no
-   * filename, but the function says the filename is "-". Avoid setting in this
-   * case; otherwise, all the evaluated/cli calls would match.
-   */
-  if ((NULL == wraprec->filename) && (NULL != filename)
-      && (0 != nr_strcmp("-", filename))) {
-    wraprec->filename = nr_strdup(filename);
-  }
-
-  wraprec->lineno = nr_php_zend_function_lineno(zf);
-
-  if (chk_reported_class(zf, wraprec)) {
-    wraprec->reportedclass = nr_strdup(ZSTR_VAL(zf->common.scope->name));
-  }
-#endif
+  zf_to_id(id, zf);
 }
 
 static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t* zf_id) {
@@ -160,7 +126,7 @@ static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t
 
   /* compare from the back */
   for (int i = wr_id->len; i >= 0; i--) {
-    if (wr_id->value[i] != zf_id->value[i]) {
+    if (wr_id->value.ccp[i] != zf_id->value.ccp[i]) {
       return false;
     }
   }
@@ -169,130 +135,45 @@ static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t
 }
 
 static inline bool wraprec_metadata_is_match(const nruserfn_t* wraprec, const zend_function* zf) {
-  const nruserfn_metadata *id;
-  nruserfn_metadata zf_id;
+  const nruserfn_metadata *nr_id;
+  nruserfn_metadata zf_id = {};
 
   if (nrunlikely(NULL == wraprec || NULL == zf)) {
     return false;
   }
 
-  id = &wraprec->id;
+  nr_id = &wraprec->id;
 
-  wraprec_metadata_set_internal(&zf_id, zf, true);
+  /* cast zend_function to nruserfn_metadata - cast does not make 
+   * any memory allocation but makes the code more readable */
+  zf_as_id(&zf_id, zf);
 
-  if (id->lineno != zf_id.lineno) {
+  if (nr_id->lineno != zf_id.lineno) {
     return false;
   }
 
-  if (id->function_name.len != zf_id.function_name.len) {
+  if (nr_id->function_name.len != zf_id.function_name.len) {
     return false;
   }
 
-  if (id->filename.len != zf_id.filename.len) {
+  if (nr_id->filename.len != zf_id.filename.len) {
     return false;
   }
 
-  if (id->scope.len != zf_id.scope.len) {
+  if (nr_id->scope.len != zf_id.scope.len) {
     return false;
   }
 
-  if (!wraprec_streq(&id->function_name, &zf_id.function_name)) {
+  if (!wraprec_streq(&nr_id->function_name, &zf_id.function_name)) {
     return false;
   }
 
-  if (!wraprec_streq(&id->filename, &zf_id.filename)) {
+  if (!wraprec_streq(&nr_id->filename, &zf_id.filename)) {
     return false;
   }
 
   /* No need to check scope - function has the same name is at the same location in the same file */
   return true;
-
-#if 0
-  char* klass = NULL;
-  const char* filename = NULL;
-
-  /*
-   * We are able to match either by lineno/filename pair or funcname/classname
-   * pair.
-   */
-
-  /*
-   * Optimize out string manipulations; don't do them if you don't have to.
-   * For instance, if funcname doesn't match, no use comparing the classname.
-   */
-
-  if (NULL == wraprec) {
-    return false;
-  }
-  if ((NULL == zf) || (ZEND_USER_FUNCTION != zf->type)) {
-    return false;
-  }
-
-  if (0 != wraprec->lineno) {
-    /*
-     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
-     * going on to the funcname/classname pair comparison.
-     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
-     * we must do the funcname/classname compare.
-     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
-     * we can exit without doing the funcname/classname compare.
-     */
-    if (wraprec->lineno != nr_php_zend_function_lineno(zf)) {
-      return false;
-    } 
-    /*
-     * lineno matched, let's check the filename
-     */
-    filename = nr_php_function_filename(zf);
-
-    /*
-     * If p->filename isn't NULL, we know the comparison is accurate;
-     * otherwise, it's inconclusive even if we have a lineno because it
-     * could be a cli call or evaluated expression that has no filename.
-     */
-    if (NULL != wraprec->filename) {
-      if (0 == nr_strcmp(wraprec->filename, filename)) {
-        return true;
-      }
-      return false;
-    }
-  }
-
-  if (NULL == zf->common.function_name) {
-    return false;
-  }
-
-  if (0 != nr_stricmp(wraprec->funcnameLC, ZSTR_VAL(zf->common.function_name))) {
-    return false;
-  }
-  if (NULL != zf->common.scope && NULL != zf->common.scope->name) {
-    klass = ZSTR_VAL(zf->common.scope->name);
-  }
-
-  if ((0 == nr_strcmp(wraprec->reportedclass, klass))
-      || (0 == nr_stricmp(wraprec->classname, klass))) {
-#if 0
-    /*
-     * If we get here it means lineno/filename weren't initially set.
-     * Set it now so we can do the optimized compare next time.
-     * lineno/filename is usually not set if the func wasn't loaded when we
-     * created the initial wraprec and we had to use the more difficult way to
-     * set, update it with lineno/filename now.
-     */
-    if (NULL == wraprec->filename) {
-      filename = nr_php_function_filename(zf);
-      if ((NULL != filename) && (0 != nr_strcmp("-", filename))) {
-        wraprec->filename = nr_strdup(filename);
-      }
-    }
-    if (0 == wraprec->lineno) {
-      wraprec->lineno = nr_php_zend_function_lineno(zf);
-    }
-#endif
-    return true;
-  }
-  return false;
-#endif
 }
 
 static inline size_t zf2hash(const nr_php_wraprec_hashmap_t* hashmap, const zend_function* zf) {
@@ -340,6 +221,7 @@ static inline nr_status_t wraprec_hashmap_set(nr_php_wraprec_hashmap_t* hashmap,
     return NR_FAILURE;
   }
 
+  /* Copy zend_function's metadata to nruserfn_metadata. Memory must be freed */
   wraprec_metadata_set(&wraprec->id, zf);
 
   bucket = (nr_wraprec_hashmap_bucket_t*)nr_malloc(sizeof(nr_wraprec_hashmap_bucket_t));

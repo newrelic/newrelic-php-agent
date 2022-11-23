@@ -30,7 +30,10 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
 typedef struct {
   bool is_set;
   uint32_t len;
-  char *value;
+  union {
+    char *cp; /* cp = char pointer */
+    const char *ccp; /* ccp = const char pointer */
+  } value;
 } zf_metadata_t;
 typedef struct _nruserfn_metadata {
   uint32_t lineno;
