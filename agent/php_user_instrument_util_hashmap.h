@@ -1,3 +1,8 @@
+/*
+ * Copyright 2022 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
 
 /*

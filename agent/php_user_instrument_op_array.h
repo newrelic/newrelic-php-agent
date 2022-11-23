@@ -1,3 +1,8 @@
+/*
+ * Copyright 2022 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 /*
  * The functions nr_php_op_array_set_wraprec and
