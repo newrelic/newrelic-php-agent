@@ -244,7 +244,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
   return wraprec;
 }
 
-static void wraprec_id_destroy(nruserfn_metadata *id) {
+static void wraprec_id_dtor(nruserfn_metadata *id) {
   nr_free(id->filename.value);
   nr_free(id->scope.value);
   nr_free(id->function_name.value);
@@ -261,7 +261,7 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
     return;
   }
 
-  wraprec_id_destroy(&wraprec->id);
+  wraprec_id_dtor(&wraprec->id);
 
   nr_free(wraprec->supportability_metric);
   nr_free(wraprec->drupal_module);
