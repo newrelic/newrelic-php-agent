@@ -31,20 +31,7 @@
 #include "config.h"
 #endif
 
-#define LOOKUP_USE_OP_ARRAY 0
-#define LOOKUP_USE_LINKED_LIST 1
-#define LOOKUP_USE_UTIL_HASHMAP 2
-#define LOOKUP_USE_WRAPREC_HASHMAP 3
-
-#ifndef LOOKUP_METHOD
-
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-#define LOOKUP_METHOD LOOKUP_USE_WRAPREC_HASHMAP
-#else
-#define LOOKUP_METHOD LOOKUP_USE_OP_ARRAY
-#endif
-
-#endif
+#include "php_user_instrument_lookup_config.h"
 
 #include "nr_axiom.h"
 #include "nr_agent.h"

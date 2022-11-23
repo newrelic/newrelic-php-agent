@@ -165,8 +165,9 @@ endif
 # Other build time configuration.
 #
 
-# Select different lookup method: 0, 1, 2, 3 (see php_agent.h)
-# Read about each lookup method in php_user_instrument_lookup.h
+# Select different lookup method: 0, 1, 2, 3. Allowed values 
+# are defined in php_user_instrument_lookup_config.h. Each 
+# lookup method in described in php_user_instrument_lookup.h
 ifneq (,$(LOOKUP_METHOD))
   CPPFLAGS += -DLOOKUP_METHOD=$(LOOKUP_METHOD)
   CFLAGS += -DLOOKUP_METHOD=$(LOOKUP_METHOD)
