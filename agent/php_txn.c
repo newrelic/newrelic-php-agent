@@ -1146,9 +1146,11 @@ extern void nr_php_txn_add_code_level_metrics(
    * Additionally, none of the needed attributes can exceed 255 characters.
    */
 
-  const char* filepath = metadata->function_filepath;
-  const char* namespace = metadata->function_namespace;
-  const char* function = metadata->function_name;
+  const char* namespace = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
+  const char* function
+      = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
+  const char* filepath
+      = metadata->filepath ? ZSTR_VAL(metadata->filepath) : NULL;
 
 #define CHK_CLM_STRLEN(s)                         \
   if (CLM_STRLEN_MAX < NRSAFELEN(nr_strlen(s))) { \
@@ -1184,11 +1186,11 @@ extern void nr_php_txn_add_code_level_metrics(
   nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
                                          function);
 
-  if (!nr_strempty(metadata->function_filepath)) {
+  if (!nr_strempty(filepath)) {
     nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
                                            filepath);
   }
-  if (!nr_strempty(metadata->function_namespace)) {
+  if (!nr_strempty(namespace)) {
     nr_txn_attributes_set_string_attribute(
         attributes, nr_txn_clm_code_namespace, namespace);
   }

@@ -150,7 +150,7 @@ static int nr_format_zval_for_debug(zval* arg,
         break;
       }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_STR_P(arg)) {
         safe_append("invalid string", 14);
         break;
@@ -194,7 +194,7 @@ static int nr_format_zval_for_debug(zval* arg,
       safe_append(tmp, len);
       break;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
     case IS_TRUE:
       safe_append("true", 4);
       break;
@@ -222,7 +222,7 @@ static int nr_format_zval_for_debug(zval* arg,
       break;
 
     case IS_OBJECT:
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_OBJ_P(arg)) {
         safe_append("invalid object", 14);
         break;
@@ -966,63 +966,6 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 }
 
 /*
- * Purpose : Populate metadata structure from zend_execute_data.
- *
- * Params  : 1. A pointer to a metadata structure.
- *           2. The zend_execute_data
- *
- * Note    : It is the responsibility of the caller to allocate the metadata
- *           structure. In general, it's expected that this will be a pointer
- *           to a stack variable.
- */
-static inline void nr_php_observer_metadata_init(
-    nr_php_execute_metadata_t* metadata,
-    NR_EXECUTE_PROTO) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
-  (void)metadata;
-  NR_UNUSED_SPECIALFN;
-  return;
-#else
-  const char* filepath = NULL;
-  const char* namespace = NULL;
-  const char* function = NULL;
-  /*
-   * Check if code level metrics are enabled in the ini.
-   * If they aren't, exit and don't update CLM.
-   */
-  if (!NRINI(code_level_metrics_enabled)) {
-    return;
-  }
-  if (nrunlikely(NULL == metadata)) {
-    return;
-  }
-
-  if (nrunlikely(NULL == execute_data)) {
-    return;
-  }
-
-  filepath = nr_php_zend_execute_data_filename(execute_data);
-  namespace = nr_php_zend_execute_data_scope_name(execute_data);
-  function = nr_php_zend_execute_data_function_name(execute_data);
-
-  metadata->function_lineno = nr_php_zend_function_lineno(execute_data->func);
-
-  if (!nr_strempty(function)) {
-    metadata->function_name = nr_strdup(function);
-  }
-
-  if (!nr_strempty(namespace)) {
-    metadata->function_namespace = nr_strdup(namespace);
-  }
-
-  if (!nr_strempty(filepath)) {
-    metadata->function_filepath = nr_strdup(filepath);
-  }
-
-#endif /* PHP7 */
-}
-
-/*
  * Purpose : Initialise a metadata structure from an op array.
  *
  * Params  : 1. A pointer to a metadata structure.
@@ -1034,7 +977,7 @@ static inline void nr_php_observer_metadata_init(
  */
 static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
                                          zend_op_array* op_array) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
     metadata->scope = op_array->scope->name;
     zend_string_addref(metadata->scope);
@@ -1048,6 +991,13 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->function = NULL;
   }
+  if (op_array->filename && op_array->filename->len) {
+    metadata->filepath = op_array->filename;
+    zend_string_addref(metadata->filepath);
+  } else {
+    metadata->filepath = NULL;
+  }
+
 #else
   metadata->op_array = op_array;
 #endif /* PHP7 */
@@ -1071,7 +1021,7 @@ static void nr_php_execute_metadata_metric(
   const char* function_name;
   const char* scope_name;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   scope_name = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
   function_name = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
 #else
@@ -1100,6 +1050,11 @@ static inline void nr_php_execute_metadata_release(
   if (NULL != metadata->function) {
     zend_string_release(metadata->function);
     metadata->function = NULL;
+  }
+
+  if (NULL != metadata->filepath) {
+    zend_string_release(metadata->filepath);
+    metadata->filepath = NULL;
   }
 
   nr_free(metadata->function_name);
@@ -1183,7 +1138,9 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
-
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+  metadata.function_lineno = nr_php_zend_function_lineno(execute_data->func);
+#endif
   /*
    * The function name needs to be checked before the NR_OP_ARRAY->fn_flags
    * since in PHP 5.1 fn_flags is not initialized for files.
@@ -1201,7 +1158,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     bool create_metric = wraprec->create_metric;
 
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
-    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
 
@@ -1263,7 +1219,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     }
   } else if (NRINI(tt_detail) && NR_OP_ARRAY->function_name) {
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
-    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     /*
      * This is the case for transaction_tracer.detail >= 1 requested custom
@@ -1282,7 +1237,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
         zval* exception_zval = NULL;
         nr_status_t status;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
         /*
          * On PHP 7, EG(exception) is stored as a zend_object, and is only
          * wrapped in a zval when it actually needs to be.
@@ -1475,7 +1430,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
     return;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   func = execute_data->func;
 #else
   func = execute_data->function_state.function;

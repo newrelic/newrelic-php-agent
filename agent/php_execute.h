@@ -57,6 +57,7 @@ typedef struct {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   zend_string* scope;
   zend_string* function;
+  zend_string* filepath;
   char* function_name;
   char* function_filepath;
   char* function_namespace;
