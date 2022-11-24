@@ -115,7 +115,7 @@ static inline void wraprec_metadata_set(nruserfn_metadata* id, const zend_functi
 
 static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t* zf_id) {
 
-  if (!wr_id->is_set || zf_id->is_set) {
+  if (!wr_id->is_set || !zf_id->is_set) {
     return false;
   }
 
