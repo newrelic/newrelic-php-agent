@@ -991,6 +991,10 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->function = NULL;
   }
+  if (ZEND_USER_FUNCTION != op_array->type) {
+    metadata->filepath = NULL;
+    return;
+  }
   if (op_array->filename && op_array->filename->len) {
     metadata->filepath = op_array->filename;
     zend_string_addref(metadata->filepath);
