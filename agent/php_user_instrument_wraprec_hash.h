@@ -75,19 +75,23 @@ void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
   id->lineno = nr_php_zend_function_lineno(zf); \
 } while(0)
 
+static inline void set_meta_value(zf_metadata_t* m, const char *metavalue, void* method) {
+    if (NULL == method) {
+      m->value.ccp = metavalue;
+    } else {
+      m->value.cp = nr_strdup(metavalue);
+    }
+}
+
 #define SET_META_STRING(id, nr_metaname, zf, zf_metaname, method) do { \
   const char *metavalue = nr_php_op_array_ ## zf_metaname(&zf->op_array); \
   const size_t metavaluelen = nr_php_op_array_ ## zf_metaname ## _length(&zf->op_array); \
   if (NULL != metavalue) { \
     id->nr_metaname.is_set = true; \
     id->nr_metaname.len = metavaluelen; \
-    if (NULL == method) { \
-      id->nr_metaname.value.ccp = metavalue; \
-    } else { \
-      id->nr_metaname.value.cp = nr_strdup(metavalue); \
-    } \
+    set_meta_value(&id->nr_metaname, metavalue, method); \
   } else { \
-    id->nr_metaname.is_set = true; \
+    id->nr_metaname.is_set = false; \
   } \
 } while (0)
 
