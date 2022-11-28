@@ -991,7 +991,8 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->function = NULL;
   }
-  if (ZEND_USER_FUNCTION != op_array->type) {
+  if (ZEND_USER_FUNCTION != op_array->type
+      || !NRINI(code_level_metrics_enabled)) {
     metadata->filepath = NULL;
     return;
   }
@@ -1001,6 +1002,8 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->filepath = NULL;
   }
+
+  metadata->function_lineno = op_array->line_start;
 
 #else
   metadata->op_array = op_array;
@@ -1142,9 +1145,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     return;
   }
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
-  metadata.function_lineno = nr_php_zend_function_lineno(execute_data->func);
-#endif
+
   /*
    * The function name needs to be checked before the NR_OP_ARRAY->fn_flags
    * since in PHP 5.1 fn_flags is not initialized for files.
