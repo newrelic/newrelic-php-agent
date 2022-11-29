@@ -132,7 +132,7 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
-  nr_php_user_instrument_set(func, wraprec);
+  nr_php_user_instrument_set(func, wraprec TSRMLS_CC);
 
   wraprec->is_wrapped = 1;
 
@@ -314,7 +314,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
     name = nr_php_function_debug_name(func);
   }
 
-  wraprec = nr_php_user_instrument_get(func);
+  wraprec = nr_php_user_instrument_get(func TSRMLS_CC);
 
   if (wraprec) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
@@ -463,7 +463,7 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
-  wraprec = nr_php_user_instrument_get(func);
+  wraprec = nr_php_user_instrument_get(func TSRMLS_CC);
 
   if (wraprec) {
     wraprec->is_exception_handler = 0;
@@ -509,11 +509,11 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
   }
 }
 
-void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec) {
+void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec TSRMLS_DC) {
 
 #if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 
-  nr_php_op_array_set_wraprec(&func->op_array, wraprec);
+  nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
 
 #elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
 
@@ -534,7 +534,7 @@ void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec) {
 #endif
 }
 
-nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
+nruserfn_t* nr_php_user_instrument_get(zend_function* func TSRMLS_DC) {
   nruserfn_t* p = NULL;
   unsigned n = 0;
   struct timespec tstart={0,0}, tend={0,0};
@@ -550,7 +550,7 @@ nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
 #if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
 
   n++;
-  p = nr_php_op_array_get_wraprec(&func->op_array);
+  p = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
 
 #elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
 
@@ -577,3 +577,9 @@ nruserfn_t* nr_php_user_instrument_get(zend_function* func) {
   }
   return p;
 }
+
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+nruserfn_t* nr_php_user_instrument_get_legacy(zend_op_array* op_array TSRMLS_DC) {
+  return nr_php_op_array_get_wraprec(op_array TSRMLS_CC);
+}
+#endif

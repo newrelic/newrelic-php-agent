@@ -133,7 +133,7 @@ extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
  * Params  : 1. The zend_function object with user function to be instrumented
  *           2. wraprec object to instrument user function with
  */
-extern void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec);
+extern void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec TSRMLS_DC);
 
 /*
  * Purpose : Lookup instrumentation for user function. Functionality depends
@@ -143,7 +143,10 @@ extern void nr_php_user_instrument_set(zend_function* func, nruserfn_t* wraprec)
  * Params  : 1. The zend_function object with user function to look instrumentation for
  *
  */
-extern nruserfn_t* nr_php_user_instrument_get(zend_function* func);
+extern nruserfn_t* nr_php_user_instrument_get(zend_function* func TSRMLS_DC);
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+extern nruserfn_t* nr_php_user_instrument_get_legacy(zend_op_array* op_array TSRMLS_DC);
+#endif
 // clang-format on
 
 /*

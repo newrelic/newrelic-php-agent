@@ -50,7 +50,7 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
     return;
   }
 
-  if (NULL == nr_php_user_instrument_get(function)) {
+  if (NULL == nr_php_user_instrument_get(function TSRMLS_CC)) {
     char* class_method = nr_formatf(
         "%.*s::%.*s", NRSAFELEN(nr_php_class_entry_name_length(ce)),
         nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);

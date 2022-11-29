@@ -616,6 +616,11 @@ static int nr_php_show_exec_indentation(TSRMLS_D) {
   return NRPRG(php_cur_stack_depth) * NR_EXECUTE_INDENTATION_WIDTH;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+#define NR_EXECUTE_USER_INSTRUMENT_GET(EXECUTE_ARG) nr_php_user_instrument_get(EXECUTE_ARG->func TSRMLS_CC)
+#else
+#define NR_EXECUTE_USER_INSTRUMENT_GET(EXECUTE_ARG) nr_php_user_instrument_get_legacy(EXECUTE_ARG->op_array TSRMLS_CC)
+#endif
 /*
  * Note that this function doesn't handle internal functions, and will crash if
  * you give it one.
@@ -644,7 +649,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
         NRSAFELEN(nr_php_class_entry_name_length(NR_OP_ARRAY->scope)),
         nr_php_class_entry_name(NR_OP_ARRAY->scope),
         NRP_PHP(function_name ? function_name : "?"), NRP_ARGSTR(argstr),
-        nr_php_user_instrument_get(execute_data->func) ? " *" : "",
+        NR_EXECUTE_USER_INSTRUMENT_GET(NR_EXECUTE_ORIG_ARGS)? " *" : "",
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
     /*
@@ -661,7 +666,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
         "@ " NRP_FMT_UQ ":%d",
         nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
         NRP_PHP(function_name), NRP_ARGSTR(argstr),
-        nr_php_user_instrument_get(execute_data->func) ? " *" : "",
+        NR_EXECUTE_USER_INSTRUMENT_GET(NR_EXECUTE_ORIG_ARGS)? " *" : "",
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
     /*
@@ -1150,7 +1155,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
    * The function name needs to be checked before the NR_OP_ARRAY->fn_flags
    * since in PHP 5.1 fn_flags is not initialized for files.
    */
-  wraprec = nr_php_user_instrument_get(execute_data->func);
+  wraprec = NR_EXECUTE_USER_INSTRUMENT_GET(NR_EXECUTE_ORIG_ARGS);
 
   if (NULL != wraprec) {
     /*
