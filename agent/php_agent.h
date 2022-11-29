@@ -31,13 +31,12 @@
 #include "config.h"
 #endif
 
-#include "php_user_instrument_lookup_config.h"
-
 #include "nr_axiom.h"
 #include "nr_agent.h"
 #include "nr_app.h"
 #include "nr_utilization.h"
 #include "php_includes.h"
+#include "php_user_instrument_lookup_config.h"
 #include "php_compat.h"
 #include "php_newrelic.h"
 #include "php_zval.h"
