@@ -57,7 +57,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 #endif /* PHP < 7.4 */
 
-#if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
+#if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP || LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
 
 #define STRING_SZ(s) (s), nr_strlen(s)
 
@@ -116,7 +116,9 @@ static void mock_zend_function_destroy(zend_function* zf) {
     nr_realfree((void**)&zf->common.scope);
   }
 }
+#endif
 
+#if LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
 static void test_user_instrument_hashmap() {
   char* key;
   size_t key_len;
@@ -156,48 +158,6 @@ static void test_user_instrument_hashmap() {
   mock_zend_function_destroy(&user_function_with_scope);
   mock_zend_function_destroy(&internal_function);
 }
-
-static void test_user_instrument_lookup_performance() {
-#define FILE_NAME "/some/random/path/to/a_file.php"
-#define LINE_NO 10
-#define SCOPE_NAME "a_scope"
-#define FUNC_NAME "a_function"
-  zend_function user_function = {0};
-
-  mock_user_function(&user_function, FILE_NAME, LINE_NO, FUNC_NAME);
-
-  nrtime_t start, stop, duration;
-  start = nr_get_time();
-  for (int i = 0; i < 100000; i++) {
-    char* key;
-    size_t key_len;
-    key = zf2key(&key_len, &user_function);
-    tlib_pass_if_not_null("key was generated for user_function", key);
-    //int len;
-    //len = key_len;
-    //nr_mkhash(key, &len);
-  }
-  stop = nr_get_time();
-  duration = nr_time_duration(start, stop);
-  printf("zf2key elapsed time: " NR_TIME_FMT "\n", duration);
-
-  start = nr_get_time();
-  for (int i = 0; i < 100000; i++) {
-    char* key;
-    size_t key_len;
-    int len;
-    key = zf2key(&key_len, &user_function);
-    tlib_pass_if_not_null("key was generated for user_function", key);
-    len = key_len;
-    nr_mkhash(key, &len);
-  }
-  stop = nr_get_time();
-  duration = nr_time_duration(start, stop);
-  printf("zf2key + nr_mkhash elapsed time: " NR_TIME_FMT "\n", duration);
-
-  mock_zend_function_destroy(&user_function);
-}
-
 #endif
 
 #if LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
@@ -345,7 +305,32 @@ static void test_get_wraprec_by_func() {
 
 #if LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
 static void test_wraprec_hashmap() {
-  tlib_pass_if_null("change me", NULL);
+#define FILE_NAME "/some/random/path/to/a_file.php"
+#define LINE_NO 10
+#define SCOPE_NAME "a_scope"
+#define FUNC_NAME "a_function"
+
+  zend_function user_closure = {0};
+  zend_function user_function = {0};
+  zend_function user_function_with_scope = {0};
+  zend_function internal_function = {0};
+
+  mock_user_closure(&user_closure, FILE_NAME, LINE_NO);
+  mock_user_function(&user_function, FILE_NAME, LINE_NO, FUNC_NAME);
+  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME, LINE_NO,
+                                SCOPE_NAME, FUNC_NAME);
+  mock_internal_function(&internal_function, FUNC_NAME);
+
+  /* Do asserts work? (don't blow up on invalid input) */
+
+  /* Happy path */
+  // tlib_pass_if_not_null("key was generated for user_function", );
+  // tlib_pass_if_not_null("key was generated for user_closure", key);
+
+  mock_zend_function_destroy(&user_closure);
+  mock_zend_function_destroy(&user_function);
+  mock_zend_function_destroy(&user_function_with_scope);
+  mock_zend_function_destroy(&internal_function);
 }
 #endif
 
@@ -356,13 +341,15 @@ void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
+  // test_user_instrument_set();
+  // test_user_instrument_get();
+
 #if LOOKUP_METHOD == LOOKUP_USE_OP_ARRAY
   test_op_array_wraprec(TSRMLS_C);
 #elif LOOKUP_METHOD == LOOKUP_USE_LINKED_LIST
   test_get_wraprec_by_func();
 #elif LOOKUP_METHOD == LOOKUP_USE_UTIL_HASHMAP
   test_user_instrument_hashmap();
-  test_user_instrument_lookup_performance();
 #elif LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
   test_wraprec_hashmap();
 #else
