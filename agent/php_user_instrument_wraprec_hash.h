@@ -114,7 +114,11 @@ static inline void zf_to_id(nruserfn_metadata* id, const zend_function* zf) {
 }
 
 static inline void wraprec_metadata_set(nruserfn_metadata* id, const zend_function* zf) {
+ if (id->is_set) {
+    return;
+  }
   zf_to_id(id, zf);
+  id->is_set = true;
 }
 
 static inline bool wraprec_streq(const zf_metadata_t *wr_id, const zf_metadata_t* zf_id) {

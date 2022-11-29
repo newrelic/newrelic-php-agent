@@ -374,18 +374,6 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
   return wraprec; /* return the new wraprec */
 }
 
-static void wreprec_id_reset(nruserfn_metadata *id) {
-  wraprec_id_dtor(id);
-  nr_memset(id, 0, sizeof(nruserfn_metadata));
-}
-
-static void nr_php_user_wraprec_reset(nruserfn_t* wraprec) {
-  if (NULL == wraprec) {
-    return;
-  }
-  wreprec_id_reset(&wraprec->id);
-  wraprec->is_wrapped = 0;
-}
 
 /*
  * Reset the user instrumentation records because we're starting a new
@@ -395,7 +383,7 @@ void nr_php_reset_user_instrumentation(void) {
   nruserfn_t* p = nr_wrapped_user_functions;
 
   while (0 != p) {
-    nr_php_user_wraprec_reset(p);
+    p->is_wrapped = 0;
     p = p->next;
   }
 }

@@ -36,6 +36,7 @@ typedef struct {
   } value;
 } zf_metadata_t;
 typedef struct _nruserfn_metadata {
+  bool is_set;
   uint32_t lineno;
   zf_metadata_t filename;
   zf_metadata_t scope;
