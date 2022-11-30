@@ -82,8 +82,10 @@ void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
 
 static inline void set_meta_value(zf_metadata_t* m, const char *metavalue, void* method) {
     if (NULL == method) {
+      m->is_value_cp = false;
       m->value.ccp = metavalue;
     } else {
+      m->is_value_cp = true;
       m->value.cp = nr_strdup(metavalue);
     }
 }

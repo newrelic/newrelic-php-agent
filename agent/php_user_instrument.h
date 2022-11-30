@@ -30,6 +30,7 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
 typedef struct {
   bool is_set;
   uint32_t len;
+  bool is_value_cp;
   union {
     char *cp; /* cp = char pointer */
     const char *ccp; /* ccp = const char pointer */

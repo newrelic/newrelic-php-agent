@@ -245,9 +245,17 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
 }
 
 static void wraprec_id_dtor(nruserfn_metadata *id) {
-  nr_free(id->filename.value);
-  nr_free(id->scope.value);
-  nr_free(id->function_name.value);
+#define ID_META_DTOR(meta) do { \
+  if (id->meta.is_value_cp) { \
+    nr_free(id->meta.value.cp); \
+  } \
+} while (0)
+
+  ID_META_DTOR(filename);
+  ID_META_DTOR(scope);
+  ID_META_DTOR(function_name);
+
+#undef ID_META_DTOR
 }
 
 static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
