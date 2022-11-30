@@ -6,8 +6,13 @@
 #if LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
 
 /* This hashmap will store pointers to wraprecs stored in the linked list.
- * Since wraprecs are persistent (they're not destroyed between requests), 
- * there's no need for hashmap value destructor. */
+ * Wraprec's destructor removes wraprec from hashmap before destroying the
+ * wraprec itself. Non-transient wraprecs (wraprecs for named user functions) 
+ * are persistent (they're not destroyed between requests) and will therefore
+ * not be removed from hashmap. Transient wraprecs (wraprecs for anonymous 
+ * user functions, aka callables, aka closures) are not persistent - they 
+ * are destroyed at the end of each request. Wraprec destructor removes 
+ * wraprec from the hashmap by calling wraprec_hashmap_delete. */
 
 typedef struct _nr_wraprec_hashmap_bucket_t {
   struct _nr_wraprec_hashmap_bucket_t* prev;
@@ -190,6 +195,12 @@ static inline size_t zf2hash(const nr_php_wraprec_hashmap_t* hashmap, const zend
   return hash % hashmap->hash_modulo;
 }
 
+static inline size_t wr2hash(const nr_php_wraprec_hashmap_t* hashmap, const nruserfn_t* wraprec) {
+  size_t hash = wraprec->id.lineno;
+
+  return hash % hashmap->hash_modulo;
+}
+
 static inline nruserfn_t* wraprec_hashmap_fetch(unsigned *n, const nr_php_wraprec_hashmap_t* hashmap, const size_t hash, const zend_function* zf) {
   nr_wraprec_hashmap_bucket_t* bucket;
 
@@ -246,4 +257,48 @@ static inline nr_status_t wraprec_hashmap_set(nr_php_wraprec_hashmap_t* hashmap,
 
   return NR_SUCCESS;
 }
+
+static inline nr_status_t wraprec_hashmap_delete(nr_php_wraprec_hashmap_t* hashmap, const nruserfn_t* wraprec) {
+  nr_wraprec_hashmap_bucket_t* bucket = NULL;
+  size_t hash;
+
+  if ((NULL == hashmap) || (NULL == wraprec)) {
+    return NR_FAILURE;
+  }
+
+  /* Find the bucket to be removed */
+  hash = wr2hash(hashmap, wraprec);
+  for (bucket = hashmap->buckets[hash]; bucket; bucket = bucket->next) {
+    if (wraprec == bucket->wraprec) {
+      /*
+      * Patch up the doubly linked list so that we don't point at something
+      * we're about to free.
+      */
+      if (bucket->next) {
+        bucket->next->prev = bucket->prev;
+      }
+
+      if (bucket->prev) {
+        bucket->prev->next = bucket->next;
+      }
+
+      /*
+      * If this is the first bucket in the list for this hash key, we need to
+      * point the head of the list at the next bucket.
+      */
+      if (hashmap->buckets[hash] == bucket) {
+        hashmap->buckets[hash] = bucket->next;
+      }
+
+      /* Destroy the bucket - wraprec is destroyed */
+      nr_free(bucket);
+      hashmap->elements -= 1;
+
+      return NR_SUCCESS;
+    }
+  }
+
+  return NR_FAILURE;
+}
+
 #endif

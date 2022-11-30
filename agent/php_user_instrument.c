@@ -261,6 +261,10 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
     return;
   }
 
+#if LOOKUP_METHOD == LOOKUP_USE_WRAPREC_HASHMAP
+  wraprec_hashmap_delete(NRPRG(user_function_wrappers), wraprec);
+#endif
+
   wraprec_id_dtor(&wraprec->id);
 
   nr_free(wraprec->supportability_metric);
