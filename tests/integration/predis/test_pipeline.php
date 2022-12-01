@@ -20,11 +20,11 @@ are being run, so they are instrumented as "pipeline".
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                      [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                 [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                                [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                           [12, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Redis/__HOST__/6379"},             [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [13, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [13, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                [13, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                           [13, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/__HOST__/6379"},             [13, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
@@ -40,9 +40,9 @@ are being run, so they are instrumented as "pipeline".
     [{"name":"Datastore/operation/Redis/mget"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/mget",
       "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/ping"},                     [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/ping"},                     [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/ping",
-      "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
@@ -101,6 +101,15 @@ function test_pipeline() {
   $pipe->exists($key);
   $pipe->mget('does_not_exist', $key);
   $replies = $pipe->execute();
+
+  /* method 3 (exception) */
+  $replies = $client->pipeline(function($pipe) {
+    try {
+      $pipe->execute();
+    } catch (Exception $e) {
+      $pipe->ping();
+    }
+  });
 
   $client->del($key);
   $client->quit();

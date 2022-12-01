@@ -51,19 +51,27 @@ NR_PHP_WRAPPER(nr_doctrine2_cache_dql) {
 
 /* If not using OAPI, we can simply free the value after the NR_PHP_WRAPPER_CALL.
  * Otherwise, we need an "after function" to do the freeing */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_free(NRPRG(doctrine_dql));
+#endif /* not OAPI */
+}
+NR_PHP_WRAPPER_END
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+NR_PHP_WRAPPER(nr_doctrine2_cache_dql_clean) {
+  (void)wraprec;
+  nr_free(NRPRG(doctrine_dql));
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_doctrine2_cache_dql_after) {
   (void)wraprec;
   nr_free(NRPRG(doctrine_dql));
-#else
-  nr_free(NRPRG(doctrine_dql));
-#endif /* OAPI */
 }
 NR_PHP_WRAPPER_END
+#endif /* OAPI */
 
 
 nr_slowsqls_labelled_query_t* nr_doctrine2_lookup_input_query(TSRMLS_D) {
@@ -92,7 +100,7 @@ void nr_doctrine2_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(NR_PSTR("Doctrine\\ORM\\Query::_doExecute"),
                                          nr_doctrine2_cache_dql,
                                          nr_doctrine2_cache_dql_after,
-                                         nr_doctrine2_cache_dql_after);
+                                         nr_doctrine2_cache_dql_clean);
 #else
   nr_php_wrap_user_function(NR_PSTR("Doctrine\\ORM\\Query::_doExecute"),
                             nr_doctrine2_cache_dql TSRMLS_CC);
