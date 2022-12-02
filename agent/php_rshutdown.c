@@ -109,7 +109,9 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(predis_ctx));
   nr_hashmap_destroy(&NRPRG(predis_commands));
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nr_vector_destroy(&NRPRG(user_function_wrappers));
+#endif
 
   NRPRG(cufa_callback) = NULL;
 

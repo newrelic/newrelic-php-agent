@@ -36,6 +36,13 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
 typedef struct _nruserfn_t {
   struct _nruserfn_t* next; /* singly linked list next pointer */
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  /* Pointer to zend_function is used as a key into the lookup hashmap. 
+   * It is set at the begining of a transaction when function is being 
+   * wrapped and is re-set when user instrumentation is reset */
+  zend_function* zf; 
+#endif
+
   const char* extra; /* extra naming information about the function */
 
   char* classname;
@@ -104,20 +111,9 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-/*
- * Purpose : Get the wraprec stored in nr_wrapped_user_functions and associated
- *           with a zend_function.
- *
- * Params  : 1. The zend function to find in a wraprec
- *
- * Returns : The function wrapper that matches the zend_function.
- *           This will first try to match the lineno/filename.  If we don't have
- *           that for any reason (maybe the func didn't exist in the function
- *           table when we first added), it will match by function name/class.
- *           NULL if no function wrapper matches the zend_function.
- */
-extern nruserfn_t* nr_php_get_wraprec_by_func(zend_function* func);
-#endif
+extern void nr_php_init_transient_user_instrumentation(void);
+extern nruserfn_t* nr_php_get_wraprec(zend_function* zf);
+#else
 /*
  * Purpose : Get the wraprec associated with a user function op_array.
  *
@@ -137,7 +133,7 @@ extern nruserfn_t* nr_php_op_array_get_wraprec(
  */
 extern void nr_php_op_array_set_wraprec(zend_op_array* op_array,
                                         nruserfn_t* func TSRMLS_DC);
-
+#endif
 /*
  * Purpose : Name a transaction
  *

@@ -485,6 +485,7 @@ nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding
 nrinibool_t
     code_level_metrics_enabled; /* newrelic.code_level_metrics.enabled */
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
  * pid and user_function_wrappers are used to store user function wrappers.
  * Storing this on a request level (as opposed to storing it on transaction
@@ -492,6 +493,7 @@ nrinibool_t
  */
 uint64_t pid;
 nr_vector_t* user_function_wrappers;
+#endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a
                  transaction */

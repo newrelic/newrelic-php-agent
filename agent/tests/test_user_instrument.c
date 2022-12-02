@@ -53,6 +53,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 #endif /* PHP < 7.4 */
 
+#if 0
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 static void test_get_wraprec_by_func() {
   return;
@@ -213,6 +214,7 @@ static void test_get_wraprec_by_func() {
   tlib_php_request_end();
 }
 #endif /* PHP >= 7.4 */
+#endif
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -224,7 +226,7 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   test_op_array_wraprec(TSRMLS_C);
 #else
-  test_get_wraprec_by_func();
+  //test_get_wraprec_by_func();
 #endif /* PHP >= 7.4 */
 
   tlib_php_engine_destroy(TSRMLS_C);
