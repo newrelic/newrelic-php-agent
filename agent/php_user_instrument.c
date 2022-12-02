@@ -439,6 +439,7 @@ void nr_php_reset_user_instrumentation(void) {
   }
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   if (NULL != user_function_wrappers) {
+    // send a metric with the number of transient wrappers
     nr_hashmap_destroy(&user_function_wrappers);
   }
   /* wraprecs are re-usable and stored in linked list - no destructor */
@@ -451,6 +452,7 @@ void nr_php_reset_user_instrumentation(void) {
  */
 void nr_php_remove_transient_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  // send a metric with the number of transient wrappers
   nr_hashmap_destroy(&transient_wrappers);
 #else
   nruserfn_t* p = nr_wrapped_user_functions;
