@@ -90,12 +90,12 @@ static nr_hashmap_t* user_function_wrappers;
 static nr_hashmap_t* transient_wrappers;
 
 static inline void nr_php_wraprec_hashmap_set(nr_hashmap_t* h, nruserfn_t* wr) {
-  nr_hashmap_update(h, (const char *)wr->zf, sizeof(zend_function*), wr);
+  nr_hashmap_update(h, (const char *)&wr->zf, sizeof(zend_function*), wr);
 }
 static inline nruserfn_t* nr_php_wraprec_hashmap_get(nr_hashmap_t* h, zend_function *zf) {\
   nruserfn_t* wraprec = NULL;
 
-  nr_hashmap_get_into(h, (const char*)zf, sizeof(zend_function*), (void**)&wraprec);
+  nr_hashmap_get_into(h, (const char*)&zf, sizeof(zend_function*), (void**)&wraprec);
 
   return wraprec;
 }
