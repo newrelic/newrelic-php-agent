@@ -363,12 +363,12 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   nrl_verbosedebug(NRL_INSTRUMENT, "adding custom for callable '%s'", name);
   nr_free(name);
 
-  nr_php_wrap_zend_function(
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-    transient_wrappers,
-#endif
-     func, wraprec TSRMLS_CC);
+  nr_php_wrap_zend_function(transient_wrappers, func, wraprec);
+#else
+  nr_php_wrap_zend_function(func, wraprec TSRMLS_CC);
   nr_php_add_custom_tracer_common(wraprec);
+#endif
 
   return wraprec;
 }
