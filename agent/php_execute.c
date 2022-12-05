@@ -1181,15 +1181,6 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
-    /*
-     * Non-OAPI segments are able to utilize metadata that is declared in the
-     * call stack. OAPI doesn't have this luxury since we have to handle begin
-     * and end func calls separately.  Because of this, metadata now resides as
-     * a pointer in the stacked segment. We must extract data from it BEFORE we
-     * move the stacked segment to the heap; otherwise, it gets deallocated
-     * before we can use it.
-     */
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
@@ -1913,7 +1904,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
    * Metadata deinit is handled when the segment is destroyed.
    */
 
-  if (NULL != wraprec) {
+  if (NULL == wraprec) {
     return;
   }
   /*
