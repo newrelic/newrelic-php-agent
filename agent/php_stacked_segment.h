@@ -461,7 +461,7 @@
  *
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
  * of *B. Function C throws an uncaught exception which B does not catch so
- * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. B catches the exception throws
  * another exception. At this point we realize the current
  * exception->This value indicates another function is active.  Because we
