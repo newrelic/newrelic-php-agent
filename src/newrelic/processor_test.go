@@ -1408,7 +1408,7 @@ func TestShouldConnect(t *testing.T) {
 
 // runs a mocked test of resolution of agent harvest limit request and value returned by collector
 // Notes:
-//   eventType:     "log_event_data" for log events (no others supported currently)
+//   eventType:     "log_event_data" or "custom_event_data" (no others supported currently)
 //   agentLimit:     Harvest limit from agent (INI file) for a 60 second harvest period
 //   collectorLimit: Harvest limit sent from collector for a 5 second harvest period
 //
