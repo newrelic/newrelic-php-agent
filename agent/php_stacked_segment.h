@@ -331,7 +331,7 @@
  * contents of the stacked segment *B into a segment b we obtained from the
  * slab allocator, and we make b a child of the stacked segment *A which
  * becomes the current segment.  Now current stacked_segment->metadata->this
- * still DOES equal the execute_data->prev_execute_data->This provided by
+ * DOES equal the execute_data->prev_execute_data->This provided by
  * nr_php_observer_fcall_begin(D) so we proceed and create stacked segment *D
  * correctly parented as a child of *A and *D becomes the current segment.
  *
@@ -385,7 +385,7 @@
  * segment is kept so we copy the contents of the stacked segment *B into a
  * segment b we obtained from the slab allocator, and we make b a child of the
  * stacked segment *A which becomes the current segment.  Now current
- * stacked_segment->metadata->this still DOES equal the execute_data-> this
+ * stacked_segment->metadata->this DOES equal the execute_data-> this
  * provided by nr_php_observer_fcall_end(A) so it proceeds, decides to keep the
  * segment and we copy the contents of the stacked segment *A into a segment a
  * we obtained from the slab allocator, and we make a a child of the stacked
@@ -416,7 +416,7 @@
  * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. A does not catch the exception,
  * but the txn has ended. Because we didn't get any nr_php_observer_fcall_end we
- * know no segment caught the exception. We'll apply the acception and
+ * know no segment caught the exception. We'll apply the exception and
  * keep/close stacked segments all the way down the stack to clean up dangling
  * segments. We pop the current segment *C and apply the exception. Because it
  * has an exception, the segment is kept so we copy the contents of the stacked
@@ -460,10 +460,10 @@
  *                               *C <                        c
  *
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
- * of *B. Function C throws an uncaught exception which B does not catch so
- * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
- * called and *C remains the current segment. B catches the exception throws
- * another exception. At this point we realize the current
+ * of *B. Function C throws an exception which B catches but 
+ * nr_php_observer_fcall_end(C) is not called so *C remains the 
+ * current segment. B catches the exception and throws another 
+ * exception which triggers the exception hook. At this point we realize the current
  * exception->This value indicates another function is active.  Because we
  * received no nr_php_observer_fcall_end up to that point, we know the exception
  * was uncaught until the exception->This function. We check the global
@@ -509,7 +509,7 @@
  *
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
  * of *B. Function C throws an uncaught exception which B does not catch so
- * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. A catches the exception and calls
  * newrelic_notice_error. We check the `this` value of the function that called
  * newrelic_notice_error and see it is not the same. Because we received no
