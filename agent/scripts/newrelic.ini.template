@@ -838,8 +838,9 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Type   : integer
 ; Scope  : per-directory
 ; Default: 30000
-; Info   : The default Custom Events reservoir limit in the agent is increased
-;          from 10,000 events per minute to 30,000 events per minute.
+; Info   : The default Custom Events reservoir limit in the agent is 
+;          30000 events per minute and the maximum allowed value
+;          is 100000 events per minute.
 ;
 ;newrelic.custom_events.max_samples_stored = 30000
 
