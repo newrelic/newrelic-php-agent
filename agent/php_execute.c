@@ -1181,14 +1181,14 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
-
-/*
- * Non-OAPI segments are able to utilize metadata that is declared in the call stack.
- * OAPI doesn't have this luxury since we have to handle begin and end func calls
- * separately.  Because of this, metadata now resides as a pointer in the stacked segment.
- * We must extract data from it BEFORE we move the stacked segment to the heap; otherwise,
- * it gets deallocated before we can use it.
- */
+    /*
+     * Non-OAPI segments are able to utilize metadata that is declared in the
+     * call stack. OAPI doesn't have this luxury since we have to handle begin
+     * and end func calls separately.  Because of this, metadata now resides as
+     * a pointer in the stacked segment. We must extract data from it BEFORE we
+     * move the stacked segment to the heap; otherwise, it gets deallocated
+     * before we can use it.
+     */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
@@ -1821,118 +1821,120 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
    * If there is custom instrumentation or tt detail is more than 0, start the
    * segment.
    */
-  if ((NULL != wraprec) || (NRINI(tt_detail) && NR_OP_ARRAY->function_name)) {
+  if ((NULL == wraprec) && !(NRINI(tt_detail) && NR_OP_ARRAY->function_name)) {
+    return;
+  }
+  /*
+   * Check if it's a custom error handler.  Even with some custom error
+   * handlers, fcall might not get called. But we don't need to wait for
+   * fcall_end to put the error anyway.  It can be done earlier in
+   * fcall_begin. Here, we are doing before the segment call so the error gets
+   * on the correct stacked segment.
+   */
+  if (NULL != wraprec && wraprec->is_exception_handler) {
     /*
-     * Check if it's a custom error handler.  Even with some custom error
-     * handlers, fcall might not get called. But we don't need to wait for
-     * fcall_end to put the error anyway.  It can be done earlier in
-     * fcall_begin. Here, we are doing before the segment call so the error gets
-     * on the correct stacked segment.
+     * Before starting the error handler segment, put the error it handled on
+     * the segment that called it. The choice of E_ERROR for the error level
+     * is basically arbitrary, but matches the error level PHP uses if there
+     * isn't an exception handler, so this should give more consistency for
+     * the user in terms of what they'll see with and without an exception
+     * handler installed.
      */
-    if (NULL != wraprec && wraprec->is_exception_handler) {
-      /*
-       * Before starting the error handler segment, put the error it handled on
-       * the segment that called it. The choice of E_ERROR for the error level
-       * is basically arbitrary, but matches the error level PHP uses if there
-       * isn't an exception handler, so this should give more consistency for
-       * the user in terms of what they'll see with and without an exception
-       * handler installed.
-       */
-      nr_status_t status;
-      if (NULL != NRPRG(uncaught_exception)) {
-        status = nr_php_error_record_exception_segment(
-            NRPRG(txn), NRPRG(uncaught_exception),
-            &NRPRG(exception_filters) TSRMLS_CC);
+    nr_status_t status;
+    if (NULL != NRPRG(uncaught_exception)) {
+      status = nr_php_error_record_exception_segment(
+          NRPRG(txn), NRPRG(uncaught_exception),
+          &NRPRG(exception_filters) TSRMLS_CC);
 
-        if (NR_FAILURE == status) {
-          nrl_verbosedebug(
-              NRL_AGENT, "%s: unable to record exception on segment", __func__);
-        }
-        zval* exception
-            = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-        nr_php_error_record_exception(
-            NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
-            "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
-        php_observer_clear_uncaught_exception_globals();
+      if (NR_FAILURE == status) {
+        nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
+                         __func__);
       }
-    } else {
-      /*
-       * Check if NRPRG(uncaught_exception) exists because if it's not handled,
-       * we'll parent the new segment on the wrong stacked segment. Close off
-       * all dangling segments caused by an exception before starting a new
-       * segment.
-       */
+      zval* exception
+          = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      nr_php_error_record_exception(
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
+          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+      php_observer_clear_uncaught_exception_globals();
+    }
+  } else {
+    /*
+     * Check if NRPRG(uncaught_exception) exists because if it's not handled,
+     * we'll parent the new segment on the wrong stacked segment. Close off
+     * all dangling segments caused by an exception before starting a new
+     * segment.
+     */
 
-      if (nrunlikely(NULL != NRPRG(uncaught_exception))) {
+    if (nrunlikely(NULL != NRPRG(uncaught_exception))) {
+      /*
+       * First check if it's the root because obviously, prev_execute won't
+       * exist.
+       */
+      if (NRTXN(segment_root) != NRTXN(force_current_segment)) {
         /*
-         * First check if it's the root because obviously, prev_execute won't
-         * exist.
+         * Get the current segment if it exists.
          */
-        if (NRTXN(segment_root) != NRTXN(force_current_segment)) {
+        nr_segment_t* exception_segment = NRTXN(force_current_segment);
+        if (NULL != exception_segment) {
           /*
-           * Get the current segment if it exists.
+           * If the metadata info doesn't match the previous callers This,
+           * then we know the uncaught exception occurred which caused the
+           * fcall_end function to not be called.  Clean up dangling stacked
+           * segments.
            */
-          nr_segment_t* exception_segment = NRTXN(force_current_segment);
-          if (NULL != exception_segment) {
+          nr_php_execute_metadata_t* md = exception_segment->metadata;
+          if ((NULL != md)
+              && (md->execute_data_this
+                  != &execute_data->prev_execute_data->This)) {
             /*
-             * If the metadata info doesn't match the previous callers This,
-             * then we know the uncaught exception occurred which caused the
-             * fcall_end function to not be called.  Clean up dangling stacked
-             * segments.
+             * Close all previous segments, attaching the uncaught exception
+             * as necessary.
              */
-            nr_php_execute_metadata_t* md = exception_segment->metadata;
-            if ((NULL != md)
-                && (md->execute_data_this
-                    != &execute_data->prev_execute_data->This)) {
-              /*
-               * Close all previous segments, attaching the uncaught exception
-               * as necessary.
-               */
-              nr_php_observer_exception_segments_end(
-                  NRPRG(uncaught_exception),
-                  &execute_data->prev_execute_data->This);
-            }
+            nr_php_observer_exception_segments_end(
+                NRPRG(uncaught_exception),
+                &execute_data->prev_execute_data->This);
           }
-          php_observer_clear_uncaught_exception_globals();
         }
-      }
-    }
-
-    segment = nr_php_stacked_segment_init(segment);
-    if (nrunlikely(NULL == segment)) {
-      nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
-      return;
-    }
-
-    nr_php_observer_metadata_init(segment->metadata, NR_EXECUTE_ORIG_ARGS);
-    metadata = segment->metadata;
-    metadata->execute_data_this = &execute_data->This;
-    /*
-     * Metadata deinit is handled when the segment is destroyed.
-     */
-
-    if (NULL != wraprec) {
-      /*
-       * If a function needs to have arguments modified this is the place.
-       */
-      segment->wraprec = wraprec;
-      zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
-                                                 NR_EXECUTE_ORIG_ARGS);
-      if (nrunlikely(zcaught)) {
-        zend_bailout();
-      }
-
-      nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
-      /*
-       * Check for, and handle, frameworks.
-       */
-      if (wraprec->is_names_wt_simple) {
-        nr_txn_name_from_function(NRPRG(txn), wraprec->funcname,
-                                  wraprec->classname);
+        php_observer_clear_uncaught_exception_globals();
       }
     }
   }
-  return;
+
+  segment = nr_php_stacked_segment_init(segment);
+  if (nrunlikely(NULL == segment)) {
+    nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
+    return;
+  }
+
+  nr_php_observer_metadata_init(segment->metadata, NR_EXECUTE_ORIG_ARGS);
+  metadata = segment->metadata;
+  metadata->execute_data_this = &execute_data->This;
+  /*
+   * Metadata deinit is handled when the segment is destroyed.
+   */
+
+  if (NULL != wraprec) {
+    return;
+  }
+  /*
+   * If a function needs to have arguments modified, do so in
+   * nr_zend_call_oapi_special_before.
+   */
+  segment->wraprec = wraprec;
+  zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
+                                             NR_EXECUTE_ORIG_ARGS);
+  if (nrunlikely(zcaught)) {
+    zend_bailout();
+  }
+
+  nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
+  /*
+   * Check for, and handle, frameworks.
+   */
+  if (wraprec->is_names_wt_simple) {
+    nr_txn_name_from_function(NRPRG(txn), wraprec->funcname,
+                              wraprec->classname);
+  }
 }
 
 static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
