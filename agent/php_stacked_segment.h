@@ -509,7 +509,7 @@
  *
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
  * of *B. Function C throws an uncaught exception which B does not catch so
- * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. A catches the exception and calls
  * newrelic_notice_error. We check the `this` value of the function that called
  * newrelic_notice_error and see it is not the same. Because we received no
