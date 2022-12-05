@@ -1114,10 +1114,17 @@ static inline void nr_php_execute_segment_end(
       || stacked->error) {
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
+
+      /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (NRINI(code_level_metrics_enabled)) {
     if (NULL == s->attributes) {
       s->attributes = nr_attributes_create(s->txn->attribute_config);
     }
-    nr_php_txn_add_code_level_metrics(s->attributes, metadata);
+      nr_php_txn_add_code_level_metrics(s->attributes, metadata);
+  }
     nr_segment_end(&s);
   } else {
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
