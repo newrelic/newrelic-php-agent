@@ -416,7 +416,7 @@
  * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. A does not catch the exception,
  * but the txn has ended. Because we didn't get any nr_php_observer_fcall_end we
- * know no segment caught the exception. We'll apply the acception and
+ * know no segment caught the exception. We'll apply the exception and
  * keep/close stacked segments all the way down the stack to clean up dangling
  * segments. We pop the current segment *C and apply the exception. Because it
  * has an exception, the segment is kept so we copy the contents of the stacked
