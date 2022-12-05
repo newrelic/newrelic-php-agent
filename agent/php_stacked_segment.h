@@ -331,7 +331,7 @@
  * contents of the stacked segment *B into a segment b we obtained from the
  * slab allocator, and we make b a child of the stacked segment *A which
  * becomes the current segment.  Now current stacked_segment->metadata->this
- * still DOES equal the execute_data->prev_execute_data->This provided by
+ * DOES equal the execute_data->prev_execute_data->This provided by
  * nr_php_observer_fcall_begin(D) so we proceed and create stacked segment *D
  * correctly parented as a child of *A and *D becomes the current segment.
  *
