@@ -385,7 +385,7 @@
  * segment is kept so we copy the contents of the stacked segment *B into a
  * segment b we obtained from the slab allocator, and we make b a child of the
  * stacked segment *A which becomes the current segment.  Now current
- * stacked_segment->metadata->this still DOES equal the execute_data-> this
+ * stacked_segment->metadata->this DOES equal the execute_data-> this
  * provided by nr_php_observer_fcall_end(A) so it proceeds, decides to keep the
  * segment and we copy the contents of the stacked segment *A into a segment a
  * we obtained from the slab allocator, and we make a a child of the stacked
