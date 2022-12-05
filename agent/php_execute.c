@@ -991,8 +991,8 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->function = NULL;
   }
-  if (ZEND_USER_FUNCTION != op_array->type
-      || !NRINI(code_level_metrics_enabled)) {
+  if (!NRINI(code_level_metrics_enabled)
+      || ZEND_USER_FUNCTION != op_array->type) {
     metadata->filepath = NULL;
     return;
   }
