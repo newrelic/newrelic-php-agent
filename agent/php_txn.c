@@ -1113,7 +1113,8 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 extern void nr_php_txn_add_code_level_metrics(
     nr_attributes_t* attributes,
     const nr_php_execute_metadata_t* metadata) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
+/* Current CLM functionality only works with PHP 7+ */
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP < PHP7 */
   (void)attributes;
   (void)metadata;
   return;
@@ -1126,8 +1127,6 @@ extern void nr_php_txn_add_code_level_metrics(
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
-
-  /* Current CLM functionality only works with PHP 7+ */
 
   if (NULL == metadata) {
     return;
