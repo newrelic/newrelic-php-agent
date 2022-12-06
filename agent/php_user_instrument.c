@@ -412,7 +412,7 @@ static void destroy_transient_wrapper(void* wraprec) {
 
 void nr_php_init_transient_user_instrumentation(void) {
   /* wraprecs are not re-usable and destroyed together with hashmap */
-  transient_wrappers = nr_hashmap_create(destroy_transient_wrapper);
+  transient_wrappers = nr_hashmap_create_buckets(10, destroy_transient_wrapper);
 }
 #endif
 
@@ -433,7 +433,7 @@ void nr_php_reset_user_instrumentation(void) {
     nr_hashmap_destroy(&user_function_wrappers);
   }
   /* wraprecs are re-usable and stored in linked list - no destructor */
-  user_function_wrappers = nr_hashmap_create(NULL);
+  user_function_wrappers = nr_hashmap_create_buckets(6, NULL);
 #endif
 }
 
