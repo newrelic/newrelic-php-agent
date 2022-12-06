@@ -416,7 +416,7 @@ void nr_php_reset_user_instrumentation(void) {
     nr_hashmap_destroy(&user_function_wrappers);
   }
   // send a metric with the number of transient wrappers
-  user_function_wrappers = nr_hashmap_create_buckets(10, reset_wraprec);
+  user_function_wrappers = nr_hashmap_create_buckets(1024, reset_wraprec);
 #else
   nruserfn_t* p = nr_wrapped_user_functions;
   while (0 != p) {
