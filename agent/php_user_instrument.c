@@ -265,12 +265,8 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->classname = nr_strndup(klass, klass_len);
     wraprec->classnamelen = klass_len;
     wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
-    wraprec->reportedclass = NULL;
     wraprec->is_method = 1;
   }
-
-  wraprec->lineno = 0;
-  wraprec->filename = NULL;
 
   wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
       wraprec->funcname, wraprec->classname);
@@ -296,8 +292,6 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nr_free(wraprec->funcname);
   nr_free(wraprec->classnameLC);
   nr_free(wraprec->funcnameLC);
-  nr_free(wraprec->reportedclass);
-  nr_free(wraprec->filename);
   nr_realfree((void**)wraprec_ptr);
 }
 

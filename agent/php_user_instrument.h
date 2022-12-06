@@ -62,27 +62,6 @@ typedef struct _nruserfn_t {
   char* funcnameLC;
 
   /*
-   * Internally, there are cases where the zend_function reports it is one
-   * class; however, the zend_function is also contained in another class_entry
-   * table.
-   * For an example, see tests/integration/laravel
-   * A lookup for the class = Illuminate\Console\Application returns the class
-   * entry named classname = Illuminate\Console\Application
-   * So far so good!
-   * Lookup Illuminate\Console\Application method doRun and a zend_function is
-   * returned.  Ask that zend_func what its classname is and it says:
-   * Symfony\Component\Console\Application.
-   * Okay.
-   * Track both pieces of info for any wraprecs.
-   */
-  char* reportedclass;
-  /*
-   * These are helpful to compare the wraprec more quickly and to differentiate
-   * between closures.
-   */
-  char* filename;
-  uint32_t lineno;
-  /*
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
@@ -212,17 +191,5 @@ extern void nr_php_user_function_add_declared_callback(
     const char* namestr,
     int namestrlen,
     nruserfn_declared_t callback TSRMLS_DC);
-
-static inline bool chk_reported_class(zend_function* func,
-                                      nruserfn_t* wraprec) {
-  if ((NULL == func) || (NULL == func->common.scope)) {
-    return false;
-  }
-
-  if ((NULL == func->common.scope->name) || (NULL != wraprec->reportedclass)) {
-    return false;
-  }
-  return true;
-}
 
 #endif /* PHP_USER_INSTRUMENT_HDR */
