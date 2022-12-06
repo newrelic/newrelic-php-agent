@@ -89,8 +89,8 @@ static nr_hashmap_t* user_function_wrappers;
  * together with all wraprecs in it at the end of the request. */
 static nr_hashmap_t* transient_wrappers;
 
-static inline void nr_php_wraprec_hashmap_set(nr_hashmap_t* h, nruserfn_t* wr) {
-  nr_hashmap_update(h, (const char *)&wr->zf, sizeof(zend_function*), wr);
+static inline void nr_php_wraprec_hashmap_set(nr_hashmap_t* h, zend_function* zf, nruserfn_t* wr) {
+  nr_hashmap_update(h, (const char *)&zf, sizeof(zend_function*), wr);
 }
 static inline nruserfn_t* nr_php_wraprec_hashmap_get(nr_hashmap_t* h, zend_function *zf) {\
   nruserfn_t* wraprec = NULL;
@@ -160,8 +160,7 @@ static void nr_php_wrap_zend_function(
                                       zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  wraprec->zf = func;
-  nr_php_wraprec_hashmap_set(h, wraprec);
+  nr_php_wraprec_hashmap_set(h, func, wraprec);
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
 #endif
@@ -425,9 +424,6 @@ void nr_php_reset_user_instrumentation(void) {
   nruserfn_t* p = nr_wrapped_user_functions;
 
   while (0 != p) {
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-    p->zf = NULL;
-#endif
     p->is_wrapped = 0;
     p = p->next;
   }

@@ -36,13 +36,6 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
 typedef struct _nruserfn_t {
   struct _nruserfn_t* next; /* singly linked list next pointer */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  /* Pointer to zend_function is used as a key into the lookup hashmap. 
-   * It is set at the begining of a transaction when function is being 
-   * wrapped and is re-set when user instrumentation is reset */
-  zend_function* zf; 
-#endif
-
   const char* extra; /* extra naming information about the function */
 
   char* classname;
