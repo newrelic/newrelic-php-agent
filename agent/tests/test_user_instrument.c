@@ -53,168 +53,97 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 #endif /* PHP < 7.4 */
 
-#if 0
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-static void test_get_wraprec_by_func() {
-  return;
-  zend_op_array oparray = {.function_name = (void*)1};
-  zend_function zend_func = {0};
-  zend_string* scope_name = NULL;
-  zend_class_entry ce = {0};
-  nruserfn_t* wraprec = NULL;
-  char* name_str = "my_func_name";
-  char* file_str = "my_file_name";
+static void test_hashmap_wraprec() {
+  const char* user_func1_name = "user_function_to_be_instrumented";
+  zend_function* user_func1_zf;
+  const char* user_func2_name = "user_callable_to_be_instrumented";
+  zend_function* user_func2_zf;
+  const char* user_func3_name = "user_function_not_instrumented";
+  zend_function* user_func3_zf;
+  zend_function* zf;
+  char* php_code;
+  nruserfn_t *user_func1_wraprec, *user_func2_wraprec, *wraprec_found;
 
   tlib_php_request_start();
 
-  /*
-   * NULL if there's no wraprecs in the internal list.
-   */
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
+  /* create zend_functions for test user function */
+  php_code = nr_formatf("function %s() { return 1; }", user_func1_name);
+  tlib_php_request_eval(php_code);
+  nr_free(php_code);
+  php_code = nr_formatf("function %s() { return 2; }", user_func2_name);
+  tlib_php_request_eval(php_code);
+  nr_free(php_code);
+  php_code = nr_formatf("function %s() { return 3; }", user_func3_name);
+  tlib_php_request_eval(php_code);
+  nr_free(php_code);
+  user_func1_zf = nr_php_find_function(user_func1_name);
+  user_func2_zf = nr_php_find_function(user_func2_name);
+  user_func3_zf = nr_php_find_function(user_func3_name);
 
-  wraprec = nr_php_add_custom_tracer_named(
-      "ClassNoMatch::functionNoMatch",
-      nr_strlen("ClassNoMatch::functionNoMatch"));
-  wraprec = nr_php_add_custom_tracer_named("functionNoMatch2",
-                                           nr_strlen("functionNoMatch2"));
-  wraprec = nr_php_add_custom_tracer_named(name_str, nr_strlen(name_str));
+  /* assert we got two distinct zend_functions */
+  tlib_fail_if_ptr_equal("zend_functions are different", user_func1_zf,
+                         user_func2_zf);
+  tlib_fail_if_ptr_equal("zend_functions are different", user_func1_zf,
+                         user_func3_zf);
+  tlib_fail_if_ptr_equal("zend_functions are different", user_func2_zf,
+                         user_func3_zf);
 
-  /*
-   * NULL if zend_function is NULL.
-   */
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(NULL), NULL);
+  /* don't create wraprec yet */
+  user_func1_wraprec = NULL;
+  wraprec_found = nr_php_get_wraprec(user_func1_zf);
+  tlib_pass_if_ptr_equal("lookup uninstrumented user function", wraprec_found,
+                         user_func1_wraprec);
 
-  /*
-   * NULL if function name is NULL.
-   */
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
+  /* instrument user function */
+  user_func1_wraprec = nr_php_add_custom_tracer_named(
+      user_func1_name, nr_strlen(user_func1_name));
+  wraprec_found = nr_php_get_wraprec(user_func1_zf);
+  tlib_pass_if_ptr_equal("lookup instrumented user function succeeds",
+                         wraprec_found, user_func1_wraprec);
 
-  /*
-   * NULL if name is correct but type is wrong.
-   */
-  zend_func.type = ZEND_INTERNAL_FUNCTION;
-  zend_func.common.function_name
-      = zend_string_init(name_str, strlen(name_str), 0);
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
-  /*
-   * Valid if function name matches and type is user function.
-   */
-  zend_func.type = ZEND_USER_FUNCTION;
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
-  /*
-   * NULL if function name matches, but class name doesn't.
-   */
-  scope_name = zend_string_init("ClassName", strlen("ClassName"), 0);
-  ce.name = scope_name;
-  zend_func.common.scope = &ce;
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
-  /*
-   * NULL if function name doesn't match and class name matches.
-   */
-
-  wraprec = nr_php_add_custom_tracer_named(
-      "ClassName::my_func_name2", nr_strlen("ClassName::my_func_name2"));
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
-  /*
-   * Valid if function name matches and class name matches.
-   */
-  wraprec = nr_php_add_custom_tracer_named(
-      "ClassName::my_func_name", nr_strlen("ClassName::my_func_name"));
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
-
-  /*
-   * Invalidate the cached pid.
-   */
-  NRPRG(pid) -= 1;
-
-  /*
-   * Not NULL because we don't care about the reserved array anymore.
-   */
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
-  /*
-   * Restore the cached pid and invalidate the mangled pid/index value.
-   */
-  NRPRG(pid) += 1;
-
-  {
-    unsigned long pval;
-
-    pval = (unsigned long)oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)];
-    oparray.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)(pval * 2);
-  }
-
-  /*
-   * Not NULL because we don't care about the reserved array anymore.
-   */
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
-
-  /*
-   * Valid if lineno/filename match.
-   */
-
-  /*
-   * Because no lineno/filename are set yet, this wraprec matches using
-   * funcname/classname.
-   */
-  wraprec = nr_php_get_wraprec_by_func(&zend_func);
-  /*
-   * Let's add filename/lineno to func.  Because it doesn't exist in wraprec, it
-   * should match with funcname/classname, but should then ADD the
-   * filename/lineno to the wraprec.
-   */
-  zend_func.op_array.filename = zend_string_init(file_str, strlen(file_str), 0);
-  zend_func.op_array.line_start = 4;
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
+  /* lookup instrumentation via copy of zend_function pointer */
+  zf = user_func1_zf;
+  wraprec_found = nr_php_get_wraprec(zf);
   tlib_pass_if_ptr_equal(
-      "obtain instrumented function filename added after wraprec is created",
-      nr_php_get_wraprec_by_func(&zend_func), wraprec);
-  tlib_pass_if_int_equal(
-      "obtain instrumented function lineno added after wraprec is created", 4,
-      wraprec->lineno);
-  /*
-   * Now if we remove funcname and klassname, should still match by
-   * lineno/filename that was added in previous test.
-   */
+      "lookup instrumented user function via different pointer to the same "
+      "zend_function succeeds",
+      wraprec_found, user_func1_wraprec);
 
-  zend_string_release(zend_func.common.function_name);
-  zend_func.common.function_name = NULL;
-  zend_string_release(zend_func.common.scope->name);
-  zend_func.common.scope->name = NULL;
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), wraprec);
+  wraprec_found = nr_php_get_wraprec(user_func3_zf);
+  tlib_pass_if_null("lookup uninstrumented user function fails", wraprec_found);
 
-  /*
-   * NULL if filename matches but lineno doesn't.
-   */
-  zend_func.op_array.line_start = 41;
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
+  /* lookup instrumentation after modifying op_array.reserved */
+  user_func1_zf->op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)]
+      = (void*)1;
+  wraprec_found = nr_php_get_wraprec(user_func1_zf);
+  tlib_pass_if_ptr_equal(
+      "lookup instrumented user function with modified reserved field succeeds",
+      wraprec_found, user_func1_wraprec);
 
-  /*
-   * NULL if lineno matches but filename doesn't.
-   */
-  zend_func.op_array.line_start = 4;
-  zend_string_release(zend_func.op_array.filename);
-  zend_func.op_array.filename = NULL;
+  /* instrument user callable */
+  user_func2_wraprec = nr_php_add_custom_tracer_callable(user_func2_zf);
+  wraprec_found = nr_php_get_wraprec(user_func1_zf);
+  tlib_pass_if_ptr_equal("lookup instrumented user function still succeeds",
+                         wraprec_found, user_func1_wraprec);
+  wraprec_found = nr_php_get_wraprec(user_func2_zf);
+  tlib_pass_if_ptr_equal("lookup instrumented user callable succeeds",
+                         wraprec_found, user_func2_wraprec);
 
-  tlib_pass_if_ptr_equal("obtain instrumented function",
-                         nr_php_get_wraprec_by_func(&zend_func), NULL);
+  wraprec_found = nr_php_get_wraprec(user_func3_zf);
+  tlib_pass_if_null("lookup uninstrumented user function fails", wraprec_found);
+
+  /* lookup instrumentation after modifying op_array.reserved */
+  user_func1_zf->op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)]
+      = (void*)1;
+  wraprec_found = nr_php_get_wraprec(user_func2_zf);
+  tlib_pass_if_ptr_equal(
+      "lookup instrumented user callable with modified reserved field succeeds",
+      wraprec_found, user_func2_wraprec);
 
   tlib_php_request_end();
 }
 #endif /* PHP >= 7.4 */
-#endif
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -226,7 +155,7 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   test_op_array_wraprec(TSRMLS_C);
 #else
-  //test_get_wraprec_by_func();
+  test_hashmap_wraprec();
 #endif /* PHP >= 7.4 */
 
   tlib_php_engine_destroy(TSRMLS_C);
