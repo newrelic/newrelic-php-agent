@@ -814,7 +814,7 @@ extern void nr_php_txn_add_code_level_metrics(
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 
-#define NR_ZEND_USER_FUNC_EXISTS(x) \
+#define NR_NOT_ZEND_USER_FUNC(x) \
   (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
 
 /*
@@ -863,7 +863,7 @@ static inline const char* nr_php_zend_execute_data_filename(
     const zend_execute_data* execute_data) {
   zend_string* filename = NULL;
 
-  while (NR_ZEND_USER_FUNC_EXISTS(execute_data)) {
+  while (NR_NOT_ZEND_USER_FUNC(execute_data)) {
     execute_data = execute_data->prev_execute_data;
   }
   if (execute_data) {
