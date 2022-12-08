@@ -325,8 +325,8 @@ integration: Makefile daemon lasp-test-all integration-events-limits
 #
 # Agent event limits integration testing
 #
-# Because of how the integration_runner connects to the collector once before
-# running any tests we have to tell the runner the value the agent would
+# Because of how the integration_runner connects to the collector (once before
+# running any tests) we have to tell the runner the value the agent would
 # have passed to it for each test.  This means these tests are not testing
 # the agent <-> daemon communcations of the agent's requested custom event limit
 # via the daemon to the collector and daemon sending back the collectors harvest
