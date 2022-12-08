@@ -41,7 +41,6 @@
 #include "php_zval.h"
 #include "util_memory.h"
 #include "util_strings.h"
-#include "php_execute.h"
 
 /*
  * The default connection mechanism to the daemon is:
