@@ -108,6 +108,44 @@ typedef void (*nr_framework_enable_fn_t)(TSRMLS_D);
 typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
 
 /*
+ * Version specific metadata that we have to gather before we call the original
+ * execute_ex handler, as different versions of PHP behave differently in terms
+ * of what you can do with the op array after making that call. This structure
+ * and the functions immediately below are helpers for
+ * nr_php_execute_enabled(), which is the user function execution function.
+ *
+ * In PHP 7, it is possible that the op array will be destroyed if the function
+ * being called is a __call() magic method (in which case a trampoline is
+ * created and destroyed). We increment the reference counts on the scope and
+ * function strings and keep pointers to them in this structure, then release
+ * them once we've named the trace node and/or metric (if required).
+ *
+ * In PHP 5, execute_data->op_array may be set to NULL if we make a subsequent
+ * user function call in an exec callback (which occurs before we decide
+ * whether to create a metric and/or trace node), so we keep a copy of the
+ * pointer here. The op array itself won't be destroyed from under us, as it's
+ * owned by the request and not the specific function call (unlike the
+ * trampoline case above).
+ *
+ * Note that, while op arrays are theoretically reference counted themselves,
+ * we cannot take the simple approach of incrementing that reference count due
+ * to not all Zend Engine functions using init_op_array() and
+ * destroy_op_array(): one example is that PHP 7 trampoline op arrays are
+ * simply emalloc() and efree()'d without even setting the reference count.
+ * Therefore we have to be more selective in our approach.
+ */
+typedef struct {
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+  zend_string* scope;
+  zend_string* function;
+  zend_string* filepath;
+  uint32_t function_lineno;
+#else
+  zend_op_array* op_array;
+#endif /* PHP7 */
+} nr_php_execute_metadata_t;
+
+/*
  * This code is used for function call debugging.
  */
 #define MAX_NR_EXECUTE_DEBUG_STRLEN (80)
@@ -1010,6 +1048,130 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
 #endif /* PHP7 */
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+/*
+ * Purpose : If code level metrics are enabled, use the metadata to create agent
+ * attributes in the segment with code level metrics.
+ *
+ * Params  : 1. segment to create and add agent attributes to
+ *           2. metadata that will populate the CLM attributes
+ *
+ * Returns : void
+ *
+ * Note: PHP has a concept of calling files with no function names.  In the
+ *       case of a file being called when there is no function name, the agent
+ *       instruments the file.  In this case, we provide the filename to CLM
+ *       as the "function" name.
+ *       Current CLM functionality only works with PHP 7+
+ */
+static inline void nr_php_execute_segment_add_code_level_metrics(
+    nr_segment_t* segment,
+    const nr_php_execute_metadata_t* metadata) {
+  /*
+   * Check if code level metrics are enabled in the ini.
+   * If they aren't, exit and don't add any attributes.
+   */
+  if (!NRINI(code_level_metrics_enabled)) {
+    return;
+  }
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  if (NULL == segment) {
+    return;
+  }
+
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions:
+   *  - code.filepath AND code.function
+   *  - code.namespace AND code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   *
+   * Additionally, none of the needed attributes can exceed 255 characters.
+   */
+
+#define CHK_CLM_STRLEN(s, zstr_len) \
+  if (CLM_STRLEN_MAX < zstr_len) {  \
+    s = NULL;                       \
+  }
+
+  const char* namespace = NULL;
+  const char* function = NULL;
+  const char* filepath = NULL;
+
+  if (NULL != metadata->scope) {
+    namespace = ZSTR_VAL(metadata->scope);
+    CHK_CLM_STRLEN(namespace, ZSTR_LEN(metadata->scope));
+  }
+
+  if (NULL != metadata->function) {
+    function = ZSTR_VAL(metadata->function);
+    CHK_CLM_STRLEN(function, ZSTR_LEN(metadata->function));
+  }
+
+  if (NULL != metadata->filepath) {
+    filepath = ZSTR_VAL(metadata->filepath);
+    CHK_CLM_STRLEN(filepath, ZSTR_LEN(metadata->filepath));
+  }
+
+#undef CHK_CLM_STRLEN
+
+  if (1 == metadata->function_lineno) {
+    /*
+     * It's a file.  For CLM purposes, the "function" name is the filepath.
+     */
+    function = filepath;
+  }
+
+  if (nr_strempty(function)) {
+    /*
+     * Name isn't set so don't do anything
+     */
+    return;
+  }
+  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+    /*
+     * CLM MUST have either function+namespace or function+filepath.
+     */
+    return;
+  }
+
+  /*
+   * Only go through the trouble of actually allocating agent attributes if we
+   * know we have valid values to turn into attributes.
+   */
+
+  if (NULL == segment->attributes) {
+    segment->attributes = nr_attributes_create(segment->txn->attribute_config);
+  }
+
+  if (nrunlikely(NULL == segment->attributes)) {
+    return;
+  }
+
+  nr_txn_attributes_set_string_attribute(segment->attributes,
+                                         nr_txn_clm_code_function, function);
+
+  if (!nr_strempty(filepath)) {
+    nr_txn_attributes_set_string_attribute(segment->attributes,
+                                           nr_txn_clm_code_filepath, filepath);
+  }
+  if (!nr_strempty(namespace)) {
+    nr_txn_attributes_set_string_attribute(
+        segment->attributes, nr_txn_clm_code_namespace, namespace);
+  }
+
+  nr_txn_attributes_set_long_attribute(
+      segment->attributes, nr_txn_clm_code_lineno, metadata->function_lineno);
+}
+
+#endif
 /*
  * Purpose : Create a metric name from the given metadata.
  *
@@ -1114,14 +1276,13 @@ static inline void nr_php_execute_segment_end(
 
     /*
      * Check if code level metrics are enabled in the ini.
-     * If they aren't, exit and don't add any attributes.
+     * If they aren't, exit and don't create any metrics.
      */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
     if (NRINI(code_level_metrics_enabled)) {
-      if (NULL == s->attributes) {
-        s->attributes = nr_attributes_create(s->txn->attribute_config);
-      }
-      nr_php_txn_add_code_level_metrics(s->attributes, metadata);
+      nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
+#endif
     nr_segment_end(&s);
   } else {
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
