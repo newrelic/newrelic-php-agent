@@ -698,7 +698,6 @@ static void test_nr_txn_attributes_set_attribute(void) {
   /*
    * Invalid values are attribute=NULL.
    */
-  // amber
   nr_txn_attributes_set_long_attribute(attributes, NULL, 1);
   obj = nr_attributes_agent_to_obj(attributes, all);
   tlib_pass_if_null("Shouldn't have any attributes", obj);
