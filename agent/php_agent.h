@@ -886,7 +886,7 @@ extern void nr_php_txn_add_code_level_metrics(
     const nr_php_execute_metadata_t* metadata);
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 
-#define NR_ZEND_USER_FUNC_EXISTS(x) \
+#define NR_NOT_ZEND_USER_FUNC(x) \
   (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
 
 /*
@@ -899,8 +899,28 @@ extern void nr_php_txn_add_code_level_metrics(
  *           or NULL if the zend_execute_data is invalid.
  *
  */
-extern const char* nr_php_zend_execute_data_function_name(
-    const zend_execute_data* execute_data);
+static inline const char* nr_php_zend_execute_data_function_name(
+    const zend_execute_data* execute_data) {
+  zend_string* function_name = NULL;
+
+  if ((NULL == execute_data) || (NULL == execute_data->func)) {
+    return NULL;
+  }
+
+  function_name = execute_data->func->common.function_name;
+
+  if ((NULL == function_name)
+      && (ZEND_USER_FUNCTION == execute_data->func->type)) {
+    /*
+     * This is the case of a filename being called so there is no function name.
+     * It is broken out separately here in case we need to do something special
+     * with it in the future.
+     */
+    return NULL;
+  }
+  return function_name ? ZSTR_VAL(function_name) : NULL;
+}
+
 /*
  * Purpose : Return a pointer to the filename of zend_execute_data.
  *
@@ -911,8 +931,18 @@ extern const char* nr_php_zend_execute_data_function_name(
  *           or NULL if the zend_execute_data is invalid.
  *
  */
-extern const char* nr_php_zend_execute_data_filename(
-    const zend_execute_data* execute_data);
+static inline const char* nr_php_zend_execute_data_filename(
+    const zend_execute_data* execute_data) {
+  zend_string* filename = NULL;
+
+  while (NR_NOT_ZEND_USER_FUNC(execute_data)) {
+    execute_data = execute_data->prev_execute_data;
+  }
+  if (execute_data) {
+    filename = execute_data->func->op_array.filename;
+  }
+  return filename ? ZSTR_VAL(filename) : NULL;
+}
 
 /*
  * Purpose : Return a pointer to the scope(i.e., class) name of
@@ -925,19 +955,22 @@ extern const char* nr_php_zend_execute_data_filename(
  *           or NULL if the zend_execute_data is invalid.
  *
  */
-extern const char* nr_php_zend_execute_data_scope_name(
-    const zend_execute_data* execute_data);
+static inline const char* nr_php_zend_execute_data_scope_name(
+    const zend_execute_data* execute_data) {
+  zend_class_entry* ce = NULL;
 
-/*
- * Purpose : Return a uint32_t line number value of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : uint32_t lineno value
- *
- */
-extern uint32_t nr_php_zend_execute_data_lineno(
-    const zend_execute_data* execute_data);
+  while (execute_data) {
+    if (execute_data->func
+        && (ZEND_USER_CODE(execute_data->func->type)
+            || execute_data->func->common.scope)) {
+      ce = execute_data->func->common.scope;
+      execute_data = NULL;
+    } else {
+      execute_data = execute_data->prev_execute_data;
+    }
+  }
+  return ce ? ZSTR_VAL(ce->name) : NULL;
+}
 
 /*
  * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.
@@ -948,7 +981,7 @@ extern uint32_t nr_php_zend_execute_data_lineno(
  *
  */
 static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
-  if (NULL != func) {
+  if (NULL != func && ZEND_USER_FUNCTION == func->op_array.type) {
     return func->op_array.line_start;
   }
   return 0;
