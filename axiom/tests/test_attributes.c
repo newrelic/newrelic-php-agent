@@ -666,10 +666,6 @@ checks the wrappers employ.
 static void test_nr_txn_attributes_set_attribute(void) {
   nr_attributes_t* attributes;
   nr_attribute_config_t* config;
-  //  uint32_t event = NR_ATTRIBUTE_DESTINATION_TXN_EVENT;
-  // uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
-  // uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
-  // uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
   uint32_t all = NR_ATTRIBUTE_DESTINATION_ALL;
   nrobj_t* obj = NULL;
 
