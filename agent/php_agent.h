@@ -794,8 +794,7 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
 /*
- * Purpose : If code level metrics are enabled, extract the data segment
- * metadata. Add the CLM as agent attributes to the attributes data structure.
+ * Purpose : If code level metrics are enabled, use the execute metadata to populate CLM agent attributes in the segment.
  *
  * Params  : 1. attributes data structure to add the CLM to
  *           2. metadata that contains the information about the segment
