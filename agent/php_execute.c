@@ -1096,6 +1096,8 @@ static inline void nr_php_execute_segment_add_code_level_metrics(
    * Additionally, none of the needed attributes can exceed 255 characters.
    */
 
+#define CLM_STRLEN_MAX (255)
+
 #define CHK_CLM_STRLEN(s, zstr_len) \
   if (CLM_STRLEN_MAX < zstr_len) {  \
     s = NULL;                       \

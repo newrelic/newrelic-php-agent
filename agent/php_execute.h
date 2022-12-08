@@ -24,8 +24,6 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
-#define CLM_STRLEN_MAX (255)
-
 /*
  * Purpose: Look through the PHP symbol table for special names or symbols
  * that provide additional hints that a specific framework has been loaded.
