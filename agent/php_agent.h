@@ -794,8 +794,8 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
 /*
- * Purpose : If code level metrics are enabled, extract the data segment metadata.  
- *           Add the CLM as agent attributes to the attributes data structure.
+ * Purpose : If code level metrics are enabled, extract the data segment
+ * metadata. Add the CLM as agent attributes to the attributes data structure.
  *
  * Params  : 1. attributes data structure to add the CLM to
  *           2. metadata that contains the information about the segment
@@ -813,92 +813,6 @@ extern void nr_php_txn_add_code_level_metrics(
     const nr_php_execute_metadata_t* metadata);
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-
-#define NR_NOT_ZEND_USER_FUNC(x) \
-  (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
-
-/*
- * Purpose : Return a pointer to the function name of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-static inline const char* nr_php_zend_execute_data_function_name(
-    const zend_execute_data* execute_data) {
-  zend_string* function_name = NULL;
-
-  if ((NULL == execute_data) || (NULL == execute_data->func)) {
-    return NULL;
-  }
-
-  function_name = execute_data->func->common.function_name;
-
-  if ((NULL == function_name)
-      && (ZEND_USER_FUNCTION == execute_data->func->type)) {
-    /*
-     * This is the case of a filename being called so there is no function name.
-     * It is broken out separately here in case we need to do something special
-     * with it in the future.
-     */
-    return NULL;
-  }
-  return function_name ? ZSTR_VAL(function_name) : NULL;
-}
-
-/*
- * Purpose : Return a pointer to the filename of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-static inline const char* nr_php_zend_execute_data_filename(
-    const zend_execute_data* execute_data) {
-  zend_string* filename = NULL;
-
-  while (NR_NOT_ZEND_USER_FUNC(execute_data)) {
-    execute_data = execute_data->prev_execute_data;
-  }
-  if (execute_data) {
-    filename = execute_data->func->op_array.filename;
-  }
-  return filename ? ZSTR_VAL(filename) : NULL;
-}
-
-/*
- * Purpose : Return a pointer to the scope(i.e., class) name of
- * zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-static inline const char* nr_php_zend_execute_data_scope_name(
-    const zend_execute_data* execute_data) {
-  zend_class_entry* ce = NULL;
-
-  while (execute_data) {
-    if (execute_data->func
-        && (ZEND_USER_CODE(execute_data->func->type)
-            || execute_data->func->common.scope)) {
-      ce = execute_data->func->common.scope;
-      execute_data = NULL;
-    } else {
-      execute_data = execute_data->prev_execute_data;
-    }
-  }
-  return ce ? ZSTR_VAL(ce->name) : NULL;
-}
 
 /*
  * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.

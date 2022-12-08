@@ -1064,9 +1064,6 @@ static inline void nr_php_execute_metadata_release(
     metadata->filepath = NULL;
   }
 
-  nr_free(metadata->function_name);
-  nr_free(metadata->function_namespace);
-  nr_free(metadata->function_filepath);
 #else
   metadata->op_array = NULL;
 #endif /* PHP7 */

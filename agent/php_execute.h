@@ -58,9 +58,6 @@ typedef struct {
   zend_string* scope;
   zend_string* function;
   zend_string* filepath;
-  char* function_name;
-  char* function_filepath;
-  char* function_namespace;
   uint32_t function_lineno;
 #else
   zend_op_array* op_array;
