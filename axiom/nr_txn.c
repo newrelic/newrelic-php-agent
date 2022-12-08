@@ -105,18 +105,6 @@ NR_TXN_ATTR(nr_txn_http_statuscode,
 NR_TXN_ATTR(nr_txn_request_user_agent,
             "request.headers.userAgent",
             NR_TXN_ATTRIBUTE_TRACE_ERROR);
-NR_TXN_ATTR(nr_txn_clm_code_function,
-            "code.function",
-            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
-NR_TXN_ATTR(nr_txn_clm_code_filepath,
-            "code.filepath",
-            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
-NR_TXN_ATTR(nr_txn_clm_code_namespace,
-            "code.namespace",
-            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
-NR_TXN_ATTR(nr_txn_clm_code_lineno,
-            "code.lineno",
-            NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT);
 
 /*
  * Deprecated per December 2019
@@ -168,32 +156,6 @@ void nr_txn_set_long_attribute(nrtxn_t* txn,
     return;
   }
   nr_attributes_agent_add_long(txn->attributes, attribute->destinations,
-                               attribute->name, value);
-}
-
-void nr_txn_attributes_set_string_attribute(nr_attributes_t* attributes,
-                                            const nr_txn_attribute_t* attribute,
-                                            const char* value) {
-  if (NULL == attribute) {
-    return;
-  }
-  if (NULL == value) {
-    return;
-  }
-  if ('\0' == value[0]) {
-    return;
-  }
-  nr_attributes_agent_add_string(attributes, attribute->destinations,
-                                 attribute->name, value);
-}
-
-void nr_txn_attributes_set_long_attribute(nr_attributes_t* attributes,
-                                          const nr_txn_attribute_t* attribute,
-                                          const long value) {
-  if (NULL == attribute) {
-    return;
-  }
-  nr_attributes_agent_add_long(attributes, attribute->destinations,
                                attribute->name, value);
 }
 

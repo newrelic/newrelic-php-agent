@@ -1155,20 +1155,34 @@ static inline void nr_php_execute_segment_add_code_level_metrics(
     return;
   }
 
-  nr_txn_attributes_set_string_attribute(segment->attributes,
-                                         nr_txn_clm_code_function, function);
+#define CLM_ATTRIBUTE_DESTINATION                                      \
+  (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
+   | NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_SPAN)
+
+  /*
+   * If the string is empty, CLM specs say don't add it.
+   * nr_attributes_agent_add_string is okay with an empty string attribute.
+   * Already checked function for strempty no need to check again, but will need
+   * to check filepath and namespace.
+   */
+
+  nr_attributes_agent_add_string(segment->attributes, CLM_ATTRIBUTE_DESTINATION,
+                                 "code.function", function);
 
   if (!nr_strempty(filepath)) {
-    nr_txn_attributes_set_string_attribute(segment->attributes,
-                                           nr_txn_clm_code_filepath, filepath);
-  }
-  if (!nr_strempty(namespace)) {
-    nr_txn_attributes_set_string_attribute(
-        segment->attributes, nr_txn_clm_code_namespace, namespace);
+    nr_attributes_agent_add_string(segment->attributes,
+                                   CLM_ATTRIBUTE_DESTINATION, "code.filepath",
+                                   filepath);
   }
 
-  nr_txn_attributes_set_long_attribute(
-      segment->attributes, nr_txn_clm_code_lineno, metadata->function_lineno);
+  if (!nr_strempty(namespace)) {
+    nr_attributes_agent_add_string(segment->attributes,
+                                   CLM_ATTRIBUTE_DESTINATION, "code.namespace",
+                                   namespace);
+  }
+
+  nr_attributes_agent_add_long(segment->attributes, CLM_ATTRIBUTE_DESTINATION,
+                               "code.lineno", metadata->function_lineno);
 }
 
 #endif
