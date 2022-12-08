@@ -592,7 +592,7 @@ extern void nr_txn_attributes_set_string_attribute(
 extern void nr_txn_attributes_set_long_attribute(
     nr_attributes_t* attributes,
     const nr_txn_attribute_t* attribute,
-    long value);
+    const long value);
 /*
  * Purpose : Return the duration of the transaction.  This function will return
  *           0 if the transaction has not yet finished or if the transaction

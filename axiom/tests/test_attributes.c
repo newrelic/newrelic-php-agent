@@ -11,6 +11,7 @@
 
 #include "nr_attributes.h"
 #include "nr_attributes_private.h"
+#include "nr_txn.h"
 #include "util_hash.h"
 #include "util_memory.h"
 #include "util_object.h"
@@ -655,6 +656,74 @@ static void test_add(void) {
   nr_attribute_config_destroy(&config);
 }
 
+/*
+ * nr_txn_attributes_set_long_attribute and
+nr_txn_attributes_set_string_attribute are wrappers for
+nr_attributes_agent_add_long nr_attributes_agent_add_string which already have
+unit tests which do data validation. This test case will just be verify the
+checks the wrappers employ.
+ */
+static void test_nr_txn_attributes_set_attribute(void) {
+  nr_attributes_t* attributes;
+  nr_attribute_config_t* config;
+  //  uint32_t event = NR_ATTRIBUTE_DESTINATION_TXN_EVENT;
+  // uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
+  // uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
+  // uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
+  uint32_t all = NR_ATTRIBUTE_DESTINATION_ALL;
+  nrobj_t* obj = NULL;
+
+  config = nr_attribute_config_create();
+  attributes = nr_attributes_create(config);
+
+  /*
+   * Invalid values are attribute=NULL, value = NULL, value = empty string.
+   */
+  // amber
+  nr_txn_attributes_set_string_attribute(attributes, NULL, "value");
+  obj = nr_attributes_agent_to_obj(attributes, all);
+  tlib_pass_if_null("Shouldn't have any attributes", obj);
+  nro_delete(obj);
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         NULL);
+  obj = nr_attributes_agent_to_obj(attributes, all);
+  tlib_pass_if_null("Shouldn't have any attributes", obj);
+  nro_delete(obj);
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         "");
+  obj = nr_attributes_agent_to_obj(attributes, all);
+  tlib_pass_if_null("Shouldn't have any attributes", obj);
+  nro_delete(obj);
+
+  /*
+   * Invalid values are attribute=NULL.
+   */
+  // amber
+  nr_txn_attributes_set_long_attribute(attributes, NULL, 1);
+  obj = nr_attributes_agent_to_obj(attributes, all);
+  tlib_pass_if_null("Shouldn't have any attributes", obj);
+  nro_delete(obj);
+
+  /*
+   * Attributes added for valid value.
+   */
+  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
+                                         "value");
+  test_agent_attributes_as_json("attributes added", attributes, all,
+                                "{\"code.function\":\"value\"}");
+
+  /*
+   * Attributes added for valid value.
+   */
+  nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno, 123);
+  test_agent_attributes_as_json(
+      "attributes added", attributes, all,
+      "{\"code.lineno\":123,\"code.function\":\"value\"}");
+
+  nr_attributes_destroy(&attributes);
+  nr_attribute_config_destroy(&config);
+}
+
 static void test_attributes_to_obj_bad_params(void) {
   /* Don't blow up! */
   nr_attributes_user_to_obj(0, NR_ATTRIBUTE_DESTINATION_BROWSER);
@@ -1159,6 +1228,7 @@ void test_main(void* p NRUNUSED) {
   test_null_and_bools_and_double();
   test_user_exists();
   test_remove_attribute();
+  test_nr_txn_attributes_set_attribute();
 
   test_cross_agent_attribute_configuration();
 }
