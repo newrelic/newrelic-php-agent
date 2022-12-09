@@ -5,7 +5,8 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation generates metrics and log events
+Test that Monolog3 instrumentation generates metrics and log events and that
+CLM is properly added for autoinstrumentated functions.
 */
 
 /*SKIPIF
@@ -65,7 +66,231 @@ monolog3.EMERGENCY: emergency []
 */
 
 /*EXPECT_SPAN_EVENTS
-null
+/*EXPECT_SPAN_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 10000,
+    "events_seen": 10
+  },
+  [
+    [
+      {
+        "traceId": "??",
+        "duration": "??",
+        "transactionId": "??",
+        "name": "OtherTransaction\/php__FILE__",
+        "guid": "??",
+        "type": "Span",
+        "category": "generic",
+        "priority": "??",
+        "sampled": true,
+        "nr.entryPoint": true,
+        "timestamp": "??",
+        "transaction.name": "OtherTransaction\/php__FILE__"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/test_logging",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 396,
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/Monolog\\Logger::addRecord",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 314,
+        "code.namespace":"Monolog\\Logger",
+        "code.filepath": "??",
+        "code.function": "test_logging"
+      }
+    ],
+  ]
+]
 */
 
 /*EXPECT_LOG_EVENTS
