@@ -260,7 +260,7 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 		err = getEventConfig(
 		rawLimits.CustomEventData,
 		daemonConfig.ReportPeriod,
-		limits.MaxCustomEvents,
+		limits.MaxCustomMaxEvents,
 		limits.DefaultReportPeriod)
 	if err != nil {
 		log.Infof("Unexpected negative Custom event limit %d", rawLimits.CustomEventData)
@@ -305,9 +305,10 @@ func (daemonConfig *EventHarvestConfig) UnmarshalJSON(b []byte) error {
 func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 
 	// Check if we have agent limits to incorporate.
-	// Currently only max span events and max log events are configurable via the agent.
+	// Currently only max span, log, and custom events are configurable via the agent.
 	spanEventLimit := limits.MaxSpanMaxEvents
 	logEventLimit := limits.MaxLogMaxEvents
+	customEventLimit := limits.MaxCustomMaxEvents
 	if agentLimits != nil {
 		if (agentLimits.SpanEventConfig.Limit < limits.MaxSpanMaxEvents) &&
 			(agentLimits.SpanEventConfig.Limit >= 0) {
@@ -316,6 +317,10 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 		if (agentLimits.LogEventConfig.Limit < limits.MaxLogMaxEvents) &&
 			(agentLimits.LogEventConfig.Limit >= 0) {
 			logEventLimit = agentLimits.LogEventConfig.Limit
+		}
+		if (agentLimits.CustomEventConfig.Limit < limits.MaxCustomMaxEvents) &&
+			(agentLimits.CustomEventConfig.Limit >= 0) {
+			customEventLimit = agentLimits.CustomEventConfig.Limit
 		}
 	}
 
@@ -327,7 +332,7 @@ func NewHarvestLimits(agentLimits *EventConfigs) EventConfigs {
 			Limit: limits.MaxTxnEvents,
 		},
 		CustomEventConfig: Event{
-			Limit: limits.MaxCustomEvents,
+			Limit: customEventLimit,
 		},
 		SpanEventConfig: Event{
 			Limit: spanEventLimit,

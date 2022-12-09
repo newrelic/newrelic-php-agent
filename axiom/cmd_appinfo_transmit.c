@@ -178,6 +178,8 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
                                     info->span_queue_size, 0);
   nr_flatbuffers_object_prepend_u64(fb, APP_SPAN_EVENTS_MAX_SAMPLES_STORED,
                                     info->span_events_max_samples_stored, 0);
+  nr_flatbuffers_object_prepend_u64(fb, APP_CUSTOM_EVENTS_MAX_SAMPLES_STORED,
+                                    info->custom_events_max_samples_stored, 0);
   nr_flatbuffers_object_prepend_u64(fb, APP_LOG_EVENTS_MAX_SAMPLES_STORED,
                                     info->log_events_max_samples_stored, 0);
   nr_flatbuffers_object_prepend_u16(fb, APP_TRACE_OBSERVER_PORT,
@@ -413,6 +415,7 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
                                                  nr_app_limits_t* app_limits,
                                                  nr_app_info_t info) {
   uint64_t harvest_log_limit;
+  uint64_t harvest_custom_limit;
   const nrobj_t* harvest_limits
       = nro_get_hash_hash(config, "harvest_limits", NULL);
 
@@ -423,8 +426,6 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
    * consistency, but the defaults are more or less inconsequential. */
   app_limits->analytics_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "analytic_event_data", NR_MAX_ANALYTIC_EVENTS);
-  app_limits->custom_events = nr_cmd_appinfo_process_get_harvest_limit(
-      harvest_limits, "custom_event_data", NR_MAX_CUSTOM_EVENTS);
   app_limits->error_events = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "error_event_data", NR_MAX_ERRORS);
   app_limits->span_events = nr_cmd_appinfo_process_get_harvest_limit(
@@ -433,8 +434,18 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
           ? NR_MAX_SPAN_EVENTS_MAX_SAMPLES_STORED
           : info.span_events_max_samples_stored);
 
+
   /* Need to select the smaller value between the agent INI config value
-   * and the value returned by the collector.  */
+   * and the value returned by the collector.  This was necessary because
+   * the collector for some time returned '833' if sent a value of '0' 
+   */
+  harvest_custom_limit = nr_cmd_appinfo_process_get_harvest_limit(
+      harvest_limits, "custom_event_data", 
+      NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED);
+  app_limits->custom_events = info.custom_events_max_samples_stored;
+  if (harvest_custom_limit < info.custom_events_max_samples_stored)
+    app_limits->custom_events = harvest_custom_limit;
+
   harvest_log_limit = nr_cmd_appinfo_process_get_harvest_limit(
       harvest_limits, "log_event_data", info.log_events_max_samples_stored);
   app_limits->log_events = info.log_events_max_samples_stored;
@@ -448,6 +459,15 @@ void nr_cmd_appinfo_process_event_harvest_config(const nrobj_t* config,
                    "app_limits->log_events = %d",
                    info.log_events_max_samples_stored, harvest_log_limit,
                    app_limits->log_events);
+
+  nrl_verbosedebug(NRL_AGENT,
+                   "custom event limits:  agent config = %" PRIu64
+                   ",  harvest = %" PRIu64
+                   " final "
+                   ",  app_limits->log_events = %d",
+                   info.custom_events_max_samples_stored, 
+                   harvest_custom_limit,
+                   app_limits->custom_events);
 }
 
 int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,

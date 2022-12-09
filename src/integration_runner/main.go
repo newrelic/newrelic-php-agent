@@ -31,19 +31,24 @@ import (
 )
 
 var (
-	flagAgent     = flag.String("agent", "", "")
-	flagCGI       = flag.String("cgi", "", "")
-	flagCollector = flag.String("collector", "", "the collector host")
-	flagLoglevel  = flag.String("loglevel", "", "agent log level")
-	flagOutputDir = flag.String("output-dir", ".", "")
-	flagPattern   = flag.String("pattern", "test_*", "shell pattern describing tests to run")
-	flagPHP       = flag.String("php", "", "")
-	flagPort      = flag.String("port", defaultPort(), "")
-	flagRetry     = flag.Int("retry", 0, "maximum retry attempts")
-	flagTimeout   = flag.Duration("timeout", 10*time.Second, "")
-	flagValgrind  = flag.String("valgrind", "", "if given, this is the path to valgrind")
-	flagWorkers   = flag.Int("threads", 1, "")
-	flagTime      = flag.Bool("time", false, "time each test")
+	DefaultMaxCustomEvents = 30000
+)
+
+var (
+	flagAgent           = flag.String("agent", "", "")
+	flagCGI             = flag.String("cgi", "", "")
+	flagCollector       = flag.String("collector", "", "the collector host")
+	flagLoglevel        = flag.String("loglevel", "", "agent log level")
+	flagOutputDir       = flag.String("output-dir", ".", "")
+	flagPattern         = flag.String("pattern", "test_*", "shell pattern describing tests to run")
+	flagPHP             = flag.String("php", "", "")
+	flagPort            = flag.String("port", defaultPort(), "")
+	flagRetry           = flag.Int("retry", 0, "maximum retry attempts")
+	flagTimeout         = flag.Duration("timeout", 10*time.Second, "")
+	flagValgrind        = flag.String("valgrind", "", "if given, this is the path to valgrind")
+	flagWorkers         = flag.Int("threads", 1, "")
+	flagTime            = flag.Bool("time", false, "time each test")
+	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -139,9 +144,15 @@ var (
 		// Ensure that we get Javascript agent code in the reply
 		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
 		SecurityPolicyToken: "",
+		// Set log and customer event limits to non-zero values or else collector will return 0.
+		// Use default value for logging.
+		// Use max value for custom event so integration tests can exercise full range of values for max to record.
 		AgentEventLimits: collector.EventConfigs{
 			LogEventConfig: collector.Event{
 				Limit: 10000,
+			},
+			CustomEventConfig: collector.Event{
+				Limit: DefaultMaxCustomEvents,
 			},
 		},
 	}
@@ -253,6 +264,9 @@ func main() {
 		TestApp.RedirectCollector = "collector.newrelic.com"
 	}
 	TestApp.License = collector.LicenseKey(secrets.NewrelicLicenseKey)
+
+	// Set value that will be sent to collector for the max custom event samples
+	TestApp.AgentEventLimits.CustomEventConfig.Limit = *flagMaxCustomEvents
 
 	// Set the redirect collector from the flag, if given.
 	if *flagCollector != "" {

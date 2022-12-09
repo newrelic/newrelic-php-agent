@@ -363,6 +363,10 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	// propagate through and be sent to the collector
 	info.AgentEventLimits.LogEventConfig.Limit = 4545
 
+	// A valid custom event max samples stored value configured from the agent should
+	// propagate through and be sent to the collector
+	info.AgentEventLimits.CustomEventConfig.Limit = 1234
+
 	pid := 123
 	expected := `[` +
 		`{` +
@@ -379,7 +383,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":2323,"log_event_data":4545}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":1234,"span_event_data":2323,"log_event_data":4545}}` +
 		`}` +
 		`]`
 
@@ -398,6 +402,10 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	// propagate defaults through and be sent to the collector
 	info.AgentEventLimits.LogEventConfig.Limit = 45678
 
+	// An invalid custom event max samples stored value configured from the agent should
+	// propagate defaults through and be sent to the collector
+	info.AgentEventLimits.CustomEventConfig.Limit = 456780
+
 	pid = 123
 	expected = `[` +
 		`{` +
@@ -414,7 +422,9 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,` +
+		`"event_harvest_config":{"report_period_ms":60000,` +
+		`"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,` +
+		`"custom_event_data":` + strconv.Itoa(limits.MaxCustomMaxEvents) + `,` +
 		`"span_event_data":` + strconv.Itoa(limits.MaxSpanMaxEvents) + `,` +
 		`"log_event_data":` + strconv.Itoa(limits.MaxLogMaxEvents) + `}}` +
 		`}` +
@@ -430,6 +440,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	// an empty string for the HostDisplayName should not produce JSON
 	info.AgentEventLimits.SpanEventConfig.Limit = 1001
 	info.AgentEventLimits.LogEventConfig.Limit = 1002
+	info.AgentEventLimits.CustomEventConfig.Limit = 1003
 	info.HostDisplayName = ""
 	expected = `[` +
 		`{` +
@@ -445,7 +456,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":1003,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 
@@ -472,7 +483,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":1003,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 
@@ -499,7 +510,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 		`"metadata":{},` +
 		`"identifier":"one;two",` +
 		`"utilization":{"metadata_version":1,"logical_processors":22,"total_ram_mib":1000,"hostname":"some_host"},` +
-		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":10000,"span_event_data":1001,"log_event_data":1002}}` +
+		`"event_harvest_config":{"report_period_ms":60000,"harvest_limits":{"error_event_data":100,"analytic_event_data":10000,"custom_event_data":1003,"span_event_data":1001,"log_event_data":1002}}` +
 		`}` +
 		`]`
 

@@ -1842,6 +1842,55 @@ static PHP_INI_MH(nr_log_forwarding_log_level_mh) {
   return FAILURE;
 }
 
+static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
+  nriniuint_t* p;
+  int val = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+  bool err = false;
+  nr_status_t parse_status = NR_SUCCESS;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nriniuint_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  /*
+   * -- An invalid value will result in the default value.
+   * -- A value < 0 will result in the default value
+   * -- A value > MAX will result in MAX value
+   */
+
+  p->where = 0;
+
+  if (0 != NEW_VALUE_LEN) {
+    parse_status = nr_strtoi(&val, NEW_VALUE, 0);
+    if (0 > val || NR_FAILURE == parse_status) {
+      val = NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    } else if (NR_MAX_CUSTOM_EVENTS_MAX_SAMPLES_STORED < val) {
+      val = NR_MAX_CUSTOM_EVENTS_MAX_SAMPLES_STORED;
+      err = true;
+    }
+    if (err) {
+      nrl_warning(NRL_INIT,
+                  "Invalid custom_events.max_samples_stored "
+                  "value \"%.8s\"; using "
+                  "%d instead",
+                  NEW_VALUE, val);
+    }
+  }
+  p->value = (zend_uint)val;
+  p->where = stage;
+
+  return SUCCESS;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2570,6 +2619,14 @@ STD_PHP_INI_ENTRY_EX("newrelic.custom_insights_events.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.custom_events.max_samples_stored",
+                     NR_STR2(NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED),
+                     NR_PHP_REQUEST,
+                     nr_custom_events_max_samples_stored_mh,
+                     custom_events_max_samples_stored,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 /*
  * Synthetics
