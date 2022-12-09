@@ -1217,3 +1217,14 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          on the APM Summary page.
 ;
 ;newrelic.application_logging.metrics.enabled = true
+
+; Setting: newrelic.code_level_metrics.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Toggles whether the agent provides function name, function
+;          filepath, function namespace, and function lineno as
+;          attributes on reported spans
+;
+;newrelic.code_level_metrics.enabled = false
+
