@@ -23,17 +23,11 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.code_level_metrics.enabled = 1
+newrelic.transaction_tracer.detail = 0
 */
 
 /*EXPECT
 monolog3.DEBUG: debug []
-monolog3.INFO: info []
-monolog3.NOTICE: notice []
-monolog3.WARNING: warning []
-monolog3.ERROR: error []
-monolog3.CRITICAL: critical []
-monolog3.ALERT: alert []
-monolog3.EMERGENCY: emergency []
 */
 
 /*EXPECT_METRICS
@@ -44,15 +38,8 @@ monolog3.EMERGENCY: emergency []
   [
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines"},                                                   [8, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/ALERT"},                                             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/CRITICAL"},                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Logging/lines"},                                                   [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/DEBUG"},                                             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/EMERGENCY"},                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/ERROR"},                                             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/INFO"},                                              [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/NOTICE"},                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/WARNING"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
@@ -66,12 +53,11 @@ monolog3.EMERGENCY: emergency []
 */
 
 /*EXPECT_SPAN_EVENTS
-/*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 10
+    "events_seen": 2
   },
   [
     [
@@ -99,27 +85,6 @@ monolog3.EMERGENCY: emergency []
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/test_logging",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 396,
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
         "name": "Custom\/Monolog\\Logger::addRecord",
         "guid": "??",
         "timestamp": "??",
@@ -132,163 +97,9 @@ monolog3.EMERGENCY: emergency []
         "code.lineno": 314,
         "code.namespace":"Monolog\\Logger",
         "code.filepath": "??",
-        "code.function": "test_logging"
+        "code.function": "addRecord"
       }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/Monolog\\Logger::addRecord",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": 314,
-        "code.namespace":"Monolog\\Logger",
-        "code.filepath": "??",
-        "code.function": "test_logging"
-      }
-    ],
+    ]
   ]
 ]
 */
@@ -300,76 +111,6 @@ monolog3.EMERGENCY: emergency []
         "attributes": {}
       },
       "logs": [
-        {
-          "message": "error",
-          "level": "ERROR",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "critical",
-          "level": "CRITICAL",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "notice",
-          "level": "NOTICE",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "warning",
-          "level": "WARNING",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "info",
-          "level": "INFO",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },  
-        {
-          "message": "emergency",
-          "level": "EMERGENCY",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },        
         {
           "message": "debug",
           "level": "DEBUG",
@@ -412,19 +153,7 @@ function test_logging() {
     // all having the same timestamp.
     $logger->debug("debug");
     usleep(10000);
-    $logger->info("info");
-    usleep(10000);
-    $logger->notice("notice");
-    usleep(10000);
-    $logger->warning("warning");
-    usleep(10000);
-    $logger->error("error");
-    usleep(10000);
-    $logger->critical("critical");
-    usleep(10000);
-    $logger->alert("alert");
-    usleep(10000);
-    $logger->emergency("emergency");
+
 }
 
 test_logging();
