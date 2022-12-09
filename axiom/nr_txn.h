@@ -58,6 +58,8 @@ typedef enum _nr_tt_recordsql_t {
  */
 typedef struct _nrtxnopt_t {
   int custom_events_enabled; /* Whether or not to capture custom events */
+  size_t custom_events_max_samples_stored; /* The maximum number of custom events
+                                              per transaction */
   int synthetics_enabled;    /* Whether or not to enable Synthetics support */
   int instance_reporting_enabled; /* Whether to capture datastore instance host
                                      and port */
@@ -581,7 +583,6 @@ extern void nr_txn_set_string_attribute(nrtxn_t* txn,
 extern void nr_txn_set_long_attribute(nrtxn_t* txn,
                                       const nr_txn_attribute_t* attribute,
                                       long value);
-
 /*
  * Purpose : Return the duration of the transaction.  This function will return
  *           0 if the transaction has not yet finished or if the transaction

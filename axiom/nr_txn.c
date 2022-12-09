@@ -48,6 +48,10 @@ struct _nr_txn_attribute_t {
   uint32_t destinations;
 };
 
+#define NR_TXN_ATTRIBUTE_SPAN_TRACE_ERROR_EVENT                        \
+  (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
+   | NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_SPAN)
+
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR_EVENT                             \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
    | NR_ATTRIBUTE_DESTINATION_TXN_EVENT)
@@ -55,10 +59,8 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS)                     \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
-    (NAME), (DESTS)                                     \
-  }
+#define NR_TXN_ATTR(X, NAME, DESTS) \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",
@@ -2504,7 +2506,6 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
       nro_set_hash_string(params, "spanId", nr_error_get_span_id(txn->error));
     }
   }
-
   agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
                                                 NR_ATTRIBUTE_DESTINATION_ERROR);
   user_attributes = nr_attributes_user_to_obj(txn->attributes,

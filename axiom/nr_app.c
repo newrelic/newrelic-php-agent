@@ -277,6 +277,8 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
   app->info.span_events_max_samples_stored
       = info->span_events_max_samples_stored;
   app->info.log_events_max_samples_stored = info->log_events_max_samples_stored;
+  app->info.custom_events_max_samples_stored 
+      = info->custom_events_max_samples_stored;
   app->rnd = nr_random_create();
   nr_random_seed_from_time(app->rnd);
 
