@@ -151,23 +151,23 @@ void nr_php_wraprec_hashmap_key_release(nr_php_wraprec_hashmap_key_t *key) {
   key->lineno = 0;
 }
 
-static inline size_t nr_zendfunc2bucketidx(size_t log2_num_buckets, const zend_function* zf) {
+static inline size_t nr_zendfunc2bucketidx(size_t log2_num_buckets, zend_function* zf) {
   /* default to lineno */
   uint32_t hash = nr_php_zend_function_lineno(zf);
 
   if (NULL != zf->op_array.function_name && !nr_zf_is_unnamed_closure(zf)) {
     /* but use hash of function name when possible */
-    hash = zf->op_array.function_name->h;
+    hash = ZSTR_HASH(zf->op_array.function_name);
   } else if (NULL != zf->op_array.filename) {
     /* and as last resort try hash of filename if available */
-    hash = zf->op_array.filename->h;
+    hash = ZSTR_HASH(zf->op_array.filename);
   }
 
   /* normalize to stay in-bound */
   return (hash & ((1 << log2_num_buckets) - 1));
 }
 
-static inline bool zstr_equal(const zend_string* zs1, const zend_string* zs2) {
+static inline bool zstr_equal(zend_string* zs1, zend_string* zs2) {
   if (NULL == zs1 || NULL == zs2) {
     return false;
   }
@@ -176,7 +176,7 @@ static inline bool zstr_equal(const zend_string* zs1, const zend_string* zs2) {
     return false;
   }
 
-  if (ZSTR_H(zs1) != ZSTR_H(zs2)) {
+  if (ZSTR_HASH(zs1) != ZSTR_HASH(zs2)) {
     return false;
   }
 
@@ -187,7 +187,7 @@ static inline bool zstr_equal(const zend_string* zs1, const zend_string* zs2) {
   return true;
 }
 
-static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key, const zend_function* zf) {
+static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key, zend_function* zf) {
 
   if (nr_php_zend_function_lineno(zf) != key->lineno) {
     return false;
@@ -212,7 +212,7 @@ static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key, const
 }
 
 static int nr_php_wraprec_hashmap_fetch_internal(nr_php_wraprec_hashmap_t* hashmap,
-                             size_t hash_key, const zend_function* zf, nr_wraprecs_bucket_t** bucket_ptr) {
+                             size_t hash_key, zend_function* zf, nr_wraprecs_bucket_t** bucket_ptr) {
   nr_wraprecs_bucket_t* bucket;
 
   for (bucket = hashmap->buckets[hash_key]; bucket; bucket = bucket->next) {
@@ -242,7 +242,7 @@ static void nr_php_wraprec_hashmap_add_internal(nr_php_wraprec_hashmap_t* hashma
   ++hashmap->elements;
 }
 
-void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap, const zend_function* zf, nruserfn_t* wr) {
+void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap, zend_function* zf, nruserfn_t* wr) {
   nr_wraprecs_bucket_t* bucket = NULL;
   size_t bucketidx;
 
@@ -266,7 +266,7 @@ void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap, const zend
 }
 
 
-int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t* hashmap, const zend_function* zf, nruserfn_t** wraprec_ptr) {
+int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t* hashmap, zend_function* zf, nruserfn_t** wraprec_ptr) {
   nr_wraprecs_bucket_t* bucket = NULL;
   size_t bucketidx;
 

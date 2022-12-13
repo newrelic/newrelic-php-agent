@@ -90,10 +90,10 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * wraprecs. Re-usable wraprecs are not destroyed - they are re-set. */
 static nr_php_wraprec_hashmap_t* user_function_wrappers;
 
-static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr, const zend_function* zf) {
+static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr, zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
 }
-static inline nruserfn_t* nr_php_wraprec_lookup_get(const zend_function *zf) {
+static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function *zf) {
   nruserfn_t* wraprec = NULL;
 
   nr_php_wraprec_hashmap_get_into(user_function_wrappers, zf, &wraprec);

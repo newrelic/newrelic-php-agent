@@ -50,8 +50,12 @@ extern void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t**);
  * Params  : 1. The hashmap.
  *           2. The zend function to set instrumentation for.
  *           3. The wraprec to set the key and store in the hashmap.
+ * 
+ * Caveat: If zend function's zend_string metadata (function_name or filename)
+ *         does not have hash calculated, this function will calculate value
+ *         for zend_string's h property.
  */
-extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*, const zend_function*, nruserfn_t*);
+extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*, zend_function*, nruserfn_t*);
 
 /*
  * Purpose : Get a wraprec pointer from a hashmap into an out parameter.
@@ -63,8 +67,12 @@ extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*, const zend_
  *              unchanged.
  *
  * Returns : Non-zero if the value exists, zero otherwise.
+ * 
+ * Caveat: If zend function's zend_string metadata (function_name or filename)
+ *         does not have hash calculated, this function will calculate value
+ *         for zend_string's h property.
  */
-extern int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t*, const zend_function*, nruserfn_t**);
+extern int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t*, zend_function*, nruserfn_t**);
 #endif
 
 #endif
