@@ -20,6 +20,18 @@
 typedef struct _nr_php_wraprec_hashmap nr_php_wraprec_hashmap_t;
 
 /*
+ * hashmap type stats
+ */
+typedef struct _nr_php_wraprec_hashmap_stats {
+  size_t elements;
+  size_t buckets_used;
+  size_t collisions_min;
+  size_t collisions_max;
+  size_t collisions_mean;
+  size_t buckets_with_collisions;
+} nr_php_wraprec_hashmap_stats_t;
+
+/*
  * Type declaration for destructor functions.
  */
 typedef void (*nr_php_wraprec_hashmap_dtor_fn_t)(nruserfn_t*);
@@ -39,8 +51,10 @@ extern nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(size_t, n
  * Purpose : Destroy a hashmap.
  *
  * Params  : 1. The address of the hashmap to destroy.
+ * 
+ * Returns : hashmap stats.
  */
-extern void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t**);
+extern nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t**);
 
 /*
  * Purpose : Update the key in the wraprec using metadata from zend function,

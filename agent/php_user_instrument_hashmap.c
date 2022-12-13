@@ -84,30 +84,59 @@ static void nr_destroy_wraprecs_bucket(nr_wraprecs_bucket_t** bucket_ptr,
   nr_realfree((void**)bucket_ptr);
 }
 
-void nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
+nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
+  nr_php_wraprec_hashmap_stats_t stats = {};
   size_t count;
   nr_php_wraprec_hashmap_t* hashmap;
   size_t i;
+  size_t collisions;
 
   if ((NULL == hashmap_ptr) || (NULL == *hashmap_ptr)) {
-    return;
+    return stats;
   }
   hashmap = *hashmap_ptr;
+
+  stats.elements = hashmap->elements;
+  stats.collisions_min = stats.elements;
 
   count = nr_count_buckets(hashmap);
   for (i = 0; i < count; i++) {
     nr_wraprecs_bucket_t* bucket = hashmap->buckets[i];
+    collisions = 0;
+
+    if (bucket) {
+      stats.buckets_used++;
+    }
 
     while (bucket) {
       nr_wraprecs_bucket_t* next = bucket->next;
 
+      collisions++;
+
       nr_destroy_wraprecs_bucket(&bucket, hashmap->dtor_func);
       bucket = next;
     }
+
+    if (0 != collisions && collisions < stats.collisions_min) {
+      stats.collisions_min = collisions;
+    }
+    if (collisions > stats.collisions_max) {
+      stats.collisions_max = collisions;
+    }
+    if (collisions > 1) {
+      stats.buckets_with_collisions++;
+      stats.collisions_mean += collisions;
+    }
+  }
+
+  if (0 != stats.buckets_with_collisions) {
+    stats.collisions_mean /= stats.buckets_with_collisions;
   }
 
   nr_free(hashmap->buckets);
   nr_realfree((void**)hashmap_ptr);
+
+  return stats;
 }
 
 static bool nr_zf_is_unnamed_closure(const zend_function* zf) {

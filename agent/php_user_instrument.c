@@ -444,7 +444,10 @@ void nr_php_reset_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
    // send a metric with the number of transient wrappers
   if (NULL != user_function_wrappers) {
-    nr_php_wraprec_hashmap_destroy(&user_function_wrappers);
+    nr_php_wraprec_hashmap_stats_t stats = nr_php_wraprec_hashmap_destroy(&user_function_wrappers);
+
+    nrl_debug(NRL_INSTRUMENT, "# elements: %lu, # buckets used: %lu", stats.elements, stats.buckets_used);
+    nrl_debug(NRL_INSTRUMENT, "collisions - min: %lu, max: %lu, avg: %lu", stats.collisions_min, stats.collisions_max, stats.collisions_mean);
   }
 #else
   nruserfn_t* p = nr_wrapped_user_functions;
