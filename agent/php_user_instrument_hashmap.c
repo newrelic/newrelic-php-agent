@@ -152,7 +152,18 @@ void nr_php_wraprec_hashmap_key_release(nr_php_wraprec_hashmap_key_t *key) {
 }
 
 static inline size_t nr_zendfunc2bucketidx(size_t log2_num_buckets, const zend_function* zf) {
+  /* default to lineno */
   uint32_t hash = nr_php_zend_function_lineno(zf);
+
+  if (NULL != zf->op_array.function_name && !nr_zf_is_unnamed_closure(zf)) {
+    /* but use hash of function name when possible */
+    hash = zf->op_array.function_name->h;
+  } else if (NULL != zf->op_array.filename) {
+    /* and as last resort try hash of filename if available */
+    hash = zf->op_array.filename->h;
+  }
+
+  /* normalize to stay in-bound */
   return (hash & ((1 << log2_num_buckets) - 1));
 }
 
