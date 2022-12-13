@@ -11,6 +11,7 @@
 #define PHP_USER_INSTRUMENT_HDR
 
 #include "nr_segment.h"
+#include "php_user_instrument_hashmap_key.h"
 
 struct _nruserfn_t;
 
@@ -35,6 +36,11 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
  */
 typedef struct _nruserfn_t {
   struct _nruserfn_t* next; /* singly linked list next pointer */
+
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  /* wraprec hashmap key */
+  nr_php_wraprec_hashmap_key_t key;
+#endif
 
   const char* extra; /* extra naming information about the function */
 

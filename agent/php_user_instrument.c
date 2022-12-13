@@ -6,6 +6,7 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_hashmap.h"
 #include "php_wrapper.h"
 #include "lib_guzzle_common.h"
 #include "util_logging.h"
@@ -87,15 +88,15 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * user function is instrumented, its wraprec is added to the hashmap, and at
  * the end of the request the hashmap is destroyed together with transient
  * wraprecs. Re-usable wraprecs are not destroyed - they are re-set. */
-static nr_hashmap_t* user_function_wrappers;
+static nr_php_wraprec_hashmap_t* user_function_wrappers;
 
-static inline void nr_php_wraprec_hashmap_set(nr_hashmap_t* h, zend_function* zf, nruserfn_t* wr) {
-  nr_hashmap_update(h, (const char *)&zf, sizeof(zend_function*), wr);
+static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr, const zend_function* zf) {
+  nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
 }
-static inline nruserfn_t* nr_php_wraprec_hashmap_get(nr_hashmap_t* h, zend_function *zf) {\
+static inline nruserfn_t* nr_php_wraprec_lookup_get(const zend_function *zf) {
   nruserfn_t* wraprec = NULL;
 
-  nr_hashmap_get_into(h, (const char*)&zf, sizeof(zend_function*), (void**)&wraprec);
+  nr_php_wraprec_hashmap_get_into(user_function_wrappers, zf, &wraprec);
 
   return wraprec;
 }
@@ -105,14 +106,14 @@ static inline nruserfn_t* nr_php_wraprec_hashmap_get(nr_hashmap_t* h, zend_funct
  * This creates wraprec lookup hashmap and registers wraprec destructor
  * callback - reset_wraprec - which is called on request shutdown.
  */
-static void reset_wraprec(void* wraprec);
+static void reset_wraprec(nruserfn_t *);
 void nr_php_init_user_instrumentation(void) {
   if (NULL != user_function_wrappers) {
     /* Should not happen */
     nrl_verbosedebug(NRL_INSTRUMENT, "user_function_wrappers lookup hashmap already initialized!");
     return;
   }
-  user_function_wrappers = nr_hashmap_create_buckets(1024, reset_wraprec);
+  user_function_wrappers = nr_php_wraprec_hashmap_create_buckets(1024, reset_wraprec);
 }
 
 /*
@@ -123,8 +124,9 @@ void nr_php_init_user_instrumentation(void) {
  * all new user code.
  */
 static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
-static void reset_wraprec(void* wraprec) {
+static void reset_wraprec(nruserfn_t* wraprec) {
   nruserfn_t*p = wraprec;
+  nr_php_wraprec_hashmap_key_release(&p->key);
   if (p->is_transient) {
     nr_php_user_wraprec_destroy((nruserfn_t**)&wraprec);
   } else {
@@ -188,7 +190,7 @@ static void reset_wraprec(void* wraprec) {
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  nr_php_wraprec_hashmap_set(user_function_wrappers, func, wraprec);
+  nr_php_wraprec_lookup_set(wraprec, func);
 #else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
 #endif
@@ -364,7 +366,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
 #else
-  wraprec = nr_php_wraprec_hashmap_get(user_function_wrappers, func);
+  wraprec = nr_php_wraprec_lookup_get(func);
 #endif
 
   if (wraprec) {
@@ -533,7 +535,7 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
 #else
-  wraprec = nr_php_wraprec_hashmap_get(user_function_wrappers, func);
+  wraprec = nr_php_wraprec_lookup_get(func);
 #endif
   if (wraprec) {
     wraprec->is_exception_handler = 0;
@@ -581,7 +583,7 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 nruserfn_t* nr_php_get_wraprec(zend_function* zf) {
-  return nr_php_wraprec_hashmap_get(user_function_wrappers, zf);
+  return nr_php_wraprec_lookup_get(zf);
 }
 #else
 /*
