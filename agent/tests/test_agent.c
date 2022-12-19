@@ -664,36 +664,6 @@ static void test_nr_php_zend_execute_data_scope_name() {
   zend_string_release(scope_name);
 }
 
-static void test_nr_php_zend_execute_data_lineno() {
-  zend_function func = {0};
-  zend_op opline = {0};
-  zend_execute_data execute_data = {0};
-
-  /*
-   * Test : Invalid arguments, NULL zend_execute_data
-   */
-  tlib_pass_if_uint32_t_equal("NULL zend_execute_data should return 0", 0,
-                              nr_php_zend_execute_data_lineno(NULL TSRMLS_CC));
-
-  /*
-   * Test : Invalid arguments.
-   */
-  tlib_pass_if_uint32_t_equal(
-      "NULL zend_function should return 0", 0,
-      nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
-
-  /*
-   * Test : Normal operation.
-   */
-  execute_data.func = &func;
-
-  opline.lineno = 4;
-  execute_data.opline = &opline;
-  tlib_pass_if_uint32_t_equal(
-      "Unexpected lineno name", 4,
-      nr_php_zend_execute_data_lineno(&execute_data TSRMLS_CC));
-}
-
 #endif /* PHP 7+ */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
@@ -751,7 +721,6 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   test_nr_php_zend_execute_data_function_name();
   test_nr_php_zend_execute_data_filename();
-  test_nr_php_zend_execute_data_lineno();
   test_nr_php_zend_execute_data_scope_name();
 #endif /* PHP 7+ */
 
