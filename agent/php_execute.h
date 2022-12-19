@@ -27,7 +27,19 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
-#define CLM_STRLEN_MAX (255)
+/*
+ * Purpose: Look through the PHP symbol table for special names or symbols
+ * that provide additional hints that a specific framework has been loaded.
+ *
+ * Returns: a nr_framework_classification
+ */
+typedef enum {
+  FRAMEWORK_IS_NORMAL,  /* the framework isn't special, but is treated normally
+                         */
+  FRAMEWORK_IS_SPECIAL, /* the framework is special */
+} nr_framework_classification_t;
+typedef nr_framework_classification_t (*nr_framework_special_fn_t)(
+    const char* filename TSRMLS_DC);
 
 /*
  * Version specific metadata that we have to gather before we call the original
@@ -58,39 +70,15 @@
  */
 typedef struct {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-  char* function_name;
-  char* function_filepath;
-  char* function_namespace;
-  uint32_t function_lineno;
   zend_string* scope;
   zend_string* function;
+  zend_string* filepath;
+  uint32_t function_lineno;
   zval* execute_data_this;
 #else
   zend_op_array* op_array;
 #endif /* PHP7 */
 } nr_php_execute_metadata_t;
-
-/*
- * Purpose: Look through the PHP symbol table for special names or symbols
- * that provide additional hints that a specific framework has been loaded.
- *
- * Returns: a nr_framework_classification
- */
-typedef enum {
-  FRAMEWORK_IS_NORMAL,  /* the framework isn't special, but is treated normally
-                         */
-  FRAMEWORK_IS_SPECIAL, /* the framework is special */
-} nr_framework_classification_t;
-typedef nr_framework_classification_t (*nr_framework_special_fn_t)(
-    const char* filename TSRMLS_DC);
-
-/*
- * Purpose : Release any cached metadata.
- *
- * Params  : 1. A pointer to the metadata.
- */
-extern void nr_php_execute_metadata_release(
-    nr_php_execute_metadata_t* metadata);
 
 extern nrframework_t nr_php_framework_from_config(const char* config_name);
 
@@ -148,6 +136,15 @@ static inline void php_observer_set_uncaught_exception_globals(
   ZVAL_DUP(NRPRG(uncaught_exception), exception);
   NRPRG(uncaught_exeption_execute_data_this) = exception_this;
 }
+
+/*
+ * Purpose : Release any cached metadata.
+ *
+ * Params  : 1. A pointer to the metadata.
+ */
+extern void nr_php_execute_metadata_release(
+    nr_php_execute_metadata_t* metadata);
+
 #endif
 
 #endif /* PHP_EXECUTE_HDR */

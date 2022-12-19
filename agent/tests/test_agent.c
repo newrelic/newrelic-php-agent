@@ -718,6 +718,7 @@ static void test_nr_php_zend_function_lineno() {
    */
 
   func.op_array.line_start = 4;
+  func.op_array.type = ZEND_USER_FUNCTION;
   tlib_pass_if_uint32_t_equal("Unexpected lineno name", 4,
                               nr_php_zend_function_lineno(&func));
 }

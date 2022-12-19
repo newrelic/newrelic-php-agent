@@ -150,7 +150,7 @@ static int nr_format_zval_for_debug(zval* arg,
         break;
       }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_STR_P(arg)) {
         safe_append("invalid string", 14);
         break;
@@ -194,7 +194,7 @@ static int nr_format_zval_for_debug(zval* arg,
       safe_append(tmp, len);
       break;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
     case IS_TRUE:
       safe_append("true", 4);
       break;
@@ -222,7 +222,7 @@ static int nr_format_zval_for_debug(zval* arg,
       break;
 
     case IS_OBJECT:
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_OBJ_P(arg)) {
         safe_append("invalid object", 14);
         break;
@@ -968,67 +968,146 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   nr_php_add_user_instrumentation(TSRMLS_C);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 /*
- * Purpose : Populate metadata structure from zend_execute_data.
+ * Purpose : If code level metrics are enabled, use the metadata to create agent
+ * attributes in the segment with code level metrics.
  *
- * Params  : 1. A pointer to a metadata structure.
- *           2. The zend_execute_data
+ * Params  : 1. segment to create and add agent attributes to
+ *           2. metadata that will populate the CLM attributes
  *
- * Note    : It is the responsibility of the caller to allocate the metadata
- *           structure. In general, it's expected that this will be a pointer
- *           to a stack variable.
+ * Returns : void
+ *
+ * Note: PHP has a concept of calling files with no function names.  In the
+ *       case of a file being called when there is no function name, the agent
+ *       instruments the file.  In this case, we provide the filename to CLM
+ *       as the "function" name.
+ *       Current CLM functionality only works with PHP 7+
  */
-static inline void nr_php_observer_metadata_init(
-    nr_php_execute_metadata_t* metadata,
-    NR_EXECUTE_PROTO) {
-  NR_UNUSED_FUNC_RETURN_VALUE;
-
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
-  (void)metadata;
-  NR_UNUSED_SPECIALFN;
-  return;
-#else
-  const char* filepath = NULL;
-  const char* namespace = NULL;
-  const char* function = NULL;
+static inline void nr_php_execute_segment_add_code_level_metrics(
+    nr_segment_t* segment,
+    const nr_php_execute_metadata_t* metadata) {
   /*
    * Check if code level metrics are enabled in the ini.
-   * If they aren't, exit and don't update CLM.
+   * If they aren't, exit and don't add any attributes.
    */
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA
   if (!NRINI(code_level_metrics_enabled)) {
     return;
   }
-#endif
-  if (nrunlikely(NULL == metadata)) {
+
+  if (NULL == metadata) {
     return;
   }
 
-  if (nrunlikely(NULL == execute_data)) {
+  if (NULL == segment) {
     return;
   }
 
-  filepath = nr_php_zend_execute_data_filename(execute_data);
-  namespace = nr_php_zend_execute_data_scope_name(execute_data);
-  function = nr_php_zend_execute_data_function_name(execute_data);
+  /*
+   * At a minimum, at least one of the following attribute combinations MUST be
+   * implemented in order for customers to be able to accurately identify their
+   * instrumented functions:
+   *  - code.filepath AND code.function
+   *  - code.namespace AND code.function
+   *
+   * If we don't have the minimum requirements, exit and don't add any
+   * attributes.
+   *
+   * Additionally, none of the needed attributes can exceed 255 characters.
+   */
 
-  metadata->function_lineno = nr_php_zend_function_lineno(execute_data->func);
+#define CLM_STRLEN_MAX (255)
 
-  if (!nr_strempty(function)) {
-    metadata->function_name = nr_strdup(function);
+#define CHK_CLM_STRLEN(s, zstr_len) \
+  if (CLM_STRLEN_MAX < zstr_len) {  \
+    s = NULL;                       \
+  }
+
+  const char* namespace = NULL;
+  const char* function = NULL;
+  const char* filepath = NULL;
+
+  if (NULL != metadata->scope) {
+    namespace = ZSTR_VAL(metadata->scope);
+    CHK_CLM_STRLEN(namespace, ZSTR_LEN(metadata->scope));
+  }
+
+  if (NULL != metadata->function) {
+    function = ZSTR_VAL(metadata->function);
+    CHK_CLM_STRLEN(function, ZSTR_LEN(metadata->function));
+  }
+
+  if (NULL != metadata->filepath) {
+    filepath = ZSTR_VAL(metadata->filepath);
+    CHK_CLM_STRLEN(filepath, ZSTR_LEN(metadata->filepath));
+  }
+
+#undef CHK_CLM_STRLEN
+
+  if (1 == metadata->function_lineno) {
+    /*
+     * It's a file.  For CLM purposes, the "function" name is the filepath.
+     */
+    function = filepath;
+  }
+
+  if (nr_strempty(function)) {
+    /*
+     * Name isn't set so don't do anything
+     */
+    return;
+  }
+  if (nr_strempty(namespace) && nr_strempty(filepath)) {
+    /*
+     * CLM MUST have either function+namespace or function+filepath.
+     */
+    return;
+  }
+
+  /*
+   * Only go through the trouble of actually allocating agent attributes if we
+   * know we have valid values to turn into attributes.
+   */
+
+  if (NULL == segment->attributes) {
+    segment->attributes = nr_attributes_create(segment->txn->attribute_config);
+  }
+
+  if (nrunlikely(NULL == segment->attributes)) {
+    return;
+  }
+
+#define CLM_ATTRIBUTE_DESTINATION                                      \
+  (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
+   | NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_SPAN)
+
+  /*
+   * If the string is empty, CLM specs say don't add it.
+   * nr_attributes_agent_add_string is okay with an empty string attribute.
+   * Already checked function for strempty no need to check again, but will need
+   * to check filepath and namespace.
+   */
+
+  nr_attributes_agent_add_string(segment->attributes, CLM_ATTRIBUTE_DESTINATION,
+                                 "code.function", function);
+
+  if (!nr_strempty(filepath)) {
+    nr_attributes_agent_add_string(segment->attributes,
+                                   CLM_ATTRIBUTE_DESTINATION, "code.filepath",
+                                   filepath);
   }
 
   if (!nr_strempty(namespace)) {
-    metadata->function_namespace = nr_strdup(namespace);
+    nr_attributes_agent_add_string(segment->attributes,
+                                   CLM_ATTRIBUTE_DESTINATION, "code.namespace",
+                                   namespace);
   }
 
-  if (!nr_strempty(filepath)) {
-    metadata->function_filepath = nr_strdup(filepath);
-  }
-
-#endif /* PHP7 */
+  nr_attributes_agent_add_long(segment->attributes, CLM_ATTRIBUTE_DESTINATION,
+                               "code.lineno", metadata->function_lineno);
 }
+
+#endif
 
 /*
  * Purpose : Initialise a metadata structure from an op array.
@@ -1042,33 +1121,33 @@ static inline void nr_php_observer_metadata_init(
  */
 static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
                                          zend_op_array* op_array) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
     metadata->scope = op_array->scope->name;
     zend_string_addref(metadata->scope);
   } else {
     metadata->scope = NULL;
   }
+
   if (op_array->function_name && op_array->function_name->len) {
     metadata->function = op_array->function_name;
     zend_string_addref(metadata->function);
   } else {
     metadata->function = NULL;
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  /*
-   * If we are using OAPI and instrument internal functions is toggled on (very
-   * very rare and very slow) we still need to populate metadata properly for
-   * internal instrumentation if OAPI is enabled.
-   */
-  if (NR_PHP_PROCESS_GLOBALS(instrument_internal)) {
-    metadata->function_name
-        = metadata->function ? nr_strdup(ZSTR_VAL(metadata->function)) : NULL;
-    metadata->function_namespace
-        = metadata->scope ? nr_strdup(ZSTR_VAL(metadata->scope)) : NULL;
+  if (!NRINI(code_level_metrics_enabled)
+      || ZEND_USER_FUNCTION != op_array->type) {
+    metadata->filepath = NULL;
+    return;
   }
-#endif
+  if (op_array->filename && op_array->filename->len) {
+    metadata->filepath = op_array->filename;
+    zend_string_addref(metadata->filepath);
+  } else {
+    metadata->filepath = NULL;
+  }
+
+  metadata->function_lineno = op_array->line_start;
 
 #else
   metadata->op_array = op_array;
@@ -1093,12 +1172,7 @@ static void nr_php_execute_metadata_metric(
   const char* function_name;
   const char* scope_name;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-
-  scope_name = metadata->function_namespace;
-  function_name = metadata->function_name;
-#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   scope_name = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
   function_name = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
 #else
@@ -1115,7 +1189,13 @@ static void nr_php_execute_metadata_metric(
  *
  * Params  : 1. A pointer to the metadata.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
 void nr_php_execute_metadata_release(nr_php_execute_metadata_t* metadata) {
+#else
+static inline void nr_php_execute_metadata_release(
+    nr_php_execute_metadata_t* metadata) {
+#endif
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 
   if (NULL != metadata->scope) {
@@ -1128,9 +1208,11 @@ void nr_php_execute_metadata_release(nr_php_execute_metadata_t* metadata) {
     metadata->function = NULL;
   }
 
-  nr_free(metadata->function_name);
-  nr_free(metadata->function_namespace);
-  nr_free(metadata->function_filepath);
+  if (NULL != metadata->filepath) {
+    zend_string_release(metadata->filepath);
+    metadata->filepath = NULL;
+  }
+
 #else
   metadata->op_array = NULL;
 #endif /* PHP7 */
@@ -1193,21 +1275,32 @@ static inline void nr_php_execute_segment_end(
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
     nr_php_execute_segment_add_metric(stacked, metadata, create_metric);
-    if (NULL == stacked->attributes) {
-      stacked->attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
-    }
 
-    nr_php_txn_add_code_level_metrics(stacked->attributes, metadata);
+    /*
+     * Check if code level metrics are enabled in the ini.
+     * If they aren't, exit and don't create any metrics.
+     */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
+    if (NRINI(code_level_metrics_enabled)) {
+      nr_php_execute_segment_add_code_level_metrics(stacked, metadata);
+    }
+#endif
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
 
 #else
 
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
-    if (NULL == s->attributes) {
-      s->attributes = nr_attributes_create(s->txn->attribute_config);
+
+    /*
+     * Check if code level metrics are enabled in the ini.
+     * If they aren't, don't create any CLM.
+     */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
+    if (NRINI(code_level_metrics_enabled)) {
+      nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
-    nr_php_txn_add_code_level_metrics(s->attributes, metadata);
+#endif
 
 #endif
     nr_segment_end(&s);
@@ -1234,12 +1327,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   NRTXNGLOBAL(execute_count) += 1;
 
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    if (NRPRG(txn)) {
-      nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
-      nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &metadata);
-    }
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    nr_php_execute_metadata_release(&metadata);
     return;
   }
 
@@ -1260,7 +1348,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     bool create_metric = wraprec->create_metric;
 
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
-    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
 
     nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
 
@@ -1321,7 +1408,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
       zend_bailout();
     }
   } else if (NRINI(tt_detail) && NR_OP_ARRAY->function_name) {
-    nr_php_observer_metadata_init(&metadata, NR_EXECUTE_ORIG_ARGS);
     nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
 
     /*
@@ -1341,7 +1427,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
         zval* exception_zval = NULL;
         nr_status_t status;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
         /*
          * On PHP 7, EG(exception) is stored as a zend_object, and is only
          * wrapped in a zval when it actually needs to be.
@@ -1545,7 +1631,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
     return;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   func = execute_data->func;
 #else
   func = execute_data->function_state.function;
@@ -1807,12 +1893,9 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
    * Handle here, but be aware the classes might not be loaded yet.
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    nr_php_execute_metadata_t md = {0};
-    nr_php_observer_metadata_init(&md, NR_EXECUTE_ORIG_ARGS);
     const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
     nr_execute_handle_framework(all_frameworks, num_all_frameworks,
                                 filename TSRMLS_CC);
-    nr_php_execute_metadata_release(&md);
     return;
   }
   wraprec = nr_php_get_wraprec_by_func(execute_data->func);
@@ -1905,7 +1988,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     return;
   }
 
-  nr_php_observer_metadata_init(segment->metadata, NR_EXECUTE_ORIG_ARGS);
+  nr_php_execute_metadata_init(segment->metadata, NR_OP_ARRAY);
   metadata = segment->metadata;
   metadata->execute_data_this = &execute_data->This;
   /*
@@ -1951,14 +2034,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * Let's get the framework info.
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    /*
-     * Optimization option: could remove nr_php_txn_add_code_level_metrics for
-     * filenames.
-     */
-    nr_php_execute_metadata_t md = {0};
-    nr_php_observer_metadata_init(&md, NR_EXECUTE_ORIG_ARGS);
-    nr_php_txn_add_code_level_metrics(NRPRG(txn)->attributes, &md);
-    nr_php_execute_metadata_release(&md);
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     php_observer_clear_uncaught_exception_globals();
     return;

@@ -46,11 +46,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {
       },
-      {
-        "code.lineno": 1,
-        "code.filepath": "__FILE__",
-        "code.function": "__FILE__"
-      }
+      {}
     ]
   ]
 ]
@@ -80,11 +76,7 @@ newrelic.code_level_metrics.enabled=true
         "transaction.name": "OtherTransaction\/php__FILE__"
       },
       {},
-      {
-        "code.lineno": 1,
-        "code.filepath": "__FILE__",
-        "code.function": "__FILE__"
-      }
+      {}
     ],
     [
       {
@@ -102,7 +94,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 131,
+        "code.lineno": 123,
         "code.namespace": "Foo\\Bar\\Vegetable",
         "code.filepath": "__FILE__",
         "code.function": "getColor"
