@@ -8,6 +8,13 @@
 Test that a span event is created for transactions that create no segments.
 */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0

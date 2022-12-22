@@ -9,6 +9,13 @@ Span events should not be sent when distributed tracing is
 disabled, regardless of span events being enabled.
 */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
+*/
+
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled = 1

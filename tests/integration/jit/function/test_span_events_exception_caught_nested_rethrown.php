@@ -9,6 +9,13 @@ Test that a caught exception that originated from a child span that
 is "rethrown" is correctly handled.
 */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0

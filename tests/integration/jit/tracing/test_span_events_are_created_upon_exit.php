@@ -9,6 +9,13 @@ Test that span events are correctly created from any eligible segment, even
 when exit() is called.
 */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0

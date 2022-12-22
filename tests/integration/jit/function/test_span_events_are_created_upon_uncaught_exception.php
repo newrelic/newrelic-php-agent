@@ -4,6 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
+*/
+
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
 when an uncaught exception is thrown.

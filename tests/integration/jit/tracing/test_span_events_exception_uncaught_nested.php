@@ -3,8 +3,16 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 /*DESCRIPTION
 Test that an uncaught exception that originated from a child span is correctly handled.
+*/
+
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
 */
 
 /*INI

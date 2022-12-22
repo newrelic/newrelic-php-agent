@@ -3,8 +3,16 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 /*DESCRIPTION
 Test that span events error attributes conform to high security mode.
+*/
+
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
 */
 
 /*INI
