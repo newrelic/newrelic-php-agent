@@ -704,7 +704,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   opts.custom_events_enabled = (int)NRINI(custom_events_enabled);
-  opts.custom_events_max_samples_stored = NRINI(custom_events_max_samples_stored);
+  opts.custom_events_max_samples_stored
+      = NRINI(custom_events_max_samples_stored);
   opts.synthetics_enabled = (int)NRINI(synthetics_enabled);
   opts.instance_reporting_enabled = (int)NRINI(instance_reporting_enabled);
   opts.database_name_reporting_enabled
@@ -782,12 +783,13 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
 
-  /* Need to initialize custom and log event max samples to value negotiated between that
-   * requested in the INI file and the value returned from the daaemon (based in
-   * part on the collector connect response harvest limits) */
+  /* Need to initialize custom and log event max samples to value negotiated
+   * between that requested in the INI file and the value returned from the
+   * daaemon (based in part on the collector connect response harvest limits) */
   info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
-  info.custom_events_max_samples_stored = NRINI(custom_events_max_samples_stored);
-  
+  info.custom_events_max_samples_stored
+      = NRINI(custom_events_max_samples_stored);
+
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*
@@ -914,17 +916,17 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nr_php_txn_log_error_dt_on_tt_off();
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  if (nr_php_ini_setting_is_set_by_user("opcache.enable")
-      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+  /*
+   * Only try to instrument preloaded opcache scripts when opcache enabled and
+   * preload is nt null.  If an INI value does not exist, INI_INT returns 0 and
+   * INI_STR returns NULL.
+   */
+  if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
+    if ((1 == INI_INT("opcache.enable"))
+        && (NULL != INI_STR("opcache.preload"))) {
+      nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+    }
   }
-#else
-  if (nr_php_ini_setting_is_set_by_user("opcache.preload")
-      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
-  }
-#endif
 
   return NR_SUCCESS;
 }
