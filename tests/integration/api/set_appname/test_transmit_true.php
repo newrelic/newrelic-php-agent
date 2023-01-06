@@ -32,8 +32,8 @@ ok - newrelic_set_appname transmit=1
     [{"name":"Supportability/api/set_appname/after"},                 [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/set_appname/before"},                [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/set_appname/with_license"},          [2, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [3, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
