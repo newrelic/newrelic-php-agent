@@ -347,6 +347,81 @@ static void test_zend_string_hash_after_set_before_get() {
   mock_zend_function_destroy(&user_function);
   mock_zend_function_destroy(&user_function_with_scope);
 }
+
+static void test_wraprec_hashmap_two_functions() {
+#define FILE_1_NAME "/some/random/path/to/a_file.php"
+#define FILE_2_NAME "/some/random/path/to/b_file.php"
+#define LINENO_BASE 10
+#define SCOPE_1_NAME "a_scope"
+#define FUNC_1_NAME "a_function"
+#define SCOPE_2_NAME "b_scope"
+#define FUNC_2_NAME "b_function"
+
+  zend_function zf1 = {0};
+  zend_function zf2 = {0};
+  nruserfn_t wr1 = {0}, wr2 = {0};
+  int rc = 0;
+  nruserfn_t *wraprec_found = NULL;
+  nr_php_wraprec_hashmap_t* h = NULL;
+  nr_php_wraprec_hashmap_stats_t s = {};
+
+  h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
+  tlib_fail_if_null("hashmap created", h);
+
+  /* A function */
+  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME, FUNC_1_NAME);
+  nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
+
+  /* A function with the same in the same file but different scope */
+  mock_user_function_with_scope(&zf2, FILE_1_NAME, LINENO_BASE, SCOPE_2_NAME, FUNC_1_NAME);
+  nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
+
+  wraprec_found = NULL;
+  rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
+  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
+  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr1, wraprec_found);
+
+  wraprec_found = NULL;
+  rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
+  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
+  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr2, wraprec_found);
+
+  s = nr_php_wraprec_hashmap_destroy(&h);
+  tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);
+
+  mock_zend_function_destroy(&zf1);
+  mock_zend_function_destroy(&zf2);
+
+  /* -------------------------------------------------------------------  */
+
+  h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
+  tlib_fail_if_null("hashmap created", h);
+
+  /* A function */
+  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME, FUNC_1_NAME);
+  nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
+
+  /* A function with the same in different file with different scope */
+  mock_user_function_with_scope(&zf2, FILE_2_NAME, LINENO_BASE, SCOPE_2_NAME, FUNC_1_NAME);
+  nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
+
+  wraprec_found = NULL;
+  rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
+  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
+  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr1, wraprec_found);
+
+  wraprec_found = NULL;
+  rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
+  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
+  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr2, wraprec_found);
+
+  s = nr_php_wraprec_hashmap_destroy(&h);
+  tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);
+
+  mock_zend_function_destroy(&zf1);
+  mock_zend_function_destroy(&zf2);
+}
+
 #endif
 
 void test_main(void* p NRUNUSED) {
@@ -360,6 +435,7 @@ void test_main(void* p NRUNUSED) {
   test_wraprecs_hashmap();
   test_zend_string_hash_before_set();
   test_zend_string_hash_after_set_before_get();
+  test_wraprec_hashmap_two_functions();
 #endif /* PHP >= 7.4 */
 
   tlib_php_engine_destroy(TSRMLS_C);
