@@ -225,26 +225,40 @@ static inline bool zstr_equal(zend_string* zs1, zend_string* zs2) {
 
 static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key,
                                         zend_function* zf) {
+  /* Start with comparing line number: */
   if (nr_php_zend_function_lineno(zf) != key->lineno) {
+    /* no match: line number is different - no need to check anything else */
     return false;
   }
 
+  /* Next compare function name unless it is unnamed closure. Zend engine sets
+   * function name to '{closure}' for all unnamed closures so function name
+   * cannot be used for them. A fallback method to compare filename is used
+   * for unnamed closures. */
   if (zf->op_array.function_name && !nr_zf_is_unnamed_closure(zf)) {
     if (!zstr_equal(key->function_name, zf->op_array.function_name)) {
+      /* no match: function name is different - no need to check anything else
+       */
       return false;
     }
-    /* compare scope if it is set */
+    /* If function is scoped, compare the scope: */
     if (zf->op_array.scope
         && !zstr_equal(key->scope_name, zf->op_array.scope->name)) {
+      /* no match: scope is different */
       return false;
     }
+    /* match: line number, function name and scope (if function is scoped) are
+     * the same */
     return true;
   }
 
+  /* deal with unnamed colsure: fallback to comparing filename */
   if (!zstr_equal(key->filename, zf->op_array.filename)) {
+    /* no match: filename is different */
     return false;
   }
 
+  /* match: line number and filename are the same */
   return true;
 }
 
