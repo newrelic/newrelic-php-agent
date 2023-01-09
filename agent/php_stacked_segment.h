@@ -48,7 +48,9 @@
  *     - nr_slab_release
  *       - zero-out segment
  *
- * As a comparision, here's what happens when using stacked segments.
+ * As a comparision, here's the basic outline of what happens when using stacked segments.
+ * Stacked segment alloc/dealloc for overwite execute paradigm handled by c stack behind the scenes
+ * Stacked segment alloc/dealloc for OAPI paradigm handled manually.
  * Also for the best case.
  *
  *   - nr_php_stacked_segment_init        - nr_php_stacked_segment_discard
@@ -61,6 +63,13 @@
  * are immediately discarded. Speeding up the segment init/discard cycle
  * is crucial for improving the performance of the agent.
  *
+ * Additionally the ordered nature of the stack segment provides additional benefits 
+ * when dealing with the increased likelihood of dangling segments in OAPI.
+ *
+ * There are some additional functionalities/checks added for OAPI however those
+ * would need to be done regardless of where the segment is located so are not added
+ * for comparison.
+ * 
  * What enables us to eliminate much of the work done in the
  * nr_segment_start/nr_segment_discard cycle:
  *
@@ -158,17 +167,6 @@
 /*
  * Observer API paradigm.
  *
- * Here's what happens when using stacked segments with OAPI.
- *
- *   - nr_php_stacked_segment_init        - nr_php_stacked_segment_deinit
- *     - calloc stacked segment
- *     - calloc metadata
- *     - 3 value changes                    - reparent children (3 if checks)
- *     - get start time                     - 1 if check for segment->id
- *     - init children (2 value changes)    - 1 value change
- *
- * Speeding up the segment init/discard cycle
- * is crucial for improving the performance of the agent.
  *
  * The workflow of using stacked segments in connection with regular
  * segments is complicated. It's best illustrated by a short ASCII
