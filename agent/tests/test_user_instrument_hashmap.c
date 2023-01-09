@@ -500,6 +500,10 @@ static void test_wraprec_hashmap_two_functions() {
   nr_php_wraprec_hashmap_t* h = NULL;
   nr_php_wraprec_hashmap_stats_t s = {};
 
+#define TEST_DESCRIPTION_1                                                     \
+  "Two functions with the same name in the same file but different scope are " \
+  "stored separetely"
+
   h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
   tlib_fail_if_null("hashmap created", h);
 
@@ -508,32 +512,20 @@ static void test_wraprec_hashmap_two_functions() {
                                 FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
 
-  /* A function with the same in the same file but different scope */
+  /* A function with the same name in the same file but different scope */
   mock_user_function_with_scope(&zf2, FILE_1_NAME, LINENO_BASE, SCOPE_2_NAME,
                                 FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
-  tlib_pass_if_int_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      1, rc);
-  tlib_pass_if_ptr_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      &wr1, wraprec_found);
+  tlib_pass_if_int_equal(TEST_DESCRIPTION_1, 1, rc);
+  tlib_pass_if_ptr_equal(TEST_DESCRIPTION_1, &wr1, wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
-  tlib_pass_if_int_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      1, rc);
-  tlib_pass_if_ptr_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      &wr2, wraprec_found);
+  tlib_pass_if_int_equal(TEST_DESCRIPTION_1, 1, rc);
+  tlib_pass_if_ptr_equal(TEST_DESCRIPTION_1, &wr2, wraprec_found);
 
   s = nr_php_wraprec_hashmap_destroy(&h);
   tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);
@@ -543,6 +535,10 @@ static void test_wraprec_hashmap_two_functions() {
 
   /* -------------------------------------------------------------------  */
 
+#define TEST_DESCRIPTION_2                                                    \
+  "Two functions with the same name in a different file and different scope " \
+  "are stored separetely"
+
   h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
   tlib_fail_if_null("hashmap created", h);
 
@@ -551,32 +547,21 @@ static void test_wraprec_hashmap_two_functions() {
                                 FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
 
-  /* A function with the same in different file with different scope */
+  /* A function with the same in name in a different file with different scope
+   */
   mock_user_function_with_scope(&zf2, FILE_2_NAME, LINENO_BASE, SCOPE_2_NAME,
                                 FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
-  tlib_pass_if_int_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      1, rc);
-  tlib_pass_if_ptr_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      &wr1, wraprec_found);
+  tlib_pass_if_int_equal(TEST_DESCRIPTION_2, 1, rc);
+  tlib_pass_if_ptr_equal(TEST_DESCRIPTION_2, &wr1, wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
-  tlib_pass_if_int_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      1, rc);
-  tlib_pass_if_ptr_equal(
-      "Two functions with the same in the same file but different scope are "
-      "stored separetely",
-      &wr2, wraprec_found);
+  tlib_pass_if_int_equal(TEST_DESCRIPTION_2, 1, rc);
+  tlib_pass_if_ptr_equal(TEST_DESCRIPTION_2, &wr2, wraprec_found);
 
   s = nr_php_wraprec_hashmap_destroy(&h);
   tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);
