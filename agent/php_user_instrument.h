@@ -89,7 +89,24 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Purpose : Init user instrumentation. This must only be called on request
+ * init! This creates wraprec lookup hashmap and registers wraprec destructor
+ * callback which is called on request shutdown.
+ *
+ * Params  : None
+ *
+ * Returns : None
+ */
 extern void nr_php_init_user_instrumentation(void);
+/*
+ * Purpose : Get the wraprec associated with a zend_function.
+ *
+ * Params  : 1. The zend function to find a wraprec for
+ *
+ * Returns : The function wrapper that matches the zend_function or NULL if no
+ * match was found.
+ */
 extern nruserfn_t* nr_php_get_wraprec(zend_function* zf);
 #else
 /*
