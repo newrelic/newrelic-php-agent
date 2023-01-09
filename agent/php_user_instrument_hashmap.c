@@ -94,7 +94,7 @@ nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
   size_t count;
   nr_php_wraprec_hashmap_t* hashmap;
   size_t i;
-  size_t collisions;
+  size_t bucket_items_cnt;
 
   if ((NULL == hashmap_ptr) || (NULL == *hashmap_ptr)) {
     return stats;
@@ -107,7 +107,7 @@ nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
   count = nr_count_buckets(hashmap);
   for (i = 0; i < count; i++) {
     nr_wraprecs_bucket_t* bucket = hashmap->buckets[i];
-    collisions = 0;
+    bucket_items_cnt = 0;
 
     if (bucket) {
       stats.buckets_used++;
@@ -116,21 +116,21 @@ nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
     while (bucket) {
       nr_wraprecs_bucket_t* next = bucket->next;
 
-      collisions++;
+      bucket_items_cnt++;
 
       nr_destroy_wraprecs_bucket(&bucket, hashmap->dtor_func);
       bucket = next;
     }
 
-    if (0 != collisions && collisions < stats.collisions_min) {
-      stats.collisions_min = collisions;
+    if (0 != bucket_items_cnt && bucket_items_cnt < stats.collisions_min) {
+      stats.collisions_min = bucket_items_cnt;
     }
-    if (collisions > stats.collisions_max) {
-      stats.collisions_max = collisions;
+    if (bucket_items_cnt > stats.collisions_max) {
+      stats.collisions_max = bucket_items_cnt;
     }
-    if (collisions > 1) {
+    if (bucket_items_cnt > 1) {
       stats.buckets_with_collisions++;
-      stats.collisions_mean += collisions;
+      stats.collisions_mean += bucket_items_cnt;
     }
   }
 
