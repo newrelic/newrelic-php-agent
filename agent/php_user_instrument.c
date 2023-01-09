@@ -79,21 +79,22 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 /* Hashmap with pointers to wraprecs. Some, that are re-usable between requests,
- * are stored in linked list. These wraprecs are created once per interesting 
- * function detection, and destroyed at module shutdown. Some, that are transient
- * and not re-usable between requests, are not stored in linked list. Transient
- * wraprecs are created on the fly and destroyed at request shutdown. However
- * wrapping is done the same way for both types of wraprecs and happens once
- * per each request, i.e. for each request the hashmap is created anew, when
- * user function is instrumented, its wraprec is added to the hashmap, and at
- * the end of the request the hashmap is destroyed together with transient
+ * are stored in linked list. These wraprecs are created once per interesting
+ * function detection, and destroyed at module shutdown. Some, that are
+ * transient and not re-usable between requests, are not stored in linked list.
+ * Transient wraprecs are created on the fly and destroyed at request shutdown.
+ * However wrapping is done the same way for both types of wraprecs and happens
+ * once per each request, i.e. for each request the hashmap is created anew,
+ * when user function is instrumented, its wraprec is added to the hashmap, and
+ * at the end of the request the hashmap is destroyed together with transient
  * wraprecs. Re-usable wraprecs are not destroyed - they are re-set. */
 static nr_php_wraprec_hashmap_t* user_function_wrappers;
 
-static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr, zend_function* zf) {
+static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
+                                             zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
 }
-static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function *zf) {
+static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   nruserfn_t* wraprec = NULL;
 
   nr_php_wraprec_hashmap_get_into(user_function_wrappers, zf, &wraprec);
@@ -106,26 +107,29 @@ static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function *zf) {
  * This creates wraprec lookup hashmap and registers wraprec destructor
  * callback - reset_wraprec - which is called on request shutdown.
  */
-static void reset_wraprec(nruserfn_t *);
+static void reset_wraprec(nruserfn_t*);
 void nr_php_init_user_instrumentation(void) {
   if (NULL != user_function_wrappers) {
     /* Should not happen */
-    nrl_verbosedebug(NRL_INSTRUMENT, "user_function_wrappers lookup hashmap already initialized!");
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "user_function_wrappers lookup hashmap already initialized!");
     return;
   }
-  user_function_wrappers = nr_php_wraprec_hashmap_create_buckets(1024, reset_wraprec);
+  user_function_wrappers
+      = nr_php_wraprec_hashmap_create_buckets(1024, reset_wraprec);
 }
 
 /*
  * This callback resets user instrumentation. It is called at request shutdown
  * when user instrumentation is reset - lookup hashmap is destroyed together
- * with transient wraprecs and non-transient wraprecs are reset (mark as not 
+ * with transient wraprecs and non-transient wraprecs are reset (mark as not
  * wrapped). This happens because with new request/transaction php is loading
  * all new user code.
  */
 static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
 static void reset_wraprec(nruserfn_t* wraprec) {
-  nruserfn_t*p = wraprec;
+  nruserfn_t* p = wraprec;
   nr_php_wraprec_hashmap_key_release(&p->key);
   if (p->is_transient) {
     nr_php_user_wraprec_destroy((nruserfn_t**)&wraprec);
@@ -429,25 +433,28 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
   return wraprec; /* return the new wraprec */
 }
 
-
 /*
  * Reset the user instrumentation records because we're starting a new
  * transaction and so we'll be loading all new user code.
- * 
+ *
  * For PHP 7.4+ this function is called on request shutdown to release memory
- * allocated for lookup hashmap! Additionally hashmap's value destructor 
+ * allocated for lookup hashmap! Additionally hashmap's value destructor
  * callback will reset all non-transient wraprecs (mark them as not wrapped),
  * destroy all transient wraprecs.
- * 
+ *
  */
 void nr_php_reset_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-   // send a metric with the number of transient wrappers
+  // send a metric with the number of transient wrappers
   if (NULL != user_function_wrappers) {
-    nr_php_wraprec_hashmap_stats_t stats = nr_php_wraprec_hashmap_destroy(&user_function_wrappers);
+    nr_php_wraprec_hashmap_stats_t stats
+        = nr_php_wraprec_hashmap_destroy(&user_function_wrappers);
 
-    nrl_debug(NRL_INSTRUMENT, "# elements: %lu, # buckets used: %lu", stats.elements, stats.buckets_used);
-    nrl_debug(NRL_INSTRUMENT, "collisions - min: %lu, max: %lu, avg: %lu", stats.collisions_min, stats.collisions_max, stats.collisions_mean);
+    nrl_debug(NRL_INSTRUMENT, "# elements: %lu, # buckets used: %lu",
+              stats.elements, stats.buckets_used);
+    nrl_debug(NRL_INSTRUMENT, "collisions - min: %lu, max: %lu, avg: %lu",
+              stats.collisions_min, stats.collisions_max,
+              stats.collisions_mean);
   }
 #else
   nruserfn_t* p = nr_wrapped_user_functions;

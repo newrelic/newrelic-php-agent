@@ -45,16 +45,19 @@ typedef void (*nr_php_wraprec_hashmap_dtor_fn_t)(nruserfn_t*);
  *
  * Returns : A newly allocated hashmap.
  */
-extern nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(size_t, nr_php_wraprec_hashmap_dtor_fn_t);
+extern nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(
+    size_t,
+    nr_php_wraprec_hashmap_dtor_fn_t);
 
 /*
  * Purpose : Destroy a hashmap.
  *
  * Params  : 1. The address of the hashmap to destroy.
- * 
+ *
  * Returns : hashmap stats.
  */
-extern nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t**);
+extern nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
+    nr_php_wraprec_hashmap_t**);
 
 /*
  * Purpose : Update the key in the wraprec using metadata from zend function,
@@ -64,12 +67,14 @@ extern nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(nr_php_wrap
  * Params  : 1. The hashmap.
  *           2. The zend function to set instrumentation for.
  *           3. The wraprec to set the key and store in the hashmap.
- * 
+ *
  * Caveat: If zend function's zend_string metadata (function_name or filename)
  *         does not have hash calculated, this function will calculate value
  *         for zend_string's h property.
  */
-extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*, zend_function*, nruserfn_t*);
+extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*,
+                                          zend_function*,
+                                          nruserfn_t*);
 
 /*
  * Purpose : Get a wraprec pointer from a hashmap into an out parameter.
@@ -81,12 +86,14 @@ extern void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t*, zend_functi
  *              unchanged.
  *
  * Returns : Non-zero if the value exists, zero otherwise.
- * 
+ *
  * Caveat: If zend function's zend_string metadata (function_name or filename)
  *         does not have hash calculated, this function will calculate value
  *         for zend_string's h property.
  */
-extern int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t*, zend_function*, nruserfn_t**);
+extern int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t*,
+                                           zend_function*,
+                                           nruserfn_t**);
 #endif
 
 #endif

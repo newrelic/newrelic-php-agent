@@ -33,7 +33,8 @@ typedef struct _nr_php_wraprec_hashmap_key {
  *
  * Returns : void
  */
-extern void nr_php_wraprec_hashmap_key_set(nr_php_wraprec_hashmap_key_t*, const zend_function*);
+extern void nr_php_wraprec_hashmap_key_set(nr_php_wraprec_hashmap_key_t*,
+                                           const zend_function*);
 
 /*
  * Purpose : Release zend_strings referenced by the key.

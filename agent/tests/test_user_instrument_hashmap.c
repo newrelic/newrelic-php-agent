@@ -71,7 +71,7 @@ static void mock_zend_function_destroy(zend_function* zf) {
   }
 }
 
-static void reset_wraprec(nruserfn_t *w) {
+static void reset_wraprec(nruserfn_t* w) {
   nr_php_wraprec_hashmap_key_release(&w->key);
 }
 
@@ -87,13 +87,13 @@ static void test_wraprecs_hashmap() {
   zend_function zend_function_copy = {0};
   nruserfn_t wr1 = {0}, wr2 = {0}, wr3 = {0};
   int rc = 0;
-  nruserfn_t *wraprec_found = NULL;
+  nruserfn_t* wraprec_found = NULL;
   nr_php_wraprec_hashmap_t* h = NULL;
 
   mock_user_closure(&user_closure, FILE_NAME, LINENO_BASE);
-  mock_user_function(&user_function, FILE_NAME, LINENO_BASE+1, FUNC_NAME);
-  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME, LINENO_BASE+2,
-                                SCOPE_NAME, FUNC_NAME);
+  mock_user_function(&user_function, FILE_NAME, LINENO_BASE + 1, FUNC_NAME);
+  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME,
+                                LINENO_BASE + 2, SCOPE_NAME, FUNC_NAME);
 
   h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
   tlib_fail_if_null("hashmap created", h);
@@ -104,59 +104,101 @@ static void test_wraprecs_hashmap() {
   tlib_pass_if_null("can't find anything in an empty hashmap", wraprec_found);
 
   nr_php_wraprec_hashmap_update(h, &user_closure, &wr1);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_closure.op_array.line_start, wr1.key.lineno);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set function name", wr1.key.function_name);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set scope name", wr1.key.scope_name);
-  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name", wr1.key.filename);
-  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name", FILE_NAME, ZSTR_VAL(wr1.key.filename));
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_closure.op_array.line_start, wr1.key.lineno);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set function name",
+      wr1.key.function_name);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set scope name",
+      wr1.key.scope_name);
+  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name",
+                        wr1.key.filename);
+  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name",
+                         FILE_NAME, ZSTR_VAL(wr1.key.filename));
 
   nr_php_wraprec_hashmap_update(h, &user_function, &wr2);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function.op_array.line_start, wr2.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/o scope sets function name", wr2.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/o scope sets function name", FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set scope name", wr2.key.scope_name);
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set file name", wr2.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function.op_array.line_start,
+                              wr2.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/o scope sets function name",
+      wr2.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/o scope sets function name",
+      FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set scope name",
+      wr2.key.scope_name);
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set file name",
+      wr2.key.filename);
 
   nr_php_wraprec_hashmap_update(h, &user_function_with_scope, &wr3);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function_with_scope.op_array.line_start, wr3.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets function name", wr3.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets function name", FUNC_NAME, ZSTR_VAL(wr3.key.function_name));
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets scope name", wr3.key.scope_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets scope name", SCOPE_NAME, ZSTR_VAL(wr3.key.scope_name));
-  tlib_pass_if_null("adding wraprec for named function w/scope does not set file name", wr3.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function_with_scope.op_array.line_start,
+                              wr3.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets function name",
+      wr3.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets function name", FUNC_NAME,
+      ZSTR_VAL(wr3.key.function_name));
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets scope name",
+      wr3.key.scope_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets scope name", SCOPE_NAME,
+      ZSTR_VAL(wr3.key.scope_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/scope does not set file name",
+      wr3.key.filename);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_closure, &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/o scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr1, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr1,
+                         wraprec_found);
 
   zend_function_copy = user_closure;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr1, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr1,
+      wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_function, &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/o scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr2, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr2,
+                         wraprec_found);
 
   zend_function_copy = user_function;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr2, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr2,
+      wraprec_found);
 
   wraprec_found = NULL;
-  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope, &wraprec_found);
+  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope,
+                                       &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope", &wr3, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/scope", &wr3,
+                         wraprec_found);
 
   zend_function_copy = user_function_with_scope;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope by zend_function copy", &wr3, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/scope by zend_function copy", &wr3,
+      wraprec_found);
 
   nr_php_wraprec_hashmap_destroy(&h);
 
@@ -177,14 +219,14 @@ static void test_zend_string_hash_before_set() {
   zend_function zend_function_copy = {0};
   nruserfn_t wr1 = {0}, wr2 = {0}, wr3 = {0};
   int rc = 0;
-  nruserfn_t *wraprec_found = NULL;
+  nruserfn_t* wraprec_found = NULL;
   nr_php_wraprec_hashmap_t* h = NULL;
   uint32_t hash;
 
   mock_user_closure(&user_closure, FILE_NAME, LINENO_BASE);
-  mock_user_function(&user_function, FILE_NAME, LINENO_BASE+1, FUNC_NAME);
-  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME, LINENO_BASE+2,
-                                SCOPE_NAME, FUNC_NAME);
+  mock_user_function(&user_function, FILE_NAME, LINENO_BASE + 1, FUNC_NAME);
+  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME,
+                                LINENO_BASE + 2, SCOPE_NAME, FUNC_NAME);
 
   h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
   tlib_fail_if_null("hashmap created", h);
@@ -192,66 +234,114 @@ static void test_zend_string_hash_before_set() {
   hash = ZSTR_H(user_closure.op_array.filename);
   ZSTR_H(user_closure.op_array.filename) = 0;
   nr_php_wraprec_hashmap_update(h, &user_closure, &wr1);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_closure.op_array.line_start, wr1.key.lineno);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set function name", wr1.key.function_name);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set scope name", wr1.key.scope_name);
-  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name", wr1.key.filename);
-  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name", FILE_NAME, ZSTR_VAL(wr1.key.filename));
-  tlib_pass_if_uint32_t_equal("adding wraprec for unnamed function sets file name's hash", hash, ZSTR_H(wr1.key.filename));
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_closure.op_array.line_start, wr1.key.lineno);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set function name",
+      wr1.key.function_name);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set scope name",
+      wr1.key.scope_name);
+  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name",
+                        wr1.key.filename);
+  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name",
+                         FILE_NAME, ZSTR_VAL(wr1.key.filename));
+  tlib_pass_if_uint32_t_equal(
+      "adding wraprec for unnamed function sets file name's hash", hash,
+      ZSTR_H(wr1.key.filename));
 
   hash = ZSTR_H(user_function.op_array.function_name);
   ZSTR_H(user_function.op_array.function_name) = 0;
   nr_php_wraprec_hashmap_update(h, &user_function, &wr2);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function.op_array.line_start, wr2.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/o scope sets function name", wr2.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/o scope sets function name", FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
-  tlib_pass_if_uint32_t_equal("adding wraprec for named function w/o scope sets function name's hash", hash, ZSTR_H(wr2.key.function_name));
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set scope name", wr2.key.scope_name);
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set file name", wr2.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function.op_array.line_start,
+                              wr2.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/o scope sets function name",
+      wr2.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/o scope sets function name",
+      FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
+  tlib_pass_if_uint32_t_equal(
+      "adding wraprec for named function w/o scope sets function name's hash",
+      hash, ZSTR_H(wr2.key.function_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set scope name",
+      wr2.key.scope_name);
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set file name",
+      wr2.key.filename);
 
   hash = ZSTR_H(user_function_with_scope.op_array.function_name);
   ZSTR_H(user_function_with_scope.op_array.function_name) = 0;
   nr_php_wraprec_hashmap_update(h, &user_function_with_scope, &wr3);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function_with_scope.op_array.line_start, wr3.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets function name", wr3.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets function name", FUNC_NAME, ZSTR_VAL(wr3.key.function_name));
-  tlib_pass_if_uint32_t_equal("adding wraprec for named function w/scope sets function name's hash", hash, ZSTR_H(wr2.key.function_name));
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets scope name", wr3.key.scope_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets scope name", SCOPE_NAME, ZSTR_VAL(wr3.key.scope_name));
-  tlib_pass_if_null("adding wraprec for named function w/scope does not set file name", wr3.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function_with_scope.op_array.line_start,
+                              wr3.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets function name",
+      wr3.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets function name", FUNC_NAME,
+      ZSTR_VAL(wr3.key.function_name));
+  tlib_pass_if_uint32_t_equal(
+      "adding wraprec for named function w/scope sets function name's hash",
+      hash, ZSTR_H(wr2.key.function_name));
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets scope name",
+      wr3.key.scope_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets scope name", SCOPE_NAME,
+      ZSTR_VAL(wr3.key.scope_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/scope does not set file name",
+      wr3.key.filename);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_closure, &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/o scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr1, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr1,
+                         wraprec_found);
 
   zend_function_copy = user_closure;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr1, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr1,
+      wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_function, &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/o scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr2, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/o scope", &wr2,
+                         wraprec_found);
 
   zend_function_copy = user_function;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr2, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr2,
+      wraprec_found);
 
   wraprec_found = NULL;
-  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope, &wraprec_found);
+  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope,
+                                       &wraprec_found);
   tlib_pass_if_int_equal("can find named function w/scope", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope", &wr3, wraprec_found);
+  tlib_pass_if_ptr_equal("can find named function w/scope", &wr3,
+                         wraprec_found);
 
   zend_function_copy = user_function_with_scope;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope by zend_function copy", &wr3, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/scope by zend_function copy", &wr3,
+      wraprec_found);
 
   nr_php_wraprec_hashmap_destroy(&h);
 
@@ -272,74 +362,119 @@ static void test_zend_string_hash_after_set_before_get() {
   zend_function zend_function_copy = {0};
   nruserfn_t wr1 = {0}, wr2 = {0}, wr3 = {0};
   int rc = 0;
-  nruserfn_t *wraprec_found = NULL;
+  nruserfn_t* wraprec_found = NULL;
   nr_php_wraprec_hashmap_t* h = NULL;
 
   mock_user_closure(&user_closure, FILE_NAME, LINENO_BASE);
-  mock_user_function(&user_function, FILE_NAME, LINENO_BASE+1, FUNC_NAME);
-  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME, LINENO_BASE+2,
-                                SCOPE_NAME, FUNC_NAME);
+  mock_user_function(&user_function, FILE_NAME, LINENO_BASE + 1, FUNC_NAME);
+  mock_user_function_with_scope(&user_function_with_scope, FILE_NAME,
+                                LINENO_BASE + 2, SCOPE_NAME, FUNC_NAME);
 
   h = nr_php_wraprec_hashmap_create_buckets(16, reset_wraprec);
   tlib_fail_if_null("hashmap created", h);
 
   nr_php_wraprec_hashmap_update(h, &user_closure, &wr1);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_closure.op_array.line_start, wr1.key.lineno);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set function name", wr1.key.function_name);
-  tlib_pass_if_null("adding wraprec for unnamed function does not set scope name", wr1.key.scope_name);
-  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name", wr1.key.filename);
-  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name", FILE_NAME, ZSTR_VAL(wr1.key.filename));
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_closure.op_array.line_start, wr1.key.lineno);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set function name",
+      wr1.key.function_name);
+  tlib_pass_if_null(
+      "adding wraprec for unnamed function does not set scope name",
+      wr1.key.scope_name);
+  tlib_pass_if_not_null("adding wraprec for unnamed function sets file name",
+                        wr1.key.filename);
+  tlib_pass_if_str_equal("adding wraprec for unnamed function sets file name",
+                         FILE_NAME, ZSTR_VAL(wr1.key.filename));
 
   nr_php_wraprec_hashmap_update(h, &user_function, &wr2);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function.op_array.line_start, wr2.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/o scope sets function name", wr2.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/o scope sets function name", FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set scope name", wr2.key.scope_name);
-  tlib_pass_if_null("adding wraprec for named function w/o scope does not set file name", wr2.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function.op_array.line_start,
+                              wr2.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/o scope sets function name",
+      wr2.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/o scope sets function name",
+      FUNC_NAME, ZSTR_VAL(wr2.key.function_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set scope name",
+      wr2.key.scope_name);
+  tlib_pass_if_null(
+      "adding wraprec for named function w/o scope does not set file name",
+      wr2.key.filename);
 
   nr_php_wraprec_hashmap_update(h, &user_function_with_scope, &wr3);
-  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno", user_function_with_scope.op_array.line_start, wr3.key.lineno);
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets function name", wr3.key.function_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets function name", FUNC_NAME, ZSTR_VAL(wr3.key.function_name));
-  tlib_pass_if_not_null("adding wraprec for named function w/scope sets scope name", wr3.key.scope_name);
-  tlib_pass_if_str_equal("adding wraprec for named function w/scope sets scope name", SCOPE_NAME, ZSTR_VAL(wr3.key.scope_name));
-  tlib_pass_if_null("adding wraprec for named function w/scope does not set file name", wr3.key.filename);
+  tlib_pass_if_uint32_t_equal("adding wraprec to hashmap updates lineno",
+                              user_function_with_scope.op_array.line_start,
+                              wr3.key.lineno);
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets function name",
+      wr3.key.function_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets function name", FUNC_NAME,
+      ZSTR_VAL(wr3.key.function_name));
+  tlib_pass_if_not_null(
+      "adding wraprec for named function w/scope sets scope name",
+      wr3.key.scope_name);
+  tlib_pass_if_str_equal(
+      "adding wraprec for named function w/scope sets scope name", SCOPE_NAME,
+      ZSTR_VAL(wr3.key.scope_name));
+  tlib_pass_if_null(
+      "adding wraprec for named function w/scope does not set file name",
+      wr3.key.filename);
 
   wraprec_found = NULL;
   ZSTR_H(user_closure.op_array.filename) = 0;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_closure, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope after hash reset", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope after hash reset", &wr1, wraprec_found);
+  tlib_pass_if_int_equal("can find named function w/o scope after hash reset",
+                         1, rc);
+  tlib_pass_if_ptr_equal("can find named function w/o scope after hash reset",
+                         &wr1, wraprec_found);
 
   zend_function_copy = user_closure;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr1, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr1,
+      wraprec_found);
 
   wraprec_found = NULL;
   ZSTR_H(user_function.op_array.function_name) = 0;
   rc = nr_php_wraprec_hashmap_get_into(h, &user_function, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope after hash reset", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope after hash reset", &wr2, wraprec_found);
+  tlib_pass_if_int_equal("can find named function w/o scope after hash reset",
+                         1, rc);
+  tlib_pass_if_ptr_equal("can find named function w/o scope after hash reset",
+                         &wr2, wraprec_found);
 
   zend_function_copy = user_function;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/o scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/o scope by zend_function copy", &wr2, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/o scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/o scope by zend_function copy", &wr2,
+      wraprec_found);
 
   wraprec_found = NULL;
   ZSTR_H(user_function_with_scope.op_array.function_name) = 0;
-  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/scope after hash reset", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope after hash reset", &wr3, wraprec_found);
+  rc = nr_php_wraprec_hashmap_get_into(h, &user_function_with_scope,
+                                       &wraprec_found);
+  tlib_pass_if_int_equal("can find named function w/scope after hash reset", 1,
+                         rc);
+  tlib_pass_if_ptr_equal("can find named function w/scope after hash reset",
+                         &wr3, wraprec_found);
 
   zend_function_copy = user_function_with_scope;
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zend_function_copy, &wraprec_found);
-  tlib_pass_if_int_equal("can find named function w/scope by zend_function copy", 1, rc);
-  tlib_pass_if_ptr_equal("can find named function w/scope by zend_function copy", &wr3, wraprec_found);
+  tlib_pass_if_int_equal(
+      "can find named function w/scope by zend_function copy", 1, rc);
+  tlib_pass_if_ptr_equal(
+      "can find named function w/scope by zend_function copy", &wr3,
+      wraprec_found);
 
   nr_php_wraprec_hashmap_destroy(&h);
 
@@ -361,7 +496,7 @@ static void test_wraprec_hashmap_two_functions() {
   zend_function zf2 = {0};
   nruserfn_t wr1 = {0}, wr2 = {0};
   int rc = 0;
-  nruserfn_t *wraprec_found = NULL;
+  nruserfn_t* wraprec_found = NULL;
   nr_php_wraprec_hashmap_t* h = NULL;
   nr_php_wraprec_hashmap_stats_t s = {};
 
@@ -369,22 +504,36 @@ static void test_wraprec_hashmap_two_functions() {
   tlib_fail_if_null("hashmap created", h);
 
   /* A function */
-  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME, FUNC_1_NAME);
+  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME,
+                                FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
 
   /* A function with the same in the same file but different scope */
-  mock_user_function_with_scope(&zf2, FILE_1_NAME, LINENO_BASE, SCOPE_2_NAME, FUNC_1_NAME);
+  mock_user_function_with_scope(&zf2, FILE_1_NAME, LINENO_BASE, SCOPE_2_NAME,
+                                FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
-  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
-  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr1, wraprec_found);
+  tlib_pass_if_int_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      1, rc);
+  tlib_pass_if_ptr_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      &wr1, wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
-  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
-  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr2, wraprec_found);
+  tlib_pass_if_int_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      1, rc);
+  tlib_pass_if_ptr_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      &wr2, wraprec_found);
 
   s = nr_php_wraprec_hashmap_destroy(&h);
   tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);
@@ -398,22 +547,36 @@ static void test_wraprec_hashmap_two_functions() {
   tlib_fail_if_null("hashmap created", h);
 
   /* A function */
-  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME, FUNC_1_NAME);
+  mock_user_function_with_scope(&zf1, FILE_1_NAME, LINENO_BASE, SCOPE_1_NAME,
+                                FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
 
   /* A function with the same in different file with different scope */
-  mock_user_function_with_scope(&zf2, FILE_2_NAME, LINENO_BASE, SCOPE_2_NAME, FUNC_1_NAME);
+  mock_user_function_with_scope(&zf2, FILE_2_NAME, LINENO_BASE, SCOPE_2_NAME,
+                                FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf2, &wr2);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf1, &wraprec_found);
-  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
-  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr1, wraprec_found);
+  tlib_pass_if_int_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      1, rc);
+  tlib_pass_if_ptr_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      &wr1, wraprec_found);
 
   wraprec_found = NULL;
   rc = nr_php_wraprec_hashmap_get_into(h, &zf2, &wraprec_found);
-  tlib_pass_if_int_equal("Two functions with the same in the same file but different scope are stored separetely", 1, rc);
-  tlib_pass_if_ptr_equal("Two functions with the same in the same file but different scope are stored separetely", &wr2, wraprec_found);
+  tlib_pass_if_int_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      1, rc);
+  tlib_pass_if_ptr_equal(
+      "Two functions with the same in the same file but different scope are "
+      "stored separetely",
+      &wr2, wraprec_found);
 
   s = nr_php_wraprec_hashmap_destroy(&h);
   tlib_pass_if_size_t_equal("all elements are stored", 2, s.elements);

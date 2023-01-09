@@ -12,7 +12,7 @@ typedef struct _nr_wraprecs_bucket {
   struct _nr_wraprecs_bucket* prev;
   struct _nr_wraprecs_bucket* next;
   /* for efficiency wraprec is used as both: key and a value */
-  nruserfn_t *wraprec;
+  nruserfn_t* wraprec;
 } nr_wraprecs_bucket_t;
 
 typedef struct _nr_php_wraprec_hashmap {
@@ -26,8 +26,9 @@ static inline size_t nr_count_buckets(const nr_php_wraprec_hashmap_t* hashmap) {
   return (size_t)(1 << hashmap->log2_num_buckets);
 }
 
-static nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_internal(size_t log2_num_buckets,
-                                         nr_php_wraprec_hashmap_dtor_fn_t dtor_fn) {
+static nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_internal(
+    size_t log2_num_buckets,
+    nr_php_wraprec_hashmap_dtor_fn_t dtor_fn) {
   nr_php_wraprec_hashmap_t* hashmap;
 
   if (0 == log2_num_buckets) {
@@ -43,7 +44,8 @@ static nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_internal(size_t l
     log2_num_buckets = 24;
   }
 
-  hashmap = (nr_php_wraprec_hashmap_t*)nr_malloc(sizeof(nr_php_wraprec_hashmap_t));
+  hashmap
+      = (nr_php_wraprec_hashmap_t*)nr_malloc(sizeof(nr_php_wraprec_hashmap_t));
   hashmap->dtor_func = dtor_fn;
   hashmap->log2_num_buckets = log2_num_buckets;
   hashmap->buckets = (nr_wraprecs_bucket_t**)nr_calloc(
@@ -53,8 +55,9 @@ static nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_internal(size_t l
   return hashmap;
 }
 
-nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(size_t buckets, nr_php_wraprec_hashmap_dtor_fn_t dtor_fn) {
-
+nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(
+    size_t buckets,
+    nr_php_wraprec_hashmap_dtor_fn_t dtor_fn) {
   size_t actual_buckets;
 
   if (0 == buckets) {
@@ -74,8 +77,9 @@ nr_php_wraprec_hashmap_t* nr_php_wraprec_hashmap_create_buckets(size_t buckets, 
   return nr_php_wraprec_hashmap_create_internal(actual_buckets, dtor_fn);
 }
 
-static void nr_destroy_wraprecs_bucket(nr_wraprecs_bucket_t** bucket_ptr,
-                               nr_php_wraprec_hashmap_dtor_fn_t dtor_func) {
+static void nr_destroy_wraprecs_bucket(
+    nr_wraprecs_bucket_t** bucket_ptr,
+    nr_php_wraprec_hashmap_dtor_fn_t dtor_func) {
   nr_wraprecs_bucket_t* bucket = *bucket_ptr;
 
   if (dtor_func) {
@@ -84,7 +88,8 @@ static void nr_destroy_wraprecs_bucket(nr_wraprecs_bucket_t** bucket_ptr,
   nr_realfree((void**)bucket_ptr);
 }
 
-nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(nr_php_wraprec_hashmap_t** hashmap_ptr) {
+nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
+    nr_php_wraprec_hashmap_t** hashmap_ptr) {
   nr_php_wraprec_hashmap_stats_t stats = {};
   size_t count;
   nr_php_wraprec_hashmap_t* hashmap;
@@ -146,19 +151,20 @@ static bool nr_zf_is_unnamed_closure(const zend_function* zf) {
   return 0 == memcmp("{closure}", ZSTR_VAL(zf->op_array.function_name), 9);
 }
 
-void nr_php_wraprec_hashmap_key_set(nr_php_wraprec_hashmap_key_t *key, const zend_function *zf) {
+void nr_php_wraprec_hashmap_key_set(nr_php_wraprec_hashmap_key_t* key,
+                                    const zend_function* zf) {
   key->lineno = nr_php_zend_function_lineno(zf);
   key->scope_name = NULL;
   key->function_name = NULL;
   key->filename = NULL;
 
   if (NULL != zf->op_array.function_name && !nr_zf_is_unnamed_closure(zf)) {
-      key->function_name = zf->op_array.function_name;
-      zend_string_addref(key->function_name);
-      if (zf->op_array.scope) {
-        key->scope_name = zf->op_array.scope->name;
-        zend_string_addref(key->scope_name);
-      }
+    key->function_name = zf->op_array.function_name;
+    zend_string_addref(key->function_name);
+    if (zf->op_array.scope) {
+      key->scope_name = zf->op_array.scope->name;
+      zend_string_addref(key->scope_name);
+    }
   } else {
     if (NULL != zf->op_array.filename) {
       key->filename = zf->op_array.filename;
@@ -167,7 +173,7 @@ void nr_php_wraprec_hashmap_key_set(nr_php_wraprec_hashmap_key_t *key, const zen
   }
 }
 
-void nr_php_wraprec_hashmap_key_release(nr_php_wraprec_hashmap_key_t *key) {
+void nr_php_wraprec_hashmap_key_release(nr_php_wraprec_hashmap_key_t* key) {
   if (NULL != key->scope_name) {
     zend_string_release(key->scope_name);
   }
@@ -180,7 +186,8 @@ void nr_php_wraprec_hashmap_key_release(nr_php_wraprec_hashmap_key_t *key) {
   key->lineno = 0;
 }
 
-static inline size_t nr_zendfunc2bucketidx(size_t log2_num_buckets, zend_function* zf) {
+static inline size_t nr_zendfunc2bucketidx(size_t log2_num_buckets,
+                                           zend_function* zf) {
   /* default to lineno */
   uint32_t hash = nr_php_zend_function_lineno(zf);
 
@@ -216,8 +223,8 @@ static inline bool zstr_equal(zend_string* zs1, zend_string* zs2) {
   return true;
 }
 
-static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key, zend_function* zf) {
-
+static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key,
+                                        zend_function* zf) {
   if (nr_php_zend_function_lineno(zf) != key->lineno) {
     return false;
   }
@@ -227,21 +234,25 @@ static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key, zend_
       return false;
     }
     /* compare scope if it is set */
-    if (zf->op_array.scope && !zstr_equal(key->scope_name, zf->op_array.scope->name)) {
+    if (zf->op_array.scope
+        && !zstr_equal(key->scope_name, zf->op_array.scope->name)) {
       return false;
     }
     return true;
   }
-  
+
   if (!zstr_equal(key->filename, zf->op_array.filename)) {
-      return false;
+    return false;
   }
 
   return true;
 }
 
-static int nr_php_wraprec_hashmap_fetch_internal(nr_php_wraprec_hashmap_t* hashmap,
-                             size_t hash_key, zend_function* zf, nr_wraprecs_bucket_t** bucket_ptr) {
+static int nr_php_wraprec_hashmap_fetch_internal(
+    nr_php_wraprec_hashmap_t* hashmap,
+    size_t hash_key,
+    zend_function* zf,
+    nr_wraprecs_bucket_t** bucket_ptr) {
   nr_wraprecs_bucket_t* bucket;
 
   for (bucket = hashmap->buckets[hash_key]; bucket; bucket = bucket->next) {
@@ -254,8 +265,10 @@ static int nr_php_wraprec_hashmap_fetch_internal(nr_php_wraprec_hashmap_t* hashm
   return 0;
 }
 
-static void nr_php_wraprec_hashmap_add_internal(nr_php_wraprec_hashmap_t* hashmap,
-                             size_t hash_key, nruserfn_t* wr) {
+static void nr_php_wraprec_hashmap_add_internal(
+    nr_php_wraprec_hashmap_t* hashmap,
+    size_t hash_key,
+    nruserfn_t* wr) {
   nr_wraprecs_bucket_t* bucket;
 
   bucket = (nr_wraprecs_bucket_t*)nr_malloc(sizeof(nr_wraprecs_bucket_t));
@@ -271,7 +284,9 @@ static void nr_php_wraprec_hashmap_add_internal(nr_php_wraprec_hashmap_t* hashma
   ++hashmap->elements;
 }
 
-void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap, zend_function* zf, nruserfn_t* wr) {
+void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap,
+                                   zend_function* zf,
+                                   nruserfn_t* wr) {
   nr_wraprecs_bucket_t* bucket = NULL;
   size_t bucketidx;
 
@@ -294,8 +309,9 @@ void nr_php_wraprec_hashmap_update(nr_php_wraprec_hashmap_t* hashmap, zend_funct
   nr_php_wraprec_hashmap_add_internal(hashmap, bucketidx, wr);
 }
 
-
-int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t* hashmap, zend_function* zf, nruserfn_t** wraprec_ptr) {
+int nr_php_wraprec_hashmap_get_into(nr_php_wraprec_hashmap_t* hashmap,
+                                    zend_function* zf,
+                                    nruserfn_t** wraprec_ptr) {
   nr_wraprecs_bucket_t* bucket = NULL;
   size_t bucketidx;
 
