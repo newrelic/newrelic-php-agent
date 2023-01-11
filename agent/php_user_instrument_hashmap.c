@@ -252,7 +252,7 @@ static bool nr_is_wraprec_for_zend_func(nr_php_wraprec_hashmap_key_t* key,
     return true;
   }
 
-  /* deal with unnamed colsure: fallback to comparing filename */
+  /* deal with unnamed closure: fallback to comparing filename */
   if (!zstr_equal(key->filename, zf->op_array.filename)) {
     /* no match: filename is different */
     return false;
