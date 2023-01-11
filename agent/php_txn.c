@@ -918,7 +918,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   /*
    * Only try to instrument preloaded opcache scripts when opcache enabled and
-   * preload is nt null.  If an INI value does not exist, INI_INT returns 0 and
+   * preload is not null.  If an INI value does not exist, INI_INT returns 0 and
    * INI_STR returns NULL.
    */
   if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
