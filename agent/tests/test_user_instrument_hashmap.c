@@ -547,7 +547,7 @@ static void test_wraprec_hashmap_two_functions() {
                                 FUNC_1_NAME);
   nr_php_wraprec_hashmap_update(h, &zf1, &wr1);
 
-  /* A function with the same in name in a different file with different scope
+  /* A function with the same name in a different file with different scope
    */
   mock_user_function_with_scope(&zf2, FILE_2_NAME, LINENO_BASE, SCOPE_2_NAME,
                                 FUNC_1_NAME);
