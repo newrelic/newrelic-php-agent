@@ -921,7 +921,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
    * returns 0 and INI_STR returns NULL.
    */
   if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    bool opcache_enabled = (0 != NR_PHP_PROCESS_GLOBALS(cli))
+    bool opcache_enabled = is_cli
                                ? INI_BOOL("opcache.enable_cli")
                                : INI_BOOL("opcache.enable");
     if ((opcache_enabled)
