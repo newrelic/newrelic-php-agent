@@ -144,7 +144,7 @@ nr_php_wraprec_hashmap_stats_t nr_php_wraprec_hashmap_destroy(
   return stats;
 }
 
-static bool nr_zf_is_unnamed_closure(const zend_function* zf) {
+static inline bool nr_zf_is_unnamed_closure(const zend_function* zf) {
   if (9 != ZSTR_LEN(zf->op_array.function_name)) {
     return false;
   }
