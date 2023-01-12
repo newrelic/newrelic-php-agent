@@ -1686,11 +1686,15 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
                 "status, even though opcache.preload is set");
     return;
   }
-
   if (IS_ARRAY != Z_TYPE_P(status)) {
-    nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: opcache status "
-                "information is not an array");
+    /*
+     * `opcache_get_status` returns either an array or false.  If it's not an
+     * array, it must have returned false indicating we are unable to get the
+     * status yet.
+     */
+    nrl_debug(NRL_INSTRUMENT,
+              "User instrumentation from opcache: opcache status "
+              "information is not an array");
     goto end;
   }
 
