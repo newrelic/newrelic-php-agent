@@ -647,7 +647,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
@@ -668,7 +668,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
@@ -1334,7 +1334,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC);
 #else
-  wraprec = nr_php_get_wraprec_by_func(execute_data->func);
+  wraprec = nr_php_get_wraprec(execute_data->func);
 #endif
 
   if (NULL != wraprec) {

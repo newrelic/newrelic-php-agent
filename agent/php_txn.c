@@ -679,7 +679,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
    */
   pfd = nr_get_daemon_fd();
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+  /* For PHP 7.4+ user instrumentation is reset at rshutdown. */
   nr_php_reset_user_instrumentation();
+#endif
 
   if (pfd < 0) {
     nrl_debug(NRL_INIT, "unable to begin transaction: no daemon connection");
