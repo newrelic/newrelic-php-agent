@@ -11,6 +11,7 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
+#include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "nr_txn.h"
 #include "nr_rum.h"
@@ -35,8 +36,12 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(php_cur_stack_depth) = 0;
   NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG(sapi_headers) = NULL;
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  nr_php_init_user_instrumentation();
+#else
   NRPRG(pid) = getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+#endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
     return SUCCESS;
