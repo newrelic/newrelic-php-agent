@@ -1808,6 +1808,12 @@ void nr_php_observer_segment_end(zval* exception) {
         zend_bailout();
       }
     }
+    /*
+     * We are only here because there is a dangling segment which means
+     * didn't get called due to unhandled exception(s).
+     * Decrement the php_cur_stack_depth counter properly.
+     */
+    NRPRG(php_cur_stack_depth) -= 1;
     nr_php_execute_segment_end(segment, segment->metadata, create_metric);
   }
   return;
