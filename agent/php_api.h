@@ -7,6 +7,28 @@
 #ifndef PHP_API_HDR
 #define PHP_API_HDR
 
+/*
+ * Recommendations for API calls when using OAPI instrumentation and PHP 8+
+ *
+ * Dangling segments:
+ * With the use of Observer API we have the possibility of dangling segments
+ * that can occur due to an exception occurring.  In the normal course of
+ * events, nr_php_observer_fcall_begin starts segments and
+ * nr_php_observer_fcall_end keeps/discards/ends segments. However, in the case
+ * of an uncaught exception, nr_php_observer_fcall_end is never called and
+ * therefore, the logic to keep/discard/end the segment doesn't automatically
+ * get initiated which can lead to dangling stacked segments.
+ *
+ * However, certain agent API calls need to be associated with particular
+ * segments.
+ *
+ * To handle this , dangling exception cleanup is initiated by the following
+ * call: nr_php_api_ensure_current_segment();
+ *
+ * ANY API call that depends on the current segment needs to use this function
+ * to ensure the API uses the correct segment.
+ */
+
 extern void nr_php_api_add_supportability_metric(const char* name TSRMLS_DC);
 
 extern void nr_php_api_error(const char* format, ...) NRPRINTFMT(1);
