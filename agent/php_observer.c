@@ -118,8 +118,8 @@ void nr_throw_exception_hook(zend_object* exception) {
   zval* exception_zval = NULL;
 
   /*
-   * On PHP 7, EG(exception) is stored as a zend_object, and is only
-   * wrapped in a zval when it actually needs to be.
+   * Since PHP 7, EG(exception) is stored as a zend_object, and is therefore
+   * only wrapped in a zval when it actually needs to be.
    */
   ZVAL_OBJ(&new_exception, exception);
   exception_zval = &new_exception;
