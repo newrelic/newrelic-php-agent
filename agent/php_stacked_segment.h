@@ -253,7 +253,7 @@
  * Stacked segments cannot be used to model async segments.
  *
  * Dangling segments:
- * With the use of Observer we have the possibility of dangling segments.  In
+ * With the use of Observer API we have the possibility of dangling segments.  In
  * the normal course of events, the above scenario shows
  * nr_php_observer_fcall_begin starting segments and nr_php_observer_fcall_end
  * keeping/discarding/ending segments. However, in the case of an uncaught
