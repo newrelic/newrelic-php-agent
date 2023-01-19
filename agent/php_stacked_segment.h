@@ -391,7 +391,8 @@
  * we obtained from the slab allocator, and we make a a child of the stacked
  * segment root and root becomes the current segment.
  *
- * case 3 nr_php_stacked_segment_unwind - when a txn ends and we clean up
+ * case 3 nr_php_stacked_segment_unwind - when a txn ends but stacked segments
+ * still exist
  *
  * root <                      root                       root
  *                              |                          |
@@ -412,11 +413,13 @@
  *   *C <                        c
  *
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
- * of *B. Function C throws an uncaught exception which B does not catch so
- * netiher nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
- * called and *C remains the current segment. A does not catch the exception,
- * but the txn has ended. Because we didn't get any nr_php_observer_fcall_end we
- * know no segment caught the exception. We'll apply the exception and
+ * of *B. Function C throws an uncaught exception which A and B do not catch so
+ * nr_php_observer_fcall_end(A), nr_php_observer_fcall_end(B),
+ * nr_php_observer_fcall_end(C) are not called and *C remains the current
+ * segment. The root segment ends and rshutdown calls `nr_php_txn_end` which
+ * calls `nr_php_stacked_segment_unwind`. Because we didn't get any
+ * nr_php_observer_fcall_end we know no segment caught the exception that
+ * triggered the exception hook. We'll apply the exception and
  * keep/close stacked segments all the way down the stack to clean up dangling
  * segments. We pop the current segment *C and apply the exception. Because it
  * has an exception, the segment is kept so we copy the contents of the stacked
@@ -438,7 +441,8 @@
  * pop the current segment *A and apply the exception. Because it has an
  * exception, the segment is kept so we copy the contents of the stacked segment
  * *A into a segment a we obtained from the slab allocator, and we make a a
- * child of the root.  The exception is applied to the root and the txn ends.
+ * child of the root.  The exception is applied to the root and the rshutdown
+ * completes.
  *
  * case 4 php_observer_handle_exception_hook - when a new exception is noticed
  *  root <                      root                      root
