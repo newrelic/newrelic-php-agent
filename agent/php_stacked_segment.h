@@ -544,6 +544,7 @@
  * Note that this only works with segments on the default parent stack.
  * Stacked segments cannot be used to model async segments.
  */
+ // clang-format on
 
 #include "php_agent.h"
 
