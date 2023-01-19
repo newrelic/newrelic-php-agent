@@ -101,20 +101,238 @@ static void test_php_cur_stack_depth(TSRMLS_D) {
   tlib_php_request_start();
 
   tlib_php_request_eval("function f1() { return 4; }" TSRMLS_CC);
-  tlib_php_request_eval("function f2() { newrelic_ignore_transaction(); return 4; }" TSRMLS_CC);
+  tlib_php_request_eval(
+      "function f2() { newrelic_ignore_transaction(); return 4; }" TSRMLS_CC);
 
   expr = nr_php_call(NULL, "f1");
   nr_php_zval_free(&expr);
 
-  tlib_pass_if_int_equal("PHP stack depth tracking when recording", 0, NRPRG(php_cur_stack_depth));
+  tlib_pass_if_int_equal("PHP stack depth tracking when recording", 0,
+                         NRPRG(php_cur_stack_depth));
 
   expr = nr_php_call(NULL, "f2");
   nr_php_zval_free(&expr);
 
-  tlib_pass_if_int_equal("PHP stack depth tracking when ignoring", 0, NRPRG(php_cur_stack_depth));
+  tlib_pass_if_int_equal("PHP stack depth tracking when ignoring", 0,
+                         NRPRG(php_cur_stack_depth));
 
   tlib_php_request_end();
 }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+
+static void populate_functions() {
+  tlib_php_request_eval(
+      "function three($a) { if (0 == $a) { throw new "
+      "RuntimeException('Division by zero'); } else return $a; }");
+  tlib_php_request_eval("function two($a) { return three($a); }");
+  tlib_php_request_eval("function uncaught($a) { return two($a); }");
+  tlib_php_request_eval(
+      "function caught($a) { try {two($a);} catch (Exception $e) { return 1;} "
+      "return 1; }");
+  tlib_php_request_eval(
+      "function followup($a) { try {two($a);} catch (Exception $e) { return "
+      "three(1);} return three(1); }");
+  tlib_php_request_eval(
+      "function followup_uncaught($a) { try {two($a);} catch (Exception $e) { "
+      "return three(0);} return three(1); }");
+  tlib_php_request_eval(
+      "function rethrow($a) { try {two($a);} catch (Exception $e) { throw new "
+      "RuntimeException('Rethrown caught exception: '. $e->getMessage());} "
+      "return three(1); }");
+}
+
+static void test_stack_depth_after_exception() {
+  zval* expr = NULL;
+  zval* arg = NULL;
+
+  /*
+   * call a function and trigger an exception and cause two segments to dangle
+   * because it was caught, even though two functions don't get the oapi end
+   * func call, they are still cleaned up and stack_depth is appropriately
+   * decremented. the valid function end will trigger a cleanup dangling
+   * segments, stack_depth should be zero again
+   */
+
+  /*
+   * stack depth should increment on function call and decrement on function
+   * end.
+   */
+  tlib_php_request_start();
+  populate_functions();
+  /*
+   * pass argument that will not throw exception.
+   * stack depth should be 0 before calling and 1 before ending.
+   */
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("1" TSRMLS_CC);
+  expr = nr_php_call(NULL, "uncaught", arg);
+  tlib_pass_if_not_null("Runs fine with no exception.", expr);
+  tlib_pass_if_zval_type_is("Should have received the arg value.", IS_LONG,
+                            expr);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after successful function call", 0,
+      NRPRG(php_cur_stack_depth));
+
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+
+  /*
+   * call a function and trigger an exception and cause three segments to dangle
+   * stack_depth should be initially stuck at 3
+   * after triggering the unwind, stack_depth should be zero again
+   */
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("0");
+  expr = nr_php_call(NULL, "uncaught", arg);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 3 after function call", 3,
+      NRPRG(php_cur_stack_depth));
+  tlib_pass_if_null("Exception so expr should be null.", expr);
+
+  /*
+   * Trigger the unwind.
+   */
+  tlib_php_request_eval("newrelic_end_transaction(); ");
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction ends", 0,
+      NRPRG(php_cur_stack_depth));
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+  tlib_php_request_end();
+
+  /*
+   * call a function and trigger an exception that is caught but causes two
+   * segments to dangle.
+   * the function that caught the exception will successfully call the
+   * registered oapi function end which will trigger a cleanup of dangling
+   * segments, stack_depth should be zero
+   */
+
+  tlib_php_request_start();
+  populate_functions();
+
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("0");
+  expr = nr_php_call(NULL, "caught", arg);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after function call", 0,
+      NRPRG(php_cur_stack_depth));
+  tlib_pass_if_not_null("Exception caught so expr should not be null.", expr);
+
+  /*
+   * Trigger the unwind.
+   */
+  tlib_php_request_eval("newrelic_end_transaction(); ");
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction ends", 0,
+      NRPRG(php_cur_stack_depth));
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+  tlib_php_request_end();
+
+  /*
+   * call a function and trigger an exception that is caught but the initial
+   * exception caused two segments to dangle. immediately call another function
+   * that will trigger cleanup of segments, and stack_depth should be zero.
+   */
+
+  tlib_php_request_start();
+  populate_functions();
+
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("0");
+  expr = nr_php_call(NULL, "followup", arg);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after function call", 0,
+      NRPRG(php_cur_stack_depth));
+  tlib_pass_if_not_null("Exception caught so expr should not be null.", expr);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction", 0,
+      NRPRG(php_cur_stack_depth));
+
+  /*
+   * Trigger the unwind.
+   */
+  tlib_php_request_eval("newrelic_end_transaction(); ");
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction ends", 0,
+      NRPRG(php_cur_stack_depth));
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+  tlib_php_request_end();
+
+  /*
+   * call a function and trigger an exception that is caught but another
+   * uncaught exception is thrown and causes two segments to dangle stack_depth
+   * should be initially stuck at 2 after unwind, stack_depth should be zero
+   * again
+   */
+
+  tlib_php_request_start();
+  populate_functions();
+
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("0");
+  expr = nr_php_call(NULL, "followup_uncaught", arg);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 2 after function call", 2,
+      NRPRG(php_cur_stack_depth));
+  tlib_pass_if_null("Exception so expr should not be null.", expr);
+
+  /*
+   * Trigger the unwind.
+   */
+  tlib_php_request_eval("newrelic_end_transaction(); ");
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction ends", 0,
+      NRPRG(php_cur_stack_depth));
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+  tlib_php_request_end();
+
+  /*
+   * call a function and trigger an exception that is caught then rethrown
+   * stack_depth should be initially stuck at 2
+   * after unwind, stack_depth should be zero again
+   */
+
+  tlib_php_request_start();
+  populate_functions();
+
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 before function call", 0,
+      NRPRG(php_cur_stack_depth));
+  arg = tlib_php_request_eval_expr("0");
+  expr = nr_php_call(NULL, "rethrow", arg);
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 2 after function call", 1,
+      NRPRG(php_cur_stack_depth));
+  tlib_pass_if_null("Exception so expr should not be null.", expr);
+
+  /*
+   * Trigger the unwind.
+   */
+  tlib_php_request_eval("newrelic_end_transaction(); ");
+  tlib_pass_if_int_equal(
+      "PHP stack depth tracking should be 0 after transaction ends", 0,
+      NRPRG(php_cur_stack_depth));
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&arg);
+  tlib_php_request_end();
+}
+#endif
 
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
@@ -124,5 +342,11 @@ void test_main(void* p NRUNUSED) {
   test_add_segment_metric(TSRMLS_C);
   test_txn_restart_in_callstack(TSRMLS_C);
   test_php_cur_stack_depth(TSRMLS_C);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  test_stack_depth_after_exception();
+#endif
+
   tlib_php_engine_destroy(TSRMLS_C);
 }
