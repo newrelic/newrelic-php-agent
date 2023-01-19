@@ -512,8 +512,8 @@
  * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
  * called and *C remains the current segment. A catches the exception and makes
  * an API call `newrelic_notice_error`. All API functions that rely on segments
- * call `nr_php_api_ensure_current_segment` before doing any other operation.
- * `nr_php_api_ensure_current_segment` eventually calls
+ * call `nr_php_api_ensure_current_segment` before doing any segment related
+ * operation. `nr_php_api_ensure_current_segment` eventually calls
  * `nr_php_observer_handle_uncaught_exception` where we check the `this` value
  * of the function that called newrelic_notice_error and see it is not the same.
  * Because we received no nr_php_observer_fcall_end up to that point, we know
