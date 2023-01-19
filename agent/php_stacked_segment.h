@@ -532,7 +532,7 @@
  *
  *
  * But we aren't done yet.
- * The `this` value of the function that called
+ * We check the `this` value of the function that called
  * newrelic_notice_error and see it is not the same as the current segment
  * `this`. We pop the current segment *B and apply the exception. Because it has
  * an exception, the segment is kept so we copy the contents of the stacked
