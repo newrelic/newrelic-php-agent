@@ -274,7 +274,7 @@ static void test_stack_depth_after_exception() {
   /*
    * call a function and trigger an exception that is caught but another
    * uncaught exception is thrown and causes two segments to dangle stack_depth
-   * should be initially stuck at 2 after unwind, stack_depth should be zero
+   * should be initially stuck at 2 but after unwind, stack_depth should be zero
    * again
    */
 
