@@ -48,10 +48,10 @@
  *     - nr_slab_release
  *       - zero-out segment
  *
- * As a comparision, here's the basic outline of what happens when using stacked segments.
- * Stacked segment alloc/dealloc for overwite execute paradigm handled by c stack behind the scenes
- * Stacked segment alloc/dealloc for OAPI paradigm handled manually.
- * Also for the best case.
+ * As a comparision, here's the basic outline of what happens when using stacked
+ * segments. Stacked segment alloc/dealloc for overwite execute paradigm handled
+ * by c stack behind the scenes Stacked segment alloc/dealloc for OAPI paradigm
+ * handled manually. Also for the best case.
  *
  *   - nr_php_stacked_segment_init        - nr_php_stacked_segment_discard
  *     - 3 value changes                    - reparent children (3 if checks)
@@ -63,13 +63,14 @@
  * are immediately discarded. Speeding up the segment init/discard cycle
  * is crucial for improving the performance of the agent.
  *
- * Additionally the ordered nature of the stack segment provides additional benefits 
- * when dealing with the increased likelihood of dangling segments in OAPI.
+ * Additionally the ordered nature of the stack segment provides additional
+ * benefits when dealing with the increased likelihood of dangling segments in
+ * OAPI.
  *
  * There are some additional functionalities/checks added for OAPI however those
- * would need to be done regardless of where the segment is located so are not added
- * for comparison.
- * 
+ * would need to be done regardless of where the segment is located so are not
+ * added for comparison.
+ *
  * What enables us to eliminate much of the work done in the
  * nr_segment_start/nr_segment_discard cycle:
  *
@@ -509,18 +510,22 @@
  * nr_php_observer_fcall_begin(C) starts *C gets started as child
  * of *B. Function C throws an uncaught exception which B does not catch so
  * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
- * called and *C remains the current segment. A catches the exception and calls
- * newrelic_notice_error. We check the `this` value of the function that called
- * newrelic_notice_error and see it is not the same. Because we received no
- * nr_php_observer_fcall_end up to that point, we know the exception was
- * uncaught until the Function A. We check the global exception hook and see it
- * has a value and that the global uncaught_exception_this also matches the
- * current segment `this`. Time to apply the exception and clean up dangling
- * segments as we don't want to apply the notice_error to the wrong segment. We
- * pop the current segment *C and apply the exception. Because it has an
- * exception, the segment is kept so we copy the contents of the stacked segment
- * *C into a segment c we obtained from the slab allocator, and we make c a
- * child of the stacked segment *B which becomes the current segment.
+ * called and *C remains the current segment. A catches the exception and makes
+ * an API call `newrelic_notice_error`. All API functions that rely on segments
+ * call `nr_php_api_ensure_current_segment` before doing any other operation.
+ * `nr_php_api_ensure_current_segment` eventually calls
+ * `nr_php_observer_handle_uncaught_exception` where we check the `this` value
+ * of the function that called newrelic_notice_error and see it is not the same.
+ * Because we received no nr_php_observer_fcall_end up to that point, we know
+ * the exception was uncaught until the Function A. We check the global
+ * exception hook and see it has a value and that the global
+ * uncaught_exception_this also matches the current segment `this`. Time to
+ * apply the exception and clean up dangling segments as we don't want to apply
+ * the notice_error to the wrong segment. We pop the current segment *C and
+ * apply the exception. Because it has an exception, the segment is kept so we
+ * copy the contents of the stacked segment *C into a segment c we obtained
+ * from the slab allocator, and we make c a child of the stacked segment *B
+ * which becomes the current segment.
  *
  *  root
  *   |
@@ -544,7 +549,7 @@
  * Note that this only works with segments on the default parent stack.
  * Stacked segments cannot be used to model async segments.
  */
- // clang-format on
+// clang-format on
 
 #include "php_agent.h"
 
