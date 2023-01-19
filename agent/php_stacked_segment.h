@@ -219,7 +219,7 @@
  * stacked segment *E. We copy the contents of the stacked segment *E into a
  * segment e we obtained from the slab allocator, and we make e a child of the
  * stacked segment *D. nr_php_observer_fcall_end(D) discards stacked segment *D
- * is, and its child e is made a child of *D's parent *A.
+ * and its child e is made a child of *D's parent *A.
  *
  *   root                        root                       root
  *    |                           |                          |
