@@ -164,6 +164,7 @@
  * Stacked segments cannot be used to model async segments.
  */
 
+// clang-format off
 /*
  * Observer API paradigm.
  *
