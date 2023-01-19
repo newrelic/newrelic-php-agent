@@ -305,7 +305,7 @@ static void test_stack_depth_after_exception() {
   /*
    * call a function and trigger an exception that is caught then rethrown
    * stack_depth should be initially stuck at 2
-   * after unwind, stack_depth should be zero again
+   * but after unwind, stack_depth should be zero again
    */
 
   tlib_php_request_start();
