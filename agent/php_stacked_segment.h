@@ -537,9 +537,9 @@
  * `this`. We pop the current segment *B and apply the exception. Because it has
  * an exception, the segment is kept so we copy the contents of the stacked
  * segment *B into a segment b we obtained from the slab allocator, and we make
- * b a child of the stacked segment *A which becomes the current segment.  The
- * this` value of the function that called newrelic_notice_error and see it is
- * not the same as the current segment `this` so it proceeds and applies the
+ * b a child of the stacked segment *A which becomes the current segment.  We
+ * check the this` value of the function that called newrelic_notice_error and see it is
+ * the same as the current segment `this` so newrelic_notice_error proceeds and applies the
  * notice error to the current segment *A.
  * Note that this only works with segments on the default parent stack.
  * Stacked segments cannot be used to model async segments.
