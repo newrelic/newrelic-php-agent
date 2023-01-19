@@ -96,6 +96,11 @@
 static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC);
 static int nr_php_show_exec_indentation(TSRMLS_D);
 static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+static void nr_php_show_oapi_metadata(nr_php_execute_metadata_t* metadata,
+                                      bool wraprec_exists);
+#endif
 
 /*
  * Purpose: Enable monitoring on specific functions in the framework.
@@ -688,6 +693,27 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+/*
+ * Show the metadata values associated with a dangling segment.
+ * This is called only with OAPI/PHP8+ when an exception leaves a stacked
+ * segment dangling due to nr_php_observer_fcall_end not getting called when an
+ * unhandled exception occurs.
+ */
+static void nr_php_show_oapi_metadata(nr_php_execute_metadata_t* metadata,
+                                      bool wraprec_exists) {
+  char* function_name = metadata->function ? ZSTR_VAL(metadata->function) : "?";
+  char* class_name = metadata->scope ? ZSTR_VAL(metadata->scope) : "?";
+  char* file_name = metadata->filepath ? ZSTR_VAL(metadata->filepath) : "?";
+  char* wraprec_indicator = wraprec_exists ? "exists" : "";
+  nrl_verbosedebug(NRL_AGENT,
+                   "oapi metadata: scope={%s} function={%s} filename={%s} "
+                   "lineno={%d} wraprec={%s}",
+                   class_name, function_name, file_name,
+                   metadata->function_lineno, wraprec_indicator);
+}
+#endif
 /*
  * Show the return value, assuming that there is one.
  * The return value is an attribute[sic] of the caller site,
@@ -1810,9 +1836,16 @@ void nr_php_observer_segment_end(zval* exception) {
     }
     /*
      * We are only here because there is a dangling segment which means
-     * didn't get called due to unhandled exception(s).
-     * Decrement the php_cur_stack_depth counter properly.
+     * nr_php_observer_fcall_end didn't get called due to unhandled
+     * exception(s). Decrement the php_cur_stack_depth counter properly.
      */
+    if (nrunlikely(
+            NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns)) {
+      nrl_verbosedebug(NRL_AGENT,
+                       "Stack depth: %d before OAPI function exiting via %s",
+                       NRPRG(php_cur_stack_depth), __func__);
+      nr_php_show_oapi_metadata(segment->metadata, (NULL != wraprec));
+    }
     NRPRG(php_cur_stack_depth) -= 1;
     nr_php_execute_segment_end(segment, segment->metadata, create_metric);
   }
@@ -2157,6 +2190,9 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
 
   if (nrunlikely(show_executes)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "Stack depth: %d after OAPI function beginning via %s",
+                     NRPRG(php_cur_stack_depth), __func__);
     nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
@@ -2183,6 +2219,9 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
         = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
 
     if (nrunlikely(show_executes_return)) {
+      nrl_verbosedebug(NRL_AGENT,
+                       "Stack depth: %d before OAPI function exiting via %s",
+                       NRPRG(php_cur_stack_depth), __func__);
       nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
 
