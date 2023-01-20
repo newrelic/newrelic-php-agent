@@ -132,7 +132,7 @@ static void nr_php_file_get_contents_add_headers_internal(zval* context,
     return;
   }
 
-  if ((Z_STRLEN_P(http_header) <= 0) || (0 == Z_STRVAL_P(http_header))) {
+  if (Z_STRLEN_P(http_header) <= 0) {
     /* No header string to preserve. */
     nr_php_add_assoc_string(http_context_options, "header", headers);
     return;
