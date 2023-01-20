@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Code Level Metrics (CLM) should not report attributes if instrumented
-function name exceeds 255 characters
+The agent should send code level metrics (CLM) including function name,
+class name, and lineno for closures.
  */
 
 /*SKIPIF
@@ -57,7 +57,7 @@ newrelic.code_level_metrics.enabled=true
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 2
+    "events_seen": 4
   },
   [
     [
@@ -85,7 +85,7 @@ newrelic.code_level_metrics.enabled=true
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/PacerTest::theFitnessGramPacerTestIsAMultistageAerobicCapacityTestThatProgressivelyGetsMoreDifficultAsItContinuesThe20MeterPacerTestWillBeginIn30SecondsLineUpAtTheStartTheRunningSpeedStartsSlowlyButGetsFasterEachMinuteAfterYouHearThisSignalBeepASingleLapShouldBeCompl",
+        "name": "Custom\/{closure}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -93,29 +93,74 @@ newrelic.code_level_metrics.enabled=true
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 151,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/{closure}",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 159,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/{closure}",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??"
+      },
+      {},
+      {
+        "code.lineno": 159,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
     ]
   ]
 ]
  */
 
-class PacerTest {
-    public $start;
+/*
+ * Closure type 1
+ */
+echo preg_replace_callback('~-([a-z])~', function ($match) {
+sleep(1);
+    return strtoupper($match[1]);
+}, 'hello-world');
 
-    public $lap;
+/*
+ * Closure type 2
+ */
+$greet = function($name) {
+sleep(1);
+    printf("Hello %s\r\n", $name);
+};
 
-    public function __construct($start, $lap = "0")
-    {
-        $this->start = $start;
-        $this->lap = $lap;
-    }
+$greet('World');
+$greet('PHP');
 
-    public function theFitnessGramPacerTestIsAMultistageAerobicCapacityTestThatProgressivelyGetsMoreDifficultAsItContinuesThe20MeterPacerTestWillBeginIn30SecondsLineUpAtTheStartTheRunningSpeedStartsSlowlyButGetsFasterEachMinuteAfterYouHearThisSignalBeepASingleLapShouldBeCompl()
-    {
-        echo "Beep\n";
-        return $this->lap;
-    }
-}
-newrelic_add_custom_tracer("PacerTest::theFitnessGramPacerTestIsAMultistageAerobicCapacityTestThatProgressivelyGetsMoreDifficultAsItContinuesThe20MeterPacerTestWillBeginIn30SecondsLineUpAtTheStartTheRunningSpeedStartsSlowlyButGetsFasterEachMinuteAfterYouHearThisSignalBeepASingleLapShouldBeCompl");
-$pacer = new PacerTest(true, "0");
-$pacer->theFitnessGramPacerTestIsAMultistageAerobicCapacityTestThatProgressivelyGetsMoreDifficultAsItContinuesThe20MeterPacerTestWillBeginIn30SecondsLineUpAtTheStartTheRunningSpeedStartsSlowlyButGetsFasterEachMinuteAfterYouHearThisSignalBeepASingleLapShouldBeCompl();

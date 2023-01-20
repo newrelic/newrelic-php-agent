@@ -87,10 +87,13 @@ typedef struct _nruserfn_t {
   nrspecialfn_t special_instrumentation;
   /*
    * Only used by OAPI, PHP 8+.  Used to do any special instrumentation actions
-   * before a function is executed.  Both callbacks can bet set.  Use the
-   * `nr_php_wrap_user_function_after_before` to set both.
+   * before a function is executed.  special_instrumentation_clean will clean up
+   * any variables that were set in the before calledback but didn't get cleaned
+   * up when an exception circumvents the end callback. All callbacks can be
+   * set.  Use the `nr_php_wrap_user_function_after_before_clean` to set.
    */
   nrspecialfn_t special_instrumentation_before;
+  nrspecialfn_t special_instrumentation_clean;
 
   nruserfn_declared_t declared_callback;
 
@@ -147,16 +150,16 @@ static inline bool nr_php_wraprec_matches(nruserfn_t* p, zend_function* func) {
 
   if (0 != p->lineno) {
     /*
-     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit without
-     * going on to the funcname/classname pair comparison.
-     * If lineno matches, but the wraprec filename is NULL, it is inconclusive and we
-     * we must do the funcname/classname compare.
-     * If lineno matches, wraprec filename is not NULL, and it matches/doesn't match,
-     * we can exit without doing the funcname/classname compare.
+     * Lineno is set in the wraprec.  If lineno doesn't match, we can exit
+     * without going on to the funcname/classname pair comparison. If lineno
+     * matches, but the wraprec filename is NULL, it is inconclusive and we we
+     * must do the funcname/classname compare. If lineno matches, wraprec
+     * filename is not NULL, and it matches/doesn't match, we can exit without
+     * doing the funcname/classname compare.
      */
     if (p->lineno != nr_php_zend_function_lineno(func)) {
       return false;
-    } 
+    }
     /*
      * lineno matched, let's check the filename
      */
@@ -302,6 +305,9 @@ extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                             nr_segment_t* segment,
                                             NR_EXECUTE_PROTO);
+extern int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
+                                           nr_segment_t* segment,
+                                           NR_EXECUTE_PROTO);
 #endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing

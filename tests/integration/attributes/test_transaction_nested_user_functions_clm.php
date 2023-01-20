@@ -46,11 +46,7 @@ newrelic.code_level_metrics.enabled = 1
         "transaction.name": "OtherTransaction\/php__FILE__"
       },
       {},
-      {
-        "code.lineno": 1,
-        "code.filepath": "__FILE__",
-        "code.function": "__FILE__"
-      }
+      {}
     ],
     [
       {
@@ -68,7 +64,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 228,
+        "code.lineno": 214,
         "code.filepath": "__FILE__",
         "code.function": "level_2"
       }
@@ -89,7 +85,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 224,
+        "code.lineno": 210,
         "code.filepath": "__FILE__",
         "code.function": "level_1"
       }
@@ -120,11 +116,7 @@ newrelic.code_level_metrics.enabled = 1
         "error": false
       },
       {},
-      {
-        "code.lineno": 1,
-        "code.filepath": "__FILE__",
-        "code.function": "__FILE__"
-      }
+      {}
     ]
   ]
 ]
@@ -154,7 +146,7 @@ newrelic.code_level_metrics.enabled = 1
                   [
                     "?? start time", "?? end time", "`1",
                             {
-                              "code.lineno": 228,
+                              "code.lineno": 214,
                               "code.filepath": "__FILE__",
                               "code.function": "level_2"
                             },
@@ -162,7 +154,7 @@ newrelic.code_level_metrics.enabled = 1
                       [
                         "?? start time", "?? end time", "`2",
                             {
-                              "code.lineno": 224,
+                              "code.lineno": 210,
                               "code.filepath": "__FILE__",
                               "code.function": "level_1"
                         },
@@ -175,11 +167,6 @@ newrelic.code_level_metrics.enabled = 1
             ]
           ],
           {
-            "agentAttributes": {
-              "code.lineno": 1,
-              "code.filepath": "__FILE__",
-              "code.function": "__FILE__"
-            },
             "intrinsics": {
               "totalTime": "??",
               "cpu_time": "??",

@@ -48,8 +48,10 @@
  *     - nr_slab_release
  *       - zero-out segment
  *
- * As a comparision, here's what happens when using stacked segments.
- * Also for the best case.
+ * As a comparision, here's the basic outline of what happens when using stacked
+ * segments. Stacked segment alloc/dealloc for overwite execute paradigm handled
+ * by c stack behind the scenes Stacked segment alloc/dealloc for OAPI paradigm
+ * handled manually. Also for the best case.
  *
  *   - nr_php_stacked_segment_init        - nr_php_stacked_segment_discard
  *     - 3 value changes                    - reparent children (3 if checks)
@@ -60,6 +62,14 @@
  * applications we are dealing with lots of short running segments that
  * are immediately discarded. Speeding up the segment init/discard cycle
  * is crucial for improving the performance of the agent.
+ *
+ * Additionally the ordered nature of the stack segment provides additional
+ * benefits when dealing with the increased likelihood of dangling segments in
+ * OAPI.
+ *
+ * There are some additional functionalities/checks added for OAPI however those
+ * would need to be done regardless of where the segment is located so are not
+ * added for comparison.
  *
  * What enables us to eliminate much of the work done in the
  * nr_segment_start/nr_segment_discard cycle:
@@ -154,6 +164,396 @@
  * Also note that this only works with segments on the default parent stack.
  * Stacked segments cannot be used to model async segments.
  */
+
+// clang-format off
+/*
+ * Observer API paradigm.
+ *
+ *
+ * The workflow of using stacked segments in connection with regular
+ * segments is complicated. It's best illustrated by a short ASCII
+ * cartoon.
+ *
+ *  root <                      root                      root
+ *                               |                         |
+ *                               *A <                      *A
+ *                                                         |
+ *                                                         *B
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin for
+ * A, and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                        root                       root
+ *   |                           |                          |
+ *   *A <                        *A                         *A <
+ *                               |
+ *                               *C <
+ *
+ * *nr_php_observer_fcall_end(B) decides to discard *B, and *A is the current
+ * segment again. nr_php_observer_fcall_begin(C) starts *C gets started as child
+ * of *A and when nr_php_observer_fcall_end(C) is called, *C gets discarded too.
+ * Note that up to this point, no segment except the root segment ever was
+ * allocated via the slab; however, stacked segments are being calloced in
+ * stacked_segment_init.
+ *
+ *   root                        root                       root
+ *    |                           |                          |
+ *    *A <                        *A                         *A
+ *                                |                          |
+ *                                *D <                       *D
+ *                                                           |
+ *                                                           *E <
+ *
+ * In a next exciting step, nr_php_observer_fcall_begin(D) starts stacked
+ * segment *D as child of *A and nr_php_observer_fcall_begin(E) *E is started as
+ * child of *D.
+ *
+ *   root                        root
+ *    |                           |
+ *    *A                          *A <
+ *    |                           |
+ *    *D <                        e
+ *    |
+ *    e
+ *
+ * Now something new happens. nr_php_observer_fcall_end(E) decides to keep the
+ * stacked segment *E. We copy the contents of the stacked segment *E into a
+ * segment e we obtained from the slab allocator, and we make e a child of the
+ * stacked segment *D. nr_php_observer_fcall_end(D) discards stacked segment *D
+ * and its child e is made a child of *D's parent *A.
+ *
+ *   root                        root                       root
+ *    |                           |                          |
+ *    *A                          *A <                       *A
+ *   / \                          |                         / \
+ *  e   *F <                      e                        e   *G <
+ *
+ * More of the same. nr_php_observer_fcall_begin(F) creates a stacked segment *F
+ * as child of A and nr_php_observer_fcall_end(F) eventually discards it.
+ * nr_php_observer_fcall_begin(G) then creates a stacked segment *G.
+ *
+ *   root                        root <                     root
+ *    |                           |                         / \
+ *    *A <                        a                        a   *H
+ *   / \                         / \                      / \
+ *  e   g                       e   g                    e   g
+ *
+ * Finally nr_php_observer_fcall_end(G) also decides to keep *G. Again, it is
+ * turned into a regular segment g and made a child of *A. Then we decide to
+ * keep *A, turning it into regular segment a and making it a child of the root
+ * segment. Afterward a nr_php_observer_fcall_begin(H) starts stacked segment *H
+ * as child of the root segment.
+ *
+ * Note that with this workflow, we went through the
+ * nr_segment_start/nr_segment_discard cycle for only 3 times,
+ * although we used 8 different segments. For the remaining 5 segments, we
+ * went through the stacked segment cycle.
+ *
+ * Also note that this only works with segments on the default parent stack.
+ * Stacked segments cannot be used to model async segments.
+ *
+ * Dangling segments:
+ * With the use of Observer API we have the possibility of dangling segments.  In
+ * the normal course of events, the above scenario shows
+ * nr_php_observer_fcall_begin starting segments and nr_php_observer_fcall_end
+ * keeping/discarding/ending segments. However, in the case of an uncaught
+ * exception, nr_php_observer_fcall_end is never called and therefore, the logic
+ * to keep/discard/end the segment doesn't automatically get initiated.
+ * Additionally, PHP only provides the last exception (meaning if exceptions
+ * were thrown then rethrown or another exception thrown, nothing gets
+ * communicated except for the last exception. PHP has a hook that can be used
+ * to notify whenever an exception is triggered but it doesn't give any
+ * indication if that exception was ever caught.
+ *
+ * To handle this, dangling exception sweeps occur in
+ * nr_php_observer_exception_segments_end and is called from 5 different places:
+ * 1) nr_php_observer_fcall_begin - before a new segment starts
+ * 2) nr_php_observer_fcall_end - before a segment is ended(kept/discarded)
+ * 3) nr_php_stacked_segment_unwind - when a txn ends and we are closing up shop
+ * 4) php_observer_handle_exception_hook - when a new exception is noticed
+ * 5) in newrelic APIs that depend on having the current segment
+ *
+ *
+ * The workflow of using stacked segments in connection with regular
+ * segments when an exception occurs is complicated.
+ * These cases are illustrated by a series of short ASCII cartoons.
+ *
+ * case 1 nr_php_observer_fcall_begin - before a new segment starts
+ *  root <                      root                      root
+ *                               |                         |
+ *                               *A <                      *A
+ *                                                         |
+ *                                                         *B
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin(A),
+ * and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                       root
+ *   |                           |
+ *   *A                          *A
+ *   |                           |
+ *   *B                          *B <
+ *    |                           |
+ *    *C <                        c
+ *
+ * nr_php_observer_fcall_begin(C) starts *C gets started as child
+ * of *B. Function C throws an uncaught exception which B does not catch so
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * called and *C remains the current segment. A catches the exception and calls
+ * function D, so nr_php_observer_fcall_begin(D) is triggered. At this point we
+ * realize the current stacked_segment->metadata->This value and the
+ * execute_data->prev_execute_data->This don't match so we don't want to parent
+ * *D to the wrong segment. We check the global exception hook and see it
+ * has a value and that the global uncaught_exception_this also matches the
+ * current segment `this`. Time to apply the exception and clean up dangling
+ * segments. We pop the current segment *C and apply the exception.
+ * Because it has an exception, the segment is kept so we copy the contents of
+ * the stacked segment *C into a segment c we obtained from the slab allocator,
+ * and we make c a child of the stacked segment *B which becomes the current
+ * segment.
+ *
+ *  root                        root                       root
+ *   |                           |                          |
+ *   *A <                        *A <                       *A
+ *    |                          |                          / \
+ *    b                          b                          b  *D <
+ *    |                          |                          |
+ *    c                          c                          c
+ *
+ *
+ * But we aren't done yet.
+ * current stacked_segment->metadata->this still doesn't equal the
+ * execute_data->prev_execute_data->This provided by
+ * nr_php_observer_fcall_begin(D). We pop the current segment *B and apply the
+ * exception. Because it has an exception, the segment is kept so we copy the
+ * contents of the stacked segment *B into a segment b we obtained from the
+ * slab allocator, and we make b a child of the stacked segment *A which
+ * becomes the current segment.  Now current stacked_segment->metadata->this
+ * DOES equal the execute_data->prev_execute_data->This provided by
+ * nr_php_observer_fcall_begin(D) so we proceed and create stacked segment *D
+ * correctly parented as a child of *A and *D becomes the current segment.
+ *
+ * case 2 nr_php_observer_fcall_end - before a segment is ended(kept/discarded)
+ *  root <                      root                      root
+ *                               |                         |
+ *                               *A <                      *A
+ *                                                         |
+ *                                                         *B
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin(A),
+ * and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                       root
+ *   |                           |
+ *   *A                          *A
+ *   |                           |
+ *   *B                          *B <
+ *    |                           |
+ *    *C <                        c
+ *
+ * nr_php_observer_fcall_begin(C) starts segment *C as child
+ * of *B. Function C throws an uncaught exception which B does not catch so
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * called and *C remains the current segment. A catches the exception and
+ * nr_php_observer_fcall_end(A) is triggered. At this point we compare the
+ * current stacked_segment->metadata->This value with the execute_data->This and
+ * realize the two don't match. We check the global exception hook and see it
+ * has a value and that the global uncaught_exception_this also matches the
+ * current segment `this`. Time to apply the exception and clean up dangling
+ * segments. We pop the current segment *C and apply the exception.
+ * Because it has an exception, the segment is kept so we copy the contents of
+ * the stacked segment *C into a segment c we obtained from the slab allocator,
+ * and we make c a child of the stacked segment *B which becomes the current
+ * segment.
+ *
+ *  root                        root <
+ *   |                           |
+ *   *A <                        a
+ *    |                          |
+ *    b                          b
+ *    |                          |
+ *    c                          c
+ *
+ *
+ * But we aren't done yet.
+ * current stacked_segment->metadata->this still doesn't equal the
+ * execute_data-> this provided by nr_php_observer_fcall_end(A). We pop the
+ * current segment *B and apply the exception. Because it has an exception, the
+ * segment is kept so we copy the contents of the stacked segment *B into a
+ * segment b we obtained from the slab allocator, and we make b a child of the
+ * stacked segment *A which becomes the current segment.  Now current
+ * stacked_segment->metadata->this DOES equal the execute_data-> this
+ * provided by nr_php_observer_fcall_end(A) so it proceeds, decides to keep the
+ * segment and we copy the contents of the stacked segment *A into a segment a
+ * we obtained from the slab allocator, and we make a a child of the stacked
+ * segment root and root becomes the current segment.
+ *
+ * case 3 nr_php_stacked_segment_unwind - when a txn ends but stacked segments
+ * still exist
+ *
+ * root <                      root                       root
+ *                              |                          |
+ *                              *A <                       *A
+ *                                                         |
+ *                                                         *B <
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin(A),
+ * and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                       root
+ *   |                           |
+ *   *A                          *A
+ *   |                           |
+ *   *B                          *B <
+ *   |                           |
+ *   *C <                        c
+ *
+ * nr_php_observer_fcall_begin(C) starts *C gets started as child
+ * of *B. Function C throws an uncaught exception which A and B do not catch so
+ * nr_php_observer_fcall_end(A), nr_php_observer_fcall_end(B),
+ * nr_php_observer_fcall_end(C) are not called and *C remains the current
+ * segment. The root segment ends and rshutdown calls `nr_php_txn_end` which
+ * calls `nr_php_stacked_segment_unwind`. Because we didn't get any
+ * nr_php_observer_fcall_end we know no segment caught the exception that
+ * triggered the exception hook. We'll apply the exception and
+ * keep/close stacked segments all the way down the stack to clean up dangling
+ * segments. We pop the current segment *C and apply the exception. Because it
+ * has an exception, the segment is kept so we copy the contents of the stacked
+ * segment *C into a segment c we obtained from the slab allocator, and we make
+ * c a child of the stacked segment *B which becomes the current segment.
+ *
+ *  root                        root <                        root
+ *   |                           |                             |
+ *   *A <                        a                             a
+ *    |                          |                             |
+ *    b                          b                             b
+ *    |                          |                             |
+ *    c                          c                             c
+ *
+ * We pop the current segment *B and apply the exception. Because it has an
+ * exception, the segment is kept so we copy the contents of the stacked segment
+ * *B into a segment b we obtained from the slab allocator, and we make b a
+ * child of the stacked segment *A which becomes the current segment.  Then we
+ * pop the current segment *A and apply the exception. Because it has an
+ * exception, the segment is kept so we copy the contents of the stacked segment
+ * *A into a segment a we obtained from the slab allocator, and we make a a
+ * child of the root.  The exception is applied to the root and the rshutdown
+ * completes.
+ *
+ * case 4 php_observer_handle_exception_hook - when a new exception is noticed
+ *  root <                      root                      root
+ *                               |                         |
+ *                               *A <                      *A
+ *                                                         |
+ *                                                         *B
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin(A),
+ * and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                        root                       root
+ *   |                           |                           |
+ *   *A <                        *A                          *A
+ *                               |                           |
+ *                               *B                          *B <
+ *                               |                           |
+ *                               *C <                        c
+ *
+ * nr_php_observer_fcall_begin(C) starts *C gets started as child
+ * of *B. Function C throws an exception which B catches but 
+ * nr_php_observer_fcall_end(C) is not called so *C remains the 
+ * current segment. B catches the exception and throws another 
+ * exception which triggers the exception hook. At this point we realize the current
+ * exception->This value indicates another function is active.  Because we
+ * received no nr_php_observer_fcall_end up to that point, we know the exception
+ * was uncaught until the exception->This function. We check the global
+ * exception hook and see it has a value and that the global
+ * uncaught_exception_this also matches the current segment `this`. Time to
+ * apply the exception and clean up dangling segments. We pop the current
+ * segment *C and apply the exception. Because it has an exception, the segment
+ * is kept so we copy the contents of the stacked segment *C into a segment c we
+ * obtained from the slab allocator, and we make c a child of the stacked
+ * segment *B which becomes the current segment.
+ *
+ *  root
+ *   |
+ *   *A
+ *    |
+ *    *B <
+ *    |
+ *    c
+ *
+ * current stacked_segment->metadata->this now equals the exception->This. so we
+ * reserve judgement on what eventually happens to segment *B and *B becomes the
+ * current segment with the new active exception stored. Any subsequent dangling
+ * segments are cleaned when the next scenario 1-5 occurs.
+ *
+ * case 5 in newrelic APIs that depend on having the current segment
+ *  root <                      root                      root
+ *                               |                         |
+ *                               *A <                      *A
+ *                                                         |
+ *                                                         *B
+ *
+ * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin(A),
+ * and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
+ * starts stacked segment *B as a child of *A.
+ *
+ *  root                       root
+ *   |                           |
+ *   *A                          *A
+ *   |                           |
+ *   *B                          *B <
+ *   |                           |
+ *   *C <                        c
+ *
+ * nr_php_observer_fcall_begin(C) starts *C gets started as child
+ * of *B. Function C throws an uncaught exception which B does not catch so
+ * neither nr_php_observer_fcall_end(B) nor nr_php_observer_fcall_end(C) is
+ * called and *C remains the current segment. A catches the exception and makes
+ * an API call `newrelic_notice_error`. All API functions that rely on segments
+ * call `nr_php_api_ensure_current_segment` before doing any segment related
+ * operation. `nr_php_api_ensure_current_segment` eventually calls
+ * `nr_php_observer_handle_uncaught_exception` where we check the `this` value
+ * of the function that called newrelic_notice_error and see it is not the same.
+ * Because we received no nr_php_observer_fcall_end up to that point, we know
+ * the exception was uncaught until the Function A. We check the global
+ * exception hook and see it has a value and that the global
+ * uncaught_exception_this also matches the current segment `this`. Time to
+ * apply the exception and clean up dangling segments as we don't want to apply
+ * the notice_error to the wrong segment. We pop the current segment *C and
+ * apply the exception. Because it has an exception, the segment is kept so we
+ * copy the contents of the stacked segment *C into a segment c we obtained
+ * from the slab allocator, and we make c a child of the stacked segment *B
+ * which becomes the current segment.
+ *
+ *  root
+ *   |
+ *   *A <
+ *    |
+ *    b
+ *    |
+ *    c
+ *
+ *
+ * But we aren't done yet.
+ * We check the `this` value of the function that called
+ * newrelic_notice_error and see it is not the same as the current segment
+ * `this`. We pop the current segment *B and apply the exception. Because it has
+ * an exception, the segment is kept so we copy the contents of the stacked
+ * segment *B into a segment b we obtained from the slab allocator, and we make
+ * b a child of the stacked segment *A which becomes the current segment.  We
+ * check the this` value of the function that called newrelic_notice_error and see it is
+ * the same as the current segment `this` so newrelic_notice_error proceeds and applies the
+ * notice error to the current segment *A.
+ * Note that this only works with segments on the default parent stack.
+ * Stacked segments cannot be used to model async segments.
+ */
+// clang-format on
 
 #include "php_agent.h"
 

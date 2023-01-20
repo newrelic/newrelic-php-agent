@@ -10,6 +10,7 @@
 #include "php_stacked_segment.h"
 #include "php_globals.h"
 #include "php_wrapper.h"
+#include "util_sleep.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
@@ -98,6 +99,11 @@ static void test_unwind(TSRMLS_D) {
    */
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   nr_segment_end(&segment);
+
+  /*
+   * Sleep; otherwise, unwind will dump the short segments and fail.
+   */
+  nr_msleep(500);
 
   /*
    * Unwind the stacked segment stack.
@@ -193,6 +199,11 @@ static void test_unwind(TSRMLS_D) {
    */
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   nr_segment_end(&segment);
+
+  /*
+   * Sleep; otherwise, unwind will dump the short segments and fail.
+   */
+  nr_msleep(500);
 
   /*
    * Unwind the stacked segment stack.

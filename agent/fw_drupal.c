@@ -303,6 +303,16 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_drupal_http_request_clean) {
+  NR_UNUSED_SPECIALFN;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
+
+  NRPRG(drupal_http_request_depth) -= 1;
+}
+NR_PHP_WRAPPER_END
 #else
 
 /*
@@ -753,9 +763,9 @@ void nr_drupal_enable(TSRMLS_D) {
                             nr_drupal_cron_run TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("drupal_http_request"), nr_drupal_http_request_before,
-      nr_drupal_http_request_after TSRMLS_CC);
+      nr_drupal_http_request_after, nr_drupal_http_request_clean);
 #else
   nr_php_wrap_user_function(NR_PSTR("drupal_http_request"),
                             nr_drupal_http_request_exec TSRMLS_CC);

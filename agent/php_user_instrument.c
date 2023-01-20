@@ -56,9 +56,7 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch {
-    zcaught = 1;
-  }
+  zend_catch { zcaught = 1; }
   zend_end_try();
   return zcaught;
 }
@@ -67,18 +65,32 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                      nr_segment_t* segment,
                                      NR_EXECUTE_PROTO) {
   volatile int zcaught = 0;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  NR_UNUSED_SPECIALFN;
-  zend_try {
-    if (wraprec && wraprec->special_instrumentation_before) {
+
+  if (wraprec && wraprec->special_instrumentation_before) {
+    zend_try {
       wraprec->special_instrumentation_before(wraprec, segment,
-                                              NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+                                              NR_EXECUTE_ORIG_ARGS);
     }
+    zend_catch { zcaught = 1; }
+    zend_end_try();
   }
-  zend_catch {
-    zcaught = 1;
+
+  return zcaught;
+}
+
+int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
+                                    nr_segment_t* segment,
+                                    NR_EXECUTE_PROTO) {
+  volatile int zcaught = 0;
+
+  if (wraprec && wraprec->special_instrumentation_clean) {
+    zend_try {
+      wraprec->special_instrumentation_clean(wraprec, segment,
+                                             NR_EXECUTE_ORIG_ARGS);
+    }
+    zend_catch { zcaught = 1; }
+    zend_end_try();
   }
-  zend_end_try();
   return zcaught;
 }
 #endif
@@ -96,9 +108,7 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch {
-    zcaught = 1;
-  }
+  zend_catch { zcaught = 1; }
   zend_end_try();
   return zcaught;
 }

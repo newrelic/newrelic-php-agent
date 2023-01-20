@@ -75,6 +75,32 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data);
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value);
 
+/*
+ * Purpose : Overwrite the php exception hook.
+ *
+ * Params  : zend_object* exception : The exception to monitor.
+ */
+void nr_throw_exception_hook(zend_object* exception);
+
+/*
+ * Purpose : Monitor the exception to take care of dangling segments, if needed.
+ *
+ * Params  : 1) zval* exception : The exception to monitor.
+ * 	     2) zval* execute_data_this: The pointer to the unique execute data
+ * that the exception was thrown from.
+ */
+void php_observer_handle_exception_hook(zval* exception_zval,
+                                        zval* execute_data_this);
+
+/*
+ * Purpose : End a stacked segment.  If an exception is provided, add it before
+ * exiting.
+ *
+ * Params  : zval* exception : The exception to add to the segment.  If NULL, no
+ * exception is recorded on the segment.
+ */
+extern void nr_php_observer_segment_end(zval* exception);
+
 #endif /* PHP8+ */
 
 #endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H

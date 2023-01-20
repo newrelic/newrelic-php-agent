@@ -1033,15 +1033,18 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     return NR_SUCCESS;
   }
 
-  /* Stop all recording although we shouldn't be getting anything */
-  NRTXN(status.recording) = 0;
-
   /*
    * If a transaction is ended while stacked segments are active (e. g.
    * by calling newrelic_end_transaction inside nested function scopes)
    * the stack of stacked segments has to be cleaned up.
    */
   nr_php_stacked_segment_unwind(TSRMLS_C);
+
+  nrl_verbosedebug(NRL_TXN, "%s: Ending the transaction and stack depth = %d",
+                   __func__, NRPRG(php_cur_stack_depth));
+
+  /* Stop all recording although we shouldn't be getting anything */
+  NRTXN(status.recording) = 0;
 
   ignoretxn = nr_php_txn_should_ignore(ignoretxn TSRMLS_CC);
 
@@ -1110,54 +1113,3 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   return NR_SUCCESS;
 }
-
-extern void nr_php_txn_add_code_level_metrics(
-    nr_attributes_t* attributes,
-    const nr_php_execute_metadata_t* metadata) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO /* PHP7+ */
-  (void)attributes;
-  (void)metadata;
-  return;
-}
-#else
-  /* Current CLM functionality only works with PHP 7+ */
-
-  if (NULL == metadata) {
-    return;
-  }
-
-  /*
-   * Check if code level metrics are enabled in the ini.
-   * If they aren't, exit and don't add any attributes.
-   */
-  if (!NRINI(code_level_metrics_enabled)) {
-    return;
-  }
-
-#define CHK_CLM_EMPTY(s) ((NULL == s || nr_strempty(s)) ? true : false)
-
-  if (CHK_CLM_EMPTY(metadata->function_name)) {
-    /*
-     * CLM aren't set so don't do anything
-     */
-    return;
-  }
-
-  nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_function,
-                                         metadata->function_name);
-
-  if (!CHK_CLM_EMPTY(metadata->function_filepath)) {
-    nr_txn_attributes_set_string_attribute(attributes, nr_txn_clm_code_filepath,
-                                           metadata->function_filepath);
-  }
-  if (!CHK_CLM_EMPTY(metadata->function_namespace)) {
-    nr_txn_attributes_set_string_attribute(
-        attributes, nr_txn_clm_code_namespace, metadata->function_namespace);
-  }
-
-#undef CHK_CLM_EMPTY
-
-  nr_txn_attributes_set_long_attribute(attributes, nr_txn_clm_code_lineno,
-                                       metadata->function_lineno);
-}
-#endif

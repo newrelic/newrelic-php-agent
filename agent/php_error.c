@@ -172,10 +172,10 @@ PHP_FUNCTION(newrelic_exception_handler) {
    * _including_ API noticed errors (in case the user uses newrelic_notice_error
    * as their error handler with prioritize_api_errors enabled).
    */
+
   nr_php_error_record_exception(
       NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
       "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
-
   /*
    * Finally, we need to generate an E_ERROR to match what PHP would have done
    * if this handler wasn't installed. Happily, PHP exposes an API function
@@ -452,17 +452,15 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
 /* Prior to PHP8 these error_filename and error_lineno were only used to pass
  * on to the error handler that the agent overwrote.  With PHP8+, these values
  * are currently unused since the agent is already recording the stack trace.
- * HOWEVER, when code level metrics(CLM) are incorporated, these values can be
- * used to add lineno and filename to error traces.
  */
 void nr_php_error_cb(int type,
-                     zend_string* error_filename NRUNUSED,
-                     uint error_lineno NRUNUSED,
+                     zend_string* error_filename,
+                     uint error_lineno,
                      zend_string* message) {
 #elif ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
 void nr_php_error_cb(int type,
-                     const char* error_filename NRUNUSED,
-                     uint error_lineno NRUNUSED,
+                     const char* error_filename,
+                     uint error_lineno,
                      zend_string* message) {
 #else
 void nr_php_error_cb(int type,
@@ -471,6 +469,11 @@ void nr_php_error_cb(int type,
                      const char* format,
                      va_list args) {
 #endif /* PHP >= 8.1 */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  (void)error_filename;
+  (void)error_lineno;
+#endif
   TSRMLS_FETCH();
   char* stack_json = NULL;
   const char* errclass = NULL;
@@ -506,11 +509,13 @@ void nr_php_error_cb(int type,
     nr_free(msg);
     nr_free(stack_json);
   }
-
   /*
    * Call through to the actual error handler for PHP 7.4 and below.
    * For PHP 8+ we have registered our error handler with the Observer
    * API so there is no need to callback to the original.
+   */
+  /*
+   * Call through to the actual error handler.
    */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
@@ -607,10 +612,10 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
   char* message = NULL;
   char* prefix = "Uncaught exception ";
   long line = 0;
-  zend_class_entry* ce;
+  zend_class_entry* ce = NULL;
   zval* zend_err_message = NULL;
   zval* zend_err_file = NULL;
-  zval* zend_err_line;
+  zval* zend_err_line = NULL;
 
   if ((NULL == txn)
       || (0 == nr_php_error_zval_is_exception(exception TSRMLS_CC))) {

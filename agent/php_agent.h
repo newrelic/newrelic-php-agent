@@ -39,6 +39,7 @@
 #include "php_compat.h"
 #include "php_newrelic.h"
 #include "php_zval.h"
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "php_execute.h"
@@ -766,6 +767,42 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 #endif /* PHP8+ */
 
 /*
+ * Purpose : Ensure all dangling segments caused by an OAPI exception are closed
+ * before having an API act on the calling segment.
+ *
+ * Params  :
+ *
+ * Returns :
+ */
+static inline void nr_php_api_ensure_current_segment() {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /*
+   * Before we call an API that depends on current segment, we need to ensure
+   * there isn't an outstanding uncaught exception that needs to be applied to
+   * dangling segments. If so, we need to apply the exception and close the
+   * stacked segments until we get to the segment that called the API.  To do
+   * this, we detect the execute_data that called the API which is guaranteed to
+   * be what the current segment should be (otherwise, fcall_end would have
+   * closed normal segments and we would have taken care of any dangling
+   * segments already) and any segments stacked above it need to be closed due
+   * to an exception.
+   */
+
+  /*
+   * Get the function that called the API.  prev_execute_data
+   * should never be null, but doublecheck for it anyway.
+   */
+  if (NULL != EG(current_execute_data)->prev_execute_data) {
+    zval* prev_this = &EG(current_execute_data)->prev_execute_data->This;
+
+    nr_php_observer_handle_uncaught_exception(prev_this);
+  }
+
+#endif
+}
+
+/*
  * Purpose : Wrap the native PHP json_decode function for those times when we
  *           need a more robust JSON decoder than nro_create_from_json.
  *
@@ -828,83 +865,10 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
-/*
- * Purpose : If code level metrics are enabled, extract the data from the OAPI
- *           given zend_execute_data.  Add the CLM as agent attributes to the
- *           attributes data structure.
- *
- * Params  : 1. attributes data structure to add the CLM to
- *           2. The zend_execute_data given by OAPI
- *
- * Returns : void
- *
- * Note: PHP has a concept of calling files with no function names.  In the
- *       case of a file being called when there is no function name, the agent
- *       instruments the file.  In this case, we provide the filename to CLM
- *       as the "function" name.
- *       Current CLM functionality only works with PHP 7+
- */
-extern void nr_php_txn_add_code_level_metrics(
-    nr_attributes_t* attributes,
-    const nr_php_execute_metadata_t* metadata);
-
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 
-#define NR_ZEND_USER_FUNC_EXISTS(x) \
+#define NR_NOT_ZEND_USER_FUNC(x) \
   (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
-
-/*
- * Purpose : Return a pointer to the function name of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-extern const char* nr_php_zend_execute_data_function_name(
-    const zend_execute_data* execute_data);
-/*
- * Purpose : Return a pointer to the filename of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-extern const char* nr_php_zend_execute_data_filename(
-    const zend_execute_data* execute_data);
-
-/*
- * Purpose : Return a pointer to the scope(i.e., class) name of
- * zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : A pointer to string, ownership of does NOT pass to the caller and
- *           string must be dupped if it needs to persist,
- *           or NULL if the zend_execute_data is invalid.
- *
- */
-extern const char* nr_php_zend_execute_data_scope_name(
-    const zend_execute_data* execute_data);
-
-/*
- * Purpose : Return a uint32_t line number value of zend_execute_data.
- *
- * Params  : 1. zend_execute_data.
- *
- * Returns : uint32_t lineno value
- *
- */
-extern uint32_t nr_php_zend_execute_data_lineno(
-    const zend_execute_data* execute_data);
-#endif /* PHP 7+ */
-
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 
 /*
  * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.
@@ -915,7 +879,7 @@ extern uint32_t nr_php_zend_execute_data_lineno(
  *
  */
 static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
-  if (NULL != func) {
+  if (NULL != func && ZEND_USER_FUNCTION == func->op_array.type) {
     return func->op_array.line_start;
   }
   return 0;
