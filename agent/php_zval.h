@@ -175,8 +175,7 @@ static inline int nr_php_is_zval_valid_string(const zval* z) {
  * Returns : a 1 if the argument is a valid non-empty PHP string; 0 otherwise
  */
 static inline int nr_php_is_zval_non_empty_string(const zval* z) {
-  if (!nr_php_is_zval_valid_string(z) || (0 == Z_STRVAL_P(z))
-      || (Z_STRLEN_P(z) <= 0)) {
+  if (!nr_php_is_zval_valid_string(z) || (Z_STRLEN_P(z) <= 0)) {
     return 0;
   }
   return 1;
@@ -287,9 +286,8 @@ static inline bool nr_php_is_zval_null(const zval* z) {
  *
  */
 static inline long nr_php_zval_resource_id(const zval* zv) {
-  if (!nr_php_is_zval_valid_resource(zv))
-  {
-      return 0;
+  if (!nr_php_is_zval_valid_resource(zv)) {
+    return 0;
   }
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return Z_RES_P(zv)->handle;
@@ -307,9 +305,8 @@ static inline long nr_php_zval_resource_id(const zval* zv) {
  *
  */
 static inline long nr_php_zval_object_id(const zval* zv) {
-  if (!nr_php_is_zval_valid_object(zv))
-  {
-      return 0;
+  if (!nr_php_is_zval_valid_object(zv)) {
+    return 0;
   }
   return Z_OBJ_HANDLE_P(zv);
 }
