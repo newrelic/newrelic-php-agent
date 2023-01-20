@@ -638,10 +638,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;          Must be one of the following values:
 ;          cakephp, codeigniter, drupal, drupal8, joomla, kohana, laravel,
-;          magento, magento2, mediawiki, silex, slim, symfony1, symfony2,
+;          magento, magento2, mediawiki, slim, symfony2, symfony4,
 ;          wordpress, yii, zend, zend2, no_framework
 ;
-;          Note that "drupal" covers only Drupal 6 and 7.
+;          Note that "drupal" covers only Drupal 6 and 7 and "symfony2"
+;          now only supports Symfony 3.x.
 ;
 ;newrelic.framework = ""
 
@@ -832,6 +833,16 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Enables or disables the API function newrelic_record_custom_event.
 ;
 ;newrelic.custom_insights_events.enabled = true
+
+; Setting: newrelic.custom_events.max_samples_stored
+; Type   : integer
+; Scope  : per-directory
+; Default: 30000
+; Info   : The default Custom Events reservoir limit in the agent is 
+;          30000 events per minute and the maximum allowed value
+;          is 100000 events per minute.
+;
+;newrelic.custom_events.max_samples_stored = 30000
 
 ; Setting: newrelic.labels
 ; Type   : string (Use quotes)
@@ -1206,7 +1217,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          on the APM Summary page.
 ;
 ;newrelic.application_logging.metrics.enabled = true
-
 
 ; Setting: newrelic.code_level_metrics.enabled
 ; Type   : boolean

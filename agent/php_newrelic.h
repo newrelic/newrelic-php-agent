@@ -352,6 +352,7 @@ nr_php_ini_attribute_config_t
                                     */
 
 nrinibool_t custom_events_enabled; /* newrelic.custom_insights_events.enabled */
+nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored */
 nrinibool_t synthetics_enabled;    /* newrelic.synthetics.enabled */
 
 nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */
@@ -545,6 +546,7 @@ nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding
 nrinibool_t
     code_level_metrics_enabled; /* newrelic.code_level_metrics.enabled */
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
  * pid and user_function_wrappers are used to store user function wrappers.
  * Storing this on a request level (as opposed to storing it on transaction
@@ -552,6 +554,7 @@ nrinibool_t
  */
 uint64_t pid;
 nr_vector_t* user_function_wrappers;
+#endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a
                  transaction */

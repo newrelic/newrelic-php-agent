@@ -58,6 +58,8 @@ typedef enum _nr_tt_recordsql_t {
  */
 typedef struct _nrtxnopt_t {
   int custom_events_enabled; /* Whether or not to capture custom events */
+  size_t custom_events_max_samples_stored; /* The maximum number of custom events
+                                              per transaction */
   int synthetics_enabled;    /* Whether or not to enable Synthetics support */
   int instance_reporting_enabled; /* Whether to capture datastore instance host
                                      and port */
@@ -293,6 +295,12 @@ typedef struct _nrtxn_t {
   nr_distributed_trace_t*
       distributed_trace; /* distributed tracing metadata for the transaction */
   nr_span_queue_t* span_queue; /* span queue when 8T is enabled */
+
+  /*
+   * flag to indicate if one time (per transaction) logging metrics
+   * have been created
+   */
+  bool created_logging_onetime_metrics;
 
   /*
    * Special control variables derived from named bits in
@@ -581,7 +589,6 @@ extern void nr_txn_set_string_attribute(nrtxn_t* txn,
 extern void nr_txn_set_long_attribute(nrtxn_t* txn,
                                       const nr_txn_attribute_t* attribute,
                                       long value);
-
 /*
  * Purpose : Return the duration of the transaction.  This function will return
  *           0 if the transaction has not yet finished or if the transaction

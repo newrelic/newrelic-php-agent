@@ -23,18 +23,20 @@
 /*
  * Current version naming scheme is flowers
  *
- *   vanilla            07Dec2020 (9.15)
  *   watermelon         25Jan2021 (9.16)
  *   xigua              21Apr2021 (9.17)
  *   yam                23Aug2021 (9.18)
  *   zomp               02Mar2022 (9.19)
  *   allium             14Mar2022 (9.20)
  *   buttercup          26Apr2022 (9.21)
- *   cosmos		29Jun2022 (10.0)
- *   dahlia		19Sep2022 (10.1)
- *   echinacea		03Oct2022 (10.2)
+ *   cosmos             29Jun2022 (10.0)
+ *   dahlia             19Sep2022 (10.1)
+ *   echinacea          03Oct2022 (10.2)
+ *   freesia            03Nov2022 (10.3)
+ *   goldenrod          12Dec2022 (10.4)
+ *   hydrangea          18Jan2023 (10.5)
  */
-#define NR_CODENAME "freesia"
+#define NR_CODENAME "impatiens"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

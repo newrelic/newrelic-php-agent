@@ -652,7 +652,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
@@ -673,7 +673,7 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        nr_php_get_wraprec_by_func(execute_data->func) ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
@@ -994,6 +994,50 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   nr_php_add_user_instrumentation(TSRMLS_C);
 }
 
+/*
+ * Purpose : Initialise a metadata structure from an op array.
+ *
+ * Params  : 1. A pointer to a metadata structure.
+ *           2. The op array.
+ *
+ * Note    : It is the responsibility of the caller to allocate the metadata
+ *           structure. In general, it's expected that this will be a pointer
+ *           to a stack variable.
+ */
+static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
+                                         zend_op_array* op_array) {
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+  if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
+    metadata->scope = op_array->scope->name;
+    zend_string_addref(metadata->scope);
+  } else {
+    metadata->scope = NULL;
+  }
+  if (op_array->function_name && op_array->function_name->len) {
+    metadata->function = op_array->function_name;
+    zend_string_addref(metadata->function);
+  } else {
+    metadata->function = NULL;
+  }
+  if (!NRINI(code_level_metrics_enabled)
+      || ZEND_USER_FUNCTION != op_array->type) {
+    metadata->filepath = NULL;
+    return;
+  }
+  if (op_array->filename && op_array->filename->len) {
+    metadata->filepath = op_array->filename;
+    zend_string_addref(metadata->filepath);
+  } else {
+    metadata->filepath = NULL;
+  }
+
+  metadata->function_lineno = op_array->line_start;
+
+#else
+  metadata->op_array = op_array;
+#endif /* PHP7 */
+}
+
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 /*
  * Purpose : If code level metrics are enabled, use the metadata to create agent
@@ -1134,52 +1178,6 @@ static inline void nr_php_execute_segment_add_code_level_metrics(
 }
 
 #endif
-
-/*
- * Purpose : Initialise a metadata structure from an op array.
- *
- * Params  : 1. A pointer to a metadata structure.
- *           2. The op array.
- *
- * Note    : It is the responsibility of the caller to allocate the metadata
- *           structure. In general, it's expected that this will be a pointer
- *           to a stack variable.
- */
-static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
-                                         zend_op_array* op_array) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-  if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
-    metadata->scope = op_array->scope->name;
-    zend_string_addref(metadata->scope);
-  } else {
-    metadata->scope = NULL;
-  }
-
-  if (op_array->function_name && op_array->function_name->len) {
-    metadata->function = op_array->function_name;
-    zend_string_addref(metadata->function);
-  } else {
-    metadata->function = NULL;
-  }
-  if (!NRINI(code_level_metrics_enabled)
-      || ZEND_USER_FUNCTION != op_array->type) {
-    metadata->filepath = NULL;
-    return;
-  }
-  if (op_array->filename && op_array->filename->len) {
-    metadata->filepath = op_array->filename;
-    zend_string_addref(metadata->filepath);
-  } else {
-    metadata->filepath = NULL;
-  }
-
-  metadata->function_lineno = op_array->line_start;
-
-#else
-  metadata->op_array = op_array;
-#endif /* PHP7 */
-}
-
 /*
  * Purpose : Create a metric name from the given metadata.
  *
@@ -1198,7 +1196,7 @@ static void nr_php_execute_metadata_metric(
   const char* function_name;
   const char* scope_name;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   scope_name = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
   function_name = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
 #else
@@ -1305,12 +1303,13 @@ static inline void nr_php_execute_segment_end(
     /*
      * Check if code level metrics are enabled in the ini.
      * If they aren't, exit and don't create any metrics.
+     * We need to get the CLM from metadata before we move it to the heap
+     * because once it is moved to the heap, the metadata on the segment is
+     * freed.
      */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(stacked, metadata);
     }
-#endif
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
 
 #else
@@ -1320,7 +1319,7 @@ static inline void nr_php_execute_segment_end(
 
     /*
      * Check if code level metrics are enabled in the ini.
-     * If they aren't, don't create any CLM.
+     * If they aren't, exit and don't create any CLM.
      */
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
     if (NRINI(code_level_metrics_enabled)) {
@@ -1329,6 +1328,7 @@ static inline void nr_php_execute_segment_end(
 #endif
 
 #endif
+
     nr_segment_end(&s);
   } else {
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
@@ -1364,7 +1364,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC);
 #else
-  wraprec = nr_php_get_wraprec_by_func(execute_data->func);
+  wraprec = nr_php_get_wraprec(execute_data->func);
 #endif
 
   if (NULL != wraprec) {
@@ -1726,11 +1726,15 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
                 "status, even though opcache.preload is set");
     return;
   }
-
   if (IS_ARRAY != Z_TYPE_P(status)) {
-    nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: opcache status "
-                "information is not an array");
+    /*
+     * `opcache_get_status` returns either an array or false.  If it's not an
+     * array, it must have returned false indicating we are unable to get the
+     * status yet.
+     */
+    nrl_debug(NRL_INSTRUMENT,
+              "User instrumentation from opcache: opcache status "
+              "information is not an array");
     goto end;
   }
 
@@ -1937,7 +1941,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
                                 filename TSRMLS_CC);
     return;
   }
-  wraprec = nr_php_get_wraprec_by_func(execute_data->func);
+  wraprec = nr_php_get_wraprec(execute_data->func);
   /*
    * If there is custom instrumentation or tt detail is more than 0, start the
    * segment.
