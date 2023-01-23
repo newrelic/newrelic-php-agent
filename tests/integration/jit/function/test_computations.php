@@ -39,9 +39,10 @@ Hello
 
 newrelic_add_custom_tracer('computation');
 
-function computation(float $a): float
+function computation(float $a): int
 {
-    $b = $a % (2 ** 32);
+
+    $b = intval($a) % (2 ** 32);
     return $b;
 }
 
