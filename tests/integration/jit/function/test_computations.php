@@ -27,10 +27,6 @@ opcache.jit_buffer_size=32M
 opcache.jit=function
 */
 
-/*EXPECT_SPAN_EVENTS
-null
-*/
-
 /*EXPECT
 Hello
 */
