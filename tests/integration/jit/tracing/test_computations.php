@@ -58,7 +58,7 @@ opcache.jit=function
 Hello
 */
 
-newrelic_custom_tracer(computation);
+newrelic_add_custom_tracer('computation');
 
 function computation(float $a): int
 {
