@@ -27,6 +27,35 @@ opcache.jit_buffer_size=32M
 opcache.jit=function
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "traceId": "??",
+        "duration": "??",
+        "timestamp": "??",
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "guid": "??",
+        "priority": "??",
+        "sampled": true,
+        "totalTime": "??",
+        "error": false
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
+
 /*EXPECT
 Hello
 */
