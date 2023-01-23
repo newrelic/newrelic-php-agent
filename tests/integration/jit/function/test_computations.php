@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Span events should not be sent when distributed tracing is
-enabled, span events are disabled and cat is enabled.
+Transaction event created and no errors despite creating spans
+for a HUGE number of calls.
 */
 
 /*SKIPIF
@@ -19,8 +19,6 @@ require('skipif.inc');
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
-newrelic.span_events_enabled=0
-newrelic.cross_application_tracer.enabled = true
 error_reporting = E_ALL
 opcache.enable=1
 opcache.enable_cli=1
