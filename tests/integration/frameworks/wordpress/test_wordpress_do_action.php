@@ -9,6 +9,10 @@ The agent should properly instrument Wordpress do_action hooks.
 */
 
 /*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "5.6", "<")) {
+  die("skip: PHP < 5.6 argument unpacking not supported\n");
+}
 */
 
 /*INI
