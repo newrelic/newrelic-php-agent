@@ -35,7 +35,6 @@ g: string2
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/f"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/g"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/h"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],
