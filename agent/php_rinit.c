@@ -29,7 +29,7 @@ static void nr_php_datastore_instance_destroy(
 /* OAPI global stacks (as opposed to call stack used previously) 
  * need to have a dtor set so that when we free it
  * during rshutdown, all elements are properly freed */
-void str_stack_dtor(void* e, NRUNUSED void* d) {
+static void str_stack_dtor(void* e, NRUNUSED void* d) {
   char* str = (char*)e;
   nr_free(str);
 }
