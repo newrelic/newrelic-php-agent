@@ -6,15 +6,13 @@
 
 /*DESCRIPTION
 The agent should properly instrument Wordpress do_action hooks.
+With OAPI, the agent will not generate external segment metrics in all cases where an exception occurred
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "5.6", "<")) {
-  die("skip: PHP < 5.6 argument unpacking not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not OAPI\n");
 }
 */
 
@@ -38,7 +36,6 @@ g
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/f"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/g"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/h"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],

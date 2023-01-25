@@ -13,6 +13,9 @@ The agent should properly instrument Wordpress apply_filters hooks.
 if (version_compare(PHP_VERSION, "5.6", "<")) {
   die("skip: PHP < 5.6 argument unpacking not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: PHP >= 8.0 uses other test\n");
+}
 */
 
 /*INI
@@ -35,6 +38,7 @@ g: string2
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/f"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/g"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Framework/WordPress/Hook/h"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],

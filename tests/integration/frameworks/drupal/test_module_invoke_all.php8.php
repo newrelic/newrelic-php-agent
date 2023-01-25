@@ -2,6 +2,7 @@
 
 /*DESCRIPTION
 Test that a simple request through drupal_http_request gets instrumented.
+With OAPI, the agent will not generate external segment metrics in all cases where an exception occurred
 */
 
 // force the framework to avoid requiring the drupal detection file
@@ -15,8 +16,8 @@ newrelic.application_logging.metrics.enabled = false
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not OAPI\n");
 }
 */
 
@@ -44,8 +45,7 @@ f
     [{"name":"Framework/Drupal/Hook/hook_with_arg"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/f"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/g"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Hook/h"},                [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Module/module"},         [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Module/module"},         [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],

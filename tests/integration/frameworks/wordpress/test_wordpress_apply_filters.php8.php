@@ -5,16 +5,14 @@
  */
 
 /*DESCRIPTION
-The agent should properly instrument Wordpress do_action hooks.
+The agent should properly instrument Wordpress apply_filters hooks.
+With OAPI, the agent will not generate external segment metrics in all cases where an exception occurred
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "5.6", "<")) {
-  die("skip: PHP < 5.6 argument unpacking not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not OAPI\n");
 }
 */
 
@@ -23,9 +21,9 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
-f
-h
-g
+f: string1
+h: string3
+g: string2
 */
 
 /*EXPECT_METRICS
@@ -38,7 +36,6 @@ g
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/f"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "Framework/WordPress/Hook/g"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/h"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],
@@ -50,27 +47,33 @@ g
 ]
 */
 
-// Simple mock of wordpress's do_action()
-function do_action($tag, ...$args) {
+// Simple mock of wordpress's apply_filter()
+function apply_filters($tag, ...$args) {
     call_user_func_array($tag, $args);
 }
 
-function h() {
-    echo "h\n";
+function h($str) {
+    echo "h: ";
+    echo $str;
+    echo "\n";
     throw new Exception("Test Exception");
 }
 
-function g() {
-    echo "g\n";
+function g($str) {
+    echo "g: ";
+    echo $str;
+    echo "\n";
 }
 
-function f() {
-    echo "f\n";
+function f($str) {
+    echo "f: ";
+    echo $str;
+    echo "\n";
     try {
-        do_action("h");
-    } catch (Exception $e){
-        do_action("g");
+        apply_filters("h", "string3");
+    } catch (Exception $e) {
+        apply_filters("g", "string2");
     }
 }
 
-do_action("f");
+apply_filters("f", "string1");
