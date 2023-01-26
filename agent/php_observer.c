@@ -118,15 +118,19 @@ void nr_throw_exception_hook(zend_object* exception) {
   zval* exception_zval = NULL;
 
   /*
-   * Since PHP 7, EG(exception) is stored as a zend_object, and is therefore
-   * only wrapped in a zval when it actually needs to be.
+   * Don't track the exception if we don't have a valid txn.
    */
-  ZVAL_OBJ(&new_exception, exception);
-  exception_zval = &new_exception;
+  if (NULL != NRPRG(txn)) {
+    /*
+     * Since PHP 7, EG(exception) is stored as a zend_object, and is therefore
+     * only wrapped in a zval when it actually needs to be.
+     */
+    ZVAL_OBJ(&new_exception, exception);
+    exception_zval = &new_exception;
 
-  php_observer_handle_exception_hook(exception_zval,
-                                     &(EG(current_execute_data)->This));
-
+    php_observer_handle_exception_hook(exception_zval,
+                                       &(EG(current_execute_data)->This));
+  }
   if (original_zend_throw_exception_hook != NULL) {
     original_zend_throw_exception_hook(exception);
   }
