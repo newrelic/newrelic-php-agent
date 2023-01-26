@@ -24,6 +24,17 @@ static void nr_php_datastore_instance_destroy(
   nr_datastore_instance_destroy(&instance);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/* OAPI global stacks (as opposed to call stack used previously) 
+ * need to have a dtor set so that when we free it
+ * during rshutdown, all elements are properly freed */
+static void str_stack_dtor(void* e, NRUNUSED void* d) {
+  char* str = (char*)e;
+  nr_free(str);
+}
+#endif
+
 #ifdef TAGS
 void zm_activate_newrelic(void); /* ctags landing pad only */
 #endif
@@ -101,6 +112,11 @@ PHP_RINIT_FUNCTION(newrelic) {
       "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
       NR_REGEX_CASELESS, 0);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
+  NRPRG(predis_ctxs).dtor = str_stack_dtor;
+#endif
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
   NRPRG(datastore_connections) = nr_hashmap_create(

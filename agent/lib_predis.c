@@ -544,13 +544,19 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    * have set predis_ctx to a non-NULL async context, so we use that to add an
    * async context to the datastore node.
    */
-  if (NRPRG(predis_ctx)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  char* ctx = (char *)nr_stack_get_top(&NRPRG(predis_ctxs));
+#else
+  char* ctx = NRPRG(predis_ctx);
+#endif /* OAPI */
+  if (ctx) {
     /*
      * Since we need a unique async context for each element within the
      * pipeline, we'll concatenate the object ID onto the base context name
      * generated in the executePipeline() instrumentation.
      */
-    async_context = nr_formatf("%s." NR_UINT64_FMT, NRPRG(predis_ctx), index);
+    async_context = nr_formatf("%s." NR_UINT64_FMT, ctx, index);
   }
 
   segment = nr_segment_start(NRPRG(txn), NULL, async_context);
@@ -684,7 +690,6 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
-  char* prev_predis_ctx;
 
   (void)wraprec;
 
@@ -698,18 +703,50 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
    * We'll save any existing context just in case this is a nested pipeline.
    */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_stack_push(&NRPRG(predis_ctxs), nr_formatf("Predis #" NR_TIME_FMT, nr_get_time()));
+#else
+  char* prev_predis_ctx;
   prev_predis_ctx = NRPRG(predis_ctx);
   NRPRG(predis_ctx) = nr_formatf("Predis #" NR_TIME_FMT, nr_get_time());
+#endif /* OAPI */
 
   NR_PHP_WRAPPER_CALL;
 
   /*
    * Restore any previous context on the way out.
+   *
+   * If not using OAPI, we can simply free the value after the NR_PHP_WRAPPER_CALL.
+   * Otherwise, we need an "after function" to do the freeing
    */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_free(NRPRG(predis_ctx));
   NRPRG(predis_ctx) = prev_predis_ctx;
+#endif /* not OAPI */
 }
 NR_PHP_WRAPPER_END
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+static void predis_executePipeline_handle_stack() {
+  char* predis_ctx = (char *)nr_stack_pop(&NRPRG(predis_ctxs));
+  nr_free(predis_ctx);
+}
+
+NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline_after) {
+  (void)wraprec;
+  predis_executePipeline_handle_stack();
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline_clean) {
+  (void)wraprec;
+  predis_executePipeline_handle_stack();
+}
+NR_PHP_WRAPPER_END
+#endif /* OAPI */
 
 NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
   char* operation = NULL;
@@ -755,6 +792,29 @@ void nr_predis_enable(TSRMLS_D) {
    * Instrument the pipeline classes that are bundled with Predis so that we
    * correctly set up async contexts.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
+      nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after,
+      nr_predis_pipeline_executePipeline_clean);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Predis\\Pipeline\\Atomic::executePipeline"),
+      nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after,
+      nr_predis_pipeline_executePipeline_clean);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Predis\\Pipeline\\ConnectionErrorProof::executePipeline"),
+      nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after,
+      nr_predis_pipeline_executePipeline_clean);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
+      nr_predis_pipeline_executePipeline,
+      nr_predis_pipeline_executePipeline_after,
+      nr_predis_pipeline_executePipeline_clean);
+#else
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
       nr_predis_pipeline_executePipeline TSRMLS_CC);
@@ -767,6 +827,7 @@ void nr_predis_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline TSRMLS_CC);
+#endif /* OAPI */
 
   /*
    * Instrument Webdis connections, since they don't use the same

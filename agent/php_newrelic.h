@@ -561,7 +561,14 @@ nrapp_t* app; /* The application used in the last attempt to initialize a
 
 nrtxn_t* txn; /* The all-important transaction pointer */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+nr_stack_t predis_ctxs; /* Without OAPI, we are able to utilize the call
+                           stack to keep track of the current predis_ctx.
+                           WIth OAPI, we must track this manually */
+#else
 char* predis_ctx; /* The current Predis pipeline context name, if any */
+#endif
 nr_hashmap_t* predis_commands;
 
 /*
