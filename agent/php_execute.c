@@ -1919,6 +1919,68 @@ void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
   php_observer_set_uncaught_exception_globals(exception, exception_this);
 }
 
+static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  if (NULL == execute_data->prev_execute_data) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data", __func__);
+    return;
+  }
+  if (NULL == execute_data->prev_execute_data->opline) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
+    return;
+  }
+
+  /*
+   * COPIED Comment from php_vm.c:
+   * To actually determine whether this is a call_user_func_array() call we
+   * have to look at one of the previous opcodes. ZEND_DO_FCALL will never be
+   * the first opcode in an op array -- minimally, there is always at least a
+   * ZEND_INIT_FCALL before it -- so this is safe.
+   *
+   * When PHP 7+ flattens a call_user_func_array() call into direct opcodes, it
+   * uses ZEND_SEND_ARRAY to send the arguments in a single opline, and that
+   * opcode is the opcode before the ZEND_DO_FCALL. Therefore, if we see
+   * ZEND_SEND_ARRAY, we know it's call_user_func_array(). The relevant code
+   * can be found at:
+   * https://github.com/php/php-src/blob/php-7.0.19/Zend/zend_compile.c#L3082-L3098
+   * https://github.com/php/php-src/blob/php-7.1.5/Zend/zend_compile.c#L3564-L3580
+   *
+   * In PHP 8, sometimes a ZEND_CHECK_UNDEF_ARGS opcode is added after the call
+   * to ZEND_SEND_ARRAY and before ZEND_DO_FCALL so we need to sometimes look
+   * back two opcodes instead of just one.
+   *
+   * Note that this heuristic will fail if the Zend Engine ever starts
+   * compiling inlined call_user_func_array() calls differently. PHP 7.2 made
+   * a change, but it only optimized array_slice() calls, which as an internal
+   * function won't get this far anyway.) We can disable this behaviour by
+   * setting the ZEND_COMPILE_NO_BUILTINS compiler flag, but since that will
+   * cause additional performance overhead, this should be considered a last
+   * resort.
+   */
+  const zend_op* prev_opline = execute_data->prev_execute_data->opline - 1;
+  if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
+    prev_opline = execute_data->prev_execute_data->opline - 2;
+  }
+  if (ZEND_SEND_ARRAY == prev_opline->opcode) {
+    if (UNEXPECTED((NULL == execute_data->func))) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get current function", __func__);
+      return;
+    }
+    if (UNEXPECTED(NULL == execute_data->prev_execute_data->func)) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function", __func__);
+      return;
+    }
+
+    if (UNEXPECTED(NULL == execute_data->prev_execute_data->func->common.function_name)) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
+      return;
+    }
+
+    nr_php_call_user_func_array_handler(NRPRG(cufa_callback), execute_data->func,
+                                        execute_data->prev_execute_data);
+  }
+}
+
 static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
@@ -1940,6 +2002,18 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     nr_execute_handle_framework(all_frameworks, num_all_frameworks,
                                 filename TSRMLS_CC);
     return;
+  }
+  if (UNEXPECTED(NULL != NRPRG(cufa_callback))) {
+    /*
+     * For PHP 7+, call_user_func_array() is flattened into an inline by default. Because
+     * of this, we must check the opcodes set to see whether we are calling it flattened.
+     * If we have a cufa callback, we want to call that here. This will create the wraprec
+     * for the user function we want to instrument and thus must be called before we search
+     * the wraprecs
+     *
+     * For non-OAPI, this is handled in php_vm.c by overwriting the ZEND_DO_FCALL opcode.
+     */
+     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
   /*

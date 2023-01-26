@@ -33,6 +33,10 @@ static void str_stack_dtor(void* e, NRUNUSED void* d) {
   char* str = (char*)e;
   nr_free(str);
 }
+static void zval_stack_dtor(void* e, NRUNUSED void* d) {
+  zval* zv = (zval*)e;
+  nr_php_zval_free(&zv);
+}
 #endif
 
 #ifdef TAGS
@@ -112,11 +116,22 @@ PHP_RINIT_FUNCTION(newrelic) {
       "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
       NR_REGEX_CASELESS, 0);
 
+  /*
+   * Pre-OAPI, this variables were kept on the call stack and
+   * therefore had no need to be in an nr_stack
+   */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(drupal_module_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(drupal_module_invoke_all_states), NR_STACK_DEFAULT_CAPACITY);
   NRPRG(predis_ctxs).dtor = str_stack_dtor;
+  NRPRG(wordpress_tags).dtor = str_stack_dtor;
+  NRPRG(drupal_module_invoke_all_hooks).dtor = zval_stack_dtor;
 #endif
+
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
   NRPRG(datastore_connections) = nr_hashmap_create(
