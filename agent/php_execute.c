@@ -1793,6 +1793,11 @@ static inline void nr_php_observer_exception_segments_end(
   if (NULL == exception || NULL == execute_data_this) {
     return;
   }
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+
   segment = NRTXN(force_current_segment);
   while ((NULL != segment)
          && (NRTXN(segment_root) != NRTXN(force_current_segment))) {
@@ -1814,6 +1819,10 @@ void nr_php_observer_segment_end(zval* exception) {
    * if null.  The segment would only have been created if we are recording and
    * if wraprec is set or if tt is greater than 0.
    */
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
 
   if (NULL != exception) {
     nr_status_t status;
@@ -2056,7 +2065,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
           "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
       php_observer_clear_uncaught_exception_globals();
     }
-  } else {
+  } else if (NULL != NRPRG(txn)) {
     /*
      * Check if NRPRG(uncaught_exception) exists because if it's not handled,
      * we'll parent the new segment on the wrong stacked segment. Close off
