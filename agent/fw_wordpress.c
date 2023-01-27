@@ -622,6 +622,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
     }
   }
 #else
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   if (1 == nr_php_is_zval_non_empty_string(tag)) {
     if (0 != NRINI(wordpress_hooks)) {
       /*
@@ -639,7 +640,6 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NR_PHP_WRAPPER_CALL;
     }
 
-    zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
     nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
   } else {
     NR_PHP_WRAPPER_CALL;
