@@ -505,6 +505,23 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
   tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /* We will ignore the global wordpress_tag_states stack if wodpress_hooks is off */
+  if (0 != NRINI(wordpress_hooks)) {
+    if (1 == nr_php_is_zval_non_empty_string(tag)) {
+      /*
+       * Our general approach here is to set the wordpress_tag global, then let
+       * the call_user_func_array instrumentation take care of actually timing
+       * the hooks by checking if it's set.
+       */
+      nr_stack_push(&NRPRG(wordpress_tags), nr_wordpress_clean_tag(tag TSRMLS_CC));
+      nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
+    } else {
+      nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
+    }
+  }
+#else
   if (1 == nr_php_is_zval_non_empty_string(tag)
       && (0 != NRINI(wordpress_hooks))) {
     /*
@@ -512,14 +529,6 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
      * the call_user_func_array instrumentation take care of actually timing
      * the hooks by checking if it's set.
      */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    nr_stack_push(&NRPRG(wordpress_tags), nr_wordpress_clean_tag(tag TSRMLS_CC));
-    nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
-  } else {
-    nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
-  }
-#else
     char* old_tag = NRPRG(wordpress_tag);
 
     NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
@@ -595,6 +604,25 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 
   tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /* We will ignore the global wordpress_tag_states stack if wodpress_hooks is off */
+  if (0 != NRINI(wordpress_hooks)) {
+    if (1 == nr_php_is_zval_non_empty_string(tag)) {
+      /*
+       * Our general approach here is to set the wordpress_tag global, then let
+       * the call_user_func_array instrumentation take care of actually timing
+       * the hooks by checking if it's set.
+       */
+      nr_stack_push(&NRPRG(wordpress_tags), nr_wordpress_clean_tag(tag TSRMLS_CC));
+      nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
+    } else {
+      // Keep track of whether we pushed to NRPRG(wordpress_tags)
+      nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
+    }
+  }
+#else
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   if (1 == nr_php_is_zval_non_empty_string(tag)) {
     if (0 != NRINI(wordpress_hooks)) {
       /*
@@ -602,18 +630,6 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
        * the call_user_func_array instrumentation take care of actually timing
        * the hooks by checking if it's set.
        */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-      nr_stack_push(&NRPRG(wordpress_tags), nr_wordpress_clean_tag(tag TSRMLS_CC));
-      nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
-    } else {
-      // Keep track of whether we pushed to NRPRG(wordpress_tags)
-      nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
-    }
-  } else {
-    nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
-  }
-#else
       char* old_tag = NRPRG(wordpress_tag);
 
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
@@ -624,7 +640,6 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NR_PHP_WRAPPER_CALL;
     }
 
-    zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
     nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
   } else {
     NR_PHP_WRAPPER_CALL;
