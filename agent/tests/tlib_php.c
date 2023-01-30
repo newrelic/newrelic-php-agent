@@ -301,9 +301,15 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
   /*
    * Actually start the Zend Engine.
    */
-  if (FAILURE == php_module_startup(&tlib_module, &newrelic_module_entry, 1)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  if (FAILURE == php_module_startup(&tlib_module, &newrelic_module_entry)) {
     return NR_FAILURE;
   }
+#else
+    if (FAILURE == php_module_startup(&tlib_module, &newrelic_module_entry, 1)) {
+    return NR_FAILURE;
+  }
+#endif
 
   /*
    * As noted above, we now replace the interned string callbacks on PHP
