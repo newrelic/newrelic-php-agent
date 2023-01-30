@@ -84,7 +84,10 @@ log_errors=0
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.class": "E_USER_ERROR",
+        "code.lineno": 101,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ]
   ]

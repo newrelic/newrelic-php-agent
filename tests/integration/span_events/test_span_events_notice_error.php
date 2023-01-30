@@ -86,7 +86,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 133,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {
@@ -105,7 +109,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception"
+        "error.class": "Exception",
+        "code.lineno": 127,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ]
   ]

@@ -117,7 +117,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 180,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -137,7 +140,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 186,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ],
     [
@@ -157,7 +163,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 192,
+        "code.filepath": "__FILE__",
+        "code.function": "c"
       }
     ]
   ]

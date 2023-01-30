@@ -34,7 +34,12 @@ newrelic.distributed_tracing_enabled=0
               [
                 "?? start time", "?? end time", "`0", {}, [
                   [
-                    "?? start time", "?? end time", "`1", {}, []
+                    "?? start time", "?? end time", "`1", 
+                    {
+                      "code.lineno": 116,
+                      "code.filepath": "__FILE__",
+                      "code.function": "my_function"
+                    }, []
                   ],
                   [
                     "?? start time", "?? end time", "`2",

@@ -62,7 +62,11 @@ newrelic.special.expensive_node_min = 0
         "timestamp": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 83,
+        "code.filepath": "__FILE__",
+        "code.function": "child"
+      }
     ]
   ]
 ]

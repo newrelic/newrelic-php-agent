@@ -86,7 +86,10 @@ null
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 130,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -104,7 +107,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 124,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
     ]
   ]
 ]

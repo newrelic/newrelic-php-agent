@@ -92,7 +92,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Rethrown caught exception: Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 161,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ],
     [
@@ -112,7 +115,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 155,
+        "code.filepath": "__FILE__",
+        "code.function": "c"
       }
     ],
     [
@@ -131,8 +137,11 @@ newrelic.cross_application_tracer.enabled = false
       },
       {},
       {
-       "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
+        "error.class": "RuntimeException",
+        "code.lineno": 171,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
       }
     ]
   ]

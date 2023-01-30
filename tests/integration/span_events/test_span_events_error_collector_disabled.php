@@ -81,7 +81,11 @@ log_errors=0
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 94,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

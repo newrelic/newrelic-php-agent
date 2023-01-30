@@ -199,7 +199,11 @@ null
         "2": 2,
         "1": 1
       },
-      {}
+      {
+        "code.lineno": 240,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

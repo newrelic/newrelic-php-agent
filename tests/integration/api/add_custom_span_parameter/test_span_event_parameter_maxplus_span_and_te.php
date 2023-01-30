@@ -316,7 +316,11 @@ ok - string attribute added
         "36": 36,
         "35": 35
       },
-      {}
+      {
+        "code.lineno": 358,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

@@ -60,7 +60,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 115,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {
@@ -77,7 +81,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 100,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
+      }
     ]
   ]
 ]

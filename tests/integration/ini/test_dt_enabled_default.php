@@ -56,7 +56,11 @@ newrelic.span_events_enabled = 1
         "timestamp": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 74,
+        "code.filepath": "__FILE__",
+        "code.function": "main"
+      }
     ]
   ]
 ]

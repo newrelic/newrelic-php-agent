@@ -68,7 +68,11 @@ ok - double attribute added
         "bool": false,
         "int": 7
       },
-      {}
+      {
+        "code.lineno": 109,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

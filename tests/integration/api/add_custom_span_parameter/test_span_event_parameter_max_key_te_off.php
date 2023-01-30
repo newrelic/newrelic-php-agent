@@ -73,7 +73,11 @@ null
         "bool": false,
         "int": 7
       },
-      {}
+      {
+        "code.lineno": 114,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

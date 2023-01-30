@@ -56,7 +56,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 92,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {

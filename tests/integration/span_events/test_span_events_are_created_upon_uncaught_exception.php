@@ -87,7 +87,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 104,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ]
   ]

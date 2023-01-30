@@ -68,7 +68,11 @@ ok - transaction event attribute added
         "string": "from span event",
         "bool": false
       },
-      {}
+      {
+        "code.lineno": 110,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

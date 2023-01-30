@@ -60,7 +60,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 192,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {
@@ -77,7 +81,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 174,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
+      }
     ],
     [
       {
@@ -96,7 +104,10 @@ null
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 167,
+        "code.filepath": "__FILE__",
+        "code.function": "c"
       }
     ],
     [
@@ -114,7 +125,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 184,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
+      }
     ],
     [
       {
@@ -133,7 +148,10 @@ null
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 184,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
       }
     ]
   ]

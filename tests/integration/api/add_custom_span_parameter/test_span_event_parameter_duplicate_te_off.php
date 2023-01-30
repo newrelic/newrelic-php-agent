@@ -80,7 +80,11 @@ null
         "int": 1,
         "string": "span str"
       },
-      {}
+      {
+        "code.lineno": 122,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

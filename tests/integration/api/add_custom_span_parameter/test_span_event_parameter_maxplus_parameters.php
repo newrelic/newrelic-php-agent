@@ -190,7 +190,11 @@ ok - string attribute NOT added
         "2": 2,
         "1": 1
       },
-      {}
+      {
+        "code.lineno": 231,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

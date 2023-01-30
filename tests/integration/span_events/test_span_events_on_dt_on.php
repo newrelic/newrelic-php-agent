@@ -55,7 +55,11 @@ newrelic.cross_application_tracer.enabled = false
         "timestamp": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 73,
+        "code.filepath": "__FILE__",
+        "code.function": "main"
+      }
     ]
   ]
 ]

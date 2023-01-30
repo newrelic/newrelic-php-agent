@@ -84,7 +84,10 @@ log_errors=0
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.class": "E_USER_ERROR",
+        "code.lineno": 129,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -102,7 +105,11 @@ log_errors=0
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno":  123,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
     ]
   ]
 ]

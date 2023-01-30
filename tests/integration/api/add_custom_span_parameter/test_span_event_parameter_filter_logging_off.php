@@ -71,7 +71,11 @@ ok - double attribute added
       {
         "double": 1.50000
       },
-      {}
+      {
+        "code.lineno": 111,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

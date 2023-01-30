@@ -106,7 +106,11 @@ ok - double attribute added
         "int": 1,
         "string": "span str"
       },
-      {}
+      {
+        "code.lineno": 148,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

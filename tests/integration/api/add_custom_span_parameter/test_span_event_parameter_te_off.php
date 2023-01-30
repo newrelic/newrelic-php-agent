@@ -70,7 +70,11 @@ ok - double attribute added
         "int": 7,
         "string": "str"
       },
-      {}
+      {
+        "code.lineno": 111,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

@@ -34,31 +34,76 @@ newrelic.distributed_tracing_enabled=0
                 "?? start time", "?? end time", "`0", {},
                 [
                   [
-                    "?? start time", "?? end time", "`1", {},
+                    "?? start time", "?? end time", "`1", 
+                    {
+                      "code.lineno": 178,
+                      "code.filepath": "__FILE__",
+                      "code.function": "great_grandmother"
+                    },
                     [
                       [
-                        "?? start time", "?? end time", "`2", {},
+                        "?? start time", "?? end time", "`2", 
+                        {
+                          "code.lineno": 173,
+                          "code.filepath": "__FILE__",
+                          "code.function": "grandmother"                          
+                        },
                         [
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 170,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ]
                         ]
                       ]
