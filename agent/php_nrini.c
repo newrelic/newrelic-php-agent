@@ -2925,7 +2925,7 @@ STD_PHP_INI_ENTRY_EX(
  * Code Level Metrics, initially off by default
  */
 STD_PHP_INI_ENTRY_EX("newrelic.code_level_metrics.enabled",
-                     "0",
+                     "1",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      code_level_metrics_enabled,
