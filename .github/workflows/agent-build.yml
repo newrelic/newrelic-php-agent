@@ -20,11 +20,13 @@ on:
       - main
       - 'php8'
       - 'dev'
+      - 'clm-obd'
   pull_request:
     branches: 
       - main
       - 'php8'
       - 'dev'
+      - 'clm-obd'
 
 jobs:
   agent_pr:
