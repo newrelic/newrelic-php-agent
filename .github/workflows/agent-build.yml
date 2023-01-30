@@ -18,12 +18,12 @@ on:
   push:
     branches: 
       - main
-      - 'php8'
+      - 'php-82'
       - 'dev'
   pull_request:
     branches: 
       - main
-      - 'php8'
+      - 'php-82'
       - 'dev'
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         os: [linux]
-        php_ver: ['7.0', '7.1-zts', '7.2', '7.3', '7.4', '8.0', '8.0-zts', '8.1', '8.1-zts']
+        php_ver: ['7.0', '7.1-zts', '7.2', '7.3', '7.4', '8.0', '8.0-zts', '8.1', '8.1-zts', '8.2']
         arch: ['x64', 'x86']
         exclude:
         # Excludes PHP 5.x, 7.x on linux 32-bit
@@ -69,6 +69,9 @@ jobs:
           arch: 'x86'
         - os: linux
           php_ver: '8.1-zts'
+          arch: 'x86'
+        - os: linux
+          php_ver: '8.2'
           arch: 'x86'
     steps:
       - name: Checkout Repo 
