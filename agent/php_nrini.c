@@ -2980,10 +2980,16 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
 PHP_INI_END() /* } */
 
 void nr_php_register_ini_entries(int module_number TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  int type = MODULE_PERSISTENT;
+#endif
   REGISTER_INI_ENTRIES();
 }
 
 void nr_php_unregister_ini_entries(int module_number TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  int type = MODULE_PERSISTENT;
+#endif
   UNREGISTER_INI_ENTRIES();
 }
 
@@ -3162,11 +3168,10 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled)
-                                  ? "enabled"
-                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                        ? "disabled due to threaded MPM"
-                                        : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
+                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                  ? "disabled due to threaded MPM"
+                                  : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 
