@@ -306,7 +306,7 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
     return NR_FAILURE;
   }
 #else
-    if (FAILURE == php_module_startup(&tlib_module, &newrelic_module_entry, 1)) {
+  if (FAILURE == php_module_startup(&tlib_module, &newrelic_module_entry, 1)) {
     return NR_FAILURE;
   }
 #endif
