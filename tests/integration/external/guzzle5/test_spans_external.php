@@ -72,7 +72,7 @@ newrelic.transaction_tracer.detail = 0
       {
         "code.lineno": 67,
         "code.namespace": "GuzzleHttp\\Client",
-        "code.filepath": "\/usr\/src\/myapp\/tests\/include\/guzzle\/guzzle5\/vendor\/guzzlehttp\/guzzle\/src\/Client.php",
+        "code.filepath": "??",
         "code.function": "__construct"
       }
     ],
