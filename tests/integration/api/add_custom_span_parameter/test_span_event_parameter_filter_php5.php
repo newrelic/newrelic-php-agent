@@ -16,6 +16,7 @@ newrelic.attributes.exclude = int
 newrelic.span_events.attributes.exclude = bool, string
 newrelic.transaction_events.attributes.exclude = double
 newrelic.cross_application_tracer.enabled = false
+newrelic.code_level_metrics.enabled=false
 */
 
 /*EXPECT
