@@ -12,8 +12,8 @@ Test that the actually external call is marked as http.
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 
-if (version_compare(phpversion(), '5.5.0', '<=')) {
-    die("skip: PHP > 5.5.0 required\n");
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
 }
 
 if (!unpack_guzzle(6)) {

@@ -9,6 +9,13 @@ Test that span events are correctly created from any eligible segment, even
 when an error is generated and left to the default error handler.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -85,7 +92,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_ERROR",
-        "code.lineno": 101,
+        "code.lineno": 108,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }

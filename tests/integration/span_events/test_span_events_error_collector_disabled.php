@@ -7,6 +7,13 @@
 Test that no span events error attributes are captured when error_collector is disabled
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -82,7 +89,7 @@ log_errors=0
       },
       {},
       {
-        "code.lineno": 94,
+        "code.lineno": 101,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }

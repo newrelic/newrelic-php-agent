@@ -8,6 +8,13 @@ Test that a caught exception that originated from a child span is
 correctly handled.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -61,7 +68,7 @@ null
       },
       {},
       {
-        "code.lineno": 192,
+        "code.lineno": 199,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -82,7 +89,7 @@ null
       },
       {},
       {
-        "code.lineno": 174,
+        "code.lineno": 181,
         "code.filepath": "__FILE__",
         "code.function": "b"
       }
@@ -105,7 +112,7 @@ null
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 167,
+        "code.lineno": 174,
         "code.filepath": "__FILE__",
         "code.function": "c"
       }
@@ -126,7 +133,7 @@ null
       },
       {},
       {
-        "code.lineno": 184,
+        "code.lineno": 191,
         "code.filepath": "__FILE__",
         "code.function": "fraction"
       }
@@ -149,7 +156,7 @@ null
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 184,
+        "code.lineno": 191,
         "code.filepath": "__FILE__",
         "code.function": "fraction"
       }

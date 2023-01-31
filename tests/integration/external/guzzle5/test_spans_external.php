@@ -14,8 +14,8 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php'
 
 require('skipif.inc');
 
-if (version_compare(phpversion(), '5.4.0', '<')) {
-    die("skip: PHP >= 5.4.0 required\n");
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
 }
 */
 

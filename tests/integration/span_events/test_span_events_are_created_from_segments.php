@@ -8,6 +8,13 @@
 Test that span events are correctly created from any eligible segment.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -57,7 +64,7 @@ newrelic.cross_application_tracer.enabled = false
       },
       {},
       {
-        "code.lineno": 92,
+        "code.lineno": 99,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }

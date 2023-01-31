@@ -9,6 +9,13 @@ Test that a caught exception that originated from a child span that
 is "rethrown" is correctly handled.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -93,7 +100,7 @@ newrelic.cross_application_tracer.enabled = false
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Rethrown caught exception: Division by zero' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 161,
+        "code.lineno": 168,
         "code.filepath": "__FILE__",
         "code.function": "b"
       }
@@ -116,7 +123,7 @@ newrelic.cross_application_tracer.enabled = false
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 155,
+        "code.lineno": 162,
         "code.filepath": "__FILE__",
         "code.function": "c"
       }
@@ -139,7 +146,7 @@ newrelic.cross_application_tracer.enabled = false
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 171,
+        "code.lineno": 178,
         "code.filepath": "__FILE__",
         "code.function": "fraction"
       }

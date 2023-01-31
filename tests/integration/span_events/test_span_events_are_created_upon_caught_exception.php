@@ -9,6 +9,13 @@ Test that span events are correctly created from any eligible segment, even
 when an exception is handled by the exception handler.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -87,7 +94,7 @@ null
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 130,
+        "code.lineno": 137,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -108,7 +115,7 @@ null
       },
       {},
       {
-        "code.lineno": 124,
+        "code.lineno": 131,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }

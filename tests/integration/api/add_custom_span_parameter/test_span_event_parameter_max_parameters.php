@@ -9,6 +9,13 @@ Test that attributes only a maximum of 64 custom attributes are added to span
 events.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -191,7 +198,7 @@ ok - string attribute added
         "1": 1
       },
       {
-        "code.lineno": 231,
+        "code.lineno": 238,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
