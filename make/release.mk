@@ -10,6 +10,8 @@
 # the top-level of the project.
 #
 
+include make/php_versions.mk
+
 RELEASE_OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 RELEASE_OS := $(RELEASE_OS:darwin=osx)
 RELEASE_OS := $(RELEASE_OS:sunos=solaris)
@@ -40,17 +42,15 @@ ifeq (osx,$(RELEASE_OS))
   endif
 endif
 
-# Set the default PHP versions we will build.
-PHPS?=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
 # Set the PHP versions we support on 64-bit OSs.
-SUPPORTED_64=8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5
+SUPPORTED_64=$(PHP_VERSION_LIST)
 # Set the PHP versions we support on 32-bit OSs.
 SUPPORTED_32=
 # Of the PHP versions we want to build, determine which are supported on the detected OS.
 ifeq (x64,$(ARCH))
-  SUPPORTED_PHP = $(filter $(SUPPORTED_64),$(PHPS))
+  SUPPORTED_PHP = $(filter $(SUPPORTED_64),$(PHP_VERSION_LIST))
 else
-  SUPPORTED_PHP = $(filter $(SUPPORTED_32),$(PHPS))
+  SUPPORTED_PHP = $(filter $(SUPPORTED_32),$(PHP_VERSION_LIST))
 endif
 
 
