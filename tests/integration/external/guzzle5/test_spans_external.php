@@ -70,7 +70,7 @@ newrelic.transaction_tracer.detail = 0
       },
       {},
       {
-        "code.lineno": 67,
+        "code.lineno": "??",
         "code.namespace": "GuzzleHttp\\Client",
         "code.filepath": "??",
         "code.function": "__construct"
