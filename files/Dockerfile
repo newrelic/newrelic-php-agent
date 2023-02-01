@@ -133,7 +133,7 @@ RUN \
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-#RUN docker-php-ext-install mysqli
+RUN docker-php-ext-install mysqli
 
 # redis
 RUN pecl install redis && docker-php-ext-enable redis
@@ -177,9 +177,6 @@ ARG PHP_VER
 ENV PHP_VER=${PHP_VER}
 ARG PS1
 ENV PS1="New Relic > "
-
-RUN echo 'alias integ="./bin/integration_runner -agent ./agent/.libs/newrelic.so"' >> ~/.bashrc
-RUN echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 
 WORKDIR /usr/src/myapp
 CMD ["bash"]
