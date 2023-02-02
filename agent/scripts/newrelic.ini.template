@@ -933,9 +933,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          pathnames to your PHP files/functions, you may exceed the max message
 ;          size limit set by the Daemon if your max_samples_stored setting is
 ;          too high. To fix this, you can either:
-;           a) set newrelic.code_level_metrics.enabled=false, disabling it
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
 ;              entirely
-;           b) lower the value for newrelic.span_events.max_samples_stored
+;           c) lower the value for newrelic.span_events.max_samples_stored
 ;
 ;newrelic.span_events.max_samples_stored = 0
 
@@ -1238,9 +1239,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          pathnames to your PHP files/functions, you may exceed the max message
 ;          size limit set by the Daemon if your max_samples_stored setting is
 ;          too high. To fix this, you can either:
-;           a) set newrelic.code_level_metrics.enabled=false, disabling it
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
 ;              entirely
-;           b) lower the value for newrelic.span_events.max_samples_stored
+;           c) lower the value for newrelic.span_events.max_samples_stored
 ;
 ;newrelic.code_level_metrics.enabled = true
 
