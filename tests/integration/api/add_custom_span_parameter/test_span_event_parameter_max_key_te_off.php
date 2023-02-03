@@ -8,6 +8,13 @@
 Test that attributes are added to span events when transaction_events are disabled.  Attribute keys should be limited to 255 bytes (256 including the null terminator), but if an attribute key exceeds 255 bytes, then the attribute should be dropped. If the dropped attribute was a custom attribute, then a warning message should be logged and the API function should return failure.  
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled = 1
 newrelic.transaction_tracer.threshold = 0
@@ -73,7 +80,11 @@ null
         "bool": false,
         "int": 7
       },
-      {}
+      {
+        "code.lineno": 121,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]

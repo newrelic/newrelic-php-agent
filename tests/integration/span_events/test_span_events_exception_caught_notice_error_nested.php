@@ -9,6 +9,13 @@ Test that a caught exception that originated from a child span is correctly
 handled when a notice error is also called.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -87,7 +94,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 229,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {
@@ -106,7 +117,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception"
+        "error.class": "Exception",
+        "code.lineno": 210,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ],
     [
@@ -126,7 +140,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 203,
+        "code.filepath": "__FILE__",
+        "code.function": "c"
       }
     ],
     [
@@ -144,7 +161,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 221,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
+      }
     ],
     [
       {
@@ -163,7 +184,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 221,
+        "code.filepath": "__FILE__",
+        "code.function": "fraction"
       }
     ]
   ]

@@ -8,6 +8,13 @@
 Test that attributes are added to span events.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -70,7 +77,11 @@ ok - double attribute added
         "int": 7,
         "string": "str"
       },
-      {}
+      {
+        "code.lineno": 118,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]
