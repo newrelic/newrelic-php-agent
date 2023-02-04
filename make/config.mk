@@ -42,6 +42,11 @@ HAVE_BACKTRACE := $(shell $(CC) $(dir $(abspath $(lastword $(MAKEFILE_LIST))))ba
 # Whether you have libexecinfo
 HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libexecinfo.a && echo 1 || echo 0)
 
+# Whether you have protoc-c and libprotobuf-c.a
+# Look in /usr by default but can be overriden from environment)
+VENDOR_PREFIX ?= /usr
+HAVE_PROTOBUF_C := $(shell test -x $(VENDOR_PREFIX)/bin/protoc-c && find $(VENDOR_PREFIX)/lib -name 'libprotobuf-c.a' | grep -q 'libprotobuf-c.a' && echo 1 || echo 0)
+
 # Whether you have PTHREAD_MUTEX_ERRORCHECK
 #
 # The interesting dir/abspath/lastword/$(MAKEFILE_LIST) construct is required to

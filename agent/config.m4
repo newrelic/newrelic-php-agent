@@ -26,7 +26,7 @@ dnl file, as built by running "make" in the axiom directory.
 PHP_ARG_WITH(axiom,,
 [  --with-axiom=DIR        Path to axiom], ../axiom, no)
 
-dnl The path to protobuf-c. The default is to look for a local vendored
+dnl The path to libprotobuf-c.a. The default is to look for a local vendored
 dnl install, as built by running "make" at the level above this.
 PHP_ARG_WITH(protobuf-c,,
 [  --with-protobuf-c=DIR   Path to protobuf-c], ../vendor/local, no)
@@ -145,7 +145,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
     dnl protobuf-c directory, and there's no way to prevent it.
     dnl Note that the -lprotobuf-c has to be _after_ axiom for the symbols
     dnl to be resolved properly, hence the different order to the above.
-    NEWRELIC_SHARED_LIBADD="$NEWRELIC_SHARED_LIBADD -L$PHP_PROTOBUF_C/lib -lprotobuf-c"
+    NEWRELIC_SHARED_LIBADD="$NEWRELIC_SHARED_LIBADD -L$PHP_PROTOBUF_C/lib -l:libprotobuf-c.a"
   ],[
     AC_MSG_ERROR([protobuf-c not found])
   ],[

@@ -13,7 +13,9 @@
 
 # We need to find where the project's vendored dependencies live for these
 # variables.
-VENDOR_BASE := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor)
+ifeq (0,$(HAVE_PROTOBUF_C))
+VENDOR_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor/local)
+endif
 
 #
 # protobuf-c
@@ -21,9 +23,10 @@ VENDOR_BASE := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendo
 # Note that this does not require protobuf, which is a build time dependency
 # only.
 #
-PROTOBUF_C_CFLAGS := -I$(VENDOR_BASE)/local/include
-PROTOBUF_C_LDFLAGS := -L$(VENDOR_BASE)/local/lib
-PROTOBUF_C_LDLIBS := -lprotobuf-c
+PROTOBUF_C_CFLAGS := -I$(VENDOR_PREFIX)/include
+PROTOBUF_C_LDFLAGS := -L$(VENDOR_PREFIX)/lib
+# Always link to static library
+PROTOBUF_C_LDLIBS := -l:libprotobuf-c.a
 
 #
 # Aggregated flag variables for use in other Makefiles.

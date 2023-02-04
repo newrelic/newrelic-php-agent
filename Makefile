@@ -123,7 +123,7 @@ agent/configure: agent/config.m4 agent/Makefile.frag
 	cd agent; $(PHPIZE) --clean && $(PHPIZE)
 
 agent/Makefile: agent/configure | axiom
-	cd agent; ./configure $(SILENT) --enable-newrelic --with-axiom=$(realpath axiom) --with-php-config=$(PHP_CONFIG)
+	cd agent; ./configure $(SILENT) --enable-newrelic --with-axiom=$(realpath axiom) --with-php-config=$(PHP_CONFIG) --with-protobuf-c=$(VENDOR_PREFIX)
 
 #
 # Installs the agent into the extension directory of the appropriate PHP
@@ -305,7 +305,7 @@ daemon-protobuf: src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go
 src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_tracing/v1.proto
 	$(MAKE) vendor # Only build vendor stuff if v1.proto has changed. Otherwise
 	               # this rule will be triggered every time the daemon is built.
-	$(VENDOR_BASE)/local/bin/protoc \
+	$(VENDOR_PREFIX)/bin/protoc \
 	    -I=./protocol/infinite_tracing \
 	    --go_out="paths=source_relative,plugins=grpc:src/newrelic/infinite_tracing/com_newrelic_trace_v1" \
 	    protocol/infinite_tracing/v1.proto
@@ -467,11 +467,17 @@ lasp-test-all:
 export GIT
 
 .PHONY: vendor vendor-clean
+ifeq (0,$(HAVE_PROTOBUF_C))
 vendor:
 	$(MAKE) -C vendor all
 
 vendor-clean:
 	$(MAKE) -C vendor clean
+else
+vendor: ;
+
+vendor-clean: ;
+endif
 
 #
 # Extras
