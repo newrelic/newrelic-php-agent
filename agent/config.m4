@@ -31,6 +31,12 @@ dnl install, as built by running "make" at the level above this.
 PHP_ARG_WITH(protobuf-c,,
 [  --with-protobuf-c=DIR   Path to protobuf-c], ../vendor/local, no)
 
+dnl The path to libpcre.a. The default is to look for a php-build-scripts
+dnl install in /opt/nr/pcre/8.40 local vendored as built by running 
+dnl "./make.sh pcre" from top level directory of php-build-scripts.
+PHP_ARG_WITH(pcre,,
+[  --with-pcre=DIR   Path to pcre], /opt/nr/pcre/8.40, no)
+
 if test "$PHP_NEWRELIC" = "yes"; then
   AC_DEFINE(HAVE_NEWRELIC, 1, [Whether you have New Relic])
 
@@ -95,24 +101,13 @@ if test "$PHP_NEWRELIC" = "yes"; then
     AC_MSG_ERROR([unknown or unsupported system])
   fi
 
-  dnl Our one external dependency is libpcre, which axiom needs. We'll use
-  dnl pcre-config to find it, since every modern version of PCRE provides it.
-  PCRE_INCLINE=`pcre-config --cflags`
-  if pcre-config --prefix | grep -q /opt/nr/camp; then
-    PCRE_LIBLINE=-lnrpcre-pic
-    PCRE_LIBRARY=nrpcre-pic
-  else
-    PCRE_LIBLINE=`pcre-config --libs`
-    PCRE_LIBRARY=pcre
-  fi
-
-  PHP_CHECK_LIBRARY($PCRE_LIBRARY, pcre_exec, [
-    PHP_EVAL_INCLINE($PCRE_INCLINE)
-    PHP_EVAL_LIBLINE($PCRE_LIBLINE, NEWRELIC_SHARED_LIBADD)
+  PHP_CHECK_LIBRARY(pcre, pcre_exec, [
+    PHP_EVAL_INCLINE($PHP_PCRE)
+    NEWRELIC_SHARED_LIBADD="-L$PHP_PCRE -l:libpcre.a $NEWRELIC_SHARED_LIBADD"
   ],[
     AC_MSG_ERROR([PCRE not found])
   ],[
-    $PCRE_LIBLINE
+    -L$PHP_PCRE/lib
   ])
 
   dnl Check for axiom.

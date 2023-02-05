@@ -47,6 +47,12 @@ HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libex
 VENDOR_PREFIX ?= /usr
 HAVE_PROTOBUF_C := $(shell test -x $(VENDOR_PREFIX)/bin/protoc-c && find $(VENDOR_PREFIX)/lib -name 'libprotobuf-c.a' | grep -q 'libprotobuf-c.a' && echo 1 || echo 0)
 
+# Our one external dependency is libpcre.a, which axiom needs. We'll assume
+# it is installed in the system but allow user to override it. Note that
+# we need static version because different linux distributions use different
+# names for shared object which causes installation to fail.
+PCRE_PREFIX ?= /usr
+
 # Whether you have PTHREAD_MUTEX_ERRORCHECK
 #
 # The interesting dir/abspath/lastword/$(MAKEFILE_LIST) construct is required to
