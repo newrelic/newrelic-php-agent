@@ -11,6 +11,13 @@ The agent must still create metrics for functions for which add_custom_tracer
 was called.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.transaction_tracer.max_segments_cli=3
 newrelic.transaction_tracer.threshold=0
@@ -34,7 +41,12 @@ newrelic.distributed_tracing_enabled=0
               [
                 "?? start time", "?? end time", "`0", {}, [
                   [
-                    "?? start time", "?? end time", "`1", {}, []
+                    "?? start time", "?? end time", "`1", 
+                    {
+                      "code.lineno": 123,
+                      "code.filepath": "__FILE__",
+                      "code.function": "my_function"
+                    }, []
                   ],
                   [
                     "?? start time", "?? end time", "`2",

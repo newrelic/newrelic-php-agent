@@ -9,6 +9,13 @@ When the newrelic.transaction_tracer.max_segments_cli is set to a non-zero value
 the agent limits the number of segments created, even in a nested scenario.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.transaction_tracer.max_segments_cli=10
 newrelic.transaction_tracer.threshold=0
@@ -34,31 +41,76 @@ newrelic.distributed_tracing_enabled=0
                 "?? start time", "?? end time", "`0", {},
                 [
                   [
-                    "?? start time", "?? end time", "`1", {},
+                    "?? start time", "?? end time", "`1", 
+                    {
+                      "code.lineno": 185,
+                      "code.filepath": "__FILE__",
+                      "code.function": "great_grandmother"
+                    },
                     [
                       [
-                        "?? start time", "?? end time", "`2", {},
+                        "?? start time", "?? end time", "`2", 
+                        {
+                          "code.lineno": 180,
+                          "code.filepath": "__FILE__",
+                          "code.function": "grandmother"                          
+                        },
                         [
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ],
                           [
-                            "?? start time", "?? end time", "`3", {}, []
+                            "?? start time", "?? end time", "`3", 
+                            {
+                              "code.lineno": 177,
+                              "code.filepath": "__FILE__",
+                              "code.function": "my_function"                              
+                            }, []
                           ]
                         ]
                       ]

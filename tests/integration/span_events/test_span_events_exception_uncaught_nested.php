@@ -7,6 +7,13 @@
 Test that an uncaught exception that originated from a child span is correctly handled.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -117,7 +124,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 187,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -137,7 +147,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 193,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ],
     [
@@ -157,7 +170,10 @@ log_errors=0
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": 199,
+        "code.filepath": "__FILE__",
+        "code.function": "c"
       }
     ]
   ]
