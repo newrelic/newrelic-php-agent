@@ -929,6 +929,15 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          per transaction. A value of 0 will use the agent default.  The max
 ;          setting is 10000.
 ;
+;          !IMPORTANT: If you have Code Level Metrics enabled & long absolute
+;          pathnames to your PHP files/functions, you may exceed the max message
+;          size limit set by the Daemon if your max_samples_stored setting is
+;          too high. To fix this, you can either:
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
+;              entirely
+;           c) lower the value for newrelic.span_events.max_samples_stored
+;
 ;newrelic.span_events.max_samples_stored = 0
 
 
@@ -1221,10 +1230,19 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.code_level_metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: false
+; Default: true
 ; Info   : Toggles whether the agent provides function name, function
 ;          filepath, function namespace, and function lineno as
 ;          attributes on reported spans
 ;
-;newrelic.code_level_metrics.enabled = false
+;          !IMPORTANT: If you have Code Level Metrics enabled & long absolute
+;          pathnames to your PHP files/functions, you may exceed the max message
+;          size limit set by the Daemon if your max_samples_stored setting is
+;          too high. To fix this, you can either:
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
+;              entirely
+;           c) lower the value for newrelic.span_events.max_samples_stored
+;
+;newrelic.code_level_metrics.enabled = true
 

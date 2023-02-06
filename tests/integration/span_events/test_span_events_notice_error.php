@@ -8,6 +8,13 @@
 Test that notice error is correctly handled.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -86,7 +93,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 140,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ],
     [
       {
@@ -105,7 +116,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception"
+        "error.class": "Exception",
+        "code.lineno": 134,
+        "code.filepath": "__FILE__",
+        "code.function": "b"
       }
     ]
   ]
