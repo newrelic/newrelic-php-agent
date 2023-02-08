@@ -54,7 +54,10 @@ else
 endif
 
 
-release: Makefile release-daemon release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
+.PHONY: release
+release: Makefile release-version release-daemon release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
+
+release-version: releases/$(RELEASE_OS)/
 	printf '%s\n' "$(AGENT_VERSION)" > releases/$(RELEASE_OS)/VERSION
 	printf '%s\n' "$(GIT_COMMIT)" > releases/$(RELEASE_OS)/COMMIT
 
