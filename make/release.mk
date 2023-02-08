@@ -113,6 +113,17 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 define RELEASE_AGENT_TARGET
 
 #
+# Target for building the agent for a given PHP version. Works well
+# when building agent using containers. This is useful not only in 
+# GitHub Actions workflows, but also in a day to day development,
+# because it allows to preserve agent between PHP version switches.
+#
+agent-for-php-$1: PHP_CONFIG := /usr/local/bin/php-config
+agent-for-php-$1: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
+
+#
 # Target for non-zts GHA releases.
 #
 release-$1-gha: PHPIZE := /usr/local/bin/phpize
