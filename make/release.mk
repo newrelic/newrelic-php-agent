@@ -64,8 +64,13 @@ release-version: releases/$(RELEASE_OS)/
 release-daemon: Makefile daemon | releases/$(RELEASE_OS)/daemon/
 	cp bin/daemon releases/$(RELEASE_OS)/daemon/newrelic-daemon.$(RELEASE_ARCH)
 
-release-installer: Makefile bin/newrelic-install bin/newrelic-iutil | releases/$(RELEASE_OS)/ releases/$(RELEASE_OS)/scripts/
+.PHONY: release-installer
+release-installer: Makefile release-installer-script release-installer-iutil
+
+release-installer-script: bin/newrelic-install | releases/$(RELEASE_OS)/
 	cp bin/newrelic-install releases/$(RELEASE_OS)
+
+release-installer-iutil: bin/newrelic-iutil | releases/$(RELEASE_OS)/scripts/
 	cp bin/newrelic-iutil   releases/$(RELEASE_OS)/scripts/newrelic-iutil.$(RELEASE_ARCH)
 
 release-docs: Makefile | releases/$(RELEASE_OS)/
