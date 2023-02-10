@@ -193,7 +193,7 @@ nr_config.h: configure Makefile
 # Build the 8T protobuf code.
 #
 v1.pb-c.c: v1.proto
-	$(VENDOR_PREFIX)/bin/protoc-c --c_out=. $<
+	$(PROTOBUF_C_PREFIX)/bin/protoc-c --c_out=. $<
 
 #
 # The generated code is not warning-free with current compilers, so we'll
