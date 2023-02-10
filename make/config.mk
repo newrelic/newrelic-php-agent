@@ -45,7 +45,23 @@ HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libex
 # Whether you have protoc-c and libprotobuf-c.a. By default, ask pkg-config
 # for install location. This can be overriden by environment.
 VENDOR_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
-HAVE_PROTOBUF_C := $(shell test -x $(VENDOR_PREFIX)/bin/protoc-c && find $(VENDOR_PREFIX)/lib -name 'libprotobuf-c.a' | grep -q 'libprotobuf-c.a' && echo 1 || echo 0)
+HAVE_PROTOBUF_C := $(shell \
+                      test -d "$(VENDOR_PREFIX)" \
+                      && test -d "$(VENDOR_PREFIX)/bin" \
+                      && test -d "$(VENDOR_PREFIX)/lib" \
+                      && test -x "$(VENDOR_PREFIX)/bin/protoc-c" \
+                      && find -L "$(VENDOR_PREFIX)/lib" -name 'libprotobuf-c.a' 2>/dev/null | grep -q 'libprotobuf-c.a' \
+                      && echo 1 \
+                      || echo 0)
+ifneq ($(findstring environment,$(origin VENDOR_PREFIX))", "")
+  ifeq ($(HAVE_PROTOBUF_C), 0)
+    $(error User provided 'protobuf-c' installation is not valid!)
+  endif
+else
+  ifeq ($(HAVE_PROTOBUF_C), 0)
+    $(info 'protobuf-c' installation not found, falling back to building from vendor subdir.)
+  endif
+endif
 
 
 # Our one external dependency is libpcre.a, which axiom needs. By default, ask
@@ -53,6 +69,18 @@ HAVE_PROTOBUF_C := $(shell test -x $(VENDOR_PREFIX)/bin/protoc-c && find $(VENDO
 # Note that we need static version because different linux distributions use 
 # different names for shared object, which causes installation to fail.
 PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix)
+HAVE_PCRE := $(shell \
+                test -d "$(PCRE_PREFIX)" \
+                && test -d "$(PCRE_PREFIX)/lib" \
+                && find -L "$(PCRE_PREFIX)/lib" -name 'libpcre.a' 2>/dev/null | grep -q 'libpcre.a' \
+                && echo 1 \
+                || echo 0)
+ifneq ($(findstring environment,$(origin PCRE_PREFIX)), "")
+  ifeq ($(HAVE_PCRE), 0)
+    $(error User provided 'pcre' installation is not valid!)
+  endif
+#else handled in agent/config.m4
+endif
 
 # Whether you have PTHREAD_MUTEX_ERRORCHECK
 #
