@@ -46,7 +46,7 @@ HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libex
 # for install location. This can be overriden by environment.
 # Agent's build system assumes that libprotobuf-c's libdir is %prefix%/lib,
 # includedir is %prefix%/include and bindir is %prefix%/bin.
-PROTOBUF_C_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
+PROTOBUF_C_PREFIX ?= $(shell pkg-config libprotoobuf-c --variable=prefix 2>/dev/null)
 HAVE_PROTOBUF_C := $(shell \
                       test -d "$(PROTOBUF_C_PREFIX)" \
                       && test -d "$(PROTOBUF_C_PREFIX)/bin" \
@@ -72,7 +72,7 @@ endif
 # includedir is %prefix%/include.
 # Note that we need static version because different linux distributions use 
 # different names for shared object, which causes installation to fail.
-PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix)
+PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix 2>/dev/null)
 HAVE_PCRE := $(shell \
                 test -d "$(PCRE_PREFIX)" \
                 && test -d "$(PCRE_PREFIX)/lib" \
