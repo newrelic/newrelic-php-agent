@@ -14,7 +14,7 @@
 # We need to find where the project's vendored dependencies live for these
 # variables.
 ifeq (0,$(HAVE_PROTOBUF_C))
-PROTOBUF_C_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor/local)
+PROTOBUF_C_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor)/local
 endif
 
 #
