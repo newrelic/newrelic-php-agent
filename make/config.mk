@@ -55,7 +55,7 @@ HAVE_PROTOBUF_C := $(shell \
                       && find -L "$(PROTOBUF_C_PREFIX)/lib" -name 'libprotobuf-c.a' 2>/dev/null | grep -q 'libprotobuf-c.a' \
                       && echo 1 \
                       || echo 0)
-ifneq ($(findstring environment,$(origin PROTOBUF_C_PREFIX))", "")
+ifneq ($(findstring environment,$(origin PROTOBUF_C_PREFIX)), )
   ifeq ($(HAVE_PROTOBUF_C), 0)
     $(error User provided 'protobuf-c' installation is not valid!)
   endif
@@ -79,7 +79,7 @@ HAVE_PCRE := $(shell \
                 && find -L "$(PCRE_PREFIX)/lib" -name 'libpcre.a' 2>/dev/null | grep -q 'libpcre.a' \
                 && echo 1 \
                 || echo 0)
-ifneq ($(findstring environment,$(origin PCRE_PREFIX)), "")
+ifneq ($(findstring environment,$(origin PCRE_PREFIX)), )
   ifeq ($(HAVE_PCRE), 0)
     $(error User provided 'pcre' installation is not valid!)
   endif
