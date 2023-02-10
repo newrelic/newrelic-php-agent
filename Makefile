@@ -108,6 +108,17 @@ echo_config:
 	@echo GIT_COMMIT=$(GIT_COMMIT)
 
 #
+# Print information where do the build dependencies come from
+#
+.PHONY: show-vendors
+show-vendors:
+	@echo ""
+	@echo -----------------------------------------------------------------------
+	@echo "| Using pcre library from $(PCRE_PREFIX) (from $(origin PCRE_PREFIX))"
+	@echo "| Using protobuf-c library from $(VENDOR_PREFIX) (from $(origin VENDOR_PREFIX))"
+	@echo -----------------------------------------------------------------------
+	@echo ""
+#
 # Let's build an agent! Building an agent is a three step process: using phpize
 # to build a configure script, using configure to build a Makefile, and then
 # actually using that Makefile to build the agent extension.
@@ -116,7 +127,7 @@ PHPIZE := phpize
 PHP_CONFIG := php-config
 
 .PHONY: agent
-agent: agent/Makefile
+agent: show-vendors agent/Makefile
 	$(MAKE) -C agent
 
 agent/configure: agent/config.m4 agent/Makefile.frag
