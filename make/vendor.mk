@@ -14,7 +14,7 @@
 # We need to find where the project's vendored dependencies live for these
 # variables.
 ifeq (0,$(HAVE_PROTOBUF_C))
-VENDOR_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor/local)
+PROTOBUF_C_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor/local)
 endif
 
 #
@@ -23,8 +23,8 @@ endif
 # Note that this does not require protobuf, which is a build time dependency
 # only.
 #
-PROTOBUF_C_CFLAGS := -I$(VENDOR_PREFIX)/include
-PROTOBUF_C_LDFLAGS := -L$(VENDOR_PREFIX)/lib
+PROTOBUF_C_CFLAGS := -I$(PROTOBUF_C_PREFIX)/include
+PROTOBUF_C_LDFLAGS := -L$(PROTOBUF_C_PREFIX)/lib
 # Always link to static library
 PROTOBUF_C_LDLIBS := -l:libprotobuf-c.a
 

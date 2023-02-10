@@ -115,7 +115,7 @@ show-vendors:
 	@echo ""
 	@echo -----------------------------------------------------------------------
 	@echo "| Using pcre library from $(PCRE_PREFIX) (from $(origin PCRE_PREFIX))"
-	@echo "| Using protobuf-c library from $(VENDOR_PREFIX) (from $(origin VENDOR_PREFIX))"
+	@echo "| Using protobuf-c library from $(PROTOBUF_C_PREFIX) (from $(origin PROTOBUF_C_PREFIX))"
 	@echo -----------------------------------------------------------------------
 	@echo ""
 #

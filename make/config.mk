@@ -44,16 +44,16 @@ HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libex
 
 # Whether you have protoc-c and libprotobuf-c.a. By default, ask pkg-config
 # for install location. This can be overriden by environment.
-VENDOR_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
+PROTOBUF_C_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
 HAVE_PROTOBUF_C := $(shell \
-                      test -d "$(VENDOR_PREFIX)" \
-                      && test -d "$(VENDOR_PREFIX)/bin" \
-                      && test -d "$(VENDOR_PREFIX)/lib" \
-                      && test -x "$(VENDOR_PREFIX)/bin/protoc-c" \
-                      && find -L "$(VENDOR_PREFIX)/lib" -name 'libprotobuf-c.a' 2>/dev/null | grep -q 'libprotobuf-c.a' \
+                      test -d "$(PROTOBUF_C_PREFIX)" \
+                      && test -d "$(PROTOBUF_C_PREFIX)/bin" \
+                      && test -d "$(PROTOBUF_C_PREFIX)/lib" \
+                      && test -x "$(PROTOBUF_C_PREFIX)/bin/protoc-c" \
+                      && find -L "$(PROTOBUF_C_PREFIX)/lib" -name 'libprotobuf-c.a' 2>/dev/null | grep -q 'libprotobuf-c.a' \
                       && echo 1 \
                       || echo 0)
-ifneq ($(findstring environment,$(origin VENDOR_PREFIX))", "")
+ifneq ($(findstring environment,$(origin PROTOBUF_C_PREFIX))", "")
   ifeq ($(HAVE_PROTOBUF_C), 0)
     $(error User provided 'protobuf-c' installation is not valid!)
   endif
