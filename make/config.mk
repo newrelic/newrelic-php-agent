@@ -44,6 +44,8 @@ HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libex
 
 # Whether you have protoc-c and libprotobuf-c.a. By default, ask pkg-config
 # for install location. This can be overriden by environment.
+# Agent's build system assumes that libprotobuf-c's libdir is %prefix%/lib,
+# includedir is %prefix%/include and bindir is %prefix%/bin.
 PROTOBUF_C_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
 HAVE_PROTOBUF_C := $(shell \
                       test -d "$(PROTOBUF_C_PREFIX)" \
@@ -66,6 +68,8 @@ endif
 
 # Our one external dependency is libpcre.a, which axiom needs. By default, ask
 # pkg-config for install location. This can be overriden by environment.
+# Agent's build system assumes that pcre's libdir is %prefix%/lib,
+# includedir is %prefix%/include.
 # Note that we need static version because different linux distributions use 
 # different names for shared object, which causes installation to fail.
 PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix)
