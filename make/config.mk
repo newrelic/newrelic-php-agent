@@ -42,16 +42,17 @@ HAVE_BACKTRACE := $(shell $(CC) $(dir $(abspath $(lastword $(MAKEFILE_LIST))))ba
 # Whether you have libexecinfo
 HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libexecinfo.a && echo 1 || echo 0)
 
-# Whether you have protoc-c and libprotobuf-c.a
-# Look in /usr by default but can be overriden from environment)
-VENDOR_PREFIX ?= /usr
+# Whether you have protoc-c and libprotobuf-c.a. By default, ask pkg-config
+# for install location. This can be overriden by environment.
+VENDOR_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix)
 HAVE_PROTOBUF_C := $(shell test -x $(VENDOR_PREFIX)/bin/protoc-c && find $(VENDOR_PREFIX)/lib -name 'libprotobuf-c.a' | grep -q 'libprotobuf-c.a' && echo 1 || echo 0)
 
-# Our one external dependency is libpcre.a, which axiom needs. We'll assume
-# it is installed in the system but allow user to override it. Note that
-# we need static version because different linux distributions use different
-# names for shared object which causes installation to fail.
-PCRE_PREFIX ?= /usr
+
+# Our one external dependency is libpcre.a, which axiom needs. By default, ask
+# pkg-config for install location. This can be overriden by environment.
+# Note that we need static version because different linux distributions use 
+# different names for shared object, which causes installation to fail.
+PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix)
 
 # Whether you have PTHREAD_MUTEX_ERRORCHECK
 #
