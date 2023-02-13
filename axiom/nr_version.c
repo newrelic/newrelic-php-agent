@@ -35,8 +35,9 @@
  *   freesia            03Nov2022 (10.3)
  *   goldenrod          12Dec2022 (10.4)
  *   hydrangea          18Jan2023 (10.5)
+ *   impatiens          13Feb2023 (10.6)
  */
-#define NR_CODENAME "impatiens"
+#define NR_CODENAME "jasmine"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
