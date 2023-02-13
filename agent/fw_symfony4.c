@@ -28,7 +28,7 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
 
   /* Get the event that was given. */
   event = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  
+
   /* Call the original function. */
   NR_PHP_WRAPPER_CALL;
 
@@ -41,8 +41,9 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
 
   /*
    * Get the exception from the event.
-   * Firstly, we check if ExceptionEvent is available - if yes, that means we are using Symfony 5
-  */
+   * Firstly, we check if ExceptionEvent is available - if yes, that means we
+   * are using Symfony 5
+   */
   exception = nr_php_call(event, "getThrowable");
   if (!nr_php_is_zval_valid_object(exception)) {
     exception = nr_php_call(event, "getException");
@@ -55,8 +56,8 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
   }
 
   if (NR_SUCCESS
-      != nr_php_error_record_exception( NRPRG(txn), exception, priority, NULL, 
-                                        &NRPRG(exception_filters) TSRMLS_CC)) {
+      != nr_php_error_record_exception(NRPRG(txn), exception, priority, NULL,
+                                       &NRPRG(exception_filters) TSRMLS_CC)) {
     nrl_verbosedebug(NRL_TXN, "Symfony 4: unable to record exception");
   }
 
@@ -66,6 +67,14 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This entails that the last wrapped call gets to name the
+ * txn but it is overwritable if another better name comes along.
+ */
 NR_PHP_WRAPPER(nr_symfony4_console_application_run) {
   zval* command = NULL;
   zval* input = NULL;
@@ -83,15 +92,15 @@ NR_PHP_WRAPPER(nr_symfony4_console_application_run) {
    */
   input = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_object_instanceof_class(
-      input,
-      "Symfony\\Component\\Console\\Input\\InputInterface" TSRMLS_CC)) {
+          input,
+          "Symfony\\Component\\Console\\Input\\InputInterface" TSRMLS_CC)) {
     goto leave;
   }
 
   command = nr_php_call(input, "getFirstArgument");
   if (nr_php_is_zval_non_empty_string(command)) {
-    nr_txn_set_path("Symfony4", NRPRG(txn), Z_STRVAL_P(command), NR_PATH_TYPE_ACTION,
-                    NR_OK_TO_OVERWRITE);
+    nr_txn_set_path("Symfony4", NRPRG(txn), Z_STRVAL_P(command),
+                    NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
   } else {
     /*
      * Not having any arguments will result in the same behaviour as
@@ -108,6 +117,14 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ *  * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.  See more naming logic
+ * details within the function.
+ */
 NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   zval* event = NULL;
   zval* request = NULL;
@@ -121,11 +138,11 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   /*
    * A high level overview of the logic:
    *
-   * RouterListener::onKernelRequest() receives a GetResponseEvent (RequestEvent in Symfony 5) parameter,
-   * which includes the request object accessible via the getRequest() method.
-   * We want to get the request, then access its attributes: the request
-   * matcher will create a number of internal attributes prefixed by
-   * underscores as part of resolving the controller action.
+   * RouterListener::onKernelRequest() receives a GetResponseEvent (RequestEvent
+   * in Symfony 5) parameter, which includes the request object accessible via
+   * the getRequest() method. We want to get the request, then access its
+   * attributes: the request matcher will create a number of internal attributes
+   * prefixed by underscores as part of resolving the controller action.
    *
    * If the user has given their action method a friendly name via an
    * annotation or controller option, then this is available in _route. This is
@@ -161,7 +178,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
     if (route_rval) {
       if (NR_SUCCESS
           != nr_symfony_name_the_wt_from_zval(route_rval TSRMLS_CC,
-                                               "Symfony 4")) {
+                                              "Symfony 4")) {
         nrl_verbosedebug(
             NRL_TXN, "Symfony 4: Request::get('_route') returned a non-string");
       }
@@ -174,7 +191,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
       if (controller_rval) {
         if (NR_SUCCESS
             != nr_symfony_name_the_wt_from_zval(controller_rval TSRMLS_CC,
-                                                 "Symfony 4")) {
+                                                "Symfony 4")) {
           nrl_verbosedebug(
               NRL_TXN,
               "Symfony 4: Request::get('_controller') returned a non-string");
@@ -219,9 +236,10 @@ void nr_symfony4_enable(TSRMLS_D) {
    * listener service, which is a pretty deep customisation: chances are a user
    * who's doing that is quite capable of naming a transaction by hand.
    */
-  nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\"
-                                    "EventListener\\RouterListener::onKernelRequest"),
-                            nr_symfony4_name_the_wt TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\"
+              "EventListener\\RouterListener::onKernelRequest"),
+      nr_symfony4_name_the_wt TSRMLS_CC);
 
   /*
    * Symfony does a pretty good job of catching errors but that means we
@@ -247,7 +265,14 @@ void nr_symfony4_enable(TSRMLS_D) {
   /*
    * Listen for Symfony commands so we can name those appropriately.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
+      nr_symfony4_console_application_run, NULL, NULL);
+#else
   nr_php_wrap_user_function(
-        NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
-     nr_symfony4_console_application_run TSRMLS_CC);
+      NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
+      nr_symfony4_console_application_run TSRMLS_CC);
+#endif
 }

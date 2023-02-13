@@ -89,8 +89,44 @@
  *    1) before_callback gets called when OAPI triggers the begin function hook.
  *    2) after_callback gets called when OAPI triggers the end function hook.
  *    3) clean_callback gets called in the case of dangling segments that occur
- * because an exception causes the end function hook to NOT be called and thus
- * the clean function resets any variables.
+ *    4) unless explicitly setting any of the above callbacks, the default
+ * callback is set to after_callback. because an exception causes the end
+ * function hook to NOT be called and thus the clean function resets any
+ * variables.
+ *
+ * TXN Naming schemes and understanding how it is affected by function order,
+ * NR_PHP_WRAPPER_CALL, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE
+ *
+ * txn naming has been configured to take into account order in which functions
+ * are processed, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE, and whether it is
+ * called either before or after NR_PHP_WRAPPER_CALL (for pre PHP 8+) or whether
+ * it is called in func_begin or func_end (for PHP 8+ / OAPI). Txn naming scheme
+ * is customized per framework according to its requirements and pecularities.
+ * To determine the txn naming winner in the case of nested functions wrapped
+ * functions:
+ *
+ * 1) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
+ * func_begin AND NR_NOT_OK_TO_OVERWRITE is set THEN the FIRST wrapped function
+ * encountered determines the txn name.
+ *
+ * 2) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
+ * func_begin AND NR_OK_TO_OVERWRITE is set THEN the LAST wrapped function
+ * encountered determines the txn name.
+ *
+ * 3) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
+ * func_end AND NR_NOT_OK_TO_OVERWRITE is set THEN the LAST wrapped function
+ * encountered determines the txn name.
+ *
+ * 4) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
+ * func_end AND NR_OK_TO_OVERWRITE is set THEN the FIRST wrapped function
+ * encountered determines the txn name.
+ *
+ * 5) If there are nested functions that have wrapped functions called before
+ * NR_PHP_WRAPPER_CALL or called in func_begin AND that also have called after
+ * NR_PHP_WRAPPER_CALL or called in func_end if the before call uses
+ * NR_NOT_OK_TO_OVERWRITE, rule 1 occurs; otherwise, the txn naming winner will
+ * be as specified in rule 3 or 4.
+ *
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(

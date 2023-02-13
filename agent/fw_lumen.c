@@ -66,6 +66,13 @@ static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
 /*
  * Core transaction naming logic. Wraps the function that correlates
  * requests to routes
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the last wrapped
+ * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
   zval* route_info = NULL;
@@ -105,7 +112,8 @@ NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
 
   if (NULL != route_name) {
     if (NR_SUCCESS
-        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen", false)) {
+        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen",
+                                          false)) {
       nrl_verbosedebug(NRL_TXN, "Lumen: located route name is a non-string");
     }
   } else {
@@ -139,6 +147,12 @@ NR_PHP_WRAPPER_END
 /*
  * Exception handling logic. Wraps the function that routes
  * exceptions to their respective handlers
+ *
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_lumen_exception) {
   zval* exception = NULL;

@@ -22,6 +22,13 @@
 
 /*
  * Set the Web Transaction (WT) name to "(cached page)"
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_begin it needs to be explicitly set as a before_callback to
+ * ensure OAPI compatibility. This combination entails that the first wrapped
+ * call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal_name_wt_as_cached_page) {
   const char* buf = "(cached page)";
@@ -39,6 +46,12 @@ NR_PHP_WRAPPER_END
 
 /*
  * Name the WT based on the QDrupal QForm name.
+ *  txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_begin it needs to be explicitly set as a before_callback to
+ * ensure OAPI compatibility. This combination entails that the first wrapped
+ * call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal_qdrupal_name_the_wt) {
   zval* arg1 = NULL;
@@ -455,8 +468,9 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
    * available.
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  zval* curr_hook = (zval*)nr_stack_get_top(&NRPRG(drupal_module_invoke_all_hooks));
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  zval* curr_hook
+      = (zval*)nr_stack_get_top(&NRPRG(drupal_module_invoke_all_hooks));
   if (!nr_php_is_zval_non_empty_string(curr_hook)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
@@ -476,18 +490,16 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
     return;
   }
 
-  rv = module_invoke_all_parse_module_and_hook(
-      &module, &module_len, hook_name,
-      hook_len, func);
+  rv = module_invoke_all_parse_module_and_hook(&module, &module_len, hook_name,
+                                               hook_len, func);
 
   if (NR_SUCCESS != rv) {
     return;
   }
 
-  nr_php_wrap_user_function_drupal(
-      nr_php_function_name(func), nr_php_function_name_length(func), module,
-      module_len, hook_name,
-      hook_len TSRMLS_CC);
+  nr_php_wrap_user_function_drupal(nr_php_function_name(func),
+                                   nr_php_function_name_length(func), module,
+                                   module_len, hook_name, hook_len TSRMLS_CC);
 
   nr_free(module);
 }
@@ -733,7 +745,7 @@ leave:
 NR_PHP_WRAPPER_END
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
   (void)wraprec;
   zval* hook_copy = NULL;
@@ -742,19 +754,16 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
 
   hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
   if (nr_php_is_zval_non_empty_string(hook_copy)) {
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks),
-                  hook_copy);
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_states),
-                  (void*)!NULL);
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks), hook_copy);
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_states), (void*)!NULL);
   } else {
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_states),
-                  NULL);
+    nr_stack_push(&NRPRG(drupal_module_invoke_all_states), NULL);
   }
 }
 NR_PHP_WRAPPER_END
 
 static void module_invoke_all_clean_stacks() {
-  if((bool)nr_stack_pop(&NRPRG(drupal_module_invoke_all_states))) {
+  if ((bool)nr_stack_pop(&NRPRG(drupal_module_invoke_all_states))) {
     zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
     nr_php_arg_release(&hook_copy);
   }
@@ -814,18 +823,23 @@ NR_PHP_WRAPPER_END
 void nr_drupal_enable(TSRMLS_D) {
   nr_php_add_call_user_func_array_pre_callback(
       nr_drupal_call_user_func_array_callback TSRMLS_CC);
-  nr_php_wrap_user_function(NR_PSTR("QFormBase::Run"),
-                            nr_drupal_qdrupal_name_the_wt TSRMLS_CC);
-  nr_php_wrap_user_function(NR_PSTR("drupal_page_cache_header"),
-                            nr_drupal_name_wt_as_cached_page TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("drupal_cron_run"),
                             nr_drupal_cron_run TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("QFormBase::Run"), nr_drupal_qdrupal_name_the_wt, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("drupal_page_cache_header"), nr_drupal_name_wt_as_cached_page,
+      NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("drupal_http_request"), nr_drupal_http_request_before,
       nr_drupal_http_request_after, nr_drupal_http_request_clean);
 #else
+  nr_php_wrap_user_function(NR_PSTR("QFormBase::Run"),
+                            nr_drupal_qdrupal_name_the_wt TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("drupal_page_cache_header"),
+                            nr_drupal_name_wt_as_cached_page TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("drupal_http_request"),
                             nr_drupal_http_request_exec TSRMLS_CC);
 #endif
@@ -838,11 +852,11 @@ void nr_drupal_enable(TSRMLS_D) {
     nr_php_wrap_user_function(NR_PSTR("module_invoke"),
                               nr_drupal_wrap_module_invoke TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    nr_php_wrap_user_function_before_after_clean(NR_PSTR("module_invoke_all"),
-                                                 nr_drupal_wrap_module_invoke_all_before,
-                                                 nr_drupal_wrap_module_invoke_all_after,
-                                                 nr_drupal_wrap_module_invoke_all_clean);
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("module_invoke_all"), nr_drupal_wrap_module_invoke_all_before,
+        nr_drupal_wrap_module_invoke_all_after,
+        nr_drupal_wrap_module_invoke_all_clean);
 #else
     nr_php_wrap_user_function(NR_PSTR("module_invoke_all"),
                               nr_drupal_wrap_module_invoke_all TSRMLS_CC);

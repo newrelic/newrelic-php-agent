@@ -154,6 +154,14 @@ out:
 /*
  * Purpose : Name the Drupal 8 transaction based on the return value of
  *           ControllerResolver::getControllerFromDefinition().
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_end no change is needed to ensure OAPI compatibility as it
+ * will use the default func_end after callback. This entails that the last
+ * wrapped call gets to name the txn which corresponds to the naming details
+ * within the function.
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt) {
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
@@ -203,6 +211,14 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the last wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   const char* name = "page_cache";
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
@@ -400,6 +416,14 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This entails that the last wrapped call gets to name the
+ * txn but it is overwritable if another better name comes along.
+ */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_via_symfony) {
   zval* event = NULL;
   zval* request = NULL;
@@ -467,9 +491,17 @@ void nr_drupal8_enable(TSRMLS_D) {
    * the Symfony RouterListener to determine the main controller this
    * request is routed through.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
+              "ner\\RouterListener::onKernelRequest"),
+      nr_drupal8_name_the_wt_via_symfony, NULL, NULL);
+#else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
                                     "ner\\RouterListener::onKernelRequest"),
                             nr_drupal8_name_the_wt_via_symfony TSRMLS_CC);
+#endif
 
   /*
    * The ControllerResolver is the legacy way to name
