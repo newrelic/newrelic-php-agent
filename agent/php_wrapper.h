@@ -89,10 +89,10 @@
  *    1) before_callback gets called when OAPI triggers the begin function hook.
  *    2) after_callback gets called when OAPI triggers the end function hook.
  *    3) clean_callback gets called in the case of dangling segments that occur
+ * because an exception causes the end function hook to NOT be called and thus
+ * the clean function resets any variables.
  *    4) unless explicitly setting any of the above callbacks, the default
- * callback is set to after_callback. because an exception causes the end
- * function hook to NOT be called and thus the clean function resets any
- * variables.
+ * callback is set to after_callback.
  *
  * TXN Naming schemes and understanding how it is affected by function order,
  * NR_PHP_WRAPPER_CALL, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE
