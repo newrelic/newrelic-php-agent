@@ -289,13 +289,13 @@ NR_PHP_WRAPPER_END
  * handler to be completely replaced.
  *
  *  CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
-As such, functionality added in PHP 7.1+ is not well supported.
+ * As such, functionality added in PHP 7.1+ is not well supported.
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
-`NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
-in func_begin it needs to be explicitly set as a before_callback to ensure OAPI
-compatibility.
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure OAPI
+ * compatibility.
  * This entails that the first wrapped call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_cakephp_problem_2) {
