@@ -141,7 +141,7 @@ NR_PHP_WRAPPER_END
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
-`NR_NOT_OK_TO_OVERWRITE`
+ * `NR_NOT_OK_TO_OVERWRITE`
  * This entails that the last wrapped call gets to name the txn.
  * No changes required to ensure OAPI compatibility this corresponds to the
 default way of calling the wrapped function in func_end.
