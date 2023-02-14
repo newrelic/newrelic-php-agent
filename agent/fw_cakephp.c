@@ -137,7 +137,7 @@ NR_PHP_WRAPPER_END
  * with the word "Controller" appended which is what the CakePHP code does).
  *
  * CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
-As such, functionality added in PHP 7.1+ is not well supported.
+ * As such, functionality added in PHP 7.1+ is not well supported.
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
