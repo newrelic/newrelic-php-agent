@@ -144,7 +144,7 @@ NR_PHP_WRAPPER_END
  * `NR_NOT_OK_TO_OVERWRITE`
  * This entails that the last wrapped call gets to name the txn.
  * No changes required to ensure OAPI compatibility this corresponds to the
-default way of calling the wrapped function in func_end.
+ * default way of calling the wrapped function in func_end.
  *
  */
 NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
