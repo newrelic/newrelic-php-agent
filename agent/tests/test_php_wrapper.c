@@ -89,9 +89,6 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(test_name_txn_before_not_ok) {
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
-  nrl_verbosedebug(
-      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
-      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
 
   NR_PHP_WRAPPER_CALL;
 }
@@ -100,9 +97,7 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(test_name_txn_before_ok) {
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
-  nrl_verbosedebug(
-      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
-      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
+
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
@@ -111,9 +106,7 @@ NR_PHP_WRAPPER(test_name_txn_after_not_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
-  nrl_verbosedebug(
-      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
-      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
+
 }
 NR_PHP_WRAPPER_END
 
@@ -121,9 +114,7 @@ NR_PHP_WRAPPER(test_name_txn_after_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
-  nrl_verbosedebug(
-      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
-      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
+
 }
 NR_PHP_WRAPPER_END
 
@@ -151,8 +142,6 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   tlib_php_engine_create("");
   tlib_php_request_start();
   populate_functions();
-
-  nrl_verbosedebug(NRL_TXN, "from %s amber: message is %s", __func__, message);
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
