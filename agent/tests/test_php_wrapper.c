@@ -53,6 +53,11 @@ NR_PHP_WRAPPER(test_clean) {
 }
 NR_PHP_WRAPPER_END
 #endif
+/*
+ * endif to match:
+ * ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+ *  && !defined OVERWRITE_ZEND_EXECUTE_DATA
+ */
 
 NR_PHP_WRAPPER(test_add_array) {
   zval* arg = nr_php_zval_alloc();
@@ -117,9 +122,9 @@ NR_PHP_WRAPPER(test_name_txn_after_ok) {
 NR_PHP_WRAPPER_END
 
 static void populate_functions() {
-  tlib_php_request_eval("function three($a) { return $a; }");
-  tlib_php_request_eval("function two($a) { return three($a); }");
-  tlib_php_request_eval("function one($a) { return two($a); }");
+  tlib_php_request_eval("function three($a) { return $a; }" TSRMLS_CC);
+  tlib_php_request_eval("function two($a) { return three($a); }" TSRMLS_CC);
+  tlib_php_request_eval("function one($a) { return two($a); }" TSRMLS_CC);
 }
 /*
  * This function is meant to wrap/test when only ONE before/after special
