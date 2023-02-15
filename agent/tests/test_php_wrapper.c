@@ -146,9 +146,9 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   nr_php_wrap_user_function_before_after_clean(NR_PSTR("three"), three_before,
                                                three_after, NULL);
 #else
-  void(one_before);
-  void(two_before);
-  void(three_before);
+  (void)one_before;
+  (void)two_before;
+  (void)three_before;
   nr_php_wrap_user_function(NR_PSTR("one"), one_after TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("two"), two_after TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("three"), three_after TSRMLS_CC);
