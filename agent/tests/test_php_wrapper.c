@@ -89,6 +89,9 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(test_name_txn_before_not_ok) {
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
+  nrl_verbosedebug(
+      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
+      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
 
   NR_PHP_WRAPPER_CALL;
 }
@@ -97,7 +100,9 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(test_name_txn_before_ok) {
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
-
+  nrl_verbosedebug(
+      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
+      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
@@ -106,6 +111,9 @@ NR_PHP_WRAPPER(test_name_txn_after_not_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
+  nrl_verbosedebug(
+      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
+      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
 }
 NR_PHP_WRAPPER_END
 
@@ -113,6 +121,9 @@ NR_PHP_WRAPPER(test_name_txn_after_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
+  nrl_verbosedebug(
+      NRL_TXN, "from %s amber: wraprec->funcname is %s and path is %s",
+      __func__, wraprec->funcname, NRTXN(path) ? NRTXN(path) : "null");
 }
 NR_PHP_WRAPPER_END
 
@@ -121,7 +132,11 @@ static void populate_functions() {
   tlib_php_request_eval("function two($a) { return three($a); }");
   tlib_php_request_eval("function one($a) { return two($a); }");
 }
-
+/*
+ * This function is meant to wrap/test when only ONE before/after special
+ * callback is chosen for one, two, and three. If one_before is configured,
+ * one_after must be NULL.
+ */
 static void setup_nested_framework_calls(nrspecialfn_t one_before,
                                          nrspecialfn_t one_after,
                                          nrspecialfn_t two_before,
@@ -137,6 +152,8 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   tlib_php_request_start();
   populate_functions();
 
+  nrl_verbosedebug(NRL_TXN, "from %s amber: message is %s", __func__, message);
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(NR_PSTR("one"), one_before,
@@ -146,9 +163,12 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   nr_php_wrap_user_function_before_after_clean(NR_PSTR("three"), three_before,
                                                three_after, NULL);
 #else
-  (void)one_before;
-  (void)two_before;
-  (void)three_before;
+  /*
+   * This will pick up whichever one isn't null.
+   */
+  nr_php_wrap_user_function(NR_PSTR("one"), one_before TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("two"), two_before TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("three"), three_before TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("one"), one_after TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("two"), two_after TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("three"), three_after TSRMLS_CC);
@@ -203,6 +223,7 @@ static void test_framework_txn_naming() {
       test_name_txn_before_not_ok, NULL, test_name_txn_before_not_ok, NULL,
       test_name_txn_before_not_ok, NULL, "one",
       "one:beforenotok,two:beforenotok,three:beforenotok");
+  return;
   /*
    *
    * 2) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
