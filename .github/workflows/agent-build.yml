@@ -40,38 +40,8 @@ jobs:
     strategy:
       matrix:
         os: [linux]
-        php_ver: ['7.0', '7.1-zts', '7.2', '7.3', '7.4', '8.0', '8.0-zts', '8.1', '8.1-zts']
-        arch: ['x64', 'x86']
-        exclude:
-        # Excludes PHP 5.x, 7.x on linux 32-bit
-        # Excludes PHP 8.x as only 64bit is supported for these versions
-        - os: linux
-          php_ver: '7.0'
-          arch: 'x86'
-        - os: linux
-          php_ver: '7.1-zts'
-          arch: 'x86'
-        - os: linux
-          php_ver: '7.2'
-          arch: 'x86'
-        - os: linux
-          php_ver: '7.3'
-          arch: 'x86'
-        - os: linux
-          php_ver: '7.4'
-          arch: 'x86'
-        - os: linux
-          php_ver: '8.0'
-          arch: 'x86'
-        - os: linux
-          php_ver: '8.0-zts'
-          arch: 'x86'
-        - os: linux
-          php_ver: '8.1'
-          arch: 'x86'
-        - os: linux
-          php_ver: '8.1-zts'
-          arch: 'x86'
+        php_ver: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1']
+        arch: ['x64']
     steps:
       - name: Checkout Repo 
         uses: actions/checkout@v2
