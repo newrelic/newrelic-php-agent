@@ -137,7 +137,7 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   zval* expr = NULL;
   zval* arg = NULL;
 
-  tlib_php_engine_create("");
+  tlib_php_engine_create("" PTSRMLS_CC);
   tlib_php_request_start();
   populate_functions();
 
@@ -171,7 +171,7 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
   nr_php_zval_free(&expr);
   nr_php_zval_free(&arg);
   tlib_php_request_end();
-  tlib_php_engine_destroy();
+  tlib_php_engine_destroy(TSRMLS_C);
 }
 
 /*
