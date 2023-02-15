@@ -131,14 +131,14 @@ static void populate_functions() {
  * callback is chosen for one, two, and three. If one_before is configured,
  * one_after must be NULL.
  */
-static void setup_nested_framework_calls(nrspecialfn_t one_before,
-                                         nrspecialfn_t one_after,
-                                         nrspecialfn_t two_before,
-                                         nrspecialfn_t two_after,
-                                         nrspecialfn_t three_before,
-                                         nrspecialfn_t three_after,
-                                         char* expected_name,
-                                         char* message) {
+static void execute_nested_framework_calls(nrspecialfn_t one_before,
+                                           nrspecialfn_t one_after,
+                                           nrspecialfn_t two_before,
+                                           nrspecialfn_t two_after,
+                                           nrspecialfn_t three_before,
+                                           nrspecialfn_t three_after,
+                                           char* expected_name,
+                                           char* message) {
   zval* expr = NULL;
   zval* arg = NULL;
 
@@ -181,14 +181,47 @@ static void setup_nested_framework_calls(nrspecialfn_t one_before,
 
 /*
  * to customize txn naming per framework, PHP agent uses the order in which
-functions are processed, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE, and whether
-it is called either before or after NR_PHP_WRAPPER_CALL (for pre PHP 8+) or
-whether it is called in func_begin or func_end (for PHP 8+ / OAPI).
+ * (functions are processed, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE, and
+ * whether it is called either before or after NR_PHP_WRAPPER_CALL (for pre PHP
+ * 8+) or whether it is called in func_begin or func_end (for PHP 8+ / OAPI).
  *
  * This test serves to illustrate and test *framework* txn naming conventions
-and how they are affected by calling nr_tx_set path either 1) before
-nr_wrapper_call for preoapi and in func_begin as a before callback in oapi 2)
-after nr_wrapper_call for preoapi and in func_end as an after callback in oapi
+ * and how they are affected by calling nr_tx_set path either 1) before
+ * nr_wrapper_call for preoapi and in func_begin as a before callback in oapi 2)
+ * after nr_wrapper_call for preoapi and in func_end as an after callback in
+ * oapi
+ *
+ * The execution order is as follows:
+ * 1) oapi: `one` before callback OR legacy:any statements before the `one`
+ * PHP_CALL_WRAPPER
+ *
+ *     2) `one` begins execution and calls `two`
+ *
+ *         3) oapi: `two` before callback OR legacy: any statements before the
+ * `two` PHP_CALL_WRAPPER
+ *
+ *              4) `two` begins execution and calls `three`
+ *
+ *                  5) oapi: `three` before callback OR legacy: any statements
+ * before the `three` PHP_CALL_WRAPPER
+ *
+ *                      6) `three` begins execution
+ *
+ *                      7) `three` ends
+ *
+ *                   8) oapi: `three` after callback OR legacy:
+ * any statements after the `three` PHP_CALL_WRAPPER
+ *
+ *               9) `two` ends
+ *
+ *          10) oapi:
+ * `two` after callback OR legacy: any statements after the `two`
+ * PHP_CALL_WRAPPER
+ *
+ *      11) `one` ends
+ *
+ * 11) oapi: `one` after callback OR legacy: any statements after the `one`
+ * PHP_CALL_WRAPPER
  */
 static void test_framework_txn_naming() {
   /*
@@ -211,10 +244,11 @@ static void test_framework_txn_naming() {
    *
    * Expecting `one` to name txn.
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       test_name_txn_before_not_ok, NULL, test_name_txn_before_not_ok, NULL,
       test_name_txn_before_not_ok, NULL, "one",
-      "one:beforenotok,two:beforenotok,three:beforenotok");
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_not_"
+      "overwrite,three:name_before_call:will_not_overwrite");
 
   /*
    *
@@ -227,10 +261,11 @@ static void test_framework_txn_naming() {
    *
    * Expecting `three` to name txn.
    */
-  setup_nested_framework_calls(test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL, "three",
-                               "one:beforeok,two:beforeok,three:beforeok");
+  execute_nested_framework_calls(
+      test_name_txn_before_ok, NULL, test_name_txn_before_ok, NULL,
+      test_name_txn_before_ok, NULL, "three",
+      "one:name_before_call:will_overwrite,two:name_before_call:will_overwrite,"
+      "three:name_before_call:will_overwrite");
   /*
    *
    * 3) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
@@ -241,10 +276,11 @@ static void test_framework_txn_naming() {
    *
    * Expecting `three` to name txn.
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       NULL, test_name_txn_after_not_ok, NULL, test_name_txn_after_not_ok, NULL,
       test_name_txn_after_not_ok, "three",
-      "one:afternotok,two:afternotok,three:afternotok");
+      "one:name_after_call:will_not_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_after_call:will_not_overwrite");
 
   /*
    * 4) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
@@ -256,9 +292,11 @@ static void test_framework_txn_naming() {
    *
    * Expecting `one` to name txn.
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       NULL, test_name_txn_after_ok, NULL, test_name_txn_after_ok, NULL,
-      test_name_txn_after_ok, "one", "one:afterok,two:afterok,three:afterok");
+      test_name_txn_after_ok, "one",
+      "one:name_after_call:will_overwrite,two:name_after_call:will_overwrite,"
+      "three:name_after_call:will_overwrite");
 
   /*
    * 5) If there are nested functions that have wrapped functions called before
@@ -290,10 +328,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_ok, NULL,
-                               test_name_txn_after_ok, "two",
-                               "one:afternotok,two:afterok,three:afterok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_not_ok, NULL, test_name_txn_after_ok, NULL,
+      test_name_txn_after_ok, "two",
+      "one:name_after_call:will_not_overwrite,two:name_after_call:will_"
+      "overwrite,three:name_after_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_NOT_OK_TO_OVERWRITE
@@ -302,10 +341,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_ok, "three",
-                               "one:afternotok,two:afternotok,three:afterok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_not_ok, NULL, test_name_txn_after_not_ok, NULL,
+      test_name_txn_after_ok, "three",
+      "one:name_after_call:will_not_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_after_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_NOT_OK_TO_OVERWRITE
@@ -314,10 +354,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok, "two",
-                               "one:afternotok,two:afterok,three:afternotok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_not_ok, NULL, test_name_txn_after_ok, NULL,
+      test_name_txn_after_not_ok, "two",
+      "one:name_after_call:will_not_overwrite,two:name_after_call:will_"
+      "overwrite,three:name_after_call:will_not_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -326,10 +367,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_ok, "one",
-                               "one:afterok,two:afternotok,three:afterok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_ok, NULL, test_name_txn_after_not_ok, NULL,
+      test_name_txn_after_ok, "one",
+      "one:name_after_call:will_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_after_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -338,10 +380,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok, NULL,
-                               test_name_txn_after_not_ok, "one",
-                               "one:afterok,two:afternotok,three:afternotok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_ok, NULL, test_name_txn_after_not_ok, NULL,
+      test_name_txn_after_not_ok, "one",
+      "one:name_after_call:will_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_after_call:will_not_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -350,10 +393,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_ok, NULL,
-                               test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok, "one",
-                               "one:afterok,two:afterok,three:afternotok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_ok, NULL, test_name_txn_after_ok, NULL,
+      test_name_txn_after_not_ok, "one",
+      "one:name_after_call:will_overwrite,two:name_after_call:will_overwrite,"
+      "three:name_after_call:will_not_overwrite");
 
   /*
    * Before only mixes of NR_NOT_OK_TO_OVERWRITE/NR_NOT_OK_TO_OVERWRITE
@@ -366,10 +410,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(test_name_txn_before_not_ok, NULL,
-                               test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL, "three",
-                               "one:beforenotok,two:beforeok,three:beforeok");
+  execute_nested_framework_calls(
+      test_name_txn_before_not_ok, NULL, test_name_txn_before_ok, NULL,
+      test_name_txn_before_ok, NULL, "three",
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -378,10 +423,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       test_name_txn_before_not_ok, NULL, test_name_txn_before_not_ok, NULL,
       test_name_txn_before_ok, NULL, "three",
-      "one:beforenotok,two:beforenotok,three:beforeok");
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_not_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -390,10 +436,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       test_name_txn_before_not_ok, NULL, test_name_txn_before_ok, NULL,
       test_name_txn_before_not_ok, NULL, "two",
-      "one:beforenotok,two:beforeok,three:beforenotok");
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_"
+      "overwrite,three:name_before_call:will_not_overwrite");
 
   /*
    * special function for one is called before and uses NR_OK_TO_OVERWRITE
@@ -402,10 +449,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(test_name_txn_before_ok, NULL,
-                               test_name_txn_before_not_ok, NULL,
-                               test_name_txn_before_ok, NULL, "three",
-                               "one:beforeok,two:beforenotok,three:beforeok");
+  execute_nested_framework_calls(
+      test_name_txn_before_ok, NULL, test_name_txn_before_not_ok, NULL,
+      test_name_txn_before_ok, NULL, "three",
+      "one:name_before_call:will_overwrite,two:name_before_call:will_not_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_OK_TO_OVERWRITE
@@ -414,10 +462,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(
+  execute_nested_framework_calls(
       test_name_txn_before_ok, NULL, test_name_txn_before_not_ok, NULL,
       test_name_txn_before_not_ok, NULL, "one",
-      "one:beforeok,two:beforenotok,three:beforenotok");
+      "one:name_before_call:will_overwrite,two:name_before_call:will_not_"
+      "overwrite,three:name_before_call:will_not_overwrite");
 
   /*
    * special function for one is called before and uses NR_OK_TO_OVERWRITE
@@ -426,10 +475,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL,
-                               test_name_txn_before_not_ok, NULL, "two",
-                               "one:beforeok,two:beforeok,three:beforenotok");
+  execute_nested_framework_calls(
+      test_name_txn_before_ok, NULL, test_name_txn_before_ok, NULL,
+      test_name_txn_before_not_ok, NULL, "two",
+      "one:name_before_call:will_overwrite,two:name_before_call:will_overwrite,"
+      "three:name_before_call:will_not_overwrite");
 
   /*
    * Before/After and NR_NOT_OK_TO_OVERWRITE/NR_NOT_OK_TO_OVERWRITE mixes
@@ -442,10 +492,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_not_ok,
-                               test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL, "three",
-                               "one:afternotok,two:beforeok,three:beforeok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_not_ok, test_name_txn_before_ok, NULL,
+      test_name_txn_before_ok, NULL, "three",
+      "one:name_after_call:will_not_overwrite,two:name_before_call:will_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -454,10 +505,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_ok,
-                               test_name_txn_before_ok, NULL,
-                               test_name_txn_before_ok, NULL, "one",
-                               "one:afterok,two:beforeok,three:beforeok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_ok, test_name_txn_before_ok, NULL,
+      test_name_txn_before_ok, NULL, "one",
+      "one:name_after_call:will_overwrite,two:name_before_call:will_overwrite,"
+      "three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -466,10 +518,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(test_name_txn_before_not_ok, NULL, NULL,
-                               test_name_txn_after_not_ok,
-                               test_name_txn_before_ok, NULL, "three",
-                               "one:beforenotok,two:afternotok,three:beforeok");
+  execute_nested_framework_calls(
+      test_name_txn_before_not_ok, NULL, NULL, test_name_txn_after_not_ok,
+      test_name_txn_before_ok, NULL, "three",
+      "one:name_before_call:will_not_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -478,10 +531,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(test_name_txn_before_not_ok, NULL, NULL,
-                               test_name_txn_after_ok, test_name_txn_before_ok,
-                               NULL, "two",
-                               "one:beforenotok,two:afterok,three:beforeok");
+  execute_nested_framework_calls(
+      test_name_txn_before_not_ok, NULL, NULL, test_name_txn_after_ok,
+      test_name_txn_before_ok, NULL, "two",
+      "one:name_before_call:will_not_overwrite,two:name_after_call:will_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -490,10 +544,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(test_name_txn_before_not_ok, NULL,
-                               test_name_txn_before_ok, NULL, NULL,
-                               test_name_txn_after_not_ok, "two",
-                               "one:beforenotok,two:beforeok,three:afternotok");
+  execute_nested_framework_calls(
+      test_name_txn_before_not_ok, NULL, test_name_txn_before_ok, NULL, NULL,
+      test_name_txn_after_not_ok, "two",
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_"
+      "overwrite,three:name_after_call:will_not_overwrite");
 
   /*
    * special function for one is called before and uses NR_NOT_OK_TO_OVERWRITE
@@ -502,10 +557,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `three`
    */
-  setup_nested_framework_calls(test_name_txn_before_not_ok, NULL,
-                               test_name_txn_before_ok, NULL, NULL,
-                               test_name_txn_after_ok, "three",
-                               "one:beforenotok,two:beforeok,three:afterok");
+  execute_nested_framework_calls(
+      test_name_txn_before_not_ok, NULL, test_name_txn_before_ok, NULL, NULL,
+      test_name_txn_after_ok, "three",
+      "one:name_before_call:will_not_overwrite,two:name_before_call:will_"
+      "overwrite,three:name_after_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -514,10 +570,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `one`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok,
-                               test_name_txn_before_ok, NULL, "one",
-                               "one:afterok,two:afternotok,three:beforeok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_ok, NULL, test_name_txn_after_not_ok,
+      test_name_txn_before_ok, NULL, "one",
+      "one:name_after_call:will_overwrite,two:name_after_call:will_not_"
+      "overwrite,three:name_before_call:will_overwrite");
 
   /*
    * special function for one is called after and uses NR_OK_TO_OVERWRITE
@@ -526,10 +583,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(NULL, test_name_txn_after_not_ok,
-                               test_name_txn_before_not_ok, NULL, NULL,
-                               test_name_txn_after_not_ok, "two",
-                               "one:afterok,two:beforenotok,three:afternotok");
+  execute_nested_framework_calls(
+      NULL, test_name_txn_after_not_ok, test_name_txn_before_not_ok, NULL, NULL,
+      test_name_txn_after_not_ok, "two",
+      "one:name_after_call:will_overwrite,two:name_before_call:will_not_"
+      "overwrite,three:name_after_call:will_not_overwrite");
 
   /*
    * special function for one is called before and uses NR_OK_TO_OVERWRITE
@@ -538,10 +596,11 @@ static void test_framework_txn_naming() {
    *
    * expect txn to be named `two`
    */
-  setup_nested_framework_calls(test_name_txn_before_ok, NULL, NULL,
-                               test_name_txn_after_ok, NULL,
-                               test_name_txn_after_not_ok, "two",
-                               "one:beforeok,two:afterok,three:afternotok");
+  execute_nested_framework_calls(
+      test_name_txn_before_ok, NULL, NULL, test_name_txn_after_ok, NULL,
+      test_name_txn_after_not_ok, "two",
+      "one:name_before_call:will_overwrite,two:name_after_call:will_overwrite,"
+      "three:name_after_call:will_not_overwrite");
 }
 
 static void test_add_arg(TSRMLS_D) {
