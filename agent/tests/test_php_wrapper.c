@@ -106,7 +106,6 @@ NR_PHP_WRAPPER(test_name_txn_after_not_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
-
 }
 NR_PHP_WRAPPER_END
 
@@ -114,7 +113,6 @@ NR_PHP_WRAPPER(test_name_txn_after_ok) {
   NR_PHP_WRAPPER_CALL;
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_OK_TO_OVERWRITE);
-
 }
 NR_PHP_WRAPPER_END
 
@@ -212,7 +210,7 @@ static void test_framework_txn_naming() {
       test_name_txn_before_not_ok, NULL, test_name_txn_before_not_ok, NULL,
       test_name_txn_before_not_ok, NULL, "one",
       "one:beforenotok,two:beforenotok,three:beforenotok");
-  return;
+
   /*
    *
    * 2) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
