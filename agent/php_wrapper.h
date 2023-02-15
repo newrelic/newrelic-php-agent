@@ -106,27 +106,34 @@
  * functions:
  *
  * 1) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
- * func_begin AND NR_NOT_OK_TO_OVERWRITE is set THEN the FIRST wrapped function
- * encountered determines the txn name.
+ * func_begin AND NR_NOT_OK_TO_OVERWRITE is set for all THEN the FIRST wrapped
+ * function encountered determines the txn name.
  *
  * 2) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
- * func_begin AND NR_OK_TO_OVERWRITE is set THEN the LAST wrapped function
- * encountered determines the txn name.
+ * func_begin then the LAST wrapped function with NR_OK_TO_OVERWRITE determines
+ * the txn name.
  *
  * 3) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
- * func_end AND NR_NOT_OK_TO_OVERWRITE is set THEN the LAST wrapped function
- * encountered determines the txn name.
+ * func_end AND NR_NOT_OK_TO_OVERWRITE is set for all THEN the LAST wrapped
+ * function encountered determines the txn name.
  *
  * 4) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
- * func_end AND NR_OK_TO_OVERWRITE is set THEN the FIRST wrapped function
- * encountered determines the txn name.
+ * func_end then the FIRST wrapped function with NR_OK_TO_OVERWRITE determines
+ * the txn name.
  *
  * 5) If there are nested functions that have wrapped functions called before
  * NR_PHP_WRAPPER_CALL or called in func_begin AND that also have called after
- * NR_PHP_WRAPPER_CALL or called in func_end if the before call uses
- * NR_NOT_OK_TO_OVERWRITE, rule 1 occurs; otherwise, the txn naming winner will
- * be as specified in rule 3 or 4.
+ * NR_PHP_WRAPPER_CALL or called in func_end if the after call uses
+ * NR_NOT_OK_TO_OVERWRITE, then rule 1 or 2 applies depending on whether a
+ * before_func used NR_NOT_OK_TO_OVERWRITE or NR_NOT_TO_OVERWRITE.
  *
+ * 6) If there are nested functions that have wrapped functions called before
+ * NR_PHP_WRAPPER_CALL or called in func_begin AND that also have called after
+ * NR_PHP_WRAPPER_CALL or called in func_end if the after call uses
+ * NR_OK_TO_OVERWRITE, then rule 4 applies.
+ *
+ * See agent/tests/test_php_wrapper.c `function test_framework_txn_naming` to
+ * see how it works with frameworks.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
