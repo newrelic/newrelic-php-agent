@@ -210,18 +210,17 @@ static void execute_nested_framework_calls(nrspecialfn_t one_before,
  *
  *                      7) `three` ends
  *
- *                   8) oapi: `three` after callback OR legacy:
- * any statements after the `three` PHP_CALL_WRAPPER
+ *                   8) oapi: `three` after callback OR legacy: any statements
+ * after the `three` PHP_CALL_WRAPPER
  *
  *               9) `two` ends
  *
- *          10) oapi:
- * `two` after callback OR legacy: any statements after the `two`
- * PHP_CALL_WRAPPER
+ *          10) oapi:`two` after callback OR legacy: any statements after the
+ * `two` PHP_CALL_WRAPPER
  *
  *      11) `one` ends
  *
- * 11) oapi: `one` after callback OR legacy: any statements after the `one`
+ * 12) oapi: `one` after callback OR legacy: any statements after the `one`
  * PHP_CALL_WRAPPER
  */
 static void test_framework_txn_naming() {
