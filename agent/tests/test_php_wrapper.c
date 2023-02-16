@@ -1129,10 +1129,9 @@ void test_main(void* p NRUNUSED) {
    * create/destroys, but works on more recent OSs.
    */
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  if (0 != nr_strcmp(PHP_VERSION, "8.0.2"))
-    || (0 != nr_strcmp(PHP_VERSION, "8.0.0")) {
-      test_framework_txn_naming();
-    }
+  if (PHP_VERSION_ID < 80000 && PHP_VERSION_ID > 80002) {
+    test_framework_txn_naming();
+  }
 #endif
 }
 #else  /* PHP 7.3 */
