@@ -15,6 +15,13 @@
 
 /*
  * Set the web transaction name from the action.
+ *
+ * * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_begin it needs to be explicitly set as a before_callback to
+ * ensure OAPI compatibility. This entails that the first wrapped call gets to
+ * name the txn.
  */
 
 NR_PHP_WRAPPER(nr_yii_runWithParams_wrapper) {
@@ -82,8 +89,18 @@ NR_PHP_WRAPPER_END
  * Enable Yii instrumentation.
  */
 void nr_yii_enable(TSRMLS_D) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("CAction::runWithParams"), nr_yii_runWithParams_wrapper, NULL,
+      NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("CInlineAction::runWithParams"), nr_yii_runWithParams_wrapper,
+      NULL, NULL);
+#else
   nr_php_wrap_user_function(NR_PSTR("CAction::runWithParams"),
                             nr_yii_runWithParams_wrapper TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("CInlineAction::runWithParams"),
                             nr_yii_runWithParams_wrapper TSRMLS_CC);
+#endif
 }
