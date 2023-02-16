@@ -91,6 +91,7 @@ NR_PHP_WRAPPER(test_add_2_arrays) {
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 NR_PHP_WRAPPER(test_name_txn_before_not_ok) {
   nr_txn_set_path("UnitTest", NRPRG(txn), wraprec->funcname,
                   NR_PATH_TYPE_ACTION, NR_NOT_OK_TO_OVERWRITE);
@@ -602,6 +603,7 @@ static void test_framework_txn_naming() {
       "one:name_before_call:will_overwrite,two:name_after_call:will_overwrite,"
       "three:name_after_call:will_not_overwrite");
 }
+#endif /* ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO */
 
 static void test_add_arg(TSRMLS_D) {
   zval* expr = NULL;
