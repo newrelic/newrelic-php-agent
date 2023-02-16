@@ -1128,7 +1128,8 @@ void test_main(void* p NRUNUSED) {
    * The Jenkins PHP 7.3 nodes are unable to handle the multiple
    * create/destroys, but works on more recent OSs.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO \
+    || ZEND_MODULE_API_NO == ZEND_8_0_X_API_NO
   test_framework_txn_naming();
 #endif
 }
