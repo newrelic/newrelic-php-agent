@@ -15,6 +15,7 @@ GIT   ?= git
 include make/config.mk
 include make/vendor.mk
 include make/version.mk
+include make/php_versions.mk
 
 # Include the secrets file if it exists, but if it doesn't, that's OK too.
 -include make/secrets.mk
@@ -328,7 +329,7 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 
 .PHONY: integration
 integration: Makefile daemon lasp-test-all integration-events-limits
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	for PHP in $(PHP_VERSION_LIST); do \
           echo; echo "# PHP=$${PHP}"; \
 	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
 	  echo "# PHP=$${PHP}"; \
@@ -354,7 +355,7 @@ integration-events-limits: daemon
 	custom_limits_tests[7000]=583; \
 	custom_limits_tests[30000]=2500; \
 	custom_limits_tests[100000]=8333; \
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	for PHP in $(PHP_VERSION_LIST); do \
           echo; echo "# PHP=$${PHP}"; \
 	      for custom_max in "$${!custom_limits_tests[@]}"; do \
 	          collector_limit=$${custom_limits_tests[$$custom_max]}; \
@@ -367,7 +368,7 @@ integration-events-limits: daemon
 
 	# test for invalid value (-1) and (1000000)
 	# Should use default (30000) for -1 and max (100000) for 1000000
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 100000 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_invalid_toolarge_limit.php || exit 1; \
@@ -379,7 +380,7 @@ integration-events-limits: daemon
 
 	# also run a test where limit is set to 0
 	# default value is used
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 0 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_0_limit.php || exit 1; \
@@ -388,7 +389,7 @@ integration-events-limits: daemon
 
 	# also run a test where no agent custom event limit is specified and verify
 	# default value is used
-	for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 30000 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_not_specified.php || exit 1; \
@@ -454,7 +455,7 @@ lasp-test: daemon
 	if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
 	@if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
 	if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
-	@for PHP in $${PHPS:-8.1 8.0 7.4 7.3 7.2 7.1 7.0 5.6 5.5}; do \
+	@for PHP in $(PHP_VERSION_LIST); do \
           echo; echo "# PHP=$${PHP}"; \
           NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
         -license $(LICENSE_lasp_$(subst -,_,$(SUITE_LASP))) \
