@@ -1087,6 +1087,13 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
     goto end;
   }
 
+  if (!nr_php_object_has_method(arg_request, "method" TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                      "%s: Request object has no 'method' function. Bailing.",
+                      __func__);
+    goto end;
+  }
+
   /*
    * Call the ->method() method on the request and marshall the
    * string to something we can compare.
@@ -1102,6 +1109,13 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
   if (0
       != nr_strnicmp("OPTIONS", Z_STRVAL_P(http_method),
                      Z_STRLEN_P(http_method))) {
+    goto end;
+  }
+
+  if (!nr_php_object_has_method(*route, "getName" TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                      "%s: Request object has no 'getName' function. Bailing.",
+                      __func__);
     goto end;
   }
 
@@ -1122,6 +1136,13 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
    */
   new_name = nr_php_zval_alloc();
   nr_php_zval_str(new_name, "_CORS_OPTIONS");
+
+  if (!nr_php_object_has_method(*route, "name" TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                      "%s: Request object has no 'name' function. Bailing.",
+                      __func__);
+    goto end;
+  }
 
   nr_php_call(*route, "name", new_name);
 
