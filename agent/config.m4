@@ -101,13 +101,34 @@ if test "$PHP_NEWRELIC" = "yes"; then
     AC_MSG_ERROR([unknown or unsupported system])
   fi
 
-  PHP_CHECK_LIBRARY(pcre, pcre_exec, [
-    PHP_EVAL_INCLINE($PHP_PCRE)
-    NEWRELIC_SHARED_LIBADD="-L$PHP_PCRE -l:libpcre.a $NEWRELIC_SHARED_LIBADD"
+  dnl Check for libpcre - an external dependency, which axiom needs. Use
+  dnl install location provided via --with-pcre.
+  PCRE_INCLINE=$PHP_PCRE/include
+  if echo "$PHP_PCRE" | grep -q /opt/nr/camp; then
+    dnl Legacy agent's build system quirks:
+    dnl libpcre provided by NRCAMP as libnrpcre is not position independent.
+    dnl Since the agent is a shared object it needs to be position independent
+    dnl and therefore requires linking to the position independent version 
+    dnl of libpcre which in NRCAMP is available as libnrpcre-pic (a symlink
+    dnl to libpcre-pic).
+    PCRE_LIBLINE=-lnrpcre-pic
+    PCRE_LIBRARY=nrpcre-pic
+  else
+    dnl Force the agent to use static version of pcre library. This avoids the
+    dnl issue with runtime dependency on libpcre shared object that is hard to
+    dnl satisfy universally because different Linux distributions use different
+    dnl name of the shared object: libpcre.so or libpcre3.so.
+    PCRE_LIBLINE="-L$PHP_PCRE -l:libpcre.a"
+    PCRE_LIBRARY=pcre
+  fi
+
+  PHP_CHECK_LIBRARY($PCRE_LIBRARY, pcre_exec, [
+    PHP_EVAL_INCLINE($PCRE_INCLINE)
+    PHP_EVAL_LIBLINE($PCRE_LIBLINE, NEWRELIC_SHARED_LIBADD)
   ],[
     AC_MSG_ERROR([PCRE not found])
   ],[
-    -L$PHP_PCRE/lib
+    $PCRE_LIBLINE
   ])
 
   dnl Check for axiom.
