@@ -5,29 +5,29 @@
  */
 
 /*DESCRIPTION
-The agent should report metrics when memcache keys are replaced using the
-Memcache procedural api.
+The agent should report metrics for Memcache::replace().
 */
 
 /*SKIPIF
 <?php require('skipif.inc');
 
-if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: test for PHP 8.2 separate\n");
+if (version_compare(PHP_VERSION, "8.2", "<")) {
+  die("skip: PHP 8.2 exclusive\n");
 }
 */
 
 /*INI
 */
 
-/*EXPECT
+/*EXPECT_REGEX
+^\s*Deprecated: Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - add key 1
 ok - add key 2
 ok - add key 3
-ok - replace key 1 (2 args)
-ok - replace key 2 (3 args)
-ok - replace key 3 (4 args)
+ok - replace key 1 \(2 args\)
+ok - replace key 2 \(3 args\)
+ok - replace key 3 \(4 args\)
 ok - check values
 ok - delete key 1
 ok - delete key 2
@@ -66,7 +66,12 @@ ok - delete key 3
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/all"},                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/allOther"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -77,13 +82,14 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/config.php');
 
-define('KEYLEN', 8);   // should be long enough to prevent collisions
+define('KEYLEN', 8);   /* Should be long enough to prevent collisions. */
 
 function test_memcache() {
   global $MEMCACHE_HOST, $MEMCACHE_PORT;
 
-  $memcache = memcache_connect($MEMCACHE_HOST, $MEMCACHE_PORT);
-  tap_not_equal(false, $memcache, 'connect to server');
+  $memcache = new Memcache();
+  $memcache->addServer($MEMCACHE_HOST, $MEMCACHE_PORT);     /* Prevents a warning during connect. */
+  tap_assert($memcache->connect($MEMCACHE_HOST), 'connect to server');
 
   $keys = array(randstr(KEYLEN), randstr(KEYLEN), randstr(KEYLEN));
 
@@ -99,22 +105,22 @@ function test_memcache() {
     $keys[2] => 'ccc (after)'
   );
 
-  tap_assert(memcache_add($memcache, $keys[0], $before[$keys[0]]), 'add key 1');
-  tap_assert(memcache_add($memcache, $keys[1], $before[$keys[1]]), 'add key 2');
-  tap_assert(memcache_add($memcache, $keys[2], $before[$keys[2]]), 'add key 3');
+  tap_assert($memcache->add($keys[0], $before[$keys[0]]), 'add key 1');
+  tap_assert($memcache->add($keys[1], $before[$keys[1]]), 'add key 2');
+  tap_assert($memcache->add($keys[2], $before[$keys[2]]), 'add key 3');
 
-  tap_assert(memcache_replace($memcache, $keys[0], $after[$keys[0]]), 'replace key 1 (2 args)');
-  tap_assert(memcache_replace($memcache, $keys[1], $after[$keys[1]], false), 'replace key 2 (3 args)');
-  tap_assert(memcache_replace($memcache, $keys[2], $after[$keys[2]], false, 30), 'replace key 3 (4 args)');
+  tap_assert($memcache->replace($keys[0], $after[$keys[0]]), 'replace key 1 (2 args)');
+  tap_assert($memcache->replace($keys[1], $after[$keys[1]], false), 'replace key 2 (3 args)');
+  tap_assert($memcache->replace($keys[2], $after[$keys[2]], false, 30), 'replace key 3 (4 args)');
 
-  // all keys should be present and updated
-  tap_equal_unordered($after, memcache_get($memcache, $keys), 'check values');
+  /* All keys should be present and updated. */
+  tap_equal_unordered($after, $memcache->get($keys), 'check values');
 
-  tap_assert(memcache_delete($memcache, $keys[0]), 'delete key 1');
-  tap_assert(memcache_delete($memcache, $keys[1]), 'delete key 2');
-  tap_assert(memcache_delete($memcache, $keys[2]), 'delete key 3');
+  tap_assert($memcache->delete($keys[0]), 'delete key 1');
+  tap_assert($memcache->delete($keys[1]), 'delete key 2');
+  tap_assert($memcache->delete($keys[2]), 'delete key 3');
 
-  memcache_close($memcache);
+  $memcache->close();
 }
 
 test_memcache();

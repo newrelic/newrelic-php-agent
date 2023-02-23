@@ -5,29 +5,30 @@
  */
 
 /*DESCRIPTION
-The agent should report metrics for Memcache::replace().
+The agent should report metrics for Memcache::set().
 */
 
 /*SKIPIF
 <?php require('skipif.inc');
 
-if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: test for PHP 8.2 separate\n");
+if (version_compare(PHP_VERSION, "8.2", "<")) {
+  die("skip: PHP 8.2 exclusive\n");
 }
 */
 
 /*INI
 */
 
-/*EXPECT
+/*EXPECT_REGEX
+^\s*Deprecated: Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
-ok - add key 1
-ok - add key 2
-ok - add key 3
-ok - replace key 1 (2 args)
-ok - replace key 2 (3 args)
-ok - replace key 3 (4 args)
-ok - check values
+ok - set key 1 \(2 args\)
+ok - get key 1
+ok - set key 2 \(3 args\)
+ok - get key 2
+ok - set key 3 \(4 args\)
+ok - get key 3
+ok - multi-get
 ok - delete key 1
 ok - delete key 2
 ok - delete key 3
@@ -45,27 +46,29 @@ ok - delete key 3
     [{"name":"Datastore/allOther"},                                   [11, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                              [11, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/allOther"},                         [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/add"},                    [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/add",
-      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/connect"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/connect",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete"},                 [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete",
       "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/get"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/get"},                    [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/replace"},                [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/replace",
+      "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/set"},                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/set",
       "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/all"},                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/allOther"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -76,40 +79,41 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/config.php');
 
-define('KEYLEN', 8);   /* Should be long enough to prevent collisions. */
+define('KEYLEN', 8);   // should be long enough to prevent collisions.
 
 function test_memcache() {
   global $MEMCACHE_HOST, $MEMCACHE_PORT;
 
   $memcache = new Memcache();
-  $memcache->addServer($MEMCACHE_HOST, $MEMCACHE_PORT);     /* Prevents a warning during connect. */
+  $memcache->addServer($MEMCACHE_HOST, $MEMCACHE_PORT);   // prevents warning during connect
   tap_assert($memcache->connect($MEMCACHE_HOST), 'connect to server');
 
-  $keys = array(randstr(KEYLEN), randstr(KEYLEN), randstr(KEYLEN));
-
-  $before = array(
-    $keys[0] => 'aaa (before)',
-    $keys[1] => 'bbb (before)',
-    $keys[2] => 'ccc (before)'
+  $data = array(
+    randstr(KEYLEN) => 'aaa',
+    randstr(KEYLEN) => 'bbb',
+    randstr(KEYLEN) => 'ccc'
   );
 
-  $after = array(
-    $keys[0] => 'aaa (after)',
-    $keys[1] => 'bbb (after)',
-    $keys[2] => 'ccc (after)'
-  );
+  $keys = array_keys($data);
 
-  tap_assert($memcache->add($keys[0], $before[$keys[0]]), 'add key 1');
-  tap_assert($memcache->add($keys[1], $before[$keys[1]]), 'add key 2');
-  tap_assert($memcache->add($keys[2], $before[$keys[2]]), 'add key 3');
+  /* Two argument form */
+  list($k1, $v1) = array($keys[0], $data[$keys[0]]);
+  tap_assert($memcache->set($k1, $v1), 'set key 1 (2 args)');
+  tap_equal($v1, $memcache->get($k1), 'get key 1');
 
-  tap_assert($memcache->replace($keys[0], $after[$keys[0]]), 'replace key 1 (2 args)');
-  tap_assert($memcache->replace($keys[1], $after[$keys[1]], false), 'replace key 2 (3 args)');
-  tap_assert($memcache->replace($keys[2], $after[$keys[2]], false, 30), 'replace key 3 (4 args)');
+  /* Three argument form */
+  list($k2, $v2) = array($keys[1], $data[$keys[1]]);
+  tap_assert($memcache->set($k2, $v2, false), 'set key 2 (3 args)');
+  tap_equal($v2, $memcache->get($k2), 'get key 2');
 
-  /* All keys should be present and updated. */
-  tap_equal_unordered($after, $memcache->get($keys), 'check values');
+  /* Four argument form */
+  list($k3, $v3) = array($keys[2], $data[$keys[2]]);
+  tap_assert($memcache->set($k3, $v3, false, 30), 'set key 3 (4 args)');
+  tap_equal($v3, $memcache->get($k3), 'get key 3');
 
+  tap_equal_unordered($data, $memcache->get($keys), 'multi-get');
+
+  /* Only test the one argument form, the two argument form is deprecated. */
   tap_assert($memcache->delete($keys[0]), 'delete key 1');
   tap_assert($memcache->delete($keys[1]), 'delete key 2');
   tap_assert($memcache->delete($keys[2]), 'delete key 3');

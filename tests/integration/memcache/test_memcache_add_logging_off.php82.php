@@ -12,15 +12,19 @@ procedural api.
 /*SKIPIF
 <?php require('skipif.inc');
 
-if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: test for PHP 8.2 separate\n");
+if (version_compare(PHP_VERSION, "8.2", "<")) {
+  die("skip: PHP 8.2 exclusive\n");
 }
 */
 
 /*INI
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
-/*EXPECT
+/*EXPECT_REGEX
+^\s*Deprecated: Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - add key 1
 ok - add key 2
@@ -60,8 +64,13 @@ ok - delete key 3
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/all"},                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Errors/allOther"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
