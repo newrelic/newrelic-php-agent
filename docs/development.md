@@ -123,7 +123,13 @@ Both unit tests can be run under Valgrind to check for memory issues:
 make valgrind
 ```
 
-**NOTE:** Although agent integration tests are available, all tests will fail due to internal licensing requirements. This will be changed in the future and will allow integration tests to be run locally by anyone.
+To run integration tests, run:
+
+`make integration`
+
+**NOTE:** Although agent integration tests are available, they require a valid New Relic license key to run.  Please use a valid license and add it as an environmental variable `NEWRELIC_LICENSE_KEY`. Sign up at https://newrelic.com/signup for a free account.
+
+**NOTE:** Some of the integration tests that require additional services (i.e., redis, mysql, etc); otherwise, the integration_runner will skip those tests.  To spin them up automatically in a development environment, try the [dockerized development environment](https://github.com/newrelic/newrelic-php-agent/blob/main/docs/dev_environment.md).
 
 ## Make
 
