@@ -8,6 +8,9 @@
 The agent should obey the queue time header.
 */
 
+/*INI
+*/
+
 /*HEADERS
 X_REQUEST_START=abc
 */
@@ -18,19 +21,21 @@ X_REQUEST_START=abc
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},
-                                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Apdex"},                               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Apdex/Uri__FILE__"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"HttpDispatcher"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction/Uri__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime/Uri__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Apdex"},                                                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Apdex/Uri__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction"},                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 echo "hello world";

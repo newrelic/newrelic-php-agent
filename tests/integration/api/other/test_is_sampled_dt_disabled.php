@@ -22,10 +22,14 @@ newrelic.distributed_tracing_enabled = false
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/is_sampled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/api/is_sampled"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT
 ok - newrelic_is_sampled() returned false with DT disabled

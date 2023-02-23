@@ -35,25 +35,27 @@ array(1) {
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/MySQL/select"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/TABLES/select"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/MySQL/select"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/TABLES/select"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/MySQL/TABLES/select",
-      "scope":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/all"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/allOther"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},   [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/all"},                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/allOther"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_SLOW_SQLS
 [

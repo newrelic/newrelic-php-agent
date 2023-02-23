@@ -638,10 +638,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;          Must be one of the following values:
 ;          cakephp, codeigniter, drupal, drupal8, joomla, kohana, laravel,
-;          magento, magento2, mediawiki, silex, slim, symfony1, symfony2,
+;          magento, magento2, mediawiki, slim, symfony2, symfony4,
 ;          wordpress, yii, zend, zend2, no_framework
 ;
-;          Note that "drupal" covers only Drupal 6 and 7.
+;          Note that "drupal" covers only Drupal 6 and 7 and "symfony2"
+;          now only supports Symfony 3.x.
 ;
 ;newrelic.framework = ""
 
@@ -833,6 +834,16 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.custom_insights_events.enabled = true
 
+; Setting: newrelic.custom_events.max_samples_stored
+; Type   : integer
+; Scope  : per-directory
+; Default: 30000
+; Info   : The default Custom Events reservoir limit in the agent is 
+;          30000 events per minute and the maximum allowed value
+;          is 100000 events per minute.
+;
+;newrelic.custom_events.max_samples_stored = 30000
+
 ; Setting: newrelic.labels
 ; Type   : string (Use quotes)
 ; Scope  : per-directory
@@ -917,6 +928,15 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : The maximum number of span events added to the span event reservoir
 ;          per transaction. A value of 0 will use the agent default.  The max
 ;          setting is 10000.
+;
+;          !IMPORTANT: If you have Code Level Metrics enabled & long absolute
+;          pathnames to your PHP files/functions, you may exceed the max message
+;          size limit set by the Daemon if your max_samples_stored setting is
+;          too high. To fix this, you can either:
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
+;              entirely
+;           c) lower the value for newrelic.span_events.max_samples_stored
 ;
 ;newrelic.span_events.max_samples_stored = 0
 
@@ -1160,10 +1180,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.application_logging.forwarding.enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: false
+; Default: true
 ; Info   : Toggles whether the agent gathers log records for sending to New Relic.
 ;
-;newrelic.application_logging.forwarding.enabled = false
+;newrelic.application_logging.forwarding.enabled = true
 
 ; Setting: newrelic.application_logging.forwarding.max_samples_stored
 ; Type   : integer
@@ -1174,6 +1194,29 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.application_logging.forwarding.max_samples_stored = 10000
 
+; Setting: newrelic.application_logging.forwarding.log_level
+; Type   : string
+; Scope  : per-directory
+; Default: "WARNING"
+; Info   : Sets the minimum log level to be collected when log forwarding
+;          is enabled. 
+;
+;          Based on
+;           https://www.php-fig.org/psr/psr-3/#5-psrlogloglevel
+;           https://datatracker.ietf.org/doc/html/rfc5424
+;
+;          Valid settings (ordered highest to lowest):
+;           "EMERGENCY"
+;           "ALERT"
+;           "CRITICAL"
+;           "ERROR"
+;           "WARNING"
+;           "NOTICE"
+;           "INFO"
+;           "DEBUG"
+;          
+;newrelic.application_logging.forwarding.log_level = "WARNING"
+
 ; Setting: newrelic.application_logging.metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory
@@ -1183,3 +1226,23 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          on the APM Summary page.
 ;
 ;newrelic.application_logging.metrics.enabled = true
+
+; Setting: newrelic.code_level_metrics.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : Toggles whether the agent provides function name, function
+;          filepath, function namespace, and function lineno as
+;          attributes on reported spans
+;
+;          !IMPORTANT: If you have Code Level Metrics enabled & long absolute
+;          pathnames to your PHP files/functions, you may exceed the max message
+;          size limit set by the Daemon if your max_samples_stored setting is
+;          too high. To fix this, you can either:
+;           a) enable infinite tracing (newrelic.infinite_tracing.trace_observer.host)
+;           b) set newrelic.code_level_metrics.enabled=false, disabling it
+;              entirely
+;           c) lower the value for newrelic.span_events.max_samples_stored
+;
+;newrelic.code_level_metrics.enabled = true
+

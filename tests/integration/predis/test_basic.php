@@ -9,6 +9,9 @@ The agent SHALL report Datastore metrics for Redis basic operations.
 This Predis test is largely copied from the Redis version.
 */
 
+/*INI
+*/
+
 /*EXPECT
 ok - set key
 ok - get key
@@ -25,32 +28,40 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                                           [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                                      [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                                                     [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                                                [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Redis/__HOST__/6379"},                                  [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},                                           [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del","scope":"OtherTransaction/php__FILE__"},    [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists"},                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists","scope":"OtherTransaction/php__FILE__"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/set"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/set","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/setnx"},                                         [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/setnx","scope":"OtherTransaction/php__FILE__"},  [2, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                                                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                                               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},                                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Predis/detected"},                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},                              [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                           [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/__HOST__/6379"},             [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del",
+      "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/set"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/set",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/setnx"},                    [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/setnx",
+      "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Predis/detected"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 /*EXPECT_TRACED_ERRORS null */
 

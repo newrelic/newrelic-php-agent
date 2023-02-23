@@ -31,23 +31,27 @@ newrelic.transaction_tracer.record_sql = raw
   "?? start time",
   "?? stop time",
   [
-    [{"name":"Datastore/operation/Postgres/other"},    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Postgres/other"},                 [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Postgres/other",
-      "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/all"},                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/allOther"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/OtherTransaction/php__FILE__"},   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Postgres/all"},                [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Postgres/allOther"},           [3, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allOther"},                                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Postgres/all"},                             [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Postgres/allOther"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_SLOW_SQLS
 [

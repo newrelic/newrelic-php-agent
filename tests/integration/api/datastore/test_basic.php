@@ -20,27 +20,29 @@ newrelic.transaction_tracer.threshold = 0
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/custom/all"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/custom/allOther"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/custom/unknown/unknown"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/custom/other"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/custom/other/other"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/custom/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/custom/allOther"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/custom/unknown/unknown"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/custom/other"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/custom/other/other"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/custom/other/other",
-      "scope":"OtherTransaction/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/record_datastore_segment"},  [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/record_datastore_segment"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_TXN_TRACES
 [

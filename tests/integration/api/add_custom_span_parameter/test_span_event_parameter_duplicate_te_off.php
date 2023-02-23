@@ -10,6 +10,13 @@ If the transaction event has an attribute with the same name as the currently
 executing span event, the value from the span MUST be kept.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -80,7 +87,11 @@ null
         "int": 1,
         "string": "span str"
       },
-      {}
+      {
+        "code.lineno": 129,
+        "code.filepath": "__FILE__",
+        "code.function": "a"
+      }
     ]
   ]
 ]
@@ -94,21 +105,23 @@ null
   [
     [{"name":"Custom/a"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/a",
-      "scope": "OtherTransaction/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},               [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_span_parameter"},       [4, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/api/add_custom_parameter"},       [4, 0, 0, 0, 0, 0]]
+    [{"name":"Supportability/api/add_custom_parameter"},            [4, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
 newrelic_add_custom_tracer("a");

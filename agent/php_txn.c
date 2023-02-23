@@ -624,6 +624,34 @@ static void nr_php_txn_log_error_dt_on_tt_off(void) {
   }
 }
 
+static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
+  char* metname = NULL;
+
+  if (nrunlikely(NULL == NRPRG(txn))) {
+    return;
+  }
+
+  if (nrlikely(0 != txn->created_logging_onetime_metrics)) {
+    return;
+  }
+
+#define FMT_BOOL(v) (v) ? "enabled" : "disabled"
+
+  metname = nr_formatf("Supportability/Logging/Forwarding/PHP/%s",
+                       FMT_BOOL(nr_txn_log_forwarding_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  metname = nr_formatf("Supportability/Logging/Metrics/PHP/%s",
+                       FMT_BOOL(nr_txn_log_metrics_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
+  txn->created_logging_onetime_metrics = true;
+
+#undef FMT_BOOL
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -651,7 +679,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
    */
   pfd = nr_get_daemon_fd();
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+  /* For PHP 7.4+ user instrumentation is reset at rshutdown. */
   nr_php_reset_user_instrumentation();
+#endif
 
   if (pfd < 0) {
     nrl_debug(NRL_INIT, "unable to begin transaction: no daemon connection");
@@ -675,6 +706,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   opts.custom_events_enabled = (int)NRINI(custom_events_enabled);
+  opts.custom_events_max_samples_stored
+      = NRINI(custom_events_max_samples_stored);
   opts.synthetics_enabled = (int)NRINI(synthetics_enabled);
   opts.instance_reporting_enabled = (int)NRINI(instance_reporting_enabled);
   opts.database_name_reporting_enabled
@@ -708,6 +741,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
+  opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
 
@@ -750,6 +784,14 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
+
+  /* Need to initialize custom and log event max samples to value negotiated
+   * between that requested in the INI file and the value returned from the
+   * daaemon (based in part on the collector connect response harvest limits) */
+  info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
+  info.custom_events_max_samples_stored
+      = NRINI(custom_events_max_samples_stored);
+
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*
@@ -778,6 +820,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nrl_debug(NRL_INIT, "no Axiom transaction this time around");
     return NR_FAILURE;
   }
+
+  nr_php_txn_send_metrics_once(NRPRG(txn) TSRMLS_CC);
 
   /*
    * Disable automated parenting for the default parent context. See
@@ -874,17 +918,20 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     nr_php_txn_log_error_dt_on_tt_off();
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  if (nr_php_ini_setting_is_set_by_user("opcache.enable")
-      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+  /*
+   * Only try to instrument preloaded opcache scripts when opcache enabled and
+   * preload is not null.  If an INI value does not exist, INI_INT/INI_BOOL
+   * returns 0 and INI_STR returns NULL.
+   */
+  if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
+    bool opcache_enabled = is_cli
+                               ? INI_BOOL("opcache.enable_cli")
+                               : INI_BOOL("opcache.enable");
+    if ((opcache_enabled)
+        && (nr_php_ini_setting_is_set_by_user("opcache.preload"))) {
+      nr_php_user_instrumentation_from_opcache(TSRMLS_C);
+    }
   }
-#else
-  if (nr_php_ini_setting_is_set_by_user("opcache.preload")
-      && NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    nr_php_user_instrumentation_from_opcache(TSRMLS_C);
-  }
-#endif
 
   return NR_SUCCESS;
 }

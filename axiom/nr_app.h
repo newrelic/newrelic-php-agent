@@ -75,18 +75,23 @@ typedef struct _nr_app_info_t {
   char* trace_observer_host;       /* 8T trace observer host */
   uint16_t trace_observer_port;    /* 8T trace observer port */
   uint64_t span_queue_size;        /* 8T span queue size (for the daemon) */
-  uint64_t span_events_max_samples_stored; /* maximum number of spans (for the
+  uint64_t span_events_max_samples_stored; /* maximum number of spans per min (for the
                                               daemon) */
+  uint64_t log_events_max_samples_stored;  /* maximum number of log events per min (for
+                                              the  daemon) */
+  uint64_t custom_events_max_samples_stored; /* maximum number of custom events per min (for
+                                              the  daemon) */
 } nr_app_info_t;
 
 /*
- * Calculated limits for event types.
+ * Calculated limits for event types per HARVEST.
  */
 typedef struct _nr_app_limits_t {
   int analytics_events;
   int custom_events;
   int error_events;
   int span_events;
+  int log_events;
 } nr_app_limits_t;
 
 typedef struct _nrapp_t {
@@ -119,7 +124,8 @@ typedef struct _nrapp_t {
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
-   * The exception is the span_event which is negotiated with the backend. */
+   * The exception are the span_event and log_event which is negotiated with the
+   * backend. */
   nr_app_limits_t limits;
 } nrapp_t;
 

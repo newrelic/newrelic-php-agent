@@ -54,7 +54,11 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
    * Using nr_php_op_array_get_wraprec to check if the method has valid
    * instrumentation.
    */
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   if (NULL == nr_php_op_array_get_wraprec(&function->op_array TSRMLS_CC)) {
+#else
+  if (NULL == nr_php_get_wraprec(function)) {
+#endif
     char* class_method = nr_formatf(
         "%.*s::%.*s", NRSAFELEN(nr_php_class_entry_name_length(ce)),
         nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);

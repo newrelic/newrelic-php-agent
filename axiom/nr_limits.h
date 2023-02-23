@@ -20,7 +20,12 @@
 /*
  * The default maximum number of custom events in a transaction.
  */
-#define NR_MAX_CUSTOM_EVENTS 10000
+#define NR_DEFAULT_CUSTOM_EVENTS_MAX_SAMPLES_STORED 30000
+
+/*
+ * The maximum number of custom events in a transaction.
+ */
+#define NR_MAX_CUSTOM_EVENTS_MAX_SAMPLES_STORED 100000
 
 /*
  * Set the maximum number of errors in a transaction.
@@ -55,6 +60,6 @@
 /*
  * The maximum number of log events in a transaction.
  */
-#define NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED 10000
+#define NR_MAX_LOG_EVENTS_MAX_SAMPLES_STORED 20000
 
 #endif /* NR_LIMITS_HDR */

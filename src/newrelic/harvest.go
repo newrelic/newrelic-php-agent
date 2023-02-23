@@ -34,7 +34,7 @@ type Harvest struct {
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
-	return &Harvest{
+	nh := &Harvest{
 		Metrics:           NewMetricTable(limits.MaxMetrics, now),
 		Errors:            NewErrorHeap(limits.MaxErrors),
 		SlowSQLs:          NewSlowSQLs(limits.MaxSlowSQLs),
@@ -43,10 +43,13 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		CustomEvents:      NewCustomEvents(hl.CustomEventConfig.Limit),
 		ErrorEvents:       NewErrorEvents(hl.ErrorEventConfig.Limit),
 		SpanEvents:        NewSpanEvents(hl.SpanEventConfig.Limit),
+		LogEvents:         NewLogEvents(hl.LogEventConfig.Limit),
 		commandsProcessed: 0,
 		pidSet:            make(map[int]struct{}),
 		httpErrorSet:      make(map[int]float64),
 	}
+
+	return nh
 }
 
 func (h *Harvest) empty() bool {
@@ -58,7 +61,8 @@ func (h *Harvest) empty() bool {
 		h.Metrics.Empty() &&
 		h.SlowSQLs.Empty() &&
 		h.TxnEvents.Empty() &&
-		h.TxnTraces.Empty()
+		h.TxnTraces.Empty() &&
+		h.LogEvents.Empty()
 }
 
 func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *MetricTable) {
@@ -67,7 +71,7 @@ func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *Met
 	}
 
 	for name, val := range to.DumpSupportabilityMetrics() {
-		metrics.AddCount(name, "", val, Forced)
+		metrics.AddRaw([]byte(name), "", "", val, Forced)
 	}
 }
 
@@ -157,6 +161,11 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", h.SpanEvents.analyticsEvents.NumSaved(), Forced)
 	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), h.SpanEvents.analyticsEvents.NumFailedAttempts())
 
+	// Log Events Supportability Metrics
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
+	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), h.LogEvents.analyticsEvents.NumFailedAttempts())
+
 	// Certificate supportability metrics.
 	if collector.CertPoolState == collector.SystemCertPoolMissing {
 		h.Metrics.AddCount("Supportability/PHP/SystemCertificates/Unavailable", "", float64(1), Forced)
@@ -168,6 +177,7 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Supportability/EventHarvest/CustomEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.CustomEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/ErrorEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.ErrorEventConfig.Limit), Forced)
 	h.Metrics.AddCount("Supportability/EventHarvest/SpanEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.SpanEventConfig.Limit), Forced)
+	h.Metrics.AddCount("Supportability/EventHarvest/LogEventData/HarvestLimit", "", float64(harvestLimits.EventConfigs.LogEventConfig.Limit), Forced)
 
 	h.createEndpointAttemptsMetric(h.Metrics.Cmd(), h.Metrics.NumFailedAttempts())
 
@@ -194,6 +204,7 @@ func (x *MetricTable) Cmd() string  { return collector.CommandMetrics }
 func (x *CustomEvents) Cmd() string { return collector.CommandCustomEvents }
 func (x *ErrorEvents) Cmd() string  { return collector.CommandErrorEvents }
 func (x *SpanEvents) Cmd() string   { return collector.CommandSpanEvents }
+func (x *LogEvents) Cmd() string    { return collector.CommandLogEvents }
 func (x *ErrorHeap) Cmd() string    { return collector.CommandErrors }
 func (x *SlowSQLs) Cmd() string     { return collector.CommandSlowSQLs }
 func (x *TxnTraces) Cmd() string    { return collector.CommandTraces }

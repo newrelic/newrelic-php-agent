@@ -83,6 +83,7 @@ TEST_BINARIES = \
 	tests/test_environment \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
+	tests/test_fw_support \
 	tests/test_fw_wordpress \
 	tests/test_globals \
 	tests/test_internal_instrument \
@@ -105,6 +106,7 @@ TEST_BINARIES = \
 	tests/test_txn \
 	tests/test_txn_private \
 	tests/test_user_instrument \
+	tests/test_user_instrument_hashmap \
 	tests/test_zval
 
 .PHONY: unit-tests
@@ -261,6 +263,7 @@ endif
 #
 TEST_LIBS := $(PHP_EMBED_LIBRARY) $(shell $(PHP_CONFIG) --libs)
 TEST_LDFLAGS := $(shell $(PHP_CONFIG) --ldflags) $(EXPORT_DYNAMIC)
+TEST_LDFLAGS += $(USER_LDFLAGS)
 
 #
 # Implicit rule to build test object files with the appropriate flags.

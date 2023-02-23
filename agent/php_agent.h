@@ -79,6 +79,7 @@
  * Returns : A newly allocated JSON stack trace string or NULL on error.
  */
 #define NR_PHP_STACKTRACE_LIMIT 300
+
 extern char* nr_php_backtrace_to_json(zval* itrace TSRMLS_DC);
 
 /*
@@ -790,5 +791,24 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  *           (current_execute_path).
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+/*
+ * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.
+ *
+ * Params  : 1. zend_function.
+ *
+ * Returns : uint32_t lineno value
+ *
+ */
+static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
+  if (NULL != func && ZEND_USER_FUNCTION == func->op_array.type) {
+    return func->op_array.line_start;
+  }
+  return 0;
+}
+
+#endif /* PHP 7+ */
 
 #endif /* PHP_AGENT_HDR */

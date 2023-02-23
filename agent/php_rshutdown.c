@@ -80,16 +80,19 @@ int nr_php_post_deactivate(void) {
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing started");
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   /*
    * PHP 7 has a singleton trampoline op array that is used for the life of an
    * executor (which, in non-ZTS mode, is the life of the process). We need to
    * ensure that it goes back to having a NULL wraprec, lest we accidentally try
    * to dereference a transient wraprec that is about to be destroyed.
+   *
+   * For PHP 7.4+ we are not using the op_array for wraprecs
    */
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   EG(trampoline).op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = NULL;
 #endif /* PHP7 */
-
+#endif
   nr_php_remove_transient_user_instrumentation();
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
@@ -106,7 +109,11 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(predis_ctx));
   nr_hashmap_destroy(&NRPRG(predis_commands));
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  nr_php_reset_user_instrumentation();
+#else
   nr_vector_destroy(&NRPRG(user_function_wrappers));
+#endif
 
   NRPRG(cufa_callback) = NULL;
 

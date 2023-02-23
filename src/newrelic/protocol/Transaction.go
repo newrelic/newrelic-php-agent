@@ -231,8 +231,28 @@ func (rcv *Transaction) SpanEventsLength() int {
 	return 0
 }
 
+func (rcv *Transaction) LogEvents(obj *Event, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(30))
+	if o != 0 {
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
+	}
+	return false
+}
+
+func (rcv *Transaction) LogEventsLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(30))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
+}
+
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(13)
+	builder.StartObject(14)
 }
 func TransactionAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -289,6 +309,12 @@ func TransactionAddSpanEvents(builder *flatbuffers.Builder, spanEvents flatbuffe
 	builder.PrependUOffsetTSlot(12, flatbuffers.UOffsetT(spanEvents), 0)
 }
 func TransactionStartSpanEventsVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(4, numElems, 4)
+}
+func TransactionAddLogEvents(builder *flatbuffers.Builder, logEvents flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(13, flatbuffers.UOffsetT(logEvents), 0)
+}
+func TransactionStartLogEventsVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(4, numElems, 4)
 }
 func TransactionEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {

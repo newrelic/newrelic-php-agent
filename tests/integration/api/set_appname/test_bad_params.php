@@ -15,6 +15,9 @@ if (version_compare(PHP_VERSION, "7.4", ">")) {
 }
 */
 
+/*INI
+*/
+
 /*EXPECT_REGEX
 .*Warning:.*newrelic_set_appname\(\) expects at least 1 parameter, 0 given.*
 ok - newrelic_set_appname no params
@@ -30,27 +33,27 @@ ok - newrelic_set_appname too many params
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/all"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/allOther"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"see_me"},                                 [1, 1, 1, 1, 1, 1]],
-    [{"name":"Supportability/api/custom_metric"},       [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/api/set_appname/before"},  [5, 0, 0, 0, 0, 0]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allOther"},                                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"see_me"},                                               [1, 1, 1, 1, 1, 1]],
+    [{"name":"Supportability/api/custom_metric"},                     [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/api/set_appname/before"},                [5, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 

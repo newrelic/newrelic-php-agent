@@ -29,7 +29,7 @@ func TestJSONMarshalling(t *testing.T) {
 				InstanceType:     "t2.micro",
 				AvailabilityZone: "us-west-1",
 			},
-			Docker: &docker{ID: "47cbd16b77c50cbf71401"},
+			Docker:     &docker{ID: "47cbd16b77c50cbf71401"},
 			Kubernetes: &kubernetes{KubernetesServiceHost: "10.96.0.1"},
 		},
 		Config: &override{

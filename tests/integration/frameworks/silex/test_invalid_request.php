@@ -20,14 +20,18 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/Silex/detected"},  [1,    0,    0,    0,    0,    0]]
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/Silex/detected"},            [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;

@@ -30,13 +30,17 @@ ok - execute request
   "?? start time",
   "?? stop time",
   [
-    [{"name":"OtherTransaction/all"},                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 

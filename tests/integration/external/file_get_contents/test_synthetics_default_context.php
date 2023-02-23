@@ -54,25 +54,27 @@ X-NewRelic-App-Data=??
   "?? start time",
   "?? stop time",
   [
-    [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
-    [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
-    [{"name":"External/all"},                             [   3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allWeb"},                          [   3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                   [   3, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"},
-                                                          [   3, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"},
-                                                          [   3, "??", "??", "??", "??", "??"]],
+    [{"name":"Apdex"},                                              ["??", "??", "??", "??", "??", 0]],
+    [{"name":"Apdex/Uri__FILE__"},                                  ["??", "??", "??", "??", "??", 0]],
+    [{"name":"External/all"},                                       [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allWeb"},                                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                             [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"}, [3, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"}, [3, "??", "??", "??", "??", "??"]],
     [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
-      "scope":"WebTransaction/Uri__FILE__"},              [   3, "??", "??", "??", "??", "??"]],
-    [{"name":"HttpDispatcher"},                           [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction"},                           [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction/Uri__FILE__"},               [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime"},                  [   1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime/Uri__FILE__"},      [   1, "??", "??", "??", "??", "??"]]
+      "scope":"WebTransaction/Uri__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction"},                                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 

@@ -22,6 +22,8 @@
 #include "nr_attributes.h"
 #include "nr_errors.h"
 #include "nr_file_naming.h"
+#include "nr_log_events.h"
+#include "nr_log_level.h"
 #include "nr_segment.h"
 #include "nr_slowsqls.h"
 #include "nr_span_queue.h"
@@ -56,6 +58,8 @@ typedef enum _nr_tt_recordsql_t {
  */
 typedef struct _nrtxnopt_t {
   int custom_events_enabled; /* Whether or not to capture custom events */
+  size_t custom_events_max_samples_stored; /* The maximum number of custom events
+                                              per transaction */
   int synthetics_enabled;    /* Whether or not to enable Synthetics support */
   int instance_reporting_enabled; /* Whether to capture datastore instance host
                                      and port */
@@ -116,7 +120,9 @@ typedef struct _nrtxnopt_t {
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
   bool logging_enabled; /* An overall configuration for enabling/disabling all
                            application logging features */
-  bool log_forwarding_enabled;          /* Whether log forwarding is enabled */
+  bool log_forwarding_enabled;  /* Whether log forwarding is enabled */
+  int log_forwarding_log_level; /* minimum log level to forward to the collector
+                                 */
   size_t log_events_max_samples_stored; /* The maximum number of log events per
                                            transaction */
   bool log_metrics_enabled;             /* Whether log metrics are enabled */
@@ -266,7 +272,8 @@ typedef struct _nrtxn_t {
   nr_file_naming_t* match_filenames; /* Filenames to match on for txn naming */
 
   nr_analytics_events_t*
-      custom_events; /* Custom events created through the API. */
+      custom_events;           /* Custom events created through the API. */
+  nr_log_events_t* log_events; /* Log events pool */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -288,6 +295,12 @@ typedef struct _nrtxn_t {
   nr_distributed_trace_t*
       distributed_trace; /* distributed tracing metadata for the transaction */
   nr_span_queue_t* span_queue; /* span queue when 8T is enabled */
+
+  /*
+   * flag to indicate if one time (per transaction) logging metrics
+   * have been created
+   */
+  bool created_logging_onetime_metrics;
 
   /*
    * Special control variables derived from named bits in
@@ -576,7 +589,6 @@ extern void nr_txn_set_string_attribute(nrtxn_t* txn,
 extern void nr_txn_set_long_attribute(nrtxn_t* txn,
                                       const nr_txn_attribute_t* attribute,
                                       long value);
-
 /*
  * Purpose : Return the duration of the transaction.  This function will return
  *           0 if the transaction has not yet finished or if the transaction
@@ -609,6 +621,43 @@ extern void nr_txn_set_queue_start(nrtxn_t* txn, const char* x_request_start);
 extern void nr_txn_record_custom_event(nrtxn_t* txn,
                                        const char* type,
                                        const nrobj_t* params);
+
+/*
+ * Purpose : Check log forwarding configuration
+ */
+extern bool nr_txn_log_forwarding_enabled(nrtxn_t* txn);
+
+/*
+ * Purpose : Check log forwarding log level configuration
+ */
+extern bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
+                                                   const char* log_level_name);
+
+/*
+ * Purpose : Check logging metrics configuration
+ */
+extern bool nr_txn_log_metrics_enabled(nrtxn_t* txn);
+
+/*
+ * Purpose : Check log decorating configuration
+ */
+extern bool nr_txn_log_decorating_enabled(nrtxn_t* txn);
+
+/*
+ * Purpose : Add a log event to transaction
+ *
+ * Params  : 1. The transaction.
+ *           2. Log record level name
+ *           3. Log record message
+ *           4. Log record timestamp
+ *           5. The application (to get linking meta data)
+ *
+ */
+extern void nr_txn_record_log_event(nrtxn_t* txn,
+                                    const char* level_name,
+                                    const char* message,
+                                    nrtime_t timestamp,
+                                    nrapp_t* app);
 
 /*
  * Purpose : Return the CAT trip ID for the current transaction.

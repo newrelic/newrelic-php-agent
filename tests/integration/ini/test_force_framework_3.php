@@ -26,14 +26,18 @@ which causes the metric to be generated.
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/CakePHP/forced"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/CakePHP/forced"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 date_default_timezone_set('America/Los_Angeles');
 

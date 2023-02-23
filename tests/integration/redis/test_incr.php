@@ -33,39 +33,47 @@ ok - delete key
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                   [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},              [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/connect"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                  [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                             [10, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/connect"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/connect",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del"},         [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/expire"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/expire",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get"},         [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get",
-      "scope":"OtherTransaction/php__FILE__"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/incr"},        [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/incr"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/incr",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/incrby"},      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/incrby"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/incrby",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/set"},         [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/set"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
@@ -80,8 +88,7 @@ function test_redis() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($redis->exists($key)) {
-    echo "key already exists: ${key}\n";
-    exit(1);
+    die("skip: key already exists: ${key}\n");
   }
 
   /* Ensure the key doesn't persist (too much) longer than the test. */

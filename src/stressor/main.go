@@ -93,18 +93,18 @@ const (
 )
 
 var (
-	flagPort        = flag.String("port", newrelic.DefaultListenSocket(), "")
-	flagApps        = flag.Int("applications", DefaultApps, "")
-	flagLifespan    = flag.Duration("lifespan", DefaultLifespan, "")
-	flagRPM         = flag.Int("rpm", DefaultRPM, "")
-	flagConcurrency = flag.Int("concurrency", 0, "")
-	flagSpans       = flag.Int("spans-per-txn", 0, "")
-	flagSpansBatch  = flag.Int("spans-batch-size", 0, "")
-	flagDataDir     = flag.String("datadir", "src/newrelic/sample_data", "")
-	flagLogFile     = flag.String("logfile", "stdout", "")
-	flagCPUProfile  = flag.String("cpuprofile", "", "")
-	flagDaemonPprof = flag.Int("daemon-pprof", 0, "")
-	flagHostname    = flag.String("agent-hostname", "", "")
+	flagPort              = flag.String("port", newrelic.DefaultListenSocket(), "")
+	flagApps              = flag.Int("applications", DefaultApps, "")
+	flagLifespan          = flag.Duration("lifespan", DefaultLifespan, "")
+	flagRPM               = flag.Int("rpm", DefaultRPM, "")
+	flagConcurrency       = flag.Int("concurrency", 0, "")
+	flagSpans             = flag.Int("spans-per-txn", 0, "")
+	flagSpansBatch        = flag.Int("spans-batch-size", 0, "")
+	flagDataDir           = flag.String("datadir", "src/newrelic/sample_data", "")
+	flagLogFile           = flag.String("logfile", "stdout", "")
+	flagCPUProfile        = flag.String("cpuprofile", "", "")
+	flagDaemonPprof       = flag.Int("daemon-pprof", 0, "")
+	flagHostname          = flag.String("agent-hostname", "", "")
 	flagTraceObserverHost = flag.String("trace-observer-host", "", "")
 	flagTraceObserverPort = flag.Int("trace-observer-port", 0, "")
 )
@@ -357,7 +357,7 @@ func hammer(bucket *ratelimit.Bucket, stopChan <-chan struct{}, txn flatbuffersd
 				}
 
 				// Protobuf encoded span batch
-				protoSpanBatch, err:= proto_testdata.MarshalSpanBatch(uint(batchSize))
+				protoSpanBatch, err := proto_testdata.MarshalSpanBatch(uint(batchSize))
 				if err != nil {
 					return stats, err
 				}

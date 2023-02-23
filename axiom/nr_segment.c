@@ -404,7 +404,6 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
   }
 
   trace_id = nr_txn_get_current_trace_id(segment->txn);
-
   event = nr_span_event_create();
   nr_span_event_set_guid(event, segment->id);
   nr_span_event_set_trace_id(event, trace_id);
@@ -463,9 +462,7 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
 
     agent_attributes = nr_attributes_agent_to_obj(
         segment->txn->attributes, NR_ATTRIBUTE_DESTINATION_TXN_EVENT);
-
     nro_iteratehash(agent_attributes, add_agent_attribute_to_span_event, event);
-
     nro_delete(agent_attributes);
   }
 
@@ -505,6 +502,13 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
                     &event_and_counter);
 
     nro_delete(user_attributes);
+    /*
+     * Add segment agent attributes to span
+     */
+    agent_attributes = nr_attributes_agent_to_obj(
+        segment->attributes, NR_ATTRIBUTE_DESTINATION_SPAN);
+    nro_iteratehash(agent_attributes, add_agent_attribute_to_span_event, event);
+    nro_delete(agent_attributes);
   }
   if (segment->attributes_txn_event) {
     user_attributes = nr_attributes_user_to_obj(segment->attributes_txn_event,
@@ -1128,6 +1132,14 @@ void nr_segment_set_priority_flag(nr_segment_t* segment, int flag) {
   }
 
   segment->priority |= flag;
+}
+
+int nr_segment_get_priority_flag(nr_segment_t* segment) {
+  if (NULL == segment) {
+    return 0;
+  }
+
+  return segment->priority;
 }
 
 void nr_segment_record_exception(nr_segment_t* segment,

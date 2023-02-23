@@ -64,21 +64,23 @@ newrelic.transaction_tracer.threshold=0
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/my_function"},                     [1000, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function"},                                   [1000, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function",
-     "scope":"OtherTransaction/php__FILE__" },          [1000, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},   [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1000, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function my_function() {
     printf('');

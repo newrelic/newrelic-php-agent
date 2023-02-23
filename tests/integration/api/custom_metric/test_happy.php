@@ -10,6 +10,9 @@ the agent should correctly calculate the count, sum, min, max and sum-of-
 squares.
 */
 
+/*INI
+*/
+
 /*EXPECT
 ok - min added successfully
 ok - max added successfully
@@ -22,16 +25,16 @@ ok - median added successfully
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/Application/Metric"},              [3,  7.0,  7.0,  1.0,  4.0, 21.0]],
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/custom_metric"},       [3, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/Application/Metric"},                            [3, 7.0, 7.0, 1.0, 4.0, 21.0]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/custom_metric"},                     [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

@@ -18,7 +18,7 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
 
 /*INI
 newrelic.distributed_tracing_enabled = false
- */
+*/
 
 /*EXPECT_REGEX
 ^\s*(PHP )?Fatal error:.*Uncaught ArgumentCountError:.*newrelic_get_linking_metadata\(\) expects exactly 0 arguments, 1 given.*
@@ -37,10 +37,14 @@ newrelic.distributed_tracing_enabled = false
     [{"name":"Errors/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/allOther"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/get_linking_metadata"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/api/get_linking_metadata"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 

@@ -15,30 +15,33 @@ if (!extension_loaded("curl")) {
 }
 */
 
+/*INI
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/all"},                                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/allOther"},                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allOther"},                                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 $ch = curl_init();
 

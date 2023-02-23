@@ -119,7 +119,7 @@ func TestCollectorRequest(t *testing.T) {
 			}),
 		},
 	}
-	resp := client.Execute(cmd, cs)
+	resp := client.Execute(&cmd, cs)
 	if nil != resp.Err {
 		t.Error(resp.Err)
 	}

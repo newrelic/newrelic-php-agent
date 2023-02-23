@@ -11,6 +11,13 @@ The agent must still create metrics for functions for which add_custom_tracer
 was called.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.transaction_tracer.max_segments_cli=3
 newrelic.transaction_tracer.threshold=0
@@ -34,7 +41,12 @@ newrelic.distributed_tracing_enabled=0
               [
                 "?? start time", "?? end time", "`0", {}, [
                   [
-                    "?? start time", "?? end time", "`1", {}, []
+                    "?? start time", "?? end time", "`1", 
+                    {
+                      "code.lineno": 123,
+                      "code.filepath": "__FILE__",
+                      "code.function": "my_function"
+                    }, []
                   ],
                   [
                     "?? start time", "?? end time", "`2",
@@ -82,27 +94,31 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"Custom/my_function"},                          [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/all"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/allOther"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/MySQL/host.name/2222"},     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/MySQL/select"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/table/select"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/record_datastore_segment"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function"},                                 [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/all"},                                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/MySQL/allOther"},                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/MySQL/host.name/2222"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/MySQL/select"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/MySQL/table/select"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/record_datastore_segment"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/my_function",
-     "scope":"OtherTransaction/php__FILE__" },               [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/MySQL/table/select",
-      "scope": "OtherTransaction/php__FILE__"},              [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 function my_function(){
   printf('');

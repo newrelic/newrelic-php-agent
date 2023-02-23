@@ -23,15 +23,19 @@ The framework is being incorrectly reported as Drupal 8.
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"OtherTransaction/all"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/execute/user/call_count"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/Drupal/forced"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/execute/user/call_count"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/Drupal/forced"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 date_default_timezone_set('America/Los_Angeles');
 phpinfo();

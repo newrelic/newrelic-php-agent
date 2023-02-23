@@ -12,39 +12,41 @@ The agent should record an error when a query fails.
 <?php require("skipif.inc");
 */
 
+/*INI
+*/
+
 /*EXPECT_METRICS
 [
   "?? agent run id",
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/SQLite/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/SQLite/allOther"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/SQLite/select"},     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/SQLite/non_existent_table/select"}, 
-                                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/allOther"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/select"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/non_existent_table/select"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/non_existent_table/select",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/OtherTransaction/php__FILE__"},   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/all"},                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Errors/allOther"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allOther"},                                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_TRACED_ERRORS
 [

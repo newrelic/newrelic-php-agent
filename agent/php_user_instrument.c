@@ -6,6 +6,7 @@
 #include "php_agent.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_hashmap.h"
 #include "php_wrapper.h"
 #include "lib_guzzle_common.h"
 #include "util_logging.h"
@@ -34,7 +35,7 @@
  *     (1) bad code byte;
  *     (2) corrupted APC cache;
  *   (b) the PHP program calls exit.
- *   (c) An internall call to zend_error_cb, as for example empirically due to
+ *   (c) An internal call to zend_error_cb, as for example empirically due to
  * one of: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING, E_COMPILE_ERROR,
  * E_COMPILE_WARNING Cases (b) and (c) are interesting, as it is not
  * really an error condition, but merely a fast path out of the interpreter.
@@ -47,6 +48,7 @@
  *
  * Many functions here call zend_bailout to continue handling fatal PHP errors,
  * Since zend_bailout calls longjmp it never returns.
+ *
  */
 int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   volatile int zcaught = 0;
@@ -75,6 +77,68 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
   return zcaught;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/* Hashmap with pointers to wraprecs. Some, that are re-usable between requests,
+ * are stored in linked list. These wraprecs are created once per interesting
+ * function detection, and destroyed at module shutdown. Some, that are
+ * transient and not re-usable between requests, are not stored in linked list.
+ * Transient wraprecs are created on the fly and destroyed at request shutdown.
+ * However wrapping is done the same way for both types of wraprecs and happens
+ * once per each request, i.e. for each request the hashmap is created anew,
+ * when user function is instrumented, its wraprec is added to the hashmap, and
+ * at the end of the request the hashmap is destroyed together with transient
+ * wraprecs. Re-usable wraprecs are not destroyed - they are re-set. */
+static nr_php_wraprec_hashmap_t* user_function_wrappers;
+
+static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
+                                             zend_function* zf) {
+  nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
+}
+static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
+  nruserfn_t* wraprec = NULL;
+
+  nr_php_wraprec_hashmap_get_into(user_function_wrappers, zf, &wraprec);
+
+  return wraprec;
+}
+
+/*
+ * Init user instrumentation. This must only be called on request init!
+ * This creates wraprec lookup hashmap and registers wraprec destructor
+ * callback - reset_wraprec - which is called on request shutdown.
+ */
+static void reset_wraprec(nruserfn_t*);
+void nr_php_init_user_instrumentation(void) {
+  if (NULL != user_function_wrappers) {
+    /* Should not happen */
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "user_function_wrappers lookup hashmap already initialized!");
+    return;
+  }
+  user_function_wrappers
+      = nr_php_wraprec_hashmap_create_buckets(1024, reset_wraprec);
+}
+
+/*
+ * This callback resets user instrumentation. It is called at request shutdown
+ * when user instrumentation is reset - lookup hashmap is destroyed together
+ * with transient wraprecs and non-transient wraprecs are reset (mark as not
+ * wrapped). This happens because with new request/transaction php is loading
+ * all new user code.
+ */
+static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
+static void reset_wraprec(nruserfn_t* wraprec) {
+  nruserfn_t* p = wraprec;
+  nr_php_wraprec_hashmap_key_release(&p->key);
+  if (p->is_transient) {
+    nr_php_user_wraprec_destroy((nruserfn_t**)&wraprec);
+  } else {
+    p->is_wrapped = 0;
+  }
+}
+#endif
+
 /*
  * Wrap an existing user-defined (written in PHP) function with an
  * instrumentation function. Actually, what we do is just set a pointer in the
@@ -88,10 +152,52 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
  * (or can't) match by name and have the zend_function available. (The main use
  * case for this is to allow instrumenting closures, but it's useful anywhere
  * we're dealing with a callable rather than a name.)
+ *
+ * There are two main structures containing `wraprecs`.
+ * `nr_php_op_array_set_wraprec` is a list of pointers to `wraprecs` that will
+ * contain all our custom instrumentation and all the user specified
+ * instrumentation they want to monitor. `user_function_wrappers` is a vector of
+ * pointers to wrappers, after the zend function represented by a wraprec has
+ * the reserved field modified, the pointer to the wraprec (which again, exists
+ * in `nr_php_op_array_set_wraprec`) goes into the vector.
+ * `nr_php_op_array_set_wraprec` is always a superset of
+ * `user_function_wrappers` and the wraprec pointers that exist in
+ * `user_function_wrappers` always exist in `nr_php_op_array_set_wraprec`.
+ *
+ * `nr_php_op_array_set_wraprec` is populated a few different ways.
+ * 1)from function `nr_php_add_transaction_naming_function` called from
+ * `php_nrini.c` to set the naming for all the transactions the user  set in the
+ * ini with `newrelic.webtransaction.name.functions` 2) from function
+ * `nr_php_add_custom_tracer` from `php_nrini.c` to set the naming for all the
+ * transactions the user set in the ini with
+ * `newrelic.transaction_tracer.custom` 3)
+ * nr_php_user_function_add_declared_callback (prior to PHP 7.3) 4) from
+ * function `nr_php_wrap_user_function` called from php_wrapper sets the wraprec
+ * with framework specific instrumentation. 5) from function
+ * `nr_php_wrap_callable` (in `php_wrapper.c`) used only by Wordpress and predis
+ * for custom instrumentation that adds `is_transient` wrappers that get cleaned
+ * up with each shutdown.
+ *
+ * When overwriting the zend_execute_ex function, every effort was made to
+ * reduce performance overhead because until the agent returns control, we are
+ * the bottleneck of PHP execution on a customer's machine.  Overwriting the
+ * reserved field was seen as a quick way to check if a function is instrumented
+ * or not.
+ *
+ * However, with PHP 8+, we've begun noticing more conflicts with the reserved
+ * fields.  Additionally, as we are no longer halting execution while we
+ * process, we can search through `nr_php_op_array_set_wraprec` instead of
+ * setting reserved field and getting from the `user_function_wrappers` vector.
+ * This stops the issues (segfaults, incorrect naming in laravel, etc) that we
+ * were observing, especially with PHP 8.1.
  */
 static void nr_php_wrap_zend_function(zend_function* func,
                                       nruserfn_t* wraprec TSRMLS_DC) {
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  nr_php_wraprec_lookup_set(wraprec, func);
+#else
   nr_php_op_array_set_wraprec(&func->op_array, wraprec TSRMLS_CC);
+#endif
   wraprec->is_wrapped = 1;
 
   if (wraprec->declared_callback) {
@@ -140,7 +246,6 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     wraprec->is_disabled = 1;
     return;
   }
-
   nr_php_wrap_zend_function(orig_func, wraprec TSRMLS_CC);
 }
 
@@ -262,7 +367,12 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
    * nr_php_op_array_get_wraprec does basic sanity checks on the stored
    * wraprec.
    */
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_wraprec_lookup_get(func);
+#endif
+
   if (wraprec) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
                      name);
@@ -277,7 +387,9 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   nr_free(name);
 
   nr_php_wrap_zend_function(func, wraprec TSRMLS_CC);
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nr_php_add_custom_tracer_common(wraprec);
+#endif
 
   return wraprec;
 }
@@ -324,20 +436,40 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
 /*
  * Reset the user instrumentation records because we're starting a new
  * transaction and so we'll be loading all new user code.
+ *
+ * For PHP 7.4+ this function is called on request shutdown to release memory
+ * allocated for lookup hashmap! Additionally hashmap's value destructor
+ * callback will reset all non-transient wraprecs (mark them as not wrapped),
+ * destroy all transient wraprecs.
+ *
  */
 void nr_php_reset_user_instrumentation(void) {
-  nruserfn_t* p = nr_wrapped_user_functions;
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  // send a metric with the number of transient wrappers
+  if (NULL != user_function_wrappers) {
+    nr_php_wraprec_hashmap_stats_t stats
+        = nr_php_wraprec_hashmap_destroy(&user_function_wrappers);
 
+    nrl_debug(NRL_INSTRUMENT, "# elements: %lu, # buckets used: %lu",
+              stats.elements, stats.buckets_used);
+    nrl_debug(NRL_INSTRUMENT, "collisions - min: %lu, max: %lu, avg: %lu",
+              stats.collisions_min, stats.collisions_max,
+              stats.collisions_mean);
+  }
+#else
+  nruserfn_t* p = nr_wrapped_user_functions;
   while (0 != p) {
     p->is_wrapped = 0;
     p = p->next;
   }
+#endif
 }
 
 /*
  * Remove any transient wraprecs. This must only be called on request shutdown!
  */
 void nr_php_remove_transient_user_instrumentation(void) {
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nruserfn_t* p = nr_wrapped_user_functions;
   nruserfn_t* prev = NULL;
 
@@ -358,6 +490,7 @@ void nr_php_remove_transient_user_instrumentation(void) {
       p = p->next;
     }
   }
+#endif
 }
 
 /*
@@ -379,7 +512,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
   }
 }
@@ -388,7 +521,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
 
-  if (0 != wraprec) {
+  if (NULL != wraprec) {
     wraprec->create_metric = 1;
     wraprec->is_user_added = 1;
   }
@@ -409,7 +542,11 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
     return;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec = nr_php_op_array_get_wraprec(&func->op_array TSRMLS_CC);
+#else
+  wraprec = nr_php_wraprec_lookup_get(func);
+#endif
   if (wraprec) {
     wraprec->is_exception_handler = 0;
   }
@@ -454,6 +591,11 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+nruserfn_t* nr_php_get_wraprec(zend_function* zf) {
+  return nr_php_wraprec_lookup_get(zf);
+}
+#else
 /*
  * The functions nr_php_op_array_set_wraprec and
  * nr_php_op_array_get_wraprec set and retrieve pointers to function wrappers
@@ -538,3 +680,4 @@ nruserfn_t* nr_php_op_array_get_wraprec(
 
   return (nruserfn_t*)nr_vector_get(NRPRG(user_function_wrappers), index);
 }
+#endif /* PHP < 7.4 */

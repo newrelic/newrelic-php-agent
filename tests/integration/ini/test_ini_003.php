@@ -33,24 +33,26 @@ f_3() called
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/f_0"},                              [2, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/f_0"},                                           [2, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_0",
-      "scope":"OtherTransaction/Function/f_0"},          [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/f_3"},                              [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/Function/f_0"},                       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/f_3"},                                           [3, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/f_3",
-      "scope":"OtherTransaction/Function/f_0"},          [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},    [2, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/Function/f_0"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/Function/f_0"},           [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/Function/f_0"},                       [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},                 [2, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/Function/f_0"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/Function/f_0"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 class Foobar {
   static function interesting_method() {

@@ -28,17 +28,17 @@ newrelic.distributed_tracing_enabled = false
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/AcceptPayload/Exception"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/create_distributed_trace_payload"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/accept_distributed_trace_payload"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Exception"},
-                                                          [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/DistributedTrace/AcceptPayload/Exception"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/create_distributed_trace_payload"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/accept_distributed_trace_payload"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Exception"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 $payload = newrelic_create_distributed_trace_payload();
 newrelic_accept_distributed_trace_payload($payload);

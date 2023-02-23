@@ -27,27 +27,24 @@ newrelic.cross_application_tracer.enabled = false
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Mobile/111111/2827902/HTTP/all"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Mobile/111111/2827902/HTTP/allOther"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/AcceptPayload/Success"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Accept/Success"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/accept_distributed_trace_headers"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/Mobile/111111/2827902/HTTP/all"},
-                                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"TransportDuration/Mobile/111111/2827902/HTTP/allOther"},
-                                                          [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Mobile/111111/2827902/HTTP/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Mobile/111111/2827902/HTTP/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/AcceptPayload/Success"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Accept/Success"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/accept_distributed_trace_headers"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"TransportDuration/Mobile/111111/2827902/HTTP/all"},[1, "??", "??", "??", "??", "??"]],
+    [{"name":"TransportDuration/Mobile/111111/2827902/HTTP/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_ANALYTICS_EVENTS
 [

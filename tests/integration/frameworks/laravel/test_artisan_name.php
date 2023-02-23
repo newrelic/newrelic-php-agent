@@ -19,18 +19,20 @@ newrelic.framework = laravel
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/Action/Artisan/foo:bar"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/Action/Artisan/foo:bar"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/Laravel/forced"},          [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/Action/Artisan/foo:bar"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/Action/Artisan/foo:bar"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/Laravel/forced"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 use Illuminate\Console\Application;
 use Symfony\Component\Console\Input\Input;

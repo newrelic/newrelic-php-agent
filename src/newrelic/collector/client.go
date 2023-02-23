@@ -184,12 +184,12 @@ func (control *RpmControls) userAgent() string {
 }
 
 type Client interface {
-	Execute(cmd RpmCmd, cs RpmControls) RPMResponse
+	Execute(cmd *RpmCmd, cs RpmControls) RPMResponse
 }
 
-type ClientFn func(cmd RpmCmd, cs RpmControls) RPMResponse
+type ClientFn func(cmd *RpmCmd, cs RpmControls) RPMResponse
 
-func (fn ClientFn) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+func (fn ClientFn) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 	return fn(cmd, cs)
 }
 
@@ -199,7 +199,7 @@ type limitClient struct {
 	semaphore chan bool
 }
 
-func (l *limitClient) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+func (l *limitClient) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 	var timer <-chan time.Time
 
 	if 0 != l.timeout {
@@ -398,7 +398,8 @@ func parseResponse(b []byte) ([]byte, error) {
 	return r.ReturnValue, nil
 }
 
-func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
+func (c *clientImpl) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
+	// Create the JSON payload
 	data, err := cs.Collectible.CollectorJSON(false)
 	if nil != err {
 		return RPMResponse{Err: err}
@@ -406,15 +407,14 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
 	cmd.Data = data
 
 	var audit []byte
-
 	if log.Auditing() {
 		audit, err = cs.Collectible.CollectorJSON(true)
 		if nil != err {
 			log.Errorf("unable to create audit json payload for '%s': %s", cmd.Name, err)
-			audit = data
+			audit = cmd.Data
 		}
 		if nil == audit {
-			audit = data
+			audit = cmd.Data
 		}
 	}
 
@@ -422,15 +422,16 @@ func (c *clientImpl) Execute(cmd RpmCmd, cs RpmControls) RPMResponse {
 	cleanURL := cmd.url(true)
 
 	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
-	log.Debugf("command='%s' url='%s' max_payload_size_in_bytes='%d' payload={%s}", cmd.Name, cleanURL, cmd.MaxPayloadSize, data)
+	log.Debugf("command='%s' url='%s' max_payload_size_in_bytes='%d' payload={%s}", cmd.Name, cleanURL, cmd.MaxPayloadSize, cmd.Data)
 
-	resp := c.perform(url, cmd, cs)
-	if err != nil {
+	resp := c.perform(url, *cmd, cs)
+	if nil != resp.Err {
 		log.Debugf("attempt to perform %s failed: %q, url=%s",
-			cmd.Name, err.Error(), cleanURL)
+			cmd.Name, resp.Err.Error(), cleanURL)
 	}
 
-	log.Audit("command='%s' url='%s', response={%s}", cmd.Name, url, string(resp.Body))
-	log.Debugf("command='%s' url='%s', response={%s}", cmd.Name, cleanURL, string(resp.Body))
+	log.Audit("command='%s' url='%s', status=%d, response={%s}", cmd.Name, url, resp.StatusCode, string(resp.Body))
+	log.Debugf("command='%s' url='%s', status=%d, response={%s}", cmd.Name, cleanURL, resp.StatusCode, string(resp.Body))
+
 	return resp
 }

@@ -15,6 +15,9 @@ NOTE: deleteMulti and fetchAll are not instrumented by the agent.
 <?php require('skipif.inc'); ?>
 */
 
+/*INI
+*/
+
 /*EXPECT
 ok - setMulti
 ok - assertEqual
@@ -33,27 +36,29 @@ ok - deleteMulti
   "?? start time",
   "?? stop time",
   [
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},
-                                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                         [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                    [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Memcached/all"},               [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Memcached/allOther"},          [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/get"},     [4, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/all"},                              [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Memcached/allOther"},                         [5, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/get"},                    [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get",
-      "scope":"OtherTransaction/php__FILE__"},         [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Memcached/set"},     [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Memcached/set"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/set",
-      "scope":"OtherTransaction/php__FILE__"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"}, [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
+
 
 /*EXPECT_TRACED_ERRORS
 null
