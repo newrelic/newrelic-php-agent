@@ -15,6 +15,10 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_object* object = NULL;
+  zend_string* method_name = NULL;
+#endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
@@ -48,8 +52,29 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
+  /*
+   * With PHP 8.2, functions that do not exist will cause a deprecation error to
+   * be thrown `zend_call_method_if_exists` will attempt to call a function and
+   * silently fail if it does not exist
+   */
+  if (NULL != object_ptr) {
+    object = Z_OBJ_P(object_ptr);
+  } else {
+    object = NULL;
+  }
 
+  if (NULL != fname) {
+    method_name = Z_STR_P(fname);
+  } else {
+    return NULL;
+  }
+
+  zend_result = zend_call_method_if_exists(object, method_name, retval,
+                                           param_count, param_values);
+
+#elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
+    && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /*
    * With PHP8, `call_user_function_ex` was removed and `call_user_function`
    * became the recommended function.
