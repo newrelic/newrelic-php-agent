@@ -54,8 +54,8 @@ zval* nr_php_call_user_func(zval* object_ptr,
   nr_php_zval_str(fname, function_name);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
   /*
-   * With PHP 8.2, functions that do not exist will cause a deprecation error to
-   * be thrown `zend_call_method_if_exists` will attempt to call a function and
+   * With PHP 8.2, functions that do not exist will cause a fatal error to
+   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
    * silently fail if it does not exist
    */
   if (NULL != object_ptr) {
