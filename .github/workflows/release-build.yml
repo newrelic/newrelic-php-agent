@@ -27,7 +27,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         php_ver: ['8.2']
-        arch: [x64]
+        arch: [amd64]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
