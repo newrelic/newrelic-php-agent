@@ -72,7 +72,7 @@ endif
 # includedir is %prefix%/include.
 # Note that we need static version because different linux distributions use 
 # different names for shared object, which causes installation to fail.
-PCRE_PREFIX ?= $(shell pkg-config libpcre --variable=prefix 2>/dev/null)
+PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre/$$(ls /opt/nr/pcre 2>/dev/null)/lib/pkgconfig:$$PKG_CONFIG_PATH pkg-config libpcre --variable=prefix 2>/dev/null)
 HAVE_PCRE := $(shell \
                 test -d "$(PCRE_PREFIX)" \
                 && test -d "$(PCRE_PREFIX)/lib" \
