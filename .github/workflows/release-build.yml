@@ -48,6 +48,6 @@ jobs:
       - name: Save build artifacts
         uses: actions/upload-artifact@v3
         with:
-          path: releases
+          path: newrelic-php-agent/releases
           name: release-from-gha
           if-no-files-found: error
