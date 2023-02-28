@@ -14,6 +14,10 @@ value of the inbound payload as its parent id;
 if (!isset($_ENV["ACCOUNT_supportability_trusted"])) {
     die("skip: env vars required");
 }
+
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
 */
 
 /*INI
@@ -71,7 +75,11 @@ newrelic.cross_application_tracer.enabled = false
         "timestamp": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 96,
+        "code.filepath": "__FILE__",
+        "code.function": "main"
+      }
     ]
   ]
 ]

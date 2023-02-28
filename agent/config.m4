@@ -26,10 +26,16 @@ dnl file, as built by running "make" in the axiom directory.
 PHP_ARG_WITH(axiom,,
 [  --with-axiom=DIR        Path to axiom], ../axiom, no)
 
-dnl The path to protobuf-c. The default is to look for a local vendored
+dnl The path to libprotobuf-c.a. The default is to look for a local vendored
 dnl install, as built by running "make" at the level above this.
 PHP_ARG_WITH(protobuf-c,,
 [  --with-protobuf-c=DIR   Path to protobuf-c], ../vendor/local, no)
+
+dnl The path to libpcre.a. The default is to look for a php-build-scripts
+dnl install in /opt/nr/pcre/8.40 local vendored as built by running 
+dnl "./make.sh pcre" from top level directory of php-build-scripts.
+PHP_ARG_WITH(pcre,,
+[  --with-pcre=DIR   Path to pcre], /opt/nr/pcre/8.40, no)
 
 if test "$PHP_NEWRELIC" = "yes"; then
   AC_DEFINE(HAVE_NEWRELIC, 1, [Whether you have New Relic])
@@ -95,14 +101,24 @@ if test "$PHP_NEWRELIC" = "yes"; then
     AC_MSG_ERROR([unknown or unsupported system])
   fi
 
-  dnl Our one external dependency is libpcre, which axiom needs. We'll use
-  dnl pcre-config to find it, since every modern version of PCRE provides it.
-  PCRE_INCLINE=`pcre-config --cflags`
-  if pcre-config --prefix | grep -q /opt/nr/camp; then
+  dnl Check for libpcre - an external dependency, which axiom needs. Use
+  dnl install location provided via --with-pcre.
+  PCRE_INCLINE=$PHP_PCRE/include
+  if echo "$PHP_PCRE" | grep -q /opt/nr/camp; then
+    dnl Legacy agent's build system quirks:
+    dnl libpcre provided by NRCAMP as libnrpcre is not position independent.
+    dnl Since the agent is a shared object it needs to be position independent
+    dnl and therefore requires linking to the position independent version 
+    dnl of libpcre which in NRCAMP is available as libnrpcre-pic (a symlink
+    dnl to libpcre-pic).
     PCRE_LIBLINE=-lnrpcre-pic
     PCRE_LIBRARY=nrpcre-pic
   else
-    PCRE_LIBLINE=`pcre-config --libs`
+    dnl Force the agent to use static version of pcre library. This avoids the
+    dnl issue with runtime dependency on libpcre shared object that is hard to
+    dnl satisfy universally because different Linux distributions use different
+    dnl name of the shared object: libpcre.so or libpcre3.so.
+    PCRE_LIBLINE="-L$PHP_PCRE -l:libpcre.a"
     PCRE_LIBRARY=pcre
   fi
 
@@ -145,7 +161,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
     dnl protobuf-c directory, and there's no way to prevent it.
     dnl Note that the -lprotobuf-c has to be _after_ axiom for the symbols
     dnl to be resolved properly, hence the different order to the above.
-    NEWRELIC_SHARED_LIBADD="$NEWRELIC_SHARED_LIBADD -L$PHP_PROTOBUF_C/lib -lprotobuf-c"
+    NEWRELIC_SHARED_LIBADD="$NEWRELIC_SHARED_LIBADD -L$PHP_PROTOBUF_C/lib -l:libprotobuf-c.a"
   ],[
     AC_MSG_ERROR([protobuf-c not found])
   ],[

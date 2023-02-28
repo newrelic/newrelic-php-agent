@@ -42,6 +42,50 @@ HAVE_BACKTRACE := $(shell $(CC) $(dir $(abspath $(lastword $(MAKEFILE_LIST))))ba
 # Whether you have libexecinfo
 HAVE_LIBEXECINFO := $(shell test -e /usr/lib/libexecinfo.so -o -e /usr/lib/libexecinfo.a && echo 1 || echo 0)
 
+# Whether you have protoc-c and libprotobuf-c.a. By default, ask pkg-config
+# for install location. This can be overriden by environment.
+# Agent's build system assumes that libprotobuf-c's libdir is %prefix%/lib,
+# includedir is %prefix%/include and bindir is %prefix%/bin.
+PROTOBUF_C_PREFIX ?= $(shell pkg-config libprotobuf-c --variable=prefix 2>/dev/null)
+HAVE_PROTOBUF_C := $(shell \
+                      test -d "$(PROTOBUF_C_PREFIX)" \
+                      && test -d "$(PROTOBUF_C_PREFIX)/bin" \
+                      && test -d "$(PROTOBUF_C_PREFIX)/lib" \
+                      && test -x "$(PROTOBUF_C_PREFIX)/bin/protoc-c" \
+                      && find -L "$(PROTOBUF_C_PREFIX)/lib" -name 'libprotobuf-c.a' 2>/dev/null | grep -q 'libprotobuf-c.a' \
+                      && echo 1 \
+                      || echo 0)
+ifneq ($(findstring environment,$(origin PROTOBUF_C_PREFIX)), )
+  ifeq ($(HAVE_PROTOBUF_C), 0)
+    $(error User provided 'protobuf-c' installation is not valid!)
+  endif
+else
+  ifeq ($(HAVE_PROTOBUF_C), 0)
+    $(info 'protobuf-c' installation not found, falling back to building from vendor subdir.)
+  endif
+endif
+
+
+# Our one external dependency is libpcre.a, which axiom needs. By default, ask
+# pkg-config for install location. This can be overriden by environment.
+# Agent's build system assumes that pcre's libdir is %prefix%/lib,
+# includedir is %prefix%/include.
+# Note that we need static version because different linux distributions use 
+# different names for shared object, which causes installation to fail.
+PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre/$$(ls /opt/nr/pcre 2>/dev/null)/lib/pkgconfig:$$PKG_CONFIG_PATH pkg-config libpcre --variable=prefix 2>/dev/null)
+HAVE_PCRE := $(shell \
+                test -d "$(PCRE_PREFIX)" \
+                && test -d "$(PCRE_PREFIX)/lib" \
+                && find -L "$(PCRE_PREFIX)/lib" -name 'libpcre.a' 2>/dev/null | grep -q 'libpcre.a' \
+                && echo 1 \
+                || echo 0)
+ifneq ($(findstring environment,$(origin PCRE_PREFIX)), )
+  ifeq ($(HAVE_PCRE), 0)
+    $(error User provided 'pcre' installation is not valid!)
+  endif
+#else handled in agent/config.m4
+endif
+
 # Whether you have PTHREAD_MUTEX_ERRORCHECK
 #
 # The interesting dir/abspath/lastword/$(MAKEFILE_LIST) construct is required to

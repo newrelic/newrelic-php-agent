@@ -1,16 +1,16 @@
 # Dockerized development environment for the New Relic PHP Agent
 
-The dockerized development environment prototype allows contributors to both develop and test (using unit tests AND integration tests) without having to set up a specific environment on their own system.  Integration tests send actual data to the New Relic backend and therefore requires a license key (Sign up at https://newrelic.com/signup for a free account.).
+The dockerized development environment prototype allows contributors to both develop and test (using unit tests AND integration tests) without having to set up a specific environment on their own system.  Integration tests require  a valid New Relic license key. Sign up at https://newrelic.com/signup for a free account.
 
 *PLEASE NOTE* While this is now usable, this is still a work in progress.
 
-Currently docker-compose spins up `mysql` and `redis` databases in separate containers.
+docker-compose spins up `mysql` and `redis` and other databases in separate containers.
 
 Two environment variables to note:
 `NEWRELIC_LICENSE_KEY` is required to run the integration tests and should be set to your NR license key.
 If your collector isn’t the default (collector.newrelic.com), set the `NEWRELIC_COLLECTOR_HOST` to the appropriate value.
 
-PHP_VER can also be set, but hasn’t been tested beyond `8.0`.
+PHP_VER can also be set to vary the PHP version being used.
 
 Set all environment variables prior to running the development environment.  
 
@@ -53,13 +53,5 @@ In the shell, you can run all `make` commands as you normally would.
 
 # Next steps and issues
 
-## Currently only `mysql` and `redis` containers are integrated.  
- Other databases need to be added to the docker-compose.yml, but many of the tests cases run as-is.
+## There is possibly some incompatibility with mysql in the main build container as one of the mysql unit tests fails.  Unless this is resolved, It might make sense at a future point to have the integration tests run from a different container than the build container.
 
-## The explain plan in the sql tests contain partition/filtered properties but the tests can't currently be updated to reflect that since the sql database on our CI doesn't include those values. 
- RUN docker-php-ext-install pdo pdo_mysql
-
-## There is possibly some incompatibility with mysql in the main build container.  
- It might make sense at a future point to have the integration tests run from a different container than the build container.
-
-## There are currently 0 known failing integration tests with this prototype.
