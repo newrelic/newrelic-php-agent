@@ -12,6 +12,21 @@
 #include "nr_app_harvest_private.h"
 #include "util_logging.h"
 
+/*
+ * The build pipeline for PHP 8.2 uses a Debian image that is built on a
+ * version of glibc that contains an newer glibc version symbol for `pow()`
+ * which is incompatible with older distributions, causing RPM installs to fail.
+ *
+ * To pin the version of `pow` to a version compatible with all NR PHP Agent
+ * supported OSes, we utilize `asm()` and `.symver` to instruct the linker to
+ * select an older version- in this case, 2.17.
+ */
+#if defined(__GLIBC__)
+#if ZEND_MODULE_API_NO == ZEND_8_2_API_NO
+__asm__(".symver pow,pow@GLIBC_2.17");
+#endif
+#endif
+
 void nr_app_harvest_init(nr_app_harvest_t* ah,
                          nrtime_t connect_timestamp,
                          nrtime_t harvest_frequency,
