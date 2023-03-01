@@ -66,24 +66,25 @@ else
 endif
 
 
-# Our one external dependency is libpcre.a, which axiom needs. By default, ask
+# Our one external dependency is libpcre, which axiom needs. By default, ask
 # pkg-config for install location. This can be overriden by environment.
 # Agent's build system assumes that pcre's libdir is %prefix%/lib,
 # includedir is %prefix%/include.
-# Note that we need static version because different linux distributions use 
-# different names for shared object, which causes installation to fail.
 PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre/$$(ls /opt/nr/pcre 2>/dev/null)/lib/pkgconfig:$$PKG_CONFIG_PATH pkg-config libpcre --variable=prefix 2>/dev/null)
-HAVE_PCRE := $(shell \
-                test -d "$(PCRE_PREFIX)" \
-                && test -d "$(PCRE_PREFIX)/lib" \
-                && find -L "$(PCRE_PREFIX)/lib" -name 'libpcre.a' 2>/dev/null | grep -q 'libpcre.a' \
-                && echo 1 \
-                || echo 0)
-ifneq ($(findstring environment,$(origin PCRE_PREFIX)), )
-  ifeq ($(HAVE_PCRE), 0)
-    $(error User provided 'pcre' installation is not valid!)
-  endif
-#else handled in agent/config.m4
+
+# By default let the agent link to whatever libpcre is available on the system
+# (most likely a shared object). However for release builds the agent needs to
+# link with a static version of libpcre to ensure it runs on all Linux distros.
+# This is needed because different Linux distributions use different names for
+# the shared object and its impossible to link to a shared object that works 
+# universally on all Linux distributions. If PCRE_STATIC is set to yes, agent's
+# build system will enforce linking to static version of libpcre and if it is
+# not available, the build will abort.
+PCRE_STATIC ?= no
+ifneq ($(findstring /opt/nr/pcre,$(PCRE_PREFIX)), )
+# Legacy agent's build system quirks: link statically to build-scripts' provided
+# pcre library.
+PCRE_STATIC=yes
 endif
 
 # Whether you have PTHREAD_MUTEX_ERRORCHECK

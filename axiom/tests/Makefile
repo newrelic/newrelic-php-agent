@@ -102,7 +102,11 @@ endif
 # Flags required to link PCRE.
 #
 PCRE_CFLAGS := -I$(PCRE_PREFIX)/include
+ifeq (yes,$(PCRE_STATIC))
 PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -l:libpcre.a
+else 
+PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -lpcre
+endif
 
 all: tests
 
