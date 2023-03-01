@@ -22,7 +22,9 @@
  * select an older version- in this case, 2.17.
  */
 #if defined(__GLIBC__)
+#if ((__GLIBC__) >= 2) && ((__GLIBC_MINOR__) > 17)
 __asm__(".symver pow,pow@GLIBC_2.17");
+#endif
 #endif
 
 void nr_app_harvest_init(nr_app_harvest_t* ah,
