@@ -60,8 +60,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
    */
   if (NULL != object_ptr) {
     object = Z_OBJ_P(object_ptr);
-  } else {
-    object = NULL;
   }
 
   if (NULL != fname) {
