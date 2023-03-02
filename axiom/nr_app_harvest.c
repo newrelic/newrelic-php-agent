@@ -25,8 +25,6 @@
 #if ((__GLIBC__) >= 2) && ((__GLIBC_MINOR__) > 17)
 #if defined (__x86_64__)
   __asm__(".symver pow,pow@GLIBC_2.2.5");
-#elif defined (__aarch64__)
-  __asm__(".symver pow,pow@GLIBC_2.17");
 #endif
 #endif
 #endif
