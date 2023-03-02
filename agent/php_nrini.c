@@ -3053,7 +3053,7 @@ static int nr_ini_displayer_global(zend_ini_entry* ini_entry,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtautological-compare"
   if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
-      && 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+      || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic pop
     if (0
         == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
@@ -3212,7 +3212,7 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtautological-compare"
     if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
-        && 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+        || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic pop
       if (0
           == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
@@ -3248,8 +3248,8 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtautological-compare"
-  if (0 == PHP_INI_ENTRY_VALUE(ini_entry)
-      && 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+  if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
+      || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic push
     nro_set_hash_string(setarg->obj, PHP_INI_ENTRY_NAME(ini_entry), "no value");
   } else {
