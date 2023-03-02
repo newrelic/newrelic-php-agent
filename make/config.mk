@@ -81,9 +81,9 @@ PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre/$$(ls /opt/nr/pcre 2>/dev/nu
 # build system will enforce linking to static version of libpcre and if it is
 # not available, the build will abort.
 PCRE_STATIC ?= no
-ifneq ($(findstring /opt/nr/pcre,$(PCRE_PREFIX)), )
-# Legacy agent's build system quirks: link statically to build-scripts' provided
-# pcre library.
+ifneq ($(findstring /opt/nr/,$(PCRE_PREFIX)), )
+# Legacy agent's build systems (nrcamp and build-scripts) quirks: default to 
+# linking with static libpcre.
 PCRE_STATIC=yes
 endif
 
