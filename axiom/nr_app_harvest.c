@@ -19,7 +19,7 @@
  *
  * To pin the version of `pow` to a version compatible with all NR PHP Agent
  * supported OSes, we utilize `asm()` and `.symver` to instruct the linker to
- * select an older version- in this case, 2.17.
+ * select an older version of the symbol.
  */
 #if defined(__GLIBC__)
 #if ((__GLIBC__) >= 2) && ((__GLIBC_MINOR__) > 17)
