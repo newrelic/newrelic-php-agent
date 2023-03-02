@@ -20,49 +20,35 @@ on:
 jobs:
   agent_release:
     env:
-      PHP_VER: ${{ matrix.php_ver }}
-      ARCH: ${{ matrix.arch }}
-      BUILD_TYPE: release
-      OS: ${{ matrix.os }}
-      image_name: ${{ matrix.os }}:${{ matrix.php_ver }}${{ matrix.arch }}
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_VERSION: v1
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux]
-        php_ver: ['8.0-zts']
-        arch: [x64, x86]
+        platform: [gnu, musl]
+        php_ver: ['8.2']
+        arch: [amd64]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.client_payload.ref }}
-      - name: Build Custom Docker Image
-        run: docker build --build-arg ARCH=$ARCH --build-arg PHP_VER=$PHP_VER --build-arg BUILD_TYPE=$BUILD_TYPE -f ./.github/docker/${OS}/${ARCH}/Dockerfile -t $image_name .
-      - name: Build and Test
-        run: docker run --name runtest --workdir /github/workspace --rm -e GITHUB_WORKSPACE -e GITHUB_ENV -v "${GITHUB_WORKSPACE}":"/github/workspace" $image_name
+          path: newrelic-php-agent
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/newrelic-php-agent":"/usr/local/src/newrelic-php-agent"
+          -e OPTIMIZE=1
+          -e PCRE_STATIC=yes
+          $IMAGE_NAME:agent-builder-php${{matrix.php_ver}}-${{matrix.platform}}-$IMAGE_VERSION release-${{matrix.php_ver}}-gha
       - name: Save build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.php_ver }}binaries
-          path: releases
-          if-no-files-found: error
-  combine:
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    name: Combine artifacts from matrix build
-    needs: agent_release
-    steps:
-      - name: Create directory
-        run: mkdir releases
-      - name: Download to directory
-        uses: actions/download-artifact@v2
-        with:
-          path: releases
-      - run: sudo apt install tree
-      - run: tree
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: $GITHUB_SHA
-          path: releases
+          path: newrelic-php-agent/releases
+          name: release-from-gha
           if-no-files-found: error
