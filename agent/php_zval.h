@@ -175,7 +175,11 @@ static inline int nr_php_is_zval_valid_string(const zval* z) {
  * Returns : a 1 if the argument is a valid non-empty PHP string; 0 otherwise
  */
 static inline int nr_php_is_zval_non_empty_string(const zval* z) {
-  if (!nr_php_is_zval_valid_string(z) || (Z_STRLEN_P(z) <= 0)) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
+  if (!nr_php_is_zval_valid_string(z) || (NULL == Z_STRVAL_P(z))
+      || (Z_STRLEN_P(z) <= 0)) {
+#pragma GCC diagnostic pop
     return 0;
   }
   return 1;
