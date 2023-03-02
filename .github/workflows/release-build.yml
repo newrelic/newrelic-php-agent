@@ -44,6 +44,7 @@ jobs:
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/newrelic-php-agent":"/usr/local/src/newrelic-php-agent"
           -e OPTIMIZE=1
+          -e PCRE_STATIC=yes
           $IMAGE_NAME:agent-builder-php${{matrix.php_ver}}-${{matrix.platform}}-$IMAGE_VERSION release-${{matrix.php_ver}}-gha
       - name: Save build artifacts
         uses: actions/upload-artifact@v3
