@@ -103,7 +103,12 @@ endif
 #
 PCRE_CFLAGS := -I$(PCRE_PREFIX)/include
 ifeq (yes,$(PCRE_STATIC))
-PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -l:libpcre.a
+  ifneq (,$(findstring /opt/nr/camp,$(shell pcre-config --prefix)))
+    # Special handling for legacy build environments.
+    PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -lnrpcre-pic
+  else
+    PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -l:libpcre.a
+  endif
 else 
 PCRE_LDLIBS := -L$(PCRE_PREFIX)/lib -lpcre
 endif
