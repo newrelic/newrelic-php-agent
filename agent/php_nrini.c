@@ -2998,7 +2998,7 @@ static void nr_ini_displayer_cb(zend_ini_entry* ini_entry, int type TSRMLS_DC) {
   }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
   if ((ZEND_INI_DISPLAY_ORIG == type) && ini_entry->modified
       && PHP_INI_ENTRY_ORIG_VALUE(ini_entry)
       && PHP_INI_ENTRY_ORIG_VALUE_LEN(ini_entry)) {
@@ -3051,7 +3051,7 @@ static int nr_ini_displayer_global(zend_ini_entry* ini_entry,
    * settings.
    */
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
   if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
       || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic pop
@@ -3210,7 +3210,7 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
 
   if (!(ini_entry->modifiable & PHP_INI_PERDIR)) {
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
     if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
         || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic pop
@@ -3247,7 +3247,7 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
   }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
   if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
       || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
 #pragma GCC diagnostic push

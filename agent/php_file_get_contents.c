@@ -132,7 +132,7 @@ static void nr_php_file_get_contents_add_headers_internal(zval* context,
     return;
   }
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
   if (Z_STRLEN_P(http_header) <= 0 || NULL == Z_STRVAL_P(http_header)) {
 #pragma GCC diagnostic pop
     /* No header string to preserve. */

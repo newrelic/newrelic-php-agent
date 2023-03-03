@@ -176,7 +176,7 @@ static inline int nr_php_is_zval_valid_string(const zval* z) {
  */
 static inline int nr_php_is_zval_non_empty_string(const zval* z) {
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+#pragma GCC diagnostic ignored "-Waddress"
   if (!nr_php_is_zval_valid_string(z) || (NULL == Z_STRVAL_P(z))
       || (Z_STRLEN_P(z) <= 0)) {
 #pragma GCC diagnostic pop
