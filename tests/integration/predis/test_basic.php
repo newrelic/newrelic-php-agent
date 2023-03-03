@@ -34,7 +34,7 @@ ok - delete key
     [{"name":"Datastore/allOther"},                                 [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/all"},                                [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/allOther"},                           [8, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Redis/__HOST__/6379"},             [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/redisdb/6379"},             [8, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                      [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
@@ -83,7 +83,7 @@ function test_basic() {
   /* Generate a unique key to use for this test run */
   $key = randstr(16);
   if ($client->exists($key)) {
-      echo "key already exists: ${key}\n";
+      echo "key already exists: $key\n";
       exit(1);
   }
 

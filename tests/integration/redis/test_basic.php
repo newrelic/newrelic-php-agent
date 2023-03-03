@@ -198,9 +198,9 @@ function test_basic() {
 
   /* generate a unique key to use for this test run */
   $key1 = randstr(16);
-  $key2 = "${key1}_b";
+  $key2 = "{$key1}_b";
   if ($redis->exists([$key1, $key2])) {
-    die("skip: key(s) already exist: ${key1}, ${key2}\n");
+    die("skip: key(s) already exist: $key1, $key2\n");
     exit(1);
   }
 
