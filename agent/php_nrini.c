@@ -2997,12 +2997,15 @@ static void nr_ini_displayer_cb(zend_ini_entry* ini_entry, int type TSRMLS_DC) {
     return;
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress"
   if ((ZEND_INI_DISPLAY_ORIG == type) && ini_entry->modified
       && PHP_INI_ENTRY_ORIG_VALUE(ini_entry)
       && PHP_INI_ENTRY_ORIG_VALUE_LEN(ini_entry)) {
     display_string = PHP_INI_ENTRY_ORIG_VALUE(ini_entry);
     display_string_length = PHP_INI_ENTRY_ORIG_VALUE_LEN(ini_entry);
     esc_html = sapi_module.phpinfo_as_text ? 0 : 1;
+#pragma GCC diagnostic pop
   } else if (PHP_INI_ENTRY_VALUE(ini_entry)
              && PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
     display_string = PHP_INI_ENTRY_VALUE(ini_entry);
@@ -3047,8 +3050,11 @@ static int nr_ini_displayer_global(zend_ini_entry* ini_entry,
    * If there is no value, then don't print anything for the "special" ini
    * settings.
    */
-  if ((NULL == PHP_INI_ENTRY_VALUE(ini_entry))
-      || (0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry))) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress"
+  if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
+      || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+#pragma GCC diagnostic pop
     if (0
         == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
                       NR_PSTR("newrelic.special"))) {
@@ -3162,11 +3168,10 @@ void zm_info_newrelic(void); /* ctags landing pad only */
 PHP_MINFO_FUNCTION(newrelic) {
   php_info_print_table_start();
   php_info_print_table_header(2, "New Relic RPM Monitoring",
-                              NR_PHP_PROCESS_GLOBALS(enabled)
-                                  ? "enabled"
-                                  : NR_PHP_PROCESS_GLOBALS(mpm_bad)
-                                        ? "disabled due to threaded MPM"
-                                        : "disabled");
+                              NR_PHP_PROCESS_GLOBALS(enabled) ? "enabled"
+                              : NR_PHP_PROCESS_GLOBALS(mpm_bad)
+                                  ? "disabled due to threaded MPM"
+                                  : "disabled");
   php_info_print_table_row(2, "New Relic Version", nr_version_verbose());
   php_info_print_table_end();
 
@@ -3204,8 +3209,11 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
   }
 
   if (!(ini_entry->modifiable & PHP_INI_PERDIR)) {
-    if ((NULL == PHP_INI_ENTRY_VALUE(ini_entry))
-        || (0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry))) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress"
+    if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
+        || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+#pragma GCC diagnostic pop
       if (0
           == nr_strncmp(PHP_INI_ENTRY_NAME(ini_entry),
                         NR_PSTR("newrelic.special"))) {
@@ -3238,8 +3246,11 @@ static int nr_ini_settings(zend_ini_entry* ini_entry,
     return 0;
   }
 
-  if ((NULL == PHP_INI_ENTRY_VALUE(ini_entry))
-      || (0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry))) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress"
+  if (NULL == PHP_INI_ENTRY_VALUE(ini_entry)
+      || 0 == PHP_INI_ENTRY_VALUE_LEN(ini_entry)) {
+#pragma GCC diagnostic push
     nro_set_hash_string(setarg->obj, PHP_INI_ENTRY_NAME(ini_entry), "no value");
   } else {
     if (0

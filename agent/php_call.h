@@ -49,7 +49,8 @@ extern zval* nr_php_call_user_func(zval* object_ptr,
     zval* call_params[] = {params};                                   \
     size_t num_call_params = sizeof(call_params) / sizeof(zval*);     \
     nr_php_call_user_func(object_ptr, function_name, num_call_params, \
-                          call_params TSRMLS_CC);                     \
+                          (num_call_params > 0 ? call_params : NULL)  \
+                              TSRMLS_CC);                             \
   })
 
 /*
@@ -79,12 +80,13 @@ extern zval* nr_php_call_callable_zval(zval* callable,
                                        zend_uint param_count,
                                        zval* params[] TSRMLS_DC);
 
-#define nr_php_call_callable(callable, params...)                 \
-  ({                                                              \
-    zval* call_params[] = {params};                               \
-    size_t num_call_params = sizeof(call_params) / sizeof(zval*); \
-    nr_php_call_callable_zval(callable, num_call_params,          \
-                              call_params TSRMLS_CC);             \
+#define nr_php_call_callable(callable, params...)                        \
+  ({                                                                     \
+    zval* call_params[] = {params};                                      \
+    size_t num_call_params = sizeof(call_params) / sizeof(zval*);        \
+    nr_php_call_callable_zval(callable, num_call_params,                 \
+                              (num_call_params > 0 ? call_params : NULL) \
+                                  TSRMLS_CC);                            \
   })
 
 extern zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
@@ -92,12 +94,13 @@ extern zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
                                          zend_uint param_count,
                                          zval* params[] TSRMLS_DC);
 
-#define nr_php_call_fcall_info(fci, fcc, params...)               \
-  ({                                                              \
-    zval* call_params[] = {params};                               \
-    size_t num_call_params = sizeof(call_params) / sizeof(zval*); \
-    nr_php_call_fcall_info_zval(fci, fcc, num_call_params,        \
-                                call_params TSRMLS_CC);           \
+#define nr_php_call_fcall_info(fci, fcc, params...)                        \
+  ({                                                                       \
+    zval* call_params[] = {params};                                        \
+    size_t num_call_params = sizeof(call_params) / sizeof(zval*);          \
+    nr_php_call_fcall_info_zval(fci, fcc, num_call_params,                 \
+                                (num_call_params > 0 ? call_params : NULL) \
+                                    TSRMLS_CC);                            \
   })
 
 extern void nr_php_call_user_func_array_handler(
