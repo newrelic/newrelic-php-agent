@@ -18,12 +18,10 @@ on:
   push:
     branches: 
       - main
-      - 'php-82'
       - 'dev'
   pull_request:
     branches: 
       - main
-      - 'php-82'
       - 'dev'
 
 jobs:
