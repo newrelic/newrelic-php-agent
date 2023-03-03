@@ -79,7 +79,7 @@ function test_sorted_sets() {
   /* generate a unique key to use for this test run */
   $key1 = randstr(16);
   if ($redis->exists($key1)) {
-    die("skip: key already exists: ${key1}\n");
+    die("skip: key already exists: $key1\n");
   }
 
   $redis->sadd($key1, 'foo');

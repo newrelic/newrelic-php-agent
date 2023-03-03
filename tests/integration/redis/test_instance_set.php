@@ -65,10 +65,10 @@ function test_setops() {
 
   /* generate a unique key to use for this test run */
   $key1 = randstr(16);
-  $key2 = "${key1}_b";
-  $dkey = "${key1}_d";
+  $key2 = "{$key1}_b";
+  $dkey = "{$key1}_d";
   if ($redis->exists([$key1, $key2, $dkey])) {
-    die("skip: key(s) already exist: ${key1}, ${key2}, ${dkey}\n");
+    die("skip: key(s) already exist: $key1, $key2, $dkey\n");
   }
 
   tap_equal(1, $redis->sadd($key1, 'foo'), 'add new element to set');
