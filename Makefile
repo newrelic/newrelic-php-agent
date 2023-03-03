@@ -115,6 +115,7 @@ show-vendors:
 	@echo ""
 	@echo -----------------------------------------------------------------------
 	@echo "| Using pcre library from $(PCRE_PREFIX) (from $(origin PCRE_PREFIX))"
+	@echo -n "| Link to "; [ $(PCRE_STATIC) = yes ] && echo -n "static" || echo -n "shared"; echo " libpcre";
 	@echo "| Using protobuf-c library from $(PROTOBUF_C_PREFIX) (from $(origin PROTOBUF_C_PREFIX))"
 	@echo -----------------------------------------------------------------------
 	@echo ""
@@ -134,7 +135,7 @@ agent/configure: agent/config.m4 agent/Makefile.frag
 	cd agent; $(PHPIZE) --clean && $(PHPIZE)
 
 agent/Makefile: agent/configure | axiom
-	cd agent; ./configure $(SILENT) --enable-newrelic --with-axiom=$(realpath axiom) --with-php-config=$(PHP_CONFIG) --with-protobuf-c=$(PROTOBUF_C_PREFIX) --with-pcre=$(PCRE_PREFIX)
+	cd agent; ./configure $(SILENT) --enable-newrelic --with-axiom=$(realpath axiom) --with-php-config=$(PHP_CONFIG) --with-protobuf-c=$(PROTOBUF_C_PREFIX) --with-pcre=$(PCRE_PREFIX) --with-pcre-static=$(PCRE_STATIC)
 
 #
 # Installs the agent into the extension directory of the appropriate PHP
