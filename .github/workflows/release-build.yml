@@ -16,6 +16,11 @@ on:
   # Run this workflow manually from the Actions tab or using the API
   #
   workflow_dispatch:
+    inputs:
+      build-number:
+        description: 'Build number for agent version'
+        required: true
+        type: string
 
 jobs:
   agent_release:
@@ -45,6 +50,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/newrelic-php-agent":"/usr/local/src/newrelic-php-agent"
           -e OPTIMIZE=1
           -e PCRE_STATIC=yes
+          -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:agent-builder-php${{matrix.php_ver}}-${{matrix.platform}}-$IMAGE_VERSION release-${{matrix.php_ver}}-gha
       - name: Save build artifacts
         uses: actions/upload-artifact@v3
