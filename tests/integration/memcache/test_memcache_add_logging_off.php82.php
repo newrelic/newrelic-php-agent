@@ -24,7 +24,7 @@ newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_REGEX
-^\s*Deprecated: Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
+^.*\s*Deprecated:\s+Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - add key 1
 ok - add key 2

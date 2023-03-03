@@ -21,7 +21,7 @@ if (version_compare(PHP_VERSION, "8.2", "<")) {
 */
 
 /*EXPECT_REGEX
-^\s*Deprecated: Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
+^.*\s*Deprecated:\s+Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - set key
 ok - increment key
