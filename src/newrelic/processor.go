@@ -377,7 +377,7 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	app = NewApp(m.Info)
 	p.apps[key] = app
 	numapps = len(p.apps)
-	log.Healthf("# active apps = %d, max = %d",
+	log.Healthf("current number of apps is %d of a max of %d",
 		numapps, limits.AppLimit)
 	if numapps == limits.AppLimitNotifyHigh {
 		log.Infof("approaching app limit of %d, current number of apps is %d",
@@ -828,7 +828,7 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 			log.Infof("current number of apps is %d",
 				limits.AppLimitNotifyLow)
 		}
-		log.Healthf("# active apps = %d, max = %d",
+		log.Healthf("current number of apps is %d of a max of %d",
 			numapps, limits.AppLimit)
 		p.shutdownAppHarvest(id)
 		delete(p.apps, app.Key())
