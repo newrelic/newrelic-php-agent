@@ -650,7 +650,7 @@ func deleteSockfile(network, address string) {
 	if network == "unix" && !(address[0] == '@') {
 		err := os.Remove(address)
 		if err != nil && !os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "unable to remove stale sock file: %v"+
+			fmt.Fprintf(os.Stderr, "unable to remove stale sock file: %v"+
 				" - another daemon may already be running?", err)
 		}
 	}

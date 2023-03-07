@@ -83,8 +83,7 @@ EXAMPLES
      25 concurrent transactions.
 
   stressor --rpm 0
-     Simulate an unlimited number of transactions per minute.
-`
+     Simulate an unlimited number of transactions per minute.`
 
 const (
 	DefaultApps     = 1
