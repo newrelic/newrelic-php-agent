@@ -83,7 +83,8 @@ EXAMPLES
      25 concurrent transactions.
 
   stressor --rpm 0
-     Simulate an unlimited number of transactions per minute.`
+     Simulate an unlimited number of transactions per minute.
+`
 
 const (
 	DefaultApps     = 1
@@ -574,7 +575,7 @@ func reportDaemonStats(stats *MemStats, numMsg uint64, lifespan time.Duration) {
 }
 
 func main() {
-	flag.Usage = func() { fmt.Fprintln(os.Stderr, helpMessage) }
+	flag.Usage = func() { fmt.Fprint(os.Stderr, helpMessage, '\n') }
 	flag.Parse()
 
 	if *flagCPUProfile != "" {
