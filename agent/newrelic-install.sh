@@ -336,7 +336,7 @@ if [ -z "${ispkg}" ]; then
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
-"20180731" "20190902" "20200930" "20210902"; do
+"20180731" "20190902" "20200930" "20210902" "20220829"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   # remove following line when ZTS removed from releases
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
