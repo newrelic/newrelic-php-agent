@@ -338,6 +338,8 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 # Check that exxtension artifacts exist for all supported PHP versions
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
+# Currently supported versions:
+#    (5.5, 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2)
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
 "20180731" "20190902" "20200930" "20210902" "20220829"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
