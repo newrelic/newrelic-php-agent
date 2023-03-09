@@ -338,8 +338,6 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
 "20180731" "20190902" "20200930" "20210902"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
-  # remove following line when ZTS removed from releases
-  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
 done
 
 if [ -n "${fmissing}" ]; then
@@ -1277,20 +1275,20 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
-# uncomment when ZTS binaries are removed
-#  if [ "${pi_zts}" = "yes" ]; then
-#    msg=$(
-#    cat << EOF
-#
-#An unsupported PHP ZTS build has been detected. Please refer to this link:
-#  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
-#to view compatibilty requirements for the the New Relic PHP agent.
-#The install will now exit.
-#EOF
-#)
-#    error "${msg}"
-#    exit 1
-#  fi
+# zts installs are no longer supported
+  if [ "${pi_zts}" = "yes" ]; then
+    msg=$(
+    cat << EOF
+
+An unsupported PHP ZTS build has been detected. Please refer to this link:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+The install will now exit.
+EOF
+)
+    error "${msg}"
+    exit 1
+  fi
 
 #
 # This is where we figure out where to put the ini file, if at all. We only do
