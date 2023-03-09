@@ -94,7 +94,11 @@ newrelic.cross_application_tracer.enabled = false
         "int": 7,
         "string": "a_str"
       },
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ],
     [
       {
@@ -113,8 +117,11 @@ newrelic.cross_application_tracer.enabled = false
       {},      
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
-      }     
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ],
     [
       {
@@ -133,7 +140,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ],
     [
@@ -151,7 +161,11 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ],
     [
       {
@@ -170,7 +184,10 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]
