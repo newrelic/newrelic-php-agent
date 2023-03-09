@@ -8,6 +8,13 @@ Tests newrelic_add_custom_span_parameter() on a nested path that includes an unc
 The custom span parameters for `a` should not show up on the span error event associated with for `b`.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0

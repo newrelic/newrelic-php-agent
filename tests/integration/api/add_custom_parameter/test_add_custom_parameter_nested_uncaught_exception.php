@@ -7,6 +7,13 @@
 Tests newrelic_add_custom_parameter() on a nested path that includes a caught exception.  Any txn custom parameters get rolled up, so the parameters for `a` should get rolled up to the error event.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
