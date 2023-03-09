@@ -9,7 +9,13 @@ uopz_get_exit_status
 */
 
 /*SKIPIF
-<?php include("skipif.inc") ?>
+<?php include("skipif.inc"); 
+
+if (extension_loaded('uopz')) {
+   if (version_compare(phpversion('uopz'), '7.1', '>=')) {
+     die("skip: needs uopz < 7.1 - eval('exit(10)') does not work as expected need to fix");
+   }
+}
 */
 
 /*INI

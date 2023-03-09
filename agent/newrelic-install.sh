@@ -335,8 +335,13 @@ if [ -z "${ispkg}" ]; then
   check_file "${ilibdir}/scripts/newrelic-daemon.logrotate"
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
+# Check that exxtension artifacts exist for all supported PHP versions
+# MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
+# FOR A PHP VERSION
+# Currently supported versions:
+#    (5.5, 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2)
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
-"20180731" "20190902" "20200930" "20210902"; do
+"20180731" "20190902" "20200930" "20210902" "20220829"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   # remove following line when ZTS removed from releases
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
@@ -543,6 +548,7 @@ add_to_path /usr/local/php-7.3/bin
 add_to_path /usr/local/php-7.4/bin
 add_to_path /usr/local/php-8.0/bin
 add_to_path /usr/local/php-8.1/bin
+add_to_path /usr/local/php-8.2/bin
 
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
@@ -556,6 +562,7 @@ add_to_path /usr/php-7.3/bin
 add_to_path /usr/php-7.4/bin
 add_to_path /usr/php-8.0/bin
 add_to_path /usr/php-8.1/bin
+add_to_path /usr/php-8.2/bin
 
 add_to_path /usr/php/5.5/bin
 add_to_path /usr/php/5.6/bin
@@ -566,6 +573,7 @@ add_to_path /usr/php/7.3/bin
 add_to_path /usr/php/7.4/bin
 add_to_path /usr/php/8.0/bin
 add_to_path /usr/php/8.1/bin
+add_to_path /usr/php/8.2/bin
 
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
@@ -579,6 +587,7 @@ add_to_path /opt/php-7.3/bin
 add_to_path /opt/php-7.4/bin
 add_to_path /opt/php-8.0/bin
 add_to_path /opt/php-8.1/bin
+add_to_path /opt/php-8.2/bin
 
 if [ -n "${NR_INSTALL_PATH}" ]; then
   oIFS="${IFS}"
@@ -1065,6 +1074,10 @@ for this copy of PHP. We apologize for the inconvenience.
       pi_php8="yes"
       ;;
 
+    8.2.*)
+      pi_php8="yes"
+      ;;
+
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
@@ -1233,6 +1246,7 @@ does not exist. This particular instance of PHP will be skipped.
     7.4.*)  pi_modver="20190902" ;;
     8.0.*)  pi_modver="20200930" ;;
     8.1.*)  pi_modver="20210902" ;;
+    8.2.*)  pi_modver="20220829" ;;
   esac
   log "${pdir}: pi_modver=${pi_modver}"
 

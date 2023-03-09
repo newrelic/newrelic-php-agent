@@ -37,6 +37,9 @@ dnl "./make.sh pcre" from top level directory of php-build-scripts.
 PHP_ARG_WITH(pcre,,
 [  --with-pcre=DIR   Path to pcre], /opt/nr/pcre/8.40, no)
 
+PHP_ARG_WITH(pcre-static,,
+[  --with-pcre-static=no   link to static pcre], no, no)
+
 if test "$PHP_NEWRELIC" = "yes"; then
   AC_DEFINE(HAVE_NEWRELIC, 1, [Whether you have New Relic])
 
@@ -113,12 +116,19 @@ if test "$PHP_NEWRELIC" = "yes"; then
     dnl to libpcre-pic).
     PCRE_LIBLINE=-lnrpcre-pic
     PCRE_LIBRARY=nrpcre-pic
-  else
+  elif echo "$PHP_PCRE_STATIC" | grep -q yes; then
     dnl Force the agent to use static version of pcre library. This avoids the
     dnl issue with runtime dependency on libpcre shared object that is hard to
     dnl satisfy universally because different Linux distributions use different
     dnl name of the shared object: libpcre.so or libpcre3.so.
     PCRE_LIBLINE="-L$PHP_PCRE -l:libpcre.a"
+    PCRE_LIBRARY=pcre
+  else
+    dnl When casually building from source and not enforcing static linking,
+    dnl through PCRE_STATIC=yes environmental variable, let the linker decide
+    dnl what version of libpcre to link to. This is allowed because usually
+    dnl when building from source, build platform = runtime platform.
+    PCRE_LIBLINE="-L$PHP_PCRE -lpcre"
     PCRE_LIBRARY=pcre
   fi
 

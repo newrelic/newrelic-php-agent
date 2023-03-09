@@ -11,7 +11,7 @@ if (empty($PREDIS_HOME)) {
 }
 
 if (!file_exists($PREDIS_HOME)) {
-  die("skip: PREDIS_HOME not found: ${PREDIS_HOME}\n");
+  die("skip: PREDIS_HOME not found: $PREDIS_HOME\n");
 }
 
 $PREDIS_HOME = realpath($PREDIS_HOME);

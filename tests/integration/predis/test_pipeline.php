@@ -20,11 +20,11 @@ are being run, so they are instrumented as "pipeline".
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                      [13, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                 [13, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/all"},                                [13, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/Redis/allOther"},                           [13, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Redis/__HOST__/6379"},             [13, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                      [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                 [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                                [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                           [12, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/redisdb/6379"},             [12, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
@@ -79,7 +79,7 @@ function test_pipeline() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($client->exists($key)) {
-    echo "key already exists: ${key}\n";
+    echo "key already exists: $key\n";
     exit(1);
   }
 

@@ -55,10 +55,10 @@ function test_bitops() {
 
   /* generate a unique key to use for this test run */
   $key1 = randstr(16);
-  $key2 = "${key1}_b";
-  $dkey = "${key1}_d";
+  $key2 = "{$key1}_b";
+  $dkey = "{$key1}_d";
   if ($redis->exists([$key1, $key2, $dkey])) {
-    die("skip: key(s) already exist: ${key1}, ${key2}, ${dkey}\n");
+    die("skip: key(s) already exist: $key1, $key2, $dkey\n");
   }
 
   /* T - 01010100; E - 01000101; N - 01001110 */

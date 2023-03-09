@@ -257,8 +257,9 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 			t.Fatal(string(append(cp.data, cp2.data...)))
 		}
 	}
-	time := strings.Split(string(cp3.data), ",")[1]
-	usageMetrics := `["one",` + time + `,` + time + `,` +
+	time1 := strings.Split(string(cp3.data), ",")[1]
+	time2 := strings.Split(string(cp3.data), ",")[2]
+	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1333,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
@@ -358,8 +359,9 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}
 
-	time := strings.Split(string(cp2.data), ",")[1]
-	usageMetrics := `["one",` + time + `,` + time + `,` +
+	time1 := strings.Split(string(cp2.data), ",")[1]
+	time2 := strings.Split(string(cp2.data), ",")[2]
+	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1313,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/custom_event_data/Output/Bytes"},[1,60,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
@@ -394,8 +396,9 @@ func TestUsageHarvest(t *testing.T) {
 
 	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
 	//   of harvests. So we extract the time from what we receive
-	time := strings.Split(string(cp1.data), ",")[1]
-	var expectedJSON1 = `["one",` + time + `,` + time + `,` +
+	time1 := strings.Split(string(cp1.data), ",")[1]
+	time2 := strings.Split(string(cp1.data), ",")[2]
+	var expectedJSON1 = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
@@ -413,8 +416,9 @@ func TestUsageHarvest(t *testing.T) {
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
-	time = strings.Split(string(cp2.data), ",")[1]
-	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
+	time1 = strings.Split(string(cp2.data), ",")[1]
+	time2 = strings.Split(string(cp2.data), ",")[2]
+	var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[1,1253,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
 
@@ -467,9 +471,10 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 
 	<-m.p.trackProgress // unblock processor after harvest
 
-	time := strings.Split(string(cp.data), ",")[1]
+	time1 := strings.Split(string(cp.data), ",")[1]
+	time2 := strings.Split(string(cp.data), ",")[2]
 	// The data usage channel only holds 25 points until dropping data
-	var expectedJSON = `["one",` + time + `,` + time + `,` +
+	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
 
@@ -527,8 +532,9 @@ func TestSupportabilityHarvest(t *testing.T) {
 
 	// Because MockedProcessor wraps a real processor, we have no way to directly set the time
 	//   of harvests. So we extract the time from what we receive
-	time := strings.Split(string(cp1.data), ",")[1]
-	var expectedJSON = `["one",` + time + `,` + time + `,` +
+	time1 := strings.Split(string(cp1.data), ",")[1]
+	time2 := strings.Split(string(cp1.data), ",")[2]
+	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
 		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
@@ -548,9 +554,10 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
-	time = strings.Split(string(cp2.data), ",")[1]
+	time1 = strings.Split(string(cp2.data), ",")[1]
+	time2 = strings.Split(string(cp2.data), ",")[2]
 	// includes usage of the first data usage metrics sent
-	var expectedJSON2 = `["one",` + time + `,` + time + `,` +
+	var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1584,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[2,1584,0,0,0,0]]]]`
 
@@ -878,8 +885,9 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		t.Fatal("Payload sum of 8001 events expected, got ", cp1Events, " and ", cp2Events)
 	}
 	// usage metrics comparison
-	time := strings.Split(string(cp3.data), ",")[1]
-	var expectedJSON = `["one",` + time + `,` + time + `,` +
+	time1 := strings.Split(string(cp3.data), ",")[1]
+	time2 := strings.Split(string(cp3.data), ",")[2]
+	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[6,289520,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1259,0,0,0,0]]]]`
