@@ -74,12 +74,12 @@ function tap_equal_unordered_values($expect, $actual, $msg) {
 
 // Prints a test pass in TAP format.
 function tap_ok($msg) {
-  echo "ok - ${msg}\n";
+  echo "ok - $msg\n";
 }
 
 // Prints a test failure in TAP format.
 function tap_not_ok($msg, $expect, $actual, $negated = false) {
-  echo "not ok - ${msg}\n";
+  echo "not ok - $msg\n";
 
   $expect_str = var_export($expect, true);
   $actual_str = var_export($actual, true);

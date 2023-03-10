@@ -37,7 +37,11 @@ newrelic.framework = laravel
 use Illuminate\Console\Application;
 use Symfony\Component\Console\Output\Output;
 
-require_once __DIR__.'/mock_artisan.php';
+if (version_compare(PHP_VERSION, "8.0", ">=")){
+  require_once __DIR__.'/mock_artisan.php8.php';
+} else {
+  require_once __DIR__.'/mock_artisan.php';
+}
 
 $output = new Output;
 

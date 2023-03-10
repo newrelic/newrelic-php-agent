@@ -15,12 +15,10 @@ namespace Symfony\Component\Console\Input {
   interface InputInterface {
     public function getFirstArgument();
   }
-
   class Input implements InputInterface {
     public function __construct($argument) {
       $this->argument = $argument;
     }
-
     public function getFirstArgument() {
       return $this->argument;
     }

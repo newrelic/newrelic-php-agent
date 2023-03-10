@@ -9,7 +9,11 @@ Test function uopz_implement.
 */
 
 /*SKIPIF
-<?php include("skipif.inc") ?>
+<?php include("skipif.inc");
+
+if (extension_loaded('uopz') && !function_exists("uopz_extend")) {
+  die("skip: needs uopz < 7.1");
+}
 */
 
 /*EXPECT

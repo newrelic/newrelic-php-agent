@@ -11,6 +11,10 @@ decremented.
 
 /*SKIPIF
 <?php require('skipif.inc');
+
+if (version_compare(PHP_VERSION, "8.2", ">=")) {
+  die("skip: test for PHP 8.2 separate\n");
+}
 */
 
 /*INI

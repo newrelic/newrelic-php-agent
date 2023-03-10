@@ -26,28 +26,28 @@ ok - delete key
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/all/"},                                    [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/allOther/"},                               [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/Redis/all/"},                              [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/Redis/allOther/"},                         [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/instance/Redis/__HOST__/[0-9]{1,5}/"},     [4, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/del/"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/del/",
+    [{"name":"Datastore/all"},                                    [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                               [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/all"},                              [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/Redis/allOther"},                         [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Redis/redisdb/6379"},      [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/exists/"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/exists/",
+    [{"name":"Datastore/operation/Redis/exists"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/get/"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/get/",
+    [{"name":"Datastore/operation/Redis/get"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/set/"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Datastore/operation/Redis/set/",
+    [{"name":"Datastore/operation/Redis/set"},                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/set",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransaction/all/"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransaction/php__FILE__/"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransactionTotalTime/"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/OtherTransactionTotalTime/php__FILE__/"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"/Supportability/api/set_appname/after/"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/set_appname/after"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
@@ -77,7 +77,7 @@ function test_basic() {
   /* generate a unique key to use for this test run */
   $key = randstr(16);
   if ($client->exists($key)) {
-      echo "key already exists: ${key}\n";
+      echo "key already exists: $key\n";
       exit(1);
   }
 

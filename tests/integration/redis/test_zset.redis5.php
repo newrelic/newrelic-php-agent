@@ -86,7 +86,7 @@ function test_sorted_sets() {
 
   $key = randstr(16);
   if ($redis->exists($key)) {
-    die("skip: key already exists: ${key}\n");
+    die("skip: key already exists: $key\n");
   }
 
   tap_equal(3, $redis->zadd($key, 0, 'min', 1, 'med', 2, 'max'), 'add three elements to sorted set');

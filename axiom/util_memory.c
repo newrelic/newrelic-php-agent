@@ -96,7 +96,7 @@ void* NRMALLOCSZ(2) nr_realloc(void* oldptr, size_t newsize) {
   }
 
   ret = (realloc)(oldptr, newsize);
-  if (nrunlikely(0 == ret)) {
+  if (NULL == ret) {
     nrl_error(NRL_MEMORY, "failed to reallocate %p for %zu bytes", oldptr,
               newsize);
     nr_signal_tracer_common(31); /* SIGSYS(31) - bad system call */
