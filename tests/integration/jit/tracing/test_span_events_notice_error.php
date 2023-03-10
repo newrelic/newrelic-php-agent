@@ -99,7 +99,11 @@ opcache.jit=tracing
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ],
     [
       {
@@ -118,7 +122,10 @@ opcache.jit=tracing
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception"
+        "error.class": "Exception",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]

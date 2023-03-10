@@ -73,7 +73,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ],
     [
       {
@@ -90,7 +94,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ]
   ]
 ]

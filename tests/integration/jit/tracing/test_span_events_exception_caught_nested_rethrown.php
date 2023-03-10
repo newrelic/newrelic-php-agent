@@ -105,7 +105,10 @@ opcache.jit=tracing
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Rethrown caught exception: Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ],
     [
@@ -125,7 +128,10 @@ opcache.jit=tracing
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ],
     [
@@ -145,7 +151,10 @@ opcache.jit=tracing
       {},
       {
        "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]

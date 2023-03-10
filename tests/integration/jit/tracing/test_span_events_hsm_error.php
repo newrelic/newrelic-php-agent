@@ -108,7 +108,10 @@ opcache.jit=tracing
       {},
       {
         "error.message": "Message removed by New Relic high_security setting",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]

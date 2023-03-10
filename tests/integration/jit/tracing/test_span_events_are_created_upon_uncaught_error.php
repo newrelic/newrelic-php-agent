@@ -97,7 +97,10 @@ opcache.jit=tracing
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.class": "E_USER_ERROR",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]
