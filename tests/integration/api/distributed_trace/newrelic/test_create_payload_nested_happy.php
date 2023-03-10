@@ -7,6 +7,13 @@
 Tests newrelic_create_distributed_trace_payload() on a happy, nested path. We can ensure the payloads were associated with the correct segment by using the INI settings to limit the spans it saves to only those with payloads (and the root).
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+*/
+
 /*INI
 error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
