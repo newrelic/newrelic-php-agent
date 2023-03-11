@@ -22,7 +22,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   zval* retval;
 #endif
-#endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
