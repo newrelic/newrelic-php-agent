@@ -15,10 +15,13 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ if clause 1*/
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_object* object = NULL;
   zend_string* method_name = NULL;
+#endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   zval* retval;
+#endif
 #endif
   int zend_result = FAILURE;
   zval* fname = NULL;
