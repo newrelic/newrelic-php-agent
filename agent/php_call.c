@@ -14,17 +14,19 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ if clause 1*/
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   zend_object* object = NULL;
   zend_string* method_name = NULL;
+  zval* retval;
 #endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
-  zval* retval = NULL;
+
 #ifndef PHP8
+  zval* retval = NULL;
   int no_separation = 0;
 #endif /* PHP8 */
 
@@ -48,53 +50,52 @@ zval* nr_php_call_user_func(zval* object_ptr,
     }
   }
 
-  retval = nr_php_zval_alloc();
-
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8+ : if clause 2*/
   /*
    * With PHP 8.2, functions that do not exist will cause a fatal error to
    * be thrown. `zend_call_method_if_exists` will attempt to call a function and
-   * silently fail if it does not exist
+   * silently fail if it does not exist.  This calls call_user_function under
+   * the hood.
    */
-  if (NULL != object_ptr) {
-    object = Z_OBJ_P(object_ptr);
-  } else {
-    object = NULL;
-  }
 
-  if (NULL != fname) {
-    method_name = Z_STR_P(fname);
-  } else {
-    return NULL;
-  }
-  zend_try {
-  zend_result = zend_call_method_if_exists(object, method_name, retval,
-                                           param_count, param_values);
-  }
-  zend_catch { zend_result = FAILURE; }
-  zend_end_try();
-#elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
-    && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /*
-   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
+   * With PHP8+, `call_user_function_ex` was removed and `call_user_function`
    * became the recommended function.  This does't return a FAILURE for
    * exceptions and needs to be in a try/catch block in order to clean up
    * properly.
+   *
+   * Additionally, in the case of exceptions according to:
+   * https://www.php.net/manual/en/function.call-user-func.php
+   * Callbacks registered with functions such as call_user_func() and
+   * call_user_func_array() will not be called if there is an uncaught exception
+   * thrown in a previous callback. So if we call something that causes an
+   * exception, it will block us from future calls that use call_user_func or
+   * call_user_func_array.
    */
-  zend_try {
-    zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                     retval, param_count, param_values);
-  }
-  zend_catch { zend_result = FAILURE; }
-  zend_end_try();
 
-#else
-  zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
-                                      retval, param_count, param_values,
-                                      no_separation, symbol_table TSRMLS_CC);
-#endif /* PHP8+ */
+  zend_try {
+    if (NULL != object_ptr) {
+      object = Z_OBJ_P(object_ptr);
+    } else {
+      object = NULL;
+    }
+
+    if (NULL != fname) {
+      method_name = Z_STR_P(fname);
+    } else {
+      return NULL;
+    }
+
+    retval = nr_php_zval_alloc();
+    zend_result = zend_call_method_if_exists(object, method_name, retval,
+                                             param_count, param_values);
+  }
+  zend_catch {
+    zend_result = FAILURE;
+  }
+  zend_end_try();
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
@@ -103,7 +104,22 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   nr_php_zval_free(&retval);
   return NULL;
-#else /* PHP < 7 */
+#else  /* else to the PHP 8+ : if clause 2 */
+  retval = nr_php_zval_alloc();
+  zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
+                                      retval, param_count, param_values,
+                                      no_separation, symbol_table TSRMLS_CC);
+
+  nr_php_zval_free(&fname);
+
+  nr_free(param_values);
+  if (SUCCESS == zend_result) {
+    return retval;
+  }
+  nr_php_zval_free(&retval);
+  return NULL;
+#endif /* PHP8+: endif to the PHP 8+ : if clause 2 */
+#else  /* PHP < 7; this is the else to PHP 7.0+ if clause 1*/
   int zend_result;
   zval* fname = NULL;
   int no_separation = 0;
@@ -139,7 +155,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   nr_php_zval_free(&retval);
   return NULL;
-#endif
+#endif /* the endif closing the PHP 7.0+ if clause 1*/
 }
 
 zval* nr_php_call_user_func_catch(zval* object_ptr,
