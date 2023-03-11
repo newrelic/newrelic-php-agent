@@ -63,7 +63,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
    * call_user_func_array.
    */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8+ : if clause 2*/
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ : if clause 2*/
   /*
    * With PHP 8.2, functions that do not exist will cause a fatal error to
    * be thrown. `zend_call_method_if_exists` will attempt to call a function and
@@ -93,7 +93,8 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   zend_end_try();
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
-    && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    && ZEND_MODULE_API_NO                    \
+           >= ZEND_8_0_X_API_NO /* else to the PHP 8.2+ : if clause 2*/
   zend_try {
     retval = nr_php_zval_alloc();
     zend_result = call_user_function(EG(function_table), object_ptr, fname,
@@ -110,7 +111,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
    * properly.
    */
 
-#else  /* else to the PHP 8+ : if clause 2 */
+#else  /* else to elif 8.0/8.1 of the PHP 8.2+ : if clause 2 */
   retval = nr_php_zval_alloc();
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
                                       retval, param_count, param_values,
