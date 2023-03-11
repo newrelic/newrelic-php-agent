@@ -19,16 +19,13 @@ zval* nr_php_call_user_func(zval* object_ptr,
   zend_object* object = NULL;
   zend_string* method_name = NULL;
 #endif
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  zval* retval;
-#endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
+  zval* retval = NULL;
 
 #ifndef PHP8
-  zval* retval = NULL;
   int no_separation = 0;
 #endif /* PHP8 */
 
@@ -93,7 +90,16 @@ zval* nr_php_call_user_func(zval* object_ptr,
   zend_catch {
     zend_result = FAILURE;
   }
+  nr_php_zval_free(&fname);
+
+  nr_free(param_values);
+  if (SUCCESS == zend_result) {
+    return retval;
+  }
+  nr_php_zval_free(&retval);
+  return NULL;
   zend_end_try();
+
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
     && ZEND_MODULE_API_NO                    \
            >= ZEND_8_0_X_API_NO /* else to the PHP 8.2+ : if clause 2*/
@@ -105,6 +111,15 @@ zval* nr_php_call_user_func(zval* object_ptr,
   zend_catch {
     zend_result = FAILURE;
   }
+  nr_php_zval_free(&fname);
+
+  nr_free(param_values);
+  if (SUCCESS == zend_result) {
+    return retval;
+  }
+  nr_php_zval_free(&retval);
+  return NULL;
+
   zend_end_try();
   /*
    * With PHP8.0, `call_user_function_ex` was removed and `call_user_function`
