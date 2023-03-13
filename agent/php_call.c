@@ -89,15 +89,11 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   zend_catch {
     zend_result = FAILURE;
-  }
-  nr_php_zval_free(&fname);
+    nr_php_zval_free(&retval);
 
-  nr_free(param_values);
-  if (SUCCESS == zend_result) {
-    return retval;
+    retval = NULL;
   }
-  nr_php_zval_free(&retval);
-  return NULL;
+
   zend_end_try();
 
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
@@ -110,17 +106,12 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   zend_catch {
     zend_result = FAILURE;
+    nr_php_zval_free(&retval);
+    retval = NULL;
   }
-  nr_php_zval_free(&fname);
-
-  nr_free(param_values);
-  if (SUCCESS == zend_result) {
-    return retval;
-  }
-  nr_php_zval_free(&retval);
-  return NULL;
 
   zend_end_try();
+
   /*
    * With PHP8.0, `call_user_function_ex` was removed and `call_user_function`
    * became the recommended function.  This doesn't return a FAILURE for
