@@ -23,7 +23,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
-  zval* retval = NULL;
+  zval retval, *retval_copy = NULL;
 
 #ifndef PHP8
   int no_separation = 0;
@@ -83,15 +83,11 @@ zval* nr_php_call_user_func(zval* object_ptr,
       return NULL;
     }
 
-    retval = nr_php_zval_alloc();
-    zend_result = zend_call_method_if_exists(object, method_name, retval,
+    zend_result = zend_call_method_if_exists(object, method_name, &retval,
                                              param_count, param_values);
   }
   zend_catch {
     zend_result = FAILURE;
-    nr_php_zval_free(&retval);
-
-    retval = NULL;
   }
 
   zend_end_try();
@@ -100,14 +96,11 @@ zval* nr_php_call_user_func(zval* object_ptr,
     && ZEND_MODULE_API_NO                    \
            >= ZEND_8_0_X_API_NO /* else to the PHP 8.2+ : if clause 2*/
   zend_try {
-    retval = nr_php_zval_alloc();
     zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                     retval, param_count, param_values);
+                                     &retval, param_count, param_values);
   }
   zend_catch {
     zend_result = FAILURE;
-    nr_php_zval_free(&retval);
-    retval = NULL;
   }
 
   zend_end_try();
@@ -120,19 +113,22 @@ zval* nr_php_call_user_func(zval* object_ptr,
    */
 
 #else  /* else to elif 8.0/8.1 of the PHP 8.2+ : if clause 2 */
-  retval = nr_php_zval_alloc();
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
-                                      retval, param_count, param_values,
+                                      &retval, param_count, param_values,
                                       no_separation, symbol_table TSRMLS_CC);
 #endif /* PHP8+: endif to the PHP 8+ : if clause 2 */
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
-  if (SUCCESS == zend_result) {
-    return retval;
+  if (FAILURE == zend_result) {
+    /* nothing to return - Zend failure */
+    return NULL;
   }
-  nr_php_zval_free(&retval);
-  return NULL;
+  /* create copy of automatic value */
+  retval_copy = nr_php_zval_alloc();
+  ZVAL_DUP(retval_copy, &retval);
+  zval_ptr_dtor(&retval);
+  return retval_copy;
 
 #else  /* PHP < 7; this is the else to PHP 7.0+ if clause 1*/
   int zend_result;
