@@ -10,7 +10,7 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: PHP < 8.0.0 not supported\n");
 }
 
-/* Test cannot run with opache */
+/* Test cannot run without opcache */
 /* This should be changed to a 'warn' result when supported */
 if (!extension_loaded('Zend OPcache')) {
   die("skip: Zend OPcache extension required\n");
