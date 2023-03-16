@@ -13,11 +13,9 @@ for a HUGE number of calls.
 <?php
 
 require('skipif.inc');
-
 */
 
 /*INI
-zend_extension=opcache.so
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 error_reporting = E_ALL
@@ -26,6 +24,10 @@ opcache.enable_cli=1
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
 opcache.jit=function
+*/
+
+/*PHPMODULES
+zend_extension=opcache.so
 */
 
 /*EXPECT_ANALYTICS_EVENTS

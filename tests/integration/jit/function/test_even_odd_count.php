@@ -16,7 +16,6 @@ require('skipif.inc');
 */
 
 /*INI
-zend_extension=opcache.so
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false
@@ -26,6 +25,10 @@ opcache.enable_cli=1
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
 opcache.jit=function
+*/
+
+/*PHPMODULES
+zend_extension=opcache.so
 */
 
 /*EXPECT_ERROR_EVENTS null */
