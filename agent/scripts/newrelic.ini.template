@@ -160,7 +160,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          rarely need to change this from the default, and usually only under
 ;          the guidance of technical support.
 ;          Must be one of the following values:
-;            always, error, warning, healthcheck, info, debug
+;            always, error, warning, info, healthcheck, debug
 ;
 ;          The values verbose and verbosedebug are deprecated aliases for debug.
 ;
