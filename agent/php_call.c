@@ -15,15 +15,12 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ if clause 1*/
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  zend_object* object = NULL;
-  zend_string* method_name = NULL;
-#endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
-  zval retval, *retval_copy = NULL;
+  zval retval = {0};
+  zval* retval_copy = NULL;
 
 #ifndef PHP8
   int no_separation = 0;
@@ -59,45 +56,24 @@ zval* nr_php_call_user_func(zval* object_ptr,
    * call_user_func_array() will not be called if there is an uncaught exception
    * thrown in a previous callback. So if we call something that causes an
    * exception, it will block us from future calls that use call_user_func or
-   * call_user_func_array.
+   * call_user_func_array and hence the need for a try/catch block.
    */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ : if clause 2*/
-  /*
-   * With PHP 8.2, functions that do not exist will cause a fatal error to
-   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
-   * silently fail if it does not exist.  This calls call_user_function under
-   * the hood.
-   */
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ : if clause 1*/
   zend_try {
-    if (NULL != object_ptr) {
-      object = Z_OBJ_P(object_ptr);
-    } else {
-      object = NULL;
-    }
-
-    if (NULL != fname) {
-      method_name = Z_STR_P(fname);
-    } else {
-      return NULL;
-    }
-
-    zend_result = zend_call_method_if_exists(object, method_name, &retval,
-                                             param_count, param_values);
-  }
-  zend_catch {
-    zend_result = FAILURE;
-  }
-
-  zend_end_try();
-
-#elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
-    && ZEND_MODULE_API_NO                    \
-           >= ZEND_8_0_X_API_NO /* else to the PHP 8.2+ : if clause 2*/
-  zend_try {
-    zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                     &retval, param_count, param_values);
+    /*
+     * With PHP 8.2, functions that do not exist will cause a fatal error to
+     * be thrown but calling functions that do not exist should cause a fatal
+     * error. We do not want to attempt to call a function and have it silently
+     * fail if it does not exist.
+     *
+     * According to zend internals documentation:
+     * As of PHP 7.1.0, the function_table argument is not used and should
+     * always be NULL. See for more details:
+     * https://www.phpinternalsbook.com/php7/internal_types/functions/callables.html
+     */
+    zend_result = call_user_function(NULL, object_ptr, fname, &retval,
+                                     param_count, param_values);
   }
   zend_catch {
     zend_result = FAILURE;
@@ -112,14 +88,18 @@ zval* nr_php_call_user_func(zval* object_ptr,
    * properly.
    */
 
-#else  /* else to elif 8.0/8.1 of the PHP 8.2+ : if clause 2 */
+#else  /* else to PHP 8.0+ : if clause 1*/
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
                                       &retval, param_count, param_values,
                                       no_separation, symbol_table TSRMLS_CC);
-#endif /* PHP8+: endif to the PHP 8+ : if clause 2 */
+#endif /* PHP8+: endif to the PHP 8+ : if clause 1 */
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
+  if (IS_UNDEF == Z_TYPE(retval)) {
+    /* nothing to return - retval is undefined */
+    return NULL;
+  }
   if (FAILURE == zend_result) {
     /* nothing to return - Zend failure */
     return NULL;
