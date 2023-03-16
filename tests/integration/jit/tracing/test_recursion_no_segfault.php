@@ -19,6 +19,7 @@ require('skipif.inc');
 
 /*INI
 error_reporting = E_ALL
+zend_extension=opcache.so
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false
