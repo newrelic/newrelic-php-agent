@@ -50,6 +50,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
+  ZVAL_UNDEF(&retval);
   /*
    * For PHP 8+, in the case of exceptions according to:
    * https://www.php.net/manual/en/function.call-user-func.php
@@ -118,10 +119,12 @@ zval* nr_php_call_user_func(zval* object_ptr,
   nr_free(param_values);
 
   if (SUCCESS == zend_result) {
-    retval_copy = nr_php_zval_alloc();
-    ZVAL_DUP(retval_copy, &retval);
-    zval_ptr_dtor(&retval);
-    return retval_copy;
+    if (IS_UNDEF != Z_TYPE(retval)) {
+      retval_copy = nr_php_zval_alloc();
+      ZVAL_DUP(retval_copy, &retval);
+      zval_ptr_dtor(&retval);
+      return retval_copy;
+    }
   }
   zval_ptr_dtor(&retval);
   return NULL;
