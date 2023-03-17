@@ -23,7 +23,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
-  zval retval = {0};
+  zval retval = {{0}};
   zval* retval_copy = NULL;
 #ifndef PHP8
   int no_separation = 0;
