@@ -1930,26 +1930,12 @@ void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
 
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
-
-  if (NULL == execute_data || NULL == execute_data->opline) {
-    return;
-  }
-
   if (NULL == execute_data->prev_execute_data) {
-    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data",
-                     __func__);
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data", __func__);
     return;
   }
   if (NULL == execute_data->prev_execute_data->opline) {
     nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
-    return;
-  }
-
-  /*
-   * First, since all of the logic below depends on what we know about
-   * ZEND_DO_FCALL, verify this is actually a ZEND_DO_FCALL otherwise exit.
-   */
-  if (ZEND_DO_FCALL != execute_data->prev_execute_data->opline->opcode) {
     return;
   }
 
@@ -1994,16 +1980,12 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
       return;
     }
 
-    if (UNEXPECTED(
-            NULL
-            == execute_data->prev_execute_data->func->common.function_name)) {
-      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name",
-                       __func__);
+    if (UNEXPECTED(NULL == execute_data->prev_execute_data->func->common.function_name)) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
       return;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
-                                        execute_data->func,
+    nr_php_call_user_func_array_handler(NRPRG(cufa_callback), execute_data->func,
                                         execute_data->prev_execute_data);
   }
 }
@@ -2032,16 +2014,15 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   if (UNEXPECTED(NULL != NRPRG(cufa_callback))) {
     /*
-     * For PHP 7+, call_user_func_array() is flattened into an inline by
-     * default. Because of this, we must check the opcodes set to see whether we
-     * are calling it flattened. If we have a cufa callback, we want to call
-     * that here. This will create the wraprec for the user function we want to
-     * instrument and thus must be called before we search the wraprecs
+     * For PHP 7+, call_user_func_array() is flattened into an inline by default. Because
+     * of this, we must check the opcodes set to see whether we are calling it flattened.
+     * If we have a cufa callback, we want to call that here. This will create the wraprec
+     * for the user function we want to instrument and thus must be called before we search
+     * the wraprecs
      *
-     * For non-OAPI, this is handled in php_vm.c by overwriting the
-     * ZEND_DO_FCALL opcode.
+     * For non-OAPI, this is handled in php_vm.c by overwriting the ZEND_DO_FCALL opcode.
      */
-    nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
+     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
   /*
