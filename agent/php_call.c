@@ -14,14 +14,17 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ if clause 1*/
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_object* object = NULL;
+  zend_string* method_name = NULL;
+#endif
   int zend_result = FAILURE;
   zval* fname = NULL;
   HashTable* symbol_table = NULL;
   zval* param_values = NULL;
   zval retval = {0};
   zval* retval_copy = NULL;
-
 #ifndef PHP8
   int no_separation = 0;
 #endif /* PHP8 */
@@ -45,10 +48,8 @@ zval* nr_php_call_user_func(zval* object_ptr,
       param_values[i] = *params[i];
     }
   }
-
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
-
   /*
    * For PHP 8+, in the case of exceptions according to:
    * https://www.php.net/manual/en/function.call-user-func.php
@@ -59,58 +60,72 @@ zval* nr_php_call_user_func(zval* object_ptr,
    * call_user_func_array and hence the need for a try/catch block.
    */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ : if clause 1*/
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
+  /*
+   * With PHP 8.2, functions that do not exist will cause a fatal error to
+   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
+   * silently fail if it does not exist
+   */
   zend_try {
-    /*
-     * With PHP 8.2, functions that do not exist will cause a fatal error to
-     * be thrown but calling functions that do not exist should cause a fatal
-     * error. We do not want to attempt to call a function and have it silently
-     * fail if it does not exist.
-     *
-     * According to zend internals documentation:
-     * As of PHP 7.1.0, the function_table argument is not used and should
-     * always be NULL. See for more details:
-     * https://www.phpinternalsbook.com/php7/internal_types/functions/callables.html
-     */
+    if (NULL != object_ptr) {
+      object = Z_OBJ_P(object_ptr);
+    } else {
+      object = NULL;
+    }
+
+    if (NULL != fname) {
+      method_name = Z_STR_P(fname);
+    } else {
+      nr_php_zval_free(&fname);
+      nr_free(param_values);
+      zval_ptr_dtor(&retval);
+      return NULL;
+    }
+
+    zend_result = zend_call_method_if_exists(object, method_name, &retval,
+                                             param_count, param_values);
+  }
+  zend_catch {
+    zend_result = FAILURE;
+  }
+  zend_end_try();
+
+#elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
+    && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
+   * became the recommended function.
+   * According to zend internals documentation:
+   * As of PHP 7.1.0, the function_table argument is not used and should
+   * always be NULL. See for more details:
+   * https://www.phpinternalsbook.com/php7/internal_types/functions/callables.html
+   */
+  zend_try {
     zend_result = call_user_function(NULL, object_ptr, fname, &retval,
                                      param_count, param_values);
   }
   zend_catch {
     zend_result = FAILURE;
   }
-
   zend_end_try();
-
-  /*
-   * With PHP8.0, `call_user_function_ex` was removed and `call_user_function`
-   * became the recommended function.  This doesn't return a FAILURE for
-   * exceptions and needs to be in a try/catch block in order to clean up
-   * properly.
-   */
-
-#else  /* else to PHP 8.0+ : if clause 1*/
+#else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
                                       &retval, param_count, param_values,
                                       no_separation, symbol_table TSRMLS_CC);
-#endif /* PHP8+: endif to the PHP 8+ : if clause 1 */
+#endif /* PHP8+ */
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
-  if (IS_UNDEF == Z_TYPE(retval)) {
-    /* nothing to return - retval is undefined */
-    return NULL;
-  }
-  if (FAILURE == zend_result) {
-    /* nothing to return - Zend failure */
-    return NULL;
-  }
-  /* create copy of automatic value */
-  retval_copy = nr_php_zval_alloc();
-  ZVAL_DUP(retval_copy, &retval);
-  zval_ptr_dtor(&retval);
-  return retval_copy;
 
-#else  /* PHP < 7; this is the else to PHP 7.0+ if clause 1*/
+  if (SUCCESS == zend_result) {
+    retval_copy = nr_php_zval_alloc();
+    ZVAL_DUP(retval_copy, &retval);
+    zval_ptr_dtor(&retval);
+    return retval_copy;
+  }
+  zval_ptr_dtor(&retval);
+  return NULL;
+#else /* PHP < 7 */
   int zend_result;
   zval* fname = NULL;
   int no_separation = 0;
@@ -146,7 +161,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
 
   nr_php_zval_free(&retval);
   return NULL;
-#endif /* the endif closing the PHP 7.0+ if clause 1*/
+#endif
 }
 
 zval* nr_php_call_user_func_catch(zval* object_ptr,
