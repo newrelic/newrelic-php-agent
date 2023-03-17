@@ -556,7 +556,7 @@ func runTest(t *integration.Test) {
 		t.Skip(reason)
 		return
 	}
-	
+
 	if warnRE.Match(body) {
 		reason := string(bytes.TrimSpace(head(body)))
 		t.Warn(reason)
