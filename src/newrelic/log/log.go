@@ -23,6 +23,7 @@ const (
 	LogError
 	LogWarning
 	LogInfo
+	LogHealthCheck
 	LogDebug
 )
 
@@ -46,10 +47,11 @@ func Init(level Level, location string) error {
 	return nil
 }
 
-func Errorf(format string, a ...interface{}) { logf(LogError, format, a...) }
-func Warnf(format string, a ...interface{})  { logf(LogWarning, format, a...) }
-func Infof(format string, a ...interface{})  { logf(LogInfo, format, a...) }
-func Debugf(format string, a ...interface{}) { logf(LogDebug, format, a...) }
+func Errorf(format string, a ...interface{})  { logf(LogError, format, a...) }
+func Warnf(format string, a ...interface{})   { logf(LogWarning, format, a...) }
+func Healthf(format string, a ...interface{}) { logf(LogHealthCheck, format, a...) }
+func Infof(format string, a ...interface{})   { logf(LogInfo, format, a...) }
+func Debugf(format string, a ...interface{})  { logf(LogDebug, format, a...) }
 
 func logf(level Level, format string, a ...interface{}) {
 	maxLevel := atomic.LoadInt32((*int32)(&daemonLevel))
@@ -114,6 +116,8 @@ func (level Level) String() string {
 		return "Error"
 	case LogWarning:
 		return "Warning"
+	case LogHealthCheck:
+		return "HealthCheck"
 	case LogInfo:
 		return "Info"
 	case LogDebug:
@@ -198,6 +202,8 @@ func parseLevel(s string) (Level, error) {
 		return LogError, nil
 	case "warning":
 		return LogWarning, nil
+	case "healthcheck":
+		return LogHealthCheck, nil
 	case "info", "":
 		return LogInfo, nil
 		// verbose and verbosedebug kept for historical compatibility
