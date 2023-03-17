@@ -121,6 +121,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
       retval_copy = nr_php_zval_alloc();
       ZVAL_DUP(retval_copy, &retval);
       zval_ptr_dtor(&retval);
+      return retval_copy;
   }
   zval_ptr_dtor(&retval);
   return NULL;
