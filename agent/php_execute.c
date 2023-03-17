@@ -1931,7 +1931,9 @@ void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
 
-  if (NULL == execute_data || NULL == execute_data->opline) {
+  if (NULL == execute_data) {
+      nrl_verbosedebug(NRL_AGENT, "%s: The current execute data is NULL.",
+                     __func__);
     return;
   }
 
