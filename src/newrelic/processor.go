@@ -368,17 +368,22 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	}
 
 	numapps := len(p.apps)
-	if numapps > limits.AppLimit {
+	if numapps >= limits.AppLimit {
 		log.Errorf("unable to add app '%s', limit of %d applications reached",
 			m.Info, limits.AppLimit)
 		return
-	} else if numapps == limits.AppLimitNotifyHigh {
-		log.Infof("approaching app limit of %d, current number of apps is %d",
-			limits.AppLimit, limits.AppLimitNotifyHigh)
 	}
 
 	app = NewApp(m.Info)
 	p.apps[key] = app
+	numapps = len(p.apps)
+	log.Healthf("current number of apps is %d of a max of %d",
+		numapps, limits.AppLimit)
+	if numapps == limits.AppLimitNotifyHigh {
+		log.Infof("approaching app limit of %d, current number of apps is %d",
+			limits.AppLimit, limits.AppLimitNotifyHigh)
+	}
+
 }
 
 func processConnectMessages(reply collector.RPMResponse) {
@@ -818,10 +823,13 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 	if p.cfg.AppTimeout > 0 && app.Inactive(p.cfg.AppTimeout) {
 		log.Infof("removing %q with run id %q for lack of activity within %v",
 			app, id, p.cfg.AppTimeout)
-		if len(p.apps) == limits.AppLimitNotifyLow {
+		numapps := len(p.apps)
+		if numapps == limits.AppLimitNotifyLow {
 			log.Infof("current number of apps is %d",
 				limits.AppLimitNotifyLow)
 		}
+		log.Healthf("current number of apps is %d of a max of %d",
+			numapps, limits.AppLimit)
 		p.shutdownAppHarvest(id)
 		delete(p.apps, app.Key())
 

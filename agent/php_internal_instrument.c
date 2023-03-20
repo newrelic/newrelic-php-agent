@@ -2714,11 +2714,11 @@ NR_INNER_WRAPPER(curl_multi_exec) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                ZEND_NUM_ARGS() TSRMLS_CC, "ol", &curlres,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "oz", &curlres,
                                 &still_running);
 #else
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                ZEND_NUM_ARGS() TSRMLS_CC, "rl", &curlres,
+                                ZEND_NUM_ARGS() TSRMLS_CC, "rz", &curlres,
                                 &still_running);
 #endif /* PHP 8.0+ */
 

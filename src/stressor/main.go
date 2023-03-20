@@ -575,7 +575,7 @@ func reportDaemonStats(stats *MemStats, numMsg uint64, lifespan time.Duration) {
 }
 
 func main() {
-	flag.Usage = func() { fmt.Fprintln(os.Stderr, helpMessage) }
+	flag.Usage = func() { fmt.Fprint(os.Stderr, helpMessage, '\n') }
 	flag.Parse()
 
 	if *flagCPUProfile != "" {
