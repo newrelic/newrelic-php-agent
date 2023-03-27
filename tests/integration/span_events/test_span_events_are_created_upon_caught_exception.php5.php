@@ -5,8 +5,15 @@
  */
 
 /*DESCRIPTION
-Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
+Test that span events are correctly created from any eligible segment when a caught exception occurs.
+Putting in a try/catch block means an exception is NOT handled by the exception handler.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", ">=")) {
+  die("skip: CLM for PHP 7+ IS supported and this test has CLM off\n");
+}
 */
 
 /*INI
@@ -14,7 +21,6 @@ newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
-newrelic.code_level_metrics.enabled=false
 */
 
 /*EXPECT_ERROR_EVENTS
@@ -26,7 +32,7 @@ null
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 4
+    "events_seen": 3
   },
   [
     [
@@ -86,26 +92,7 @@ null
       },
       {},
       {
-        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
       }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/{closure}",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {}
     ]
   ]
 ]
@@ -117,7 +104,8 @@ null
 set_exception_handler(
     function () {
         time_nanosleep(0, 100000000);
-        exit(0); 
+        echo 'this should never be printed';
+        exit(0);
     }
 );
 
@@ -134,6 +122,10 @@ newrelic_record_datastore_segment(
         'product' => 'FakeDB',
     )
 );
-a();
 
-echo 'this should never be printed';
+try {
+a();
+} catch (RuntimeException $e) {
+}
+
+
