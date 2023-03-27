@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
+Test that span events are correctly created from any eligible segment when a caught exception occurs.
+Putting in a try/catch block means an exception is NOT handled by the exception handler.
 */
 
 /*SKIPIF
@@ -42,7 +42,7 @@ null
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 4
+    "events_seen": 3
   },
   [
     [
@@ -102,32 +102,9 @@ null
       },
       {},
       {
-        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/{closure}",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+              "code.lineno": "??",
+              "code.filepath": "__FILE__",
+              "code.function": "a"
       }
     ]
   ]
@@ -140,7 +117,8 @@ null
 set_exception_handler(
     function () {
         time_nanosleep(0, 100000000);
-        exit(0); 
+        echo 'this should never be printed';
+        exit(0);
     }
 );
 
@@ -157,6 +135,8 @@ newrelic_record_datastore_segment(
         'product' => 'FakeDB',
     )
 );
-a();
 
-echo 'this should never be printed';
+try {
+a();
+} catch (RuntimeException $e) {
+}
