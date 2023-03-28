@@ -115,7 +115,10 @@ set_exception_handler(
 function a()
 {
     time_nanosleep(0, 100000000);
-    throw new RuntimeException('oops');
+    try {
+        throw new RuntimeException('oops');
+        } catch (RuntimeException $e) {
+        }
 }
 
 newrelic_record_datastore_segment(
@@ -126,9 +129,4 @@ newrelic_record_datastore_segment(
     )
 );
 
-try {
 a();
-} catch (RuntimeException $e) {
-}
-
-
