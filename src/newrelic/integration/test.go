@@ -63,7 +63,7 @@ type Test struct {
 
 	// Remaining fields are populated after the test is run.
 	Skipped bool
-    Warned bool
+	Warned  bool
 
 	// If the test was skipped or the test could not be run due to an
 	// error, describes the reason.
