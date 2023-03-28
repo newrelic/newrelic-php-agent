@@ -20,6 +20,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.code_level_metrics.enabled = 1
+newrelic.special.expensive_node_min = 1000000
 */
 
 /*EXPECT_SPAN_EVENTS
