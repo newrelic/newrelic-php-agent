@@ -49,6 +49,7 @@ jobs:
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/newrelic-php-agent":"/usr/local/src/newrelic-php-agent"
           -e USE_SYSTEM_CERTS=1
+          -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION release-daemon
       - name: Save build artifacts
         uses: actions/upload-artifact@v3
