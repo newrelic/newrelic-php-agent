@@ -49,6 +49,7 @@ var (
 	flagWorkers         = flag.Int("threads", 1, "")
 	flagTime            = flag.Bool("time", false, "time each test")
 	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
+	flagWarnIsFail      = flag.Bool("warnisfail", false, "warn result is treated as a fail")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -384,7 +385,7 @@ func main() {
 
 		handler.Lock()
 		for _, tc := range tests {
-			if !tc.Failed && !tc.Skipped {
+			if !tc.Failed && !tc.Skipped && !tc.Warned {
 				if handler.harvests[tc.Name] == nil {
 					testsToRetry <- tc
 				}
@@ -403,15 +404,19 @@ func main() {
 	deleteSockfile("unix", *flagPort)
 
 	var numFailed int
+	var numWarned int
 
 	// Compare the output
 	handler.Lock()
 	for _, tc := range tests {
-		if !tc.Failed && !tc.Skipped {
+		if !tc.Failed && !tc.Skipped && !tc.Warned {
 			tc.Compare(handler.harvests[tc.Name])
 		}
 		if tc.Failed && tc.Xfail == "" {
 			numFailed++
+		}
+		if tc.Warned {
+			numWarned++
 		}
 	}
 
@@ -420,11 +425,15 @@ func main() {
 	if numFailed > 0 {
 		os.Exit(1)
 	}
+	if *flagWarnIsFail && numWarned > 0 {
+		os.Exit(2)
+	}
 }
 
 var (
 	skipRE  = regexp.MustCompile(`^(?i)\s*skip`)
 	xfailRE = regexp.MustCompile(`^(?i)\s*xfail`)
+	warnRE  = regexp.MustCompile(`^(?i)\s*warn`)
 )
 
 func runTests(testsToRun chan *integration.Test, numWorkers int) {
@@ -545,6 +554,12 @@ func runTest(t *integration.Test) {
 	if skipRE.Match(body) {
 		reason := string(bytes.TrimSpace(head(body)))
 		t.Skip(reason)
+		return
+	}
+
+	if warnRE.Match(body) {
+		reason := string(bytes.TrimSpace(head(body)))
+		t.Warn(reason)
 		return
 	}
 
