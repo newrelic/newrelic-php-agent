@@ -13,16 +13,11 @@ name: agent-build
 #
 on:
   #
-  # Triggers the workflow on push or pull request events but only for the main branch
+  # Triggers the workflow only on push event and only for the main branch
   #
   push:
     branches: 
       - main
-      - 'dev'
-  pull_request:
-    branches: 
-      - main
-      - 'dev'
 
 jobs:
   agent_pr:
