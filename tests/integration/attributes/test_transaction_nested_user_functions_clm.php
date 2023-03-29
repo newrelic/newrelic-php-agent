@@ -65,7 +65,7 @@ newrelic.special.expensive_node_min = 1000000
       },
       {},
       {
-        "code.lineno": 214,
+        "code.lineno": 215,
         "code.filepath": "__FILE__",
         "code.function": "level_2"
       }
@@ -86,7 +86,7 @@ newrelic.special.expensive_node_min = 1000000
       },
       {},
       {
-        "code.lineno": 210,
+        "code.lineno": 211,
         "code.filepath": "__FILE__",
         "code.function": "level_1"
       }
@@ -147,7 +147,7 @@ newrelic.special.expensive_node_min = 1000000
                   [
                     "?? start time", "?? end time", "`1",
                             {
-                              "code.lineno": 214,
+                              "code.lineno": 215,
                               "code.filepath": "__FILE__",
                               "code.function": "level_2"
                             },
@@ -155,7 +155,7 @@ newrelic.special.expensive_node_min = 1000000
                       [
                         "?? start time", "?? end time", "`2",
                             {
-                              "code.lineno": 210,
+                              "code.lineno": 211,
                               "code.filepath": "__FILE__",
                               "code.function": "level_1"
                         },
