@@ -20,6 +20,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.code_level_metrics.enabled = 1
+newrelic.special.expensive_node_min = 1000000
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -64,7 +65,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 214,
+        "code.lineno": 215,
         "code.filepath": "__FILE__",
         "code.function": "level_2"
       }
@@ -85,7 +86,7 @@ newrelic.code_level_metrics.enabled = 1
       },
       {},
       {
-        "code.lineno": 210,
+        "code.lineno": 211,
         "code.filepath": "__FILE__",
         "code.function": "level_1"
       }
@@ -146,7 +147,7 @@ newrelic.code_level_metrics.enabled = 1
                   [
                     "?? start time", "?? end time", "`1",
                             {
-                              "code.lineno": 214,
+                              "code.lineno": 215,
                               "code.filepath": "__FILE__",
                               "code.function": "level_2"
                             },
@@ -154,7 +155,7 @@ newrelic.code_level_metrics.enabled = 1
                       [
                         "?? start time", "?? end time", "`2",
                             {
-                              "code.lineno": 210,
+                              "code.lineno": 211,
                               "code.filepath": "__FILE__",
                               "code.function": "level_1"
                         },
