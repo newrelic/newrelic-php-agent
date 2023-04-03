@@ -23,6 +23,40 @@ on:
         type: string
 
 jobs:
+  daemon_release:
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-go
+      IMAGE_VERSION: v1
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [amd64]
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.ref }}
+          path: newrelic-php-agent
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build daemon
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/newrelic-php-agent":"/usr/local/src/newrelic-php-agent"
+          -e USE_SYSTEM_CERTS=1
+          -e BUILD_NUMBER=${{inputs.build-number}}
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION release-daemon
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: newrelic-php-agent/releases
+          name: release-from-gha
+          if-no-files-found: error
   agent_release:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
