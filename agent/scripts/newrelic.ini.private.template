@@ -97,7 +97,7 @@
 ;newrelic.special.disable_instrumentation = ""
 
 ; Setting: newrelic.special.expensive_node_min
-; Type   : integer (time in msec)
+; Type   : integer (time in microseconds)
 ; Scope  : system
 ; Default: 2 * NR_TIME_DIVISOR_MS
 ; Info   : Sets the threshold for expensive transactions.

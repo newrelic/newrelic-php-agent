@@ -55,7 +55,7 @@ endif
 
 
 .PHONY: release
-release: Makefile release-version release-daemon release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
+release: Makefile release-version release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
 
 release-version: releases/$(RELEASE_OS)/
 	printf '%s\n' "$(AGENT_VERSION)" > releases/$(RELEASE_OS)/VERSION

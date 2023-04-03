@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   watermelon         25Jan2021 (9.16)
  *   xigua              21Apr2021 (9.17)
  *   yam                23Aug2021 (9.18)
  *   zomp               02Mar2022 (9.19)
@@ -37,8 +36,9 @@
  *   hydrangea          18Jan2023 (10.5)
  *   impatiens          13Feb2023 (10.6)
  *   jasmine            08Mar2023 (10.7)
+ *   kalmia             27Mar2023 (10.8)
  */
-#define NR_CODENAME "kalmia"
+#define NR_CODENAME "lilac"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
