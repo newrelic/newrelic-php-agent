@@ -95,6 +95,14 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 	for PHP in $(SUPPORTED_PHP) ; do \
 		$(MAKE) agent-clean; $(MAKE) release-$$PHP-no-zts; \
         done
+#
+# Next build ZTS binaries of the PHP versions requested that are supported
+# on this OS.
+#
+	for PHP in $(SUPPORTED_PHP) ; do \
+		$(MAKE) agent-clean; $(MAKE) release-$$PHP-zts; \
+	done
+
 
 #
 # Add a new target to build the agent against build machines.
@@ -113,11 +121,26 @@ release-$1-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
 	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
 	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
 
+#
+# Target for zts GHA releases.
+#
+release-$1-zts-gha: PHPIZE := /usr/local/bin/phpize
+release-$1-zts-gha: PHP_CONFIG := /usr/local/bin/php-config
+release-$1-zts-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.so"
+	 @test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
+
 release-$1-no-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-no-zts
 release-$1-no-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-no-zts
 release-$1-no-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
 	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
 	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
+
+release-$1-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-zts
+release-$1-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-zts
+release-$1-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
 
 endef
 
