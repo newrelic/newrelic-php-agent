@@ -59,6 +59,47 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
   return wraprec;
 }
 
+nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
+                                         nrspecialfn_t callback TSRMLS_DC) {
+  zend_string* name = NULL;
+  zend_fcall_info_cache fcc;
+  zend_fcall_info fci;
+  /* not calling nr_zend_is_callable because we want to additionally populate name */
+  if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
+    /* see php source code's zend_is_callable_at_frame function to see from
+     * where these switch cases are derived */
+again:
+    switch (Z_TYPE_P(callable)) {
+      /* wrapping a string name of a callable */
+      case IS_STRING:
+        return nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
+                                         ZEND_STRING_LEN(name),
+                                         callback TSRMLS_CC);
+      /* wrapping an array where [0] is an object and [1] is the method to invoke
+       * the previous zend_is_callable has created the commbined object::method
+       * name for us to wrap */
+      case IS_ARRAY:
+        return nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
+                                         ZEND_STRING_LEN(name),
+                                         callback TSRMLS_CC);
+      /* wrapping a closure. Need to initialize fcall info in order to wrap the
+       * underlying zend_function object */
+      case IS_OBJECT:
+        if (SUCCESS == zend_fcall_info_init(callable, 0, &fci, &fcc,
+                                            NULL, NULL TSRMLS_CC)) {
+          return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
+        }
+      /* unwrap references */
+      case IS_REFERENCE:
+        callable = Z_REFVAL_P(callable);
+        goto again;
+    }
+  }
+  nrl_verbosedebug(NRL_INSTRUMENT,
+                   "Failed to wrap callable: %s", ZEND_STRING_VALUE(name));
+  return NULL;
+}
+
 inline static void release_zval(zval** ppzv) {
 #ifdef PHP7
   nr_php_zval_free(ppzv);
