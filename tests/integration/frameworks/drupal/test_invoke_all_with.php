@@ -81,13 +81,20 @@ class Invoker {
     }
 }
 
+// Create module handler
 $drupal = new Drupal();
 $handler = $drupal->moduleHandler();
+
+// Test lambda calback
 $handler->invokeAllWith("hook_1", function (callable $hook, string $module) {
     $hook();
 });
+
+// Test string and reference callback
 $func_name = "invoke_callback";
 $func_name_ref =& $func_name;
 $handler->invokeAllWith("hook_2", $func_name_ref);
+
+//Test callable array callback
 $invoker = new Invoker();
 $handler->invokeAllWith("hook_3", [$invoker, "invoke"]);
