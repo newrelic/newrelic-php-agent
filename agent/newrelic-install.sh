@@ -1157,7 +1157,7 @@ Ignoring this particular instance of PHP.
     return 1
   fi
 
-  if [ "${pi_arch}" = "aarch64" ] && [ pi_php8 != "yes" ]; then
+  if [ "${pi_arch}" = "aarch64" ] && [ "${pi_php8}" != "yes" ]; then
     error "unsupported aarch64 version '${pi_ver}' of PHP found at:
     ${pdir}
 Ignoring this particular instance of PHP.
