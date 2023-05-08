@@ -64,6 +64,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   zend_string* name = NULL;
   zend_fcall_info_cache fcc;
   zend_fcall_info fci;
+  nruserfn_t* wraprec = NULL;
   /* not calling nr_zend_is_callable because we want to additionally populate name */
   if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
     /* see php source code's zend_is_callable_at_frame function to see from
@@ -72,21 +73,29 @@ again:
     switch (Z_TYPE_P(callable)) {
       /* wrapping a string name of a callable */
       case IS_STRING:
-        return nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
-                                         ZEND_STRING_LEN(name),
-                                         callback TSRMLS_CC);
+        wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
+                                            ZEND_STRING_LEN(name),
+                                            callback TSRMLS_CC);
+        /* It is a possibility that the wraprec returned here is a previously-instrumented,
+         * non-transient wraprec. Setting it to transient here should have no impact on
+         * functionality (as we will just remake it) and negligible performance impact. */
+        wraprec->is_transient = 1;
+        return wraprec;
       /* wrapping an array where [0] is an object and [1] is the method to invoke
        * the previous zend_is_callable has created the commbined object::method
        * name for us to wrap */
       case IS_ARRAY:
-        return nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
-                                         ZEND_STRING_LEN(name),
-                                         callback TSRMLS_CC);
+        wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
+                                            ZEND_STRING_LEN(name),
+                                            callback TSRMLS_CC);
+        wraprec->is_transient = 1;
+        return wraprec;
       /* wrapping a closure. Need to initialize fcall info in order to wrap the
        * underlying zend_function object */
       case IS_OBJECT:
         if (SUCCESS == zend_fcall_info_init(callable, 0, &fci, &fcc,
                                             NULL, NULL TSRMLS_CC)) {
+          /* nr_php_wrao_callable already sets the is_transient flag for us */
           return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
         }
       /* unwrap references */
