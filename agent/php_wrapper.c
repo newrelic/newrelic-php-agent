@@ -61,7 +61,11 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
 
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  char* name = NULL;
+#else
   zend_string* name = NULL;
+#endif
   zend_fcall_info_cache fcc;
   zend_fcall_info fci;
   nruserfn_t* wraprec = NULL;
@@ -69,13 +73,19 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
     /* see php source code's zend_is_callable_at_frame function to see from
      * where these switch cases are derived */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 again:
+#endif
     switch (Z_TYPE_P(callable)) {
       /* wrapping a string name of a callable */
       case IS_STRING:
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+        wraprec = nr_php_wrap_user_function(name, nr_strlen(name), callback TSRMLS_CC);
+#else
         wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
                                             ZEND_STRING_LEN(name),
                                             callback TSRMLS_CC);
+#endif
         /* It is a possibility that the wraprec returned here is a previously-instrumented,
          * non-transient wraprec. Setting it to transient here should have no impact on
          * functionality (as we will just remake it) and negligible performance impact. */
@@ -85,9 +95,13 @@ again:
        * the previous zend_is_callable has created the commbined object::method
        * name for us to wrap */
       case IS_ARRAY:
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+        wraprec = nr_php_wrap_user_function(name, nr_strlen(name), callback TSRMLS_CC);
+#else
         wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
                                             ZEND_STRING_LEN(name),
                                             callback TSRMLS_CC);
+#endif
         wraprec->is_transient = 1;
         return wraprec;
       /* wrapping a closure. Need to initialize fcall info in order to wrap the
@@ -99,9 +113,12 @@ again:
           return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
         }
       /* unwrap references */
+      /* PHP 5.x handles references in a different manner that do not need to be unwrapped */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
       case IS_REFERENCE:
         callable = Z_REFVAL_P(callable);
         goto again;
+#endif
     }
   }
   nrl_verbosedebug(NRL_INSTRUMENT,
