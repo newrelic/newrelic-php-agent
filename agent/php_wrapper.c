@@ -118,6 +118,7 @@ again:
       case IS_REFERENCE:
         callable = Z_REFVAL_P(callable);
         goto again;
+        break; // Make fallthrough check happy
 #endif
     }
   }
