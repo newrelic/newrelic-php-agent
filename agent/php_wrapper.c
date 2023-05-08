@@ -112,13 +112,13 @@ again:
           /* nr_php_wrao_callable already sets the is_transient flag for us */
           return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
         }
+      break; // Make fallthrough check happy
       /* unwrap references */
       /* PHP 5.x handles references in a different manner that do not need to be unwrapped */
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
       case IS_REFERENCE:
         callable = Z_REFVAL_P(callable);
         goto again;
-        break; // Make fallthrough check happy
 #endif
     }
   }
