@@ -9,7 +9,7 @@
 */
 
 /*SKIPIF
-if (version_compare(phpversion(), '7.4', '<')) {
+if (version_compare(PHP_VERSION, '7.4', '<')) {
     die("skip: PHP >= 7.4 required\n");
 }
 */
