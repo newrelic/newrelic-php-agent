@@ -127,7 +127,7 @@ again:
   nrl_verbosedebug(NRL_INSTRUMENT,
                    "Failed to wrap callable: %s", name);
 #else
-  if (nr_php_is_zval_valid_string(name)) {
+  if (NULL != name) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                    "Failed to wrap callable: %s", ZEND_STRING_VALUE(name));
   } else {
