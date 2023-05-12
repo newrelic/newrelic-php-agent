@@ -131,7 +131,7 @@ again:
     nrl_verbosedebug(NRL_INSTRUMENT,
                    "Failed to wrap callable: %s", ZEND_STRING_VALUE(name));
   } else {
-    nrl_verbosedebug("Failed to wrap callable with unknown name");
+    nrl_verbosedebug(NRL_INSTRUMENT, "Failed to wrap callable with unknown name");
   }
 #endif
   return NULL;
