@@ -112,7 +112,8 @@ again:
           /* nr_php_wrao_callable already sets the is_transient flag for us */
           return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
         }
-      break; // Make fallthrough check happy
+        nrl_verbosedebug(NRL_INSTRUMENT, "Failed to initialize fcall info when wrapping");
+        break;
       /* unwrap references */
       /* PHP 5.x handles references in a different manner that do not need to be unwrapped */
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
@@ -122,8 +123,17 @@ again:
 #endif
     }
   }
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
   nrl_verbosedebug(NRL_INSTRUMENT,
+                   "Failed to wrap callable: %s", name);
+#else
+  if (nr_php_is_zval_valid_string(name)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
                    "Failed to wrap callable: %s", ZEND_STRING_VALUE(name));
+  } else {
+    nrl_verbosedebug("Failed to wrap callable with unknown name");
+  }
+#endif
   return NULL;
 }
 
