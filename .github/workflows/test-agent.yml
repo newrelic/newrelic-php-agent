@@ -117,29 +117,29 @@ jobs:
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION axiom 
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom 
       - name: Build agent
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION agent
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
       - name: Build axiom unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION axiom-tests
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-tests
       - name: Run axiom unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
       - name: Build agent unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION agent-tests
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-tests
       - name: Run agent unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
