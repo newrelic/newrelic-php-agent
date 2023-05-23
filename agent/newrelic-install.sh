@@ -245,7 +245,7 @@ esac
 [ "${NR_INSTALL_ARCH}" = "x64" -o "${NR_INSTALL_ARCH}" = "x86_64" ] && arch="${NR_INSTALL_ARCH}"
 
 # exit if arch is unsupported
-if [ "${arch}" != "x64" ]; then
+if [ "${arch}" != "x64" ] && [ "${arch}" != "aarch64" ] ; then
     msg=$(
     cat << EOF
 
@@ -257,18 +257,6 @@ EOF
 )
 
   error "${msg}"
-  if [ "${arch}" = "aarch64" ]; then
-  cat << EOF
-
-In order to use the New Relic PHP Agent on the "aarch64" (also known as "ARM64")
-architecture it is necessary to build the agent extension from sources.
-
-Instructions on how to build the agent are available here:
-
-https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-arm64/
-
-EOF
-  fi
 
   echo "The install will now exit."
   exit 1
@@ -339,17 +327,22 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
 # Currently supported versions:
-#    (5.5, 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2)
+#    (5.5, 5.6, 7.0, 7.1, 7.2, 7.3, 7.4)
+# for x64
+if [ ${arch} = x64 ]; then
 for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
-"20180731" "20190902" "20200930" "20210902" "20220829"; do
+"20180731" "20190902"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
 done
-# remove following lines when ZTS removed from releases
-# 8.2 does not ship with zts
-for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
-"20180731" "20190902" "20200930" "20210902"; do
-  check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}-zts.so"
-done
+fi
+# Currently supported versions:
+#    (8.0, 8.1, 8.2)
+# for x64 and aarch64
+if [ ${arch} = x64 ] || [ ${arch} = aarch64 ]; then
+  for pmv in "20200930" "20210902" "20220829"; do
+    check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
+  done
+fi
 
 if [ -n "${fmissing}" ]; then
   echo "ERROR: the following files could not be found:" >&2
@@ -1137,7 +1130,7 @@ Ignoring this particular instance of PHP.
 
   # Check if this is a supported arch
   # Should be caught on startup but add check here to be sure
-  if [ "${pi_arch}" != "x64" ]; then
+  if [ "${pi_arch}" != "x64" ] && [ "${pi_arch}" != "aarch64" ]; then
     msg=$(
     cat << EOF
 
@@ -1160,6 +1153,16 @@ EOF
 Ignoring this particular instance of PHP.
 "
     log "${pdir}: unsupported 32-bit version '${pi_ver}'"
+    unsupported_php=1
+    return 1
+  fi
+
+  if [ "${pi_arch}" = "aarch64" ] && [ "${pi_php8}" != "yes" ]; then
+    error "unsupported aarch64 version '${pi_ver}' of PHP found at:
+    ${pdir}
+Ignoring this particular instance of PHP.
+"
+    log "${pdir}: unsupported aarch64 version '${pi_ver}'"
     unsupported_php=1
     return 1
   fi
@@ -1295,20 +1298,20 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
-# uncomment when ZTS binaries are removed
-#  if [ "${pi_zts}" = "yes" ]; then
-#    msg=$(
-#    cat << EOF
-#
-#An unsupported PHP ZTS build has been detected. Please refer to this link:
-#  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
-#to view compatibilty requirements for the the New Relic PHP agent.
-#The install will now exit.
-#EOF
-#)
-#    error "${msg}"
-#    exit 1
-#  fi
+# zts installs are no longer supported
+  if [ "${pi_zts}" = "yes" ]; then
+    msg=$(
+    cat << EOF
+
+An unsupported PHP ZTS build has been detected. Please refer to this link:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
+The install will now exit.
+EOF
+)
+    error "${msg}"
+    exit 1
+  fi
 
 #
 # This is where we figure out where to put the ini file, if at all. We only do

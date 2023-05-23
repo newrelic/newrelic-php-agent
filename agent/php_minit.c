@@ -252,6 +252,23 @@ static nr_status_t nr_php_check_8T_DT_config(TSRMLS_D) {
   return NR_SUCCESS;
 }
 
+static void nr_php_check_CAT_DT_config(TSRMLS_D) {
+  if (NRINI(distributed_tracing_enabled) && NRINI(cross_process_enabled)) {
+    // send a warning message to agent log
+    nrl_warning(NRL_INIT,
+                "Cross Application Tracing will be DISABLED because "
+                "Distributed Tracing is enabled. CAT functionality has been "
+                "superseded by DT and will be removed in a future release. The "
+                "New Relic PHP Agent Team suggests manually disabling CAT via "
+                "the 'newrelic.cross_application_tracer.enabled' INI setting "
+                "in your INI file and enabling DT via the "
+                "'newrelic.distributed_tracing_enabled' INI setting.");
+    
+    // set CAT INI value to disabled (just to be safe)
+    NRINI(cross_process_enabled) = 0;
+  }
+}
+
 /*
  * @brief Check the INI values for 'logging_enabled' and
  *        'log_forwarding_enabled' and log a warning on
@@ -610,6 +627,8 @@ PHP_MINIT_FUNCTION(newrelic) {
    * config issue and also that 8T will be disabled
    */
   nr_php_check_8T_DT_config(TSRMLS_C);
+
+  nr_php_check_CAT_DT_config(TSRMLS_C);
 
   nr_php_check_logging_config(TSRMLS_C);
   nr_php_check_high_security_log_forwarding(TSRMLS_C);
