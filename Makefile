@@ -332,8 +332,11 @@ src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_
 #
 
 .PHONY: integration
-integration: Makefile daemon lasp-test-all integration-events-limits
-	for PHP in $(PHP_VERSION_LIST); do \
+integration: Makefile integration-tests lasp-test-all integration-events-limits
+
+.PHONY: integration-tests
+integration-tests: bin/integration_runner
+	@for PHP in $(PHP_VERSION_LIST); do \
           echo; echo "# PHP=$${PHP}"; \
 	  env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) || exit 1; \
 	  echo "# PHP=$${PHP}"; \
