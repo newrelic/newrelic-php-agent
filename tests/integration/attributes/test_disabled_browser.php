@@ -8,6 +8,8 @@
 By default, browser monitoring attributes should not show up.
 */
 
+die("warn: test outcome depends on the values in runtime environment");
+
 /*EXPECT
 empty attributes hash
 */
