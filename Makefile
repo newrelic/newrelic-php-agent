@@ -229,6 +229,10 @@ daemon_cover: go-minimum-version daemon-protobuf
 	$(GO) tool cover -html=$(DAEMON_COV_FILE)
 	@rm -f $(DAEMON_COV_FILE)
 
+bin/integration_runner:
+	@echo "Building bin/integration_runner"
+	@$(GO) install $(GOFLAGS) integration_runner
+
 # Note that this rule does not require the Go binary, and therefore doesn't
 # depend on go-minimum-version.
 .PHONY: daemon-clean
@@ -347,10 +351,10 @@ integration: Makefile daemon lasp-test-all integration-events-limits
 #
 
 .PHONY: integration-events-limits
-integration-events-limits: daemon
-	# create array with the collector response for each agent requested custom events max samples
-	# currently based on fast harvest cycle being 5 seconds so ratio is 12:1
-	declare -A custom_limits_tests; \
+integration-events-limits: bin/integration_runner
+	@# create array with the collector response for each agent requested custom events max samples
+	@# currently based on fast harvest cycle being 5 seconds so ratio is 12:1
+	@declare -A custom_limits_tests; \
 	custom_limits_tests[240]=20; \
 	custom_limits_tests[7000]=583; \
 	custom_limits_tests[30000]=2500; \
@@ -366,9 +370,9 @@ integration-events-limits: daemon
 	      echo "# PHP=$${PHP}"; \
 	done;
 
-	# test for invalid value (-1) and (1000000)
-	# Should use default (30000) for -1 and max (100000) for 1000000
-	for PHP in $(PHP_VERSION_LIST); do \
+	@# test for invalid value (-1) and (1000000)
+	@# Should use default (30000) for -1 and max (100000) for 1000000
+	@for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 100000 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_invalid_toolarge_limit.php || exit 1; \
@@ -378,18 +382,18 @@ integration-events-limits: daemon
 	    echo "# PHP=$${PHP}"; \
 	done;	
 
-	# also run a test where limit is set to 0
-	# default value is used
-	for PHP in $(PHP_VERSION_LIST); do \
+	@# also run a test where limit is set to 0
+	@# default value is used
+	@for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 0 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_0_limit.php || exit 1; \
 	    echo "# PHP=$${PHP}"; \
 	done;
 
-	# also run a test where no agent custom event limit is specified and verify
-	# default value is used
-	for PHP in $(PHP_VERSION_LIST); do \
+	@# also run a test where no agent custom event limit is specified and verify
+	@# default value is used
+	@for PHP in $(PHP_VERSION_LIST); do \
 	    env NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) \
 	        -max_custom_events 30000 \
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_not_specified.php || exit 1; \
@@ -451,10 +455,10 @@ package-clean:
 # Testing the Language Agent Security Policy (LASP) feature.
 #
 .PHONY: lasp-test
-lasp-test: daemon
-	if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
+lasp-test: bin/integration_runner
+	@if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
 	@if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
-	if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
+	@if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
 	@for PHP in $(PHP_VERSION_LIST); do \
           echo; echo "# PHP=$${PHP}"; \
           NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
