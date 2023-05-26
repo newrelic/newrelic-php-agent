@@ -241,6 +241,19 @@ jobs:
           -e LICENSE_lasp_suite_random_2=${{secrets.LICENSE_LASP_SUITE_RANDOM_2}} \
           -e LICENSE_lasp_suite_random_3=${{secrets.LICENSE_LASP_SUITE_RANDOM_3}} \
           nr-php make lasp-test-all
+      - name: Run integration tests
+        if: ${{ matrix.arch == 'amd64' }}
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so tests/integration/basic/" \
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
+          -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
+          nr-php make integration-tests
       - name: Stop services
         env:
           PHP: ${{matrix.php}}
