@@ -498,31 +498,38 @@ endif
 
 include make/release.mk
 
+test-services-start:
+	docker compose pull $(SERVICES)
+	docker compose --profile test up --wait --remove-orphans -d $(SERVICES)
+
+test-services-stop:
+	docker compose --profile test stop
+
 #
 # Docker Development Environment
 #
 
 dev-shell:
-	docker compose up --build --remove-orphans -d
-	docker exec -it agent bash -c "sh files/set_path.sh ; bash"
+	docker compose --profile dev up --build --remove-orphans -d
+	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; bash"
 
 dev-build:
-	docker compose up --build --remove-orphans -d
-	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 all"
+	docker compose --profile dev up --build --remove-orphans -d
+	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all"
 
 dev-unit-tests:
-	docker compose up --build --remove-orphans -d
-	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 valgrind"
+	docker compose --profile dev up --build --remove-orphans -d
+	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
 
 dev-integration-tests:
-	docker compose up --build --remove-orphans -d
-	docker exec -it agent bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+	docker compose --profile dev up --build --remove-orphans -d
+	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-all:
-	docker compose up --build --remove-orphans -d
-	docker exec -it agent bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+	docker compose --profile dev up --build --remove-orphans -d
+	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-stop:
-	docker compose stop
+	docker compose --profile dev stop
 
 # vim: set noet ts=2 sw=2:
