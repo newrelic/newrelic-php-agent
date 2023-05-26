@@ -19,9 +19,7 @@ services:
       - "33061:3306"
     container_name: mysqldb
   redisdb:
-    build:
-      context: .
-      dockerfile: files/Dockerfile.redis
+    image: redis
     restart: always
     ports:
       - "6379:6379"
