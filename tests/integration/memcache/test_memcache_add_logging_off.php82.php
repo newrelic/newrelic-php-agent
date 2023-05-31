@@ -24,7 +24,6 @@ newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_REGEX
-^.*\s*Deprecated:\s+Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - add key 1
 ok - add key 2
@@ -65,12 +64,7 @@ ok - delete key 3
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/all"},                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/allOther"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
