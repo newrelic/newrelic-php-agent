@@ -506,7 +506,7 @@ endif
 include make/release.mk
 
 test-services-start:
-	docker compose pull $(SERVICES)
+	docker compose --profile test pull $(SERVICES)
 	docker compose --profile test up --wait --remove-orphans -d $(SERVICES)
 
 test-services-stop:
