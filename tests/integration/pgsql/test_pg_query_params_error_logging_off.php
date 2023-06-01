@@ -26,6 +26,7 @@ newrelic.transaction_tracer.record_sql = raw
 newrelic.application_logging.enabled = false
 newrelic.application_logging.forwarding.enabled = false
 newrelic.application_logging.metrics.enabled = false
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS
