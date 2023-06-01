@@ -51,6 +51,8 @@ jobs:
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon
       - name: Run daemon tests
         run: >
