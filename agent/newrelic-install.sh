@@ -1043,9 +1043,11 @@ for this copy of PHP. We apologize for the inconvenience.
 
   case "${pi_ver}" in
     5.5.*)
+      log "${pdir}: deprecated php version '${pi_ver}'"
       ;;
 
     5.6.*)
+      log "${pdir}: deprecated php version '${pi_ver}'"
       ;;
 
     7.0.*)
