@@ -1044,7 +1044,7 @@ for this copy of PHP. We apologize for the inconvenience.
   case "${pi_ver}" in
     5.5.*)
       warning_message="${pdir}: deprecated php version '${pi_ver}'"
-      if [ -z “${NR_INSTALL_SILENT}” ]; then
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
          echo $warning_message
       fi
       log $warning_message
@@ -1052,7 +1052,7 @@ for this copy of PHP. We apologize for the inconvenience.
 
     5.6.*)
       warning_message="${pdir}: deprecated php version '${pi_ver}'"
-      if [ -z “${NR_INSTALL_SILENT}” ]; then
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
          echo $warning_message
       fi
       log $warning_message
