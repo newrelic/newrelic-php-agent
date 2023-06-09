@@ -1,7 +1,10 @@
 <?php
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /* Mock enough bits of the Module Handler Interface for hook tests. */
-
 namespace Drupal\Core\Extension {
     interface ModuleHandlerInterface {
         public function invokeAllWith($hook_str, $callback);
