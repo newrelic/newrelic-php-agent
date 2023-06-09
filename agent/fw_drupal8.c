@@ -409,7 +409,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
 
   hook = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (nr_php_is_zval_non_empty_string(hook)) {
+  if (!nr_php_is_zval_non_empty_string(hook)) {
       goto leave;
   }
 
