@@ -367,6 +367,74 @@ NR_PHP_WRAPPER(nr_drupal8_post_implements_hook) {
 NR_PHP_WRAPPER_END
 
 /*
+ * Purpose : Handles ModuleHandlerInterface::invokeAllWith()'s callback
+ *           and ensure that the relevant module_hook function is instrumented.
+ */
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
+  zval* module = NULL;
+
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  module = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (!nr_php_is_zval_non_empty_string(module)) {
+      goto leave;
+  }
+
+  nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
+                            NRPRG(drupal_module_invoke_all_hook),
+                            NRPRG(drupal_module_invoke_all_hook_len) TSRMLS_CC);
+
+leave:
+  NR_PHP_WRAPPER_CALL;
+  nr_php_arg_release(&module);
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Purpose : Handles ModuleHandlerInterface::invokeAllWith() call and ensure that the
+ *           relevant hook function is instrumented. At this point in the call
+ *           stack, we do not know which module to instrument, so we
+ *           must first wrap the callback passed into this function
+ */
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
+  zval* callback = NULL;
+  zval* hook = NULL;
+  char* prev_hook = NULL;
+  int prev_hook_len;
+
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  hook = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (!nr_php_is_zval_non_empty_string(hook)) {
+      goto leave;
+  }
+
+  prev_hook = NRPRG(drupal_module_invoke_all_hook);
+  prev_hook_len = NRPRG(drupal_module_invoke_all_hook_len);
+  NRPRG(drupal_module_invoke_all_hook)
+      = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
+  NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
+
+  callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  nr_php_wrap_generic_callable(callback, nr_drupal94_invoke_all_with_callback TSRMLS_CC);
+
+  NR_PHP_WRAPPER_CALL;
+
+  nr_php_arg_release(&callback);
+  nr_free(NRPRG(drupal_module_invoke_all_hook));
+  NRPRG(drupal_module_invoke_all_hook) = prev_hook;
+  NRPRG(drupal_module_invoke_all_hook_len) = prev_hook_len;
+
+leave:
+  nr_php_arg_release(&hook);
+}
+NR_PHP_WRAPPER_END
+
+/*
  * Purpose : Wrap the invoke() method of the module handler instance in use.
  */
 NR_PHP_WRAPPER(nr_drupal8_module_handler) {
@@ -397,6 +465,9 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
                                  nr_drupal8_post_get_implementations TSRMLS_CC);
   nr_drupal8_add_method_callback(ce, NR_PSTR("implementshook"),
                                  nr_drupal8_post_implements_hook TSRMLS_CC);
+  /* Drupal 9.4 introduced a replacement method for getImplentations */
+  nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
+                                 nr_drupal94_invoke_all_with TSRMLS_CC);
 }
 NR_PHP_WRAPPER_END
 
@@ -488,7 +559,7 @@ void nr_drupal8_enable(TSRMLS_D) {
    */
   if (NRINI(drupal_modules)) {
     /*
-     * We actually need to wrap the invoke() method of the module handler
+     * We actually need to wrap some methods of the module handler
      * implementation to generate module metrics, but we can't simply wrap
      * ModuleHandler::invoke() because Drupal 8 allows for this to be replaced
      * by anything that implements ModuleHandlerInterface. Instead, we'll catch
