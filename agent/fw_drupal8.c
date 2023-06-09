@@ -370,7 +370,7 @@ NR_PHP_WRAPPER_END
  * Purpose : Handles ModuleHandlerInterface::invokeAllWith()'s callback
  *           and ensure that the relevant module_hook function is instrumented.
  */
-NR_PHP_WRAPPER(nr_drupal9_invoke_all_with_callback) {
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
   zval* module = NULL;
 
   (void)wraprec;
@@ -400,7 +400,7 @@ NR_PHP_WRAPPER_END
  *           stack, we do not know which module to instrument, so we
  *           must first wrap the callback passed into this function
  */
-NR_PHP_WRAPPER(nr_drupal9_invoke_all_with) {
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   zval* callback = NULL;
   zval* hook = NULL;
   char* prev_hook = NULL;
@@ -419,7 +419,7 @@ NR_PHP_WRAPPER(nr_drupal9_invoke_all_with) {
   NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
 
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  nr_php_wrap_generic_callable(callback, nr_drupal9_invoke_all_with_callback TSRMLS_CC);
+  nr_php_wrap_generic_callable(callback, nr_drupal94_invoke_all_with_callback TSRMLS_CC);
 
   NR_PHP_WRAPPER_CALL;
 
@@ -463,7 +463,7 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
                                  nr_drupal8_post_implements_hook TSRMLS_CC);
   /* Drupal 9.4 introduced a replacement method for getImplentations */
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
-                                 nr_drupal9_invoke_all_with TSRMLS_CC);
+                                 nr_drupal94_invoke_all_with TSRMLS_CC);
 }
 NR_PHP_WRAPPER_END
 
