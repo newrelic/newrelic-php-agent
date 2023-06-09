@@ -384,7 +384,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
 
   nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
                             NRPRG(drupal_module_invoke_all_hook),
-                            NRPRG(drupal_module_invoke_all_hook_len TSRMLS_CC));
+                            NRPRG(drupal_module_invoke_all_hook_len) TSRMLS_CC);
 
 leave:
   NR_PHP_WRAPPER_CALL;
