@@ -97,6 +97,9 @@ extern nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
 extern nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                         nrspecialfn_t callback TSRMLS_DC);
 
+extern nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
+                                                nrspecialfn_t callback TSRMLS_DC);
+
 /*
  * Purpose : Retrieve an argument from the current execute data.
  *
