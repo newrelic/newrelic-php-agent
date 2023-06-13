@@ -11,7 +11,16 @@
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
-  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen TSRMLS_CC);
+  return nr_php_wrap_user_function_transience(name, namelen, callback,
+                                              false /*is_transient*/ TSRMLS_CC);
+}
+
+nruserfn_t* nr_php_wrap_user_function_transience(const char* name,
+                                                 size_t namelen,
+                                                 nrspecialfn_t callback,
+                                                 bool is_transient TSRMLS_DC) {
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen,
+                                                       is_transient TSRMLS_CC);
 
   if (wraprec && callback) {
     if ((NULL != wraprec->special_instrumentation)
@@ -68,7 +77,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
 #endif
   zend_fcall_info_cache fcc;
   zend_fcall_info fci;
-  nruserfn_t* wraprec = NULL;
+
   /* not calling nr_zend_is_callable because we want to additionally populate name */
   if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
     /* see php source code's zend_is_callable_at_frame function to see from
@@ -80,30 +89,27 @@ again:
       /* wrapping a string name of a callable */
       case IS_STRING:
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-        wraprec = nr_php_wrap_user_function(name, nr_strlen(name), callback TSRMLS_CC);
+        return nr_php_wrap_user_function_transience(name, nr_strlen(name), callback,
+                                                    true /*is_transient*/ TSRMLS_CC);
 #else
-        wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
-                                            ZEND_STRING_LEN(name),
-                                            callback TSRMLS_CC);
+        return nr_php_wrap_user_function_transience(ZEND_STRING_VALUE(name),
+                                                    ZEND_STRING_LEN(name), callback,
+                                                    true /*is_transient*/ TSRMLS_CC);
 #endif
-        /* It is a possibility that the wraprec returned here is a previously-instrumented,
-         * non-transient wraprec. Setting it to transient here should have no impact on
-         * functionality (as we will just remake it) and negligible performance impact. */
-        wraprec->is_transient = 1;
-        return wraprec;
+
       /* wrapping an array where [0] is an object and [1] is the method to invoke
        * the previous zend_is_callable has created the commbined object::method
        * name for us to wrap */
       case IS_ARRAY:
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-        wraprec = nr_php_wrap_user_function(name, nr_strlen(name), callback TSRMLS_CC);
+        return nr_php_wrap_user_function_transience(name, nr_strlen(name), callback,
+                                                    true /*is_transient*/ TSRMLS_CC);
 #else
-        wraprec = nr_php_wrap_user_function(ZEND_STRING_VALUE(name),
-                                            ZEND_STRING_LEN(name),
-                                            callback TSRMLS_CC);
+        return nr_php_wrap_user_function_transience(ZEND_STRING_VALUE(name),
+                                                    ZEND_STRING_LEN(name), callback,
+                                                    true /*is_transient*/ TSRMLS_CC);
 #endif
-        wraprec->is_transient = 1;
-        return wraprec;
+
       /* wrapping a closure. Need to initialize fcall info in order to wrap the
        * underlying zend_function object */
       case IS_OBJECT:
@@ -114,6 +120,7 @@ again:
         }
         nrl_verbosedebug(NRL_INSTRUMENT, "Failed to initialize fcall info when wrapping");
         break;
+
       /* unwrap references */
       /* PHP 5.x handles references in a different manner that do not need to be unwrapped */
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
