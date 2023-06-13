@@ -173,10 +173,10 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * `newrelic.transaction_tracer.custom` 3)
  * nr_php_user_function_add_declared_callback (prior to PHP 7.3) 4) from
  * function `nr_php_wrap_user_function` called from php_wrapper sets the wraprec
- * with framework specific instrumentation. 5) from function
- * `nr_php_wrap_callable` (in `php_wrapper.c`) used only by Wordpress and predis
- * for custom instrumentation that adds `is_transient` wrappers that get cleaned
- * up with each shutdown.
+ * with framework specific instrumentation. Optionally sets `is_transient`.
+   5) from function `nr_php_wrap_callable` (in `php_wrapper.c`) used only by
+ * Wordpress and predis for custom instrumentation that adds `is_transient`.
+ * Transient wrappers get cleaned up with each shutdown.
  *
  * When overwriting the zend_execute_ex function, every effort was made to
  * reduce performance overhead because until the agent returns control, we are
@@ -395,7 +395,8 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 }
 
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
-                                           size_t namestrlen TSRMLS_DC) {
+                                           size_t namestrlen,
+                                           bool is_transient TSRMLS_DC) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
@@ -428,7 +429,14 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  nr_php_add_custom_tracer_common(wraprec);
+  if (is_transient) {
+    wraprec->is_transient = true;
+  } else {
+    /* non-transient wraprecs are added to both the hashmap and linked list.
+     * At request shutfown, the hashmap will free transients, but leave
+     * non-transients to be freed by the linked list */
+    nr_php_add_custom_tracer_common(wraprec);
+  }
 
   return wraprec; /* return the new wraprec */
 }
@@ -510,7 +518,8 @@ void nr_php_add_user_instrumentation(TSRMLS_D) {
 void nr_php_add_transaction_naming_function(const char* namestr,
                                             int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
+      = nr_php_add_custom_tracer_named(namestr, namestrlen,
+                                       false /*is_transient*/ TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
@@ -519,7 +528,8 @@ void nr_php_add_transaction_naming_function(const char* namestr,
 
 void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
+      = nr_php_add_custom_tracer_named(namestr, namestrlen,
+                                       false /*is_transient*/ TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
@@ -577,7 +587,8 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 nruserfn_declared_t callback
                                                     TSRMLS_DC) {
   nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen TSRMLS_CC);
+      = nr_php_add_custom_tracer_named(namestr, namestrlen,
+                                       false /*is_transient*/ TSRMLS_CC);
 
   if (0 != wraprec) {
     wraprec->declared_callback = callback;
