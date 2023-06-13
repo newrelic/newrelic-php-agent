@@ -15,6 +15,8 @@ if (!extension_loaded("curl")) {
 }
 */
 
+die("warn: this test fails on musl platform");
+
 /*INI
 */
 

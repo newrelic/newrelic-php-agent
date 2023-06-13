@@ -23,6 +23,7 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 newrelic.transaction_tracer.stack_trace_threshold = 0
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = raw
+newrelic.distributed_tracing_enabled=0
 */
 
 /*EXPECT_METRICS

@@ -433,7 +433,7 @@ func main() {
 var (
 	skipRE  = regexp.MustCompile(`^(?i)\s*skip`)
 	xfailRE = regexp.MustCompile(`^(?i)\s*xfail`)
-	warnRE  = regexp.MustCompile(`^(?i)\s*warn`)
+	warnRE  = regexp.MustCompile(`^warn:\s+`)
 )
 
 func runTests(testsToRun chan *integration.Test, numWorkers int) {

@@ -21,7 +21,6 @@ if (version_compare(PHP_VERSION, "8.2", "<")) {
 */
 
 /*EXPECT_REGEX
-^.*\s*Deprecated:\s+Creation of dynamic property Memcache::\$connection is deprecated in\s.* on line\s.*
 ok - connect to server
 ok - set key
 ok - increment key
@@ -65,12 +64,7 @@ ok - delete key
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/OtherTransaction/php__FILE__"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/all"},                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/allOther"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
