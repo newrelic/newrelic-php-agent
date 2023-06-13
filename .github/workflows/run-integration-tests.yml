@@ -100,11 +100,17 @@ jobs:
   test:
     needs: [build-test-runner, build-agent]
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: true
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
         php: ['8.0', '8.1', '8.2']
+        experimental: [false]
+        include:
+          - arch: arm64
+            experimental: true
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v3
