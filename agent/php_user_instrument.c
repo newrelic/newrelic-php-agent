@@ -173,14 +173,16 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * `newrelic.transaction_tracer.custom` 3)
  * nr_php_user_function_add_declared_callback (prior to PHP 7.3) 4) from
  * function `nr_php_wrap_user_function` called from php_wrapper sets the wraprec
- * with framework specific instrumentation. Optionally sets `is_transient`.
+ * with framework specific instrumentation. Optionally specifies transience.
    5) from function `nr_php_wrap_callable` (in `php_wrapper.c`) used only by
- * Wordpress and predis for custom instrumentation that adds `is_transient`.
+ * Wordpress and predis for custom instrumentation that sets
+ * `NR_WRAPREC_IS_TRANSIENT`.
+ *
  * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
  *
  * When overwriting the zend_execute_ex function, every effort was made to
  * reduce performance overhead because until the agent returns control, we are
- * the bottleneck of PHP execution on a customer's machine.  Overwriting the
+ * the bottleneck of PHP execution on a customer's machine. Overwriting the
  * reserved field was seen as a quick way to check if a function is instrumented
  * or not.
  *
