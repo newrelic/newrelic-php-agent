@@ -11,16 +11,16 @@
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
-  return nr_php_wrap_user_function_transience(name, namelen, callback,
-                                              false /*is_transient*/ TSRMLS_CC);
+  return nr_php_wrap_user_function_with_transience(name, namelen, callback,
+                                                   NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
 }
 
-nruserfn_t* nr_php_wrap_user_function_transience(const char* name,
+nruserfn_t* nr_php_wrap_user_function_with_transience(const char* name,
                                                  size_t namelen,
                                                  nrspecialfn_t callback,
-                                                 bool is_transient TSRMLS_DC) {
+                                                 nr_transience_t transience TSRMLS_DC) {
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen,
-                                                       is_transient TSRMLS_CC);
+                                                       transience TSRMLS_CC);
 
   if (wraprec && callback) {
     if ((NULL != wraprec->special_instrumentation)
@@ -89,12 +89,12 @@ again:
       /* wrapping a string name of a callable */
       case IS_STRING:
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-        return nr_php_wrap_user_function_transience(name, nr_strlen(name), callback,
-                                                    true /*is_transient*/ TSRMLS_CC);
+        return nr_php_wrap_user_function_with_transience(name, nr_strlen(name), callback,
+                                                         NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #else
-        return nr_php_wrap_user_function_transience(ZEND_STRING_VALUE(name),
-                                                    ZEND_STRING_LEN(name), callback,
-                                                    true /*is_transient*/ TSRMLS_CC);
+        return nr_php_wrap_user_function_with_transience(ZEND_STRING_VALUE(name),
+                                                         ZEND_STRING_LEN(name), callback,
+                                                         NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #endif
 
       /* wrapping an array where [0] is an object and [1] is the method to invoke
@@ -102,12 +102,12 @@ again:
        * name for us to wrap */
       case IS_ARRAY:
 #if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-        return nr_php_wrap_user_function_transience(name, nr_strlen(name), callback,
-                                                    true /*is_transient*/ TSRMLS_CC);
+        return nr_php_wrap_user_function_with_transience(name, nr_strlen(name), callback,
+                                                         NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #else
-        return nr_php_wrap_user_function_transience(ZEND_STRING_VALUE(name),
-                                                    ZEND_STRING_LEN(name), callback,
-                                                    true /*is_transient*/ TSRMLS_CC);
+        return nr_php_wrap_user_function_with_transience(ZEND_STRING_VALUE(name),
+                                                         ZEND_STRING_LEN(name), callback,
+                                                         NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #endif
 
       /* wrapping a closure. Need to initialize fcall info in order to wrap the
@@ -115,7 +115,7 @@ again:
       case IS_OBJECT:
         if (SUCCESS == zend_fcall_info_init(callable, 0, &fci, &fcc,
                                             NULL, NULL TSRMLS_CC)) {
-          /* nr_php_wrao_callable already sets the is_transient flag for us */
+          /* nr_php_wrap_callable already sets the transience field for us */
           return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
         }
         nrl_verbosedebug(NRL_INSTRUMENT, "Failed to initialize fcall info when wrapping");

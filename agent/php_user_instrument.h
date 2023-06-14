@@ -27,6 +27,10 @@ typedef struct nrspecialfn_return_t (*nrspecialfn_t)(
 
 typedef void (*nruserfn_declared_t)(TSRMLS_D);
 
+typedef enum {
+  NR_WRAPREC_NOT_TRANSIENT = 0,
+  NR_WRAPREC_IS_TRANSIENT = 1
+} nr_transience_t;
 /*
  * An equivalent data structure for user functions.
  *
@@ -71,14 +75,21 @@ typedef struct _nruserfn_t {
   int is_method;
   int is_disabled;
   int is_wrapped;
-  int is_exception_handler; /* 1 if the current exception handler; 0 otherwise
-                             */
-  int is_names_wt_simple; /* True if this function "names" its enclosing WT; the
-                             first such function does the naming */
-  int is_transient;       /* Non-zero if specific to the request */
-  int is_user_added;      /* True if user requested this instrumentation */
-  int create_metric; /* 1 if a metric should be made for calls of this function
-                      */
+  int is_exception_handler;   /* 1 if the current exception handler; 0 otherwise
+                               */
+  int is_names_wt_simple;     /* True if this function "names" its enclosing WT;
+                                 the first such function does the naming */
+  nr_transience_t transience; /* Wraprecs that are transient are destroyed
+                                 after each request. Wraprecs that are
+                                 non-transient are kept indefinitely.
+                                 Currently, while all wraprecs are stored
+                                 in a hashmap, non-transients are also
+                                 stored in a linked list to repopulate
+                                 the hash. This should be changed to no
+                                 longer need the linked list. */
+  int is_user_added;          /* True if user requested this instrumentation */
+  int create_metric;          /* 1 if a metric should be made for calls of
+                                 this function */
 
   char* drupal_module;
   nr_string_len_t drupal_module_len;
@@ -151,7 +162,7 @@ extern nruserfn_t* nr_php_add_custom_tracer_callable(
     zend_function* func TSRMLS_DC);
 extern nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                                   size_t namestrlen,
-                                                  bool is_transient TSRMLS_DC);
+                                                  nr_transience_t transience TSRMLS_DC);
 extern void nr_php_reset_user_instrumentation(void);
 extern void nr_php_remove_transient_user_instrumentation(void);
 extern void nr_php_add_user_instrumentation(TSRMLS_D);
