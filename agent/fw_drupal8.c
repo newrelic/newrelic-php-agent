@@ -420,6 +420,10 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
 
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  /* This instrumentation will fail if callback has already been wrapped
+   * with a special instrumentation callback in a different context.
+   * In this scenario, we will be unable to instrument hooks and modules for
+   * this particular call */
   nr_php_wrap_generic_callable(callback, nr_drupal94_invoke_all_with_callback TSRMLS_CC);
 
   NR_PHP_WRAPPER_CALL;
