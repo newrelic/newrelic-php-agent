@@ -176,7 +176,7 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * with framework specific instrumentation. Optionally sets `is_transient`.
    5) from function `nr_php_wrap_callable` (in `php_wrapper.c`) used only by
  * Wordpress and predis for custom instrumentation that adds `is_transient`.
- * Transient wrappers get cleaned up with each shutdown.
+ * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
  *
  * When overwriting the zend_execute_ex function, every effort was made to
  * reduce performance overhead because until the agent returns control, we are
