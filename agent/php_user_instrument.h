@@ -81,7 +81,7 @@ typedef struct _nruserfn_t {
                                  the first such function does the naming */
   nr_transience_t transience; /* Wraprecs that are transient are destroyed
                                  after each request. Wraprecs that are
-                                 non-transient are kept indefinitely.
+                                 non-transient are kept until module shutdown.
                                  Currently, while all wraprecs are stored
                                  in a hashmap, non-transients are also
                                  stored in a linked list to repopulate
