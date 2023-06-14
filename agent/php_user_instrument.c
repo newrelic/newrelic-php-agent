@@ -433,7 +433,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
     wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
   } else {
     /* non-transient wraprecs are added to both the hashmap and linked list.
-     * At request shutfown, the hashmap will free transients, but leave
+     * At request shutdown, the hashmap will free transients, but leave
      * non-transients to be freed by the linked list */
     nr_php_add_custom_tracer_common(wraprec);
   }
