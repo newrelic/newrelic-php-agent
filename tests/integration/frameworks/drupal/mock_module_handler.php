@@ -22,6 +22,9 @@ namespace Drupal\Core\Extension {
             } else if ($hook_str == "hook_3") {
                 $module = "module_a";
                 $callback($module . "_" . $hook_str, $module);
+            } else if ($hook_str == "hook_4") {
+                $module = "module_b";
+                $callback($module . "_" . $hook_str, $module);
             }
         }
     }
