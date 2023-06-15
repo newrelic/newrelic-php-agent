@@ -37,9 +37,10 @@
  *   impatiens          13Feb2023 (10.6)
  *   jasmine            08Mar2023 (10.7)
  *   kalmia             27Mar2023 (10.8)
- *   lilac		05Apr2023 (10.9)
+ *   lilac              05Apr2023 (10.9)
+ *   marigold           30May2023 (10.10)
  */
-#define NR_CODENAME "marigold"
+#define NR_CODENAME "narcissus"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
