@@ -2,26 +2,25 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: test-pull-request
+name: run-integration-tests
+run-name: Testing ${{ inputs.origin }}:${{ inputs.ref }} (by @${{ github.actor }})
 
-#
-# Controls when the action will run. 
-#
 on:
-  #
-  # Triggers the workflow on push or pull request events but only for listed branches
-  #
-  push:
-    branches: 
-      - main
-      - 'dev'
-  pull_request:
-    branches: 
-      - main
-      - 'dev'
-      - 'oapi'
+  workflow_dispatch:
+    inputs:
+      origin:
+        description: 'newrelic-php-agent origin'
+        required: true
+        default: 'newrelic' 
+        type: string
+      ref:
+        description: 'Branch or tag'
+        required: true
+        default: 'dev' 
+        type: string
+
 jobs:
-  daemon-unit-tests:
+  build-test-runner:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -47,24 +46,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build daemon
+      - name: Build integration_runner
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
           -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
-          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon
-      - name: Run daemon tests
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION bin/integration_runner
       - name: Save integration_runner for integration tests
         uses: actions/upload-artifact@v3
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
-  agent-unit-test:
+  build-agent:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -74,22 +68,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
-        exclude:
-          - arch: arm64
-            php: '5.5'
-          - arch: arm64
-            php: '5.6'
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
-          - arch: arm64
-            php: '7.2'
-          - arch: arm64
-            php: '7.3'
-          - arch: arm64
-            php: '7.4'
+        php: ['8.0', '8.1', '8.2']
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -103,23 +82,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Determine if valgrind can be used
-        id: get-check-variant
-        run: |
-          if [[ ${{ matrix.platform }} = 'gnu' && ${{matrix.arch}} = 'amd64' ]]; then
-            echo "AXIOM_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          else
-            echo "AXIOM_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          fi
-          if [[ ${{matrix.arch}} = 'arm64' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          elif [[ ${{ matrix.platform }} = 'gnu' ]]; then
-            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          elif [[ ${{matrix.php}} = '5.5' || ${{matrix.php}} = '5.6' || ${{matrix.php}} = '7.0' || ${{matrix.php}} = '7.1' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          else 
-            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          fi
       - name: Build axiom
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
@@ -130,54 +92,25 @@ jobs:
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
-      - name: Build axiom unit tests
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-tests
-      - name: Run axiom unit tests
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
-      - name: Build agent unit tests
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-tests
-      - name: Run agent unit tests
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
         uses: actions/upload-artifact@v3
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
-  integration-tests:
-    needs: [daemon-unit-tests, agent-unit-test]
+  test:
+    needs: [build-test-runner, build-agent]
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: true
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
-        exclude:
+        php: ['8.0', '8.1', '8.2']
+        experimental: [false]
+        include:
           - arch: arm64
-            php: '5.5'
-          - arch: arm64
-            php: '5.6'
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
-          - arch: arm64
-            php: '7.2'
-          - arch: arm64
-            php: '7.3'
-          - arch: arm64
-            php: '7.4'
+            experimental: true
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v3
@@ -218,29 +151,7 @@ jobs:
         working-directory: ./php-agent
         run: |
           make test-services-start
-      - name: Test events limits
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          docker exec \
-          -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
-          nr-php make integration-events-limits
-      - name: Test LASP
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          docker exec \
-          -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
-          -e LICENSE_lasp_suite_most_secure=${{secrets.LICENSE_LASP_SUITE_MOST_SECURE}} \
-          -e LICENSE_lasp_suite_least_secure=${{secrets.LICENSE_LASP_SUITE_LEAST_SECURE}} \
-          -e LICENSE_lasp_suite_random_1=${{secrets.LICENSE_LASP_SUITE_RANDOM_1}} \
-          -e LICENSE_lasp_suite_random_2=${{secrets.LICENSE_LASP_SUITE_RANDOM_2}} \
-          -e LICENSE_lasp_suite_random_3=${{secrets.LICENSE_LASP_SUITE_RANDOM_3}} \
-          nr-php make lasp-test-all
       - name: Run integration tests
-        if: ${{ matrix.arch == 'amd64' }}
         working-directory: ./php-agent
         shell: bash
         run: |

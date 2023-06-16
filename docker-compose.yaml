@@ -16,12 +16,16 @@ services:
       MYSQL_PASSWORD: admin
       MYSQL_HOST: mysqldb
     ports:
-      - "33061:3306"
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysql", "--user=admin", "--password=admin", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     container_name: mysqldb
   redisdb:
-    build:
-      context: .
-      dockerfile: files/Dockerfile.redis
+    image: redis
     restart: always
     ports:
       - "6379:6379"
@@ -46,7 +50,35 @@ services:
     ports:
       - "5432:5432"
     container_name: postgres
-  agent:
+  php:
+    platform: ${PLATFORM:-}
+    image: newrelic/nr-php-agent-builder:make-php-${PHP:-8.2}-${LIBC:-gnu}-${IMAGE_VERSION:-v1}
+
+    environment:
+      MEMCACHE_HOST: memcached
+
+#      MONGO_HOST: mongodb
+
+      MYSQL_DB: database
+      MYSQL_USER: admin
+      MYSQL_PASSWD: admin
+      MYSQL_HOST: mysqldb
+
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: postgres
+      PG_PW: root
+
+      PREDIS_HOME: /usr/src/vendor/predis/predis/
+      REDIS_HOST: redisdb
+
+    volumes:
+       - ${AGENT_CODE:-$PWD}:/usr/local/src/newrelic-php-agent
+    entrypoint: tail
+    command: -f /dev/null
+    container_name: nr-php
+    profiles: ["test"]
+  devenv:
     build:
       context: .
       dockerfile: files/Dockerfile
@@ -77,4 +109,5 @@ services:
     working_dir: /usr/src/myapp
     stdin_open: true
     tty: true
-    container_name: agent
+    container_name: agent-devenv
+    profiles: ["dev"]

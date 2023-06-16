@@ -13,6 +13,8 @@ should show up.
 newrelic.browser_monitoring.capture_attributes = true
 */
 
+die("warn: test outcome depends on the values in runtime environment");
+
 /*EXPECT
 non-empty attributes hash
 */

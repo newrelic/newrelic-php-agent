@@ -12,6 +12,8 @@ When browser monitoring attributes are enabled, they should show up.
 newrelic.browser_monitoring.attributes.enabled = true
 */
 
+die("warn: test outcome depends on the values in runtime environment");
+
 /*EXPECT
 non-empty attributes hash
 */

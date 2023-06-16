@@ -13,7 +13,7 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/config.php');
 if (version_compare(PHP_VERSION, '8.2', '>=')) {
   class BaseTestCase
   {
-    private mixed $memcached;
+    private $memcached;
     function __construct($memcached) {
       $this->memcached = $memcached;
     }

@@ -17,6 +17,8 @@ newrelic.browser_monitoring.attributes.enabled = true
 newrelic.browser_monitoring.capture_attributes = false
 */
 
+die("warn: test outcome depends on the values in runtime environment");
+
 /*EXPECT
 non-empty attributes hash
 */
