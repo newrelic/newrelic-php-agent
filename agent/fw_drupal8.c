@@ -43,7 +43,7 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
 
   function = nr_php_find_class_method(ce, method);
   if (NULL == function) {
-    nrl_info(NRL_FRAMEWORK,
+    nrl_verbosedebug(NRL_FRAMEWORK,
              "Drupal 8: cannot get zend_function entry for %.*s::%.*s",
              NRSAFELEN(nr_php_class_entry_name_length(ce)),
              nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
