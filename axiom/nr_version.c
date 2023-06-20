@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   xigua              21Apr2021 (9.17)
  *   yam                23Aug2021 (9.18)
  *   zomp               02Mar2022 (9.19)
  *   allium             14Mar2022 (9.20)
@@ -39,8 +38,9 @@
  *   kalmia             27Mar2023 (10.8)
  *   lilac              05Apr2023 (10.9)
  *   marigold           30May2023 (10.10)
+ *   narcissus          20Jun2023 (10.11)
  */
-#define NR_CODENAME "narcissus"
+#define NR_CODENAME "orchid"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
