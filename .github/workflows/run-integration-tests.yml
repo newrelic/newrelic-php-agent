@@ -112,6 +112,7 @@ jobs:
             experimental: false
           - arch: arm64
             experimental: true
+    name: test ${{ matrix.php }} ${{ matrix.platform }} ${{ matrix.arch }} (${{ matrix.experimental }})
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v3
