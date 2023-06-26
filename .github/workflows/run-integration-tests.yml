@@ -107,10 +107,9 @@ jobs:
         platform: [gnu, musl]
         arch: [amd64, arm64]
         php: ['8.0', '8.1', '8.2']
-        experimental: [false]
         include:
-          - platform: [gnu, musl]
-          - php: ['8.0', '8.1', '8.2']
+          - arch: amd64
+            experimental: false
           - arch: arm64
             experimental: true
     steps:
