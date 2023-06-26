@@ -1088,7 +1088,9 @@ for this copy of PHP. We apologize for the inconvenience.
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
-Ignoring this particular instance of PHP.
+Ignoring this particular instance of PHP. Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
 "
       log "${pdir}: unsupported version '${pi_ver}'"
       unsupported_php=1
