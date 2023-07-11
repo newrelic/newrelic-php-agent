@@ -312,6 +312,13 @@ jobs:
         shell: bash
         run: |
           find . -name '*.gcov'
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.codecov == 1 }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          working-directory: ./php-agent
+          flags: agent-for-php-${{matrix.php}}
       - name: Stop services
         env:
           PHP: ${{matrix.php}}
