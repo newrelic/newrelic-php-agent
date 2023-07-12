@@ -292,12 +292,6 @@ jobs:
           -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
           -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
           nr-php make integration-tests
-      - name: Debug gcov 1
-        if: ${{ matrix.codecov == 1 }}
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          find . -name '*.gcda'
       - name: Generate gcov reports
         if: ${{ matrix.codecov == 1 }}
         working-directory: ./php-agent
@@ -306,12 +300,6 @@ jobs:
           docker exec \
           -e PHPS=${{matrix.php}} \
           nr-php make gcov
-      - name: Debug gcov 2
-        if: ${{ matrix.codecov == 1 }}
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          find . -name '*.gcov'
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
         uses: codecov/codecov-action@v3
