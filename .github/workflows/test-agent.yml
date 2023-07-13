@@ -90,6 +90,11 @@ jobs:
             php: '7.3'
           - arch: arm64
             php: '7.4'
+        include:
+          - codecov: 0
+          - platform: gnu
+            arch: amd64
+            codecov: 1
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -124,37 +129,55 @@ jobs:
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom 
       - name: Build agent
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
       - name: Build axiom unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-tests
       - name: Run axiom unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
       - name: Build agent unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-tests
       - name: Run agent unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
         uses: actions/upload-artifact@v3
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
+      - name: Save axiom gcov data files (*.gcno, *.gcna)
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/axiom/*.gc*
+      - name: Save agent gcov data files (*.gcno, *.gcna)
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/.libs/*.gc*
   integration-tests:
     needs: [daemon-unit-tests, agent-unit-test]
     runs-on: ubuntu-latest
@@ -178,6 +201,11 @@ jobs:
             php: '7.3'
           - arch: arm64
             php: '7.4'
+        include:
+          - codecov: 0
+          - platform: gnu
+            arch: amd64
+            codecov: 1
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v3
@@ -193,6 +221,18 @@ jobs:
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
+      - name: Get axiom gcov data files
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/download-artifact@v3
+        with:
+          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/axiom
+      - name: Get agent gcov data files
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/download-artifact@v3
+        with:
+          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/.libs
       - name: Prep artifacts for use
         run: |
           chmod 755 php-agent/bin/integration_runner
@@ -252,6 +292,21 @@ jobs:
           -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
           -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
           nr-php make integration-tests
+      - name: Generate gcov reports
+        if: ${{ matrix.codecov == 1 }}
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          nr-php make gcov
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.codecov == 1 }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          working-directory: ./php-agent
+          flags: agent-for-php-${{matrix.php}}
       - name: Stop services
         env:
           PHP: ${{matrix.php}}
