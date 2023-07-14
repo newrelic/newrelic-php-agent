@@ -133,7 +133,7 @@ To run integration tests, run:
 
 ## Code coverage
 
-The build system supports compiling the agent with the capability to generage
+The build system supports compiling the agent with the capability to generate
 [`gcov`](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
 code coverage profiling data, which can be used to generate code coverage reports.
 `ENABLE_COVERAGE` environmental variable controls this capability.
