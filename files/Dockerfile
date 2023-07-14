@@ -13,18 +13,6 @@ FROM php:${PHP_VER:-8.2}
 
 RUN docker-php-source extract
 
-#
-# Uncomment deb-src lines for all enabled repos. First part of single-quoted
-# string (up the the !) is the pattern of the lines that will be ignored.
-# Needed for apt-get build-dep call later in script
-#
-
-# PHP 8.0
-#RUN sed -Ei '/.*partner/! s/^# (deb-src .*)/\1/g' /etc/apt/sources.list
-
-# PHP 8.1+
-RUN sed -Ei '/.*partner/! s/^# (deb-src .*)/\1/g' /etc/apt/sources.list.d/debian.sources
-
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y build-essential
