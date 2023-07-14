@@ -131,6 +131,55 @@ To run integration tests, run:
 
 **NOTE:** Some of the integration tests that require additional services (i.e., redis, mysql, etc); otherwise, the integration_runner will skip those tests.  To spin them up automatically in a development environment, try the [dockerized development environment](https://github.com/newrelic/newrelic-php-agent/blob/main/docs/dev_environment.md).
 
+## Code coverage
+
+The build system supports compiling the agent with the capability to generage
+[`gcov`](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
+code coverage profiling data, which can be used to generate code coverage reports.
+`ENABLE_COVERAGE` environmental variable controls this capability.
+
+### Enable code coverage
+
+In order to build the agent capable of generating code coverage profiling data,
+`ENABLE_COVERAGE` must be set to 1 before building the agent, e.g.:
+
+```
+export ENABLE_COVERAGE=1
+make
+```
+
+### Generate code coverage data
+
+To generate [`gcov`](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
+code coverage [profiling data](https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html),
+the code built when `ENABLE_COVERAGE=1` needs to be executed. The easiest way is to
+simply run unit and integration tests:
+
+```
+make run_tests
+make integration
+```
+
+### Generate code coverage report
+
+The last step in the process is to convert code coverage
+[profiling data](https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html)
+into human readable report. This is done by executing 
+[`gcov`](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
+program. The easiest way to do it is to build `gcov` target:
+
+```
+make gcov
+```
+
+### The `coverage` target
+
+The build system provides a convenience target - `coverage` - which combines all steps required to
+generate an interactive html code coverage report. However, this target requires additional
+tool - [`gcovr`](https://gcovr.com/) - which needs to be available in the development environment.
+Once `coverage` target is built, open the `coverage-report.html` in the web browser to view
+interactive html code coverage report.
+
 ## Make
 
 Here is a partial list of Makefile capabilities. All targets should support parallel compilation using `-j`.
