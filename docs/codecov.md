@@ -16,15 +16,14 @@ useful views. Here's a list of most useful ones:
 ## New Relic PHP Agent's CI/CD integration with [Codecov](https://about.codecov.io/)
 
 New Relic PHP Agent's CI/CD integration with [Codecov](https://about.codecov.io/)
-allows to establish code coverage baseline for long lasting branches,
-which are targets for pull requests, as well as pull request comments,
-which allow to quickly analyze PR's coverage without leaving GitHub's UI.
+1) establishes a code coverage baseline for long lasting branches which are targets for pull requests,
+2) creates pull request comments which allow contributors to quickly analyze the PR's coverage without leaving GitHub's UI.
 
 ### Establishing code coverage baseline
 
-The baseline code coverage is used to calculate pull requests code coverage deltas.
-Any branch which is a target for pull request, needs to have a baseline code
-coverage established. Otherwise Codecov's pull request comment will include a
+The baseline code coverage is used to calculate a pull request's code coverage deltas.
+Any branch which is a target for a pull request needs to have a baseline code
+coverage established. Otherwise, Codecov's pull request comment will include the
 following message:
 
 > :exclamation: No coverage uploaded for pull request base (baseref@baseref-commit-sha). 
@@ -40,7 +39,7 @@ selected `origin` and `ref`.
 ### Pull request comments
 
 [Codecov's pull request comments](https://docs.codecov.com/docs/pull-request-comments)
-allow to quickly analyze PR's coverage without leaving GitHub's UI. See example:
+allow contributors to quickly analyze PR's coverage without leaving GitHub's UI. See example:
 
 ![Codecov's pull request comment](./img/codecov-pr-comment.png)
 
