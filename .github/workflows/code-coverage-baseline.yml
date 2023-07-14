@@ -29,12 +29,7 @@ jobs:
     strategy:
       matrix:
         platform: [gnu, musl]
-        arch: [amd64, arm64]
-        exclude:
-          - platform: gnu
-            arch: arm64
-          - platform: musl
-            arch: arm64
+        arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
         uses: actions/checkout@v3
@@ -42,12 +37,6 @@ jobs:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
-      - name: Enable arm64 emulation
-        if: ${{ matrix.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v2
-        with:
-          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
-          platforms: arm64
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -79,29 +68,8 @@ jobs:
     strategy:
       matrix:
         platform: [gnu, musl]
-        arch: [amd64, arm64]
+        arch: [amd64]
         php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
-        exclude:
-          - arch: arm64
-            php: '5.5'
-          - arch: arm64
-            php: '5.6'
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
-          - arch: arm64
-            php: '7.2'
-          - arch: arm64
-            php: '7.3'
-          - arch: arm64
-            php: '7.4'
-          - arch: arm64
-            php: '8.0'
-          - arch: arm64
-            php: '8.1'
-          - arch: arm64
-            php: '8.2'
         include:
           - codecov: 0
           - platform: gnu
@@ -114,9 +82,6 @@ jobs:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
-      - name: Enable arm64 emulation
-        run: |
-          docker run --privileged --rm tonistiigi/binfmt --install arm64
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -198,29 +163,8 @@ jobs:
     strategy:
       matrix:
         platform: [gnu, musl]
-        arch: [amd64, arm64]
+        arch: [amd64]
         php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
-        exclude:
-          - arch: arm64
-            php: '5.5'
-          - arch: arm64
-            php: '5.6'
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
-          - arch: arm64
-            php: '7.2'
-          - arch: arm64
-            php: '7.3'
-          - arch: arm64
-            php: '7.4'
-          - arch: arm64
-            php: '8.0'
-          - arch: arm64
-            php: '8.1'
-          - arch: arm64
-            php: '8.2'
         include:
           - codecov: 0
           - platform: gnu
@@ -259,12 +203,6 @@ jobs:
         run: |
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
-      - name: Enable arm64 emulation
-        if: ${{ matrix.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v2
-        with:
-          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
-          platforms: arm64
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -302,7 +240,6 @@ jobs:
           -e LICENSE_lasp_suite_random_3=${{secrets.LICENSE_LASP_SUITE_RANDOM_3}} \
           nr-php make lasp-test-all
       - name: Run integration tests
-        if: ${{ matrix.arch == 'amd64' }}
         working-directory: ./php-agent
         shell: bash
         run: |
