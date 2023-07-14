@@ -87,23 +87,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Determine if valgrind can be used
-        id: get-check-variant
-        run: |
-          if [[ ${{ matrix.platform }} = 'gnu' && ${{matrix.arch}} = 'amd64' ]]; then
-            echo "AXIOM_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          else
-            echo "AXIOM_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          fi
-          if [[ ${{matrix.arch}} = 'arm64' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          elif [[ ${{ matrix.platform }} = 'gnu' ]]; then
-            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          elif [[ ${{matrix.php}} = '5.5' || ${{matrix.php}} = '5.6' || ${{matrix.php}} = '7.0' || ${{matrix.php}} = '7.1' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          else 
-            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          fi
       - name: Build axiom
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
@@ -127,7 +110,7 @@ jobs:
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           -e ENABLE_COVERAGE=${{matrix.codecov}}
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-check
       - name: Build agent unit tests
         run: >
           docker run --rm --platform linux/${{matrix.arch}}
@@ -139,7 +122,7 @@ jobs:
           docker run --rm --platform linux/${{matrix.arch}}
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           -e ENABLE_COVERAGE=${{matrix.codecov}}
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-check
       - name: Save newrelic.so for integration tests
         uses: actions/upload-artifact@v3
         with:
