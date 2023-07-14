@@ -15,7 +15,7 @@ useful views. Here's a list of most useful ones:
 
 ## New Relic PHP Agent's CI/CD integration with [Codecov](https://about.codecov.io/)
 
-New Relic PHP Agent's CI/CD integration with [Codecov](https://about.codecov.io/)
+New Relic PHP Agent's CI/CD integration with [Codecov](https://about.codecov.io/):
 1) establishes a code coverage baseline for long lasting branches which are targets for pull requests,
 2) creates pull request comments which allow contributors to quickly analyze the PR's coverage without leaving GitHub's UI.
 
