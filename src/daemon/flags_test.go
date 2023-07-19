@@ -181,7 +181,7 @@ func TestParseConfigFile(t *testing.T) {
 
 	cfgExpected := &Config{
 		ConfigFile: "../newrelic/sample_config/config1.cfg",
-		LogLevel:   4,
+		LogLevel:   5,
 		LogFile:    "/var/log/newrelic/newrelic-daemon.log",
 	}
 

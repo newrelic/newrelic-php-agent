@@ -34,6 +34,7 @@ var (
 type TestRunTotals struct {
 	passed  int
 	skipped int
+	warned  int
 	failed  int
 	xfail   int
 }
@@ -49,6 +50,10 @@ func Color(colorString string) func(...interface{}) string {
 func (totals *TestRunTotals) Accumulate(test *integration.Test) {
 	if test.Skipped {
 		totals.skipped++
+		return
+	}
+	if test.Warned {
+		totals.warned++
 		return
 	}
 	if test.Failed {
@@ -71,6 +76,8 @@ func tapOutput(tests []*integration.Test) {
 		switch {
 		case test.Skipped:
 			fmt.Println(Warn("skip -"), name, "#", Warn(test.Err))
+		case test.Warned:
+			fmt.Println(Warn("warn -"), name, "#", Warn(test.Err))
 		case test.Failed:
 			if "" != test.Xfail {
 				fmt.Println("xfail -", name)
@@ -100,6 +107,7 @@ func tapOutput(tests []*integration.Test) {
 	}
 	fmt.Println("#", totals.passed, "passed")
 	fmt.Println("#", totals.skipped, "skipped")
+	fmt.Println("#", totals.warned, "warned")
 	if totals.failed == 0 {
 		fmt.Println("#", Good(totals.failed), Good("failed"))
 	} else {

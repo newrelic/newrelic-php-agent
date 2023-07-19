@@ -63,6 +63,7 @@ type Test struct {
 
 	// Remaining fields are populated after the test is run.
 	Skipped bool
+	Warned  bool
 
 	// If the test was skipped or the test could not be run due to an
 	// error, describes the reason.
@@ -134,6 +135,19 @@ func (t *Test) Skip(reason string) {
 // according to the format, and records the text as the reason.
 func (t *Test) Skipf(format string, args ...interface{}) {
 	t.Skipped = true
+	t.Err = fmt.Errorf(format, args...)
+}
+
+// Warn marks the test as unable to be run and records the given reason.
+func (t *Test) Warn(reason string) {
+	t.Warned = true
+	t.Err = errors.New(reason)
+}
+
+// Warnf marks the test as unable to be run  and formats its arguments
+// according to the format, and records the text as the reason.
+func (t *Test) Warnf(format string, args ...interface{}) {
+	t.Warned = true
 	t.Err = fmt.Errorf(format, args...)
 }
 
@@ -460,6 +474,7 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 func (t *Test) Reset() {
 	t.Xfail = ""
 	t.Skipped = false
+	t.Warned = false
 	t.Err = nil
 	t.Output = nil
 	t.Failed = false

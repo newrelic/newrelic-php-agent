@@ -1,0 +1,317 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: test-pull-request
+
+#
+# Controls when the action will run. 
+#
+on:
+  #
+  # Triggers the workflow on push or pull request events but only for listed branches
+  #
+  push:
+    branches: 
+      - main
+      - 'dev'
+  pull_request:
+    branches: 
+      - main
+      - 'dev'
+      - 'oapi'
+jobs:
+  daemon-unit-tests:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-go
+      IMAGE_VERSION: ${{vars.MAKE_GO_VERSION}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+      - name: Enable arm64 emulation
+        if: ${{ matrix.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build daemon
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon
+      - name: Run daemon tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
+      - name: Save integration_runner for integration tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
+          path: php-agent/bin/integration_runner
+  agent-unit-test:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-php
+      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [amd64, arm64]
+        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        exclude:
+          - arch: arm64
+            php: '5.5'
+          - arch: arm64
+            php: '5.6'
+          - arch: arm64
+            php: '7.0'
+          - arch: arm64
+            php: '7.1'
+          - arch: arm64
+            php: '7.2'
+          - arch: arm64
+            php: '7.3'
+          - arch: arm64
+            php: '7.4'
+        include:
+          - codecov: 0
+          - platform: gnu
+            arch: amd64
+            codecov: 1
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+      - name: Enable arm64 emulation
+        run: |
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Determine if valgrind can be used
+        id: get-check-variant
+        run: |
+          if [[ ${{ matrix.platform }} = 'gnu' && ${{matrix.arch}} = 'amd64' ]]; then
+            echo "AXIOM_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
+          else
+            echo "AXIOM_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
+          fi
+          if [[ ${{matrix.arch}} = 'arm64' ]]; then
+            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
+          elif [[ ${{ matrix.platform }} = 'gnu' ]]; then
+            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
+          elif [[ ${{matrix.php}} = '5.5' || ${{matrix.php}} = '5.6' || ${{matrix.php}} = '7.0' || ${{matrix.php}} = '7.1' ]]; then
+            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
+          else 
+            echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
+          fi
+      - name: Build axiom
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom 
+      - name: Build agent
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
+      - name: Build axiom unit tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-tests
+      - name: Run axiom unit tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom-${{ steps.get-check-variant.outputs.AXIOM_CHECK_VARIANT }}
+      - name: Build agent unit tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-tests
+      - name: Run agent unit tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ENABLE_COVERAGE=${{matrix.codecov}}
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
+      - name: Save newrelic.so for integration tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/modules/newrelic.so
+      - name: Save axiom gcov data files (*.gcno, *.gcna)
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/axiom/*.gc*
+      - name: Save agent gcov data files (*.gcno, *.gcna)
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/.libs/*.gc*
+  integration-tests:
+    needs: [daemon-unit-tests, agent-unit-test]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [amd64, arm64]
+        php: ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        exclude:
+          - arch: arm64
+            php: '5.5'
+          - arch: arm64
+            php: '5.6'
+          - arch: arm64
+            php: '7.0'
+          - arch: arm64
+            php: '7.1'
+          - arch: arm64
+            php: '7.2'
+          - arch: arm64
+            php: '7.3'
+          - arch: arm64
+            php: '7.4'
+        include:
+          - codecov: 0
+          - platform: gnu
+            arch: amd64
+            codecov: 1
+    steps:
+      - name: Checkout integration tests
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+      - name: Get integration_runner
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
+          path: php-agent/bin
+      - name: Get newrelic.so
+        uses: actions/download-artifact@v3
+        with:
+          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/modules
+      - name: Get axiom gcov data files
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/download-artifact@v3
+        with:
+          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/axiom
+      - name: Get agent gcov data files
+        if: ${{ matrix.codecov == 1 }}
+        uses: actions/download-artifact@v3
+        with:
+          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          path: php-agent/agent/.libs
+      - name: Prep artifacts for use
+        run: |
+          chmod 755 php-agent/bin/integration_runner
+          chmod 755 php-agent/agent/modules/newrelic.so
+      - name: Enable arm64 emulation
+        if: ${{ matrix.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Start services
+        env:
+          PHP: ${{matrix.php}}
+          LIBC: ${{matrix.platform}}
+          PLATFORM: linux/${{matrix.arch}}
+          AGENT_CODE: ${{github.workspace}}/php-agent
+          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+        working-directory: ./php-agent
+        run: |
+          make test-services-start
+      - name: Test events limits
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
+          nr-php make integration-events-limits
+      - name: Test LASP
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
+          -e LICENSE_lasp_suite_most_secure=${{secrets.LICENSE_LASP_SUITE_MOST_SECURE}} \
+          -e LICENSE_lasp_suite_least_secure=${{secrets.LICENSE_LASP_SUITE_LEAST_SECURE}} \
+          -e LICENSE_lasp_suite_random_1=${{secrets.LICENSE_LASP_SUITE_RANDOM_1}} \
+          -e LICENSE_lasp_suite_random_2=${{secrets.LICENSE_LASP_SUITE_RANDOM_2}} \
+          -e LICENSE_lasp_suite_random_3=${{secrets.LICENSE_LASP_SUITE_RANDOM_3}} \
+          nr-php make lasp-test-all
+      - name: Run integration tests
+        if: ${{ matrix.arch == 'amd64' }}
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
+          -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
+          nr-php make integration-tests
+      - name: Generate gcov reports
+        if: ${{ matrix.codecov == 1 }}
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          nr-php make gcov
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.codecov == 1 }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          working-directory: ./php-agent
+          flags: agent-for-php-${{matrix.php}}
+      - name: Stop services
+        env:
+          PHP: ${{matrix.php}}
+          LIBC: ${{matrix.platform}}
+          AGENT_CODE: ${{github.workspace}}/php-agent
+        working-directory: ./php-agent
+        run: |
+          make test-services-stop

@@ -293,10 +293,10 @@ NR_PHP_WRAPPER_END
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
- * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
- * in func_begin it needs to be explicitly set as a before_callback to ensure OAPI
- * compatibility.
- * This entails that the first wrapped call gets to name the txn.
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_begin it needs to be explicitly set as a before_callback to
+ * ensure OAPI compatibility. This entails that the first wrapped call gets to
+ * name the txn.
  */
 NR_PHP_WRAPPER(nr_cakephp_problem_2) {
   const char* name = "Exception";
@@ -331,8 +331,9 @@ void nr_cakephp_enable_2(TSRMLS_D) {
                             nr_cakephp_name_the_wt_2 TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("CakeException::__construct"), nr_cakephp_problem_2, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean_with_transience(
+      NR_PSTR("CakeException::__construct"), nr_cakephp_problem_2, NULL, NULL,
+      NR_WRAPREC_NOT_TRANSIENT);
 #else
   nr_php_wrap_user_function(NR_PSTR("CakeException::__construct"),
                             nr_cakephp_problem_2 TSRMLS_CC);

@@ -136,16 +136,23 @@
  * see how it works with frameworks.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+extern nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_transience(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback);
+    nrspecialfn_t clean_callback,
+    nr_transience_t transience);
 #endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
                                              nrspecialfn_t callback TSRMLS_DC);
+
+extern nruserfn_t* nr_php_wrap_user_function_with_transience(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t callback,
+    nr_transience_t TSRMLS_DC);
 
 extern nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
                                                    size_t namelen,
@@ -154,6 +161,10 @@ extern nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
 
 extern nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                         nrspecialfn_t callback TSRMLS_DC);
+
+extern nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
+                                                nrspecialfn_t callback
+                                                    TSRMLS_DC);
 
 /*
  * Purpose : Retrieve an argument from the current execute data.

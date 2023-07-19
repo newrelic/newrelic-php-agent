@@ -20,6 +20,7 @@ func TestParseLevel(t *testing.T) {
 		{LogDebug, "debug"},
 		{LogDebug, "verbose"},
 		{LogDebug, "verbosedebug"},
+		{LogHealthCheck, "healthcheck"},
 	}
 
 	for i := range tests {

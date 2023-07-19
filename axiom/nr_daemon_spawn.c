@@ -144,7 +144,8 @@ nr_argv_t* nr_daemon_args_to_argv(const char* name,
 }
 
 #ifdef DO_GCOV
-extern void __gcov_flush(void);
+extern void __gcov_reset(void);
+extern void __gcov_dump(void);
 #endif
 
 /*
@@ -298,7 +299,8 @@ pid_t nr_spawn_daemon(const char* path, const nr_daemon_args_t* args) {
    * is overwritten by exec.
    */
 #ifdef DO_GCOV
-  __gcov_flush();
+  __gcov_dump();
+  __gcov_reset();
 #endif
 
   ret = nr_daemon_execvp_hook(path, argv->data);

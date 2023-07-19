@@ -827,14 +827,16 @@ void nr_drupal_enable(TSRMLS_D) {
                             nr_drupal_cron_run TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("QFormBase::Run"), nr_drupal_qdrupal_name_the_wt, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after_clean_with_transience(
+      NR_PSTR("QFormBase::Run"), nr_drupal_qdrupal_name_the_wt, NULL, NULL,
+      NR_WRAPREC_NOT_TRANSIENT);
+  nr_php_wrap_user_function_before_after_clean_with_transience(
       NR_PSTR("drupal_page_cache_header"), nr_drupal_name_wt_as_cached_page,
-      NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      NULL, NULL, NR_WRAPREC_NOT_TRANSIENT);
+  nr_php_wrap_user_function_before_after_clean_with_transience(
       NR_PSTR("drupal_http_request"), nr_drupal_http_request_before,
-      nr_drupal_http_request_after, nr_drupal_http_request_clean);
+      nr_drupal_http_request_after, nr_drupal_http_request_clean,
+      NR_WRAPREC_NOT_TRANSIENT);
 #else
   nr_php_wrap_user_function(NR_PSTR("QFormBase::Run"),
                             nr_drupal_qdrupal_name_the_wt TSRMLS_CC);
@@ -853,10 +855,10 @@ void nr_drupal_enable(TSRMLS_D) {
                               nr_drupal_wrap_module_invoke TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    nr_php_wrap_user_function_before_after_clean(
+    nr_php_wrap_user_function_before_after_clean_with_transience(
         NR_PSTR("module_invoke_all"), nr_drupal_wrap_module_invoke_all_before,
         nr_drupal_wrap_module_invoke_all_after,
-        nr_drupal_wrap_module_invoke_all_clean);
+        nr_drupal_wrap_module_invoke_all_clean, NR_WRAPREC_NOT_TRANSIENT);
 #else
     nr_php_wrap_user_function(NR_PSTR("module_invoke_all"),
                               nr_drupal_wrap_module_invoke_all TSRMLS_CC);

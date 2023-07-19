@@ -54,15 +54,23 @@ else
 endif
 
 
-release: Makefile release-daemon release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
+.PHONY: release
+release: Makefile release-version release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
+
+release-version: releases/$(RELEASE_OS)/
 	printf '%s\n' "$(AGENT_VERSION)" > releases/$(RELEASE_OS)/VERSION
 	printf '%s\n' "$(GIT_COMMIT)" > releases/$(RELEASE_OS)/COMMIT
 
 release-daemon: Makefile daemon | releases/$(RELEASE_OS)/daemon/
 	cp bin/daemon releases/$(RELEASE_OS)/daemon/newrelic-daemon.$(RELEASE_ARCH)
 
-release-installer: Makefile bin/newrelic-install bin/newrelic-iutil | releases/$(RELEASE_OS)/ releases/$(RELEASE_OS)/scripts/
+.PHONY: release-installer
+release-installer: Makefile release-installer-script release-installer-iutil
+
+release-installer-script: bin/newrelic-install | releases/$(RELEASE_OS)/
 	cp bin/newrelic-install releases/$(RELEASE_OS)
+
+release-installer-iutil: bin/newrelic-iutil | releases/$(RELEASE_OS)/scripts/
 	cp bin/newrelic-iutil   releases/$(RELEASE_OS)/scripts/newrelic-iutil.$(RELEASE_ARCH)
 
 release-docs: Makefile | releases/$(RELEASE_OS)/
@@ -111,6 +119,17 @@ release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 #   $2 - Zend module API number (e.g. 20131226)
 #
 define RELEASE_AGENT_TARGET
+
+#
+# Target for building the agent for a given PHP version. Works well
+# when building agent using containers. This is useful not only in 
+# GitHub Actions workflows, but also in a day to day development,
+# because it allows to preserve agent between PHP version switches.
+#
+agent-for-php-$1: PHP_CONFIG := /usr/local/bin/php-config
+agent-for-php-$1: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
+	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
 
 #
 # Target for non-zts GHA releases.
