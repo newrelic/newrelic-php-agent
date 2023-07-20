@@ -68,8 +68,8 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing X-NewRelic-Synthetics=found
 ]
 */
 
-require_once(realpath(dirname(__FILE__)) . '/drupal_7_bootstrap.inc');
-require_once(realpath(dirname(__FILE__)) . '/drupal_7_common.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_7_bootstrap.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_7_common.inc');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');

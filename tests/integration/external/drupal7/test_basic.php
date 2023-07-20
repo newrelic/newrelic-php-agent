@@ -41,8 +41,8 @@ Hello world!
 ]
 */
 
-require_once(realpath(dirname(__FILE__)) . '/drupal_7_bootstrap.inc');
-require_once(realpath(dirname(__FILE__)) . '/drupal_7_common.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_7_bootstrap.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_7_common.inc');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = "http://" . $EXTERNAL_HOST; 

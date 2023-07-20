@@ -88,8 +88,8 @@ require("skipif.inc");
 ]
 */
 
-require_once(realpath(dirname(__FILE__)) . '/drupal_6_bootstrap.inc');
-require_once(realpath(dirname(__FILE__)) . '/drupal_6_common.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_6_bootstrap.inc');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/drupal_6_common.inc');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
