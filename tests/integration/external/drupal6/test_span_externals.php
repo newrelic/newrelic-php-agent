@@ -14,9 +14,7 @@ newrelic.transaction_tracer.detail = 0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
-}
+require("skipif.inc");
 
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");

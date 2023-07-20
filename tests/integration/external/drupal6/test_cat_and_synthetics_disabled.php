@@ -17,9 +17,7 @@ newrelic.distributed_tracing_enabled=0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", ">")) {
-  die("skip: PHP > 7.4.0 not supported\n");
-}
+require("skipif.inc");
 */
 
 /*
