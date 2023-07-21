@@ -63,7 +63,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
       },
       {},
       {
-        "code.lineno": 799,
+        "code.lineno": 797,
         "code.filepath": "/.*\/drupal_7_common.inc/",
         "code.function": "drupal_http_request"
       }
