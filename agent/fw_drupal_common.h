@@ -147,4 +147,22 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
  */
 void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC);
 
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/*
+ * Purpose: Before an invoke_all style call, adds the hook to that hook states stacks
+ *
+ * Params  : 1. A zval holding a copy of the hook invoked, to be managed by the hook
+ *              states stacks and freed by invoke_all_clean_hook_stacks() after the
+ *              invoke_all call completes
+ */
+void invoke_all_push_hook_stacks(zval* hook_copy);
+
+/*
+ * Purpose: After an invoke_all style call, cleans that hook states stacks
+ */
+void invoke_all_clean_hook_stacks();
+#endif // OAPI
+
 #endif /* FW_DRUPAL_COMMON_HDR */
