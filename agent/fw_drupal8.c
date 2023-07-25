@@ -71,6 +71,48 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+static void nr_drupal8_add_method_callback_before_after_clean(
+                                           const zend_class_entry* ce,
+                                           const char* method,
+                                           size_t method_len,
+                                           nrspecialfn_t before_callback,
+                                           nrspecialfn_t after_callback,
+                                           nrspecialfn_t clean_callback) {
+  zend_function* function = NULL;
+
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "Drupal 8: got NULL class entry in %s",
+                     __func__);
+    return;
+  }
+
+  function = nr_php_find_class_method(ce, method);
+  if (NULL == function) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "Drupal 8+: cannot get zend_function entry for %.*s::%.*s",
+                     NRSAFELEN(nr_php_class_entry_name_length(ce)),
+                     nr_php_class_entry_name(ce), NRSAFELEN(method_len),
+                     method);
+    return;
+  }
+
+  if (NULL == nr_php_get_wraprec(function)) {
+    char* class_method = nr_formatf(
+        "%.*s::%.*s", NRSAFELEN(nr_php_class_entry_name_length(ce)),
+        nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
+
+    nr_php_wrap_user_function_before_after_clean_with_transience(
+                              class_method, nr_strlen(class_method),
+                              before_callback, after_callback, clean_callback,
+                              NR_WRAPREC_NOT_TRANSIENT);
+
+    nr_free(class_method);
+  }
+}
+#endif // OAPI
+
 /*
  * Purpose : Check if the given function or method is in the current call
  *           stack.
@@ -384,17 +426,9 @@ NR_PHP_WRAPPER(nr_drupal8_post_implements_hook) {
 NR_PHP_WRAPPER_END
 
 /*
- * Temporary exclusion via #if defined OVERWRITE_ZEND_EXECUTE_DATA
- * This needs to be excluded for now because the hooks handling was changed
- * for oapi so the hook vars this is referencing do not exist.
- *
- */
-#if defined OVERWRITE_ZEND_EXECUTE_DATA
-/*
  * Purpose : Handles ModuleHandlerInterface::invokeAllWith()'s callback
  *           and ensure that the relevant module_hook function is instrumented.
  */
-
 NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
   zval* module = NULL;
 
@@ -406,9 +440,24 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
     goto leave;
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  zval* curr_hook
+      = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
+  if (UNEXPECTED(!nr_php_is_zval_non_empty_string(curr_hook))) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: cannot extract hook name from global stack",
+                     __func__);
+    goto leave;
+  }
   nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
-                            NRPRG(drupal_module_invoke_all_hook),
-                            NRPRG(drupal_module_invoke_all_hook_len) TSRMLS_CC);
+                            Z_STRVAL_P(curr_hook), Z_STRLEN_P(curr_hook));
+#else
+  nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
+                            NRPRG(drupal_invoke_all_hook),
+                            NRPRG(drupal_invoke_all_hook_len) TSRMLS_CC);
+#endif // OAPI
+
 leave:
   NR_PHP_WRAPPER_CALL;
   nr_php_arg_release(&module);
@@ -424,8 +473,11 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   zval* callback = NULL;
   zval* hook = NULL;
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
   char* prev_hook = NULL;
   int prev_hook_len;
+#endif // not OAPI
 
   (void)wraprec;
 
@@ -436,40 +488,58 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
     goto leave;
   }
 
-  prev_hook = NRPRG(drupal_module_invoke_all_hook);
-  prev_hook_len = NRPRG(drupal_module_invoke_all_hook_len);
-  NRPRG(drupal_module_invoke_all_hook)
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  invoke_all_push_hook_stacks(hook);
+#else
+  prev_hook = NRPRG(drupal_invoke_all_hook);
+  prev_hook_len = NRPRG(drupal_invoke_all_hook_len);
+  NRPRG(drupal_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
-  NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
-
+  NRPRG(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
+#endif // OAPI
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
   /* This instrumentation will fail if callback has already been wrapped
    * with a special instrumentation callback in a different context.
    * In this scenario, we will be unable to instrument hooks and modules for
    * this particular call */
-
-  /*
-   * Temporary exclusion via #if defined OVERWRITE_ZEND_EXECUTE_DATA
-   * This needs to be excluded for now because the hooks handling was changed
-   * for oapi so the hook vars this is referencing do not exist.
-   *
-   */
-#if defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_generic_callable(callback,
                                nr_drupal94_invoke_all_with_callback TSRMLS_CC);
-#endif
   NR_PHP_WRAPPER_CALL;
 
   nr_php_arg_release(&callback);
-  nr_free(NRPRG(drupal_module_invoke_all_hook));
-  NRPRG(drupal_module_invoke_all_hook) = prev_hook;
-  NRPRG(drupal_module_invoke_all_hook_len) = prev_hook_len;
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_free(NRPRG(drupal_invoke_all_hook));
+  NRPRG(drupal_invoke_all_hook) = prev_hook;
+  NRPRG(drupal_invoke_all_hook_len) = prev_hook_len;
+#endif // not OAPI
 
-leave:
+leave: ;
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
+  /* for OAPI, the _after callback handles this free */
   nr_php_arg_release(&hook);
+#endif // not OAPI
 }
 NR_PHP_WRAPPER_END
-#endif /* temporary: defined OVERWRITE_ZEND_EXECUTE_DATA */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_after) {
+  (void)wraprec;
+  invoke_all_clean_hook_stacks();
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
+  (void)wraprec;
+  invoke_all_clean_hook_stacks();
+}
+NR_PHP_WRAPPER_END
+#endif // OAPI
+
 /*
  * Purpose : Wrap the invoke() method of the module handler instance in use.
  */
@@ -508,7 +578,14 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
    * for oapi so the hook vars this is referencing do not exist.
    *
    */
-#if defined OVERWRITE_ZEND_EXECUTE_DATA
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_drupal8_add_method_callback_before_after_clean(
+                                 ce, NR_PSTR("invokeallwith"),
+                                 nr_drupal94_invoke_all_with,
+                                 nr_drupal94_invoke_all_with_after,
+                                 nr_drupal94_invoke_all_with_clean);
+#else
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
                                  nr_drupal94_invoke_all_with TSRMLS_CC);
 #endif
