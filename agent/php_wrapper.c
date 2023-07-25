@@ -23,6 +23,8 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_transience(
     return wraprec;
   }
 
+  /* If any of the callbacks we are attempting to set are already set to
+   * something else, we want to exit without setting new callbacks */
   if (after_callback) {
     if (is_instrumentation_set(wraprec->special_instrumentation,
                                after_callback)) {
@@ -31,8 +33,7 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_transience(
           "%s: attempting to set special_instrumentation for %.*s, but "
           "it is already set",
           __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    } else {
-      wraprec->special_instrumentation = after_callback;
+      return wraprec;
     }
   }
 
@@ -44,8 +45,7 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_transience(
                        "for %.*s, but "
                        "it is already set",
                        __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    } else {
-      wraprec->special_instrumentation_before = before_callback;
+      return wraprec;
     }
   }
 
@@ -57,9 +57,18 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_transience(
                        "for %.*s, but "
                        "it is already set",
                        __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    } else {
-      wraprec->special_instrumentation_clean = clean_callback;
+      return wraprec;
     }
+  }
+
+  if (after_callback) {
+    wraprec->special_instrumentation = after_callback;
+  }
+  if (before_callback) {
+    wraprec->special_instrumentation_before = before_callback;
+  }
+  if (clean_callback) {
+    wraprec->special_instrumentation_clean = clean_callback;
   }
 
   return wraprec;
