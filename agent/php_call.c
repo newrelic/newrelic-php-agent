@@ -10,6 +10,54 @@
 
 #include "Zend/zend_exceptions.h"
 
+/*
+ * zend_try family of macros entail the use of setjmp and longjmp, which can cause clobbering issues with
+ * non-primitive local variables. Abstracting these constructs into separate functions protects from this.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+static int nr_php_call_try_catch(zend_object* object,
+                                 zend_string* method_name,
+                                 zval* retval,
+                                 zend_uint param_count,
+                                 zval* param_values) {
+  /*
+   * With PHP 8.2, functions that do not exist will cause a fatal error to
+   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
+   * silently fail if it does not exist
+   */
+  int zend_result = FAILURE;
+  zend_try {
+  zend_result = zend_call_method_if_exists(object, method_name, retval,
+                                           param_count, param_values);
+  }
+  zend_catch { zend_result = FAILURE; }
+  zend_end_try();
+  return zend_result;
+}
+#elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
+    && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static int nr_php_call_try_catch(zval* object_ptr,
+                                 zval* fname,
+                                 zval* retval,
+                                 zend_uint param_count,
+                                 zval* param_values) {
+  /*
+   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
+   * became the recommended function.  This does't return a FAILURE for
+   * exceptions and needs to be in a try/catch block in order to clean up
+   * properly.
+   */
+  int zend_result = FAILURE;
+  zend_try {
+    zend_result = call_user_function(EG(function_table), object_ptr, fname,
+                                     retval, param_count, param_values);
+  }
+  zend_catch { zend_result = FAILURE; }
+  zend_end_try();
+  return zend_result;
+}
+#endif
+
 zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
@@ -53,11 +101,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
-  /*
-   * With PHP 8.2, functions that do not exist will cause a fatal error to
-   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
-   * silently fail if it does not exist
-   */
   if (NULL != object_ptr) {
     object = Z_OBJ_P(object_ptr);
   } else {
@@ -69,26 +112,11 @@ zval* nr_php_call_user_func(zval* object_ptr,
   } else {
     return NULL;
   }
-  zend_try {
-  zend_result = zend_call_method_if_exists(object, method_name, retval,
-                                           param_count, param_values);
-  }
-  zend_catch { zend_result = FAILURE; }
-  zend_end_try();
+
+  zend_result =  nr_php_call_try_catch(object, method_name, retval, param_count, param_values);
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
     && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /*
-   * With PHP8, `call_user_function_ex` was removed and `call_user_function`
-   * became the recommended function.  This does't return a FAILURE for
-   * exceptions and needs to be in a try/catch block in order to clean up
-   * properly.
-   */
-  zend_try {
-    zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                     retval, param_count, param_values);
-  }
-  zend_catch { zend_result = FAILURE; }
-  zend_end_try();
+  zend_result = nr_php_call_try_catch(object_ptr, fname, retval, param_count, param_values);
 
 #else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
