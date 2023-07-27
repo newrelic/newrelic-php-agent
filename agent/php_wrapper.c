@@ -95,6 +95,9 @@ nruserfn_t* nr_php_wrap_callable_before_after_clean(
                                                   before_callback,
                                                   after_callback,
                                                   clean_callback);
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
+    nr_free(name);
+  }
 
   return wraprec;
 }
