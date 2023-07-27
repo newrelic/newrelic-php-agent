@@ -572,12 +572,6 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
   nr_drupal8_add_method_callback(ce, NR_PSTR("implementshook"),
                                  nr_drupal8_post_implements_hook TSRMLS_CC);
   /* Drupal 9.4 introduced a replacement method for getImplentations */
-  /*
-   * Temporary exclusion via #if defined OVERWRITE_ZEND_EXECUTE_DATA
-   * This needs to be excluded for now because the hooks handling was changed
-   * for oapi so the hook vars this is referencing do not exist.
-   *
-   */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_drupal8_add_method_callback_before_after_clean(
