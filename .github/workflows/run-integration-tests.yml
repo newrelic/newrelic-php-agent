@@ -21,7 +21,8 @@ on:
 
 jobs:
   build-test-runner:
-    runs-on: ubuntu-latest
+    runs-on: 
+      labels: ubuntu-20.04-8core
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-go
@@ -61,7 +62,8 @@ jobs:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
   build-agent:
-    runs-on: ubuntu-latest
+    runs-on: 
+      labels: ubuntu-20.04-8core
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
@@ -103,7 +105,8 @@ jobs:
           path: php-agent/agent/modules/newrelic.so
   test:
     needs: [build-test-runner, build-agent]
-    runs-on: ubuntu-latest
+    runs-on: 
+      labels: ubuntu-20.04-8core
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: true
