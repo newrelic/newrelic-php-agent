@@ -485,6 +485,10 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
 
   hook = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_non_empty_string(hook)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    nr_php_arg_release(&hook);
+#endif // OAPI
     goto leave;
   }
 
