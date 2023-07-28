@@ -44,7 +44,7 @@ jobs:
       artifact-name: integration_runner
       artifact-pattern: bin/integration_runner
       arch: arm64
-      runs-on: ubuntu-20.04-16core
+      runs-on: ubuntu-latest
     secrets: inherit
 
   build-agent-amd64:
@@ -61,7 +61,7 @@ jobs:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
       arch: arm64
-      runs-on: ubuntu-20.04-16core
+      runs-on: ubuntu-latest
     secrets: inherit
 
   test-amd64:
@@ -81,6 +81,6 @@ jobs:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
       arch: arm64
-      runs-on: ubuntu-20.04-16core
+      runs-on: ubuntu-20.04-8core
       continue-on-error: true
     secrets: inherit
