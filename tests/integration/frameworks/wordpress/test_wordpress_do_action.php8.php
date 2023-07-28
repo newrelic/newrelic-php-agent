@@ -21,6 +21,7 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
+g
 f
 h
 g
@@ -69,5 +70,14 @@ function f() {
         do_action("g");
     }
 }
+
+/* 
+ * Initiates a non-flattened call stack of internal->user_code
+ * to ensure that cufa instrumentation properly handles skipping
+ * opline lookups of internal functions
+ */
+$function = new ReflectionFunction('g');
+$function->invoke();
+
 
 do_action("f");
