@@ -18,6 +18,17 @@ on:
         required: true
         default: 'dev' 
         type: string
+      runner-type:
+        description: 'Type of a runner to use for integration tests on arm64'
+        required: true
+        default: 'ubuntu-20.04-4core' 
+        type: choice
+        options: 
+        - ubuntu-20.04-4core
+        - ubuntu-20.04-8core
+        - ubuntu-20.04-16core
+        - ubuntu-22.04-4core
+        - ubuntu-latest
 
 jobs:
   build-test-runner-amd64:
@@ -81,6 +92,6 @@ jobs:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
       arch: arm64
-      runs-on: ubuntu-20.04-4core
+      runs-on: ${{inputs.runner-type}}
       continue-on-error: true
     secrets: inherit
