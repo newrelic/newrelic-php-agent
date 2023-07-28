@@ -81,6 +81,6 @@ jobs:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
       arch: arm64
-      runs-on: ubuntu-20.04-8core
+      runs-on: ubuntu-20.04-4core
       continue-on-error: true
     secrets: inherit
