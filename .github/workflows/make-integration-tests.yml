@@ -1,0 +1,99 @@
+name: _make-integration-tests
+
+on:
+  workflow_call:
+    inputs:
+      origin:
+        description: 'newrelic-php-agent origin'
+        required: true
+        default: 'newrelic' 
+        type: string
+      ref:
+        description: 'Branch or tag'
+        required: true
+        type: string
+      arch:
+        description: 'Target architecture'
+        required: true
+        type: string
+      continue-on-error:
+        description: 'Continue on error'
+        required: true
+        type: boolean
+      runs-on:
+        description: 'runner type'
+        required: true
+        type: string
+
+jobs:
+  test-agent:
+    name: test agent (${{ matrix.platform }}, ${{ inputs.arch }}, ${{ matrix.php }})
+    runs-on: ${{inputs.runs-on}}
+    continue-on-error: ${{inputs.continue-on-error}}
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [gnu, musl]
+        php: ['8.0', '8.1', '8.2']
+    steps:
+      - name: Checkout integration tests
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+          repository: ${{ inputs.origin }}/newrelic-php-agent
+          ref: ${{ inputs.ref }}
+      - name: Get integration_runner
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_runner-${{matrix.platform}}-${{inputs.arch}}
+          path: php-agent/bin
+      - name: Get newrelic.so
+        uses: actions/download-artifact@v3
+        with:
+          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
+          path: php-agent/agent/modules
+      - name: Prep artifacts for use
+        run: |
+          chmod 755 php-agent/bin/integration_runner
+          chmod 755 php-agent/agent/modules/newrelic.so
+      - name: Enable arm64 emulation
+        if: ${{ inputs.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Start services
+        env:
+          PHP: ${{matrix.php}}
+          LIBC: ${{matrix.platform}}
+          PLATFORM: linux/${{inputs.arch}}
+          AGENT_CODE: ${{github.workspace}}/php-agent
+          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+        working-directory: ./php-agent
+        run: |
+          make test-services-start
+      - name: Run integration tests
+        working-directory: ./php-agent
+        shell: bash
+        run: |
+          docker exec \
+          -e PHPS=${{matrix.php}} \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
+          -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
+          -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
+          nr-php make integration-tests
+      - name: Stop services
+        env:
+          PHP: ${{matrix.php}}
+          LIBC: ${{matrix.platform}}
+          AGENT_CODE: ${{github.workspace}}/php-agent
+        working-directory: ./php-agent
+        run: |
+          make test-services-stop
