@@ -1,0 +1,68 @@
+name: _make-agent
+
+on:
+  workflow_call:
+    inputs:
+      origin:
+        description: 'newrelic-php-agent origin'
+        required: true
+        default: 'newrelic' 
+        type: string
+      ref:
+        description: 'Branch or tag'
+        required: true
+        type: string
+      arch:
+        description: 'Target architecture'
+        required: true
+        type: string
+      runs-on:
+        description: 'runner type'
+        required: true
+        type: string
+
+jobs:
+  build-agent:
+    name: make agent (${{ matrix.platform }}, ${{ inputs.arch }}, ${{ matrix.php }})
+    runs-on: ${{inputs.runs-on}}
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-php
+      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        php: ['8.0', '8.1', '8.2']
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+          repository: ${{ inputs.origin }}/newrelic-php-agent
+          ref: ${{ inputs.ref }}
+      - name: Enable arm64 emulation
+        if: ${{ inputs.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build axiom
+        run: >
+          docker run --rm --platform linux/${{inputs.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom 
+      - name: Build agent
+        run: >
+          docker run --rm --platform linux/${{inputs.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
+      - name: Save newrelic.so for integration tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
+          path: php-agent/agent/modules/newrelic.so
