@@ -1985,7 +1985,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
 
   /* 
    * Extra safety check. Previously, we instrumented by overwritting ZEND_DO_FCALL.
-   * Within OAPI, for consistencies sake, we will ensure consistency here
+   * Within OAPI, for consistency's sake, we will ensure the same
    */
   if (ZEND_DO_FCALL != prev_opline->opcode) {
     nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
