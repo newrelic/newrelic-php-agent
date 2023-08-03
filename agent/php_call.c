@@ -43,9 +43,11 @@ static int nr_php_call_try_catch(zval* object_ptr,
                                  zval* param_values) {
   /*
    * With PHP8, `call_user_function_ex` was removed and `call_user_function`
-   * became the recommended function.  This does't return a FAILURE for
-   * exceptions and needs to be in a try/catch block in order to clean up
-   * properly.
+   * became the recommended function.
+   * According to zend internals documentation:
+   * As of PHP 7.1.0, the function_table argument is not used and should
+   * always be NULL. See for more details:
+   * https://www.phpinternalsbook.com/php7/internal_types/functions/callables.html
    */
   int zend_result = FAILURE;
   zend_try {
@@ -113,6 +115,15 @@ zval* nr_php_call_user_func(zval* object_ptr,
     return NULL;
   }
 
+  /*
+   * For PHP 8+, in the case of exceptions according to:
+   * https://www.php.net/manual/en/function.call-user-func.php
+   * Callbacks registered with functions such as call_user_func() and
+   * call_user_func_array() will not be called if there is an uncaught exception
+   * thrown in a previous callback. So if we call something that causes an
+   * exception, it will block us from future calls that use call_user_func or
+   * call_user_func_array and hence the need for a try/catch block.
+   */
   zend_result =  nr_php_call_try_catch(object, method_name, retval, param_count, param_values);
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
     && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO

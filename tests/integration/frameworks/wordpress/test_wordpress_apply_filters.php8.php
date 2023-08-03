@@ -52,6 +52,10 @@ function apply_filters($tag, ...$args) {
     call_user_func_array($tag, $args);
 }
 
+//Simple mock of wordpress's get_theme_roots
+function get_theme_roots() {
+}
+
 function h($str) {
     echo "h: ";
     echo $str;
