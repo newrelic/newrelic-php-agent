@@ -27,8 +27,8 @@ static int nr_php_call_try_catch(zend_object* object,
    */
   int zend_result = FAILURE;
   zend_try {
-  zend_result = zend_call_method_if_exists(object, method_name, retval,
-                                           param_count, param_values);
+    zend_result = zend_call_method_if_exists(object, method_name, retval,
+                                             param_count, param_values);
   }
   zend_catch { zend_result = FAILURE; }
   zend_end_try();
