@@ -327,8 +327,9 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     was_executed = 1;                                                \
   }
 
-static inline bool is_instrumentation_set(nrspecialfn_t instrumentation,
-                                          nrspecialfn_t callback) {
+static inline bool is_instrumentation_set_and_not_equal(
+    nrspecialfn_t instrumentation,
+    nrspecialfn_t callback) {
   if ((NULL != instrumentation) && (callback != instrumentation)) {
     return true;
   }
