@@ -128,3 +128,25 @@
   ...
   fun:zend_string_equal_val
 }
+
+{
+   <invalid-read-see-gh-10783>
+   Memcheck:Addr8
+   fun:_zend_observe_fcall_begin
+   ...
+   fun:tlib_php_request_eval_expr
+   fun:test_*_datastore_instance
+   fun:test_main
+   ...
+}
+
+{
+  <invalid-read-see-gh-10783>
+  Memcheck:Addr8
+  fun:_zend_observe_fcall_begin
+  ...
+  fun:nr_php_zval_free
+  fun:test_*_datastore_instance
+  fun:test_main
+  ...
+}
