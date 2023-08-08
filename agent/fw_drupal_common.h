@@ -160,7 +160,8 @@ void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC);
 void nr_drupal_invoke_all_hook_stacks_push(zval* hook_copy);
 
 /*
- * Purpose: After an invoke_all style call, cleans that hook states stacks
+ * Purpose: After an invoke_all style call, pops that states stack and conditionally
+ *          pops the hook stack based on the previously popped state
  */
 void nr_drupal_invoke_all_hook_stacks_pop();
 #endif // OAPI
