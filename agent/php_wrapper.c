@@ -164,16 +164,6 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
   return wraprec;
 }
 
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-typedef nr_php_compat_zend_string_t char;
-#define NR_PHP_COMPAT_ZEND_STRING_VALUE(s) (s)
-#define NR_PHP_COMPAT_ZEND_STRING_LEN(s) nr_strlen((s))
-#else
-typedef nr_php_compat_zend_string_t zend_string;
-#define NR_PHP_COMPAT_ZEND_STRING_VALUE(s) ZEND_STRING_VALUE(name)
-#define NR_PHP_COMPAT_ZEND_STRING_LEN(s) ZEND_STRING_LEN(name)
-#endif
-
 /*
  * When wrapping a generic callable, it is currently only desired that a
  * wraprec's internals be evaluated BEFORE for the callable's. As such,
@@ -184,7 +174,11 @@ typedef nr_php_compat_zend_string_t zend_string;
  */
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
-  nr_php_compat_zend_string_t* name = NULL;
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  char* name = NULL;
+#else
+  zend_string* name = NULL;
+#endif
   zend_fcall_info_cache fcc;
   zend_fcall_info fci;
 
@@ -206,8 +200,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
             NULL, NULL, NR_WRAPREC_IS_TRANSIENT);
 #else
         return nr_php_wrap_user_function_with_transience(
-            NR_PHP_COMPAT_ZEND_STRING_VALUE(name), NR_PHP_COMPAT_ZEND_STRING_LEN(name)
-            callback,
+            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
             NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #endif
 
@@ -222,8 +215,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
             NULL, NULL, NR_WRAPREC_IS_TRANSIENT);
 #else
         return nr_php_wrap_user_function_with_transience(
-            NR_PHP_COMPAT_ZEND_STRING_VALUE(name), NR_PHP_COMPAT_ZEND_STRING_LEN(name)
-            callback,
+            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
             NR_WRAPREC_IS_TRANSIENT TSRMLS_CC);
 #endif
 
@@ -258,7 +250,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   }
   if (NULL != name) {
     nrl_verbosedebug(NRL_INSTRUMENT, "Failed to wrap callable: %s",
-                     NR_PHP_COMPAT_ZEND_STRING_VALUE(name));
+                     ZEND_STRING_VALUE(name));
   } else {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "Failed to wrap callable with unknown name");
