@@ -1969,8 +1969,11 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
    */
 
   /* 
-   * We cannot safely access the opline of internal functions, and we only
-   * want to instrument cufa calls from user functions anyway
+   * When Observer API is used, this code executes in the context of
+   * zend_execute and not in the context of VM (as was the case pre-OAPI),
+   * therefore we need to ensure we're dealing with a user function. We cannot
+   * safely access the opline of internal functions, and we only want to
+   * instrument cufa calls from user functions anyway.
    */
   if (UNEXPECTED(NULL == execute_data->prev_execute_data->func)) {
     nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function", __func__);
