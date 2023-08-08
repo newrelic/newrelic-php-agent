@@ -174,14 +174,20 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
  */
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
+#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
+  char* name = NULL;
+#else
   zend_string* name = NULL;
+#endif
   zend_fcall_info_cache fcc;
   zend_fcall_info fci;
 
   /* not calling nr_zend_is_callable because we want to additionally populate
    * name */
   if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
-again:
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
+  again:
+#endif
     /* see php source code's zend_is_callable_at_frame function to see from
      * where these switch cases are derived */
     switch (Z_TYPE_P(callable)) {
@@ -232,10 +238,14 @@ again:
                          "Failed to initialize fcall info when wrapping");
         break;
 
-      /* unwrap references */
+        /* unwrap references */
+        /* PHP 5.x handles references in a different manner that do not need to
+         * be unwrapped */
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
       case IS_REFERENCE:
         callable = Z_REFVAL_P(callable);
         goto again;
+#endif
     }
   }
   if (NULL != name) {
