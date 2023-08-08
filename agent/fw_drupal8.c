@@ -494,7 +494,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  invoke_all_push_hook_stacks(hook);
+  nr_drupal_invoke_all_hook_stacks_push(hook);
 #else
   prev_hook = NRPRG(drupal_invoke_all_hook);
   prev_hook_len = NRPRG(drupal_invoke_all_hook_len);
@@ -533,13 +533,13 @@ NR_PHP_WRAPPER_END
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_after) {
   (void)wraprec;
-  invoke_all_clean_hook_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
   (void)wraprec;
-  invoke_all_clean_hook_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 #endif // OAPI

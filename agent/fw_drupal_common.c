@@ -297,7 +297,7 @@ void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-void invoke_all_push_hook_stacks(zval* hook_copy) {
+void nr_drupal_invoke_all_hook_stacks_push(zval* hook_copy) {
   if (nr_php_is_zval_non_empty_string(hook_copy)) {
     nr_stack_push(&NRPRG(drupal_invoke_all_hooks), hook_copy);
     nr_stack_push(&NRPRG(drupal_invoke_all_states), (void*)!NULL);
@@ -306,7 +306,7 @@ void invoke_all_push_hook_stacks(zval* hook_copy) {
   }
 }
 
-void invoke_all_clean_hook_stacks() {
+void nr_drupal_invoke_all_hook_stacks_pop() {
   if ((bool)nr_stack_pop(&NRPRG(drupal_invoke_all_states))) {
     zval* hook_copy = nr_stack_pop(&NRPRG(drupal_invoke_all_hooks));
     nr_php_arg_release(&hook_copy);

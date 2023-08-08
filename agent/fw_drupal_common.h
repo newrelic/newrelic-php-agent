@@ -157,12 +157,12 @@ void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC);
  *              states stacks and freed by invoke_all_clean_hook_stacks() after the
  *              invoke_all call completes
  */
-void invoke_all_push_hook_stacks(zval* hook_copy);
+void nr_drupal_invoke_all_hook_stacks_push(zval* hook_copy);
 
 /*
  * Purpose: After an invoke_all style call, cleans that hook states stacks
  */
-void invoke_all_clean_hook_stacks();
+void nr_drupal_invoke_all_hook_stacks_pop();
 #endif // OAPI
 
 #endif /* FW_DRUPAL_COMMON_HDR */

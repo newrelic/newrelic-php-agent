@@ -753,13 +753,13 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
   hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
-  invoke_all_push_hook_stacks(hook_copy);
+  nr_drupal_invoke_all_hook_stacks_push(hook_copy);
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
   (void)wraprec;
-  invoke_all_clean_hook_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 
@@ -767,7 +767,7 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_clean) {
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_FUNC_RETURN_VALUE;
   (void)wraprec;
-  invoke_all_clean_hook_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 
