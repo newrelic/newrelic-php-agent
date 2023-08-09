@@ -1934,6 +1934,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
     nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data", __func__);
     return;
   }
+
   if (NULL == execute_data->prev_execute_data->opline) {
     nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
     return;
@@ -1966,20 +1967,43 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
    * cause additional performance overhead, this should be considered a last
    * resort.
    */
-  const zend_op* prev_opline = execute_data->prev_execute_data->opline - 1;
+
+  /* 
+   * When Observer API is used, this code executes in the context of
+   * zend_execute and not in the context of VM (as was the case pre-OAPI),
+   * therefore we need to ensure we're dealing with a user function. We cannot
+   * safely access the opline of internal functions, and we only want to
+   * instrument cufa calls from user functions anyway.
+   */
+  if (UNEXPECTED(NULL == execute_data->prev_execute_data->func)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function", __func__);
+    return;
+  }
+  if (!ZEND_USER_CODE(execute_data->prev_execute_data->func->type)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: caller is php internal function", __func__);
+    return;
+  }
+
+  const zend_op* prev_opline = execute_data->prev_execute_data->opline;
+
+  /* 
+   * Extra safety check. Previously, we instrumented by overwritting ZEND_DO_FCALL.
+   * Within OAPI, for consistency's sake, we will ensure the same
+   */
+  if (ZEND_DO_FCALL != prev_opline->opcode) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
+    return;
+  }
+  prev_opline -= 1; // Checks previous opcode
   if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
-    prev_opline = execute_data->prev_execute_data->opline - 2;
+    prev_opline -= 1; // Checks previous opcode
   }
   if (ZEND_SEND_ARRAY == prev_opline->opcode) {
+
     if (UNEXPECTED((NULL == execute_data->func))) {
       nrl_verbosedebug(NRL_AGENT, "%s: cannot get current function", __func__);
       return;
     }
-    if (UNEXPECTED(NULL == execute_data->prev_execute_data->func)) {
-      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function", __func__);
-      return;
-    }
-
     if (UNEXPECTED(NULL == execute_data->prev_execute_data->func->common.function_name)) {
       nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
       return;
