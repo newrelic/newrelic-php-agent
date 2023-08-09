@@ -470,7 +470,7 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   zval* curr_hook
-      = (zval*)nr_stack_get_top(&NRPRG(drupal_module_invoke_all_hooks));
+      = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
   if (!nr_php_is_zval_non_empty_string(curr_hook)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
@@ -480,8 +480,8 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
   char* hook_name = Z_STRVAL_P(curr_hook);
   size_t hook_len = Z_STRLEN_P(curr_hook);
 #else
-  char* hook_name = NRPRG(drupal_module_invoke_all_hook);
-  size_t hook_len = NRPRG(drupal_module_invoke_all_hook_len);
+  char* hook_name = NRPRG(drupal_invoke_all_hook);
+  size_t hook_len = NRPRG(drupal_invoke_all_hook_len);
 #endif
   if (NULL == hook_name) {
     nrl_verbosedebug(NRL_FRAMEWORK,
@@ -753,25 +753,13 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_before) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
   hook_copy = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
-  if (nr_php_is_zval_non_empty_string(hook_copy)) {
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_hooks), hook_copy);
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_states), (void*)!NULL);
-  } else {
-    nr_stack_push(&NRPRG(drupal_module_invoke_all_states), NULL);
-  }
+  nr_drupal_invoke_all_hook_stacks_push(hook_copy);
 }
 NR_PHP_WRAPPER_END
 
-static void module_invoke_all_clean_stacks() {
-  if ((bool)nr_stack_pop(&NRPRG(drupal_module_invoke_all_states))) {
-    zval* hook_copy = nr_stack_pop(&NRPRG(drupal_module_invoke_all_hooks));
-    nr_php_arg_release(&hook_copy);
-  }
-}
-
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
   (void)wraprec;
-  module_invoke_all_clean_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 
@@ -779,7 +767,7 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_clean) {
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_FUNC_RETURN_VALUE;
   (void)wraprec;
-  module_invoke_all_clean_stacks();
+  nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
 
@@ -799,17 +787,17 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all) {
     goto leave;
   }
 
-  prev_hook = NRPRG(drupal_module_invoke_all_hook);
-  prev_hook_len = NRPRG(drupal_module_invoke_all_hook_len);
-  NRPRG(drupal_module_invoke_all_hook)
+  prev_hook = NRPRG(drupal_invoke_all_hook);
+  prev_hook_len = NRPRG(drupal_invoke_all_hook_len);
+  NRPRG(drupal_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
-  NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
+  NRPRG(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
 
   NR_PHP_WRAPPER_CALL;
 
-  nr_free(NRPRG(drupal_module_invoke_all_hook));
-  NRPRG(drupal_module_invoke_all_hook) = prev_hook;
-  NRPRG(drupal_module_invoke_all_hook_len) = prev_hook_len;
+  nr_free(NRPRG(drupal_invoke_all_hook));
+  NRPRG(drupal_invoke_all_hook) = prev_hook;
+  NRPRG(drupal_invoke_all_hook_len) = prev_hook_len;
 
 leave:
   nr_php_arg_release(&hook);
