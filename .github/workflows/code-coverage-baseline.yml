@@ -144,6 +144,7 @@ jobs:
     needs: [daemon-unit-tests, agent-unit-test]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
