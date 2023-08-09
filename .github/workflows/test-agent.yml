@@ -94,8 +94,11 @@ jobs:
         with:
           path: php-agent
       - name: Enable arm64 emulation
-        run: |
-          docker run --privileged --rm tonistiigi/binfmt --install arm64
+        if: ${{ matrix.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
