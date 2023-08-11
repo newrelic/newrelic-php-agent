@@ -1578,3 +1578,65 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
     nr_free(span_id);
   }
 }
+
+#ifdef TAGS
+void zif_newrelic_set_error_group_callback(void); /* ctags landing pad only */
+void newrelic_set_error_group_callback(void);     /* ctags landing pad only */
+#endif
+PHP_FUNCTION(newrelic_set_error_group_callback) {
+  zend_fcall_info fci;
+  zend_fcall_info_cache fcc;
+
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_THIS_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+
+  nr_php_api_add_supportability_metric("set_error_group_callback" TSRMLS_CC);
+
+  // Verify that only one argument has been provided to the API (the callback)
+  if (1 != ZEND_NUM_ARGS()) {
+    nrl_warning(NRL_API,
+                "newrelic_set_error_group_callback failure: invalid number of "
+                "parameters");
+    RETURN_FALSE;
+  }
+
+  // Verify that the argument passed to the API is a function
+  // Populate function data
+  if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS(), "f", &fci, &fcc)) {
+    nrl_warning(
+        NRL_API,
+        "newrelic_set_error_group_callback failure: invalid argument passed");
+    RETURN_FALSE;
+  }
+
+  // Verify the user callback accepts 2 arguments
+  if (2 != fcc.function_handler->common.num_args) {
+    nrl_warning(NRL_API,
+                "newrelic_set_error_group_callback failure: invalid number of "
+                "callback parameters: %d",
+                fcc.function_handler->common.num_args);
+    RETURN_FALSE;
+  }
+
+  // Log info message if the user is overwriting an existing callback
+  if (NULL != NRPRG(error_group_user_callback)) {
+    nrl_info(
+        NRL_API,
+        "newrelic_set_error_group_callback: overwriting previous callback");
+  } else {
+    // Allocate memory for global callback reference
+    // This is freed (if set) in RSHUTDOWN
+    NRPRG(error_group_user_callback) = nr_malloc(sizeof(nrcallbackfn_t));
+  }
+
+  // Set global values
+  NRPRG(error_group_user_callback)->fci = fci;
+  NRPRG(error_group_user_callback)->fcc = fcc;
+
+  nrl_info(
+      NRL_API,
+      "newrelic_set_error_group_callback success: error group callback set");
+
+  RETURN_TRUE;
+}

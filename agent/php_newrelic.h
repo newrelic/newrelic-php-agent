@@ -126,6 +126,11 @@ typedef enum {
   NR_FW_MUST_BE_LAST
 } nrframework_t;
 
+typedef struct _nrcallbackfn_t {
+  zend_fcall_info fci;
+  zend_fcall_info_cache fcc;
+} nrcallbackfn_t;
+
 /*
  * Per-request globals. This is designed for thread safety.
  * These are the globals that are accessible to each request, of which
@@ -304,8 +309,9 @@ nr_php_ini_attribute_config_t
                                     */
 
 nrinibool_t custom_events_enabled; /* newrelic.custom_insights_events.enabled */
-nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored */
-nrinibool_t synthetics_enabled;    /* newrelic.synthetics.enabled */
+nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored
+                                               */
+nrinibool_t synthetics_enabled;               /* newrelic.synthetics.enabled */
 
 nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */
 
@@ -476,8 +482,9 @@ nriniuint_t
 nrinibool_t
     log_metrics_enabled; /* newrelic.application_logging.metrics.enabled */
 
-nriniuint_t log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
-                                       */
+nriniuint_t
+    log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
+                               */
 
 /*
  * Configuration option to toggle code level metrics collection.
@@ -502,6 +509,9 @@ nrtxn_t* txn; /* The all-important transaction pointer */
 
 char* predis_ctx; /* The current Predis pipeline context name, if any */
 nr_hashmap_t* predis_commands;
+
+nrcallbackfn_t* error_group_user_callback; /* The user defined callback for
+                                              error group naming */
 
 /*
  * The globals below all refer to a transaction. Those globals contain
