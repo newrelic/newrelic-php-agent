@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that Cross Application Tracing (CAT) works with guzzle 6.
+Test that neither CAT nor DT headers are added when CAT and DT are disabled.
 */
 
 /*SKIPIF
