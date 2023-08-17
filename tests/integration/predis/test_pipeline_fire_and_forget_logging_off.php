@@ -51,7 +51,6 @@ newrelic.application_logging.metrics.enabled = false
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Predis/detected"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
