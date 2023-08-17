@@ -236,7 +236,7 @@ zend_extension=opcache.so
 */
 
 /*EXPECT
-HelloHelloHelloOK
+HelloHelloHellofunctionNamefunctionNamefunctionNamefunctionNamefunctionNameOK
 */
 
 newrelic_add_custom_tracer('main');
@@ -252,12 +252,12 @@ main();
 abstract class Classname{
 
         protected function functionName() : void {
-        for($i = 0; $i < 500; ++$i){
-        /* Spin wheels. */
-        $x = 10 + 10;
+                echo 'functionName';
+                for($i = 0; $i < 500; ++$i) {
+                /* Spin wheels. */
+                $x = 10 + 10;
+                }
         }
-        }
-
         final public function __destruct(){
 
         }
