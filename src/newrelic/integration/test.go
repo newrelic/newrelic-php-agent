@@ -50,10 +50,11 @@ type Test struct {
 	// Raw parsed test information used to construct the Tx.
 	// The settings and env do not include global env and
 	// global settings.
-	rawSkipIf []byte
-	Env       map[string]string
-	Settings  map[string]string
-	headers   http.Header
+	rawSkipIf  []byte
+	Env        map[string]string
+	Settings   map[string]string
+	PhpModules map[string]string
+	headers    http.Header
 
 	// When non-empty describes why failed should be true after the test
 	// is run. This field may be set in the test definition to indicate
@@ -193,6 +194,8 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 			headers.Set(key, string(expanded))
 		}
 	}
+
+	settings = merge(settings, t.PhpModules)
 
 	if t.IsC() {
 		return CTx(ScriptFile(t.Path), env, settings, headers, ctx)
