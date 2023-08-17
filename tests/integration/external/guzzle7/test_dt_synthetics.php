@@ -5,12 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that distributed tracing works with guzzle 6.
+Test that distributed tracing works with guzzle 7.
 */
 
 /*SKIPIF
 <?php
-require('skipif.inc');
+require("skipif.inc");
 
 if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
@@ -20,7 +20,7 @@ if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.cross_application_tracer.enabled = false
-*/
+ */
 
 /*
  * The synthetics header contains the following JSON.
@@ -53,42 +53,47 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"Apdex"},                                              ["??", "??", "??", "??", "??", 0]],
-    [{"name":"Apdex/Uri__FILE__"},                                  ["??", "??", "??", "??", "??", 0]],
-    [{"name":"External/127.0.0.1/all"},                             [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all",
-      "scope":"WebTransaction/Uri__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                                       [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allWeb"},                                    [3, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransaction/Uri__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
+    [{"name":"Apdex"},                                    ["??", "??", "??", "??", "??",    0]],
+    [{"name":"Apdex/Uri__FILE__"},                        ["??", "??", "??", "??", "??",    0]],
+    [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all", 
+      "scope":"WebTransaction/Uri__FILE__"},              [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                             [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allWeb"},                          [3, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction"},                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},   
+                                                          [3,    0,    0,    0,    0,    0]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, 
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, 
+                                                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Create/Success"},    
+							  [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, 
+                                                          [3, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+
   ]
 ]
 */
-
 
 ?>
 <?php
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
 /* Create URL. */
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+/* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
 
 $client = new Client();

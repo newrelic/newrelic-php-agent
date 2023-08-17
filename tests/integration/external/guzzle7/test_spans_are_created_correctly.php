@@ -10,14 +10,13 @@ Test that the actually external call is marked as http.
 
 /*SKIPIF
 <?php
-require('skipif.inc');
+require("skipif.inc");
 */
 
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.threshold = 0
 newrelic.transaction_tracer.detail = 0
-newrelic.code_level_metrics.enabled=false
 */
 
 
@@ -62,7 +61,12 @@ newrelic.code_level_metrics.enabled=false
         "timestamp": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.namespace": "GuzzleHttp\\Client",
+        "code.filepath": "??",
+        "code.function": "__construct"
+      }
     ],
     [
       {
@@ -93,11 +97,11 @@ newrelic.code_level_metrics.enabled=false
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(6);
+require_guzzle(7);
 
 $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
 
-/* Use guzzle 6 to make an http request. */
+/* Use guzzle 7 to make an http request. */
 use GuzzleHttp\Client;
 
 $client = new Client();

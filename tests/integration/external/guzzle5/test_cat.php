@@ -10,13 +10,7 @@ Test that Cross Application Tracing works with guzzle 5.
 
 /*SKIPIF
 <?php
-require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-
 require('skipif.inc');
-
-if (version_compare(phpversion(), '5.4.0', '<')) {
-    die("skip: PHP >= 5.4.0 required\n");
-}
 
 if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"])) {
     die("skip: env vars required");
