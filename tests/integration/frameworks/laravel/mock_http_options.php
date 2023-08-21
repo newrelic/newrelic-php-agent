@@ -57,3 +57,7 @@ namespace Illuminate\Routing {
       }
   }
 }
+
+namespace Illuminate\Routing {
+    echo "";
+}
