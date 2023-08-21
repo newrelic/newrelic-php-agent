@@ -33,6 +33,7 @@ type Test struct {
 	customEvents   []byte
 	errorEvents    []byte
 	spanEvents     []byte
+	spanEventsLike []byte
 	logEvents      []byte
 	metrics        []byte
 	slowSQLs       []byte
@@ -315,6 +316,117 @@ func (t *Test) compareResponseHeaders() {
 	}
 }
 
+// Handling EXPECT_SPAN_EVENTS_LIKE is different than normal payload compare so
+// a different function is required
+func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
+	// convert array of expected spans JSON to interface representation
+	var x2 interface{}
+
+	if nil == t.spanEventsLike {
+		return
+	}
+
+	if err := json.Unmarshal(t.spanEventsLike, &x2); nil != err {
+		t.Fatal(fmt.Errorf("unable to parse expected spans like json for fuzzy matching: %v", err))
+	}
+
+	// expected will be represented as an array of "interface{}"
+	// each element will be the internal representation of the JSON
+	// for each expected span
+	// this is needed for the call to isFuzzyMatch Recursive later
+	// when comparing to the actual spans in their internal representation
+	expected := x2.([]interface{})
+
+	// now parse actual span data JSON into interface representation
+	var x1 interface{}
+
+	es := *harvest.SpanEvents
+	id := newrelic.AgentRunID("?? agent run id")
+	actualJSON, err := es.Data(id, time.Now())
+	if nil != err {
+		t.Fatal(fmt.Errorf("unable to access span event JSON data: %v", err))
+	}
+
+	// scrub actual spans
+	scrubjson := ScrubLineNumbers(actualJSON)
+	scrubjson = ScrubFilename(scrubjson, t.Path)
+	scrubjson = ScrubHost(scrubjson)
+
+	// parse to internal format
+	if err := json.Unmarshal(scrubjson, &x1); nil != err {
+		t.Fatal(fmt.Errorf("unable to parse actual spans like json for fuzzy matching: %v", err))
+	}
+
+	// expect x1 to be of type "[]interface {}" which wraps the entire span event data
+	// within this generic array there will be:
+	// - a string of the form "?? agent run id"
+	// - a map container "events_seen" and "reservoir_size"
+	// - an array of arrays containing:
+	//    - map containing main span data
+	//    - map for attributes(?)
+	//    - map of CLM data
+
+	// test initial type is as expected
+	switch x1.(type) {
+	case []interface{}:
+	default:
+		t.Fatal(errors.New("span event data json doesnt match expected format"))
+	}
+
+	// expect array of len 3
+	v2, _ := x1.([]interface{})
+	if 3 != len(v2) {
+		t.Fatal(errors.New("span event data json doesnt match expected format - expected 3 elements"))
+	}
+
+	// get array of actual spans from 3rd element
+	actual := v2[2].([]interface{})
+
+	// check if expected JSON is present in actual data
+	// will call isFuzzyMatchRecursive with "interface" representations
+	numMatched := 0
+	haveMatched := make([]bool, len(expected))
+	for i := 0; i < len(expected); i++ {
+		haveMatched[i] = false
+	}
+
+	for i := 0; i < len(actual); i++ {
+		// check each expected span (interface representation) against current actual span
+		// only iterate over unmatched expected spans
+		for j := 0; j < len(expected); j++ {
+			if haveMatched[j] {
+				continue
+			}
+
+			match := isFuzzyMatchRecursive(expected[j], actual[i])
+			if nil == match {
+				haveMatched[j] = true
+				numMatched++
+				break
+			}
+		}
+
+		if len(expected) == numMatched {
+			break
+		}
+	}
+
+	for j := 0; j < len(expected); j++ {
+		if !haveMatched[j] {
+			actualPretty := bytes.Buffer{}
+			json.Indent(&actualPretty, actualJSON, "", "  ")
+			expectedJSON, _ := json.Marshal(expected[j])
+
+			t.Fail(ComparisonFailure{
+				Name:   fmt.Sprintf("matching span event data like: unmatched expected span"),
+				Expect: string(expectedJSON),
+				Actual: actualPretty.String(),
+			})
+
+		}
+	}
+}
+
 func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreator, isMetrics bool) {
 	if nil == expected {
 		// No expected output has been specified:  Anything passes.
@@ -451,6 +563,10 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 		return
 	}
 
+	// check for any "expected spans like"
+	t.compareSpanEventsLike(harvest)
+
+	// check remaining payloads
 	t.comparePayload(t.analyticEvents, harvest.TxnEvents, false)
 	t.comparePayload(t.customEvents, harvest.CustomEvents, false)
 	t.comparePayload(t.errorEvents, harvest.ErrorEvents, false)
