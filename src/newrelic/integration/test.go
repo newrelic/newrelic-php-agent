@@ -403,8 +403,8 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 				continue
 			}
 
-			match := isFuzzyMatchRecursive(expected[j], actual[i])
-			if nil == match {
+			err := isFuzzyMatchRecursive(expected[j], actual[i])
+			if nil == err {
 				haveMatched[j] = true
 				numMatched++
 				break
