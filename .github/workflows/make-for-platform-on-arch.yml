@@ -1,0 +1,84 @@
+name: _make-target
+
+on:
+  workflow_call:
+    inputs:
+      origin:
+        description: 'newrelic-php-agent origin'
+        required: true
+        default: 'newrelic' 
+        type: string
+      ref:
+        description: 'Branch or tag'
+        required: true
+        type: string
+      make-variant:
+        description: 'Builder image tag'
+        required: true
+        type: string
+      make-variant-version:
+        description: 'Builder image version'
+        required: true
+        type: string
+      make-target:
+        description: 'make target'
+        required: true
+        type: string
+      artifact-name:
+        description: 'Build artifact name'
+        required: true
+        type: string
+      artifact-pattern:
+        description: 'Build artifact pattern'
+        required: true
+        type: string
+      arch:
+        description: 'Target architecture'
+        required: true
+        type: string
+      runs-on:
+        description: 'runner type'
+        required: true
+        type: string
+
+jobs:
+  make-target:
+    name: make ${{ inputs.make-target }} using ${{inputs.make-variant}} (${{ matrix.platform }}, ${{inputs.arch}})
+    runs-on: ${{inputs.runs-on}}
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-${{inputs.make-variant}}
+      IMAGE_VERSION: ${{inputs.make-variant-version}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v3
+        with:
+          path: php-agent
+          repository: ${{ inputs.origin }}/newrelic-php-agent
+          ref: ${{ inputs.ref }}
+      - name: Enable arm64 emulation
+        if: ${{ inputs.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: arm64
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build ${{inputs.make-target}}
+        run: >
+          docker run --rm --platform linux/${{inputs.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION ${{inputs.make-target}}
+      - name: Save ${{inputs.make-target}} artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{inputs.artifact-name}}-${{matrix.platform}}-${{inputs.arch}}
+          path: php-agent/${{ inputs.artifact-pattern }}

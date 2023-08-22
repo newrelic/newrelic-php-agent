@@ -10,8 +10,6 @@ Span events are generated and external span event fields are set correctly.
 
 /*SKIPIF
 <?php
-require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-
 require('skipif.inc');
 
 if (version_compare(PHP_VERSION, "7.0", "<")) {

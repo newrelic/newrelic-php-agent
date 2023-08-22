@@ -481,12 +481,8 @@ typedef struct _nr_library_table_t {
 static nr_library_table_t libraries[] = {
     {"Doctrine 2", "doctrine/orm/query.php", nr_doctrine2_enable},
     {"Guzzle 3", "guzzle/http/client.php", nr_guzzle3_enable},
-    /*
-     * NOTE:  This file ClientInterface.php also exists in Guzzle 3 and 6.
-     *        This file also exists in Predis.
-     */
-    {"Guzzle 4-5", "clientinterface.php", nr_guzzle4_enable},
-    {"Guzzle 6", "handlerstack.php", nr_guzzle6_enable},
+    {"Guzzle 4-5", "hasemitterinterface.php", nr_guzzle4_enable},
+    {"Guzzle 6", "guzzle/src/functions_include.php", nr_guzzle6_enable},
 
     {"MongoDB", "mongodb/src/client.php", nr_mongodb_enable},
 
