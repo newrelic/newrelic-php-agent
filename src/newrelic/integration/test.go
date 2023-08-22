@@ -328,6 +328,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 
 	if err := json.Unmarshal(t.spanEventsLike, &x2); nil != err {
 		t.Fatal(fmt.Errorf("unable to parse expected spans like json for fuzzy matching: %v", err))
+		return
 	}
 
 	// expected will be represented as an array of "interface{}"
@@ -345,6 +346,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	actualJSON, err := es.Data(id, time.Now())
 	if nil != err {
 		t.Fatal(fmt.Errorf("unable to access span event JSON data: %v", err))
+		return
 	}
 
 	// scrub actual spans
@@ -355,6 +357,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	// parse to internal format
 	if err := json.Unmarshal(scrubjson, &x1); nil != err {
 		t.Fatal(fmt.Errorf("unable to parse actual spans like json for fuzzy matching: %v", err))
+		return
 	}
 
 	// expect x1 to be of type "[]interface {}" which wraps the entire span event data
@@ -371,12 +374,14 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	case []interface{}:
 	default:
 		t.Fatal(errors.New("span event data json doesnt match expected format"))
+		return
 	}
 
 	// expect array of len 3
 	v2, _ := x1.([]interface{})
 	if 3 != len(v2) {
 		t.Fatal(errors.New("span event data json doesnt match expected format - expected 3 elements"))
+		return
 	}
 
 	// get array of actual spans from 3rd element
@@ -422,7 +427,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 				Expect: string(expectedJSON),
 				Actual: actualPretty.String(),
 			})
-
+			return
 		}
 	}
 }
