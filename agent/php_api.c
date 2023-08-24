@@ -1621,7 +1621,7 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
 
   // Log info message if the user is overwriting an existing callback
   if (NULL != NRPRG(error_group_user_callback)) {
-    nrl_info(
+    nrl_debug(
         NRL_API,
         "newrelic_set_error_group_callback: overwriting previous callback");
   } else {
@@ -1634,7 +1634,7 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
   NRPRG(error_group_user_callback)->fci = fci;
   NRPRG(error_group_user_callback)->fcc = fcc;
 
-  nrl_info(
+  nrl_debug(
       NRL_API,
       "newrelic_set_error_group_callback success: error group callback set");
 
