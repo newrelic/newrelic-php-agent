@@ -9,6 +9,7 @@
 #include "php_call.h"
 #include "php_error.h"
 #include "php_hash.h"
+#include "php_header.h"
 #include "php_globals.h"
 #include "php_hooks.h"
 #include "php_zval.h"
@@ -31,23 +32,26 @@ typedef struct _nr_php_exception_filter_t {
 } nr_php_exception_filter_t;
 
 #define ERROR_GROUP_STRLEN_MAX (255)
+
+/* Transient macro to free memory in nr_php_error_fingerprint_callback */
 #define FREE_MEM                    \
   nr_php_zval_free(&txn_arr);       \
   nr_php_zval_free(&error_arr);     \
   nr_php_zval_free(&group_name_zv); \
+  nro_delete(agent_attributes);     \
   nr_free(request_uri);             \
   nr_free(path);                    \
-  nr_free(name);
+  nr_free(method);
 
 /*
  * Purpose      Execute a user-defined PHP callback function that assigns a
  *              custom group name to an error.
  *
  * @param       txn     The transaction object
- * @param       klass   The error class
- * @param       message The error message
- * @param       file    The error file
- * @param       stack_json  The stack trace represented in JSON
+ * @param       klass   The error class string
+ * @param       message The error message string
+ * @param       file    The error file string
+ * @param       stack_json  The JSON stack trace string
  */
 static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
                                               const char* klass,
@@ -59,15 +63,26 @@ static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
   zval* group_name_zv = NULL;
   zend_fcall_info fci;
   zend_fcall_info_cache fcc;
+  nrobj_t* agent_attributes;
   char* group_name_str = NULL;
+  char* request_uri = NULL;
+  char* path = NULL;
+  char* method = NULL;
+  int status_code = 0;
 
   if (NULL == NRPRG(error_group_user_callback)) {
     return;
   }
 
-  char* request_uri = nr_strdup(txn->request_uri);
-  char* path = nr_strdup(txn->path);
-  char* name = nr_strdup(txn->name);
+  agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
+                                                NR_ATTRIBUTE_DESTINATION_ALL);
+
+  request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI" TSRMLS_CC));
+  path = nr_strdup(txn->path);
+  method = nr_strdup(
+      nro_get_hash_string(agent_attributes, "request.method", NULL));
+  status_code = nr_php_http_response_code();
+  status_code = (status_code < 0) ? 0 : status_code;
 
   txn_arr = nr_php_zval_alloc();
   error_arr = nr_php_zval_alloc();
@@ -77,7 +92,8 @@ static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
 
   nr_php_add_assoc_string(txn_arr, "request_uri", request_uri);
   nr_php_add_assoc_string(txn_arr, "path", path);
-  nr_php_add_assoc_string(txn_arr, "name", name);
+  nr_php_add_assoc_string(txn_arr, "method", method);
+  add_assoc_long(txn_arr, "status_code", (zend_long)status_code);
 
   nr_php_add_assoc_string(error_arr, "klass", klass);
   nr_php_add_assoc_string(error_arr, "message", message);
@@ -90,6 +106,9 @@ static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
 
   if (!nr_php_is_zval_non_empty_string(group_name_zv)) {
+    nrl_debug(NRL_MISC,
+              "Error fingerprint callback: Invalid return value (Non-Empty "
+              "String Required).");
     FREE_MEM;
     return;
   }
