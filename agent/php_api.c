@@ -1619,7 +1619,7 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
     RETURN_FALSE;
   }
 
-  // Log info message if the user is overwriting an existing callback
+  // Log debug message if the user is overwriting an existing callback
   if (NULL != NRPRG(error_group_user_callback)) {
     nrl_debug(
         NRL_API,
