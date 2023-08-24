@@ -54,10 +54,10 @@ typedef struct _nr_php_exception_filter_t {
  * @param       stack_json  The JSON stack trace string
  */
 static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
-                                              const char* klass,
-                                              const char* message,
-                                              const char* file,
-                                              const char* stack_json) {
+                                              char* klass,
+                                              char* message,
+                                              char* file,
+                                              char* stack_json) {
   zval* txn_arr = NULL;
   zval* error_arr = NULL;
   zval* group_name_zv = NULL;
@@ -567,6 +567,7 @@ void nr_php_error_cb(int type,
   const char* errclass = NULL;
   char* msg = NULL;
   char* file = NULL;
+  char* klass = NULL;
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (nr_php_should_record_error(type, format TSRMLS_CC)) {
@@ -595,22 +596,25 @@ void nr_php_error_cb(int type,
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), msg,
                         errclass, stack_json);
 
-#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
-    file = nr_strdup(error_filename);
-#else
-    file = nr_strdup(ZSTR_VAL(error_filename));
-#endif
-
     /*
      * Error Fingerprinting Callback
      */
     if (NULL != NRPRG(error_group_user_callback)) {
-      nr_php_error_fingerprint_callback(NRPRG(txn), errclass, msg, file,
+#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
+      file = nr_strdup(error_filename);
+#else
+      file = nr_strdup(ZSTR_VAL(error_filename));
+#endif
+      klass = nr_strdup(errclass);
+
+      nr_php_error_fingerprint_callback(NRPRG(txn), klass, msg, file,
                                         stack_json);
+
+      nr_free(file);
+      nr_free(klass);
     }
     nr_free(msg);
     nr_free(stack_json);
-    nr_free(file);
   }
 
   /*
