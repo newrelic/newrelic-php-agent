@@ -33,7 +33,7 @@ typedef struct _nr_php_exception_filter_t {
 
 #define ERROR_GROUP_STRLEN_MAX (255)
 
-/* Transient macro to free memory in nr_php_error_fingerprint_callback */
+/* Transient macro to free memory in nr_php_error_call_error_group_callback */
 #define FREE_MEM                    \
   nr_php_zval_free(&txn_arr);       \
   nr_php_zval_free(&error_arr);     \
@@ -53,11 +53,11 @@ typedef struct _nr_php_exception_filter_t {
  * @param       file    The error file string
  * @param       stack_json  The JSON stack trace string
  */
-static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
-                                              char* klass,
-                                              char* message,
-                                              char* file,
-                                              char* stack_json) {
+static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
+                                                   char* klass,
+                                                   char* message,
+                                                   char* file,
+                                                   char* stack_json) {
   zval* txn_arr = NULL;
   zval* error_arr = NULL;
   zval* group_name_zv = NULL;
@@ -107,7 +107,7 @@ static void nr_php_error_fingerprint_callback(nrtxn_t* txn,
 
   if (!nr_php_is_zval_non_empty_string(group_name_zv)) {
     nrl_debug(NRL_MISC,
-              "Error fingerprint callback: Invalid return value (Non-Empty "
+              "Error Group callback: Invalid return value (Non-Empty "
               "String Required).");
     FREE_MEM;
     return;
@@ -607,8 +607,8 @@ void nr_php_error_cb(int type,
 #endif
       klass = nr_strdup(errclass);
 
-      nr_php_error_fingerprint_callback(NRPRG(txn), klass, msg, file,
-                                        stack_json);
+      nr_php_error_call_error_group_callback(NRPRG(txn), klass, msg, file,
+                                             stack_json);
 
       nr_free(file);
       nr_free(klass);
@@ -700,7 +700,8 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
    * Error Fingerprinting Callback
    */
   if (NULL != NRPRG(error_group_user_callback)) {
-    nr_php_error_fingerprint_callback(txn, klass, message, file, stack_json);
+    nr_php_error_call_error_group_callback(txn, klass, message, file,
+                                           stack_json);
   }
 
   nr_txn_record_error(NRPRG(txn), priority, error_message, klass, stack_json);
