@@ -11,12 +11,19 @@ When a non-function object is passed to newrelic_set_error_group_callback(), it 
 and the callback will not be registered.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 treats this error as an exception.\n");
+}
+*/
+
 /*EXPECT_REGEX
-Fatal error: Uncaught TypeError: newrelic_set_error_group_callback\(\): Argument #1 \(\$callback\) must be a valid callback, function "This isn't a callback!" not found or invalid function name in .*test_error_group_callback_bad_callback.php:113
+Fatal error: Uncaught TypeError: newrelic_set_error_group_callback\(\): Argument #1 \(\$callback\) must be a valid callback, function "This isn't a callback!" not found or invalid function name in .*test_error_group_callback_bad_callback.php:120
 Stack trace:
-#0 .*test_error_group_callback_bad_callback.php\(113\): newrelic_set_error_group_callback\('This isn't a ca...'\)
+#0 .*test_error_group_callback_bad_callback.php\(120\): newrelic_set_error_group_callback\('This isn't a ca...'\)
 #1 {main}
-  thrown in .*test_error_group_callback_bad_callback.php on line 113
+  thrown in .*test_error_group_callback_bad_callback.php on line 120
 */
 
 /*EXPECT_METRICS 
