@@ -1579,6 +1579,14 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
   }
 }
 
+/*
+ * Purpose      (New Relic API) (Error Fingerprinting)
+ *              Allows a user to register a PHP callback to be invoked by the
+ *              Agent when the application encounters an error for the purpose
+ *              of returning a string for the 'error.group.name' Agent
+ *              Attribute.
+ *
+ */
 #ifdef TAGS
 void zif_newrelic_set_error_group_callback(void); /* ctags landing pad only */
 void newrelic_set_error_group_callback(void);     /* ctags landing pad only */
