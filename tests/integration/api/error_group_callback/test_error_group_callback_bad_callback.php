@@ -11,12 +11,12 @@ When a non-function object is passed to newrelic_set_error_group_callback(), it 
 and the callback will not be registered.
 */
 
-/*EXPECT
-Fatal error: Uncaught TypeError: newrelic_set_error_group_callback(): Argument #1 ($callback) must be a valid callback, function "This isn't a callback!" not found or invalid function name in /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php:113
+/*EXPECT_REGEX
+Fatal error: Uncaught TypeError: newrelic_set_error_group_callback\(\): Argument #1 \(\$callback\) must be a valid callback, function "This isn't a callback!" not found or invalid function name in .*test_error_group_callback_bad_callback.php:113
 Stack trace:
-#0 /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php(113): newrelic_set_error_group_callback('This isn't a ca...')
+#0 .*test_error_group_callback_bad_callback.php\(113\): newrelic_set_error_group_callback\('This isn't a ca...'\)
 #1 {main}
-  thrown in /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php on line 113
+  thrown in .*test_error_group_callback_bad_callback.php on line 113
 */
 
 /*EXPECT_METRICS 

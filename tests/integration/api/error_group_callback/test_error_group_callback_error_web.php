@@ -13,18 +13,18 @@ REQUEST_METHOD=GET
 QUERY_STRING=foo=1&bar=2
 */
 
-/*EXPECT
-request_uri => /test_error_group_callback_error_web.php?foo=1&bar=2
-path => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_error_web.php
+/*EXPECT_REGEX
+request_uri => \/test_error_group_callback_error_web.php\?foo=1&bar=2
+path => .*test_error_group_callback_error_web.php
 method => GET
 status_code => 200
 
 klass => E_USER_ERROR
 message => I'M COVERED IN BEES
-file => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_error_web.php
-stack => [" in trigger_error called at \/usr\/src\/myapp\/tests\/integration\/api\/error_group_callback\/test_error_group_callback_error_web.php (144)"," in alpha called at \/usr\/src\/myapp\/tests\/integration\/api\/error_group_callback\/test_error_group_callback_error_web.php (165)"]
-<br />
-<b>Fatal error</b>:  I'M COVERED IN BEES in <b>/usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_error_web.php</b> on line <b>144</b><br />
+file => .*test_error_group_callback_error_web.php
+stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php \(144\)"," in alpha called at .*test_error_group_callback_error_web.php \(165\)"\]
+<br \/>
+<b>Fatal error<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>144<\/b><br \/>
 */
 
 /*EXPECT_METRICS 

@@ -9,7 +9,7 @@ Tests newrelic_set_error_group_callback() API for non-Web exception errors.
 */
 
 
-/*EXPECT 
+/*EXPECT_REGEX
 request_uri => 
 path => test_error_group_callback_exception_non_web.php
 method => 
@@ -17,8 +17,8 @@ status_code => 0
 
 klass => Exception
 message => Sample Exception
-file => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_exception_non_web.php
-stack => [" in alpha called at \/usr\/src\/myapp\/tests\/integration\/api\/error_group_callback\/test_error_group_callback_exception_non_web.php (136)"]
+file => .*test_error_group_callback_exception_non_web.php
+stack => \[" in alpha called at .*test_error_group_callback_exception_non_web.php \(136\)"\]
 */
 
 /*EXPECT_METRICS 

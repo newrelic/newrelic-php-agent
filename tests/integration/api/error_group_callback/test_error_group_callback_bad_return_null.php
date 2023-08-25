@@ -11,7 +11,7 @@ When a value other than a non-empty string is returned by a user-registered erro
 the callback will still be registered and called, but the `error.group.name` attribute will not be generated.
 */
 
-/*EXPECT
+/*EXPECT_REGEX
 request_uri => 
 path => test_error_group_callback_bad_return_null.php
 method => 
@@ -19,8 +19,8 @@ status_code => 0
 
 klass => Exception
 message => Sample Exception
-file => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_bad_return_null.php
-stack => [" in alpha called at \/usr\/src\/myapp\/tests\/integration\/api\/error_group_callback\/test_error_group_callback_bad_return_null.php (134)"]
+file => .*test_error_group_callback_bad_return_null.php
+stack => \[" in alpha called at .*test_error_group_callback_bad_return_null.php \(134\)"\]
 */
 
 /*EXPECT_METRICS 

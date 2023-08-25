@@ -13,16 +13,16 @@ REQUEST_METHOD=GET
 QUERY_STRING=foo=1&bar=2
 */
 
-/*EXPECT 
-request_uri => /test_error_group_callback_exception_web.php?foo=1&bar=2
-path => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_exception_web.php
+/*EXPECT_REGEX
+request_uri => \/test_error_group_callback_exception_web.php\?foo=1&bar=2
+path => .*test_error_group_callback_exception_web.php
 method => GET
 status_code => 200
 
 klass => Exception
 message => Sample Exception
-file => /usr/src/myapp/tests/integration/api/error_group_callback/test_error_group_callback_exception_web.php
-stack => [" in alpha called at \/usr\/src\/myapp\/tests\/integration\/api\/error_group_callback\/test_error_group_callback_exception_web.php (163)"]
+file => .*test_error_group_callback_exception_web.php
+stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(163\)"\]
 */
 
 /*EXPECT_METRICS 
