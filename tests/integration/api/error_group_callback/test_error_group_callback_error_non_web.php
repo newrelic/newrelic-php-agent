@@ -17,9 +17,9 @@ status_code => 0
 klass => E_USER_ERROR
 message => I'M COVERED IN BEES
 file => .*test_error_group_callback_error_non_web.php
-stack => \[" in trigger_error called at .*test_error_group_callback_error_non_web.php \(116\)"," in alpha called at .*test_error_group_callback_error_non_web.php \(137\)"\]
+stack => \[" in trigger_error called at .*test_error_group_callback_error_non_web.php \(.*\)"," in alpha called at .*test_error_group_callback_error_non_web.php \(.*\)"\]
 
-Fatal error: I'M COVERED IN BEES in .*test_error_group_callback_error_non_web.php on line 116
+Fatal error: I'M COVERED IN BEES in .*test_error_group_callback_error_non_web.php on line .*
 */
 
 /*EXPECT_METRICS 
@@ -111,6 +111,8 @@ Fatal error: I'M COVERED IN BEES in .*test_error_group_callback_error_non_web.ph
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   trigger_error("I'M COVERED IN BEES", E_USER_ERROR);
@@ -132,6 +134,7 @@ $callback = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback);
+$result = newrelic_set_error_group_callback($callback);
+tap_assert($result, "callback registered");
 
 alpha();

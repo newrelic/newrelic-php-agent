@@ -14,6 +14,7 @@ QUERY_STRING=foo=1&bar=2
 */
 
 /*EXPECT_REGEX
+ok - callback registered
 request_uri => \/test_error_group_callback_error_web.php\?foo=1&bar=2
 path => .*test_error_group_callback_error_web.php
 method => GET
@@ -22,9 +23,9 @@ status_code => 200
 klass => E_USER_ERROR
 message => I'M COVERED IN BEES
 file => .*test_error_group_callback_error_web.php
-stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php \(144\)"," in alpha called at .*test_error_group_callback_error_web.php \(165\)"\]
+stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php \(.*\)"," in alpha called at .*test_error_group_callback_error_web.php \(.*\)"\]
 <br \/>
-<b>Fatal error<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>144<\/b><br \/>
+<b>Fatal error<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>.*<\/b><br \/>
 */
 
 /*EXPECT_METRICS 
@@ -136,6 +137,8 @@ stack => \[" in trigger_error called at .*test_error_group_callback_error_web.ph
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 header('Content-Type: text/html');
 header('Content-Type: application/json');
 
@@ -160,6 +163,8 @@ $callback = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback);
+$result = newrelic_set_error_group_callback($callback);
+
+tap_assert($result, "callback registered");
 
 alpha();

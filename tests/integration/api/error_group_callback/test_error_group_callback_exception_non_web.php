@@ -10,6 +10,7 @@ Tests newrelic_set_error_group_callback() API for non-Web exception errors.
 
 
 /*EXPECT_REGEX
+ok - callback registered
 request_uri => 
 path => test_error_group_callback_exception_non_web.php
 method => 
@@ -18,7 +19,7 @@ status_code => 0
 klass => Exception
 message => Sample Exception
 file => .*test_error_group_callback_exception_non_web.php
-stack => \[" in alpha called at .*test_error_group_callback_exception_non_web.php \(136\)"\]
+stack => \[" in alpha called at .*test_error_group_callback_exception_non_web.php \(.*\)"\]
 */
 
 /*EXPECT_METRICS 
@@ -110,6 +111,8 @@ stack => \[" in alpha called at .*test_error_group_callback_exception_non_web.ph
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   newrelic_notice_error(new Exception('Sample Exception'));
@@ -131,6 +134,8 @@ $callback = function($txndata, $errdata)
   return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback);
+$result = newrelic_set_error_group_callback($callback);
+
+tap_assert($result, "callback registered");
 
 alpha();

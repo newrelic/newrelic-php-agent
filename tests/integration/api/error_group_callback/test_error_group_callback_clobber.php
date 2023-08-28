@@ -20,7 +20,7 @@ status_code => 0
 klass => Exception
 message => Sample Exception
 file => .*test_error_group_callback_clobber.php
-stack => \[" in alpha called at .*test_error_group_callback_clobber.php \(156\)"\]
+stack => \[" in alpha called at .*test_error_group_callback_clobber.php \(.*\)"\]
 */
 
 /*EXPECT_METRICS 
@@ -112,6 +112,8 @@ stack => \[" in alpha called at .*test_error_group_callback_clobber.php \(156\)"
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   newrelic_notice_error(new Exception('Sample Exception'));
@@ -133,7 +135,9 @@ $callback_alpha = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback_alpha);
+$result = newrelic_set_error_group_callback($callback_alpha);
+
+tap_assert($result, "callback registered");
 
 $callback_beta = function($txndata, $errdata) 
 {
@@ -151,6 +155,8 @@ $callback_beta = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback_beta);
+$result = newrelic_set_error_group_callback($callback_beta);
+
+tap_assert($result, "second callback registered");
 
 alpha();

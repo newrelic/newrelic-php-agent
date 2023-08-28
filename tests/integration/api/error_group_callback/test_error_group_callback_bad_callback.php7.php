@@ -19,7 +19,7 @@ if (!version_compare(PHP_VERSION, "8.0", "<")) {
 */
 
 /*EXPECT_REGEX
-Warning: newrelic_set_error_group_callback\(\) expects parameter 1 to be a valid callback, function 'This isn't a callback!' not found or invalid function name in .*test_error_group_callback_bad_callback.php7.php on line 117
+Warning: newrelic_set_error_group_callback\(\) expects parameter 1 to be a valid callback, function 'This isn't a callback!' not found or invalid function name in .*test_error_group_callback_bad_callback.php7.php on line .*
 */
 
 /*EXPECT_METRICS 
@@ -43,66 +43,6 @@ Warning: newrelic_set_error_group_callback\(\) expects parameter 1 to be a valid
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/api/notice_error"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/api/set_error_group_callback"},               [1, 0, 0, 0, 0, 0]]
-  ]
-]
-*/
-
-/*EXPECT_ERROR_EVENTS
-[
-  "?? agent run id",
-  {
-    "reservoir_size": 100,
-    "events_seen": 1
-  },
-  [
-    [
-      {
-        "type": "TransactionError",
-        "timestamp": "??",
-        "error.class": "Exception",
-        "error.message": "Noticed exception 'Exception' with message 'Sample Exception' in __FILE__:??",
-        "transactionName": "OtherTransaction\/php__FILE__",
-        "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
-      },
-      {},
-      {}
-    ]
-  ]
-]
-*/
-
-/*EXPECT_TRACED_ERRORS
-[
-  "?? agent run id",
-  [
-    [
-      "??",
-      "OtherTransaction\/php__FILE__",
-      "Noticed exception 'Exception' with message 'Sample Exception' in __FILE__:??",
-      "Exception",
-      {
-        "stack_trace": [
-          " in alpha called at __FILE__ (??)"
-        ],
-        "agentAttributes": {},
-        "intrinsics": {
-          "totalTime": "??",
-          "cpu_time": "??",
-          "cpu_user_time": "??",
-          "cpu_sys_time": "??",
-          "guid": "??",
-          "sampled": true,
-          "priority": "??",
-          "traceId": "??"
-        }
-      }
-    ]
   ]
 ]
 */

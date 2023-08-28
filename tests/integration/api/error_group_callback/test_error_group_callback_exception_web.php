@@ -14,6 +14,7 @@ QUERY_STRING=foo=1&bar=2
 */
 
 /*EXPECT_REGEX
+ok - callback registered
 request_uri => \/test_error_group_callback_exception_web.php\?foo=1&bar=2
 path => .*test_error_group_callback_exception_web.php
 method => GET
@@ -22,7 +23,7 @@ status_code => 200
 klass => Exception
 message => Sample Exception
 file => .*test_error_group_callback_exception_web.php
-stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(163\)"\]
+stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(.*\)"\]
 */
 
 /*EXPECT_METRICS 
@@ -134,6 +135,8 @@ stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 header('Content-Type: text/html');
 header('Content-Type: application/json');
 
@@ -158,6 +161,8 @@ $callback = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback);
+$result = newrelic_set_error_group_callback($callback);
+
+tap_assert($result, "callback registered");
 
 alpha();

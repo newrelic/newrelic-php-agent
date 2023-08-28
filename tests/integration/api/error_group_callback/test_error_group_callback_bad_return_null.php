@@ -12,6 +12,7 @@ the callback will still be registered and called, but the `error.group.name` att
 */
 
 /*EXPECT_REGEX
+ok - callback registered
 request_uri => 
 path => test_error_group_callback_bad_return_null.php
 method => 
@@ -20,7 +21,7 @@ status_code => 0
 klass => Exception
 message => Sample Exception
 file => .*test_error_group_callback_bad_return_null.php
-stack => \[" in alpha called at .*test_error_group_callback_bad_return_null.php \(134\)"\]
+stack => \[" in alpha called at .*test_error_group_callback_bad_return_null.php \(.*\)"\]
 */
 
 /*EXPECT_METRICS 
@@ -108,6 +109,8 @@ stack => \[" in alpha called at .*test_error_group_callback_bad_return_null.php 
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   newrelic_notice_error(new Exception('Sample Exception'));
@@ -129,6 +132,8 @@ $callback_bad_return = function($txndata, $errdata)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback_bad_return);
+$result = newrelic_set_error_group_callback($callback_bad_return);
+
+tap_assert($result, "callback registered");
 
 alpha();

@@ -12,6 +12,7 @@ the callback will not be registered or called.
 */
 
 /*EXPECT
+ok - should reject callback with wrong invalid param count
 */
 
 /*EXPECT_METRICS 
@@ -99,6 +100,8 @@ the callback will not be registered or called.
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   newrelic_notice_error(new Exception('Sample Exception'));
@@ -116,6 +119,8 @@ $callback_bad_params = function($bad_params)
     return $fingerprint;
 };
 
-newrelic_set_error_group_callback($callback_bad_params);
+$result = newrelic_set_error_group_callback($callback_bad_params);
+
+tap_refute($result, "should reject callback with wrong invalid param count");
 
 alpha();

@@ -12,6 +12,7 @@ it will result in an error and the callback will not be registered.
 */
 
 /*EXPECT
+ok - should reject zero args
 */
 
 /*EXPECT_METRICS 
@@ -99,11 +100,15 @@ it will result in an error and the callback will not be registered.
 ]
 */
 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 function alpha()
 {
   newrelic_notice_error(new Exception('Sample Exception'));
 }
 
-newrelic_set_error_group_callback();
+$result = newrelic_set_error_group_callback();
+
+tap_refute($result, "should reject zero args");
 
 alpha();

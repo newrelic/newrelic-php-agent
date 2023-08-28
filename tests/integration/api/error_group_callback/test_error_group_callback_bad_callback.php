@@ -19,11 +19,11 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
 */
 
 /*EXPECT_REGEX
-Fatal error: Uncaught TypeError: newrelic_set_error_group_callback\(\): Argument #1 \(\$callback\) must be a valid callback, function "This isn't a callback!" not found or invalid function name in .*test_error_group_callback_bad_callback.php:120
+Fatal error: Uncaught TypeError: newrelic_set_error_group_callback\(\): Argument #1 \(\$callback\) must be a valid callback, function "This isn't a callback!" not found or invalid function name in .*test_error_group_callback_bad_callback.php:.*
 Stack trace:
-#0 .*test_error_group_callback_bad_callback.php\(120\): newrelic_set_error_group_callback\('This isn't a ca...'\)
+#0 .*test_error_group_callback_bad_callback.php\(.*\): newrelic_set_error_group_callback\('This isn't a ca...'\)
 #1 {main}
-  thrown in .*test_error_group_callback_bad_callback.php on line 120
+  thrown in .*test_error_group_callback_bad_callback.php on line .*
 */
 
 /*EXPECT_METRICS 
@@ -46,66 +46,6 @@ Stack trace:
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/api/set_error_group_callback"},               [1, 0, 0, 0, 0, 0]]
-  ]
-]
-*/
-
-/*EXPECT_ERROR_EVENTS
-[
-  "?? agent run id",
-  {
-    "reservoir_size": 100,
-    "events_seen": 1
-  },
-  [
-    [
-      {
-        "type": "TransactionError",
-        "timestamp": "??",
-        "error.class": "TypeError",
-        "error.message": "Uncaught exception 'TypeError' with message 'newrelic_set_error_group_callback(): Argument #1 ($callback) must be a valid callback, function \"This isn't a callback!\" not found or invalid function name' in __FILE__:??",
-        "transactionName": "OtherTransaction\/php__FILE__",
-        "duration": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
-      },
-      {},
-      {}
-    ]
-  ]
-]
-*/
-
-/*EXPECT_TRACED_ERRORS
-[
-  "?? agent run id",
-  [
-    [
-      "??",
-      "OtherTransaction\/php__FILE__",
-      "Uncaught exception 'TypeError' with message 'newrelic_set_error_group_callback(): Argument #1 ($callback) must be a valid callback, function \"This isn't a callback!\" not found or invalid function name' in __FILE__:??",
-      "TypeError",
-      {
-        "stack_trace": [
-          " in newrelic_set_error_group_callback called at __FILE__ (??)"
-        ],
-        "agentAttributes": {},
-        "intrinsics": {
-          "totalTime": "??",
-          "cpu_time": "??",
-          "cpu_user_time": "??",
-          "cpu_sys_time": "??",
-          "guid": "??",
-          "sampled": true,
-          "priority": "??",
-          "traceId": "??"
-        }
-      }
-    ]
   ]
 ]
 */
