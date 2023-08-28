@@ -70,7 +70,7 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   char* method = NULL;
   int status_code = 0;
 
-  if (NULL == NRPRG(error_group_user_callback)) {
+  if (!is_error_callback_set()) {
     return;
   }
 
@@ -100,8 +100,8 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_php_add_assoc_string(error_arr, "file", file);
   nr_php_add_assoc_string(error_arr, "stack", stack_json);
 
-  fci = NRPRG(error_group_user_callback)->fci;
-  fcc = NRPRG(error_group_user_callback)->fcc;
+  fci = NRPRG(error_group_user_callback).fci;
+  fcc = NRPRG(error_group_user_callback).fcc;
 
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
 
@@ -599,7 +599,7 @@ void nr_php_error_cb(int type,
     /*
      * Error Fingerprinting Callback
      */
-    if (NULL != NRPRG(error_group_user_callback)) {
+    if (is_error_callback_set()) {
 #if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
       file = nr_strdup(error_filename);
 #else
@@ -699,7 +699,7 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
   /*
    * Error Fingerprinting Callback
    */
-  if (NULL != NRPRG(error_group_user_callback)) {
+  if (is_error_callback_set()) {
     nr_php_error_call_error_group_callback(txn, klass, message, file,
                                            stack_json);
   }

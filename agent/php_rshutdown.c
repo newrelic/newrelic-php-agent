@@ -117,10 +117,6 @@ int nr_php_post_deactivate(void) {
 
   NRPRG(cufa_callback) = NULL;
 
-  if (NULL != NRPRG(error_group_user_callback)) {
-    nr_free(NRPRG(error_group_user_callback));
-  }
-
   if (nrlikely(0 != NRPRG(txn))) {
     (void)nr_php_txn_end(0, 1 TSRMLS_CC);
   }

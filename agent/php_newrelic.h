@@ -129,6 +129,7 @@ typedef enum {
 typedef struct _nrcallbackfn_t {
   zend_fcall_info fci;
   zend_fcall_info_cache fcc;
+  bool is_set;
 } nrcallbackfn_t;
 
 /*
@@ -510,7 +511,7 @@ nrtxn_t* txn; /* The all-important transaction pointer */
 char* predis_ctx; /* The current Predis pipeline context name, if any */
 nr_hashmap_t* predis_commands;
 
-nrcallbackfn_t* error_group_user_callback; /* The user defined callback for
+nrcallbackfn_t error_group_user_callback; /* The user defined callback for
                                               error group naming */
 
 /*
@@ -572,6 +573,10 @@ static inline int nr_php_recording(TSRMLS_D) {
   } else {
     return 0;
   }
+}
+
+static inline bool is_error_callback_set() {
+    return NRPRG(error_group_user_callback).is_set;
 }
 
 /*

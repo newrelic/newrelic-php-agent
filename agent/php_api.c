@@ -1628,19 +1628,16 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
   }
 
   // Log debug message if the user is overwriting an existing callback
-  if (NULL != NRPRG(error_group_user_callback)) {
+  if (is_error_callback_set()) {
     nrl_debug(
         NRL_API,
         "newrelic_set_error_group_callback: overwriting previous callback");
-  } else {
-    // Allocate memory for global callback reference
-    // This is freed (if set) in RSHUTDOWN
-    NRPRG(error_group_user_callback) = nr_malloc(sizeof(nrcallbackfn_t));
   }
 
   // Set global values
-  NRPRG(error_group_user_callback)->fci = fci;
-  NRPRG(error_group_user_callback)->fcc = fcc;
+  NRPRG(error_group_user_callback).fci = fci;
+  NRPRG(error_group_user_callback).fcc = fcc;
+  NRPRG(error_group_user_callback).is_set = true;
 
   nrl_debug(
       NRL_API,
