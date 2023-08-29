@@ -517,6 +517,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
        * the call_user_func_array instrumentation take care of actually timing
        * the hooks by checking if it's set.
        */
+      NRPRG(check_cufa) = true;
       nr_stack_push(&NRPRG(wordpress_tags),
                     nr_wordpress_clean_tag(tag TSRMLS_CC));
       nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
@@ -624,6 +625,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
        * the call_user_func_array instrumentation take care of actually timing
        * the hooks by checking if it's set.
        */
+      NRPRG(check_cufa) = true;
       nr_stack_push(&NRPRG(wordpress_tags),
                     nr_wordpress_clean_tag(tag TSRMLS_CC));
       nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
@@ -667,6 +669,9 @@ static void clean_wordpress_tag_stack() {
   if ((bool)nr_stack_pop(&NRPRG(wordpress_tag_states))) {
     char* cleaned_tag = nr_stack_pop(&NRPRG(wordpress_tags));
     nr_free(cleaned_tag);
+  }
+  if (nr_stack_is_empty(&NRPRG(wordpress_tags))) {
+    NRPRG(check_cufa) = false;
   }
 }
 
@@ -740,6 +745,8 @@ void nr_wordpress_enable(TSRMLS_D) {
                             nr_wordpress_exec_handle_tag TSRMLS_CC);
 #endif /* OAPI */
 
-  nr_php_add_call_user_func_array_pre_callback(
-      nr_wordpress_call_user_func_array TSRMLS_CC);
+  if (0 != NRINI(wordpress_hooks)) {
+    nr_php_add_call_user_func_array_pre_callback(
+        nr_wordpress_call_user_func_array TSRMLS_CC);
+  }
 }

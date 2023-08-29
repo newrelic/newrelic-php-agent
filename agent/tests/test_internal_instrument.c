@@ -48,6 +48,7 @@ static void test_cufa_direct(TSRMLS_D) {
   zval* retval = NULL;
 
   tlib_php_request_start();
+  NRPRG(check_cufa) = true;
 
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
@@ -73,6 +74,7 @@ static void test_cufa_indirect(TSRMLS_D) {
   zval* retval = NULL;
 
   tlib_php_request_start();
+  NRPRG(check_cufa) = true;
 
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
