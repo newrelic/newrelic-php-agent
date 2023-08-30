@@ -31,8 +31,6 @@ typedef struct _nr_php_exception_filter_t {
   nr_php_exception_filter_fn fn;
 } nr_php_exception_filter_t;
 
-#define ERROR_GROUP_STRLEN_MAX (255)
-
 /* Transient macro to free memory in nr_php_error_call_error_group_callback */
 #define FREE_MEM                    \
   nr_php_zval_free(&txn_arr);       \
@@ -114,7 +112,7 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   }
 
   group_name_str
-      = nr_strndup(Z_STRVAL_P(group_name_zv), ERROR_GROUP_STRLEN_MAX);
+      = nr_strndup(Z_STRVAL_P(group_name_zv), NR_ATTRIBUTE_VALUE_LENGTH_LIMIT);
 
   nr_attributes_agent_add_string(txn->attributes,
                                  NR_ATTRIBUTE_DESTINATION_ERROR,
@@ -124,7 +122,6 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_free(group_name_str);
 }
 #undef FREE_MEM
-#undef ERROR_GROUP_STRLEN_MAX
 
 void nr_php_exception_filters_init(zend_llist* chain) {
   if (chain) {
