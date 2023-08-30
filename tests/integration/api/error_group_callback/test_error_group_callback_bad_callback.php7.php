@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Tests newrelic_set_error_group_callback() API handling when passed a non-function object.
+Tests newrelic_set_error_group_callback() API handling when passed a non-function object for PHP versions less than 8.0.
 
 When a non-function object is passed to newrelic_set_error_group_callback(), it will result in an error
 and the callback will not be registered.
