@@ -1618,7 +1618,7 @@ PHP_FUNCTION(newrelic_set_user_id) {
     RETURN_FALSE;
   }
 
-  if (255 < Z_STRLEN_P(uuid_zv)) {
+  if (NR_ATTRIBUTE_VALUE_LENGTH_LIMIT < Z_STRLEN_P(uuid_zv)) {
     nrl_warning(NRL_API,
                 "newrelic_set_user_id_failure: invalid string length.");
     RETURN_FALSE;
@@ -1626,9 +1626,11 @@ PHP_FUNCTION(newrelic_set_user_id) {
 
   uuid_str = nr_strdup(Z_STRVAL_P(uuid_zv));
 
-  nr_attributes_agent_add_string(NRPRG(txn)->attributes,
-                                 NR_ATTRIBUTE_DESTINATION_ALL, "enduser.id",
-                                 uuid_str);
+  nr_attributes_agent_add_string(
+      NRPRG(txn)->attributes,
+      (NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_TXN_TRACE
+       | NR_ATTRIBUTE_DESTINATION_ERROR | NR_ATTRIBUTE_DESTINATION_SPAN),
+      "enduser.id", uuid_str);
 
   nr_free(uuid_str);
   RETURN_TRUE;
