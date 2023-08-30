@@ -40,6 +40,7 @@ extern PHP_FUNCTION(newrelic_get_linking_metadata);
 extern PHP_FUNCTION(newrelic_get_trace_metadata);
 extern PHP_FUNCTION(newrelic_is_sampled);
 extern PHP_FUNCTION(newrelic_add_custom_span_parameter);
+extern PHP_FUNCTION(newrelic_set_user_id);
 extern PHP_FUNCTION(newrelic_set_error_group_callback);
 
 #endif /* PHP_API_HDR */

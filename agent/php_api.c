@@ -1580,6 +1580,61 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
 }
 
 /*
+ * Purpose      (New Relic API) (User Tracking)
+ *              Allows a caller to uniquely identify a user via a unique ID
+ *              string Agent Attribute
+ *
+ */
+#ifdef TAGS
+void zif_newrelic_set_user_id(void); /* ctags landing pad only */
+void newrelic_set_user_id(void);     /* ctags landing pad only */
+#endif
+PHP_FUNCTION(newrelic_set_user_id) {
+  zval* uuid_zv = NULL;
+  char* uuid_str = NULL;
+
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_THIS_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+
+  nr_php_api_add_supportability_metric("set_user_id" TSRMLS_CC);
+
+  if (1 != ZEND_NUM_ARGS()) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id failure: invalid number of parameters.");
+    RETURN_FALSE;
+  }
+
+  if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS(), "z", &uuid_zv)) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id failure: invalid argument passed.");
+    RETURN_FALSE;
+  }
+
+  if (!nr_php_is_zval_non_empty_string(uuid_zv)) {
+    nrl_warning(
+        NRL_API,
+        "newrelic_set_user_id failure: User ID must be a non-empty string.");
+    RETURN_FALSE;
+  }
+
+  if (255 < Z_STRLEN_P(uuid_zv)) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id_failure: invalid string length.");
+    RETURN_FALSE;
+  }
+
+  uuid_str = nr_strdup(Z_STRVAL_P(uuid_zv));
+
+  nr_attributes_agent_add_string(NRPRG(txn)->attributes,
+                                 NR_ATTRIBUTE_DESTINATION_ALL, "enduser.id",
+                                 uuid_str);
+
+  nr_free(uuid_str);
+  RETURN_TRUE;
+}
+
+/*
  * Purpose      (New Relic API) (Error Fingerprinting)
  *              Allows a user to register a PHP callback to be invoked by the
  *              Agent when the application encounters an error for the purpose
