@@ -2458,7 +2458,9 @@ static void test_segment_ensure_id(void) {
                         nr_span_event_get_parent_attribute(                    \
                             _common_span, NR_SPAN_PARENT_TRANSPORT_TYPE));     \
     } else {                                                                   \
-      tlib_pass_if_null(M ": parent ID",                                       \
+      tlib_pass_if_str_equal(M ": parent ID",                                  \
+                        nr_distributed_trace_inbound_get_guid(                 \
+                            _common_txn->distributed_trace),                   \
                         nr_span_event_get_parent_id(_common_span));            \
       tlib_pass_if_bool_equal(M ": entry point", true,                         \
                               nr_span_event_is_entry_point(_common_span));     \
@@ -2828,6 +2830,12 @@ static void test_segment_to_span_event(void) {
   tlib_pass_if_not_null("valid root segment results in valid span event", span);
   test_common_span_event_fields_against_segment("valid root segment",
                                                 txn->segment_root, span);
+
+   printf("intrinscs = %s\n", nro_to_json(span->intrinsics));
+   printf("agent attr = %s\n", nro_to_json(span->agent_attributes));
+   printf("user attr = %s\n", nro_to_json(span->user_attributes));
+   printf("parentId = %s\n", nro_get_hash_string(span->intrinsics, "parentId", NULL));
+
   tlib_pass_if_str_equal(
       "valid root segment results in valid span event",
       nro_get_hash_string(span->agent_attributes, "request.method", NULL),

@@ -431,6 +431,8 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
     nr_span_event_set_trusted_parent_id(
         event, nr_distributed_trace_inbound_get_trusted_parent_id(
                    segment->txn->distributed_trace));
+    nr_span_event_set_parent_id(event, 
+        nr_distributed_trace_inbound_get_guid(segment->txn->distributed_trace);
 
     nr_span_event_set_transaction_name(event, segment->txn->name);
 
