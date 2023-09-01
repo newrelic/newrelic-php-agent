@@ -491,8 +491,8 @@ static nr_library_table_t libraries[] = {
      * /usr/local/bin. While BaseTestRunner isn't the very first file to load,
      * it contains the test status constants and loads before tests can run.
      */
-    {"PHPUnit", "phpunit/src/runner/basetestrunner.php", nr_phpunit_enable},
-    {"PHPUnit", "phpunit/runner/basetestrunner.php", nr_phpunit_enable},
+    {"PHPUnit", "phpunit/src/framework/test.php", nr_phpunit_enable},
+    {"PHPUnit", "phpunit/framework/test.php", nr_phpunit_enable},
 
     {"Predis", "predis/src/client.php", nr_predis_enable},
     {"Predis", "predis/client.php", nr_predis_enable},
