@@ -2830,12 +2830,6 @@ static void test_segment_to_span_event(void) {
   tlib_pass_if_not_null("valid root segment results in valid span event", span);
   test_common_span_event_fields_against_segment("valid root segment",
                                                 txn->segment_root, span);
-
-   printf("intrinscs = %s\n", nro_to_json(span->intrinsics));
-   printf("agent attr = %s\n", nro_to_json(span->agent_attributes));
-   printf("user attr = %s\n", nro_to_json(span->user_attributes));
-   printf("parentId = %s\n", nro_get_hash_string(span->intrinsics, "parentId", NULL));
-
   tlib_pass_if_str_equal(
       "valid root segment results in valid span event",
       nro_get_hash_string(span->agent_attributes, "request.method", NULL),
