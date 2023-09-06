@@ -10,6 +10,10 @@ Tests newrelic_set_user_id() API:
  * enduser.id agent attribute is present in span event
 */
 
+/*INI
+newrelic.transaction_tracer.threshold = 0
+*/
+
 /*EXPECT
 ok - uuid set
 */
@@ -55,6 +59,95 @@ ok - uuid set
         "sampled": true,
         "nr.entryPoint": true,
         "transaction.name": "OtherTransaction\/php__FILE__"
+      },
+      {},
+      {
+        "enduser.id": "0123456789abcdefghijlkmnopqrstuvwxyz"
+      }
+    ]
+  ]
+]
+*/
+
+/*EXPECT_TXN_TRACES
+[
+  "?? agent run id",
+  [
+    [
+      "??",
+      "??",
+      "??",
+      "??",
+      [
+        [
+          "??",
+          {},
+          {},
+          [
+            "??",
+            "??",
+            "??",
+            {},
+            [
+              [
+                "??",
+                "??",
+                "??",
+                {},
+                []
+              ]
+            ]
+          ],
+          {
+            "agentAttributes": {
+              "enduser.id": "0123456789abcdefghijlkmnopqrstuvwxyz"
+            },
+            "intrinsics": {
+              "totalTime": "??",
+              "cpu_time": "??",
+              "cpu_user_time": "??",
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
+            }
+          }
+        ],
+        [
+          "??"
+        ]
+      ],
+      "??",
+      "??",
+      "??",
+      "??",
+      "??"
+    ]
+  ]
+]
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
       },
       {},
       {

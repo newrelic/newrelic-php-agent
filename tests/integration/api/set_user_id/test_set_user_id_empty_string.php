@@ -8,6 +8,10 @@
 When provided an empty uuid string, newrelic_set_user_id() should return false and enduser.id agent attribute should not be present in span event's agent attributes.
 */
 
+/*INI
+newrelic.transaction_tracer.threshold = 0
+*/
+
 /*EXPECT
 ok - uuid not set
 */
@@ -60,6 +64,91 @@ ok - uuid not set
   ]
 ]
 */
+
+/*EXPECT_TXN_TRACES
+[
+  "?? agent run id",
+  [
+    [
+      "??",
+      "??",
+      "??",
+      "??",
+      [
+        [
+          "??",
+          {},
+          {},
+          [
+            "??",
+            "??",
+            "??",
+            {},
+            [
+              [
+                "??",
+                "??",
+                "??",
+                {},
+                []
+              ]
+            ]
+          ],
+          {
+            "intrinsics": {
+              "totalTime": "??",
+              "cpu_time": "??",
+              "cpu_user_time": "??",
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
+            }
+          }
+        ],
+        [
+          "??"
+        ]
+      ],
+      "??",
+      "??",
+      "??",
+      "??",
+      "??"
+    ]
+  ]
+]
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 

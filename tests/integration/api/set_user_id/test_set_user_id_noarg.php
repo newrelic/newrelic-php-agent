@@ -8,6 +8,10 @@
 newrelic_set_user_id() should fail when not provided an argument
 */
 
+/*INI
+newrelic.transaction_tracer.threshold = 0
+*/
+
 /*EXPECT
 ok - uuid not set
 */
@@ -53,6 +57,90 @@ ok - uuid not set
         "sampled": true,
         "nr.entryPoint": true,
         "transaction.name": "OtherTransaction\/php__FILE__"
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
+/*EXPECT_TXN_TRACES
+[
+  "?? agent run id",
+  [
+    [
+      "??",
+      "??",
+      "??",
+      "??",
+      [
+        [
+          "??",
+          {},
+          {},
+          [
+            "??",
+            "??",
+            "??",
+            {},
+            [
+              [
+                "??",
+                "??",
+                "??",
+                {},
+                []
+              ]
+            ]
+          ],
+          {
+            "intrinsics": {
+              "totalTime": "??",
+              "cpu_time": "??",
+              "cpu_user_time": "??",
+              "cpu_sys_time": "??",
+              "guid": "??",
+              "sampled": true,
+              "priority": "??",
+              "traceId": "??"
+            }
+          }
+        ],
+        [
+          "??"
+        ]
+      ],
+      "??",
+      "??",
+      "??",
+      "??",
+      "??"
+    ]
+  ]
+]
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
       },
       {},
       {}
