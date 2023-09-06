@@ -5,7 +5,8 @@
  */
 
 /*DESCRIPTION
-newrelic_set_user_id() should fail when provided a string exceeding 255 characters
+newrelic_set_user_id() should return false when provided a string exceeding 255 characters.
+enduser.id should not be present in span event, txn trace, or analytics event.
 */
 
 /*INI

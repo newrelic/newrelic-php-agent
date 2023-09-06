@@ -5,7 +5,8 @@
  */
 
 /*DESCRIPTION
-newrelic_set_user_id() should fail when provided an null argument
+newrelic_set_user_id() should return false when provided an null argument.
+enduser.id should not be present in span event, txn trace, or analytics event.
 */
 
 /*INI
