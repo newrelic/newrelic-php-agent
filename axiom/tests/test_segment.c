@@ -2458,7 +2458,9 @@ static void test_segment_ensure_id(void) {
                         nr_span_event_get_parent_attribute(                    \
                             _common_span, NR_SPAN_PARENT_TRANSPORT_TYPE));     \
     } else {                                                                   \
-      tlib_pass_if_null(M ": parent ID",                                       \
+      tlib_pass_if_str_equal(M ": parent ID",                                  \
+                        nr_distributed_trace_inbound_get_guid(                 \
+                            _common_txn->distributed_trace),                   \
                         nr_span_event_get_parent_id(_common_span));            \
       tlib_pass_if_bool_equal(M ": entry point", true,                         \
                               nr_span_event_is_entry_point(_common_span));     \
