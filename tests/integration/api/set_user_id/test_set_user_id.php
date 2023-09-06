@@ -5,7 +5,9 @@
  */
 
 /*DESCRIPTION
-Tests newrelic_set_user_id() API
+Tests newrelic_set_user_id() API:
+ * Supportability/api/set_user_id metric is created
+ * enduser.id agent attribute is present in span event
 */
 
 /*EXPECT

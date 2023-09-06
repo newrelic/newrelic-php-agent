@@ -1580,9 +1580,8 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
 }
 
 /*
- * Purpose      (New Relic API) (User Tracking)
- *              Allows a caller to uniquely identify a user via a unique ID
- *              string Agent Attribute
+ * Purpose      Allows a caller to add a user id string to agent attributes in 
+                transaction event, transaction trace, error and span.
  *
  */
 #ifdef TAGS

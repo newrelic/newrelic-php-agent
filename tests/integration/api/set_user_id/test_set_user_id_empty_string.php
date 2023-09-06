@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-newrelic_set_user_id() should fail when provided an empty uuid string
+When provided an empty uuid string, newrelic_set_user_id() should return false and enduser.id agent attribute should not be present in span event's agent attributes.
 */
 
 /*EXPECT
