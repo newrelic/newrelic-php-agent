@@ -14,8 +14,8 @@ newrelic.distributed_tracing_enabled=0
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not supported\n");
 }
 */
 
@@ -34,12 +34,7 @@ if (version_compare(PHP_VERSION, "8.0", ">=")) {
     [{"name":"OtherTransaction/php__FILE__"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/framework/Drupal/forced"}, [1,    0,    0,    0,    0,    0]],
-    [{"name":"External/127.0.0.1/all"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all",
-      "scope":"OtherTransaction/php__FILE__"},          [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/framework/Drupal/forced"}, [1,    0,    0,    0,    0,    0]]
   ]
 ]
 */
