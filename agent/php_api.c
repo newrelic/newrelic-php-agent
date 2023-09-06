@@ -1598,6 +1598,11 @@ PHP_FUNCTION(newrelic_set_user_id) {
 
   nr_php_api_add_supportability_metric("set_user_id" TSRMLS_CC);
 
+  if (nrunlikely(NULL == NRPRG(txn))) {
+    nrl_verbosedebug(NRL_API, "newrelic_set_user_id failure: txn is NULL.");
+    RETURN_FALSE;
+  }
+
   if (1 != ZEND_NUM_ARGS()) {
     nrl_warning(NRL_API,
                 "newrelic_set_user_id failure: invalid number of parameters.");
