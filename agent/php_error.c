@@ -67,6 +67,7 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   char* path = NULL;
   char* method = NULL;
   int status_code = 0;
+  size_t attr_len = 0;
 
   if (!is_error_callback_set()) {
     return;
@@ -111,8 +112,11 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
     return;
   }
 
-  group_name_str
-      = nr_strndup(Z_STRVAL_P(group_name_zv), NR_ATTRIBUTE_VALUE_LENGTH_LIMIT);
+  attr_len = Z_STRLEN_P(group_name_zv) > NR_ATTRIBUTE_VALUE_LENGTH_LIMIT
+                 ? NR_ATTRIBUTE_VALUE_LENGTH_LIMIT
+                 : Z_STRLEN_P(group_name_zv);
+
+  group_name_str = nr_strndup(Z_STRVAL_P(group_name_zv), attr_len);
 
   nr_attributes_agent_add_string(txn->attributes,
                                  NR_ATTRIBUTE_DESTINATION_ERROR,
