@@ -1592,8 +1592,8 @@ void zif_newrelic_set_error_group_callback(void); /* ctags landing pad only */
 void newrelic_set_error_group_callback(void);     /* ctags landing pad only */
 #endif
 PHP_FUNCTION(newrelic_set_error_group_callback) {
-  zend_fcall_info fci;
-  zend_fcall_info_cache fcc;
+  zend_fcall_info fci = {0};
+  zend_fcall_info_cache fcc = {0};
 
   NR_UNUSED_RETURN_VALUE_PTR;
   NR_UNUSED_THIS_PTR;
@@ -1615,6 +1615,13 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
     nrl_warning(
         NRL_API,
         "newrelic_set_error_group_callback failure: invalid argument passed");
+    RETURN_FALSE;
+  }
+
+  if (nrunlikely(NULL == fcc.function_handler)) {
+    nrl_verbosedebug(NRL_API,
+                     "newrelic_set_error_group_callback failure: zpp returned "
+                     "null function_handler.");
     RETURN_FALSE;
   }
 
