@@ -849,6 +849,33 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
 
+  /* PHP 8.1 and later will report a deprecation warning if null is sent where
+   * a non-null argument value is expected.  For these PHP versions we use the
+   * same argument type specification as the mysqli::real_connect() extension
+   * uses to avoid creating this deprecation warning.
+   * For older PHPs continue to use the same specification string as previously
+   * to minimize any chances of introducing new problems.
+   */ 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  if (FAILURE
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|s!s!s!s!l!s!l",
+          &mysqli_obj, &host, &host_len, &username, &username_len, &password,
+          &password_len, &database, &database_len, &port, &socket, &socket_len,
+          &flags)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|s!s!s!s!l!s!l",
+            &host, &host_len, &username, &username_len, &password,
+            &password_len, &database, &database_len, &port, &socket,
+            &socket_len, &flags)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+#else
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "o|sssslsl",
@@ -867,7 +894,8 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
       mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
     }
   }
-
+#endif /* PHP >= 8.1 */
+ 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
