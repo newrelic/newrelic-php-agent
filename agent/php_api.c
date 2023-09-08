@@ -1596,6 +1596,10 @@ PHP_FUNCTION(newrelic_set_user_id) {
   NR_UNUSED_THIS_PTR;
   NR_UNUSED_RETURN_VALUE_USED;
 
+  if (!nr_php_recording(TSRMLS_C)) {
+    RETURN_FALSE;
+  }
+
   nr_php_api_add_supportability_metric("set_user_id" TSRMLS_CC);
 
   if (nrunlikely(NULL == NRPRG(txn))) {
