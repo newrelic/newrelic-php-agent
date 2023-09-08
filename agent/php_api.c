@@ -1628,7 +1628,7 @@ PHP_FUNCTION(newrelic_set_user_id) {
     RETURN_FALSE;
   }
 
-  uuid_str = nr_strdup(Z_STRVAL_P(uuid_zv));
+  uuid_str = nr_strndup(Z_STRVAL_P(uuid_zv), Z_STRLEN_P(uuid_zv));
 
   nr_attributes_agent_add_string(
       NRPRG(txn)->attributes,
