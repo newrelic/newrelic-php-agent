@@ -604,7 +604,7 @@ void nr_php_error_cb(int type,
 #if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
       file = nr_strdup(error_filename);
 #else
-      file = nr_strdup(ZSTR_VAL(error_filename));
+      file = nr_strndup(ZSTR_VAL(error_filename), ZSTR_LEN(error_filename));
 #endif
       klass = nr_strdup(errclass);
 
