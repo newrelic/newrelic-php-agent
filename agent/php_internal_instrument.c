@@ -855,7 +855,7 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
    * uses to avoid creating this deprecation warning.
    * For older PHPs continue to use the same specification string as previously
    * to minimize any chances of introducing new problems.
-   */ 
+   */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   if (FAILURE
       == zend_parse_parameters_ex(
@@ -895,7 +895,7 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     }
   }
 #endif /* PHP >= 8.1 */
- 
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
