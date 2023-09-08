@@ -61,7 +61,7 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   zval* group_name_zv = NULL;
   zend_fcall_info fci;
   zend_fcall_info_cache fcc;
-  nrobj_t* agent_attributes;
+  nrobj_t* agent_attributes = NULL;
   char* group_name_str = NULL;
   char* request_uri = NULL;
   char* path = NULL;
