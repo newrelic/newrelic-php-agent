@@ -149,13 +149,17 @@ static void execute_nested_framework_calls(nrspecialfn_t one_before,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
-      NR_PSTR("one"), one_before, one_after, NULL, NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
-      NR_PSTR("two"), two_before, two_after, NULL, NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
+      NR_PSTR("one"), one_before, one_after, NULL, options);
+  nr_php_wrap_user_function_before_after_clean_with_options(
+      NR_PSTR("two"), two_before, two_after, NULL, options);
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("three"), three_before, three_after, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 #else
   /*
    * This will pick up whichever one isn't null.
@@ -613,38 +617,42 @@ static void test_add_arg(TSRMLS_D) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
   tlib_php_request_eval("function arg0_def0() { return 4; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("arg0_def0"), test_add_array, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 
   tlib_php_request_eval("function arg1_def0($a) { return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("arg1_def0"), test_add_array, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg0_def1($a = null) { return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("arg0_def1"), test_add_array, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg1_def1($a, $b = null) { return $b; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("arg1_def1"), test_add_array, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg1_def1_2($a, $b = null) { return $b; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("arg1_def1_2"), test_add_2_arrays, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 
   tlib_php_request_eval("function splat(...$a) { return $a[0]; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("splat"), test_add_array, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+      options TSRMLS_CC);
 #else
   tlib_php_request_eval("function arg0_def0() { return 4; }" TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("arg0_def0"), test_add_array TSRMLS_CC);
@@ -810,9 +818,13 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function all_set($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("all_set"), test_before, test_after, test_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
   /*
    * pass argument that will not throw exception.
    * before/after should be called.
@@ -858,9 +870,9 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function before_after($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("before_after"), test_before, test_after, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
   /*
    * pass argument that will not throw exception.
@@ -909,9 +921,9 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function before_clean($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("before_clean"), test_before, NULL, test_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
   /*
    * pass argument that will not throw exception.
@@ -957,9 +969,9 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function after_clean($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("after_clean"), NULL, test_after, test_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
   /*
    * pass argument that will not throw exception.
    * after should be called.
@@ -1002,9 +1014,9 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function before_only($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("before_only"), test_before, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
   /*
    * pass argument that will not throw exception.
    * before should be called.
@@ -1046,8 +1058,8 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function after_only($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
-      NR_PSTR("after_only"), NULL, test_after, NULL, NR_WRAPREC_NOT_TRANSIENT);
+  nr_php_wrap_user_function_before_after_clean_with_options(
+      NR_PSTR("after_only"), NULL, test_after, NULL, options);
   /*
    * pass argument that will not throw exception.
    * after should be called.
@@ -1089,8 +1101,8 @@ static void test_before_after_clean() {
   tlib_php_request_eval(
       "function clean_only($a) { if (0 == $a) { throw new "
       "RuntimeException('Division by zero'); } else return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
-      NR_PSTR("clean_only"), NULL, NULL, test_clean, NR_WRAPREC_NOT_TRANSIENT);
+  nr_php_wrap_user_function_before_after_clean_with_options(
+      NR_PSTR("clean_only"), NULL, NULL, test_clean, options);
   /*
    * pass argument that will not throw exception.
    * clean should be called.

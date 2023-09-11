@@ -221,9 +221,13 @@ void nr_lumen_enable(TSRMLS_D) {
       nr_lumen_handle_found_route TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
-      nr_lumen_exception, NULL, NULL, NR_WRAPREC_NOT_TRANSIENT);
+      nr_lumen_exception, NULL, NULL, options);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),

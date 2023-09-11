@@ -795,26 +795,30 @@ void nr_predis_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
       nr_predis_pipeline_executePipeline,
       nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean, NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+      nr_predis_pipeline_executePipeline_clean, options);
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Predis\\Pipeline\\Atomic::executePipeline"),
       nr_predis_pipeline_executePipeline,
       nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean, NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+      nr_predis_pipeline_executePipeline_clean, options);
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Predis\\Pipeline\\ConnectionErrorProof::executePipeline"),
       nr_predis_pipeline_executePipeline,
       nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean, NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+      nr_predis_pipeline_executePipeline_clean, options);
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline,
       nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean, NR_WRAPREC_NOT_TRANSIENT);
+      nr_predis_pipeline_executePipeline_clean, options);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),

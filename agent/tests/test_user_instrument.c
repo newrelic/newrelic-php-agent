@@ -96,8 +96,12 @@ static void test_hashmap_wraprec() {
                          user_func1_wraprec);
 
   /* instrument user function */
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
   user_func1_wraprec = nr_php_add_custom_tracer_named(
-      user_func1_name, nr_strlen(user_func1_name), NR_WRAPREC_NOT_TRANSIENT );
+      user_func1_name, nr_strlen(user_func1_name), options );
   wraprec_found = nr_php_get_wraprec(user_func1_zf);
   tlib_pass_if_ptr_equal("lookup instrumented user function succeeds",
                          wraprec_found, user_func1_wraprec);

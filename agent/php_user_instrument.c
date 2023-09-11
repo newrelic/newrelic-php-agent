@@ -295,7 +295,8 @@ static nruserfn_t* nr_php_user_wraprec_create(void) {
 }
 
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
-                                                    int full_name_len) {
+                                                    int full_name_len,
+                                                    nr_instrumented_function_metric_t ifm) {
   int i;
   const char* name;
   const char* klass;
@@ -338,8 +339,10 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->is_method = 1;
   }
 
-  wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
-      wraprec->funcname, wraprec->classname);
+  if (NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC == ifm) {
+    wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
+        wraprec->funcname, wraprec->classname);
+  }
 
   return wraprec;
 }
@@ -437,11 +440,13 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen,
-                                           nr_transience_t transience TSRMLS_DC) {
+                                           nr_wrap_user_function_options_t options
+                                           TSRMLS_DC) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
-  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
+  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen,
+                                             options.instrumented_function_metric);
   if (0 == wraprec) {
     return 0;
   }
@@ -470,7 +475,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  if (transience == NR_WRAPREC_IS_TRANSIENT) {
+  if (NR_WRAPREC_IS_TRANSIENT == options.transience) {
     wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
   } else {
     /* non-transient wraprecs are added to both the hashmap and linked list.
@@ -558,9 +563,13 @@ void nr_php_add_user_instrumentation(TSRMLS_D) {
 
 void nr_php_add_transaction_naming_function(const char* namestr,
                                             int namestrlen TSRMLS_DC) {
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+                                       options TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
@@ -568,9 +577,13 @@ void nr_php_add_transaction_naming_function(const char* namestr,
 }
 
 void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+                                       options TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
@@ -627,9 +640,13 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
                                                     TSRMLS_DC) {
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+                                       options TSRMLS_CC);
 
   if (0 != wraprec) {
     wraprec->declared_callback = callback;

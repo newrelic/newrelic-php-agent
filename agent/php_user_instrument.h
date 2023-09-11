@@ -27,10 +27,22 @@ typedef struct nrspecialfn_return_t (*nrspecialfn_t)(
 
 typedef void (*nruserfn_declared_t)(TSRMLS_D);
 
+/* Options for wrapping a user function */
 typedef enum {
   NR_WRAPREC_NOT_TRANSIENT = 0,
   NR_WRAPREC_IS_TRANSIENT = 1
 } nr_transience_t;
+
+typedef enum {
+  NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC = 0,
+  NR_WRAPREC_NO_INSTRUMENTED_FUNCTION_METRIC = 1
+} nr_instrumented_function_metric_t;
+
+typedef struct _nr_wrap_user_function_options_t {
+  nr_transience_t                   transience;
+  nr_instrumented_function_metric_t instrumented_function_metric;
+} nr_wrap_user_function_options_t;
+
 /*
  * An equivalent data structure for user functions.
  *
@@ -177,7 +189,8 @@ extern nruserfn_t* nr_php_add_custom_tracer_callable(
     zend_function* func TSRMLS_DC);
 extern nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                                   size_t namestrlen,
-                                                  nr_transience_t transience TSRMLS_DC);
+                                                  nr_wrap_user_function_options_t options
+                                                  TSRMLS_DC);
 extern void nr_php_reset_user_instrumentation(void);
 extern void nr_php_remove_transient_user_instrumentation(void);
 extern void nr_php_add_user_instrumentation(TSRMLS_D);

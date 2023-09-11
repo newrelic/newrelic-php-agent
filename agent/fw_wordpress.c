@@ -711,25 +711,29 @@ NR_PHP_WRAPPER_END
 void nr_wordpress_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+    NR_WRAPREC_NOT_TRANSIENT,
+    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("apply_filters"), nr_wordpress_apply_filters,
       nr_wordpress_apply_filters_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("apply_filters_ref_array"), nr_wordpress_exec_handle_tag,
       nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("do_action"), nr_wordpress_exec_handle_tag,
       nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
       nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 
 #else
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),

@@ -813,9 +813,13 @@ static void nr_laravel5_wrap_middleware(zval* app TSRMLS_DC) {
                         Z_STRVAL_P(classname));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-      nr_php_wrap_user_function_before_after_clean_with_transience(
+      nr_wrap_user_function_options_t options = {
+          NR_WRAPREC_NOT_TRANSIENT,
+          NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+      };
+      nr_php_wrap_user_function_before_after_clean_with_options(
           name, nr_strlen(name), nr_laravel5_middleware_handle, NULL, NULL,
-          NR_WRAPREC_NOT_TRANSIENT);
+          options);
 #else
       nr_php_wrap_user_function(name, nr_strlen(name),
                                 nr_laravel5_middleware_handle TSRMLS_CC);
@@ -875,9 +879,13 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       class_method, nr_strlen(class_method), callback, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 #else
   nr_php_wrap_user_function(class_method, nr_strlen(class_method),
                             callback TSRMLS_CC);
@@ -1262,10 +1270,14 @@ void nr_laravel_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  nr_php_wrap_user_function_before_after_clean_with_options(
       NR_PSTR("Illuminate\\Console\\Application::doRun"),
       nr_laravel_console_application_dorun, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      options);
 #else
   nr_php_wrap_user_function(NR_PSTR("Illuminate\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
