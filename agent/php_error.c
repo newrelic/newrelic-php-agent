@@ -8,6 +8,8 @@
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_error.h"
+#include "php_hash.h"
+#include "php_header.h"
 #include "php_globals.h"
 #include "php_hooks.h"
 #include "php_zval.h"
@@ -28,6 +30,102 @@
 typedef struct _nr_php_exception_filter_t {
   nr_php_exception_filter_fn fn;
 } nr_php_exception_filter_t;
+
+/* Transient macro to free memory in nr_php_error_call_error_group_callback */
+#define FREE_MEM                    \
+  nr_php_zval_free(&txn_arr);       \
+  nr_php_zval_free(&error_arr);     \
+  nr_php_zval_free(&group_name_zv); \
+  nro_delete(agent_attributes);     \
+  nr_free(request_uri);             \
+  nr_free(path);                    \
+  nr_free(method);
+
+/*
+ * Purpose      Execute a user-defined PHP callback function that assigns a
+ *              custom group name to an error.
+ *
+ * @param       txn     The transaction object
+ * @param       klass   The error class string
+ * @param       message The error message string
+ * @param       file    The error file string
+ * @param       stack_json  The JSON stack trace string
+ */
+static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
+                                                   char* klass,
+                                                   char* message,
+                                                   char* file,
+                                                   char* stack_json) {
+  zval* txn_arr = NULL;
+  zval* error_arr = NULL;
+  zval* group_name_zv = NULL;
+  zend_fcall_info fci;
+  zend_fcall_info_cache fcc;
+  nrobj_t* agent_attributes = NULL;
+  char* group_name_str = NULL;
+  char* request_uri = NULL;
+  char* path = NULL;
+  char* method = NULL;
+  int status_code = 0;
+  size_t attr_len = 0;
+
+  if (!is_error_callback_set()) {
+    return;
+  }
+
+  agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
+                                                NR_ATTRIBUTE_DESTINATION_ALL);
+
+  request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI" TSRMLS_CC));
+  path = nr_strdup(txn->path);
+  method = nr_strdup(
+      nro_get_hash_string(agent_attributes, "request.method", NULL));
+  status_code = nr_php_http_response_code();
+  status_code = (status_code < 0) ? 0 : status_code;
+
+  txn_arr = nr_php_zval_alloc();
+  error_arr = nr_php_zval_alloc();
+
+  array_init(txn_arr);
+  array_init(error_arr);
+
+  nr_php_add_assoc_string(txn_arr, "request_uri", request_uri);
+  nr_php_add_assoc_string(txn_arr, "path", path);
+  nr_php_add_assoc_string(txn_arr, "method", method);
+  add_assoc_long(txn_arr, "status_code", (zend_long)status_code);
+
+  nr_php_add_assoc_string(error_arr, "klass", klass);
+  nr_php_add_assoc_string(error_arr, "message", message);
+  nr_php_add_assoc_string(error_arr, "file", file);
+  nr_php_add_assoc_string(error_arr, "stack", stack_json);
+
+  fci = NRPRG(error_group_user_callback).fci;
+  fcc = NRPRG(error_group_user_callback).fcc;
+
+  group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
+
+  if (!nr_php_is_zval_non_empty_string(group_name_zv)) {
+    nrl_debug(NRL_MISC,
+              "Error Group callback: Invalid return value (Non-Empty "
+              "String Required).");
+    FREE_MEM;
+    return;
+  }
+
+  attr_len = Z_STRLEN_P(group_name_zv) > NR_ATTRIBUTE_VALUE_LENGTH_LIMIT
+                 ? NR_ATTRIBUTE_VALUE_LENGTH_LIMIT
+                 : Z_STRLEN_P(group_name_zv);
+
+  group_name_str = nr_strndup(Z_STRVAL_P(group_name_zv), attr_len);
+
+  nr_attributes_agent_add_string(txn->attributes,
+                                 NR_ATTRIBUTE_DESTINATION_ERROR,
+                                 "error.group.name", group_name_str);
+
+  FREE_MEM;
+  nr_free(group_name_str);
+}
+#undef FREE_MEM
 
 void nr_php_exception_filters_init(zend_llist* chain) {
   if (chain) {
@@ -469,6 +567,8 @@ void nr_php_error_cb(int type,
   char* stack_json = NULL;
   const char* errclass = NULL;
   char* msg = NULL;
+  char* file = NULL;
+  char* klass = NULL;
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (nr_php_should_record_error(type, format TSRMLS_CC)) {
@@ -497,6 +597,23 @@ void nr_php_error_cb(int type,
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), msg,
                         errclass, stack_json);
 
+    /*
+     * Error Fingerprinting Callback
+     */
+    if (is_error_callback_set()) {
+#if ZEND_MODULE_API_NO < ZEND_8_1_X_API_NO
+      file = nr_strdup(error_filename);
+#else
+      file = nr_strndup(ZSTR_VAL(error_filename), ZSTR_LEN(error_filename));
+#endif
+      klass = nr_strdup(errclass);
+
+      nr_php_error_call_error_group_callback(NRPRG(txn), klass, msg, file,
+                                             stack_json);
+
+      nr_free(file);
+      nr_free(klass);
+    }
     nr_free(msg);
     nr_free(stack_json);
   }
@@ -578,6 +695,14 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
         = nr_formatf("%s'%s' with message '%s'", prefix, klass, message);
   } else {
     error_message = nr_formatf("%s'%s'", prefix, klass);
+  }
+
+  /*
+   * Error Fingerprinting Callback
+   */
+  if (is_error_callback_set()) {
+    nr_php_error_call_error_group_callback(txn, klass, message, file,
+                                           stack_json);
   }
 
   nr_txn_record_error(NRPRG(txn), priority, error_message, klass, stack_json);

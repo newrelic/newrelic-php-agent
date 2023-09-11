@@ -1578,3 +1578,142 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
     nr_free(span_id);
   }
 }
+
+/*
+ * Purpose      Allows a caller to add a user id string to agent attributes in 
+                transaction event, transaction trace, error and span.
+ *
+ */
+#ifdef TAGS
+void zif_newrelic_set_user_id(void); /* ctags landing pad only */
+void newrelic_set_user_id(void);     /* ctags landing pad only */
+#endif
+PHP_FUNCTION(newrelic_set_user_id) {
+  zval* uuid_zv = NULL;
+  char* uuid_str = NULL;
+
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_THIS_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+
+  if (!nr_php_recording(TSRMLS_C)) {
+    RETURN_FALSE;
+  }
+
+  nr_php_api_add_supportability_metric("set_user_id" TSRMLS_CC);
+
+  if (nrunlikely(NULL == NRPRG(txn))) {
+    nrl_verbosedebug(NRL_API, "newrelic_set_user_id failure: txn is NULL.");
+    RETURN_FALSE;
+  }
+
+  if (1 != ZEND_NUM_ARGS()) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id failure: invalid number of parameters.");
+    RETURN_FALSE;
+  }
+
+  if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS(), "z", &uuid_zv)) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id failure: invalid argument passed.");
+    RETURN_FALSE;
+  }
+
+  if (!nr_php_is_zval_non_empty_string(uuid_zv)) {
+    nrl_warning(
+        NRL_API,
+        "newrelic_set_user_id failure: User ID must be a non-empty string.");
+    RETURN_FALSE;
+  }
+
+  if (NR_ATTRIBUTE_VALUE_LENGTH_LIMIT < Z_STRLEN_P(uuid_zv)) {
+    nrl_warning(NRL_API,
+                "newrelic_set_user_id_failure: invalid string length.");
+    RETURN_FALSE;
+  }
+
+  uuid_str = nr_strndup(Z_STRVAL_P(uuid_zv), Z_STRLEN_P(uuid_zv));
+
+  nr_attributes_agent_add_string(
+      NRPRG(txn)->attributes,
+      (NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_TXN_TRACE
+       | NR_ATTRIBUTE_DESTINATION_ERROR | NR_ATTRIBUTE_DESTINATION_SPAN),
+      "enduser.id", uuid_str);
+
+  nr_free(uuid_str);
+  RETURN_TRUE;
+}
+
+/*
+ * Purpose      (New Relic API) (Error Fingerprinting)
+ *              Allows a user to register a PHP callback to be invoked by the
+ *              Agent when the application encounters an error for the purpose
+ *              of returning a string for the 'error.group.name' Agent
+ *              Attribute.
+ *
+ */
+#ifdef TAGS
+void zif_newrelic_set_error_group_callback(void); /* ctags landing pad only */
+void newrelic_set_error_group_callback(void);     /* ctags landing pad only */
+#endif
+PHP_FUNCTION(newrelic_set_error_group_callback) {
+  zend_fcall_info fci = {0};
+  zend_fcall_info_cache fcc = {0};
+
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_THIS_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+
+  nr_php_api_add_supportability_metric("set_error_group_callback" TSRMLS_CC);
+
+  // Verify that only one argument has been provided to the API (the callback)
+  if (1 != ZEND_NUM_ARGS()) {
+    nrl_warning(NRL_API,
+                "newrelic_set_error_group_callback failure: invalid number of "
+                "parameters");
+    RETURN_FALSE;
+  }
+
+  // Verify that the argument passed to the API is a function
+  // Populate function data
+  if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS(), "f", &fci, &fcc)) {
+    nrl_warning(
+        NRL_API,
+        "newrelic_set_error_group_callback failure: invalid argument passed");
+    RETURN_FALSE;
+  }
+
+  if (nrunlikely(NULL == fcc.function_handler)) {
+    nrl_verbosedebug(NRL_API,
+                     "newrelic_set_error_group_callback failure: zpp returned "
+                     "null function_handler.");
+    RETURN_FALSE;
+  }
+
+  // Verify the user callback accepts 2 arguments
+  if (2 != fcc.function_handler->common.num_args) {
+    nrl_warning(NRL_API,
+                "newrelic_set_error_group_callback failure: invalid number of "
+                "callback parameters: %d",
+                fcc.function_handler->common.num_args);
+    RETURN_FALSE;
+  }
+
+  // Log debug message if the user is overwriting an existing callback
+  if (is_error_callback_set()) {
+    nrl_debug(
+        NRL_API,
+        "newrelic_set_error_group_callback: overwriting previous callback");
+  }
+
+  // Set global values
+  NRPRG(error_group_user_callback).fci = fci;
+  NRPRG(error_group_user_callback).fcc = fcc;
+  NRPRG(error_group_user_callback).is_set = true;
+
+  nrl_debug(
+      NRL_API,
+      "newrelic_set_error_group_callback success: error group callback set");
+
+  RETURN_TRUE;
+}

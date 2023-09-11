@@ -10,15 +10,7 @@ Test that distributed tracing works with guzzle 6.
 
 /*SKIPIF
 <?php
-require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-
-if (version_compare(phpversion(), '5.5.0', '<=')) {
-    die("skip: PHP > 5.5.0 required\n");
-}
-
-if (!unpack_guzzle(6)) {
-    die("skip: guzzle 6 installation required\n");
-}
+require('skipif.inc');
 
 if (!isset($_ENV["SYNTHETICS_HEADER_supportability"])) {
     die("skip: env vars required");
@@ -76,7 +68,6 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],

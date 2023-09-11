@@ -18,162 +18,80 @@ on:
         required: true
         default: 'dev' 
         type: string
+      runner-type:
+        description: 'Type of a runner to use for integration tests on arm64'
+        required: true
+        default: 'ubuntu-20.04-4core' 
+        type: choice
+        options: 
+        - ubuntu-20.04-4core
+        - ubuntu-20.04-8core
+        - ubuntu-20.04-16core
+        - ubuntu-22.04-4core
+        - ubuntu-latest
 
 jobs:
-  build-test-runner:
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: newrelic/nr-php-agent-builder
-      IMAGE_TAG: make-go
-      IMAGE_VERSION: ${{vars.MAKE_GO_VERSION}}
-    strategy:
-      matrix:
-        platform: [gnu, musl]
-        arch: [amd64, arm64]
-    steps:
-      - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v3
-        with:
-          path: php-agent
-          repository: ${{ inputs.origin }}/newrelic-php-agent
-          ref: ${{ inputs.ref }}
-      - name: Enable arm64 emulation
-        if: ${{ matrix.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v2
-        with:
-          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
-          platforms: arm64
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build integration_runner
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
-          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
-          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION bin/integration_runner
-      - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@v3
-        with:
-          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
-          path: php-agent/bin/integration_runner
-  build-agent:
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: newrelic/nr-php-agent-builder
-      IMAGE_TAG: make-php
-      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
-    strategy:
-      matrix:
-        platform: [gnu, musl]
-        arch: [amd64, arm64]
-        php: ['8.0', '8.1', '8.2']
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-        with:
-          path: php-agent
-          repository: ${{ inputs.origin }}/newrelic-php-agent
-          ref: ${{ inputs.ref }}
-      - name: Enable arm64 emulation
-        run: |
-          docker run --privileged --rm tonistiigi/binfmt --install arm64
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build axiom
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make axiom 
-      - name: Build agent
-        run: >
-          docker run --rm --platform linux/${{matrix.arch}}
-          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
-          $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
-      - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v3
-        with:
-          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
-          path: php-agent/agent/modules/newrelic.so
-  test:
-    needs: [build-test-runner, build-agent]
-    runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      fail-fast: true
-      matrix:
-        platform: [gnu, musl]
-        arch: [amd64, arm64]
-        php: ['8.0', '8.1', '8.2']
-        experimental: [false]
-        include:
-          - arch: arm64
-            experimental: true
-    steps:
-      - name: Checkout integration tests
-        uses: actions/checkout@v3
-        with:
-          path: php-agent
-          repository: ${{ inputs.origin }}/newrelic-php-agent
-          ref: ${{ inputs.ref }}
-      - name: Get integration_runner
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
-          path: php-agent/bin
-      - name: Get newrelic.so
-        uses: actions/download-artifact@v3
-        with:
-          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
-          path: php-agent/agent/modules
-      - name: Prep artifacts for use
-        run: |
-          chmod 755 php-agent/bin/integration_runner
-          chmod 755 php-agent/agent/modules/newrelic.so
-      - name: Enable arm64 emulation
-        if: ${{ matrix.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v2
-        with:
-          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
-          platforms: arm64
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Start services
-        env:
-          PHP: ${{matrix.php}}
-          LIBC: ${{matrix.platform}}
-          PLATFORM: linux/${{matrix.arch}}
-          AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
-        working-directory: ./php-agent
-        run: |
-          make test-services-start
-      - name: Run integration tests
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          docker exec \
-          -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
-          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
-          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
-          -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
-          -e SYNTHETICS_HEADER_supportability=${{secrets.SYNTHETICS_HEADER_SUPPORTABILITY}} \
-          nr-php make integration-tests
-      - name: Stop services
-        env:
-          PHP: ${{matrix.php}}
-          LIBC: ${{matrix.platform}}
-          AGENT_CODE: ${{github.workspace}}/php-agent
-        working-directory: ./php-agent
-        run: |
-          make test-services-stop
+  build-test-runner-amd64:
+    uses: ./.github/workflows/make-for-platform-on-arch.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      make-variant: go
+      make-variant-version: ${{vars.MAKE_GO_VERSION}}
+      make-target: bin/integration_runner
+      artifact-name: integration_runner
+      artifact-pattern: bin/integration_runner
+      arch: amd64
+      runs-on: ubuntu-latest
+    secrets: inherit
+  build-test-runner-arm64:
+    uses: ./.github/workflows/make-for-platform-on-arch.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      make-variant: go
+      make-variant-version: ${{vars.MAKE_GO_VERSION}}
+      make-target: bin/integration_runner
+      artifact-name: integration_runner
+      artifact-pattern: bin/integration_runner
+      arch: arm64
+      runs-on: ubuntu-latest
+    secrets: inherit
+
+  build-agent-amd64:
+    uses: ./.github/workflows/make-agent.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      arch: amd64
+      runs-on: ubuntu-latest
+    secrets: inherit
+  build-agent-arm64:
+    uses: ./.github/workflows/make-agent.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      arch: arm64
+      runs-on: ubuntu-latest
+    secrets: inherit
+
+  test-amd64:
+    needs: [build-test-runner-amd64, build-agent-amd64]
+    uses: ./.github/workflows/make-integration-tests.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      arch: amd64
+      runs-on: ubuntu-latest
+      continue-on-error: false
+    secrets: inherit
+  test-arm64:
+    needs: [build-test-runner-arm64, build-agent-arm64]
+    uses: ./.github/workflows/make-integration-tests.yml
+    with:
+      origin: ${{ inputs.origin }}
+      ref: ${{ inputs.ref }}
+      arch: arm64
+      runs-on: ${{inputs.runner-type}}
+      continue-on-error: true
+    secrets: inherit

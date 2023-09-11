@@ -5,18 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Cross Application Tracing (CAT) works with guzzle 5.
+Test that neither CAT nor DT headers are added when CAT and DT are disabled.
 */
 
 /*SKIPIF
 <?php
-require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-
 require('skipif.inc');
-
-if (version_compare(phpversion(), '5.4.0', '<')) {
-    die("skip: PHP >= 5.4.0 required\n");
-}
 */
 
 /*INI

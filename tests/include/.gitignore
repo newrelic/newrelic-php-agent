@@ -3,3 +3,8 @@ guzzle/
 # byproduct of logging/monolog tests
 monolog2/
 monolog3/
+# byproduct of running drupal tests
+drupal_6_bootstrap.inc
+drupal_6_common.inc
+drupal_7_bootstrap.inc
+drupal_7_common.inc

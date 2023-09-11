@@ -327,11 +327,10 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
 # Currently supported versions:
-#    (5.5, 5.6, 7.0, 7.1, 7.2, 7.3, 7.4)
+#    (7.0, 7.1, 7.2, 7.3, 7.4)
 # for x64
 if [ ${arch} = x64 ]; then
-for pmv in "20121212" "20131226" "20151012" "20160303" "20170718" \
-"20180731" "20190902"; do
+for pmv in "20151012" "20160303" "20170718" "20180731" "20190902"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
 done
 fi
@@ -536,8 +535,6 @@ add_to_path /usr/local/php
 add_to_path /usr/local/php/bin
 add_to_path /usr/local/zend/bin
 
-add_to_path /usr/local/php-5.5/bin
-add_to_path /usr/local/php-5.6/bin
 add_to_path /usr/local/php-7.0/bin
 add_to_path /usr/local/php-7.1/bin
 add_to_path /usr/local/php-7.2/bin
@@ -550,8 +547,6 @@ add_to_path /usr/local/php-8.2/bin
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
 
-add_to_path /usr/php-5.5/bin
-add_to_path /usr/php-5.6/bin
 add_to_path /usr/php-7.0/bin
 add_to_path /usr/php-7.1/bin
 add_to_path /usr/php-7.2/bin
@@ -561,8 +556,6 @@ add_to_path /usr/php-8.0/bin
 add_to_path /usr/php-8.1/bin
 add_to_path /usr/php-8.2/bin
 
-add_to_path /usr/php/5.5/bin
-add_to_path /usr/php/5.6/bin
 add_to_path /usr/php/7.0/bin
 add_to_path /usr/php/7.1/bin
 add_to_path /usr/php/7.2/bin
@@ -575,8 +568,6 @@ add_to_path /usr/php/8.2/bin
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
 
-add_to_path /opt/php-5.5/bin
-add_to_path /opt/php-5.6/bin
 add_to_path /opt/php-7.0/bin
 add_to_path /opt/php-7.1/bin
 add_to_path /opt/php-7.2/bin
@@ -1042,23 +1033,7 @@ for this copy of PHP. We apologize for the inconvenience.
   fi
 
   case "${pi_ver}" in
-    5.5.*)
-      warning_message="${pdir}: deprecated php version '${pi_ver}'"
-      if [ -z "${NR_INSTALL_SILENT}" ]; then
-         echo $warning_message
-      fi
-      log $warning_message
-      ;;
-
-    5.6.*)
-      warning_message="${pdir}: deprecated php version '${pi_ver}'"
-      if [ -z "${NR_INSTALL_SILENT}" ]; then
-         echo $warning_message
-      fi
-      log $warning_message
-      ;;
-
-    7.0.*)
+     7.0.*)
       ;;
 
     7.1.*)
@@ -1088,7 +1063,9 @@ for this copy of PHP. We apologize for the inconvenience.
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
-Ignoring this particular instance of PHP.
+Ignoring this particular instance of PHP. Please visit:
+  https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+to view compatibilty requirements for the the New Relic PHP agent.
 "
       log "${pdir}: unsupported version '${pi_ver}'"
       unsupported_php=1
@@ -1254,8 +1231,6 @@ does not exist. This particular instance of PHP will be skipped.
 #
   pi_modver=
   case "${pi_ver}" in
-    5.5.*)  pi_modver="20121212" ;;
-    5.6.*)  pi_modver="20131226" ;;
     7.0.*)  pi_modver="20151012" ;;
     7.1.*)  pi_modver="20160303" ;;
     7.2.*)  pi_modver="20170718" ;;

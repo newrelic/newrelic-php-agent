@@ -13,13 +13,6 @@ FROM php:${PHP_VER:-8.2}
 
 RUN docker-php-source extract
 
-#
-# Uncomment deb-src lines for all enabled repos. First part of single-quoted
-# string (up the the !) is the pattern of the lines that will be ignored.
-# Needed for apt-get build-dep call later in script
-#
-RUN sed -Ei '/.*partner/! s/^# (deb-src .*)/\1/g' /etc/apt/sources.list
-
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y build-essential
@@ -28,7 +21,7 @@ RUN apt-get install -y build-essential
 # PHP dependencies
 #
 RUN apt-get update \
- && apt-get -y install gcc git netcat \
+ && apt-get -y install gcc git netcat-openbsd \
  libpcre3 libpcre3-dev golang psmisc automake libtool \
  insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
  zlib1g-dev libmcrypt-dev
@@ -64,8 +57,7 @@ RUN apt-get update && apt-get install -y \
   make \
   perl \
   strace \
-  python-dev \
-  python-setuptools \
+  python-dev-is-python3 \
   python3-yaml \
   sqlite3 \
   libsqlite3-dev \
