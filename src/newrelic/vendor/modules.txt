@@ -1,0 +1,5 @@
+github.com/google/flatbuffers/go
+google.golang.org/protobuf
+google.golang.org/grpc
+golang.org/x
+github.com/golang/protobuf
