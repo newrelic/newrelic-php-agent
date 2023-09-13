@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic"
+	"newrelic.com/daemon/newrelic"
 
 	"newrelic.com/daemon/newrelic/config"
 )

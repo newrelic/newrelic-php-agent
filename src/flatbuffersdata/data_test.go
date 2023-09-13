@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	flatbuffers "github.com/google/flatbuffers/go"
+
 	"newrelic.com/daemon/newrelic"
 	"newrelic.com/daemon/newrelic/collector"
 	"newrelic.com/daemon/newrelic/limits"
