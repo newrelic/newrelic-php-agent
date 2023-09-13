@@ -213,32 +213,32 @@ daemon: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
 .PHONY: daemon_race
 daemon_race: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
 	@rm -rf $(DAEMON_TARGETS)
-	@$(GO) install -race $(GOFLAGS) ./...
+	@cd src; $(GO) install -race $(GOFLAGS) ./...
 
 .PHONY: daemon_test
 daemon_test: go-minimum-version go-setup-dependencies daemon-protobuf
-	@$(GO) test $(GOFLAGS) ./...
+	@cd src; $(GO) test $(GOFLAGS) ./...
 
 .PHONY: daemon_bench
 daemon_bench: go-minimum-version go-setup-dependencies daemon-protobuf
-	@$(GO) test $(GOFLAGS) -bench=. ./...
+	@cd src; $(GO) test $(GOFLAGS) -bench=. ./...
 
 .PHONY: daemon_integration
 daemon_integration: go-minimum-version go-setup-dependencies daemon-protobuf
 	$(MAKE) INTEGRATION_TAGS=1 go-minimum-version
-	@$(GO) test $(GOFLAGS) ./...
+	@cd src; $(GO) test $(GOFLAGS) ./...
 
 DAEMON_COV_FILE = daemon_coverage.out
 .PHONY: daemon_cover
 daemon_cover: go-minimum-version go-setup-dependencies daemon-protobuf
 	@rm -f $(DAEMON_COV_FILE)
-	@$(GO) test -coverprofile=$(DAEMON_COV_FILE) $(GOFLAGS) ./...
-	$(GO) tool cover -html=$(DAEMON_COV_FILE)
+	@cd src; $(GO) test -coverprofile=$(DAEMON_COV_FILE) $(GOFLAGS) ./...
+	cd src; $(GO) tool cover -html=$(DAEMON_COV_FILE)
 	@rm -f $(DAEMON_COV_FILE)
 
 bin/integration_runner:
 	@echo "Building bin/integration_runner"
-	@$(GO) install $(GOFLAGS) integration_runner
+	@cd src; $(GO) install $(GOFLAGS) integration_runner
 
 # Note that this rule does not require the Go binary, and therefore doesn't
 # depend on go-minimum-version.
