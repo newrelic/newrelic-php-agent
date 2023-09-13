@@ -23,8 +23,7 @@ include make/php_versions.mk
 # Configure an isolated workspace for the Go daemon.
 export GOPATH=$(CURDIR)
 export GO15VENDOREXPERIMENT=1
-# Needed for Go > 1.11 to avoid building with modules by default
-export GO111MODULE=auto
+export GO111MODULE=on
 
 # GOBIN affects the behavior of go install, ensure it is unset.
 unexport GOBIN
@@ -190,6 +189,13 @@ go-minimum-version:
 
 DAEMON_TARGETS := $(addprefix bin/,client daemon integration_runner stressor)
 
+# setup depenencies for daemon
+# THIS IS TEMPORARY NEEDS TO BE REPLACED BY PINNED VENDOR DEPENDENCIES
+.PHONY go-setup-dependencies
+go-setup-dependencies:
+	@cd src; go mod tidy
+	@cd src; go mod vendor
+
 # Delete Go binaries before each build to force them to be re-linked. This
 # ensures the version and commit variables are set correctly by the linker.
 #
@@ -198,32 +204,32 @@ DAEMON_TARGETS := $(addprefix bin/,client daemon integration_runner stressor)
 # Go binaries are made explicit. If we used a conventional `cmd` subdirectory
 # for commands, we could use `go list` to determine the names.
 .PHONY: daemon
-daemon: go-minimum-version daemon-protobuf Makefile | bin/
+daemon: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
 	@rm -rf $(DAEMON_TARGETS)
-	@$(GO) install $(GOFLAGS) ./...
+	@cd src; $(GO) install $(GOFLAGS) ./...
 
 # The -race flag enables the inegrated Go race detector. Output to stderr
 .PHONY: daemon_race
-daemon_race: go-minimum-version daemon-protobuf Makefile | bin/
+daemon_race: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
 	@rm -rf $(DAEMON_TARGETS)
 	@$(GO) install -race $(GOFLAGS) ./...
 
 .PHONY: daemon_test
-daemon_test: go-minimum-version daemon-protobuf
+daemon_test: go-minimum-version go-setup-dependencies daemon-protobuf
 	@$(GO) test $(GOFLAGS) ./...
 
 .PHONY: daemon_bench
-daemon_bench: go-minimum-version daemon-protobuf
+daemon_bench: go-minimum-version go-setup-dependencies daemon-protobuf
 	@$(GO) test $(GOFLAGS) -bench=. ./...
 
 .PHONY: daemon_integration
-daemon_integration: go-minimum-version daemon-protobuf
+daemon_integration: go-minimum-version go-setup-dependencies daemon-protobuf
 	$(MAKE) INTEGRATION_TAGS=1 go-minimum-version
 	@$(GO) test $(GOFLAGS) ./...
 
 DAEMON_COV_FILE = daemon_coverage.out
 .PHONY: daemon_cover
-daemon_cover: go-minimum-version daemon-protobuf
+daemon_cover: go-minimum-version go-setup-dependencies daemon-protobuf
 	@rm -f $(DAEMON_COV_FILE)
 	@$(GO) test -coverprofile=$(DAEMON_COV_FILE) $(GOFLAGS) ./...
 	$(GO) tool cover -html=$(DAEMON_COV_FILE)
