@@ -13,11 +13,12 @@ import (
 	"io"
 	"os"
 
-	"flatbuffersdata"
-	"newrelic"
-	"newrelic/protocol"
+	flatbuffers "github.com/google/flatbuffers/go"
 
-	"github.com/google/flatbuffers/go"
+	"newrelic.com/daemon/flatbuffersdata"
+
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/protocol"
 )
 
 var (

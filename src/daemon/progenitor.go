@@ -10,8 +10,9 @@ import (
 	"runtime"
 	"syscall"
 
-	"daemon/signal"
-	"newrelic/log"
+	"newrelic.com/daemon/daemon/signal"
+
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // runProgenitor starts the watcher and waits for the worker to start listening.

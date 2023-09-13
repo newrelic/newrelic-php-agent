@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/infinite_tracing"
-	"newrelic/limits"
-	"newrelic/log"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/infinite_tracing"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 type TxnData struct {

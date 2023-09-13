@@ -10,7 +10,8 @@ package collector
 
 import (
 	"crypto/x509"
-	"newrelic/log"
+
+	"newrelic.com/daemon/newrelic/log"
 )
 
 func init() {

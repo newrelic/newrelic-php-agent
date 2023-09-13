@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 func TestBasic(t *testing.T) {

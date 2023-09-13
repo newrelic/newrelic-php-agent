@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 // An SQLId is a unique identifier for an SQL statement. The agent

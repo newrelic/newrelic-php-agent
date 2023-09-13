@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"newrelic/crossagent"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/crossagent"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 type CrossAgentRulesTestcase struct {

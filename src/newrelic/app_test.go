@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/limits"
-	"newrelic/sysinfo"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/sysinfo"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 func TestConnectPayloadInternal(t *testing.T) {

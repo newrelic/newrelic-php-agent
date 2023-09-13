@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"newrelic/version"
+	"newrelic.com/daemon/newrelic/version"
 )
 
 func TestParseProxy(t *testing.T) {

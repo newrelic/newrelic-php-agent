@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"newrelic/jsonx"
-	"newrelic/limits"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/jsonx"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // MetricForce describes the kind of a metric. Metrics can be either forced or

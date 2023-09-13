@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"newrelic/log"
-)
+	"sort"
+	"strings"
 
-import "strings"
-import "sort"
+	"newrelic.com/daemon/newrelic/log"
+)
 
 type MetricRuleResult int
 

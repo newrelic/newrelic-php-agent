@@ -18,8 +18,8 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"newrelic/log"
-	"newrelic/version"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/version"
 )
 
 type CollectibleFunc func(auditVersion bool) ([]byte, error)

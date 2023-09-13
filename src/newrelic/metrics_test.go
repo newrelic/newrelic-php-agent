@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 var start = time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)

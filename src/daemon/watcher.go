@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 type workerState struct {

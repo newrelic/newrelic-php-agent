@@ -22,12 +22,12 @@ import (
 	"sync"
 	"time"
 
-	"newrelic"
-	"newrelic/collector"
-	"newrelic/integration"
-	"newrelic/log"
-	"newrelic/secrets"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/integration"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/secrets"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 var (

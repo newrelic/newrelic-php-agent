@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/log"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 var ErrPayloadTooLarge = errors.New("payload too large")

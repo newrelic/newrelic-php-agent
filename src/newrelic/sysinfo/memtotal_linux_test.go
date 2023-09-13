@@ -6,11 +6,12 @@
 package sysinfo
 
 import (
-	"newrelic/crossagent"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 func TestPhysicalMemoryBytes(t *testing.T) {

@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	v1 "newrelic/infinite_tracing/com_newrelic_trace_v1"
+	v1 "newrelic.com/daemon/newrelic/infinite_tracing/com_newrelic_trace_v1"
 )
 
 type testGrpcServer struct {

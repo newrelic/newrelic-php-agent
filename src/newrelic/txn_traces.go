@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 type TxnTrace struct {

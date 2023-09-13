@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/limits"
-	"newrelic/log"
-	"newrelic/sysinfo"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/sysinfo"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 // AgentRunID is a string as of agent listener protocol version 14.

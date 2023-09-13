@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // listener.go contains the logic responsible for managing agent connections.

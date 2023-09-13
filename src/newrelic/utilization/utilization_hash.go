@@ -13,8 +13,8 @@ import (
 	"runtime"
 	"sync"
 
-	"newrelic/log"
-	"newrelic/sysinfo"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/sysinfo"
 )
 
 const (

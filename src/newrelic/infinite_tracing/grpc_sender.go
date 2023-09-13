@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	v1 "newrelic/infinite_tracing/com_newrelic_trace_v1"
-	"newrelic/log"
+	v1 "newrelic.com/daemon/newrelic/infinite_tracing/com_newrelic_trace_v1"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 type grpcSpanBatchSender struct {

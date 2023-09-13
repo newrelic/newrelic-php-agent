@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 // Due to https://github.com/golang/go/issues/20903, this test is flappy on

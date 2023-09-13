@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/secrets"
-	"newrelic/utilization"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/secrets"
+	"newrelic.com/daemon/newrelic/utilization"
 )
 
 type CollectorKeys map[string]string

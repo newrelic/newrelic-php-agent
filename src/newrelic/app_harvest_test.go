@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 // A MockedAppHarvest comprises two groups of data.  First, the dependencies necessary

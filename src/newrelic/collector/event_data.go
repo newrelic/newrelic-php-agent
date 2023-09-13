@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"newrelic/limits"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // rawHarvestLimits represents the harvest_limits object specified in connect

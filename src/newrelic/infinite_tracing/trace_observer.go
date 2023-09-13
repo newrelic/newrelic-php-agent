@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 const (

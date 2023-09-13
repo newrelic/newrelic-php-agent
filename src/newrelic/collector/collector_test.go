@@ -9,9 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"newrelic/crossagent"
 	"strings"
 	"testing"
+
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 var (

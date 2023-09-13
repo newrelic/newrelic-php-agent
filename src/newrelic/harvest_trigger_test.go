@@ -8,7 +8,7 @@ package newrelic
 import (
 	"testing"
 
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 func TestHarvestTriggerGet(t *testing.T) {

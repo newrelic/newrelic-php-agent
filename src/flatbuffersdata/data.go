@@ -9,10 +9,11 @@ import (
 	"encoding/json"
 	"os"
 
-	"newrelic"
-	"newrelic/protocol"
+	flatbuffers "github.com/google/flatbuffers/go"
 
-	"github.com/google/flatbuffers/go"
+	"newrelic.com/daemon/newrelic"
+
+	"newrelic.com/daemon/newrelic/protocol"
 )
 
 func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {

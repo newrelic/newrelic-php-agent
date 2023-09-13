@@ -13,10 +13,11 @@ import (
 	"net/http/cgi"
 	"net/http/httptest"
 	"net/url"
-	"newrelic/log"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // A Tx represents a transaction.

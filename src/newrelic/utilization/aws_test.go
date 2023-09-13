@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"newrelic/crossagent"
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 func TestCrossAgentAWS(t *testing.T) {

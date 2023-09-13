@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"newrelic/crossagent"
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 func TestJSONMarshalling(t *testing.T) {

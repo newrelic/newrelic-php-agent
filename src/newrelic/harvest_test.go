@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {

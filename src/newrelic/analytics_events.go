@@ -11,8 +11,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"newrelic/limits"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // AnalyticsEvent represents an analytics event reported by an agent.

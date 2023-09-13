@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 func TestDurationToMillisecondsError(t *testing.T) {

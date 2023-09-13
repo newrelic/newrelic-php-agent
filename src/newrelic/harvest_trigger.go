@@ -8,9 +8,9 @@ package newrelic
 import (
 	"time"
 
-	"newrelic/collector"
-	"newrelic/limits"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 // A harvest trigger function. Each App has one of these, and it sends

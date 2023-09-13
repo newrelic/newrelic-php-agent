@@ -11,7 +11,7 @@ import (
 	"io"
 	"os"
 
-	"newrelic/integration"
+	"newrelic.com/daemon/newrelic/integration"
 )
 
 var (

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 func (t *Test) IsC() bool {

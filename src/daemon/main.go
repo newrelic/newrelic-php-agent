@@ -21,12 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"newrelic"
-	"newrelic/config"
-	"newrelic/limits"
-	"newrelic/log"
-	"newrelic/utilization"
-	"newrelic/version"
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/config"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/utilization"
+	"newrelic.com/daemon/newrelic/version"
 )
 
 // A custom FlagSet with special argument handling is used. This allows the

@@ -27,15 +27,17 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/google/flatbuffers/go"
+	flatbuffers "github.com/google/flatbuffers/go"
 
-	"flatbuffersdata"
-	"newrelic"
-	"newrelic/collector"
-	"newrelic/infinite_tracing/proto_testdata"
-	"newrelic/protocol"
-	"newrelic/ratelimit"
-	"newrelic/sysinfo"
+	"newrelic.com/daemon/flatbuffersdata"
+	"newrelic.com/daemon/newrelic"
+
+	"newrelic.com/daemon/newrelic/infinite_tracing/proto_testdata"
+
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/protocol"
+	"newrelic.com/daemon/newrelic/ratelimit"
+	"newrelic.com/daemon/newrelic/sysinfo"
 )
 
 const helpMessage = `Usage: stressor [OPTIONS]

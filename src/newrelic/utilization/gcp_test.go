@@ -8,7 +8,7 @@ package utilization
 import (
 	"testing"
 
-	"newrelic/crossagent"
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 func TestCrossAgentGCP(t *testing.T) {

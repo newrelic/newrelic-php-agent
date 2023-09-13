@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"newrelic/crossagent"
+	"newrelic.com/daemon/newrelic/crossagent"
 )
 
 func TestDockerID(t *testing.T) {

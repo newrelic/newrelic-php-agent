@@ -7,8 +7,9 @@ package integration
 
 import (
 	"bytes"
-	"newrelic/sysinfo"
 	"testing"
+
+	"newrelic.com/daemon/newrelic/sysinfo"
 )
 
 func TestScrubHost(t *testing.T) {

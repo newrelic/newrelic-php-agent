@@ -8,8 +8,8 @@ package flatbuffersdata
 import (
 	"encoding/json"
 
-	"newrelic"
-	"newrelic/collector"
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/collector"
 )
 
 var (

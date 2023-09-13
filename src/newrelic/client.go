@@ -6,8 +6,8 @@
 package newrelic
 
 import (
-	"newrelic/collector"
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 type ClientConfig struct {

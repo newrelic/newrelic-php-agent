@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"newrelic/limits"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 var (

@@ -11,15 +11,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"newrelic/log"
-	"newrelic/sysinfo"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"newrelic"
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/sysinfo"
 )
 
 // A Test captures the input, output and outcome of an integration test.

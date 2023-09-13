@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"newrelic/collector"
-	"newrelic/infinite_tracing"
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/infinite_tracing"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 type AggregaterInto interface {

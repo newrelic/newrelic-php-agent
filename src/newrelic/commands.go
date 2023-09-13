@@ -13,10 +13,10 @@ import (
 
 	flatbuffers "github.com/google/flatbuffers/go"
 
-	"newrelic/collector"
-	"newrelic/limits"
-	"newrelic/log"
-	"newrelic/protocol"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/protocol"
 )
 
 type CommandsHandler struct {

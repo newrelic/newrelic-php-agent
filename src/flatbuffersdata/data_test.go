@@ -10,12 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"newrelic"
-	"newrelic/collector"
-	"newrelic/limits"
-	"newrelic/protocol"
-
-	"github.com/google/flatbuffers/go"
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/collector"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/protocol"
 )
 
 func BenchmarkAggregateTxn(b *testing.B) {

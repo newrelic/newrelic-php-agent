@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"newrelic/integration/valgrind"
-	"newrelic/log"
+	"newrelic.com/daemon/newrelic/integration/valgrind"
+	"newrelic.com/daemon/newrelic/log"
 )
 
 type ValgrindCLI struct {

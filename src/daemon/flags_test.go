@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"newrelic"
-	"newrelic/config"
+
+	"newrelic.com/daemon/newrelic/config"
 )
 
 var defaultConfig = &Config{

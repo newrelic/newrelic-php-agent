@@ -6,8 +6,9 @@
 package newrelic
 
 import (
-	"newrelic/infinite_tracing"
 	"time"
+
+	"newrelic.com/daemon/newrelic/infinite_tracing"
 )
 
 // This type takes the HarvestType values sent from an application's harvest

@@ -22,12 +22,13 @@ import (
 	"syscall"
 	"time"
 
-	ds "daemon/signal"
-	"newrelic"
-	"newrelic/config"
-	"newrelic/limits"
-	"newrelic/log"
-	"newrelic/version"
+	ds "newrelic.com/daemon/daemon/signal"
+
+	"newrelic.com/daemon/newrelic"
+	"newrelic.com/daemon/newrelic/config"
+	"newrelic.com/daemon/newrelic/limits"
+	"newrelic.com/daemon/newrelic/log"
+	"newrelic.com/daemon/newrelic/version"
 )
 
 type workerError struct {

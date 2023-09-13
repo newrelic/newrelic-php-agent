@@ -8,7 +8,7 @@ package newrelic
 import (
 	"testing"
 
-	"newrelic/limits"
+	"newrelic.com/daemon/newrelic/limits"
 )
 
 func TestSyntheticsSampling(t *testing.T) {
