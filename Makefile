@@ -191,6 +191,7 @@ DAEMON_TARGETS := $(addprefix bin/,client daemon integration_runner stressor)
 
 # setup depenencies for daemon
 # THIS IS TEMPORARY NEEDS TO BE REPLACED BY PINNED VENDOR DEPENDENCIES
+# will download vendor dependencies
 .PHONY: go-setup-dependencies
 go-setup-dependencies:
 	@cd src; go mod tidy
