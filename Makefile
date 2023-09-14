@@ -28,7 +28,7 @@ export GO111MODULE=on
 # GOBIN affects the behavior of go install, ensure it is unset.
 unexport GOBIN
 
-GOFLAGS := -ldflags '-X newrelic/version.Number=$(AGENT_VERSION) -X newrelic/version.Commit=$(GIT_COMMIT) -X newrelic/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) -X newrelic/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) -X newrelic/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS) -X newrelic/secrets.NewrelicAccountId=$(ACCOUNT_supportability) -X newrelic/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)
+GOFLAGS := -ldflags '-X newrelic.com/daemon/newrelic/version.Number=$(AGENT_VERSION) -X newrelic.com/daemon/newrelic/version.Commit=$(GIT_COMMIT) -X newrelic.com/daemon/newrelic/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) -X newrelic.com/daemon/newrelic/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) -X newrelic.com/daemon/newrelic/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS) -X newrelic.com/daemon/newrelic/secrets.NewrelicAccountId=$(ACCOUNT_supportability) -X newrelic.com/daemon/newrelic/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)
 
 GCOVRFLAGS += -e "agent/tests/*" -e "axiom/tests/*" -e ".*\.h" -o
 
