@@ -13,9 +13,6 @@ The agent should properly instrument Wordpress do_action hooks.
 if (version_compare(PHP_VERSION, "5.6", "<")) {
   die("skip: PHP < 5.6 argument unpacking not supported\n");
 }
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
-}
 */
 
 /*INI
@@ -23,6 +20,10 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
+add filter
+add filter
+add filter
+g
 f
 h
 g
@@ -51,8 +52,23 @@ g
 */
 
 // Simple mock of wordpress's do_action()
+// In a real Wordpress app, the $tag is not what is eventually
+// called by the call_user_func_array. We do this for test simplicity
 function do_action($tag, ...$args) {
     call_user_func_array($tag, $args);
+}
+
+function add_filter($tag, $callback) {
+    echo "add filter\n";
+}
+
+// WP's add_action wraps add_filter
+function add_action($tag, $callback) {
+    add_filter($tag, $callback);
+}
+
+//Simple mock of wordpress's get_theme_roots
+function get_theme_roots() {
 }
 
 function h() {
@@ -72,5 +88,22 @@ function f() {
         do_action("g");
     }
 }
+
+// Due to the mock simplification described above, the hook
+// is not used in this test, and the callback is treated as the hook
+add_action("hook", "f");
+add_action("hook", "g");
+add_action("hook", "h");
+/* 
+ * pre-OAPI: Initiates a non-flattened call stack of internal->user_code
+ * to ensure that cufa instrumentation properly handles skipping
+ * opline lookups of internal functions
+ *
+ * OAPI: Initiates a call to an added action outside
+ * the context of do_action, to ensure we only instrument
+ * with an active hook
+ */
+$function = new ReflectionFunction('g');
+$function->invoke();
 
 do_action("f");

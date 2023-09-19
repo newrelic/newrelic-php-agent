@@ -13,9 +13,6 @@ The agent should properly instrument Wordpress apply_filters hooks.
 if (version_compare(PHP_VERSION, "5.6", "<")) {
   die("skip: PHP < 5.6 argument unpacking not supported\n");
 }
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
-}
 */
 
 /*INI
@@ -23,6 +20,9 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
+add filter
+add filter
+add filter
 f: string1
 h: string3
 g: string2
@@ -51,8 +51,18 @@ g: string2
 */
 
 // Simple mock of wordpress's apply_filter()
+// In a real Wordpress app, the $tag is not what is eventually
+// called by the call_user_func_array. We do this for test simplicity
 function apply_filters($tag, ...$args) {
     call_user_func_array($tag, $args);
+}
+
+function add_filter($tag, $callback) {
+    echo "add filter\n";
+}
+
+//Simple mock of wordpress's get_theme_roots
+function get_theme_roots() {
 }
 
 function h($str) {
@@ -79,4 +89,9 @@ function f($str) {
     }
 }
 
+// Due to the mock simplification described above, the hook
+// is not used in this test, and the callback is treated as the hook
+add_filter("hook", "f");
+add_filter("hook", "g");
+add_filter("hook", "h");
 apply_filters("f", "string1");
