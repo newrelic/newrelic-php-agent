@@ -440,13 +440,13 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen,
-                                           nr_wrap_user_function_options_t options
+                                           const nr_wrap_user_function_options_t* options
                                            TSRMLS_DC) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
   wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen,
-                                             options.instrumented_function_metric);
+                                             options->instrumented_function_metric);
   if (0 == wraprec) {
     return 0;
   }
@@ -475,7 +475,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  if (NR_WRAPREC_IS_TRANSIENT == options.transience) {
+  if (NR_WRAPREC_IS_TRANSIENT == options->transience) {
     wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
   } else {
     /* non-transient wraprecs are added to both the hashmap and linked list.
@@ -569,7 +569,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
   };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       options TSRMLS_CC);
+                                       &options TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
@@ -583,7 +583,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       options TSRMLS_CC);
+                                       &options TSRMLS_CC);
 
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
@@ -646,7 +646,7 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
   };
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       options TSRMLS_CC);
+                                       &options TSRMLS_CC);
 
   if (0 != wraprec) {
     wraprec->declared_callback = callback;

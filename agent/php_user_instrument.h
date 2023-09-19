@@ -189,7 +189,7 @@ extern nruserfn_t* nr_php_add_custom_tracer_callable(
     zend_function* func TSRMLS_DC);
 extern nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                                   size_t namestrlen,
-                                                  nr_wrap_user_function_options_t options
+                                                  const nr_wrap_user_function_options_t* options
                                                   TSRMLS_DC);
 extern void nr_php_reset_user_instrumentation(void);
 extern void nr_php_remove_transient_user_instrumentation(void);

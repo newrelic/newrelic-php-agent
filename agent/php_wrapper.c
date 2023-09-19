@@ -56,13 +56,28 @@ static void nr_php_wraprec_add_before_after_clean_callbacks(
   wraprec->special_instrumentation_clean = clean_callback;
 }
 
+nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
+  nr_wrap_user_function_options_t options = {
+      NR_WRAPREC_NOT_TRANSIENT,
+      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
+  };
+  return nr_php_wrap_user_function_before_after_clean_with_options(
+          name, namelen, before_callback, after_callback,
+          clean_callback, &options);
+}
+
 nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_options(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback,
-    nr_wrap_user_function_options_t options) {
+    const nr_wrap_user_function_options_t* options) {
 
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(name, namelen, options);
@@ -110,13 +125,13 @@ nruserfn_t* nr_php_wrap_user_function(const char* name,
       NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
   };
   return nr_php_wrap_user_function_with_options(
-      name, namelen, callback, options TSRMLS_CC);
+      name, namelen, callback, &options TSRMLS_CC);
 }
 
 nruserfn_t* nr_php_wrap_user_function_with_options(const char* name,
                                                    size_t namelen,
                                                    nrspecialfn_t callback,
-                                                   nr_wrap_user_function_options_t options
+                                                   const nr_wrap_user_function_options_t* options
                                                    TSRMLS_DC) {
   nruserfn_t* wraprec
       = nr_php_add_custom_tracer_named(name, namelen, options TSRMLS_CC);
@@ -175,6 +190,9 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
  * is to create "after" wrappers (see nr_php_wrap_user_function). Should
  * "after"/"clean" wrappers ever be desired, it is suggested to create a
  * separate nr_php_wrap_generic_callable_before_after_clean() function.
+ *
+ * This creates a transient wraprec that does NOT produce an
+ * "InstrumentedFunction" metric.
  */
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
@@ -206,11 +224,11 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
         return nr_php_wrap_user_function_before_after_clean_with_options(
             ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            NULL, NULL, options);
+            NULL, NULL, &options);
 #else
         return nr_php_wrap_user_function_with_options(
             ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            options TSRMLS_CC);
+            &options TSRMLS_CC);
 #endif
 
       /* wrapping an array where [0] is an object and [1] is the method to
@@ -221,11 +239,11 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
         return nr_php_wrap_user_function_before_after_clean_with_options(
             ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            NULL, NULL, options);
+            NULL, NULL, &options);
 #else
         return nr_php_wrap_user_function_with_options(
             ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            options TSRMLS_CC);
+            &options TSRMLS_CC);
 #endif
 
       /* wrapping a closure. Need to initialize fcall info in order to wrap the

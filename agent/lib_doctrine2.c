@@ -97,14 +97,9 @@ nr_slowsqls_labelled_query_t* nr_doctrine2_lookup_input_query(TSRMLS_D) {
 void nr_doctrine2_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_wrap_user_function_options_t options = {
-      NR_WRAPREC_NOT_TRANSIENT,
-      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  nr_php_wrap_user_function_before_after_clean_with_options(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Doctrine\\ORM\\Query::_doExecute"), nr_doctrine2_cache_dql,
-      nr_doctrine2_cache_dql_after, nr_doctrine2_cache_dql_clean,
-      options);
+      nr_doctrine2_cache_dql_after, nr_doctrine2_cache_dql_clean);
 #else
   nr_php_wrap_user_function(NR_PSTR("Doctrine\\ORM\\Query::_doExecute"),
                             nr_doctrine2_cache_dql TSRMLS_CC);

@@ -101,7 +101,7 @@ static void test_hashmap_wraprec() {
     NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
   };
   user_func1_wraprec = nr_php_add_custom_tracer_named(
-      user_func1_name, nr_strlen(user_func1_name), options );
+      user_func1_name, nr_strlen(user_func1_name), &options );
   wraprec_found = nr_php_get_wraprec(user_func1_zf);
   tlib_pass_if_ptr_equal("lookup instrumented user function succeeds",
                          wraprec_found, user_func1_wraprec);

@@ -136,13 +136,20 @@
  * see how it works with frameworks.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback);
+
 extern nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_options(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback,
-    nr_wrap_user_function_options_t options);
+    const nr_wrap_user_function_options_t* options);
 
 extern nruserfn_t* nr_php_wrap_callable_before_after_clean(
     zend_function* callable,
@@ -158,7 +165,7 @@ extern nruserfn_t* nr_php_wrap_user_function_with_options(
     const char* name,
     size_t namelen,
     nrspecialfn_t callback,
-    nr_wrap_user_function_options_t TSRMLS_DC);
+    const nr_wrap_user_function_options_t* TSRMLS_DC);
 
 extern nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
                                                    size_t namelen,
