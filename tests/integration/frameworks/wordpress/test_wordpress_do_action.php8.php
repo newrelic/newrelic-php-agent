@@ -21,9 +21,9 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
-add action
-add action
-add action
+add filter
+add filter
+add filter
 g
 f
 h
@@ -59,8 +59,13 @@ function do_action($tag, ...$args) {
     call_user_func_array($tag, $args);
 }
 
+function add_filter($tag, $callback) {
+    echo "add filter\n";
+}
+
+// WP's add_action wraps add_filter
 function add_action($tag, $callback) {
-    echo "add action\n";
+    add_filter($tag, $callback);
 }
 
 //Simple mock of wordpress's get_theme_roots

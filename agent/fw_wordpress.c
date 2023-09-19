@@ -702,7 +702,9 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_wordpress_add_action_filter) {
+NR_PHP_WRAPPER(nr_wordpress_add_filter) {
+  /* Wordpress's add_action() is just a wrapper around add_filter(),
+   * so we only need to instrument this function */
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
@@ -737,10 +739,8 @@ void nr_wordpress_enable(TSRMLS_D) {
       NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
       nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
 
-  nr_php_wrap_user_function(NR_PSTR("add_action"),
-                            nr_wordpress_add_action_filter);
   nr_php_wrap_user_function(NR_PSTR("add_filter"),
-                            nr_wordpress_add_action_filter);
+                            nr_wordpress_add_filter);
 
 #else
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
