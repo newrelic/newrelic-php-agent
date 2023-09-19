@@ -263,7 +263,7 @@ static void nr_php_check_CAT_DT_config(TSRMLS_D) {
                 "the 'newrelic.cross_application_tracer.enabled' INI setting "
                 "in your INI file and enabling DT via the "
                 "'newrelic.distributed_tracing_enabled' INI setting.");
-    
+
     // set CAT INI value to disabled (just to be safe)
     NRINI(cross_process_enabled) = 0;
   }

@@ -19,12 +19,12 @@
 #include "util_strings.h"
 #include "util_sleep.h"
 
-
 /*
  * Define name of log decorating processor function
  */
 #define LOG_DECORATE_NAMESPACE "newrelic\\Monolog"
-#define LOG_DECORATE_PROC_FUNC_NAME "newrelic_phpagent_monolog_decorating_processor"
+#define LOG_DECORATE_PROC_FUNC_NAME \
+  "newrelic_phpagent_monolog_decorating_processor"
 
 // clang-format off
 /*
@@ -407,7 +407,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
-  
+
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
                           NRPRG(app));
@@ -496,7 +496,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
      * Actually call pushProcessor
      */
     callback_name = nr_php_zval_alloc();
-    nr_php_zval_str(callback_name, LOG_DECORATE_NAMESPACE "\\" LOG_DECORATE_PROC_FUNC_NAME);
+    nr_php_zval_str(callback_name,
+                    LOG_DECORATE_NAMESPACE "\\" LOG_DECORATE_PROC_FUNC_NAME);
 
     ph_retval = nr_php_call(handler, "pushProcessor", callback_name TSRMLS_CC);
     if (!nr_php_is_zval_true(ph_retval)) {
@@ -525,4 +526,3 @@ void nr_monolog_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Monolog\\Logger::addRecord"),
                             nr_monolog_logger_addrecord TSRMLS_CC);
 }
-
