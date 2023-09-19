@@ -270,9 +270,9 @@ static void nr_php_check_CAT_DT_config(TSRMLS_D) {
 }
 
 /*
- * @brief Check the INI values for 'logging_enabled' and
- *        'log_forwarding_enabled' and log a warning on
- *        invalid configuration state.
+ * @brief Check the INI values for 'logging_enabled',
+ *        'log_forwarding_enabled', and 'log_decorating_enabled' and log a
+ *        warning on invalid configuration state.
  *
  */
 static void nr_php_check_logging_config(TSRMLS_D) {
@@ -282,6 +282,24 @@ static void nr_php_check_logging_config(TSRMLS_D) {
                 "Log Forwarding requires Logging to be enabled. Please check "
                 "'newrelic.application_logging.logging.enabled' in the agent "
                 "configuration.");
+  }
+
+  if (!NRINI(logging_enabled) && NRINI(log_decorating_enabled)) {
+    nrl_warning(NRL_INIT,
+                "Log Decorating will be DISABLED because logging is disabled. "
+                "Log Decorating requires Logging to be enabled. Please check "
+                "'newrelic.application_logging.logging.enabled' in the agent "
+                "configuration.");
+  }
+
+  if (NRINI(logging_enabled) && NRINI(log_forwarding_enabled)
+      && NRINI(log_decorating_enabled)) {
+    nrl_warning(NRL_INIT,
+                "Log Forwarding and Log Decorating have been enabled! "
+                "This could lead to duplicated ingest of log messages! "
+                "Check newrelic.application_logging.forwarding.enabled and "
+                "newrelic.application_logging.local_decorating.enabled in the "
+                "agent configuration.");
   }
 }
 
@@ -618,7 +636,7 @@ PHP_MINIT_FUNCTION(newrelic) {
     nr_agent_close_daemon_connection();
   }
 
-  /* Do some sanity checking of configuration settings and handle accordingly */
+  /* Do some checking of configuration settings and handle accordingly */
 
   /* If infinite tracing (8T) is enabled but distributed tracing (DT) is
    * disabled this is an unworkable combination because span IDs cannot be

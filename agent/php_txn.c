@@ -637,6 +637,11 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 
 #define FMT_BOOL(v) (v) ? "enabled" : "disabled"
 
+  metname = nr_formatf("Supportability/Logging/LocalDecorating/PHP/%s",
+                       FMT_BOOL(nr_txn_log_decorating_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
   metname = nr_formatf("Supportability/Logging/Forwarding/PHP/%s",
                        FMT_BOOL(nr_txn_log_forwarding_enabled(txn)));
   nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
@@ -740,6 +745,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
   opts.logging_enabled = NRINI(logging_enabled);
+  opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
   opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);

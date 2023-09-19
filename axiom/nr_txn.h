@@ -120,6 +120,7 @@ typedef struct _nrtxnopt_t {
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
   bool logging_enabled; /* An overall configuration for enabling/disabling all
                            application logging features */
+  bool log_decorating_enabled; /* Whether log decorating is enabled */
   bool log_forwarding_enabled;  /* Whether log forwarding is enabled */
   int log_forwarding_log_level; /* minimum log level to forward to the collector
                                  */
