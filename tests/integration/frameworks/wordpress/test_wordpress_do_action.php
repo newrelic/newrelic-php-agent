@@ -51,25 +51,7 @@ g
 ]
 */
 
-// Simple mock of wordpress's do_action()
-// In a real Wordpress app, the $tag is not what is eventually
-// called by the call_user_func_array. We do this for test simplicity
-function do_action($tag, ...$args) {
-    call_user_func_array($tag, $args);
-}
-
-function add_filter($tag, $callback) {
-    echo "add filter\n";
-}
-
-// WP's add_action wraps add_filter
-function add_action($tag, $callback) {
-    add_filter($tag, $callback);
-}
-
-//Simple mock of wordpress's get_theme_roots
-function get_theme_roots() {
-}
+require_once __DIR__.'/mock_hooks.php';
 
 function h() {
     echo "h\n";
