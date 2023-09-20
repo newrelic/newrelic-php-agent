@@ -10,9 +10,7 @@ Test that Monolog2 instrumentation adds linking metadata for log decoration
 
 /*SKIPIF
 <?php
-
 require('skipif.inc');
-
 */
 
 /*INI
@@ -25,15 +23,63 @@ newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = INFO
 */
 
-/*EXPECT_REGEX
-monolog2.DEBUG: debug NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.INFO: info NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.NOTICE: notice NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.WARNING: warning NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.ERROR: error NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.CRITICAL: critical NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.ALERT: alert NR\-LINKING|.*|.*|.*|.*|.*|
-monolog2.EMERGENCY: emergency NR\-LINKING|.*|.*|.*|.*|.*|
+/*EXPECT
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
 */
 
 /*EXPECT_METRICS
@@ -57,7 +103,7 @@ monolog2.EMERGENCY: emergency NR\-LINKING|.*|.*|.*|.*|.*|
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/get_linking_metadata"},                         [8, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/api/get_linking_metadata"},                         [16, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/enabled"},              [1, "??", "??", "??", "??", "??"]],
@@ -73,6 +119,7 @@ null
 */
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
+require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
 require_monolog(2);
 
@@ -85,13 +132,26 @@ class CheckDecorateFormatter implements Monolog\Formatter\FormatterInterface {
   public function __construct(?string $dateFormat = null) {
   }
   public function format(array $record) {
-    echo $record['level_name'] ?? 'No level_name';
-    echo " ";
-    echo $record['message'] ?? 'No message';
-    echo " ";
-    echo $record['extra']['NR-LINKING'] ?? 'No decoration data exists.';
-    echo "\n";
+    $nrlinking = $record['extra']['NR-LINKING'] ?? 'NR-LINKING DATA MISSING!!!';
+    $result = preg_match("/(NR\-LINKING)\|([\w\d]+)\|([\w\d]+)\|([\w\d]+)\|([\w\d]+)\|([\w\d\%]+\.php)\|/", $nrlinking, $matches);
+    $linkmeta = newrelic_get_linking_metadata();
+
+    tap_equal(7, count($matches), "All NR-LINKING elements present");
+    if (7 == count($matches)) {
+      tap_equal("NR-LINKING", $matches[1], "NR-LINKING present");
+      tap_equal($linkmeta['entity.guid'] ?? '<missing entity.guid>', $matches[2], "entity.guid correct");
+      tap_equal($linkmeta['hostname'] ?? '<missing hostname>', $matches[3], "entity.guid correct");
+      tap_equal($linkmeta['trace.id'] ?? '<missing trace.id>', $matches[4], "trace.id correct");
+      tap_equal(true, strlen($matches[5]) > 0 && preg_match("/[\w\d]+/",$matches[5]), "span.id is non-zero length and alphanumeric");
+      if (isset($linkmeta['entity.name'])) {
+        $name = urlencode($linkmeta['entity.name']);
+      } else {
+        $name = '<missing entity.name>';
+      }
+      tap_equal($name, $matches[6], "entity.name correct");
+    }
   }
+
   public function formatBatch(array $records) {
     foreach ($records as $key => $record) {
       $records[$key] = $this->format($record);
