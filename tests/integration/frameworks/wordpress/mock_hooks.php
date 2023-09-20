@@ -22,3 +22,6 @@ function add_action($tag, $callback) {
 //Simple mock of wordpress's get_theme_roots
 function get_theme_roots() {
 }
+
+// Noop to prevent PHP 8.2 empty file optimization
+sleep(0);
