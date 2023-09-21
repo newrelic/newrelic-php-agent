@@ -16,12 +16,6 @@ newrelic.cross_application_tracer.enabled = false
 newrelic.code_level_metrics.enabled=false
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", ">=")) {
-  die("skip: PHP 7+ not supported\n");
-}
-*/
 /*EXPECT
 ok - transaction event attribute added
 ok - span event attribute added
@@ -71,7 +65,7 @@ ok - transaction event attribute added
         "parentId": "??"
       },
       {
-        "int": 102,
+        "int": 100,
         "string": "from span event",
         "bool": false
       },

@@ -22,13 +22,6 @@ newrelic.transaction_events.enabled = false
 newrelic.code_level_metrics.enabled=false
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", ">=")) {
-  die("skip: PHP 7+ not supported\n");
-}
-*/
-
 /*EXPECT
 ok - string attribute added
 ok - int attribute added
