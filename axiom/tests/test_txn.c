@@ -8102,6 +8102,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   opts.logging_enabled = true;
   opts.log_forwarding_enabled = true;
   opts.log_forwarding_log_level = LOG_LEVEL_WARNING;
+  opts.log_decorating_enabled = false;
   opts.log_events_max_samples_stored = 10;
   opts.log_metrics_enabled = true;
 
@@ -8396,6 +8397,7 @@ static void test_txn_log_configuration(void) {
 
   /* log features globally disabled, high security disabled */
   txn->options.logging_enabled = false;
+  txn->options.log_decorating_enabled = false;
   txn->high_security = false;
 
   txn->options.log_forwarding_enabled = false;
@@ -8421,6 +8423,7 @@ static void test_txn_log_configuration(void) {
 
   /* log features globally enabled, high security disabled */
   txn->options.logging_enabled = true;
+  txn->options.log_decorating_enabled = false;
   txn->high_security = false;
 
   txn->options.log_forwarding_enabled = false;
@@ -8446,6 +8449,7 @@ static void test_txn_log_configuration(void) {
 
   /* log features globally disabled, high security enabled */
   txn->options.logging_enabled = false;
+  txn->options.log_decorating_enabled = false;
   txn->high_security = true;
 
   txn->options.log_forwarding_enabled = false;
@@ -8471,6 +8475,7 @@ static void test_txn_log_configuration(void) {
 
   /* log features globally enabled, high security enabled */
   txn->options.logging_enabled = true;
+  txn->options.log_decorating_enabled = false;
   txn->high_security = true;
 
   txn->options.log_forwarding_enabled = false;
