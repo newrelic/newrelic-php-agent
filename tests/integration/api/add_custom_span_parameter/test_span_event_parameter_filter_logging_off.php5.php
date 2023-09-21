@@ -22,6 +22,13 @@ newrelic.application_logging.metrics.enabled = false
 newrelic.code_level_metrics.enabled=false
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", ">=")) {
+  die("skip: PHP 7+ not supported\n");
+}
+*/
+
 /*EXPECT
 ok - string attribute not added
 ok - int attribute not added
@@ -99,6 +106,7 @@ ok - double attribute added
     [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]  ]
 ]
 */
+
 
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');

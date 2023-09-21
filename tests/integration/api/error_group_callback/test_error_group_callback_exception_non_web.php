@@ -28,24 +28,26 @@ stack => \[" in alpha called at .*test_error_group_callback_exception_non_web.ph
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/all"},                                                [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/allOther"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransaction/all"},                                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransaction/php__FILE__"},                              [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransactionTotalTime"},                                 [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransactionTotalTime/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/notice_error"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/set_error_group_callback"},               [1, 0, 0, 0, 0, 0]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allOther"},                                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/notice_error"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/set_error_group_callback"},                [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 /*EXPECT_ERROR_EVENTS
 [

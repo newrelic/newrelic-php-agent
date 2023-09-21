@@ -22,6 +22,13 @@ newrelic.application_logging.metrics.enabled = false
 newrelic.code_level_metrics.enabled=false
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "7.0", ">=")) {
+  die("skip: PHP 7+ not supported\n");
+}
+*/
+
 /*EXPECT
 ok - string attribute added
 ok - string attribute added
@@ -223,11 +230,13 @@ null
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},               [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_span_parameter"},       [65, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');

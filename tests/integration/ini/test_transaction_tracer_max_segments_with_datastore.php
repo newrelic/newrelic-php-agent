@@ -43,7 +43,7 @@ newrelic.distributed_tracing_enabled=0
                   [
                     "?? start time", "?? end time", "`1", 
                     {
-                      "code.lineno": 123,
+                      "code.lineno": 125,
                       "code.filepath": "__FILE__",
                       "code.function": "my_function"
                     }, []
@@ -113,10 +113,12 @@ newrelic.distributed_tracing_enabled=0
     [{"name":"Datastore/statement/MySQL/table/select",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

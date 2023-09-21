@@ -64,7 +64,6 @@ monolog2.EMERGENCY: emergency []
 ]
 */
 
-
 /*EXPECT_LOG_EVENTS
 [
     {

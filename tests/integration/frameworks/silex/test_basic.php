@@ -27,10 +27,12 @@ The agent should name Silex transactions that have _route attributes.
     [{"name":"OtherTransaction/Action/GET_foo"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/Silex/detected"},              [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 
