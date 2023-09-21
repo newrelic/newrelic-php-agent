@@ -432,6 +432,7 @@ int symfony1_in_error404; /* Whether we are currently within a
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
+bool check_cufa;
 /* Without OAPI, we are able to utilize the call stack to keep track
  * of the previous tags. With OAPI, we can no longer do this so
  * we track the stack manually */
