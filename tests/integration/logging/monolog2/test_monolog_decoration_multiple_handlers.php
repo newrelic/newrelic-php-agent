@@ -80,14 +80,63 @@ ok - entity.guid correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
+ok - All NR-LINKING elements present
+ok - NR-LINKING present
+ok - entity.guid correct
+ok - entity.guid correct
+ok - trace.id correct
+ok - span.id is non-zero length and alphanumeric
+ok - entity.name correct
 */
-
-/* The "Supportability/api/get_linking_metadata" metric has a count of 16 because it is 
- * called once inside the processor function which adds the linking metadata per log
- * message (8 total messages in this test). 
- * Then it is also called once per log message in the custom formatter this
- * test adds to check the values inserted by the processor function which adds 8 more.
- */
 
 /*EXPECT_METRICS
 [
@@ -110,7 +159,7 @@ ok - entity.name correct
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/get_linking_metadata"},                         [16, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/api/get_linking_metadata"},                         [32, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/enabled"},              [1, "??", "??", "??", "??", "??"]],
@@ -130,6 +179,8 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
 require_monolog(2);
 
+use Monolog\Handler\NoopHandler;
+use Monolog\Handler\ProcessHandler;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
@@ -179,8 +230,14 @@ function test_logging() {
 
     $stdoutHandler = new StreamHandler('php://stdout', Logger::DEBUG);
     $stdoutHandler->setFormatter($formatter);
+    $noopHandler = new NoopHandler();
+    $processHandler = new ProcessHandler('cat > /dev/null', logger::DEBUG);
+    $processHandler->setFormatter($formatter);
 
     $logger->pushHandler($stdoutHandler);
+    $logger->pushHandler($noopHandler);
+    $logger->pushHandler($processHandler);
+
   
     // insert delays between log messages to allow priority sampling
     // to resolve that later messages have higher precedence

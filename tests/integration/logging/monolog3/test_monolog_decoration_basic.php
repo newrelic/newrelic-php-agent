@@ -23,6 +23,13 @@ newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = INFO
 */
 
+/* The "Supportability/api/get_linking_metadata" metric has a count of 16 because it is 
+ * called once inside the processor function which adds the linking metadata per log
+ * message (8 total messages in this test). 
+ * Then it is also called once per log message in the custom formatter this
+ * test adds to check the values inserted by the processor function which adds 8 more.
+ */
+
 /*EXPECT
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
@@ -151,6 +158,9 @@ class CheckDecorateFormatter implements Monolog\Formatter\FormatterInterface {
       }
       tap_equal($name, $matches[6], "entity.name correct");
     }
+
+    /* have to return a non-null value which is the output string */
+    return "";
   }
 
   public function formatBatch(array $records) {
