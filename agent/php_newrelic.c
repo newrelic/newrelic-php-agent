@@ -214,6 +214,16 @@ ZEND_BEGIN_ARG_INFO_EX(
 ZEND_ARG_INFO(0, payload)
 ZEND_ARG_INFO(0, transport_type)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(newrelic_set_user_id_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, uuid)
+ZEND_END_ARG_INFO()
+
+
+ZEND_BEGIN_ARG_INFO_EX(newrelic_set_error_group_callback_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, callback)
+ZEND_END_ARG_INFO()
+
 /*
  * New Relic Distributed Trace API
  */
@@ -287,6 +297,8 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_create_distributed_trace_payload, newrelic_create_distributed_trace_payload_arginfo)
     PHP_FE(newrelic_insert_distributed_trace_headers, newrelic_insert_distributed_trace_headers_arginfo)
     PHP_FE(newrelic_add_custom_span_parameter, newrelic_add_custom_span_parameter_arginfo)
+    PHP_FE(newrelic_set_user_id, newrelic_set_user_id_arginfo)
+    PHP_FE(newrelic_set_error_group_callback, newrelic_set_error_group_callback_arginfo)
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
     PHP_FE(newrelic_ignore_transaction, newrelic_arginfo_void)
