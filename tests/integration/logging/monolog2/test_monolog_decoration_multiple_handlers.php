@@ -27,112 +27,112 @@ newrelic.application_logging.forwarding.log_level = INFO
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
 ok - All NR-LINKING elements present
 ok - NR-LINKING present
 ok - entity.guid correct
-ok - entity.guid correct
+ok - hostname correct
 ok - trace.id correct
 ok - span.id is non-zero length and alphanumeric
 ok - entity.name correct
