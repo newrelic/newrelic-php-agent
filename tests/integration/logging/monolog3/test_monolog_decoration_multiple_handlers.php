@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 Test that Monolog3 instrumentation adds linking metadata for log decoration
+when multiple handlers are present.
 */
 
 /*SKIPIF
