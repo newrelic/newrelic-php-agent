@@ -501,7 +501,11 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
     }
 
     if (NULL != orig_func) {
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+      p = nr_php_op_array_get_wraprec(&orig_func->op_array TSRMLS_CC);
+#else
       p = nr_php_wraprec_lookup_get(orig_func);
+#endif
 
       if (p) {
         nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
