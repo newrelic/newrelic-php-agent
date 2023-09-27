@@ -35,11 +35,13 @@ NULL
     [{"name":"Custom/handler"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/handler",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

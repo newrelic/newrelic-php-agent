@@ -475,6 +475,9 @@ nrinitime_t
 
 nrinibool_t logging_enabled; /* newrelic.application_logging.enabled */
 nrinibool_t
+    log_decorating_enabled; /* newrelic.application_logging.local_decorating.enabled
+                             */
+nrinibool_t
     log_forwarding_enabled; /* newrelic.application_logging.forwarding.enabled
                              */
 nriniuint_t

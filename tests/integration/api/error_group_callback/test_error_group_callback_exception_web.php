@@ -32,27 +32,29 @@ stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name": "Apdex"},                                                     [0, "??", "??", "??", "??", "??"]],
-    [{"name": "Apdex/Uri__FILE__"},                                         [0, "??", "??", "??", "??", "??"]],
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/WebTransaction/Uri__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/all"},                                                [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Errors/allWeb"},                                             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name": "ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},     [1, "??", "??", "??", "??", "??"]],
-    [{"name": "HttpDispatcher"},                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/notice_error"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/api/set_error_group_callback"},               [1, 0, 0, 0, 0, 0]],
-    [{"name": "WebTransaction"},                                            [1, "??", "??", "??", "??", "??"]],
-    [{"name": "WebTransaction/Uri__FILE__"  },                              [1, "??", "??", "??", "??", "??"]],
-    [{"name": "WebTransactionTotalTime"},                                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "WebTransactionTotalTime/Uri__FILE__"},                       [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Apdex"},                                                      [0, "??", "??", "??", "??", "??"]],
+    [{"name":"Apdex/Uri__FILE__"},                                          [0, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/WebTransaction/Uri__FILE__"},                          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/all"},                                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Errors/allWeb"},                                              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/all"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"ErrorsByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"},      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"HttpDispatcher"},                                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/notice_error"},                            [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/set_error_group_callback"},                [1, 0, 0, 0, 0, 0]],
+    [{"name":"WebTransaction"},                                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransaction/Uri__FILE__"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime"},                                    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"WebTransactionTotalTime/Uri__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 /*EXPECT_ERROR_EVENTS
 [

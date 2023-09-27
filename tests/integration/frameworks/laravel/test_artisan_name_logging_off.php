@@ -29,11 +29,13 @@ newrelic.application_logging.metrics.enabled = false
     [{"name":"OtherTransactionTotalTime/Action/Artisan/foo:bar"},     [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/Action/Artisan/foo:bar"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/Laravel/forced"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

@@ -34,11 +34,13 @@ X_REQUEST_START=1368811467146000
     [{"name":"WebTransaction/Uri__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime"},                              [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

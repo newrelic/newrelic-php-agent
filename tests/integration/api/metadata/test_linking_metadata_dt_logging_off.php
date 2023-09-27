@@ -42,11 +42,13 @@ ok - entity guid
     [{"name":"Supportability/DistributedTrace/CreatePayload/Success"},[1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/create_distributed_trace_payload"},  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/get_linking_metadata"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 
