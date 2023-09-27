@@ -70,6 +70,7 @@ function f($str) {
     echo "f: ";
     echo $str;
     echo "\n";
+    // For OAPI: attempt to overwrite the currently executing transient wrapper
     add_filter("hook", "f");
     try {
         apply_filters("h", "string3");
