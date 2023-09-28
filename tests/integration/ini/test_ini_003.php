@@ -47,10 +47,12 @@ f_3() called
     [{"name":"OtherTransactionTotalTime/Function/f_0"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/Function/f_0"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

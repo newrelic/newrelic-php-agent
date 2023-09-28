@@ -36,11 +36,13 @@ newrelic.application_logging.metrics.enabled = false
     [{"name":"Supportability/DistributedTrace/CreatePayload/Success"},[1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/Create/Success"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/insert_distributed_trace_headers"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

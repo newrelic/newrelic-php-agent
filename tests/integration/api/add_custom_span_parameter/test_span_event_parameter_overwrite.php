@@ -76,7 +76,7 @@ ok - transaction event attribute added
         "bool": false
       },
       {
-        "code.lineno": 117,
+        "code.lineno": 119,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -104,10 +104,12 @@ ok - transaction event attribute added
     [{"name":"Supportability/api/add_custom_parameter"},            [3, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_span_parameter"},       [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');

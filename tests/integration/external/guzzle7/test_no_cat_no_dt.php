@@ -34,7 +34,7 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found traci
   "?? timeframe stop",
   [
     [{"name":"External/127.0.0.1/all"},                   [3, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all", 
+    [{"name":"External/127.0.0.1/all",
       "scope":"OtherTransaction/php__FILE__"},            [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/all"},                             [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                        [3, "??", "??", "??", "??", "??"]],
@@ -42,12 +42,14 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found traci
     [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/library/Guzzle 6/detected"}, [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 ?>
 <?php

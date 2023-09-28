@@ -48,10 +48,12 @@ ok - newrelic_set_appname too many params
     [{"name":"Supportability/api/custom_metric"},                     [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/set_appname/before"},                [5, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

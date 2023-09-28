@@ -39,15 +39,20 @@ ok - no instance metadata found
     [{"name":"Datastore/Redis/all"},                                                     [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Redis/allOther"},                                                [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/del"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/del","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/del",
+      "scope":"OtherTransaction/php__FILE__"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/exists"},                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/exists","scope":"OtherTransaction/php__FILE__"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/exists",
+      "scope":"OtherTransaction/php__FILE__"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/get"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/get","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/get",
+      "scope":"OtherTransaction/php__FILE__"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/incr"},                                          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/incr","scope":"OtherTransaction/php__FILE__"},   [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/incr",
+      "scope":"OtherTransaction/php__FILE__"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/set"},                                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/set","scope":"OtherTransaction/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/set",
+      "scope":"OtherTransaction/php__FILE__"},                                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                                    [1, "??", "??", "??", "??", "??"]],
@@ -56,10 +61,12 @@ ok - no instance metadata found
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                                   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Predis/detected"},                                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                              [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},                     [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 /*EXPECT_TRACED_ERRORS null */
 

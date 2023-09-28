@@ -39,8 +39,9 @@
  *   lilac              05Apr2023 (10.9)
  *   marigold           30May2023 (10.10)
  *   narcissus          20Jun2023 (10.11)
+ *   orchid             20Sep2023 (10.12)
  */
-#define NR_CODENAME "orchid"
+#define NR_CODENAME "poinsettia"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
