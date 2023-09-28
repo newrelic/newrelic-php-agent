@@ -244,21 +244,22 @@ static void nr_php_wrap_zend_function(zend_function* func,
   }
 }
 
-static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
+// Returns whether wraprec ownership was transfered to the hashmap
+static bool nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
   zend_function* orig_func = 0;
 
   if (0 == NR_PHP_PROCESS_GLOBALS(done_instrumentation)) {
-    return;
+    return false;
   }
 
   if (wraprec->is_wrapped) {
-    return;
+    return false;
   }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
-    return;
+    return false;
   }
 #endif
   if (0 == wraprec->classname) {
@@ -272,7 +273,7 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 
   if (NULL == orig_func) {
     /* It could be in a file not yet loaded, no reason to log anything. */
-    return;
+    return false;
   }
 
   if (ZEND_USER_FUNCTION != orig_func->type) {
@@ -285,9 +286,10 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
      * logs with this message.
      */
     wraprec->is_disabled = 1;
-    return;
+    return false;
   }
   nr_php_wrap_zend_function(orig_func, wraprec TSRMLS_CC);
+  return true;
 }
 
 static nruserfn_t* nr_php_user_wraprec_create(void) {
@@ -522,9 +524,15 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
-  nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
+  bool added = nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
   if (NR_WRAPREC_IS_TRANSIENT == options->transience) {
     wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
+    /* If the wraprec (for one reason or another) was not added to the hashmap
+     * and will not be added to the linked list, it needs to be destroyed */
+    if (!added) {
+      nr_php_user_wraprec_destroy(&wraprec);
+      return NULL;
+    }
   } else {
     /* non-transient wraprecs are added to both the hashmap and linked list.
      * At request shutdown, the hashmap will free transients, but leave
