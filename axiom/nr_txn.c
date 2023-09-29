@@ -3316,12 +3316,11 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
     return false;
   }
 
-  if (!txn->options
-           .logging_enabled /* || !txn->options.log_decorating_enabled */) {
+  if (!txn->options.logging_enabled || !txn->options.log_decorating_enabled) {
     return false;
   }
 
-  return false;
+  return true;
 }
 
 #define ENSURE_LOG_LEVEL_NAME(level_name) \

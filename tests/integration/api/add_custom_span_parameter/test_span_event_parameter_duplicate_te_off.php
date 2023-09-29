@@ -88,7 +88,7 @@ null
         "string": "span str"
       },
       {
-        "code.lineno": 129,
+        "code.lineno": 131,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -116,10 +116,12 @@ null
     [{"name":"Supportability/api/add_custom_span_parameter"},       [4, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_parameter"},            [4, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');

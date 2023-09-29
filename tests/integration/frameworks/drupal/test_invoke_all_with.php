@@ -56,10 +56,12 @@ b2
     [{"name":"Custom/invoke_callback_instrumented",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 require_once __DIR__.'/mock_module_handler.php';
 require_once __DIR__.'/mock_page_cache_get.php';

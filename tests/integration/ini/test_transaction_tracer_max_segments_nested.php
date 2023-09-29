@@ -43,7 +43,7 @@ newrelic.distributed_tracing_enabled=0
                   [
                     "?? start time", "?? end time", "`1", 
                     {
-                      "code.lineno": 185,
+                      "code.lineno": 187,
                       "code.filepath": "__FILE__",
                       "code.function": "great_grandmother"
                     },
@@ -51,7 +51,7 @@ newrelic.distributed_tracing_enabled=0
                       [
                         "?? start time", "?? end time", "`2", 
                         {
-                          "code.lineno": 180,
+                          "code.lineno": 182,
                           "code.filepath": "__FILE__",
                           "code.function": "grandmother"                          
                         },
@@ -59,7 +59,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"
                             }, []
@@ -67,7 +67,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"
                             }, []
@@ -75,7 +75,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"                              
                             }, []
@@ -83,7 +83,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"                              
                             }, []
@@ -91,7 +91,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"                              
                             }, []
@@ -99,7 +99,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"                              
                             }, []
@@ -107,7 +107,7 @@ newrelic.distributed_tracing_enabled=0
                           [
                             "?? start time", "?? end time", "`3", 
                             {
-                              "code.lineno": 177,
+                              "code.lineno": 179,
                               "code.filepath": "__FILE__",
                               "code.function": "my_function"                              
                             }, []
@@ -167,10 +167,12 @@ newrelic.distributed_tracing_enabled=0
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},               [3, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

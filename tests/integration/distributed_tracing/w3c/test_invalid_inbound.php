@@ -28,10 +28,12 @@ newrelic.cross_application_tracer.enabled = false
     [{"name":"Supportability/api/accept_distributed_trace_headers"},  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/TraceContext/TraceParent/Parse/Exception"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 
