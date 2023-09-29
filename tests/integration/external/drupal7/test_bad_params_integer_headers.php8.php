@@ -27,6 +27,7 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
   [
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},    [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Errors/OtherTransaction/php__FILE__"},    [1,    0,    0,    0,    0,    0]],
     [{"name":"Errors/all"},                             [1,    0,    0,    0,    0,    0]],
     [{"name":"Errors/allOther"},                        [1,    0,    0,    0,    0,    0]],
