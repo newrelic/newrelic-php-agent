@@ -24,6 +24,7 @@ add filter
 add filter
 add filter
 f: string1
+add filter
 h: string3
 g: string2
 */
@@ -69,6 +70,8 @@ function f($str) {
     echo "f: ";
     echo $str;
     echo "\n";
+    // For OAPI: attempt to overwrite the currently executing transient wrapper
+    add_filter("hook", "f");
     try {
         apply_filters("h", "string3");
     } catch (Exception $e) {
