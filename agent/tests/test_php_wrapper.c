@@ -830,7 +830,14 @@ static void test_before_after_clean() {
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "all_set", arg);
 
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so expr should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   /*
    * Trigger the unwind.
    */
@@ -877,7 +884,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "before_after", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so does not evaluate.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   tlib_php_request_eval("newrelic_end_transaction(); ");
   tlib_pass_if_int_equal("Clean callback should not set value", 10,
                          NRPRG(drupal_http_request_depth));
@@ -927,7 +942,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "before_clean", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so func does not evaluate.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   /*
    * Trigger the unwind.
    */
@@ -972,7 +995,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "after_clean", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so returns null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   tlib_php_request_eval("newrelic_end_transaction(); ");
   tlib_pass_if_int_equal(
       "After callback should not be called and clean callback should set value",
@@ -1016,7 +1047,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "before_only", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so does not evaluate.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   tlib_php_request_eval("newrelic_end_transaction(); ");
   tlib_pass_if_int_equal("Only before would set the value", 10,
                          NRPRG(drupal_http_request_depth));
@@ -1059,7 +1098,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "after_only", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   tlib_php_request_eval("newrelic_end_transaction(); ");
   tlib_pass_if_int_equal("No callbacks triggered to set the value", 0,
                          NRPRG(drupal_http_request_depth));
@@ -1101,7 +1148,15 @@ static void test_before_after_clean() {
    */
   arg = tlib_php_request_eval_expr("0" TSRMLS_CC);
   expr = nr_php_call(NULL, "clean_only", arg);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null.",
+      expr);
+#endif
+
   tlib_php_request_eval("newrelic_end_transaction(); ");
   tlib_pass_if_int_equal("Only clean would set the value", 30,
                          NRPRG(drupal_http_request_depth));

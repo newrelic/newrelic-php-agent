@@ -193,7 +193,14 @@ static void test_stack_depth_after_exception() {
   tlib_pass_if_int_equal(
       "PHP stack depth tracking should be 3 after function call", 3,
       NRPRG(php_cur_stack_depth));
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
   tlib_pass_if_null("Exception so expr should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null",
+      expr);
+#endif
 
   /*
    * Trigger the unwind.
@@ -289,7 +296,14 @@ static void test_stack_depth_after_exception() {
   tlib_pass_if_int_equal(
       "PHP stack depth tracking should be 2 after function call", 2,
       NRPRG(php_cur_stack_depth));
-  tlib_pass_if_null("Exception so expr should not be null.", expr);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
+  tlib_pass_if_null("Exception so expr should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null",
+      expr);
+#endif
 
   /*
    * Trigger the unwind.
@@ -319,7 +333,14 @@ static void test_stack_depth_after_exception() {
   tlib_pass_if_int_equal(
       "PHP stack depth tracking should be 2 after function call", 1,
       NRPRG(php_cur_stack_depth));
-  tlib_pass_if_null("Exception so expr should not be null.", expr);
+
+#if ZEND_MODULE_API_NO < ZEND_8_3_X_API_NO
+  tlib_pass_if_null("Exception so expr should be null.", expr);
+#else
+  tlib_pass_if_not_null(
+      "Exception caught by NR exception handler, expr should not be null",
+      expr);
+#endif
 
   /*
    * Trigger the unwind.
