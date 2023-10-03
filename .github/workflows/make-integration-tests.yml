@@ -34,7 +34,7 @@ jobs:
       fail-fast: true
       matrix:
         platform: [gnu, musl]
-        php: ['8.0', '8.1', '8.2']
+        php: ['8.0', '8.1', '8.2', '8.3.0RC3']
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v3
