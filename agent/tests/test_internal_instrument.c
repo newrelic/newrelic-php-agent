@@ -48,6 +48,10 @@ static void test_cufa_direct(TSRMLS_D) {
   zval* retval = NULL;
 
   tlib_php_request_start();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(check_cufa) = true;
+#endif
 
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
@@ -73,6 +77,10 @@ static void test_cufa_indirect(TSRMLS_D) {
   zval* retval = NULL;
 
   tlib_php_request_start();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(check_cufa) = true;
+#endif
 
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(

@@ -19,6 +19,14 @@
 #include "util_strings.h"
 #include "util_sleep.h"
 
+/*
+ * Define name of log decorating processor function
+ */
+#define LOG_DECORATE_NAMESPACE "Newrelic\\Monolog"
+#define LOG_DECORATE_NAMESPACE_LC "newrelic\\monolog"
+#define LOG_DECORATE_PROC_FUNC_NAME \
+  "newrelic_phpagent_monolog_decorating_processor"
+
 // clang-format off
 /*
  * This macro affects how instrumentation $context argument of
@@ -400,7 +408,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
-  
+
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
                           NRPRG(app));
@@ -415,6 +423,54 @@ skip_instrumentation:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Create processor function used for log decorating as needed
+ */
+static int nr_monolog_create_decorate_processor_function(TSRMLS_D) {
+  int retval = SUCCESS;
+  zend_function* processor_func = NULL;
+
+  /* see if processor function exists and if not create */
+  processor_func = nr_php_find_function(LOG_DECORATE_NAMESPACE_LC "\\" LOG_DECORATE_PROC_FUNC_NAME);
+  if (NULL == processor_func) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "Creating Monolog decorating processor func");
+
+    /* this function will add NR-LINKING data to the 'extra' array
+     * entry in the log record.  It is careful to confirm all the
+     * expected linking metadata is present as well as escaping
+     * special chars in the entity.name */
+    retval = zend_eval_string(
+        "namespace " LOG_DECORATE_NAMESPACE
+        ";"
+        "function " LOG_DECORATE_PROC_FUNC_NAME
+        "($record) {"
+        "    $linkmeta = newrelic_get_linking_metadata();"
+        "    $guid = $linkmeta['entity.guid'] ?? '';"
+        "    $hostname = $linkmeta['hostname'] ?? '';"
+        "    $traceid = $linkmeta['trace.id'] ?? '';"
+        "    $spanid = $linkmeta['span.id'] ?? '';"
+        "    $name = $linkmeta['entity.name'] ?? '';"
+        "    $name = urlencode($name);"
+        "    $data = 'NR-LINKING|' . $guid . '|' . $hostname . '|' ."
+        "             $traceid . '|' . $spanid . '|' . $name . '|';"
+        "    $record['extra']['NR-LINKING'] = $data;"
+        "    return $record;"
+        "}",
+        NULL, "newrelic/Monolog/" LOG_DECORATE_PROC_FUNC_NAME TSRMLS_CC);
+
+    if (SUCCESS != retval) {
+      nrl_warning(NRL_FRAMEWORK,
+                  "%s: error creating Monolog decorating processor function!",
+                  __func__);
+    }
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "Using existing Monolog decorating processor func");
+  }
+
+  return retval;
+}
+
 NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
   (void)wraprec;
 
@@ -424,12 +480,58 @@ NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
     goto end;
   }
 
+  nrl_verbosedebug(
+      NRL_INSTRUMENT, "%s : Monolog handler = %*s", __func__,
+      NRSAFELEN(nr_php_class_entry_name_length(Z_OBJCE_P(handler))),
+      nr_php_class_entry_name(Z_OBJCE_P(handler)));
+
   if (nr_txn_log_forwarding_enabled(NRPRG(txn))
       && nr_php_object_instanceof_class(
           handler, "NewRelic\\Monolog\\Enricher\\Handler" TSRMLS_CC)) {
     nrl_warning(NRL_INSTRUMENT,
                 "detected NewRelic\\Monolog\\Enricher\\Handler. The "
                 "application may be sending logs to New Relic twice.");
+  }
+
+  if (nr_txn_log_decorating_enabled(NRPRG(txn))) {
+    zval* callback_name = NULL;
+    zval* ph_retval = NULL;
+
+    /* Verify the handler implements pushProcessor () */
+    if (!nr_php_object_has_method(handler, "pushProcessor" TSRMLS_CC)) {
+      nrl_warning(
+          NRL_INSTRUMENT,
+          "Monolog handler %*s does not implement the pushProcessor() "
+          "method so log decoration will not occur!",
+          NRSAFELEN(nr_php_class_entry_name_length(Z_OBJCE_P(handler))),
+          nr_php_class_entry_name(Z_OBJCE_P(handler)));
+
+      goto end;
+    }
+
+    /* Create function used to decorate Monolog log records */
+    nr_monolog_create_decorate_processor_function();
+
+    /*
+     * Actually call pushProcessor
+     */
+    callback_name = nr_php_zval_alloc();
+    nr_php_zval_str(callback_name,
+                    LOG_DECORATE_NAMESPACE "\\" LOG_DECORATE_PROC_FUNC_NAME);
+
+    ph_retval = nr_php_call(handler, "pushProcessor", callback_name TSRMLS_CC);
+    if (!nr_php_is_zval_true(ph_retval)) {
+      nrl_warning(
+          NRL_FRAMEWORK,
+          "%s: error registering Monolog decorating processor function!",
+          __func__);
+    } else {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "Monolog log decorating processor registered");
+    }
+
+    nr_php_zval_free(&ph_retval);
+    nr_php_zval_free(&callback_name);
   }
 
 end:

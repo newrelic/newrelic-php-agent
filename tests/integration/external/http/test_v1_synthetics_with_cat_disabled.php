@@ -76,10 +76,12 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing X-NewRelic-Synthetics=found
     [{"name":"WebTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 
 

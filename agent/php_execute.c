@@ -1930,11 +1930,6 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
     return;
   }
 
-  if (NULL == execute_data->prev_execute_data->opline) {
-    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
-    return;
-  }
-
   /*
    * COPIED Comment from php_vm.c:
    * To actually determine whether this is a call_user_func_array() call we
@@ -1976,6 +1971,11 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   }
   if (!ZEND_USER_CODE(execute_data->prev_execute_data->func->type)) {
     nrl_verbosedebug(NRL_AGENT, "%s: caller is php internal function", __func__);
+    return;
+  }
+
+  if (UNEXPECTED(NULL == execute_data->prev_execute_data->opline)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
     return;
   }
 
@@ -2031,7 +2031,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
                                 filename TSRMLS_CC);
     return;
   }
-  if (UNEXPECTED(NULL != NRPRG(cufa_callback))) {
+  if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
     /*
      * For PHP 7+, call_user_func_array() is flattened into an inline by default. Because
      * of this, we must check the opcodes set to see whether we are calling it flattened.

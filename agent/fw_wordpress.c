@@ -404,6 +404,8 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 /*
  * A call_user_func_array() callback to ensure that we wrap each hook function.
  */
@@ -416,15 +418,8 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
    * function, we're instrumenting hooks, and WordPress is currently executing
    * hooks (denoted by the wordpress_tag being set).
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  if ((NR_FW_WORDPRESS != NRPRG(current_framework))
-      || (0 == NRINI(wordpress_hooks))
-      || (NULL == nr_stack_get_top(&NRPRG(wordpress_tags)))) {
-#else
   if ((NR_FW_WORDPRESS != NRPRG(current_framework))
       || (0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
-#endif /* OAPI */
     return;
   }
 
@@ -445,6 +440,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
    */
   nr_php_wrap_callable(func, nr_wordpress_wrap_hook TSRMLS_CC);
 }
+#endif /* not OAPI */
 
 /*
  * Some plugins generate transient tag names. We can detect these by checking
@@ -517,6 +513,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
        * the call_user_func_array instrumentation take care of actually timing
        * the hooks by checking if it's set.
        */
+      NRPRG(check_cufa) = true;
       nr_stack_push(&NRPRG(wordpress_tags),
                     nr_wordpress_clean_tag(tag TSRMLS_CC));
       nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
@@ -624,6 +621,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
        * the call_user_func_array instrumentation take care of actually timing
        * the hooks by checking if it's set.
        */
+      NRPRG(check_cufa) = true;
       nr_stack_push(&NRPRG(wordpress_tags),
                     nr_wordpress_clean_tag(tag TSRMLS_CC));
       nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
@@ -668,6 +666,9 @@ static void clean_wordpress_tag_stack() {
     char* cleaned_tag = nr_stack_pop(&NRPRG(wordpress_tags));
     nr_free(cleaned_tag);
   }
+  if (nr_stack_is_empty(&NRPRG(wordpress_tags))) {
+    NRPRG(check_cufa) = false;
+  }
 }
 
 NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_after) {
@@ -701,30 +702,45 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_wordpress_add_filter) {
+  /* Wordpress's add_action() is just a wrapper around add_filter(),
+   * so we only need to instrument this function */
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+
+  zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  /* the callback here can be any PHP callable. nr_php_wrap_generic_callable
+   * checks that a valid callable is passed */
+  nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
+  nr_php_arg_release(&callback);
+}
+NR_PHP_WRAPPER_END
+
 #endif /* OAPI */
 
 void nr_wordpress_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("apply_filters"), nr_wordpress_apply_filters,
-      nr_wordpress_apply_filters_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_wordpress_apply_filters_after, nr_wordpress_handle_tag_stack_clean);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("apply_filters_ref_array"), nr_wordpress_exec_handle_tag,
-      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("do_action"), nr_wordpress_exec_handle_tag,
-      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
 
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
-      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
+
+  nr_php_wrap_user_function(NR_PSTR("add_filter"),
+                            nr_wordpress_add_filter);
 
 #else
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
@@ -738,8 +754,10 @@ void nr_wordpress_enable(TSRMLS_D) {
 
   nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                             nr_wordpress_exec_handle_tag TSRMLS_CC);
-#endif /* OAPI */
 
-  nr_php_add_call_user_func_array_pre_callback(
-      nr_wordpress_call_user_func_array TSRMLS_CC);
+  if (0 != NRINI(wordpress_hooks)) {
+    nr_php_add_call_user_func_array_pre_callback(
+        nr_wordpress_call_user_func_array TSRMLS_CC);
+  }
+#endif /* OAPI */
 }

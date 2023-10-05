@@ -1217,6 +1217,18 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          
 ;newrelic.application_logging.forwarding.log_level = "WARNING"
 
+
+; Setting: newrelic.application_logging.local_decorating.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Toggles whether the agent adds linking metadata to 
+;          log records.
+;          NOTE: Enabling log forwarding and decoration could lead to
+;                duplicate log message being sent to New Relic.
+;
+;newrelic.application_logging.local_decorating.enabled = false
+
 ; Setting: newrelic.application_logging.metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory

@@ -103,10 +103,9 @@ static void nr_drupal8_add_method_callback_before_after_clean(
         "%.*s::%.*s", NRSAFELEN(nr_php_class_entry_name_length(ce)),
         nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
 
-    nr_php_wrap_user_function_before_after_clean_with_transience(
+    nr_php_wrap_user_function_before_after_clean(
                               class_method, nr_strlen(class_method),
-                              before_callback, after_callback, clean_callback,
-                              NR_WRAPREC_NOT_TRANSIENT);
+                              before_callback, after_callback, clean_callback);
 
     nr_free(class_method);
   }
@@ -667,10 +666,10 @@ void nr_drupal8_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
               "ner\\RouterListener::onKernelRequest"),
-      nr_drupal8_name_the_wt_via_symfony, NULL, NULL, NR_WRAPREC_NOT_TRANSIENT);
+      nr_drupal8_name_the_wt_via_symfony, NULL, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
                                     "ner\\RouterListener::onKernelRequest"),

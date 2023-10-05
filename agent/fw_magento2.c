@@ -440,9 +440,9 @@ void nr_magento2_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Magento\\Framework\\App\\Action\\Action::dispatch"),
-      nr_magento2_action_dispatch, NULL, NULL, NR_WRAPREC_NOT_TRANSIENT);
+      nr_magento2_action_dispatch, NULL, NULL);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Magento\\Framework\\App\\Action\\Action::dispatch"),
@@ -472,11 +472,10 @@ void nr_magento2_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR(
           "Magento\\Webapi\\Controller\\Rest\\InputParamsResolver::resolve"),
-      nr_magento2_inputparamsresolver_resolve, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_magento2_inputparamsresolver_resolve, NULL, NULL);
 #else
   nr_php_wrap_user_function(
       NR_PSTR(
@@ -498,16 +497,14 @@ void nr_magento2_enable(TSRMLS_D) {
       nr_magento2_soap_iswsdllistrequest TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::_"
               "prepareRequestData"),
-      nr_magento2_soap_handler_preparerequestdata, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
-  nr_php_wrap_user_function_before_after_clean_with_transience(
+      nr_magento2_soap_handler_preparerequestdata, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::"
               "prepareOperationInput"),
-      nr_magento2_soap_handler_prepareoperationinput, NULL, NULL,
-      NR_WRAPREC_NOT_TRANSIENT);
+      nr_magento2_soap_handler_prepareoperationinput, NULL, NULL);
 
 #else
   nr_php_wrap_user_function(

@@ -26,6 +26,7 @@ b2
 a3
 b4
 b4
+b2
 */
 
 /*EXPECT_METRICS
@@ -37,11 +38,11 @@ b4
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_1"},                         [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Hook/hook_2"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Hook/hook_2"},                         [2, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_3"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_4"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Module/module_a"},                     [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Module/module_b"},                     [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Module/module_b"},                     [4, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
@@ -49,13 +50,18 @@ b4
     [{"name":"Supportability/framework/Drupal8/forced"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},                 [2, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback_instrumented"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/invoke_callback"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback_instrumented",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]]
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/invoke_callback",
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
+
 
 require_once __DIR__.'/mock_module_handler.php';
 require_once __DIR__.'/mock_page_cache_get.php';
@@ -125,5 +131,15 @@ $handler->invokeallwith("hook_4", [$page_cache, "get"]);
 /* At this point, module_b_hook_4 should NOT be instrumented */
 
 // test string callback; function already instrumented
+// This will reuse the existing wraprec and successfully
+// add instrumentation because the "before" callback is unset
 $func_name = "invoke_callback_instrumented";
 $handler->invokeallwith("hook_4", $func_name);
+
+// test non-transiently wrapping an already transiently instrumented function
+// This will overwrite the existing transient wrapper
+$func_name = "invoke_callback";
+newrelic_add_custom_tracer($func_name);
+// Now this test will function the same as above: adding special instrumentation
+// to an already existing wrapper
+$handler->invokeallwith("hook_2", $func_name);

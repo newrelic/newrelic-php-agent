@@ -13,9 +13,6 @@ The agent should properly instrument Wordpress apply_filters hooks.
 if (version_compare(PHP_VERSION, "5.6", "<")) {
   die("skip: PHP < 5.6 argument unpacking not supported\n");
 }
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
-}
 */
 
 /*INI
@@ -23,7 +20,11 @@ newrelic.framework = wordpress
 */
 
 /*EXPECT
+add filter
+add filter
+add filter
 f: string1
+add filter
 h: string3
 g: string2
 */
@@ -45,15 +46,13 @@ g: string2
     [{"name": "OtherTransactionTotalTime/php__FILE__"},               [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/framework/WordPress/forced"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
-// Simple mock of wordpress's apply_filter()
-function apply_filters($tag, ...$args) {
-    call_user_func_array($tag, $args);
-}
+require_once __DIR__.'/mock_hooks.php';
 
 function h($str) {
     echo "h: ";
@@ -72,6 +71,8 @@ function f($str) {
     echo "f: ";
     echo $str;
     echo "\n";
+    // For OAPI: attempt to overwrite the currently executing transient wrapper
+    add_filter("hook", "f");
     try {
         apply_filters("h", "string3");
     } catch (Exception $e) {
@@ -79,4 +80,9 @@ function f($str) {
     }
 }
 
+// Due to the mock simplification described above, the hook
+// is not used in this test, and the callback is treated as the hook
+add_filter("hook", "f");
+add_filter("hook", "g");
+add_filter("hook", "h");
 apply_filters("f", "string1");

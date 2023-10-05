@@ -30,6 +30,7 @@ var (
 		"EXPECT_CUSTOM_EVENTS":    parseCustomEvents,
 		"EXPECT_ERROR_EVENTS":     parseErrorEvents,
 		"EXPECT_SPAN_EVENTS":      parseSpanEvents,
+		"EXPECT_SPAN_EVENTS_LIKE": parseSpanEventsLike,
 		"EXPECT_LOG_EVENTS":       parseLogEvents,
 		"EXPECT_METRICS":          parseMetrics,
 		"EXPECT":                  parseExpect,
@@ -239,6 +240,10 @@ func parseErrorEvents(test *Test, content []byte) error {
 }
 func parseSpanEvents(test *Test, content []byte) error {
 	test.spanEvents = content
+	return nil
+}
+func parseSpanEventsLike(test *Test, content []byte) error {
+	test.spanEventsLike = content
 	return nil
 }
 func parseLogEvents(test *Test, content []byte) error {
