@@ -529,6 +529,44 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_drupal_version) {
+  char* retval = NULL;
+  zval* version = NULL;
+  zend_class_entry* ce = NULL;
+  ce = zend_fetch_class(zend_string_init("Drupal", nr_strlen("Drupal"), 0), ZEND_FETCH_CLASS_AUTO);
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
+                     __func__);
+    goto leave;
+  }
+
+  version = nr_php_get_class_constant(ce, "VERSION");
+  if (NULL == version) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
+                     __func__);
+    goto leave;
+  }
+
+  if (nr_php_is_zval_valid_string(version)) {
+    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: expected VERSION be a valid string, got type %d",
+                     __func__, Z_TYPE_P(version));
+    goto leave;
+  }
+
+  nr_free(retval);
+
+leave:
+  nr_php_zval_free(&version);
+}
+NR_PHP_WRAPPER_END
+
 void nr_drupal8_enable(TSRMLS_D) {
   /*
    * Obtain a transation name if a page was cached.
@@ -556,6 +594,10 @@ void nr_drupal8_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\Controller\\ControllerResolv"
                                     "er::getControllerFromDefinition"),
                             nr_drupal8_name_the_wt TSRMLS_CC);
+
+  nr_php_wrap_user_function(
+      NR_PSTR("Drupal::hasContainer"),
+      nr_drupal_version TSRMLS_CC);
 
   /*
    * The drupal_modules config setting controls instrumentation of modules,
