@@ -38,7 +38,35 @@ zend_extension=opcache.so
 
 
 /*EXPECT_ERROR_EVENTS
-null
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": "??",
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_SPAN_EVENTS
