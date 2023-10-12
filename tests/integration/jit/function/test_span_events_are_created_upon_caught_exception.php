@@ -136,7 +136,7 @@ zend_extension=opcache.so
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 137,
+        "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -157,7 +157,7 @@ zend_extension=opcache.so
       },
       {},
       {
-        "code.lineno": 131,
+        "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
