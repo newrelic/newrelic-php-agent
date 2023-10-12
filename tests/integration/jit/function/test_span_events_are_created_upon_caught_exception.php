@@ -3,7 +3,7 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+ 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
 when an exception is handled by the exception handler.
@@ -11,9 +11,9 @@ when an exception is handled by the exception handler.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
+
+require('skipif.inc');
+
 */
 
 /*INI
@@ -21,7 +21,21 @@ newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
+display_errors=1
+log_errors=0
+error_reporting = E_ALL
+opcache.enable=1
+opcache.enable_cli=1
+opcache.file_update_protection=0
+opcache.jit_buffer_size=32M
+opcache.jit=function
 */
+
+
+/*PHPMODULES
+zend_extension=opcache.so
+*/
+
 
 /*EXPECT_ERROR_EVENTS
 null
