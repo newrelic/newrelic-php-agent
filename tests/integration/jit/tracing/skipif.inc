@@ -11,7 +11,6 @@ if (version_compare(PHP_VERSION, "8.0", "<")) {
 }
 
 /* Test cannot run without opcache */
-/* This should be changed to a 'warn' result when supported */
 if (!extension_loaded('Zend OPcache')) {
   die("warn: Zend OPcache extension required\n");
 }
