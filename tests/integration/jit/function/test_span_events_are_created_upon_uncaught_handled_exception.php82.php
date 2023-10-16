@@ -6,13 +6,21 @@
  
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
+when an exception is handled by the exception handler.  Unlike the case of
+PHP 8.0/8.1 where PHP OAPI additionally passes exception information in the
+zend_execute_data for the agent to use to create an error_event, PHP 8.2
+passes no additional information for the error event to be recorded.
+Check that no error events are created.
 */
 
 /*SKIPIF
 <?php
 
 require('skipif.inc');
+
+if (version_compare(PHP_VERSION, "8.2", "<")) {
+  die("skip: PHP > 8.2 not supported\n");
+}
 
 */
 
@@ -35,6 +43,11 @@ opcache.jit=function
 /*PHPMODULES
 zend_extension=opcache.so
 */
+
+/*EXPECT_ERROR_EVENTS
+null
+*/
+
 
 /*EXPECT_SPAN_EVENTS
 [
