@@ -6,9 +6,7 @@
  
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.  In the case of PHP 8.0/8.1,
-PHP OAPI additionally where PHP OAPI additionally passes exception information in the
-zend_execute_data for the agent to use to create an error_event.
+when an exception is handled by the exception handler.
 Check that error events are created.
 */
 
@@ -17,9 +15,6 @@ Check that error events are created.
 
 require('skipif.inc');
 
-if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: PHP > 8.1 not supported\n");
-}
 
 */
 
@@ -34,6 +29,8 @@ opcache.enable_cli=1
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
 opcache.jit=tracing
+newrelic.loglevel = verbosedebug
+newrelic.daemon.loglevel = debug
 */
 
 /*PHPMODULES
@@ -173,7 +170,7 @@ zend_extension=opcache.so
 */
 
 set_exception_handler(
-    function () {
+    function (Throwable $exception) {
         time_nanosleep(0, 100000000);
         exit(0); 
     }

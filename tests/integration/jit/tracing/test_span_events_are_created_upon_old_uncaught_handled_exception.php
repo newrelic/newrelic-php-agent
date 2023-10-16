@@ -6,21 +6,23 @@
  
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.  Unlike the case of
-PHP 8.0/8.1 where PHP OAPI additionally passes exception information in the
-zend_execute_data for the agent to use to create an error_event, PHP 8.2
-passes no additional information for the error event to be recorded.
-Check that no error events are created.
+when an exception is handled by the exception handler.  In the case of PHP 8.0/8.1,
+PHP OAPI additionally where PHP OAPI additionally passes exception information in the
+zend_execute_data for the agent to use to create an error_event.
+Check that error events are created.
 */
 
 /*SKIPIF
 <?php
 
-require('skipif.inc');
-
-if (version_compare(PHP_VERSION, "8.2", "<")) {
-  die("skip: PHP > 8.2 not supported\n");
+if (version_compare(PHP_VERSION, "8.2", ">=")) {
+  die("skip: PHP > 8.1 not supported\n");
 }
+//else {
+require('skipif.inc');
+//}
+
+*/
 
 /*INI
 newrelic.distributed_tracing_enabled=1
@@ -40,7 +42,35 @@ zend_extension=opcache.so
 */
 
 /*EXPECT_ERROR_EVENTS
-null
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": "??",
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_SPAN_EVENTS
