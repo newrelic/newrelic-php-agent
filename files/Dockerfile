@@ -125,7 +125,14 @@ RUN \
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-RUN docker-php-ext-install mysqli
+# mysqli
+# Incompatiblities with arm64 architecture
+RUN \
+  arch=$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/); \
+  if [ "$arch" = "amd64" ]; then \
+    docker-php-ext-install mysqli; \
+  fi
+
 
 # redis
 RUN pecl install redis && docker-php-ext-enable redis
@@ -136,14 +143,6 @@ RUN pecl install memcache && docker-php-ext-enable memcache
 # memcached
 RUN apt-get install -y libmemcached-dev
 RUN pecl install memcached && docker-php-ext-enable memcached
-
-# mongo?
-# this extension is no longer maintained and doesn't work with
-# recent PHP releases
-#RUN pecl install mongo && docker-php-ext-enable mongo
-
-# mongodb - need tests written for this maintained mongo extension
-#RUN pecl install mongodb && docker-php-ext-enable mongodb
 
 # uopz
 RUN pecl install uopz && docker-php-ext-enable uopz
