@@ -125,15 +125,6 @@ RUN \
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-# mysqli
-# Incompatiblities with arm64 architecture
-RUN \
-  arch=$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/); \
-  if [ "$arch" = "amd64" ]; then \
-    docker-php-ext-install mysqli; \
-  fi
-
-
 # redis
 RUN pecl install redis && docker-php-ext-enable redis
 
