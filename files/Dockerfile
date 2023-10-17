@@ -183,5 +183,11 @@ ENV PHP_VER=${PHP_VER}
 ARG PS1
 ENV PS1="New Relic > "
 
+# QOL aliases
+# `rebuild` - make clean + make agent + make tests
+# `integ` - run all integration tests
+RUN echo 'alias integ="./bin/integration_runner -agent ./agent/.libs/newrelic.so"' >> ~/.bashrc
+RUN echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
+
 WORKDIR /usr/src/myapp
 CMD ["bash"]
