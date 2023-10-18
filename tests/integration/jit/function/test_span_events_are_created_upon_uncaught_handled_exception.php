@@ -6,8 +6,9 @@
  
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
-Check that error events are created.
+when an uncaught exception is handled by the user exception handler. The
+span that generated the exception should have error attributes. Additionally
+error events should be created.
 */
 
 /*SKIPIF
