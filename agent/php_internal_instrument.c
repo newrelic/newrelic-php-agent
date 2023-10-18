@@ -642,13 +642,14 @@ NR_INNER_WRAPPER(mysqli_construct) {
   zend_long port = 0;
   zval* mysqli_obj = NULL;
   int zcaught = 0;
+  bool port_is_null = 1;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|s!s!s!s!l!s!", &host,
           &host_len, &username, &username_len, &password, &password_len,
-          &database, &database_len, &port, &socket, &socket_len)) {
+          &database, &database_len, &port, &port_is_null, &socket, &socket_len)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
