@@ -3459,7 +3459,7 @@ static void nr_txn_add_logging_metrics(nrtxn_t* txn, const char* level_name) {
   nr_free(metric_name);
 }
 
-void nr_txn_record_log_event_ex(nrtxn_t* txn,
+void nr_txn_record_log_event(nrtxn_t* txn,
                              const char* log_level_name,
                              const char* log_message,
                              nrtime_t timestamp,
@@ -3469,16 +3469,8 @@ void nr_txn_record_log_event_ex(nrtxn_t* txn,
     return;
   }
 
-  nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, context_attributes, app);
+  nr_txn_add_log_event(txn, log_level_name, log_message, timestamp,
+                       context_attributes, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
-}
-
-void nr_txn_record_log_event(nrtxn_t* txn,
-                             const char* log_level_name,
-                             const char* log_message,
-                             nrtime_t timestamp,
-                             nrapp_t* app) {
-
-  nr_txn_record_log_event_ex(txn, log_level_name, log_message, timestamp, NULL, app);
 }
