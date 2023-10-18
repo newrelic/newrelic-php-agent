@@ -89,6 +89,7 @@ TEST_BINARIES = \
 	tests/test_internal_instrument \
 	tests/test_hash \
 	tests/test_mongodb \
+	tests/test_monolog \
 	tests/test_mysql \
 	tests/test_mysqli \
 	tests/test_output \

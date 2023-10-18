@@ -97,6 +97,15 @@ void nr_attribute_config_disable_destinations(nr_attribute_config_t* config,
   config->disabled_destinations |= disabled_destinations;
 }
 
+void nr_attribute_config_enable_destinations(nr_attribute_config_t* config,
+                                             uint32_t disabled_destinations) {
+  if (0 == config) {
+    return;
+  }
+
+  config->disabled_destinations &= ~disabled_destinations;
+}
+
 nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
     const char* match,
     uint32_t include_destinations,
