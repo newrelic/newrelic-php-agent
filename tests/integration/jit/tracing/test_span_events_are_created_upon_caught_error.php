@@ -36,7 +36,37 @@ opcache.jit=tracing
 /*PHPMODULES
 zend_extension=opcache.so
 */
-
+/*EXPECT_ERROR_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 100,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "E_USER_ERROR",
+        "error.message": "foo",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": 1,
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
