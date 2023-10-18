@@ -370,6 +370,24 @@ static void test_log_event_priority(void) {
   nr_log_event_set_priority(NULL, 0xFFFF);
 }
 
+static void test_log_event_context_attributes(void) {
+  nr_log_event_t* event = nr_log_event_create();
+  nr_attributes_t* attributes = NULL;
+
+  // Test : Get context attributes with a NULL event
+  tlib_pass_if_null("Initialize event should have NULL context",
+                    event->context_attributes);
+  nr_log_event_destroy(&event);
+
+  // Test: Setting context data on NULL event ptr should not crash
+  attributes = nr_attributes_create(NULL);
+  nr_log_event_set_context_attributes(NULL, attributes);
+  nr_attributes_destroy(&attributes);
+
+  // Test: Setting a NULL context data ptr should not crash
+  nr_log_event_set_context_attributes(event, NULL);
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -385,4 +403,5 @@ void test_main(void* p NRUNUSED) {
   test_log_event_timestamp();
   test_log_event_priority();
   test_log_event_span_id();
+  test_log_event_context_attributes();
 }
