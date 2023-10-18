@@ -1249,7 +1249,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;newrelic.application_logging.forwarding.context_data.enabled = false
 
 ; Setting: newrelic.application_logging.forwarding.context_data.include
-;          newrelic.application_logging.forwarding.context_data.include
+;          newrelic.application_logging.forwarding.context_data.exclude
 ; Type   : string
 ; Scope  : per-directory
 ; Default: none
