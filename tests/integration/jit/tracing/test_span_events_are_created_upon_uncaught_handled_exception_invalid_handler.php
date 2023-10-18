@@ -6,10 +6,17 @@
  
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.  In the case of PHP 8.0/8.1,
-PHP OAPI additionally where PHP OAPI additionally passes exception information in the
-zend_execute_data for the agent to use to create an error_event.
-Check that error events are created.
+when an uncaught exception is handled by the user exception handler. The
+span that generated the exception should have error attributes. Additionally
+error events should be created.
+Caveat: This test uses invalid PHP code which causes undefined behavior. The
+test is left only to demonstrate this undefined behavior of an agent. When
+user exception handler is defined without explicitly accepting one parameter
+(which violates user exception handler's callback contract defined here:
+https://www.php.net/manual/en/function.set-exception-handler), when opcache
+is enabled, the oapi agent generated error events for PHPs: 8.0 and 8.1, but
+didn't generate error events PHP 8.2+ (hence PHPs 8.2+ are excluded from this
+test).
 */
 
 /*SKIPIF
