@@ -13,7 +13,9 @@ require('skipif.inc');
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an uncaught exception is thrown.
+when an uncaught exception is thrown and handling is left to the agent's default
+exception handler. The span that generated the exception and the root span should
+have error attributes. Additionally error events should be created.
 */
 
 /*INI
