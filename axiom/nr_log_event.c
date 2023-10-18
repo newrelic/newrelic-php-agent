@@ -122,10 +122,6 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
   add_log_field_to_buf(buf, "entity.name", event->entity_name, false, false,
                        true);
   add_log_field_to_buf(buf, "hostname", event->hostname, false, false, true);
-  /*
-  add_log_field_to_buf(buf, "attributes", context_json, false, false,
-  false);
-  */
 
   // timestamp always present
   nr_buffer_add(buf, NR_PSTR(",\"timestamp\":"));
