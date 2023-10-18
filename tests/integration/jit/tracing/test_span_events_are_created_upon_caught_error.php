@@ -6,7 +6,9 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an error is generated and handled.
+when an error is generated and handled by user error handler. The span that
+generated the error should have error attributes. Additionally error events
+should be created.
 */
 
 /*SKIPIF
