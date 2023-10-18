@@ -170,7 +170,7 @@ zend_extension=opcache.so
 */
 
 set_error_handler(
-    function () {
+    function (int $errno, string $errstr) {
         time_nanosleep(0, 100000000);
         return false;
     }

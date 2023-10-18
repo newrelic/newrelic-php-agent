@@ -5,7 +5,8 @@
  */
 
 /*DESCRIPTION
-Test that no span events error attributes are captured when error_collector is disabled
+Test that no span events error attributes are captured when error_collector is disabled.
+No error events should be generated either.
 */
 
 /*SKIPIF
@@ -33,6 +34,9 @@ opcache.jit=tracing
 
 /*PHPMODULES
 zend_extension=opcache.so
+*/
+/*EXPECT_ERROR_EVENTS
+null
 */
 
 /*EXPECT_SPAN_EVENTS

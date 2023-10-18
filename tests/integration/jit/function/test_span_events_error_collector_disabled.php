@@ -34,6 +34,9 @@ opcache.jit=function
 /*PHPMODULES
 zend_extension=opcache.so
 */
+/*EXPECT_ERROR_EVENTS
+null
+*/
 
 /*EXPECT_SPAN_EVENTS
 [

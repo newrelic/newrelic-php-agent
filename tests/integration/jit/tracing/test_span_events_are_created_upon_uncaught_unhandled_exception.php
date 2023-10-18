@@ -6,7 +6,9 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an uncaught exception is thrown.
+when an uncaught exception is thrown and handling is left to the agent's default
+exception handler. The span that generated the exception and the root span should
+have error attributes. Additionally error events should be created.
 */
 
 /*SKIPIF
@@ -33,6 +35,38 @@ opcache.jit=tracing
 
 /*PHPMODULES
 zend_extension=opcache.so
+*/
+
+/*EXPECT_ERROR_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 100,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": 1,
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_SPAN_EVENTS
