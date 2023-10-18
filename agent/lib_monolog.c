@@ -583,8 +583,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   }
 
   /* Record the log event */
-  nr_txn_record_log_event_ex(NRPRG(txn), level_name, message, timestamp,
-                             context_attributes, NRPRG(app));
+  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
+                          context_attributes, NRPRG(app));
 
   nr_free(level_name);
   nr_free(message);

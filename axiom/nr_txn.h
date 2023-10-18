@@ -661,17 +661,11 @@ extern bool nr_txn_log_decorating_enabled(nrtxn_t* txn);
  *           6. The application (to get linking meta data)
  *
  */
-extern void nr_txn_record_log_event_ex(nrtxn_t* txn,
-                                    const char* level_name,
-                                    const char* message,
-                                    nrtime_t timestamp,
-                                    nr_attributes_t* context_attributes,
-                                    nrapp_t* app);
-
 extern void nr_txn_record_log_event(nrtxn_t* txn,
                                     const char* level_name,
                                     const char* message,
                                     nrtime_t timestamp,
+                                    nr_attributes_t* context_attributes,
                                     nrapp_t* app);
 
 /*
