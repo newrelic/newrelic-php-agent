@@ -23,10 +23,12 @@ test).
 /*SKIPIF
 <?php
 
-require('skipif.inc');
 if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: PHP >= 8.2 behaves differently\n");
+  die("skip: PHP > 8.1 not supported\n");
 }
+
+require('skipif.inc');
+
 
 */
 
