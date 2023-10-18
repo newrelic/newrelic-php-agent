@@ -8180,7 +8180,7 @@ static void test_record_log_event(void) {
    */
 
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
-  nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL);
+  nr_txn_record_log_event(NULL, NULL, NULL, 0, NULL, NULL);
   tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("all params null, no crash, event not recorded", 0,
@@ -8188,7 +8188,7 @@ static void test_record_log_event(void) {
   nr_txn_destroy(&txn);
 
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
-  nr_txn_record_log_event(NULL, LOG_EVENT_PARAMS, NULL);
+  nr_txn_record_log_event(NULL, LOG_EVENT_PARAMS, NULL, NULL);
   tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("null txn, no crash, event not recorded", 0,
@@ -8200,7 +8200,7 @@ static void test_record_log_event(void) {
    * don't blow up!
    */
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
-  nr_txn_record_log_event(txn, NULL, NULL, 0, NULL);
+  nr_txn_record_log_event(txn, NULL, NULL, 0, NULL, NULL);
   tlib_pass_if_int_equal("null log params, event not recorded", 0,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("null log params, event not recorded", 0,
@@ -8214,7 +8214,7 @@ static void test_record_log_event(void) {
   nr_txn_destroy(&txn);
 
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
-  nr_txn_record_log_event(txn, NULL, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, NULL, LOG_MESSAGE, 0, NULL, NULL);
   tlib_pass_if_int_equal("null log level, event seen", 1,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("null log level, event saved", 1,
@@ -8253,7 +8253,7 @@ static void test_record_log_event(void) {
 
   /* Happy path - everything initialized: record! */
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
   tlib_pass_if_int_equal("happy path, event seen", 1,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, event saved", 1,
@@ -8306,8 +8306,8 @@ static void test_record_log_event(void) {
     nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
   }
   /* force sampling */
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
   test_txn_metric_is("happy path with sampling, events recorded and dropped",
                      txn->unscoped_metrics, MET_FORCED,
                      "Logging/Forwarding/Dropped", 2, 0, 0, 0, 0, 0);
@@ -8321,8 +8321,8 @@ static void test_record_log_event(void) {
   tlib_pass_if_not_null("empty log events pool created", txn->log_events);
   tlib_pass_if_int_equal("empty log events pool stores 0 events", 0,
                          nr_log_events_max_events(txn->log_events));
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
   /* Events are seen because log forwarding is enabled
      and txn->options.log_events_max_samples_stored > 0 */
   tlib_pass_if_int_equal("happy path, event seen", 2,
@@ -8337,7 +8337,7 @@ static void test_record_log_event(void) {
   /* High_security */
   txn = new_txn_for_record_log_event_test(APP_ENTITY_NAME);
   txn->high_security = 1;
-  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+  nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
   tlib_pass_if_int_equal("happy path, hsm, event seen", 0,
                          nr_log_events_number_seen(txn->log_events));
   tlib_pass_if_int_equal("happy path, hsm, event saved", 0,
@@ -8355,17 +8355,17 @@ static void test_record_log_event(void) {
 
   /* default filter log level is LOG_LEVEL_WARNING */
   /* these messages should be accepted */
-  nr_txn_record_log_event(txn, LL_ALER_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_CRIT_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_WARN_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_EMER_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_UNKN_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, "APPLES", LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_ALER_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_CRIT_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_WARN_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_EMER_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_UNKN_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, "APPLES", LOG_MESSAGE, 0, NULL, NULL);
 
   /* these messages will be dropped */
-  nr_txn_record_log_event(txn, LL_INFO_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_DEBU_STR, LOG_MESSAGE, 0, NULL);
-  nr_txn_record_log_event(txn, LL_NOTI_STR, LOG_MESSAGE, 0, NULL);
+  nr_txn_record_log_event(txn, LL_INFO_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_DEBU_STR, LOG_MESSAGE, 0, NULL, NULL);
+  nr_txn_record_log_event(txn, LL_NOTI_STR, LOG_MESSAGE, 0, NULL, NULL);
 
   /* events seen and saved are both 6 because the filtering occurs before
    * log forwarding handles the messages.
