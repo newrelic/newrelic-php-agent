@@ -386,6 +386,9 @@ static void test_log_event_context_attributes(void) {
   // Test: Setting a NULL context data ptr should not crash
   nr_log_event_set_context_attributes(event, NULL);
 
+  // Test: All NULL parameters should not crash
+  nr_log_event_set_context_attributes(NULL, NULL);
+
   nr_log_event_destroy(&event);
 }
 
