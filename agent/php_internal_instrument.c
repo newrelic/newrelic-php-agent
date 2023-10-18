@@ -1281,31 +1281,21 @@ end:
 
 /*
  * Handle
- *   resource mysqli_stmt_execute ( object $link, ?array $params = null )
- *   resource mysqli_stmt::execute( ?array $params = null)
+ *   resource mysqli_stmt_execute ( object $link )
+ *   resource mysqli_stmt::execute()
  */
 NR_INNER_WRAPPER(mysqli_stmt_execute) {
   zval* stmt_obj = NULL;
-  zval* param_array = NULL;
   const char* sqlstr = NULL;
   int sqlstrlen;
   int zcaught = 0;
   nr_segment_t* segment = NULL;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!", &stmt_obj, &param_array)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o", &stmt_obj)) {
     stmt_obj = NR_PHP_INTERNAL_FN_THIS();
   }
-#else
-  if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a", &stmt_obj, &param_array)) {
-    stmt_obj = NR_PHP_INTERNAL_FN_THIS();
-  }
-#endif
-
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
   sqlstrlen = nr_strlen(sqlstr);
 
