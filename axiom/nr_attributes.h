@@ -38,10 +38,11 @@ typedef struct _nr_attributes_t nr_attributes_t;
 #define NR_ATTRIBUTE_DESTINATION_ERROR 4
 #define NR_ATTRIBUTE_DESTINATION_BROWSER 8
 #define NR_ATTRIBUTE_DESTINATION_SPAN 16
+#define NR_ATTRIBUTE_DESTINATION_LOG 32
 #define NR_ATTRIBUTE_DESTINATION_ALL                                       \
   (NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_TXN_TRACE \
    | NR_ATTRIBUTE_DESTINATION_ERROR | NR_ATTRIBUTE_DESTINATION_BROWSER     \
-   | NR_ATTRIBUTE_DESTINATION_SPAN)
+   | NR_ATTRIBUTE_DESTINATION_SPAN | NR_ATTRIBUTE_DESTINATION_LOG)
 
 /*
  * Attribute keys and value string lengths are limited.  If a string exceeds
@@ -96,6 +97,22 @@ extern nr_attribute_config_t* nr_attribute_config_create(void);
  *           will not be overriden:  They will instead be or-ed.
  */
 extern void nr_attribute_config_disable_destinations(
+    nr_attribute_config_t* config,
+    uint32_t disabled_destinations);
+
+/*
+ * Purpose : Enable attribute destinations.
+ *
+ * Params  : 1. The configuration to modify.
+ *           2. The set of destinations to enable.
+ *
+ * Note    : Destinations are enabled by default when a config
+ *           is created.  This function can be used to enable
+ *           a previously disabled destination.  Current
+ *           use is to enable destinationss disabled by default
+ *           for testing purposes.
+ */
+extern void nr_attribute_config_enable_destinations(
     nr_attribute_config_t* config,
     uint32_t disabled_destinations);
 

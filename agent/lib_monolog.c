@@ -12,9 +12,12 @@
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
+#include "lib_monolog_private.h"
 #include "nr_datastore_instance.h"
 #include "nr_segment_datastore.h"
+#include "nr_txn.h"
 #include "util_logging.h"
+#include "util_object.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_sleep.h"
@@ -307,6 +310,167 @@ return_context:
 #endif
 
 /*
+ * Purpose : Convert a zval value from context data to a nrobj_t
+ *
+ * Params  : zval
+ *
+ * Returns : nrobj_t* holding converted value
+ *           NULL otherwise
+ *
+ * Notes   : Only scalar and string types are supported.
+ *           Nested arrays are not converted and are ignored.
+ *           Other zval types are also ignored.
+ */
+nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
+    const zval* z TSRMLS_DC) {
+  nrobj_t* retobj = NULL;
+
+  if (NULL == z) {
+    return NULL;
+  }
+
+  nr_php_zval_unwrap(z);
+
+  switch (Z_TYPE_P(z)) {
+    case IS_NULL:
+      retobj = NULL;
+      break;
+
+    case IS_LONG:
+      retobj = nro_new_long((long)Z_LVAL_P(z));
+      break;
+
+    case IS_DOUBLE:
+      retobj = nro_new_double(Z_DVAL_P(z));
+      break;
+
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+    case IS_TRUE:
+      retobj = nro_new_boolean(true);
+      break;
+
+    case IS_FALSE:
+      retobj = nro_new_boolean(false);
+      break;
+#else
+    case IS_BOOL:
+      retobj = nro_new_boolean(Z_BVAL_P(z));
+      break;
+#endif /* PHP 7.0+ */
+
+    case IS_STRING:
+      if (!nr_php_is_zval_valid_string(z)) {
+        retobj = NULL;
+      } else {
+        retobj = nro_new_string(Z_STRVAL_P(z));
+      }
+      break;
+
+    default:
+      /* any other type conversion to attribute not supported */
+      retobj = NULL;
+      break;
+  }
+
+  return retobj;
+}
+
+/*
+ * Purpose : Extract $context argument of Monolog\Logger::addRecord to
+ * attributes
+ *
+ * Params  : # of Monolog\Logger::addRecord arguments, and
+ * Monolog\Logger::addRecord argument list
+ *
+ * Returns : zval* for context array on success (must be freed by caller)
+ *           NULL otherwise
+ *
+ */
+static zval* nr_monolog_extract_context_data(const size_t argc,
+                                             NR_EXECUTE_PROTO TSRMLS_DC) {
+  zval* context_arg;
+
+  if (3 > argc) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: $context not available", __func__);
+    goto return_context;
+  }
+
+  context_arg = nr_php_arg_get(3, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  if (NULL == context_arg) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: $context not defined, unable to get log context",
+                     __func__);
+    goto return_context;
+  } else if (!nr_php_is_zval_valid_array(context_arg)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: expected $context be a valid array, got type %d",
+                     __func__, Z_TYPE_P(context_arg));
+    goto return_context;
+  }
+
+  if (0 == nr_php_zend_hash_num_elements(Z_ARRVAL_P(context_arg))) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: $context has no elements", __func__);
+    goto return_context;
+  }
+
+return_context:
+  return context_arg;
+}
+
+/*
+ * Purpose : Convert $context array of Monolog\Logger::addRecord to
+ * attributes
+ *
+ * Params  : zval* for context array from Monolog
+ *
+ * Returns : json representation on success
+ *           NULL otherwise
+ *
+ */
+nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
+    zval* context_data TSRMLS_DC) {
+  zend_string* key;
+  zval* val;
+
+  nr_attributes_t* attributes = NULL;
+  nr_status_t st;
+
+  if (NULL == context_data) {
+    return NULL;
+  }
+
+  attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
+
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
+    (void)key;
+    (void)val;
+
+    if (NULL == key) {
+      continue;
+    }
+
+    nrobj_t* obj = nr_monolog_context_data_zval_to_attribute_obj(val);
+
+    if (NULL != obj) {
+      char* buf = nr_formatf(NR_TXN_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "%s",
+                             ZSTR_VAL(key));
+      st = nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG, buf,
+                                  obj);
+      if (NR_SUCCESS != st) {
+        nrl_warning(NRL_AGENT, "failed to add monolog context attribute key %s",
+                    ZSTR_VAL(key));
+      }
+      nr_free(buf);
+      nro_delete(obj);
+    }
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return attributes;
+}
+
+/*
  * Purpose : Combine $message and $context arguments of
  * Monolog\Logger::addRecord into a single string to be used as a message
  * property of the log event.
@@ -397,6 +561,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   int api = 0;
   size_t argc = 0;
   char* message = NULL;
+  nr_attributes_t* context_attributes = NULL;
   nrtime_t timestamp = nr_get_time();
 
   /* Values of $message and $timestamp arguments are needed only if log
@@ -404,14 +569,22 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
     argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     message = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+    if (nr_txn_log_forwarding_context_data_enabled(NRPRG(txn))) {
+      zval* context_data = nr_monolog_extract_context_data(
+          argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      context_attributes
+          = nr_monolog_convert_context_data_to_attributes(context_data);
+      nr_php_arg_release(&context_data);
+    }
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 
   /* Record the log event */
-  nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
-                          NRPRG(app));
+  nr_txn_record_log_event_ex(NRPRG(txn), level_name, message, timestamp,
+                             context_attributes, NRPRG(app));
 
   nr_free(level_name);
   nr_free(message);
