@@ -29,6 +29,8 @@ static void test_log_event_create_destroy(void) {
 static void test_log_event_to_json(void) {
   char* json;
   nr_log_event_t* log;
+  nr_attributes_t* attributes = NULL;
+  nr_attribute_config_t* config = NULL;
 
   /*
    * Test : Bad parameters.
@@ -99,6 +101,14 @@ static void test_log_event_to_json(void) {
   nr_log_event_set_guid(log, "test id 3");
   nr_log_event_set_entity_name(log, "entity name here");
   nr_log_event_set_hostname(log, "host name here");
+  config = nr_attribute_config_create();
+  attributes = nr_attributes_create(config);
+  nr_attribute_config_destroy(&config);
+  nr_attributes_user_add_string(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                                "string_attr", "string_attr_value");
+  nr_attributes_user_add_long(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                              "long_attr", 12345);
+  nr_log_event_set_context_attributes(log, attributes);
   json = nr_log_event_to_json(log);
   tlib_pass_if_str_equal(
       "requires escaping for JSON event",
@@ -110,7 +120,11 @@ static void test_log_event_to_json(void) {
       "\"entity.guid\":\"test id 3\","
       "\"entity.name\":\"entity name here\","
       "\"hostname\":\"host name here\","
-      "\"timestamp\":12345"
+      "\"timestamp\":12345,"
+      "\"attributes\":{"
+      "\"long_attr\":12345,"
+      "\"string_attr\":\"string_attr_value\""
+      "}"
       "}",
       json);
   nr_free(json);
@@ -120,6 +134,8 @@ static void test_log_event_to_json(void) {
 static void test_log_event_to_json_buffer(void) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
   nr_log_event_t* log;
+  nr_attributes_t* attributes = NULL;
+  nr_attribute_config_t* config = NULL;
 
   /*
    * Test : Bad parameters.
@@ -163,6 +179,14 @@ static void test_log_event_to_json_buffer(void) {
   nr_log_event_set_guid(log, "test id 3");
   nr_log_event_set_entity_name(log, "entity name here");
   nr_log_event_set_hostname(log, "host name here");
+  config = nr_attribute_config_create();
+  attributes = nr_attributes_create(config);
+  nr_attribute_config_destroy(&config);
+  nr_attributes_user_add_string(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                                "string_attr", "string_attr_value");
+  nr_attributes_user_add_long(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                              "long_attr", 12345);
+  nr_log_event_set_context_attributes(log, attributes);
   tlib_pass_if_bool_equal("full log event", true,
                           nr_log_event_to_json_buffer(log, buf));
   nr_buffer_add(buf, NR_PSTR("\0"));
@@ -175,7 +199,11 @@ static void test_log_event_to_json_buffer(void) {
                          "\"entity.guid\":\"test id 3\","
                          "\"entity.name\":\"entity name here\","
                          "\"hostname\":\"host name here\","
-                         "\"timestamp\":12345"
+                         "\"timestamp\":12345,"
+                         "\"attributes\":{"
+                         "\"long_attr\":12345,"
+                         "\"string_attr\":\"string_attr_value\""
+                         "}"
                          "}",
                          nr_buffer_cptr(buf));
   nr_log_event_destroy(&log);
