@@ -173,7 +173,7 @@ static void test_convert_zval_to_attribute_obj(TSRMLS_D) {
     nr_attributes_destroy(&attributes);                                        \
   } while (0)
 
-static void test_convert_context_data_to_json(TSRMLS_D) {
+static void test_convert_context_data_to_attributes(TSRMLS_D) {
   zval* context_data;
 
   tlib_php_request_start();
@@ -187,7 +187,9 @@ static void test_convert_context_data_to_json(TSRMLS_D) {
                                           NR_ATTRIBUTE_DESTINATION_LOG);
 
   context_data = tlib_php_request_eval_expr(
-      "array(1=>\"one\","
+      "array("
+      "1=>\"one\","
+      "\"null_attr\"=>null,"
       "\"string_attr\"=>\"string_value\","
       "\"double_attr\"=>3.1,"
       "\"int_attr\"=>1234,"
@@ -288,6 +290,34 @@ static void test_convert_context_data_to_json(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static void test_convert_context_data_to_attributes_bad_params(TSRMLS_D) {
+  tlib_php_request_start();
+
+  /* enable context data destination */
+  nrtxn_t* txn = NRPRG(txn);
+  txn->options.log_forwarding_context_data_enabled = 1;
+  nr_attribute_config_enable_destinations(txn->attribute_config,
+                                          NR_ATTRIBUTE_DESTINATION_LOG);
+
+  nr_attributes_t* attributes
+      = nr_monolog_convert_context_data_to_attributes(NULL);
+
+  tlib_pass_if_null("NULL context yields attributes is NULL", attributes);
+
+  // create an undefined zval - nr_php_zval_alloc() returns undefined
+  zval* z = nr_php_zval_alloc();
+
+  tlib_pass_if_equal("zval is undefined type", IS_UNDEF, Z_TYPE_P(z), int, "%d");
+
+  attributes = nr_monolog_convert_context_data_to_attributes(z);
+
+  tlib_pass_if_null("zval of undefined type yields attributes is NULL",
+                    attributes);
+  nr_php_zval_free(&z);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -296,7 +326,8 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
 
   test_convert_zval_to_attribute_obj();
-  test_convert_context_data_to_json();
+  test_convert_context_data_to_attributes();
+  test_convert_context_data_to_attributes_bad_params();
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
