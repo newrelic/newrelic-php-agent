@@ -761,6 +761,137 @@ done:
   nro_delete(params);
 }
 
+static void test_encode_log_events(void) {
+  nrtxn_t txn;
+  nr_flatbuffers_table_t tbl;
+  nr_flatbuffer_t* fb;
+  nr_aoffset_t events;
+  nrtime_t now;
+  uint32_t count;
+  int data_type;
+  int did_pass;
+  nr_log_event_t* log1 = NULL;
+  nr_log_event_t* log2 = NULL;
+  nr_attributes_t* attributes = NULL;
+  nr_attribute_config_t* config = NULL;
+
+  now = 123 * NR_TIME_DIVISOR;
+
+  // create 2 log event events
+  log1 = nr_log_event_create();
+  nr_log_event_set_log_level(log1, "LOG_LEVEL_TEST_ERROR");
+  nr_log_event_set_message(log1, "\" \\ / \b \f \n \r \t GBP sign \xc2\xa3xxx");
+  nr_log_event_set_timestamp(log1, now);
+  nr_log_event_set_trace_id(log1, "test id 1");
+  nr_log_event_set_span_id(log1, "test id 2");
+  nr_log_event_set_guid(log1, "test id 3");
+  nr_log_event_set_entity_name(log1, "entity name here");
+  nr_log_event_set_hostname(log1, "host name here");
+  config = nr_attribute_config_create();
+  attributes = nr_attributes_create(config);
+  nr_attribute_config_destroy(&config);
+  nr_attributes_user_add_string(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                                "string_attr", "string_attr_value");
+  nr_attributes_user_add_long(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                              "long_attr", 12345);
+  nr_log_event_set_context_attributes(log1, attributes);
+
+  log2 = nr_log_event_create();
+  nr_log_event_set_log_level(log2, "LOG_LEVEL_TEST_WARN");
+  nr_log_event_set_message(log2, "\" \\ / \b \f \n \r \t GBP sign \xc2\xa3xxx");
+  nr_log_event_set_timestamp(log2, now);
+  nr_log_event_set_trace_id(log2, "test id 3");
+  nr_log_event_set_span_id(log2, "test id 4");
+  nr_log_event_set_guid(log2, "test id 5");
+  nr_log_event_set_entity_name(log2, "entity name here 2");
+  nr_log_event_set_hostname(log2, "host name here 2");
+
+  // add event2
+  nr_memset(&txn, 0, sizeof(txn));
+  txn.status.recording = 1;
+  txn.app_limits.log_events = 100;
+  txn.log_events = nr_log_events_create(100);
+  nr_log_events_add_event(txn.log_events, log1);
+  nr_log_events_add_event(txn.log_events, log2);
+
+  fb = nr_txndata_encode(&txn);
+  nr_flatbuffers_table_init_root(&tbl, nr_flatbuffers_data(fb),
+                                 nr_flatbuffers_len(fb));
+
+  data_type = nr_flatbuffers_table_read_i8(&tbl, MESSAGE_FIELD_DATA_TYPE,
+                                           MESSAGE_BODY_NONE);
+  did_pass = tlib_pass_if_true(__func__, MESSAGE_BODY_TXN == data_type,
+                               "data_type=%d", data_type);
+  if (0 != did_pass) {
+    goto done;
+  }
+
+  did_pass = tlib_pass_if_true(
+      __func__,
+      0 != nr_flatbuffers_table_read_union(&tbl, &tbl, MESSAGE_FIELD_DATA),
+      "transaction data missing");
+  if (0 != did_pass) {
+    goto done;
+  }
+
+  count = nr_flatbuffers_table_read_vector_len(&tbl,
+                                               TRANSACTION_FIELD_LOG_EVENTS);
+  if (0 != tlib_pass_if_true(__func__, 2 == count, "count=%d", count)) {
+    goto done;
+  }
+
+  events = nr_flatbuffers_table_read_vector(&tbl, TRANSACTION_FIELD_LOG_EVENTS);
+
+  nr_flatbuffers_table_init(
+      &tbl, tbl.data, tbl.length,
+      nr_flatbuffers_read_indirect(tbl.data, events).offset);
+  tlib_pass_if_bytes_equal_f(
+      __func__,
+      NR_PSTR("{"
+              "\"message\":\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t GBP sign "
+              "\\u00a3xxx\","
+              "\"level\":\"LOG_LEVEL_TEST_WARN\","
+              "\"trace.id\":\"test id 3\","
+              "\"span.id\":\"test id 4\","
+              "\"entity.guid\":\"test id 5\","
+              "\"entity.name\":\"entity name here 2\","
+              "\"hostname\":\"host name here 2\","
+              "\"timestamp\":123000"
+              "}"),
+      nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),
+      nr_flatbuffers_table_read_vector_len(&tbl, EVENT_FIELD_DATA), __FILE__,
+      __LINE__);
+
+  events.offset += sizeof(uint32_t);
+  nr_flatbuffers_table_init(
+      &tbl, tbl.data, tbl.length,
+      nr_flatbuffers_read_indirect(tbl.data, events).offset);
+  tlib_pass_if_bytes_equal_f(
+      __func__,
+      NR_PSTR("{"
+              "\"message\":\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t GBP sign "
+              "\\u00a3xxx\","
+              "\"level\":\"LOG_LEVEL_TEST_ERROR\","
+              "\"trace.id\":\"test id 1\","
+              "\"span.id\":\"test id 2\","
+              "\"entity.guid\":\"test id 3\","
+              "\"entity.name\":\"entity name here\","
+              "\"hostname\":\"host name here\","
+              "\"timestamp\":123000,"
+              "\"attributes\":{"
+              "\"long_attr\":12345,"
+              "\"string_attr\":\"string_attr_value\""
+              "}"
+              "}"),
+      nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),
+      nr_flatbuffers_table_read_vector_len(&tbl, EVENT_FIELD_DATA), __FILE__,
+      __LINE__);
+
+done:
+  nr_flatbuffers_destroy(&fb);
+  nr_txn_destroy_fields(&txn);
+}
+
 static void test_encode_trace(void) {
   nrtxn_t txn;
   nr_flatbuffers_table_t tbl;
@@ -1081,6 +1212,7 @@ void test_main(void* p NRUNUSED) {
   test_encode_span_events();
   test_encode_trace();
   test_encode_txn_event();
+  test_encode_log_events();
 
   test_bad_daemon_fd();
   test_null_txn();
