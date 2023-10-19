@@ -30,6 +30,11 @@
 #define LOG_DECORATE_PROC_FUNC_NAME \
   "newrelic_phpagent_monolog_decorating_processor"
 
+/*
+ * Prefix for log context attributes 
+ */
+#define NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "context."
+
 // clang-format off
 /*
  * This macro affects how instrumentation $context argument of
@@ -453,7 +458,7 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
     nrobj_t* obj = nr_monolog_context_data_zval_to_attribute_obj(val);
 
     if (NULL != obj) {
-      char* buf = nr_formatf(NR_TXN_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "%s",
+      char* buf = nr_formatf(NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "%s",
                              ZSTR_VAL(key));
       st = nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG, buf,
                                   obj);
