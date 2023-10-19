@@ -33,7 +33,9 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_free(event->entity_guid);
   nr_free(event->entity_name);
   nr_free(event->hostname);
-  nr_attributes_destroy(&(event->context_attributes));
+  if (NULL != event->context_attributes) {
+    nr_attributes_destroy(&(event->context_attributes));
+  }
 
   nr_realfree((void**)ptr);
 }
@@ -107,6 +109,9 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
 }
 
 bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
+  char* json = NULL;
+  nrobj_t* log_attributes = NULL;
+
   if (NULL == event || NULL == buf) {
     return false;
   }
@@ -128,6 +133,19 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
   // timestamp always present
   nr_buffer_add(buf, NR_PSTR(",\"timestamp\":"));
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
+
+  // add attributes if present
+  if (NULL != event->context_attributes) {
+    log_attributes = nr_attributes_user_to_obj(event->context_attributes,
+                                              NR_ATTRIBUTE_DESTINATION_LOG);
+    if (0 < nro_getsize(log_attributes)) {
+      json = nro_to_json(log_attributes);
+      add_log_field_to_buf(buf, "attributes", json, false, false, false);
+      nr_free(json);
+    }
+
+    nro_delete(log_attributes);
+  }
 
   nr_buffer_add(buf, NR_PSTR("}"));
 
@@ -163,9 +181,8 @@ void nr_log_event_set_timestamp(nr_log_event_t* event, const nrtime_t time) {
   event->timestamp = time / NR_TIME_DIVISOR_MS;
 }
 
-void nr_log_event_set_context_attributes(
-    nr_log_event_t* event,
-    nr_attributes_t* context_attributes) {
+void nr_log_event_set_context_attributes(nr_log_event_t* event,
+                                         nr_attributes_t* context_attributes) {
   if (NULL == event) {
     return;
   }
