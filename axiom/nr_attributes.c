@@ -723,6 +723,9 @@ static char* nr_attribute_debug_json(const nr_attribute_t* attribute) {
   if (NR_ATTRIBUTE_DESTINATION_BROWSER & attribute->destinations) {
     nro_set_array_string(dests, 0, "browser");
   }
+  if (NR_ATTRIBUTE_DESTINATION_LOG & attribute->destinations) {
+    nro_set_array_string(dests, 0, "log");
+  }
 
   nro_set_hash(obj, "dests", dests);
   nro_delete(dests);
