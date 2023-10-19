@@ -497,12 +497,10 @@ static nr_attribute_config_t* nr_php_create_attribute_config(TSRMLS_D) {
       NR_ATTRIBUTE_DESTINATION_BROWSER);
 
   nr_php_modify_attribute_destinations(
-      config, NR_TXN_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX,
-      NRINI(log_context_data_attributes.include), NR_ATTRIBUTE_DESTINATION_LOG,
-      0);
+      config, 0, NRINI(log_context_data_attributes.include),
+      NR_ATTRIBUTE_DESTINATION_LOG, 0);
   nr_php_modify_attribute_destinations(
-      config, NR_TXN_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX,
-      NRINI(log_context_data_attributes.exclude), 0,
+      config, 0, NRINI(log_context_data_attributes.exclude), 0,
       NR_ATTRIBUTE_DESTINATION_LOG);
 
   nr_php_modify_attribute_destinations(config, 0, NRINI(attributes.include),

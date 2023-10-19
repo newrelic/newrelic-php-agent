@@ -41,7 +41,6 @@
 #include "util_string_pool.h"
 
 #define NR_TXN_REQUEST_PARAMETER_ATTRIBUTE_PREFIX "request.parameters."
-#define NR_TXN_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "context."
 typedef enum _nr_tt_recordsql_t {
   NR_SQL_NONE = 0,
   NR_SQL_RAW = 1,
