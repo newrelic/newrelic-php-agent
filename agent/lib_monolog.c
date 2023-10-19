@@ -441,15 +441,13 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
   nr_attributes_t* attributes = NULL;
   nr_status_t st;
 
-  if (NULL == context_data) {
+  if (NULL == context_data || !nr_php_is_zval_valid_array(context_data)) {
     return NULL;
   }
 
   attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
 
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
-    (void)key;
-    (void)val;
 
     if (NULL == key) {
       continue;
