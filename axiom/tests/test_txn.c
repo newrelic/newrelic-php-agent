@@ -8303,7 +8303,7 @@ static void test_record_log_event(void) {
   /* fill up events pool to force sampling */
   for (int i = 0, max_events = nr_log_events_max_events(txn->log_events);
        i < max_events; i++) {
-    nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, &appv);
+    nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
   }
   /* force sampling */
   nr_txn_record_log_event(txn, LOG_EVENT_PARAMS, NULL, &appv);
