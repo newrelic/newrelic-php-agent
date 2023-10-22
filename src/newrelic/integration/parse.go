@@ -23,6 +23,7 @@ var (
 		"HEADERS":                 parseHeaders,
 		"SKIPIF":                  parseRawSkipIf,
 		"INI":                     parseSettings,
+		"PHPMODULES":              parsePHPModules,
 		"CONFIG":                  parseConfig,
 		"DESCRIPTION":             parseDescription,
 		"EXPECT_ANALYTICS_EVENTS": parseAnalyticEvents,
@@ -195,6 +196,35 @@ func parseSettings(t *Test, content []byte) error {
 	t.Settings = settings
 	return nil
 }
+
+func parsePHPModules(t *Test, content []byte) error {
+	trimmed := bytes.TrimSpace(content)
+	settings := make(map[string]string)
+	scanner := bufio.NewScanner(bytes.NewReader(trimmed))
+	delim := []byte("=")
+
+	for scanner.Scan() {
+		parts := bytes.SplitN(scanner.Bytes(), delim, 2)
+		switch len(parts) {
+		case 2:
+			key, value := bytes.TrimSpace(parts[0]), bytes.TrimSpace(parts[1])
+			if len(key) > 0 {
+				settings[string(key)] = string(value)
+			} else {
+				return errBadSetting
+			}
+		case 1:
+			return errBadSetting
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	t.PhpModules = settings
+	return nil
+}
+
 
 func parseAnalyticEvents(test *Test, content []byte) error {
 	test.analyticEvents = content
