@@ -8,11 +8,15 @@
 Test that span events are correctly created from any eligible segment, even
 when an uncaught exception is handled by the user exception handler. The
 span that generated the exception should have error attributes. Additionally
-error events should be created.
+error events should be created for PHP 8+ and OAPI.
 */
 
 /*SKIPIF
 <?php
+
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 7.0.0 not supported\n");
+}
 
 require('skipif.inc');
 

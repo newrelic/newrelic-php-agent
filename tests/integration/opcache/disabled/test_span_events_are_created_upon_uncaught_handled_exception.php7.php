@@ -8,27 +8,16 @@
 Test that span events are correctly created from any eligible segment, even
 when an uncaught exception is handled by the user exception handler. The
 span that generated the exception should have error attributes. Additionally
-error events should be created.
-
-Caveat: This test uses invalid PHP code which causes undefined behavior. The
-test is left only to demonstrate this undefined behavior of an agent. When
-user exception handler is defined without explicitly accepting one parameter
-(which violates user exception handler's callback contract defined here:
-https://www.php.net/manual/en/function.set-exception-handler), when opcache
-is enabled, the oapi agent generated error events for PHPs: 8.0 and 8.1, but
-didn't generate error events PHP 8.2+ (hence PHPs 8.2+ are excluded from this
-test).
+error events should be not be created for PHP 7.x (non-OAPI).
 */
 
 /*SKIPIF
 <?php
-
-if (version_compare(PHP_VERSION, "8.2", ">=")) {
-  die("skip: PHP > 8.1 not supported\n");
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: PHP > 8.0 not supported\n");
 }
 
 require('skipif.inc');
-
 
 */
 
@@ -40,8 +29,8 @@ newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
 error_reporting = E_ALL
-opcache.enable=1
-opcache.enable_cli=1
+opcache.enable=0
+opcache.enable_cli=0
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
 opcache.jit=function
@@ -53,35 +42,7 @@ zend_extension=opcache.so
 */
 
 /*EXPECT_ERROR_EVENTS
-[
-  "?? agent run id",
-  {
-    "reservoir_size": "??",
-    "events_seen": 1
-  },
-  [
-    [
-      {
-        "type": "TransactionError",
-        "timestamp": "??",
-        "error.class": "RuntimeException",
-        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "transactionName": "OtherTransaction\/php__FILE__",
-        "duration": "??",
-        "databaseDuration": "??",
-        "databaseCallCount": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
-      },
-      {},
-      {}
-    ]
-  ]
-]
+null
 */
 
 
@@ -186,7 +147,7 @@ zend_extension=opcache.so
 */
 
 set_exception_handler(
-    function () {
+    function (Throwable $exception) {
         time_nanosleep(0, 100000000);
         exit(0); 
     }

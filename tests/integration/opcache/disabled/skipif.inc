@@ -5,8 +5,8 @@
  */
 
 /* Opcache only supported with PHP 7+ */
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: PHP < 7.0.0 not supported\n");
+if (version_compare(PHP_VERSION, "7.1", "<")) {
+  die("skip: PHP < 7.1 not supported\n");
 }
 
 /* Test should not run with opache */
