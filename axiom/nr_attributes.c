@@ -98,12 +98,12 @@ void nr_attribute_config_disable_destinations(nr_attribute_config_t* config,
 }
 
 void nr_attribute_config_enable_destinations(nr_attribute_config_t* config,
-                                             uint32_t disabled_destinations) {
+                                             uint32_t enabled_destinations) {
   if (0 == config) {
     return;
   }
 
-  config->disabled_destinations &= ~disabled_destinations;
+  config->disabled_destinations &= ~enaabled_destinations;
 }
 
 nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
