@@ -349,7 +349,6 @@ nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
       retobj = nro_new_double(Z_DVAL_P(z));
       break;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_TRUE:
       retobj = nro_new_boolean(true);
       break;
@@ -357,11 +356,6 @@ nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
     case IS_FALSE:
       retobj = nro_new_boolean(false);
       break;
-#else
-    case IS_BOOL:
-      retobj = nro_new_boolean(Z_BVAL_P(z));
-      break;
-#endif /* PHP 7.0+ */
 
     case IS_STRING:
       if (!nr_php_is_zval_valid_string(z)) {
