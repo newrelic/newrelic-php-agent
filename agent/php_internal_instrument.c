@@ -645,19 +645,20 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   bool port_is_null = 1;
-  
+  const char *type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|s!s!s!s!l!s!", &host,
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &host,
           &host_len, &username, &username_len, &password, &password_len,
           &database, &database_len, &port, &port_is_null, &socket, &socket_len)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
 #else
+  const char *type_spec =  "|ssssls";
   if (FAILURE
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|ssssls", &host,
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &host,
           &host_len, &username, &username_len, &password, &password_len,
           &database, &database_len, &port, &socket, &socket_len)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -808,28 +809,20 @@ NR_INNER_WRAPPER(mysqli_commit) {
   nr_string_len_t name_len = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|ls!",
-                                  &mysqli_obj, &flags, &name, &name_len)) {
-    if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "|ls!", &flags,
-                                    &name, &name_len)) {
-      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-      return;
-    } else {
-      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
-    }
-  }
+  const char *proc_type_spec = "o|ls!";
+  const char *oo_type_spec = "|ls!";
 #else
+  const char *proc_type_spec = "o|ls";
+  const char *oo_type_spec = "|ls";
+#endif
+
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|ls",
+                                  ZEND_NUM_ARGS() TSRMLS_CC, proc_type_spec,
                                   &mysqli_obj, &flags, &name, &name_len)) {
     if (FAILURE
         == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "|ls", &flags,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec, &flags,
                                     &name, &name_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
@@ -837,7 +830,7 @@ NR_INNER_WRAPPER(mysqli_commit) {
       mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
     }
   }
-#endif
+
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MYSQL,
                                              "commit", instance,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -888,15 +881,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   bool port_is_null = 1;
+  const char *proc_type_spec = "o|s!s!s!s!l!s!l";
+  const char *oo_type_spec = "|s!s!s!s!l!s!l";
   if (FAILURE
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "o|s!s!s!s!l!s!l",
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, proc_type_spec,
           &mysqli_obj, &host, &host_len, &username, &username_len, &password,
           &password_len, &database, &database_len, &port, &port_is_null, &socket, &socket_len,
           &flags)) {
     if (FAILURE
         == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|s!s!s!s!l!s!l",
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec,
             &host, &host_len, &username, &username_len, &password,
             &password_len, &database, &database_len, &port, &port_is_null, &socket,
             &socket_len, &flags)) {
@@ -907,15 +902,17 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     }
   }
 #else
+  const char *proc_type_spec = "o|sssslsl";
+  const char *oo_type_spec = "|sssslsl";
   if (FAILURE
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "o|sssslsl",
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, proc_type_spec,
           &mysqli_obj, &host, &host_len, &username, &username_len, &password,
           &password_len, &database, &database_len, &port, &socket, &socket_len,
           &flags)) {
     if (FAILURE
         == zend_parse_parameters_ex(
-            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|sssslsl",
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec,
             &host, &host_len, &username, &username_len, &password,
             &password_len, &database, &database_len, &port, &socket,
             &socket_len, &flags)) {
@@ -1399,22 +1396,17 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
   nr_string_len_t sqlstrlen = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|s!", &mysqli_obj,
-                                  &sqlstr, &sqlstrlen)) {
-    nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-    return;
-  }
+  const char *type_spec = "o|s!";
 #else
+  const char *type_spec = "o|s";
+#endif
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|s", &mysqli_obj,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &mysqli_obj,
                                   &sqlstr, &sqlstrlen)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
-#endif
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
