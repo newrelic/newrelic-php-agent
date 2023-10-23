@@ -564,37 +564,6 @@ NR_PHP_WRAPPER_END
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
-NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle_before) {
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
-
-  /*
-   * Here's the problem: we want to record individual transactions for each job
-   * that is executed, but don't want to record a transaction for the actual
-   * queue:work command, since it spends most of its time sleeping. The naive
-   * approach would be to end the transaction immediately and instrument
-   * Worker::process(). The issue with that is that instrumentation hooks
-   * aren't executed if we're not actually in a transaction.
-   *
-   * So instead, what we'll do is to keep recording, but ensure that we ignore
-   * the transaction after WorkCommand::handle() has finished executing, at
-   * which point no more jobs can be run.
-   */
-
-  /*
-   * Start listening for jobs.
-   */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::process"),
-      nr_laravel_queue_worker_process_before,
-      nr_laravel_queue_worker_process_after, NULL);
-
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
-
 NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle_after) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -788,10 +757,28 @@ void nr_laravel_queue_enable(TSRMLS_D) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+
+  /*
+   * Here's the problem: we want to record individual transactions for each job
+   * that is executed, but don't want to record a transaction for the actual
+   * queue:work command, since it spends most of its time sleeping. The naive
+   * approach would be to end the transaction immediately and instrument
+   * Worker::process(). The issue with that is that instrumentation hooks
+   * aren't executed if we're not actually in a transaction.
+   *
+   * So instead, what we'll do is to keep recording, but ensure that we ignore
+   * the transaction after WorkCommand::handle() has finished executing, at
+   * which point no more jobs can be run.
+   */
+
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::handle"),
-      nr_laravel_queue_workcommand_handle_before,
+      NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::handle"), NULL,
       nr_laravel_queue_workcommand_handle_after, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\Worker::process"),
+      nr_laravel_queue_worker_process_before,
+      nr_laravel_queue_worker_process_after, NULL);
+
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::handle"),
