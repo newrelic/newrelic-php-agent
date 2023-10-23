@@ -11,5 +11,5 @@ if (version_compare(PHP_VERSION, "7.1", "<")) {
 
 /* Test should not run with opache */
 if (extension_loaded('Zend OPcache')) {
-  die("warn: Zend OPcache extension required\n");
+  die("warn: Zend OPcache extension required to be not loaded\n");
 }
