@@ -887,17 +887,18 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
    * to minimize any chances of introducing new problems.
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  bool port_is_null = 1;
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "o|s!s!s!s!l!s!l",
           &mysqli_obj, &host, &host_len, &username, &username_len, &password,
-          &password_len, &database, &database_len, &port, &socket, &socket_len,
+          &password_len, &database, &database_len, &port, &port_is_null, &socket, &socket_len,
           &flags)) {
     if (FAILURE
         == zend_parse_parameters_ex(
             ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "|s!s!s!s!l!s!l",
             &host, &host_len, &username, &username_len, &password,
-            &password_len, &database, &database_len, &port, &socket,
+            &password_len, &database, &database_len, &port, &port_is_null, &socket,
             &socket_len, &flags)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
