@@ -2984,6 +2984,30 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_context_data_attributes.enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.include",
+                     "",
+                     NR_PHP_REQUEST,
+                     nr_string_mh,
+                     log_context_data_attributes.include,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclude",
+                     "",
+                     NR_PHP_REQUEST,
+                     nr_string_mh,
+                     log_context_data_attributes.exclude,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 PHP_INI_END() /* } */
 
