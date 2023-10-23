@@ -128,7 +128,7 @@ null
 */
 
 set_exception_handler(
-    function () {
+    function (Throwable $ex) {
         time_nanosleep(0, 100000000);
         exit(0); 
     }
