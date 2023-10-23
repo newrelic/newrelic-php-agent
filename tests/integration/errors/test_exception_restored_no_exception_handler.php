@@ -26,7 +26,7 @@ function alpha() {
   throw new Exception('Sample Exception');
 }
 
-function beta() {
+function beta(Throwable $ex) {
   alpha();
 }
 
