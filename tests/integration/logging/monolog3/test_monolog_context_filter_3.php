@@ -23,8 +23,8 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = "context.A, context.B"
-newrelic.application_logging.forwarding.context_data.exclude = "context.C"
+newrelic.application_logging.forwarding.context_data.include = "A, B"
+newrelic.application_logging.forwarding.context_data.exclude = "C"
 */
 
 /*EXPECT

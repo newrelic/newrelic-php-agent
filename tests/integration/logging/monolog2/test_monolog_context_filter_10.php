@@ -23,7 +23,7 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.attributes.include = "context.AB"
+newrelic.attributes.include = "AB"
 newrelic.application_logging.forwarding.context_data.exclude = "A*"
 */
 

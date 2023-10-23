@@ -23,12 +23,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = "context.A, context.B"
+newrelic.application_logging.forwarding.context_data.include = "A, B"
 newrelic.application_logging.forwarding.context_data.exclude = ""
 */
 
 /*EXPECT
-monolog3.DEBUG: A B C converted {"A":"A value","B":"B value","C":"C value"}
+monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value"}
 */
 
 
@@ -73,7 +73,6 @@ monolog3.DEBUG: A B C converted {"A":"A value","B":"B value","C":"C value"}
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
           "attributes": {
-            "context.C": "C value",
             "context.B": "B value",
             "context.A": "A value"
           }
@@ -104,7 +103,7 @@ function test_logging() {
     $logger->pushHandler($stdoutHandler);
 
     $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("A B C converted", $context);
+    $logger->debug("A B converted", $context);
 }
 
 test_logging();
