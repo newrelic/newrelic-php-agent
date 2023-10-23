@@ -103,7 +103,7 @@ void nr_attribute_config_enable_destinations(nr_attribute_config_t* config,
     return;
   }
 
-  config->disabled_destinations &= ~enaabled_destinations;
+  config->disabled_destinations &= ~enabled_destinations;
 }
 
 nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
