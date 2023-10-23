@@ -661,12 +661,14 @@ nr_status_t nr_attributes_agent_add_string(nr_attributes_t* ats,
 
 static nrobj_t* nr_attributes_to_obj_internal(
     const nr_attribute_t* attribute_list,
+    const char* attribute_prefix,
     uint32_t destination) {
+  char* key = NULL;
   nrobj_t* obj;
   const nr_attribute_t* attribute;
 
-  if (0 == attribute_list) {
-    return 0;
+  if (NULL == attribute_list || NULL == attribute_prefix) {
+    return NULL;
   }
 
   obj = nro_new_hash();
@@ -675,7 +677,10 @@ static nrobj_t* nr_attributes_to_obj_internal(
     if (0 == (attribute->destinations & destination)) {
       continue;
     }
-    nro_set_hash(obj, attribute->key, attribute->value);
+
+    key = nr_formatf("%s%s", attribute_prefix, attribute->key);
+    nro_set_hash(obj, key, attribute->value);
+    nr_free(key);
   }
 
   return obj;
@@ -686,7 +691,7 @@ nrobj_t* nr_attributes_user_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->user_attribute_list,
+  return nr_attributes_to_obj_internal(attributes->user_attribute_list, "",
                                        destination);
 }
 
@@ -695,7 +700,17 @@ nrobj_t* nr_attributes_agent_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->agent_attribute_list,
+  return nr_attributes_to_obj_internal(attributes->agent_attribute_list, "",
+                                       destination);
+}
+
+nrobj_t* nr_attributes_logcontext_to_obj(const nr_attributes_t* attributes,
+                                         uint32_t destination) {
+  if (0 == attributes) {
+    return 0;
+  }
+  return nr_attributes_to_obj_internal(attributes->user_attribute_list,
+                                       NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX,
                                        destination);
 }
 

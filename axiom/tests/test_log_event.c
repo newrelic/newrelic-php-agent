@@ -122,8 +122,8 @@ static void test_log_event_to_json(void) {
       "\"hostname\":\"host name here\","
       "\"timestamp\":12345,"
       "\"attributes\":{"
-      "\"long_attr\":12345,"
-      "\"string_attr\":\"string_attr_value\""
+      "\"context.long_attr\":12345,"
+      "\"context.string_attr\":\"string_attr_value\""
       "}"
       "}",
       json);
@@ -201,8 +201,8 @@ static void test_log_event_to_json_buffer(void) {
                          "\"hostname\":\"host name here\","
                          "\"timestamp\":12345,"
                          "\"attributes\":{"
-                         "\"long_attr\":12345,"
-                         "\"string_attr\":\"string_attr_value\""
+                         "\"context.long_attr\":12345,"
+                         "\"context.string_attr\":\"string_attr_value\""
                          "}"
                          "}",
                          nr_buffer_cptr(buf));

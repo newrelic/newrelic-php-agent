@@ -879,8 +879,8 @@ static void test_encode_log_events(void) {
               "\"hostname\":\"host name here\","
               "\"timestamp\":123000,"
               "\"attributes\":{"
-              "\"long_attr\":12345,"
-              "\"string_attr\":\"string_attr_value\""
+              "\"context.long_attr\":12345,"
+              "\"context.string_attr\":\"string_attr_value\""
               "}"
               "}"),
       nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),

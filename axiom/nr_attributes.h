@@ -58,6 +58,11 @@ typedef struct _nr_attributes_t nr_attributes_t;
 #define NR_ATTRIBUTE_USER_LIMIT 64
 
 /*
+ * APM log forwarding context attributes SHOULD have a prefix of "context."
+ */
+#define NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX "context."
+
+/*
  * Configuration
  *
  * Attributes can be configured by the customer.  This configuration allows
@@ -201,6 +206,19 @@ extern nrobj_t* nr_attributes_user_to_obj(const nr_attributes_t* attributes,
                                           uint32_t destination);
 extern nrobj_t* nr_attributes_agent_to_obj(const nr_attributes_t* attributes,
                                            uint32_t destination);
+
+/*
+ * Purpose : Specialized conversion function for attributes created on
+ *           log events.  These SHOULD have a prefix of "context."
+ *           to avoid name collision with attributes from other
+ *           destinations.
+ * 
+ * Params  : 1. Pointer to list of log context attributes
+ *           2. Attribute destinations for attribute
+ */
+extern nrobj_t* nr_attributes_logcontext_to_obj(
+    const nr_attributes_t* attributes,
+    uint32_t destination);
 
 /*
  * Purpose : Check if an attribute with the given key exists.

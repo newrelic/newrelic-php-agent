@@ -136,8 +136,9 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
 
   // add attributes if present
   if (NULL != event->context_attributes) {
-    log_attributes = nr_attributes_user_to_obj(event->context_attributes,
-                                              NR_ATTRIBUTE_DESTINATION_LOG);
+    log_attributes = nr_attributes_logcontext_to_obj(
+        event->context_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
     if (0 < nro_getsize(log_attributes)) {
       json = nro_to_json(log_attributes);
       add_log_field_to_buf(buf, "attributes", json, false, false, false);

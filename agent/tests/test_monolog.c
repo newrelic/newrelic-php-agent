@@ -148,29 +148,29 @@ static void test_convert_zval_to_attribute_obj(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-#define TEST_ATTRIBUTES_CREATION(CONTEXT_DATA, EXPECTED_JSON)                  \
-  do {                                                                         \
-    char* actual_json;                                                         \
-    nr_attributes_t* attributes                                                \
-        = nr_monolog_convert_context_data_to_attributes(context_data);         \
-                                                                               \
-    tlib_fail_if_null("attributes is not NULL", attributes);                   \
-                                                                               \
-    nrobj_t* log_attributes                                                    \
-        = nr_attributes_user_to_obj(attributes, NR_ATTRIBUTE_DESTINATION_LOG); \
-                                                                               \
-    tlib_fail_if_null("log_attributes is not NULL", log_attributes);           \
-    tlib_fail_if_bool_equal("At least one attribute created", 1,               \
-                            0 > nro_getsize(log_attributes));                  \
-                                                                               \
-    if (0 < nro_getsize(log_attributes)) {                                     \
-      actual_json = nro_to_json(log_attributes);                               \
-    }                                                                          \
-                                                                               \
-    tlib_pass_if_str_equal("Converted array", expected_json, actual_json);     \
-    nr_free(actual_json);                                                      \
-    nro_delete(log_attributes);                                                \
-    nr_attributes_destroy(&attributes);                                        \
+#define TEST_ATTRIBUTES_CREATION(CONTEXT_DATA, EXPECTED_JSON)              \
+  do {                                                                     \
+    char* actual_json;                                                     \
+    nr_attributes_t* attributes                                            \
+        = nr_monolog_convert_context_data_to_attributes(context_data);     \
+                                                                           \
+    tlib_fail_if_null("attributes is not NULL", attributes);               \
+                                                                           \
+    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(             \
+        attributes, NR_ATTRIBUTE_DESTINATION_LOG);                         \
+                                                                           \
+    tlib_fail_if_null("log_attributes is not NULL", log_attributes);       \
+    tlib_fail_if_bool_equal("At least one attribute created", 1,           \
+                            0 > nro_getsize(log_attributes));              \
+                                                                           \
+    if (0 < nro_getsize(log_attributes)) {                                 \
+      actual_json = nro_to_json(log_attributes);                           \
+    }                                                                      \
+                                                                           \
+    tlib_pass_if_str_equal("Converted array", expected_json, actual_json); \
+    nr_free(actual_json);                                                  \
+    nro_delete(log_attributes);                                            \
+    nr_attributes_destroy(&attributes);                                    \
   } while (0)
 
 static void test_convert_context_data_to_attributes(TSRMLS_D) {
@@ -212,16 +212,13 @@ static void test_convert_context_data_to_attributes(TSRMLS_D) {
 
   /* add filtering rules and try again */
   nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.string_attr",
+                                          "string_attr",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.i*",
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "i*",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.f*", 0,
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "f*", 0,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.t*", 0,
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "t*", 0,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
   expected_json
       = "{"
@@ -237,14 +234,11 @@ static void test_convert_context_data_to_attributes(TSRMLS_D) {
   NRPRG(txn)->attribute_config = nr_attribute_config_copy(orig_config);
   nr_attribute_config_enable_destinations(txn->attribute_config,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.d*",
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "d*",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.i*",
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "i*",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.*", 0,
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "*", 0,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
   expected_json
       = "{"
@@ -259,20 +253,17 @@ static void test_convert_context_data_to_attributes(TSRMLS_D) {
   NRPRG(txn)->attribute_config = nr_attribute_config_copy(orig_config);
   nr_attribute_config_enable_destinations(txn->attribute_config,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.d*",
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "d*",
+                                          NR_ATTRIBUTE_DESTINATION_LOG, 0);
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "i*",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
   nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.i*",
+                                          "true_bool_attr",
                                           NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.true_bool_attr",
-                                          NR_ATTRIBUTE_DESTINATION_LOG, 0);
-  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.t*", 0,
+  nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config, "t*", 0,
                                           NR_ATTRIBUTE_DESTINATION_ALL);
   nr_attribute_config_modify_destinations(NRPRG(txn)->attribute_config,
-                                          "context.false_bool_attr", 0,
+                                          "false_bool_attr", 0,
                                           NR_ATTRIBUTE_DESTINATION_ALL);
   expected_json
       = "{"
