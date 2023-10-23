@@ -1260,7 +1260,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          newrelic.application_logging.forwarding.context_data.include = alpha
 ;
 ;          To exclude context data whose key is 'alpha', the configuration is:
-;          newrelic.application_logging.forwarding.context_data.excludee = alpha
+;          newrelic.application_logging.forwarding.context_data.exclude = alpha
 ;
 ;          The newrelic.attributes.exclude and newrelic.attributes.include
 ;          settings affect the conversion of custom data as well.
