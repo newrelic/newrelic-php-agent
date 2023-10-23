@@ -114,7 +114,7 @@ extern void nr_attribute_config_disable_destinations(
  */
 extern void nr_attribute_config_enable_destinations(
     nr_attribute_config_t* config,
-    uint32_t disabled_destinations);
+    uint32_t enabled_destinations);
 
 /*
  * Purpose : Modify the destinations of a particular attribute, or all
