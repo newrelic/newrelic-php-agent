@@ -27,10 +27,6 @@ opcache.jit_buffer_size=32M
 opcache.jit=tracing
 */
 
-/*PHPMODULES
-zend_extension=opcache.so
-*/
-
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",

@@ -32,10 +32,6 @@ opcache.jit_buffer_size=32M
 opcache.jit=function
 */
 
-/*PHPMODULES
-zend_extension=opcache.so
-*/
-
 /*EXPECT_ERROR_EVENTS
 [
   "?? agent run id",
