@@ -9,6 +9,13 @@ Test that span events are correctly created from any eligible segment, even
 when an exception is handled by the exception handler.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: test for non-oapi agent only\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0

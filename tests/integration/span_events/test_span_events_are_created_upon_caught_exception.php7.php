@@ -6,15 +6,16 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an uncaught exception is handled by the user exception handler. The
-span that generated the exception should have error attributes. Additionally
-error events should be created.
+when an exception is handled by the exception handler.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: test for oapi agent only\n");
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: test for non-oapi agent only\n");
 }
 */
 
@@ -26,35 +27,7 @@ newrelic.cross_application_tracer.enabled = false
 */
 
 /*EXPECT_ERROR_EVENTS
-[
-  "?? agent run id",
-  {
-    "reservoir_size": "??",
-    "events_seen": 1
-  },
-  [
-    [
-      {
-        "type": "TransactionError",
-        "timestamp": "??",
-        "error.class": "RuntimeException",
-        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "transactionName": "OtherTransaction\/php__FILE__",
-        "duration": "??",
-        "databaseDuration": "??",
-        "databaseCallCount": "??",
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
-      },
-      {},
-      {}
-    ]
-  ]
-]
+null
 */
 
 /*EXPECT_SPAN_EVENTS
