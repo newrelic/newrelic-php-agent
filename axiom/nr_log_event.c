@@ -47,6 +47,8 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
  *           3. Value of the field (JSON value)
  *           4. Boolean indicating if this is the first field
  *           5. Boolean indicating if this field is required
+ *           6. Boolean indicating if this field should be quoted
+ *              (use false if including a JSON string, for example)
  *
  * Returns : True is data was added to buf.
  */
