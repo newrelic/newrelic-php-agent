@@ -659,15 +659,22 @@ nr_status_t nr_attributes_agent_add_string(nr_attributes_t* ats,
   return rv;
 }
 
+/*
+ * Purpose : Internal function to convert list of attributes to nro
+ *
+ * Params  : 1. List of attributes
+ *           2. Prefix to prepend to all attribute names
+ *              NULL indicates to use no prefix and is more efficient than ""
+ *           3. Attribute destinations
+ */
 static nrobj_t* nr_attributes_to_obj_internal(
     const nr_attribute_t* attribute_list,
     const char* attribute_prefix,
     uint32_t destination) {
-  char* key = NULL;
   nrobj_t* obj;
   const nr_attribute_t* attribute;
 
-  if (NULL == attribute_list || NULL == attribute_prefix) {
+  if (NULL == attribute_list) {
     return NULL;
   }
 
@@ -678,9 +685,13 @@ static nrobj_t* nr_attributes_to_obj_internal(
       continue;
     }
 
-    key = nr_formatf("%s%s", attribute_prefix, attribute->key);
-    nro_set_hash(obj, key, attribute->value);
-    nr_free(key);
+    if (nrlikely(NULL == attribute_prefix)) {
+      nro_set_hash(obj, attribute->key, attribute->value);
+    } else {
+      char* key = nr_formatf("%s%s", attribute_prefix, attribute->key);
+      nro_set_hash(obj, key, attribute->value);
+      nr_free(key);
+    }
   }
 
   return obj;
@@ -691,7 +702,7 @@ nrobj_t* nr_attributes_user_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->user_attribute_list, "",
+  return nr_attributes_to_obj_internal(attributes->user_attribute_list, NULL,
                                        destination);
 }
 
@@ -700,7 +711,7 @@ nrobj_t* nr_attributes_agent_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->agent_attribute_list, "",
+  return nr_attributes_to_obj_internal(attributes->agent_attribute_list, NULL,
                                        destination);
 }
 
