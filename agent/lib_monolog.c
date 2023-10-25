@@ -428,7 +428,6 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
   zval* val;
 
   nr_attributes_t* attributes = NULL;
-  nr_status_t st;
 
   if (NULL == context_data || !nr_php_is_zval_valid_array(context_data)) {
     return NULL;
@@ -444,12 +443,8 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
     nrobj_t* obj = nr_monolog_context_data_zval_to_attribute_obj(val);
 
     if (NULL != obj) {
-      st = nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+      nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
                                   ZSTR_VAL(key), obj);
-      if (NR_SUCCESS != st) {
-        nrl_warning(NRL_AGENT, "failed to add monolog context attribute key %s",
-                    ZSTR_VAL(key));
-      }
       nro_delete(obj);
     }
   }
