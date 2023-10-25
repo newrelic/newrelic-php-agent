@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-only an exclusion rule is given.
+Test that Monolog3 instrumentation filters context data:
+Rule 2: 
+   include = ""
+   exclude = "A"
+   input = "A" "B" "C"
+   expect = "B" "C"
 */
 
 /*SKIPIF

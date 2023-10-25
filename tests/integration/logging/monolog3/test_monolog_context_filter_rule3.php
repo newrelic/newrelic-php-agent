@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-inclusion and exclusion overlap.
+Test that Monolog3 instrumentation filters context data:
+Rule 3:
+   include = "A, B"
+   exclude = ""
+   input = "A" "B" "C"
+   expect = "A" "B"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = "AB"
-newrelic.application_logging.forwarding.context_data.exclude = "A*"
+newrelic.application_logging.forwarding.context_data.include = "A, B"
+newrelic.application_logging.forwarding.context_data.exclude = ""
 */
 
 /*EXPECT
-monolog3.DEBUG: AB converted {"AA":"AA value","AB":"AB value","AC":"AC value"}
+monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog3.DEBUG: AB converted {"AA":"AA value","AB":"AB value","AC":"AC value"}
       },
       "logs": [
         {
-          "message": "AB converted",
+          "message": "A B converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,9 +76,9 @@ monolog3.DEBUG: AB converted {"AA":"AA value","AB":"AB value","AC":"AC value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
-          "timestamp": "??",
           "attributes": {
-            "context.AB": "AB value"
+            "context.B": "B value",
+            "context.A": "A value"
           }
         }
       ]
@@ -102,8 +106,8 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
 
-    $context = array("AA" => "AA value", "AB" => "AB value", "AC" => "AC value");
-    $logger->debug("AB converted", $context);
+    $context = array("A" => "A value", "B" => "B value", "C" => "C value");
+    $logger->debug("A B converted", $context);
 }
 
 test_logging();

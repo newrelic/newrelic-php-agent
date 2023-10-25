@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-exclusion wildcard rule is given.
+Test that Monolog3 instrumentation filters context data:
+Rule 6: 
+   include = "A"
+   exclude = "A"
+   input = "A" "B" "C"
+   expect = No attributes
 */
 
 /*SKIPIF
@@ -24,11 +28,11 @@ newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
 newrelic.application_logging.forwarding.context_data.include = "A"
-newrelic.application_logging.forwarding.context_data.exclude = "*"
+newrelic.application_logging.forwarding.context_data.exclude = "A"
 */
 
 /*EXPECT
-monolog3.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
+monolog3.DEBUG: None converted {"A":"A value","B":"B value","C":"C value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog3.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
       },
       "logs": [
         {
-          "message": "A converted",
+          "message": "None converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,9 +76,7 @@ monolog3.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
-          "attributes": {
-            "context.A": "A value"
-          }
+          "timestamp": "??"
         }
       ]
     }
@@ -102,7 +104,7 @@ function test_logging() {
     $logger->pushHandler($stdoutHandler);
 
     $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("A converted", $context);
+    $logger->debug("None converted", $context);
 }
 
 test_logging();

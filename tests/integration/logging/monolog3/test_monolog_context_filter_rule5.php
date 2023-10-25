@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-general and specific.
+Test that Monolog3 instrumentation filters context data:
+Rule 5: 
+   include = "A, B"
+   exclude = "B"
+   input = "A" "B" "C" "D"
+   expect = "A"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.attributes.include = "A*"
-newrelic.application_logging.forwarding.context_data.exclude = "AB"
+newrelic.application_logging.forwarding.context_data.include = "A, B"
+newrelic.application_logging.forwarding.context_data.exclude = "B"
 */
 
 /*EXPECT
-monolog3.DEBUG: AA AC converted {"AA":"AA value","AB":"AB value","AC":"AC value"}
+monolog3.DEBUG: A converted {"A":"A value","B":"B value","C":"C value","D":"D value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog3.DEBUG: AA AC converted {"AA":"AA value","AB":"AB value","AC":"AC value"
       },
       "logs": [
         {
-          "message": "AA AC converted",
+          "message": "A converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,10 +76,8 @@ monolog3.DEBUG: AA AC converted {"AA":"AA value","AB":"AB value","AC":"AC value"
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
-          "timestamp": "??",
           "attributes": {
-            "context.AC": "AC value",
-            "context.AA": "AA value"
+            "context.A": "A value"
           }
         }
       ]
@@ -103,8 +105,8 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
 
-    $context = array("AA" => "AA value", "AB" => "AB value", "AC" => "AC value");
-    $logger->debug("AA AC converted", $context);
+    $context = array("A" => "A value", "B" => "B value", "C" => "C value", "D" => "D value");
+    $logger->debug("A converted", $context);
 }
 
 test_logging();

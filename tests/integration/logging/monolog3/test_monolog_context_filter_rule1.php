@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-only an inclusion and exclusion rule is given.
+Test that Monolog3 instrumentation filters context data:
+Rule 1: 
+   include = ""
+   exclude = ""
+   input = "A" "B" "C"
+   expect = "A" "B" "C"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = "A, B"
-newrelic.application_logging.forwarding.context_data.exclude = "C"
+newrelic.application_logging.forwarding.context_data.include = ""
+newrelic.application_logging.forwarding.context_data.exclude = ""
 */
 
 /*EXPECT
-monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value"}
+monolog3.DEBUG: A B C converted {"A":"A value","B":"B value","C":"C value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value"}
       },
       "logs": [
         {
-          "message": "A B converted",
+          "message": "A B C converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,7 +76,9 @@ monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
+          "timestamp": "??",
           "attributes": {
+            "context.C": "C value",
             "context.B": "B value",
             "context.A": "A value"
           }
@@ -103,7 +109,7 @@ function test_logging() {
     $logger->pushHandler($stdoutHandler);
 
     $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("A B converted", $context);
+    $logger->debug("A B C converted", $context);
 }
 
 test_logging();

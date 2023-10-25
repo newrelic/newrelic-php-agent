@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data when
-only exclusion wildcard given.
+Test that Monolog3 instrumentation filters context data:
+Rule 4: 
+   include = "A, B"
+   exclude = "C"
+   input = "A" "B" "C" "D"
+   expect = "A" "B"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = ""
-newrelic.application_logging.forwarding.context_data.exclude = "B"
+newrelic.application_logging.forwarding.context_data.include = "A, B"
+newrelic.application_logging.forwarding.context_data.exclude = "C"
 */
 
 /*EXPECT
-monolog3.DEBUG: A C converted {"A":"A value","B":"B value","C":"C value"}
+monolog3.DEBUG: A B converted {"A":"A value","B":"B value","C":"C value","D":"D value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog3.DEBUG: A C converted {"A":"A value","B":"B value","C":"C value"}
       },
       "logs": [
         {
-          "message": "A C converted",
+          "message": "A B converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,9 +76,8 @@ monolog3.DEBUG: A C converted {"A":"A value","B":"B value","C":"C value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__",
-          "timestamp": "??",
           "attributes": {
-            "context.C": "C value",
+            "context.B": "B value",
             "context.A": "A value"
           }
         }
@@ -92,19 +95,20 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
 
-function test_logging() {
-    $logger = new Logger('monolog3');
+function test_logging()
+{
+  $logger = new Logger('monolog3');
 
-    $logfmt = "%channel%.%level_name%: %message% %context%\n";
-    $formatter = new LineFormatter($logfmt);
+  $logfmt = "%channel%.%level_name%: %message% %context%\n";
+  $formatter = new LineFormatter($logfmt);
 
-    $stdoutHandler = new StreamHandler('php://stdout', Logger::DEBUG);
-    $stdoutHandler->setFormatter($formatter);
+  $stdoutHandler = new StreamHandler('php://stdout', Logger::DEBUG);
+  $stdoutHandler->setFormatter($formatter);
 
-    $logger->pushHandler($stdoutHandler);
+  $logger->pushHandler($stdoutHandler);
 
-    $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("A C converted", $context);
+  $context = array("A" => "A value", "B" => "B value", "C" => "C value", "D" => "D value");
+  $logger->debug("A B converted", $context);
 }
 
 test_logging();
