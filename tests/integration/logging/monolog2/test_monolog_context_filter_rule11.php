@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog2 instrumentation filters context data when
-inclusion wildcard rule is given.
+Test that Monolog2 instrumentation filters context data:
+Rule 11: 
+   include = "A*"
+   exclude = "AB*"
+   input = "AA" "AB" "AC" "BB"
+   expect = "AA" "AC"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = "*"
-newrelic.application_logging.forwarding.context_data.exclude = "B, C"
+newrelic.attributes.include = "A*"
+newrelic.application_logging.forwarding.context_data.exclude = "AB*"
 */
 
 /*EXPECT
-monolog2.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
+monolog2.DEBUG: AA AC converted {"AA":"AA value","AB":"AB value","AC":"AC value","BB":"BB value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog2.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
       },
       "logs": [
         {
-          "message": "A converted",
+          "message": "AA AC converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,8 +76,10 @@ monolog2.DEBUG: A converted {"A":"A value","B":"B value","C":"C value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__",
+          "timestamp": "??",
           "attributes": {
-            "context.A": "A value"
+            "context.AC": "AC value",
+            "context.AA": "AA value"
           }
         }
       ]
@@ -101,8 +107,8 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
 
-    $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("A converted", $context);
+    $context = array("AA" => "AA value", "AB" => "AB value", "AC" => "AC value", "BB" => "BB value");
+    $logger->debug("AA AC converted", $context);
 }
 
 test_logging();

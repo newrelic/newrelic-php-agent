@@ -5,8 +5,12 @@
  */
 
 /*DESCRIPTION
-Test that Monolog2 instrumentation filters context data when
-only an exclusion rule is given.
+Test that Monolog2 instrumentation filters context data:
+Extra Test 3: 
+   include = "*"
+   exclude = "BB"
+   input = "AA" "AB" "AC" "BB"
+   expect = "AA" "AB" "AC"
 */
 
 /*SKIPIF
@@ -23,12 +27,12 @@ newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
 newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.application_logging.forwarding.context_data.include = ""
-newrelic.application_logging.forwarding.context_data.exclude = "A"
+newrelic.attributes.include = "*"
+newrelic.application_logging.forwarding.context_data.exclude = "BB"
 */
 
 /*EXPECT
-monolog2.DEBUG: B C converted {"A":"A value","B":"B value","C":"C value"}
+monolog2.DEBUG: AA AB AC converted {"AA":"AA value","AB":"AB value","AC":"AC value","BB":"BB value"}
 */
 
 
@@ -64,7 +68,7 @@ monolog2.DEBUG: B C converted {"A":"A value","B":"B value","C":"C value"}
       },
       "logs": [
         {
-          "message": "B C converted",
+          "message": "AA AB AC converted",
           "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
@@ -72,9 +76,11 @@ monolog2.DEBUG: B C converted {"A":"A value","B":"B value","C":"C value"}
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__",
+          "timestamp": "??",
           "attributes": {
-            "context.C": "C value",
-            "context.B": "B value"
+            "context.AC": "AC value",
+            "context.AB": "AB value",
+            "context.AA": "AA value"
           }
         }
       ]
@@ -102,8 +108,8 @@ function test_logging() {
 
     $logger->pushHandler($stdoutHandler);
 
-    $context = array("A" => "A value", "B" => "B value", "C" => "C value");
-    $logger->debug("B C converted", $context);
+    $context = array("AA" => "AA value", "AB" => "AB value", "AC" => "AC value", "BB" => "BB value");
+    $logger->debug("AA AB AC converted", $context);
 }
 
 test_logging();
