@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 Test for filtering:
-Rule 7: 
+Test 5: 
    include = "A*"
    exclude = ""
    input = "A" "B" "C" "D"
