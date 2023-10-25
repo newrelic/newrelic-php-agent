@@ -212,16 +212,16 @@ static int nr_attribute_destination_modifier_compare(
  *
  *           The algorithm examines all input rules for the
  *           NR_ATTRIBUTE_DESTINATION_LOG destination, and will create a new
- * rule of "exclude=*" with "is_finalize_rule=true" if any input rules exist.
- *           The exception is if there is an input rule of "*" for destination
- *           NR_ATTRIBUTE_DESTINATION_LOG.  In this case no finalize rule is
- * added.
+ *           rule of "exclude=*" with "is_finalize_rule=true" if any input 
+ *           rules exist.  The exception is if there is an input rule of "*"
+ *           for destination NR_ATTRIBUTE_DESTINATION_LOG.  In this case no 
+ *           finalize rule is added.
  *
  *           The net resulting effect is the exclusion of any attributes not
  *           contained in the set of input rules for
- * NR_ATTRIBUTE_DESTINATION_LOG. The exception for if an "input=*" rule is
- * necessary since this input rule excludes nothing, making the finalize rule of
- * "exclude=*" unnecessary.
+ *           NR_ATTRIBUTE_DESTINATION_LOG. The exception for if an "input=*"
+ *           rule is necessary since this input rule excludes nothing, making
+ *           the finalize rule of "exclude=*" unnecessary.
  *
  */
 static void nr_attribute_config_finalize_log_destination(
@@ -240,8 +240,8 @@ static void nr_attribute_config_finalize_log_destination(
   for (cur = config->modifier_list; cur;) {
     next = cur->next;
 
-    /* currently only finalize rules being created are for the 
-     * NR_ATTRIBUTE_DESTINATION_LOG destination but check to 
+    /* currently only finalize rules being created are for the
+     * NR_ATTRIBUTE_DESTINATION_LOG destination but check to
      * be thorough and in case other finalize rules are created
      * in the future.
      */
