@@ -32,6 +32,7 @@ static char* nr_attribute_destination_modifier_to_json(
   obj = nro_new_hash();
   nro_set_hash_boolean(obj, "has_wildcard_suffix",
                        modifier->has_wildcard_suffix);
+  nro_set_hash_boolean(obj, "is_finalize_rule", modifier->is_finalize_rule);
   nro_set_hash_string(obj, "match", modifier->match);
   nro_set_hash_int(obj, "match_len", modifier->match_len);
   nro_set_hash_long(obj, "match_hash", modifier->match_hash);
@@ -241,6 +242,7 @@ static void test_destination_modifier_create(void) {
   test_modifier_as_json("exact match modifier created", modifier,
                         "{"
                         "\"has_wildcard_suffix\":false,"
+                        "\"is_finalize_rule\":false,"
                         "\"match\":\"alpha\","
                         "\"match_len\":5,"
                         "\"match_hash\":2000440672,"
@@ -253,6 +255,7 @@ static void test_destination_modifier_create(void) {
   test_modifier_as_json("wildcard modifier created", modifier,
                         "{"
                         "\"has_wildcard_suffix\":true,"
+                        "\"is_finalize_rule\":false,"
                         "\"match\":\"alpha\","
                         "\"match_len\":5,"
                         "\"match_hash\":2000440672,"
@@ -295,6 +298,16 @@ static void test_config_modify_destinations(void) {
                       "["
                       "{"
                       "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":true,"
+                      "\"match\":\"\","
+                      "\"match_len\":0,"
+                      "\"match_hash\":0,"
+                      "\"include_destinations\":0,"
+                      "\"exclude_destinations\":32"
+                      "},"
+                      "{"
+                      "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.\","
                       "\"match_len\":5,"
                       "\"match_hash\":1419915658,"
@@ -303,6 +316,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.\","
                       "\"match_len\":5,"
                       "\"match_hash\":1419915658,"
@@ -311,6 +325,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.a\","
                       "\"match_len\":6,"
                       "\"match_hash\":4222617845,"
@@ -319,6 +334,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.al\","
                       "\"match_len\":7,"
                       "\"match_hash\":3041978671,"
@@ -327,6 +343,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.al\","
                       "\"match_len\":7,"
                       "\"match_hash\":3041978671,"
@@ -335,6 +352,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.alp\","
                       "\"match_len\":8,"
                       "\"match_hash\":4236011699,"
@@ -343,6 +361,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.alph\","
                       "\"match_len\":9,"
                       "\"match_hash\":2625680436,"
@@ -351,6 +370,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.alpha\","
                       "\"match_len\":10,"
                       "\"match_hash\":2601622409,"
