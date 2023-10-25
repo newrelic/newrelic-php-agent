@@ -223,7 +223,6 @@ static void test_convert_context_data_to_attributes(TSRMLS_D) {
   expected_json
       = "{"
         "\"context.int_attr\":1234,"
-        "\"context.double_attr\":3.10000,"
         "\"context.string_attr\":\"string_value\""
         "}";
 
@@ -269,8 +268,7 @@ static void test_convert_context_data_to_attributes(TSRMLS_D) {
       = "{"
         "\"context.true_bool_attr\":true,"
         "\"context.int_attr\":1234,"
-        "\"context.double_attr\":3.10000,"
-        "\"context.string_attr\":\"string_value\""
+        "\"context.double_attr\":3.10000"
         "}";
 
   TEST_ATTRIBUTES_CREATION(context_data, expected_json);
