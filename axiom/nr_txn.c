@@ -19,6 +19,7 @@
 #include "nr_limits.h"
 #include "nr_log_events.h"
 #include "nr_log_level.h"
+#include "nr_php_packages.h"
 #include "nr_segment.h"
 #include "nr_segment_private.h"
 #include "nr_segment_traces.h"
@@ -3456,4 +3457,25 @@ void nr_txn_record_log_event(nrtxn_t* txn,
   nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
+}
+
+extern void nr_txn_add_php_package(nrtxn_t* txn,
+                                   char* package_name,
+                                   char* package_version) {
+  nr_php_package_t* p = NULL;
+
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
+  if (nr_strempty(package_name)) {
+    return;
+  }
+
+  if (nr_strempty(package_version)) {
+    return;
+  }
+
+  p = nr_php_package_create(package_name, package_version);
+  nr_php_packages_add_package(&txn->php_packages, p);
 }
