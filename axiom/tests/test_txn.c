@@ -8537,6 +8537,34 @@ static void test_txn_log_configuration(void) {
   // clang-format on
 }
 
+static void test_nr_txn_add_php_package(void) {
+  char* json;
+  char* package_name1 = "Laravel";
+  char* package_version1 = "8.83.27";
+  char* package_name2 = "Slim";
+  char* package_version2 = "4.12.0";
+  nrtxn_t* txn = new_txn(0);
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_add_php_package(NULL, NULL, NULL);
+
+  // Test: add php packages to transaction
+  nr_txn_add_php_package(txn, package_name1, package_version1);
+  nr_txn_add_php_package(txn, package_name2, package_version2);
+  json = nr_php_packages_to_json(txn->php_packages);
+
+  tlib_pass_if_str_equal("correct json",
+                         "[{\"name\":\"Laravel\",\"version\":\"8.83.27\"},{"
+                         "\"name\":\"Slim\",\"version\":\"4.12.0\"}]",
+                         json);
+
+  nr_free(json);
+  nr_php_packages_destroy_package(&txn->php_packages);
+  nr_txn_destroy(&txn);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 2, .state_size = sizeof(test_txn_state_t)};
 
@@ -8638,4 +8666,5 @@ void test_main(void* p NRUNUSED) {
   test_log_level_verify();
   test_record_log_event();
   test_txn_log_configuration();
+  test_nr_txn_add_php_package();
 }
