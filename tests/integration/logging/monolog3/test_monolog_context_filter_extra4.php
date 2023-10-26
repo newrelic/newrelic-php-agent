@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation filters context data:
+Test that Monolog3 instrumentation filters context data for mixed rules (global and logging):
 Extra Test 4: 
    include = "A*"
    exclude = "*, *, *"
