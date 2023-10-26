@@ -95,6 +95,24 @@ void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
 }
 
+void nr_php_packages_destroy_package(nr_php_packages_t** h) {
+  nr_hashmap_destroy(h);
+}
+
+size_t nr_php_packages_count(nr_php_packages_t* h) {
+  return nr_hashmap_count(h);
+}
+
+size_t nr_hashmap_count_buckets(const nr_php_packages_t* hashmap) {
+  return (size_t)(1 << hashmap->log2_num_buckets);
+}
+
+int nr_php_packages_has_package(nr_php_packages_t* h,
+                                char* package_name,
+                                size_t package_len) {
+  return nr_hashmap_has(h, package_name, package_len);
+}
+
 char* nr_php_package_to_json(nr_php_package_t* package) {
   char* json;
   nrbuf_t* buf = NULL;
@@ -118,38 +136,33 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
   return json;
 }
 
-static void apply_package_to_json_conversion(void* value,
-                                             const char* key,
-                                             size_t key_len,
-                                             void* user_data) {
-  nr_php_package_json_builder_t* json_builder
-      = (nr_php_package_json_builder_t*)user_data;
+bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
+  size_t num_buckets;
+  size_t i;
+  nr_hashmap_bucket_t* bucket;
+  bool package_added = false;
   char* package_json;
 
-  (void)key;
-  (void)key_len;
-
-  package_json = nr_php_package_to_json((nr_php_package_t*)value);
-  if (package_json) {
-    if (json_builder->package_added) {
-      nr_buffer_add(json_builder->buf, NR_PSTR(","));
-    } else {
-      json_builder->package_added = true;
-    }
-    nr_buffer_add(json_builder->buf, package_json, nr_strlen(package_json));
-    nr_free(package_json);
-  }
-}
-
-bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
-  nr_php_package_json_builder_t json_builder = {buf, false};
-
-  if (NULL == h || NULL == h->data || NULL == buf) {
+  if (NULL == h || NULL == buf) {
     return false;
   }
 
+  num_buckets = nr_hashmap_count_buckets(h);
   nr_buffer_add(buf, NR_PSTR("["));
-  nr_hashmap_apply(h->data, apply_package_to_json_conversion, &json_builder);
+
+  for (i = 0; i < num_buckets; i++) {
+    for (bucket = h->buckets[i]; bucket != NULL; bucket = bucket->next) {
+      package_json = nr_php_package_to_json((nr_php_package_t*)bucket->value);
+      if (package_json) {
+        if (package_added) {
+          nr_buffer_add(buf, NR_PSTR(","));
+        }
+        nr_buffer_add(buf, package_json, nr_strlen(package_json));
+        nr_free(package_json);
+        package_added = true;
+      }
+    }
+  }
 
   nr_buffer_add(buf, NR_PSTR("]"));
   return true;
