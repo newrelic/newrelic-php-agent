@@ -417,7 +417,7 @@ return_context:
  *
  * Params  : zval* for context array from Monolog
  *
- * Returns : json representation on success
+ * Returns : nr_attributes representation of $context on success
  *           NULL otherwise
  *
  */
