@@ -382,7 +382,7 @@ nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
  */
 static zval* nr_monolog_extract_context_data(const size_t argc,
                                              NR_EXECUTE_PROTO TSRMLS_DC) {
-  zval* context_arg;
+  zval* context_arg = NULL;
 
   if (3 > argc) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: $context not available", __func__);
