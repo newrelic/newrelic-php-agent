@@ -370,8 +370,7 @@ nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
 }
 
 /*
- * Purpose : Extract $context argument of Monolog\Logger::addRecord to
- * attributes
+ * Purpose : Get $context argument of Monolog\Logger::addRecord as `zval *`.
  *
  * Params  : # of Monolog\Logger::addRecord arguments, and
  * Monolog\Logger::addRecord argument list
