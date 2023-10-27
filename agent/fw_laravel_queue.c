@@ -249,7 +249,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
   /*
    * End the current txn in preparation for the Job txn.
    */
-  nr_php_txn_end(0, 0);
+  nr_php_txn_end(1, 0);
 
   /*
    * Laravel 7+ passes Job as the first parameter.
@@ -297,7 +297,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
   /*
    * End the current txn to prepare for the Job txn.
    */
-  nr_php_txn_end(0, 0 TSRMLS_CC);
+  nr_php_txn_end(1, 0 TSRMLS_CC);
 
   /*
    * Laravel 7 and later passes Job as the second parameter.
