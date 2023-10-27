@@ -300,23 +300,11 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
  */
 static char* nr_monolog_build_message(const size_t argc,
                                       NR_EXECUTE_PROTO TSRMLS_DC) {
-#if !HAVE_CONTEXT_IN_MESSAGE
-  /* Make the compiler happy - argc is not used when $context is ignored */
-  (void)argc;
-#endif
   char* message_and_context = nr_strdup("");
 
   char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   message_and_context = nr_str_append(message_and_context, message, "");
   nr_free(message);
-
-#if HAVE_CONTEXT_IN_MESSAGE
-  char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_strempty(context)) {
-    message_and_context = nr_str_append(message_and_context, context, " ");
-  }
-  nr_free(context);
-#endif
 
   return message_and_context;
 }
