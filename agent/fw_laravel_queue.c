@@ -186,11 +186,13 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
    * https://laravel.com/api/7.x/Illuminate/Queue/Jobs/Job.html
    * Job::getName(): this is not needed as sometimes it will provide a
    * CallQueuedHandler job with the actual job wrapped inside
+   *
    * Job::resolveName(): inside "resolveName" method, there are actually three
    * methods being called (resolve, getName and payload) so we will use it
    * instead of getName. This provides us the wrapped name when jobname is
    * Illuminate\Queue\CallQueuedHandler@call Job::getConnectionName()
-   * Job::getQueueName()
+   *
+   * Job::getQueue()
    *
    */
 
@@ -205,7 +207,7 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
 
   nr_php_zval_free(&connection_name_zval);
 
-  queue_name_zval = nr_php_call(job, "getQueueName");
+  queue_name_zval = nr_php_call(job, "getQueue");
 
   if (nr_php_is_zval_non_empty_string(queue_name_zval)) {
     queue_name
@@ -245,10 +247,9 @@ NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
   /*
-   * Throw away the current transaction, since it only exists to ensure this
-   * hook is called.
+   * End the current txn in preparation for the Job txn.
    */
-  nr_php_txn_end(1, 0);
+  nr_php_txn_end(0, 0);
 
   /*
    * Laravel 7+ passes Job as the first parameter.
@@ -294,10 +295,9 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
   /*
-   * Throw away the current transaction, since it only exists to ensure this
-   * hook is called.
+   * End the current txn to prepare for the Job txn.
    */
-  nr_php_txn_end(1, 0 TSRMLS_CC);
+  nr_php_txn_end(0, 0 TSRMLS_CC);
 
   /*
    * Laravel 7 and later passes Job as the second parameter.
