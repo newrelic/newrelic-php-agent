@@ -52,7 +52,7 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
   nr_hashmap_set(*h, p->package_name, nr_strlen(p->package_name), p);
 }
 
-void nr_php_packages_destroy_package(nr_php_packages_t** h) {
+void nr_php_packages_destroy(nr_php_packages_t** h) {
   nr_hashmap_destroy(h);
 }
 

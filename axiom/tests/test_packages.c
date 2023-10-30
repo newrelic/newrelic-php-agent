@@ -46,7 +46,7 @@ static void test_php_adding_packages_to_hashmap(void) {
 
   tlib_pass_if_int_equal("package count", 3, count);
 
-  nr_php_packages_destroy_package(&hm);
+  nr_php_packages_destroy(&hm);
 }
 
 static void test_php_package_to_json(void) {
@@ -113,7 +113,7 @@ static void test_php_packages_to_json(void) {
       json);
 
   nr_free(json);
-  nr_php_packages_destroy_package(&h);
+  nr_php_packages_destroy(&h);
 }
 
 static void test_php_package_exists_in_hashmap(void) {
@@ -134,7 +134,7 @@ static void test_php_package_exists_in_hashmap(void) {
 
   tlib_pass_if_int_equal("package exists", 1, exists);
 
-  nr_php_packages_destroy_package(&hm);
+  nr_php_packages_destroy(&hm);
 }
 
 tlib_parallel_info_t parallel_info

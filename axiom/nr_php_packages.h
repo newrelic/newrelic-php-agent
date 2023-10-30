@@ -41,7 +41,7 @@ extern void nr_php_package_destroy(nr_php_package_t* p);
 /*
  * Purpose : Add new php package to hashmap. If the hashmap does not exist and this is the first package
  *           being added, then a new hashmap will be created by calling nr_hashmap_create(). This function
- *           also frees the package being added, so the user does not need to call nr_php_packages_destroy_package()
+ *           also frees the package being added, so the user does not need to call nr_php_package_destroy()
  *
  * Params  : 1. A pointer to the pointer of a hashmap where packages will be added
  *           2. A pointer to the php package that needs to be added to hashmap
@@ -57,7 +57,7 @@ extern void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t*
  * 
  * Returns : Nothing, it is void
  */
-extern void nr_php_packages_destroy_package(nr_php_packages_t** h);
+extern void nr_php_packages_destroy(nr_php_packages_t** h);
 
 /*
  * Purpose : Count how many elements are inside of the hashmap
