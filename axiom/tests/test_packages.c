@@ -49,6 +49,7 @@ static void test_php_adding_packages_to_hashmap(void) {
   tlib_pass_if_int_equal("package count", 3, count);
 
   nr_php_packages_destroy(&hm);
+  tlib_pass_if_null("PHP packages hashmap destroyed", hm);
 }
 
 static void test_php_package_to_json(void) {
