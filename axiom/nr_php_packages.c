@@ -25,6 +25,9 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
   }
 
   p = (nr_php_package_t*)nr_malloc(sizeof(nr_php_package_t));
+  if (p == NULL) {
+    return NULL;
+  }
 
   p->package_name = nr_strdup(name);
   p->package_version = nr_strdup(version);
