@@ -8561,7 +8561,6 @@ static void test_nr_txn_add_php_package(void) {
                          json);
 
   nr_free(json);
-  nr_php_packages_destroy(&txn->php_packages);
   nr_txn_destroy(&txn);
 }
 

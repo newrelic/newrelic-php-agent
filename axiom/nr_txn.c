@@ -1241,6 +1241,7 @@ void nr_txn_destroy_fields(nrtxn_t* txn) {
   nr_distributed_trace_destroy(&txn->distributed_trace);
   nr_segment_destroy_tree(txn->segment_root);
   nr_hashmap_destroy(&txn->parent_stacks);
+  nr_php_packages_destroy(&txn->php_packages);
   nr_stack_destroy_fields(&txn->default_parent_stack);
   nr_slab_destroy(&txn->segment_slab);
   nr_minmax_heap_set_destructor(txn->segment_heap, NULL, NULL);
