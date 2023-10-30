@@ -79,13 +79,13 @@ int nr_php_packages_has_package(nr_php_packages_t* h,
 
 char* nr_php_package_to_json(nr_php_package_t* package) {
   char* json;
-  nrbuf_t* buf = nr_buffer_create(0, 0);
+  nrbuf_t* buf = NULL;
 
   if (package == NULL || package->package_name == NULL
       || package->package_version == NULL) {
     return NULL;
   }
-
+  buf = nr_buffer_create(0, 0);
   nr_buffer_add(buf, NR_PSTR("{\"name\":\""));
   nr_buffer_add(buf, package->package_name, nr_strlen(package->package_name));
   nr_buffer_add(buf, NR_PSTR("\",\"version\":\""));
