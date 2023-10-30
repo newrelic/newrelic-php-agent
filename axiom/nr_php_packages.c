@@ -44,7 +44,11 @@ void nr_php_package_destroy(nr_php_package_t* p) {
 }
 
 void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
-  if (h == NULL || *h == NULL) {
+  if (h == NULL) {
+    return;
+  }
+
+  if (*h == NULL) {
     *h = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
   }
 
