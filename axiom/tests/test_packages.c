@@ -20,9 +20,9 @@ static void test_php_package_create_destroy(void) {
                          package->package_version);
 
   nr_php_package_destroy(package);
-  nr_php_package_destroy(null_package);
 
   // Test: passing NULL pointer should not cause crash
+  nr_php_package_destroy(null_package);
   nr_php_package_destroy(NULL);
 }
 
