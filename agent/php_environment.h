@@ -102,7 +102,17 @@ char* nr_php_process_environment_variable_to_string(const char* prefix,
  *           Assign the value (if found) to the docker_id global.
  *
  * Params  : 1. The filepath of the mountinfo file to parse
+ * 
+ * Returns : String with v2 ID or NULL if not detected.
+ *           Caller takes ownership of the string.
  */
-void nr_php_get_v2_docker_id(const char* cgroup_fname);
+char* nr_php_parse_v2_docker_id(const char* cgroup_fname);
+
+/*
+ * Purpose : Attempt to detect Docker cgroup v2 ID and set the global
+ *           environment variable if successful 
+ * */
+void nr_php_gather_v2_docker_id();
+
 
 #endif /* PHP_ENVIRONMENT_HDR */

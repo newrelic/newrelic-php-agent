@@ -7,6 +7,7 @@
 
 #include "php_agent.h"
 #include "php_environment.h"
+#include "util_text.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
@@ -420,12 +421,53 @@ static void test_nr_php_process_environment_variables_to_string(void) {
   test_multi_nr_php_process_environment_variable_to_string();
 }
 
-void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
-  tlib_php_engine_create("" PTSRMLS_CC);
+static void test_cross_agent_docker_v2(void) {
+  int i;
+  char* json;
+  nrobj_t* tests;
+
+#define DOCKER_V2_TESTS_PATH \
+  CROSS_AGENT_TESTS_DIR "/docker_container_id_v2/"
+
+  json = nr_read_file_contents(DOCKER_V2_TESTS_PATH "cases.json", 10 * 1000 * 1000);
+  tlib_pass_if_not_null(DOCKER_V2_TESTS_PATH "cases.json readable", json);
+  tests = nro_create_from_json(json);
+  nr_free(json);
+
+  for (i = 1; i <= nro_getsize(tests); i++) {
+    const nrobj_t* test = NULL;
+    const char* filename = NULL;
+    const char* expectedID = NULL;
+    const nrobj_t* expectedMetrics = NULL;
+    char *full_filename = NULL;
+    char* detectedID = NULL;
+
+    test = nro_get_array_hash(tests, i, NULL);
+    tlib_pass_if_true("test valid", NULL != test, "test=%p", test);
+    filename = nro_get_hash_string(test, "filename", NULL);
+    expectedID = nro_get_hash_string(test, "containerId", NULL);
+    expectedMetrics = nro_get_hash_array(test, "expectedMetrics", NULL);
+    /* not currently inspected so this avoids a compiler error */
+    (void)expectedMetrics;
+
+    tlib_pass_if_true("filname valid", NULL != filename, "filename=%p",
+                      filename);
+
+    full_filename = nr_str_append(nr_strdup(DOCKER_V2_TESTS_PATH), filename, "");
+    detectedID = nr_php_parse_v2_docker_id(full_filename);
+    nr_free(full_filename);
+    tlib_pass_if_str_equal("Match Docker cgroup v2 ID", expectedID, detectedID);
+    nr_free(detectedID);
+  }
+
+  nro_delete(tests);
+}
+
+
+void test_main(void* p NRUNUSED) {
+
+  tlib_php_engine_create("");
 
   test_rocket_assignments();
 
@@ -433,5 +475,7 @@ void test_main(void* p NRUNUSED) {
 
   test_nr_php_process_environment_variables_to_string();
 
-  tlib_php_engine_destroy(TSRMLS_C);
+  tlib_php_engine_destroy();
+
+  test_cross_agent_docker_v2();
 }
