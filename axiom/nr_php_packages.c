@@ -20,7 +20,7 @@
 nr_php_package_t* nr_php_package_create(char* name, char* version) {
   nr_php_package_t* p = NULL;
 
-  if (name == NULL || version == NULL) {
+  if (NULL == name || NULL == version) {
     return NULL;
   }
 
@@ -36,7 +36,7 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
 }
 
 void nr_php_package_destroy(nr_php_package_t* p) {
-  if (p != NULL) {
+  if (NULL != p) {
     nr_free(p->package_name);
     nr_free(p->package_version);
     nr_free(p);
@@ -44,7 +44,7 @@ void nr_php_package_destroy(nr_php_package_t* p) {
 }
 
 void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
-  if (h == NULL) {
+  if (NULL == h) {
     return;
   }
 
@@ -52,7 +52,7 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
     return;
   }
 
-  if (*h == NULL) {
+  if (NULL == *h) {
     *h = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
   }
 
@@ -98,8 +98,8 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
   char* json;
   nrbuf_t* buf = NULL;
 
-  if (package == NULL || package->package_name == NULL
-      || package->package_version == NULL) {
+  if (NULL == package || NULL == package->package_name
+      || NULL == package->package_version) {
     return NULL;
   }
   buf = nr_buffer_create(0, 0);
@@ -132,7 +132,7 @@ bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
   nr_buffer_add(buf, NR_PSTR("["));
 
   for (i = 0; i < num_buckets; i++) {
-    for (bucket = h->buckets[i]; bucket != NULL; bucket = bucket->next) {
+    for (bucket = h->buckets[i]; NULL != bucket; bucket = bucket->next) {
       package_json = nr_php_package_to_json((nr_php_package_t*)bucket->value);
       if (package_json) {
         if (package_added) {
