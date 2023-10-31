@@ -237,7 +237,8 @@ static void nr_attribute_config_finalize_log_destination(
   }
 
   /* remove any existing rules with is_finalize_rule = true */
-  for (cur = config->modifier_list; cur;) {
+  cur = config->modifier_list;
+  while (NULL != cur) {
     next = cur->next;
 
     /* currently only finalize rules being created are for the
