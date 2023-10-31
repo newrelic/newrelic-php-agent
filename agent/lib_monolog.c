@@ -281,6 +281,11 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
       nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
                                   ZSTR_VAL(key), obj);
       nro_delete(obj);
+    } else {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: log context attribute '%s' dropped due to value "
+                       "being of unsupported type %d",
+                       __func__, ZSTR_VAL(key), Z_TYPE_P(val));
     }
   }
   ZEND_HASH_FOREACH_END();
