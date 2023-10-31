@@ -71,11 +71,26 @@ static void test_php_packages_to_json_buffer(void) {
   nr_php_packages_t* hashmap = NULL;
   nr_php_package_t* package1;
   nr_php_package_t* package2;
+  nr_php_package_t* package3;
+  nr_php_package_t* package4;
+  int count;
 
   package1 = nr_php_package_create("Package One", "1.0.0");
-  package2 = nr_php_package_create("Package Two", "2.0.0");
+  // Add package with same key, but different value. Newer value will be kept
+  package2 = nr_php_package_create("Package One", "11.0");
+  package3 = nr_php_package_create("Package Two", "2.0.0");
+  // Add package with same key and same value. No action will happen
+  package4 = nr_php_package_create("Package Two", "2.0.0");
+
   nr_php_packages_add_package(&hashmap, package1);
   nr_php_packages_add_package(&hashmap, package2);
+  nr_php_packages_add_package(&hashmap, package3);
+  nr_php_packages_add_package(&hashmap, package4);
+
+  // Total package count should be 2 because two packages were duplicates with
+  // the same key
+  count = nr_php_packages_count(hashmap);
+  tlib_pass_if_int_equal("package count", 2, count);
 
   // Test: adding packages to buffer
   tlib_pass_if_bool_equal("filled hashmap bool check", true,
@@ -84,7 +99,7 @@ static void test_php_packages_to_json_buffer(void) {
   nr_buffer_add(buf, NR_PSTR("\0"));
   tlib_pass_if_str_equal(
       "filled hashmap",
-      "[{\"name\":\"Package One\",\"version\":\"1.0.0\"},{\"name\":\"Package "
+      "[{\"name\":\"Package One\",\"version\":\"11.0\"},{\"name\":\"Package "
       "Two\",\"version\":\"2.0.0\"}]",
       nr_buffer_cptr(buf));
   nr_hashmap_destroy(&hashmap);
