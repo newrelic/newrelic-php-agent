@@ -97,4 +97,12 @@ char* nr_php_process_environment_variable_to_string(const char* prefix,
                                                     const char* kv_delimeter,
                                                     const char* delimeter);
 
+/*
+ * Purpose : Parse the /proc/self/mountinfo file for the Docker cgroup v2 ID.
+ *           Assign the value (if found) to the docker_id global.
+ *
+ * Params  : 1. The filepath of the mountinfo file to parse
+ */
+void nr_php_get_v2_docker_id(const char* cgroup_fname);
+
 #endif /* PHP_ENVIRONMENT_HDR */

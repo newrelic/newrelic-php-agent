@@ -511,6 +511,94 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
                    __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
+#define DOCKER_ID_V2_STRLEN (64)
+/*
+ * Purpose:
+ *    Extract the 64-byte hexadecimal Docker cgroup ID from
+ *     /proc/self/mountinfo
+ */
+void nr_php_get_v2_docker_id(const char* cgroup_fname) {
+  char* line_ptr = NULL;
+  char* token = NULL;
+  bool found = false;
+  FILE* fd = NULL;
+  size_t len = 0;
+  nr_regex_t* regex = NULL;
+
+  // check if docker_id global already set
+  if (NULL != NR_PHP_PROCESS_GLOBALS(docker_id)) {
+    nrl_verbosedebug(NRL_AGENT, "Docker ID already set.");
+    return;
+  }
+
+  // check if file exists
+  if (SUCCESS != access(cgroup_fname, F_OK)) {
+    nrl_verbosedebug(NRL_AGENT, "File not found: %s", cgroup_fname);
+    return;
+  }
+
+  // open file
+  fd = fopen(cgroup_fname, "r");
+  if (NULL == fd) {
+    nrl_warning(NRL_AGENT, "Failed to open %s", cgroup_fname);
+    return;
+  }
+
+  // compile regex to verify hexadecimal chars
+  regex = nr_regex_create("^[a-fA-F0-9]+$", 0, 0);
+
+  // clang-format off
+  /* 
+   * Example /proc/self/mountinfo file structure:
+   *   ...
+   *   795 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/vda1 rw
+   *   796 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/hostname /etc/hostname rw,relatime - ext4 /dev/vda1 rw
+   *   797 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/hosts /etc/hosts rw,relatime - ext4 /dev/vda1 rw
+   *   ...
+   */
+
+  /*
+   * File parsing logic:
+   *  1. scan file line-by-line
+   *  2. split each line into '/' delimited tokens
+   *  3. search for "docker" followed by "container" string tokens
+   *  4. extract the 64 byte field following "/docker/containers/"
+   *  5. Verify the extracted ID is both:
+   *    a. 64 bytes long (not including null terminator)
+   *    b. comprised of only hexadecimal characters
+   *  6. Assign the extracted & verified ID to the global
+   *    a. Example ID: ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5
+   *  7. Set found = true and exit the loops
+   */
+  // clang-format on
+
+  nrl_verbosedebug(NRL_AGENT, "Reading %s:", cgroup_fname);
+
+  while (FAILURE != getline(&line_ptr, &len, fd) && !found) {
+    token = strtok(line_ptr, "/");
+    while (NULL != token && !found) {
+      if (SUCCESS == nr_strcmp(token, "docker")
+          && SUCCESS == nr_strcmp(strtok(NULL, "/"), "containers")) {
+        token = strtok(NULL, "/");
+        if (DOCKER_ID_V2_STRLEN == nr_strlen(token)
+            && NR_SUCCESS
+                   == nr_regex_match(regex, token, DOCKER_ID_V2_STRLEN)) {
+          nrl_verbosedebug(NRL_AGENT, "Docker v2 ID: %s", token);
+          NR_PHP_PROCESS_GLOBALS(docker_id) = nr_strdup(token);
+          found = true;
+          break;
+        }
+      }
+      token = strtok(NULL, "/");
+    }
+  }
+
+  nr_regex_destroy(&regex);
+  nr_free(line_ptr);
+  fclose(fd);
+}
+#undef DOCKER_ID_V2_STRLEN
+
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nrobj_t* env;
 
@@ -520,6 +608,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
   nr_php_get_environment_variables(TSRMLS_C);
+  nr_php_get_v2_docker_id("/proc/self/mountinfo");
 
   return env;
 }
