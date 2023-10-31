@@ -114,7 +114,7 @@ extern void nr_attribute_config_disable_destinations(
  * Note    : Destinations are enabled by default when a config
  *           is created.  This function can be used to enable
  *           a previously disabled destination.  Current
- *           use is to enable destinationss disabled by default
+ *           use is to enable destinations disabled by default
  *           for testing purposes.
  */
 extern void nr_attribute_config_enable_destinations(
