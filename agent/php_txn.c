@@ -797,6 +797,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   info.custom_events_max_samples_stored
       = NRINI(custom_events_max_samples_stored);
+  info.docker_id = nr_strdup(NR_PHP_PROCESS_GLOBALS(docker_id));
 
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
