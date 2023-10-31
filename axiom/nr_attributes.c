@@ -880,8 +880,8 @@ nrobj_t* nr_attributes_agent_to_obj(const nr_attributes_t* attributes,
 
 nrobj_t* nr_attributes_logcontext_to_obj(const nr_attributes_t* attributes,
                                          uint32_t destination) {
-  if (0 == attributes) {
-    return 0;
+  if (NULL == attributes) {
+    return NULL;
   }
   return nr_attributes_to_obj_internal(attributes->user_attribute_list,
                                        NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX,
