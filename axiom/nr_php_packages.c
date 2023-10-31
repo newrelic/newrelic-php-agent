@@ -151,7 +151,7 @@ bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
   nr_buffer_add(buf, NR_PSTR("["));
 
   for (i = 0; i < num_buckets; i++) {
-    for (bucket = h->buckets[i]; bucket != NULL; bucket = bucket->next) {
+    for (bucket = h->buckets[i]; NULL != bucket; bucket = bucket->next) {
       package_json = nr_php_package_to_json((nr_php_package_t*)bucket->value);
       if (package_json) {
         if (package_added) {
