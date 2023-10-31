@@ -272,7 +272,7 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
   if (NULL == attributes) {
     return NULL;
   }
-  
+
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
     if (NULL == key) {
       continue;
