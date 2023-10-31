@@ -294,23 +294,6 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
 }
 
 /*
- * Purpose : Combine $message and $context arguments of
- * Monolog\Logger::addRecord into a single string to be used as a message
- * property of the log event.
- *
- * Returns : A new string with a log record message; caller must free
- */
-static char* nr_monolog_build_message(NR_EXECUTE_PROTO TSRMLS_DC) {
-  char* message_and_context = nr_strdup("");
-
-  char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  message_and_context = nr_str_append(message_and_context, message, "");
-  nr_free(message);
-
-  return message_and_context;
-}
-
-/*
  * Purpose : Create timestamp for the log event by inspecting $datetime argument
  * of Monolog\Logger::addRecord
  *
@@ -375,7 +358,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
    * forwarding is enabled so agent will get them conditionally */
   if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
     argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    message = nr_monolog_build_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
     if (nr_txn_log_forwarding_context_data_enabled(NRPRG(txn))) {
       zval* context_data = nr_monolog_extract_context_data(
