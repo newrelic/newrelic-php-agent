@@ -48,12 +48,12 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
     return;
   }
 
-  if (*h == NULL) {
-    *h = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
+  if (NULL == p || NULL == p->package_name || NULL == p->package_version) {
+    return;
   }
 
-  if (p == NULL || p->package_name == NULL || p->package_version == NULL) {
-    return;
+  if (*h == NULL) {
+    *h = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
   }
 
   // If package with the same key already exists, we will check if the value is
