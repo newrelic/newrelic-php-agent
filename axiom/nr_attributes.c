@@ -270,13 +270,11 @@ static void nr_attribute_config_finalize_log_destination(
    */
   for (cur = config->modifier_list; cur; cur = cur->next) {
     if (cur->include_destinations & NR_ATTRIBUTE_DESTINATION_LOG) {
-      if (cur->has_wildcard_suffix) {
-        if (0 == cur->match_len) {
+      if (cur->has_wildcard_suffix && 0 == cur->match_len) {
           /* there is an include rule of "*" so no finalize is needed
            * since all attributes are being explicitely included */
           return;
         }
-      }
       add_finalize_rule = true;
     }
   }
