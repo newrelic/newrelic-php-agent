@@ -194,7 +194,7 @@ static int nr_attribute_destination_modifier_compare(
  *
  * Params  : 1. Attribute configuration
  *
- * Notes   : Certain attriubtes like log context attributes expect the "include"
+ * Notes   : Certain attributes like log context attributes expect the "include"
  *           rules to act exclusively.
  *           For example:
  *             include = "A"
