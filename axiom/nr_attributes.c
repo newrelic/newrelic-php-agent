@@ -292,7 +292,7 @@ static void nr_attribute_config_finalize_log_destination(
 }
 
 /*
- * Purpose : Inserts a modifier rule into an attribute configuraiton.
+ * Purpose : Inserts a modifier rule into an attribute configuration.
  *
  * Params  : 1. Attribute config to add modifier to
  *           2. String containing matching text for modifier
