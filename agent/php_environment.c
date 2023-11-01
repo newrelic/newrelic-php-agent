@@ -526,6 +526,10 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   size_t len = 0;
   nr_regex_t* regex = NULL;
 
+  if (NULL == cgroup_fname) {
+    return NULL;
+  }
+
   // check if file exists
   if (SUCCESS != access(cgroup_fname, F_OK)) {
     nrl_verbosedebug(NRL_AGENT, "File not found: %s", cgroup_fname);
