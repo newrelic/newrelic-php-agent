@@ -8549,6 +8549,9 @@ static void test_nr_txn_add_php_package(void) {
    * NULL parameters: ensure it does not crash
    */
   nr_txn_add_php_package(NULL, NULL, NULL);
+  nr_txn_add_php_package(NULL, package_name1, package_version1);
+  nr_txn_add_php_package(txn, NULL, package_version1);
+  nr_txn_add_php_package(txn, package_name1, NULL);
 
   // Test: add php packages to transaction
   nr_txn_add_php_package(txn, package_name1, package_version1);
