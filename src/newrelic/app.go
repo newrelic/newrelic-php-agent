@@ -74,6 +74,7 @@ type AppInfo struct {
 	TraceObserverPort         uint16
 	SpanQueueSize             uint64
 	AgentEventLimits          collector.EventConfigs
+	DockerId                  string
 }
 
 func (info *AppInfo) String() string {
@@ -244,6 +245,9 @@ func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *Ra
 		utilCopy := *util
 		data.Util = &utilCopy
 		data.Util.Hostname = data.Host
+		if info.DockerId != "" {
+			utilization.OverrideDockerId(data.Util, info.DockerId)
+		}
 	}
 
 	if len(info.Labels) > 0 {
@@ -255,6 +259,10 @@ func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *Ra
 		data.Metadata = info.Metadata
 	} else {
 		data.Metadata = JSONString("{}")
+	}
+
+	if data.Util != nil {
+		utilization.OverrideVendors(data.Util)
 	}
 
 	return data

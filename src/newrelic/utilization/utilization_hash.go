@@ -164,11 +164,6 @@ func Gather(config Config) *Data {
 	// Override whatever needs to be overridden.
 	uDat.Config = overrideFromConfig(config)
 
-	if uDat.Vendors.isEmpty() {
-		// Per spec, we MUST NOT send any vendors hash if it's empty.
-		uDat.Vendors = nil
-	}
-
 	return uDat
 }
 
@@ -202,6 +197,19 @@ func GatherDockerID(util *Data) error {
 	}
 
 	return nil
+}
+
+func OverrideDockerId(util *Data, id string) {
+	if nil != util.Vendors {
+		util.Vendors.Docker = &docker{ID: id}
+	}		
+}
+
+func OverrideVendors(util *Data) {
+	if util.Vendors.isEmpty() {
+		// Per spec, we MUST NOT send any vendors hash if it's empty.
+		util.Vendors = nil
+	}
 }
 
 func GatherMemory(util *Data) error {
