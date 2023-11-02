@@ -108,6 +108,7 @@ static void test_create_query(void) {
   info.span_events_max_samples_stored = 1234;
   info.log_events_max_samples_stored = 2345;
   info.custom_events_max_samples_stored = 345;
+  info.docker_id = nr_strdup("1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156");
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
