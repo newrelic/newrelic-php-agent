@@ -512,6 +512,7 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
 }
 
 #define DOCKER_ID_V2_STRLEN (64)
+#define MAX_LOOP_COUNT (100)
 /*
  * Purpose:
  *    Extract the 64-byte hexadecimal Docker cgroup ID from
@@ -522,6 +523,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   char* token = NULL;
   char* retval = NULL;
   bool found = false;
+  int loop_count = 0;
   FILE* fd = NULL;
   size_t len = 0;
   nr_regex_t* regex = NULL;
@@ -576,7 +578,8 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
    */
   // clang-format on
 
-  while (FAILURE != getline(&line_ptr, &len, fd) && !found) {
+  while (FAILURE != getline(&line_ptr, &len, fd) && !found
+         && loop_count++ < MAX_LOOP_COUNT) {
     token = strtok(line_ptr, "/");
     while (NULL != token && !found) {
       if (SUCCESS == nr_strcmp(token, "docker")
@@ -599,6 +602,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   fclose(fd);
   return retval;
 }
+#undef MAX_LOOP_COUNT
 #undef DOCKER_ID_V2_STRLEN
 
 void nr_php_gather_v2_docker_id() {
