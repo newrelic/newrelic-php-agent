@@ -546,6 +546,11 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   // compile regex to verify hexadecimal chars
   regex = nr_regex_create("^[a-fA-F0-9]+$", 0, 0);
 
+  if (NULL == regex) {
+    nrl_error(NRL_AGENT, "Error: regex creation failed");
+    return NULL;
+  }
+
   // clang-format off
   /* 
    * Example /proc/self/mountinfo file structure:
@@ -571,8 +576,6 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
    */
   // clang-format on
 
-  nrl_verbosedebug(NRL_AGENT, "Reading %s:", cgroup_fname);
-
   while (FAILURE != getline(&line_ptr, &len, fd) && !found) {
     token = strtok(line_ptr, "/");
     while (NULL != token && !found) {
@@ -582,7 +585,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
         if (DOCKER_ID_V2_STRLEN == nr_strlen(token)
             && NR_SUCCESS
                    == nr_regex_match(regex, token, DOCKER_ID_V2_STRLEN)) {
-          retval = nr_strdup(token);
+          retval = nr_strndup(token, DOCKER_ID_V2_STRLEN);
           found = true;
           break;
         }
