@@ -127,7 +127,7 @@ log_errors=0
 */
 
 set_error_handler(
-    function () {
+    function (int $errno, string $errst) {
         time_nanosleep(0, 100000000);
         return false;
     }

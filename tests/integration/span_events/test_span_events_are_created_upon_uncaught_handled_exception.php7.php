@@ -14,6 +14,9 @@ when an exception is handled by the exception handler.
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: test for non-oapi agent only\n");
+}
 */
 
 /*INI
@@ -94,7 +97,7 @@ null
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 137,
+        "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -115,7 +118,7 @@ null
       },
       {},
       {
-        "code.lineno": 131,
+        "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
@@ -128,7 +131,7 @@ null
 */
 
 set_exception_handler(
-    function () {
+    function (Throwable $ex) {
         time_nanosleep(0, 100000000);
         exit(0); 
     }

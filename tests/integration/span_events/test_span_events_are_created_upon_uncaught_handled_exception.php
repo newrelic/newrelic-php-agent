@@ -6,7 +6,16 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
+when an uncaught exception is handled by the user exception handler. The
+span that generated the exception should have error attributes. Additionally
+error events should be created.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: test for oapi agent only\n");
+}
 */
 
 /*INI
@@ -14,11 +23,38 @@ newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
-newrelic.code_level_metrics.enabled=false
 */
 
 /*EXPECT_ERROR_EVENTS
-null
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": "??",
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -87,7 +123,10 @@ null
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -105,7 +144,11 @@ null
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "{closure}"
+      }
     ]
   ]
 ]
@@ -115,7 +158,7 @@ null
 */
 
 set_exception_handler(
-    function () {
+    function (Throwable $ex) {
         time_nanosleep(0, 100000000);
         exit(0); 
     }
