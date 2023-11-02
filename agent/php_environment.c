@@ -517,31 +517,30 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
  *    Extract the 64-byte hexadecimal Docker cgroup ID from
  *     /proc/self/mountinfo
  */
-void nr_php_get_v2_docker_id(const char* cgroup_fname) {
+char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   char* line_ptr = NULL;
   char* token = NULL;
+  char* retval = NULL;
   bool found = false;
   FILE* fd = NULL;
   size_t len = 0;
   nr_regex_t* regex = NULL;
 
-  // check if docker_id global already set
-  if (NULL != NR_PHP_PROCESS_GLOBALS(docker_id)) {
-    nrl_verbosedebug(NRL_AGENT, "Docker ID already set.");
-    return;
+  if (NULL == cgroup_fname) {
+    return NULL;
   }
 
   // check if file exists
   if (SUCCESS != access(cgroup_fname, F_OK)) {
     nrl_verbosedebug(NRL_AGENT, "File not found: %s", cgroup_fname);
-    return;
+    return NULL;
   }
 
   // open file
   fd = fopen(cgroup_fname, "r");
   if (NULL == fd) {
     nrl_warning(NRL_AGENT, "Failed to open %s", cgroup_fname);
-    return;
+    return NULL;
   }
 
   // compile regex to verify hexadecimal chars
@@ -583,8 +582,7 @@ void nr_php_get_v2_docker_id(const char* cgroup_fname) {
         if (DOCKER_ID_V2_STRLEN == nr_strlen(token)
             && NR_SUCCESS
                    == nr_regex_match(regex, token, DOCKER_ID_V2_STRLEN)) {
-          nrl_verbosedebug(NRL_AGENT, "Docker v2 ID: %s", token);
-          NR_PHP_PROCESS_GLOBALS(docker_id) = nr_strdup(token);
+          retval = nr_strdup(token);
           found = true;
           break;
         }
@@ -596,8 +594,27 @@ void nr_php_get_v2_docker_id(const char* cgroup_fname) {
   nr_regex_destroy(&regex);
   nr_free(line_ptr);
   fclose(fd);
+  return retval;
 }
 #undef DOCKER_ID_V2_STRLEN
+
+void nr_php_gather_v2_docker_id() {
+  char* dockerId = NULL;
+
+  // check if docker_id global already set
+  if (NULL != NR_PHP_PROCESS_GLOBALS(docker_id)) {
+    nrl_verbosedebug(NRL_AGENT, "Docker ID already set.");
+    return;
+  }
+
+  dockerId = nr_php_parse_v2_docker_id("/proc/self/mountinfo");
+  if (NULL != dockerId) {
+    NR_PHP_PROCESS_GLOBALS(docker_id) = dockerId;
+    nrl_verbosedebug(NRL_AGENT, "Docker v2 ID: %s", dockerId);
+  } else {
+    nrl_warning(NRL_AGENT, "Unable to read docker v2 container id");
+  }
+}
 
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nrobj_t* env;
@@ -608,7 +625,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
   nr_php_get_environment_variables(TSRMLS_C);
-  nr_php_get_v2_docker_id("/proc/self/mountinfo");
+  nr_php_gather_v2_docker_id();
 
   return env;
 }
