@@ -94,7 +94,7 @@ static nr_status_t nr_laravel_queue_iterate_headers(
 static void nr_laravel_queue_set_cat_txn(zval* job TSRMLS_DC) {
   zval* json = NULL;
   nrobj_t* payload = NULL;
-  nr_laravel_queue_headers_t headers = {NULL, NULL, NULL, NULL};
+  nr_laravel_queue_headers_t headers = {NULL, NULL, NULL, NULL, NULL, NULL};
 
   /*
    * We're not interested in SyncJob instances, since they don't run in a
@@ -136,18 +136,12 @@ static void nr_laravel_queue_set_cat_txn(zval* job TSRMLS_DC) {
   }
 
   if (headers.dt_payload || headers.traceparent) {
-    char* dt_payload = nr_strdup(headers.dt_payload);
-    char* tracestate = nr_strdup(headers.tracestate);
-    char* traceparent = nr_strdup(headers.traceparent);
 
     nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
-        dt_payload, traceparent, tracestate);
+        headers.dt_payload, headers.traceparent, headers.tracestate);
 
     nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
                                                          "Other");
-    nr_free(dt_payload);
-    nr_free(tracestate);
-    nr_free(traceparent);
     nr_hashmap_destroy(&header_map);
   }
 
