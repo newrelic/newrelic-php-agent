@@ -41,7 +41,6 @@
 #include "util_string_pool.h"
 
 #define NR_TXN_REQUEST_PARAMETER_ATTRIBUTE_PREFIX "request.parameters."
-
 typedef enum _nr_tt_recordsql_t {
   NR_SQL_NONE = 0,
   NR_SQL_RAW = 1,
@@ -122,6 +121,7 @@ typedef struct _nrtxnopt_t {
                            application logging features */
   bool log_decorating_enabled;  /* Whether log decorating is enabled */
   bool log_forwarding_enabled;  /* Whether log forwarding is enabled */
+  bool log_forwarding_context_data_enabled; /* Whether context data is forwarded with logs */
   int log_forwarding_log_level; /* minimum log level to forward to the collector
                                  */
   size_t log_events_max_samples_stored; /* The maximum number of log events per
@@ -629,6 +629,11 @@ extern void nr_txn_record_custom_event(nrtxn_t* txn,
 extern bool nr_txn_log_forwarding_enabled(nrtxn_t* txn);
 
 /*
+ * Purpose : Check log forwarding context data configuration
+ */
+extern bool nr_txn_log_forwarding_context_data_enabled(nrtxn_t* txn);
+
+/*
  * Purpose : Check log forwarding log level configuration
  */
 extern bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
@@ -651,13 +656,15 @@ extern bool nr_txn_log_decorating_enabled(nrtxn_t* txn);
  *           2. Log record level name
  *           3. Log record message
  *           4. Log record timestamp
- *           5. The application (to get linking meta data)
+ *           5. Attribute data for Monolog context data (can be NULL)
+ *           6. The application (to get linking meta data)
  *
  */
 extern void nr_txn_record_log_event(nrtxn_t* txn,
                                     const char* level_name,
                                     const char* message,
                                     nrtime_t timestamp,
+                                    nr_attributes_t* context_attributes,
                                     nrapp_t* app);
 
 /*

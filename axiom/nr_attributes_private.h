@@ -13,6 +13,8 @@
 
 typedef struct _nr_attribute_destination_modifier_t {
   int has_wildcard_suffix; /* Whether 'match' is exact or a prefix. */
+  int is_finalize_rule;    /* if true this rule was added by finalize step
+     and not by a user rule */
   char* match; /* The string to match against.  This will not contain a trailing
                   '*'. */
   int match_len;                 /* The length of 'match'. */
