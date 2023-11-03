@@ -512,7 +512,8 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
 }
 
 #define DOCKER_ID_V2_STRLEN (64)
-#define MAX_LOOP_COUNT (100)
+#define MAX_LINE_COUNT (1000)  // Upper bound for number of lines to read
+#define MAX_INNER_LOOP (10)    // Upper bound for number of token loops
 /*
  * Purpose:
  *    Extract the 64-byte hexadecimal Docker cgroup ID from
@@ -523,7 +524,8 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   char* token = NULL;
   char* retval = NULL;
   bool found = false;
-  int loop_count = 0;
+  int line_count = 0;
+  int token_loop_count = 0;
   FILE* fd = NULL;
   size_t len = 0;
   nr_regex_t* regex = NULL;
@@ -579,9 +581,10 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   // clang-format on
 
   while (FAILURE != getline(&line_ptr, &len, fd) && !found
-         && loop_count++ < MAX_LOOP_COUNT) {
+         && line_count++ < MAX_LINE_COUNT) {
     token = strtok(line_ptr, "/");
-    while (NULL != token && !found) {
+    token_loop_count = 0;
+    while (NULL != token && !found && token_loop_count++ < MAX_INNER_LOOP) {
       if (SUCCESS == nr_strcmp(token, "docker")
           && SUCCESS == nr_strcmp(strtok(NULL, "/"), "containers")) {
         token = strtok(NULL, "/");
@@ -602,7 +605,8 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   fclose(fd);
   return retval;
 }
-#undef MAX_LOOP_COUNT
+#undef MAX_INNER_LOOP
+#undef MAX_LINE_COUNT
 #undef DOCKER_ID_V2_STRLEN
 
 void nr_php_gather_v2_docker_id() {
