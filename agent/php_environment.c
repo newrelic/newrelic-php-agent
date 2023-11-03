@@ -523,6 +523,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   char* line_ptr = NULL;
   char* token = NULL;
   char* retval = NULL;
+  char* saveptr = NULL;
   bool found = false;
   int line_count = 0;
   int token_loop_count = 0;
@@ -582,12 +583,13 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
 
   while (FAILURE != getline(&line_ptr, &len, fd) && !found
          && line_count++ < MAX_LINE_COUNT) {
-    token = strtok(line_ptr, "/");
+    token = strtok_r(line_ptr, "/", &saveptr);
     token_loop_count = 0;
     while (NULL != token && !found && token_loop_count++ < MAX_INNER_LOOP) {
       if (SUCCESS == nr_strcmp(token, "docker")
-          && SUCCESS == nr_strcmp(strtok(NULL, "/"), "containers")) {
-        token = strtok(NULL, "/");
+          && SUCCESS
+                 == nr_strcmp(strtok_r(NULL, "/", &saveptr), "containers")) {
+        token = strtok_r(NULL, "/", &saveptr);
         if (DOCKER_ID_V2_STRLEN == nr_strlen(token)
             && NR_SUCCESS
                    == nr_regex_match(regex, token, DOCKER_ID_V2_STRLEN)) {
@@ -596,7 +598,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
           break;
         }
       }
-      token = strtok(NULL, "/");
+      token = strtok_r(NULL, "/", &saveptr);
     }
   }
 
