@@ -54,6 +54,7 @@ static void test_create_empty_query(void) {
   test_pass_if_empty_vector(&app, APP_TRACE_OBSERVER_HOST);
   test_pass_if_empty_vector(&app, APP_FIELD_LABELS);
   test_pass_if_empty_vector(&app, APP_METADATA);
+  test_pass_if_empty_vector(&app, APP_DOCKER_ID);
 
   high_security
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 42);
@@ -108,7 +109,8 @@ static void test_create_query(void) {
   info.span_events_max_samples_stored = 1234;
   info.log_events_max_samples_stored = 2345;
   info.custom_events_max_samples_stored = 345;
-  info.docker_id = nr_strdup("1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156");
+  info.docker_id = nr_strdup(
+      "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156");
 
   query = nr_appinfo_create_query("12345", "this_host", &info);
 
@@ -173,6 +175,10 @@ static void test_create_query(void) {
       = nr_flatbuffers_table_read_i8(&app, APP_FIELD_HIGH_SECURITY, 0);
   tlib_pass_if_true(__func__, 1 == high_security, "high_security=%d",
                     high_security);
+  tlib_pass_if_str_equal(
+      __func__,
+      "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156",
+      (const char*)nr_flatbuffers_table_read_bytes(&app, APP_DOCKER_ID));
 
   nr_app_info_destroy_fields(&info);
   nr_flatbuffers_destroy(&query);
