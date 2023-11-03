@@ -575,7 +575,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
    *  5. Verify the extracted ID is both:
    *    a. 64 bytes long (not including null terminator)
    *    b. comprised of only hexadecimal characters
-   *  6. Assign the extracted & verified ID to the global
+   *  6. Assign the extracted & verified ID to the retval
    *    a. Example ID: ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5
    *  7. Set found = true and exit the loops
    */
