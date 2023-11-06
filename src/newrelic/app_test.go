@@ -184,6 +184,54 @@ func TestConnectPayloadInternalHostname(t *testing.T) {
 	}
 }
 
+func TestConnectPayloadInternalDocker(t *testing.T) {
+	util := &utilization.Data{}
+	info := &AppInfo{}
+
+	// No docker ID, nil utilization data
+	info.DockerId = ""
+
+	b := info.ConnectPayloadInternal(1, nil)
+
+	result, _ := utilization.GetDockerId(b.Util)
+
+	if nil != b.Util {
+		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+
+	// No Docker ID, utilization data
+	info.DockerId = ""
+
+	b = info.ConnectPayloadInternal(1, util)
+
+	result, _ = utilization.GetDockerId(b.Util)
+
+	if result != info.DockerId {
+		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+
+	// Docker ID, nil utilization data
+	info.DockerId = "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156"
+
+	b = info.ConnectPayloadInternal(1, nil)
+
+	if nil != b.Util {
+		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+
+	// Docker ID, utilization data
+	info.DockerId = "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156"
+
+	b = info.ConnectPayloadInternal(1, util)
+
+	result, _ = utilization.GetDockerId(b.Util)
+
+	if result != info.DockerId {
+		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+
+}
+
 func TestPreconnectPayloadEncoded(t *testing.T) {
 
 	preconnectPayload := &RawPreconnectPayload{SecurityPolicyToken: "ffff-eeee-eeee-dddd", HighSecurity: false}
