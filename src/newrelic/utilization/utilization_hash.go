@@ -200,9 +200,11 @@ func GatherDockerID(util *Data) error {
 }
 
 func OverrideDockerId(util *Data, id string) {
-	if nil != util.Vendors {
-		util.Vendors.Docker = &docker{ID: id}
-	}		
+	if nil == util.Vendors {
+		util.Vendors = &vendors{}
+		util.Vendors.Docker = &docker{}
+	}
+	util.Vendors.Docker = &docker{ID: id}		
 }
 
 func OverrideVendors(util *Data) {
