@@ -214,6 +214,23 @@ func OverrideVendors(util *Data) {
 	}
 }
 
+func GetDockerId(util *Data) (string, error) {
+    id := ""
+    if nil == util {
+        return id, fmt.Errorf("Util is nil")
+    }
+    if util.Vendors.isEmpty() {
+        return id, fmt.Errorf("Vendors structure is empty")
+    }
+    if nil == util.Vendors.Docker {
+        return id, fmt.Errorf("Docker structure is empty")
+    }
+
+    id = util.Vendors.Docker.ID
+
+    return id, nil
+}
+
 func GatherMemory(util *Data) error {
 	ram, err := sysinfo.PhysicalMemoryBytes()
 	if nil == err {
