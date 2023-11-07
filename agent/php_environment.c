@@ -537,14 +537,14 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
 
   // check if file exists
   if (SUCCESS != access(cgroup_fname, F_OK)) {
-    nrl_verbosedebug(NRL_AGENT, "File not found: %s", cgroup_fname);
+    nrl_verbosedebug(NRL_AGENT, "%s: File not found: %s", __func__, cgroup_fname);
     return NULL;
   }
 
   // open file
   fd = fopen(cgroup_fname, "r");
   if (NULL == fd) {
-    nrl_warning(NRL_AGENT, "Failed to open %s", cgroup_fname);
+    nrl_warning(NRL_AGENT, "%s: Failed to open %s", __func__, cgroup_fname);
     return NULL;
   }
 
@@ -552,7 +552,7 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   regex = nr_regex_create("^[a-fA-F0-9]+$", 0, 0);
 
   if (NULL == regex) {
-    nrl_error(NRL_AGENT, "Error: regex creation failed");
+    nrl_error(NRL_AGENT, "%s: Error: regex creation failed", __func__);
     return NULL;
   }
 
@@ -616,16 +616,16 @@ void nr_php_gather_v2_docker_id() {
 
   // check if docker_id global already set
   if (NULL != NR_PHP_PROCESS_GLOBALS(docker_id)) {
-    nrl_verbosedebug(NRL_AGENT, "Docker ID already set.");
+    nrl_verbosedebug(NRL_AGENT, "%s: Docker ID already set.", __func__);
     return;
   }
 
   dockerId = nr_php_parse_v2_docker_id("/proc/self/mountinfo");
   if (NULL != dockerId) {
     NR_PHP_PROCESS_GLOBALS(docker_id) = dockerId;
-    nrl_verbosedebug(NRL_AGENT, "Docker v2 ID: %s", dockerId);
+    nrl_verbosedebug(NRL_AGENT, "%s: Docker v2 ID: %s", __func__, dockerId);
   } else {
-    nrl_warning(NRL_AGENT, "Unable to read docker v2 container id");
+    nrl_warning(NRL_AGENT, "%s: Unable to read docker v2 container id", __func__);
   }
 }
 
