@@ -44,6 +44,7 @@ void nr_php_package_destroy(nr_php_package_t* p) {
 }
 
 void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
+  nr_php_package_t* package;
   if (NULL == h) {
     return;
   }
@@ -58,16 +59,12 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
 
   // If package with the same key already exists, we will check if the value is
   // different. If it is different, then we will update the value of the package
-  if (0
-      != nr_php_packages_has_package(*h, p->package_name,
-                                     nr_strlen(p->package_name))) {
-    nr_php_package_t* package = (nr_php_package_t*)nr_hashmap_get(
-        *h, p->package_name, nr_strlen(p->package_name));
-    if (NULL != package) {
-      if (0 != nr_strcmp(package->package_version, p->package_version)) {
-        nr_free(package->package_version);
-        package->package_version = nr_strdup(p->package_version);
-      }
+  package = (nr_php_package_t*)nr_hashmap_get(*h, p->package_name,
+                                              nr_strlen(p->package_name));
+  if (NULL != package) {
+    if (0 != nr_strcmp(package->package_version, p->package_version)) {
+      nr_free(package->package_version);
+      package->package_version = nr_strdup(p->package_version);
     }
     nr_php_package_destroy(p);
     return;
