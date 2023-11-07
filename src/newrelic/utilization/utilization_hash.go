@@ -199,15 +199,21 @@ func GatherDockerID(util *Data) error {
 	return nil
 }
 
-func OverrideDockerId(util *Data, id string) {
+func OverrideDockerId(util *Data, id string) error {
+	if nil == util {
+		return fmt.Errorf("util is nil")
+	}
 	if nil == util.Vendors {
 		util.Vendors = &vendors{}
-		util.Vendors.Docker = &docker{}
 	}
-	util.Vendors.Docker = &docker{ID: id}		
+	util.Vendors.Docker = &docker{ID: id}	
+	return nil	
 }
 
 func OverrideVendors(util *Data) {
+	if nil == util {
+		return
+	}
 	if util.Vendors.isEmpty() {
 		// Per spec, we MUST NOT send any vendors hash if it's empty.
 		util.Vendors = nil

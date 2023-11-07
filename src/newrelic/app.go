@@ -246,7 +246,10 @@ func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *Ra
 		data.Util = &utilCopy
 		data.Util.Hostname = data.Host
 		if info.DockerId != "" {
-			utilization.OverrideDockerId(data.Util, info.DockerId)
+			err := utilization.OverrideDockerId(data.Util, info.DockerId)
+			if err != nil {
+				log.Errorf("Failed to set Agent Docker ID: %s", err)
+			}
 		}
 	}
 
