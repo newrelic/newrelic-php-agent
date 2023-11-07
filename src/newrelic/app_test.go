@@ -38,6 +38,7 @@ func TestConnectPayloadInternal(t *testing.T) {
 		Metadata:          JSONString(`{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"}`),
 		RedirectCollector: "collector.newrelic.com",
 		Hostname:          "some_host",
+		DockerId:          "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156",
 	}
 
 	info.AgentEventLimits.SpanEventConfig.Limit = 2323
@@ -59,9 +60,13 @@ func TestConnectPayloadInternal(t *testing.T) {
 	}
 
 	expected.Util.Hostname = info.Hostname
+	utilization.OverrideDockerId(expected.Util, info.DockerId)
 
 	pid := 123
 	b := info.ConnectPayloadInternal(pid, util)
+
+	expectedDockerId, _ := utilization.GetDockerId(expected.Util)
+	actualDockerId, _ := utilization.GetDockerId(b.Util)
 
 	// Compare the string integer and string portions of the structs
 	// TestConnectEncodedJSON will do a full comparison after being encoded to bytes
@@ -91,6 +96,9 @@ func TestConnectPayloadInternal(t *testing.T) {
 	}
 	if b.Util.Hostname != expected.Util.Hostname {
 		t.Errorf("expected: %s\nactual: %s", expected.Util.Hostname, b.Util.Hostname)
+	}
+	if actualDockerId != expectedDockerId {
+		t.Errorf("expected: %s\nactual: %s", expectedDockerId, actualDockerId)
 	}
 }
 
