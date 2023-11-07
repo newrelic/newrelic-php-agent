@@ -3460,7 +3460,7 @@ void nr_txn_record_log_event(nrtxn_t* txn,
   nr_txn_add_logging_metrics(txn, log_level_name);
 }
 
-extern void nr_txn_add_php_package(nrtxn_t* txn,
+void nr_txn_add_php_package(nrtxn_t* txn,
                                    char* package_name,
                                    char* package_version) {
   nr_php_package_t* p = NULL;
