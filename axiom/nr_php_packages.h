@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef nr_php_packages_HDR
-#define nr_php_packages_HDR
+#ifndef NR_PHP_PACKAGES_HDR
+#define NR_PHP_PACKAGES_HDR
 
 #include "nr_log_event.h"
 #include "util_random.h"
