@@ -73,22 +73,8 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
   nr_hashmap_set(*h, p->package_name, nr_strlen(p->package_name), p);
 }
 
-void nr_php_packages_destroy(nr_php_packages_t** h) {
-  nr_hashmap_destroy(h);
-}
-
-size_t nr_php_packages_count(nr_php_packages_t* h) {
-  return nr_hashmap_count(h);
-}
-
 size_t nr_hashmap_count_buckets(const nr_php_packages_t* hashmap) {
   return (size_t)(1 << hashmap->log2_num_buckets);
-}
-
-int nr_php_packages_has_package(nr_php_packages_t* h,
-                                char* package_name,
-                                size_t package_len) {
-  return nr_hashmap_has(h, package_name, package_len);
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

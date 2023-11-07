@@ -65,7 +65,9 @@ extern void nr_php_packages_add_package(nr_php_packages_t** h,
  *
  * Returns : Nothing, it is void
  */
-extern void nr_php_packages_destroy(nr_php_packages_t** h);
+static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
+  nr_hashmap_destroy(h);
+}
 
 /*
  * Purpose : Count how many elements are inside of the hashmap
@@ -74,7 +76,9 @@ extern void nr_php_packages_destroy(nr_php_packages_t** h);
  *
  * Returns : The number of elements in the hashmap
  */
-extern size_t nr_php_packages_count(nr_php_packages_t* h);
+static inline size_t nr_php_packages_count(nr_php_packages_t* h) {
+  return nr_hashmap_count(h);
+}
 
 /*
  * Purpose : Check if a php package exists in the hashmap
@@ -85,9 +89,11 @@ extern size_t nr_php_packages_count(nr_php_packages_t* h);
  *
  * Returns : Returns non-zero if the package exists
  */
-extern int nr_php_packages_has_package(nr_php_packages_t* h,
-                                       char* package_name,
-                                       size_t package_len);
+static inline int nr_php_packages_has_package(nr_php_packages_t* h,
+                                              char* package_name,
+                                              size_t package_len) {
+  return nr_hashmap_has(h, package_name, package_len);
+}
 
 /*
  * Purpose : Converts a package to a json
