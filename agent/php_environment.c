@@ -567,14 +567,13 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   /*
    * File parsing logic:
    *  1. scan file line-by-line
-   *  2. regex search each line for '/docker/containers/' string followed by a 64 byte hex value
-   *  3. extract the 64 byte field following "/docker/containers/"
-   *  4. Verify the extracted ID is both:
+   *  2. regex search each line for '/docker/containers/' string followed by a string
    *    a. 64 bytes long (not including null terminator)
    *    b. comprised of only hexadecimal characters
-   *  5. Assign the extracted & verified ID to the retval
+   *  3. extract the 64 byte substring following "/docker/containers/"
+   *  4. Assign the extracted & verified ID to the retval
    *    a. Example ID: ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5
-   *  6. Set found = true and exit the loops
+   *  5. Set found = true and exit the loops
    */
   // clang-format on
 
