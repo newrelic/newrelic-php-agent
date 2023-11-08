@@ -511,9 +511,7 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
                    __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
-#define DOCKER_ID_V2_STRLEN (64)
 #define MAX_LINE_COUNT (1000)  // Upper bound for number of lines to read
-#define MAX_INNER_LOOP (10)    // Upper bound for number of token loops
 /*
  * Purpose:
  *    Extract the 64-byte hexadecimal Docker cgroup ID from
@@ -521,15 +519,13 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
  */
 char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   char* line_ptr = NULL;
-  char* token = NULL;
   char* retval = NULL;
-  char* saveptr = NULL;
   bool found = false;
   int line_count = 0;
-  int token_loop_count = 0;
   FILE* fd = NULL;
   size_t len = 0;
-  nr_regex_t* regex = NULL;
+  nr_regex_t* line_regex = NULL;
+  nr_regex_substrings_t* ss = NULL;
 
   if (NULL == cgroup_fname) {
     return NULL;
@@ -537,7 +533,8 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
 
   // check if file exists
   if (SUCCESS != access(cgroup_fname, F_OK)) {
-    nrl_verbosedebug(NRL_AGENT, "%s: File not found: %s", __func__, cgroup_fname);
+    nrl_verbosedebug(NRL_AGENT, "%s: File not found: %s", __func__,
+                     cgroup_fname);
     return NULL;
   }
 
@@ -548,11 +545,12 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
     return NULL;
   }
 
-  // compile regex to verify hexadecimal chars
-  regex = nr_regex_create("^[a-fA-F0-9]+$", 0, 0);
+  // compile regex to extract target string from file line
+  line_regex = nr_regex_create("/docker/containers/([a-fA-F0-9]{64})/", 0, 0);
 
-  if (NULL == regex) {
-    nrl_error(NRL_AGENT, "%s: Error: regex creation failed", __func__);
+  if (NULL == line_regex) {
+    nrl_error(NRL_AGENT, "%s: Error: line regex creation failed", __func__);
+    fclose(fd);
     return NULL;
   }
 
@@ -569,47 +567,34 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
   /*
    * File parsing logic:
    *  1. scan file line-by-line
-   *  2. split each line into '/' delimited tokens
-   *  3. search for "docker" followed by "container" string tokens
-   *  4. extract the 64 byte field following "/docker/containers/"
-   *  5. Verify the extracted ID is both:
+   *  2. regex search each line for '/docker/containers/' string followed by a 64 byte hex value
+   *  3. extract the 64 byte field following "/docker/containers/"
+   *  4. Verify the extracted ID is both:
    *    a. 64 bytes long (not including null terminator)
    *    b. comprised of only hexadecimal characters
-   *  6. Assign the extracted & verified ID to the retval
+   *  5. Assign the extracted & verified ID to the retval
    *    a. Example ID: ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5
-   *  7. Set found = true and exit the loops
+   *  6. Set found = true and exit the loops
    */
   // clang-format on
 
   while (FAILURE != getline(&line_ptr, &len, fd) && !found
          && line_count++ < MAX_LINE_COUNT) {
-    token = strtok_r(line_ptr, "/", &saveptr);
-    token_loop_count = 0;
-    while (NULL != token && !found && token_loop_count++ < MAX_INNER_LOOP) {
-      if (SUCCESS == nr_strcmp(token, "docker")
-          && SUCCESS
-                 == nr_strcmp(strtok_r(NULL, "/", &saveptr), "containers")) {
-        token = strtok_r(NULL, "/", &saveptr);
-        if (DOCKER_ID_V2_STRLEN == nr_strlen(token)
-            && NR_SUCCESS
-                   == nr_regex_match(regex, token, DOCKER_ID_V2_STRLEN)) {
-          retval = nr_strndup(token, DOCKER_ID_V2_STRLEN);
-          found = true;
-          break;
-        }
-      }
-      token = strtok_r(NULL, "/", &saveptr);
+    ss = nr_regex_match_capture(line_regex, line_ptr, nr_strlen(line_ptr));
+    if (NULL == ss) {
+      continue;
     }
+    retval = nr_regex_substrings_get(ss, 1);
+    found = true;
   }
 
-  nr_regex_destroy(&regex);
+  nr_regex_destroy(&line_regex);
+  nr_regex_substrings_destroy(&ss);
   nr_free(line_ptr);
   fclose(fd);
   return retval;
 }
-#undef MAX_INNER_LOOP
 #undef MAX_LINE_COUNT
-#undef DOCKER_ID_V2_STRLEN
 
 void nr_php_gather_v2_docker_id() {
   char* dockerId = NULL;
@@ -625,7 +610,8 @@ void nr_php_gather_v2_docker_id() {
     NR_PHP_PROCESS_GLOBALS(docker_id) = dockerId;
     nrl_verbosedebug(NRL_AGENT, "%s: Docker v2 ID: %s", __func__, dockerId);
   } else {
-    nrl_warning(NRL_AGENT, "%s: Unable to read docker v2 container id", __func__);
+    nrl_warning(NRL_AGENT, "%s: Unable to read docker v2 container id",
+                __func__);
   }
 }
 
