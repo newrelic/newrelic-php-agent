@@ -584,11 +584,11 @@ char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
       continue;
     }
     retval = nr_regex_substrings_get(ss, 1);
+    nr_regex_substrings_destroy(&ss);
     found = true;
   }
 
   nr_regex_destroy(&line_regex);
-  nr_regex_substrings_destroy(&ss);
   nr_free(line_ptr);
   fclose(fd);
   return retval;
