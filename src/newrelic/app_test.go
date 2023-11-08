@@ -199,10 +199,13 @@ func TestConnectPayloadInternalDocker(t *testing.T) {
 
 	b := info.ConnectPayloadInternal(1, nil)
 
-	result, _ := utilization.GetDockerId(b.Util)
+	result, err := utilization.GetDockerId(b.Util)
 
 	if nil != b.Util {
 		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+	if "Util is nil" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Util is nil", err.Error())
 	}
 
 	// No Docker ID, utilization data
@@ -210,19 +213,26 @@ func TestConnectPayloadInternalDocker(t *testing.T) {
 
 	b = info.ConnectPayloadInternal(1, util)
 
-	result, _ = utilization.GetDockerId(b.Util)
+	result, err = utilization.GetDockerId(b.Util)
 
 	if result != info.DockerId {
 		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+	if "Vendors structure is empty" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Vendors structure is empty", err.Error())
 	}
 
 	// Docker ID, nil utilization data
 	info.DockerId = "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156"
 
 	b = info.ConnectPayloadInternal(1, nil)
+	result, err = utilization.GetDockerId(b.Util)
 
 	if nil != b.Util {
 		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+	if "Util is nil" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Util is nil", err.Error())
 	}
 
 	// Docker ID, utilization data
@@ -230,10 +240,13 @@ func TestConnectPayloadInternalDocker(t *testing.T) {
 
 	b = info.ConnectPayloadInternal(1, util)
 
-	result, _ = utilization.GetDockerId(b.Util)
+	result, err = utilization.GetDockerId(b.Util)
 
 	if result != info.DockerId {
 		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+	if nil != err {
+		t.Errorf("expected: %v\nactual: %v", nil, err)
 	}
 
 }
