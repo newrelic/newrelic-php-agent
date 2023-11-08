@@ -60,12 +60,10 @@ func TestConnectPayloadInternal(t *testing.T) {
 	}
 
 	expected.Util.Hostname = info.Hostname
-	utilization.OverrideDockerId(expected.Util, info.DockerId)
 
 	pid := 123
 	b := info.ConnectPayloadInternal(pid, util)
 
-	expectedDockerId, _ := utilization.GetDockerId(expected.Util)
 	actualDockerId, _ := utilization.GetDockerId(b.Util)
 
 	// Compare the string integer and string portions of the structs
@@ -97,8 +95,8 @@ func TestConnectPayloadInternal(t *testing.T) {
 	if b.Util.Hostname != expected.Util.Hostname {
 		t.Errorf("expected: %s\nactual: %s", expected.Util.Hostname, b.Util.Hostname)
 	}
-	if actualDockerId != expectedDockerId {
-		t.Errorf("expected: %s\nactual: %s", expectedDockerId, actualDockerId)
+	if actualDockerId != info.DockerId {
+		t.Errorf("expected: %s\nactual: %s", info.DockerId, actualDockerId)
 	}
 }
 
