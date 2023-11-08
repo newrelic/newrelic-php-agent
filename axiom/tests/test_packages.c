@@ -59,8 +59,7 @@ static void test_php_package_to_json(void) {
   // Test: convert package to json
   package1 = nr_php_package_create("TestPackage", "7.2.0");
   json = nr_php_package_to_json(package1);
-  tlib_pass_if_str_equal("valid package",
-                         "{\"name\":\"TestPackage\",\"version\":\"7.2.0\"}",
+  tlib_pass_if_str_equal("valid package", "[\"TestPackage\",\"7.2.0\",{}]",
                          json);
   nr_free(json);
   nr_php_package_destroy(package1);
@@ -99,8 +98,7 @@ static void test_php_packages_to_json_buffer(void) {
   nr_buffer_add(buf, NR_PSTR("\0"));
   tlib_pass_if_str_equal(
       "filled hashmap",
-      "[{\"name\":\"Package One\",\"version\":\"11.0\"},{\"name\":\"Package "
-      "Two\",\"version\":\"2.0.0\"}]",
+      "[[\"Package One\",\"11.0\",{}],[\"Package Two\",\"2.0.0\",{}]]",
       nr_buffer_cptr(buf));
   nr_hashmap_destroy(&hashmap);
   nr_buffer_destroy(&buf);
@@ -126,8 +124,7 @@ static void test_php_packages_to_json(void) {
 
   tlib_pass_if_str_equal(
       "full hashmap",
-      "[{\"name\":\"Package One\",\"version\":\"10.1.0\"},{\"name\":\"Package "
-      "Two\",\"version\":\"11.2.0\"}]",
+      "[[\"Package One\",\"10.1.0\",{}],[\"Package Two\",\"11.2.0\",{}]]",
       json);
 
   nr_free(json);
