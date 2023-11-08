@@ -86,12 +86,15 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
     return NULL;
   }
   buf = nr_buffer_create(0, 0);
-  nr_buffer_add(buf, NR_PSTR("{\"name\":\""));
+  nr_buffer_add(buf, NR_PSTR("[\""));
   nr_buffer_add(buf, package->package_name, nr_strlen(package->package_name));
-  nr_buffer_add(buf, NR_PSTR("\",\"version\":\""));
+  nr_buffer_add(buf, NR_PSTR("\",\""));
   nr_buffer_add(buf, package->package_version,
                 nr_strlen(package->package_version));
-  nr_buffer_add(buf, NR_PSTR("\"}"));
+  nr_buffer_add(buf, NR_PSTR("\""));
+
+  /* unclear if this empty dictionary should be included or not */
+  nr_buffer_add(buf, NR_PSTR(",{}]"));
   nr_buffer_add(buf, NR_PSTR("\0"));
 
   json = nr_strdup(nr_buffer_cptr(buf));
