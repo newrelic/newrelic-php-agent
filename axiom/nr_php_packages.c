@@ -20,7 +20,7 @@
 nr_php_package_t* nr_php_package_create(char* name, char* version) {
   nr_php_package_t* p = NULL;
 
-  if (NULL == name || NULL == version) {
+  if (NULL == name) {
     return NULL;
   }
 
@@ -30,7 +30,13 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
   }
 
   p->package_name = nr_strdup(name);
-  p->package_version = nr_strdup(version);
+  if (NULL != version) {
+    p->package_version = nr_strdup(version);
+  } else {
+    p->package_version
+        = nr_strdup(" ");  // if null, version is set to an empty
+                           // string with a space according to spec
+  }
 
   return p;
 }
