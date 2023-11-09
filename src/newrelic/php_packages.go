@@ -19,8 +19,8 @@ import (
 
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
-	numSeen  int
-	data     JSONString
+	numSeen int
+	data    JSONString
 }
 
 // NumSeen returns the total number PHP packages payloads stored.
@@ -33,8 +33,8 @@ func (packages *PhpPackages) NumSaved() float64 {
 // newAnalyticsEvents returns a new event reservoir with capacity max.
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
-		numSeen:  0,
-		data: nil,
+		numSeen: 0,
+		data:    nil,
 	}
 
 	return p
@@ -57,7 +57,7 @@ func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 	return nil
 }
 
-// AddPHPPacakgesFromData observes the PHP packages info from the agent. 
+// AddPHPPacakgesFromData observes the PHP packages info from the agent.
 func (packages *PhpPackages) AddEventFromData(data []byte) {
 	packages.SetPhpPackages(data)
 }
