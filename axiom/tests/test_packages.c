@@ -152,6 +152,29 @@ static void test_php_package_exists_in_hashmap(void) {
   nr_php_packages_destroy(&hm);
 }
 
+static void test_php_package_without_version(void) {
+  char* json;
+  nr_php_package_t* package1;
+  nr_php_package_t* package2;
+  nr_php_packages_t* hm = NULL;
+
+  // Test: Passing NULL as the version does not cause crash and adds it to the
+  // hashmap as a empty string with a space
+  package1 = nr_php_package_create("Package One", NULL);
+  package2 = nr_php_package_create("Package Two", NULL);
+
+  nr_php_packages_add_package(&hm, package1);
+  nr_php_packages_add_package(&hm, package2);
+  json = nr_php_packages_to_json(hm);
+
+  tlib_pass_if_str_equal(
+      "full hashmap", "[[\"Package One\",\" \",{}],[\"Package Two\",\" \",{}]]",
+      json);
+
+  nr_free(json);
+  nr_php_packages_destroy(&hm);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
@@ -162,4 +185,5 @@ void test_main(void* p NRUNUSED) {
   test_php_packages_to_json_buffer();
   test_php_packages_to_json();
   test_php_package_exists_in_hashmap();
+  test_php_package_without_version();
 }
