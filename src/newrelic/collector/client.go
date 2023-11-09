@@ -6,12 +6,14 @@
 package collector
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -326,6 +328,10 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 		return RPMResponse{Err: err}
 	}
 
+	if "update_loaded_modules" == cmd.Name {
+		deflated = bytes.NewBuffer(cmd.Data)
+	}
+
 	if l := deflated.Len(); l > cmd.MaxPayloadSize {
 		return RPMResponse{Err: fmt.Errorf("payload size too large: %d greater than %d", l, cmd.MaxPayloadSize)}
 	}
@@ -336,14 +342,28 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 		return RPMResponse{Err: err}
 	}
 
-	req.Header.Add("Accept-Encoding", "identity, deflate")
-	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Header.Add("User-Agent", cs.userAgent())
-	req.Header.Add("Content-Encoding", "deflate")
+	log.Debugf("perform - RPM name is %s", cmd.Name)
+
+	// update_loaded_modules seems to need different headers?
+	if "NOMATCH_update_loaded_modules" == cmd.Name {
+		req.Header.Add("Accept-Encoding", "gzip")
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("User-Agent", cs.userAgent())
+		req.Header.Add("Content-Encoding", "identity")
+	} else {
+		req.Header.Add("Accept-Encoding", "identity, deflate")
+		req.Header.Add("Content-Type", "application/octet-stream")
+		req.Header.Add("User-Agent", cs.userAgent())
+		req.Header.Add("Content-Encoding", "deflate")
+	}
 
 	for k, v := range cmd.RequestHeadersMap {
 		req.Header.Add(k, v)
 	}
+
+	log.Debugf("request to url %s", url)
+	val, _ := httputil.DumpRequest(req, true)
+	log.Debugf("%s", val)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
