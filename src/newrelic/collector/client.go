@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -347,10 +346,6 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 	for k, v := range cmd.RequestHeadersMap {
 		req.Header.Add(k, v)
 	}
-
-	log.Debugf("request to url %s", url)
-	val, _ := httputil.DumpRequest(req, true)
-	log.Debugf("%s", val)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
