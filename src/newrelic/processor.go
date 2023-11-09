@@ -646,6 +646,7 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, duc)
 	considerHarvestPayload(harvest.SpanEvents, args, duc)
 	considerHarvestPayload(harvest.LogEvents, args, duc)
+	considerHarvestPayload(harvest.PhpPackages, args, duc)
 	if args.blocking {
 		harvestDataUsage(args, duc)
 	} else {
@@ -695,6 +696,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		errors := harvest.Errors
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
+		phpPackages := harvest.PhpPackages
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
@@ -707,6 +709,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		considerHarvestPayload(errors, args, duc)
 		considerHarvestPayload(slowSQLs, args, duc)
 		considerHarvestPayload(txnTraces, args, duc)
+		considerHarvestPayload(phpPackages, args, duc)
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
@@ -983,6 +986,7 @@ func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 		integrationLog(now, id, h.TxnTraces)
 		integrationLog(now, id, h.TxnEvents)
 		integrationLog(now, id, h.LogEvents)
+		integrationLog(now, id, h.PhpPackages)
 	}
 	p.txnDataChannel <- TxnData{ID: id, Sample: sample}
 }
