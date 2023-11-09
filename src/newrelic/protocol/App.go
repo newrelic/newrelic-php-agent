@@ -221,8 +221,16 @@ func (rcv *App) MutateCustomEventsMaxSamplesStored(n uint64) bool {
 	return rcv._tab.MutateUint64Slot(42, n)
 }
 
+func (rcv *App) DockerId() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(44))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func AppStart(builder *flatbuffers.Builder) {
-	builder.StartObject(20)
+	builder.StartObject(21)
 }
 func AppAddLicense(builder *flatbuffers.Builder, license flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(license), 0)
@@ -283,6 +291,9 @@ func AppAddLogEventsMaxSamplesStored(builder *flatbuffers.Builder, logEventsMaxS
 }
 func AppAddCustomEventsMaxSamplesStored(builder *flatbuffers.Builder, customEventsMaxSamplesStored uint64) {
 	builder.PrependUint64Slot(19, customEventsMaxSamplesStored, 0)
+}
+func AppAddDockerId(builder *flatbuffers.Builder, dockerId flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(20, flatbuffers.UOffsetT(dockerId), 0)
 }
 func AppEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

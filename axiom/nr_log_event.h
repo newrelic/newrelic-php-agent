@@ -8,6 +8,7 @@
 
 #include "util_buffer.h"
 #include "util_time.h"
+#include "nr_attributes.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -99,5 +100,7 @@ extern void nr_log_event_set_entity_name(nr_log_event_t* event,
 extern void nr_log_event_set_hostname(nr_log_event_t* event, const char* name);
 extern void nr_log_event_set_timestamp(nr_log_event_t* event, nrtime_t time);
 extern void nr_log_event_set_priority(nr_log_event_t* event, int priority);
-
+extern void nr_log_event_set_context_attributes(
+    nr_log_event_t* event,
+    nr_attributes_t* context_attributes);
 #endif /* NR_LOG_EVENT_HDR */

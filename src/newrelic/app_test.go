@@ -38,6 +38,7 @@ func TestConnectPayloadInternal(t *testing.T) {
 		Metadata:          JSONString(`{"NEW_RELIC_METADATA_ONE":"one","NEW_RELIC_METADATA_TWO":"two"}`),
 		RedirectCollector: "collector.newrelic.com",
 		Hostname:          "some_host",
+		DockerId:          "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156",
 	}
 
 	info.AgentEventLimits.SpanEventConfig.Limit = 2323
@@ -62,6 +63,8 @@ func TestConnectPayloadInternal(t *testing.T) {
 
 	pid := 123
 	b := info.ConnectPayloadInternal(pid, util)
+
+	actualDockerId, _ := utilization.GetDockerId(b.Util)
 
 	// Compare the string integer and string portions of the structs
 	// TestConnectEncodedJSON will do a full comparison after being encoded to bytes
@@ -91,6 +94,9 @@ func TestConnectPayloadInternal(t *testing.T) {
 	}
 	if b.Util.Hostname != expected.Util.Hostname {
 		t.Errorf("expected: %s\nactual: %s", expected.Util.Hostname, b.Util.Hostname)
+	}
+	if actualDockerId != info.DockerId {
+		t.Errorf("expected: %s\nactual: %s", info.DockerId, actualDockerId)
 	}
 }
 
@@ -182,6 +188,67 @@ func TestConnectPayloadInternalHostname(t *testing.T) {
 	if b.Util.Hostname != agentHostName {
 		t.Errorf("expected: %s\nactual: %s", agentHostName, b.Util.Hostname)
 	}
+}
+
+func TestConnectPayloadInternalDocker(t *testing.T) {
+	util := &utilization.Data{}
+	info := &AppInfo{}
+
+	// No docker ID, nil utilization data
+	info.DockerId = ""
+
+	b := info.ConnectPayloadInternal(1, nil)
+
+	result, err := utilization.GetDockerId(b.Util)
+
+	if nil != b.Util {
+		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+	if "Util is nil" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Util is nil", err.Error())
+	}
+
+	// No Docker ID, utilization data
+	info.DockerId = ""
+
+	b = info.ConnectPayloadInternal(1, util)
+
+	result, err = utilization.GetDockerId(b.Util)
+
+	if result != info.DockerId {
+		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+	if "Vendors structure is empty" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Vendors structure is empty", err.Error())
+	}
+
+	// Docker ID, nil utilization data
+	info.DockerId = "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156"
+
+	b = info.ConnectPayloadInternal(1, nil)
+	result, err = utilization.GetDockerId(b.Util)
+
+	if nil != b.Util {
+		t.Errorf("expected: %v\nactual: %v", nil, b.Util)
+	}
+	if "Util is nil" != err.Error() {
+		t.Errorf("expected: %s\nactual: %s", "Util is nil", err.Error())
+	}
+
+	// Docker ID, utilization data
+	info.DockerId = "1056761e1f44969c959364a8e26e9345b37ccb91aef09a8173c90cf1d1d99156"
+
+	b = info.ConnectPayloadInternal(1, util)
+
+	result, err = utilization.GetDockerId(b.Util)
+
+	if result != info.DockerId {
+		t.Errorf("expected: %s\nactual: %v", info.DockerId, result)
+	}
+	if nil != err {
+		t.Errorf("expected: %v\nactual: %v", nil, err)
+	}
+
 }
 
 func TestPreconnectPayloadEncoded(t *testing.T) {

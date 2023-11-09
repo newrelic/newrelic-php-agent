@@ -125,28 +125,32 @@ RUN \
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-RUN docker-php-ext-install mysqli
-
 # redis
 RUN pecl install redis && docker-php-ext-enable redis
 
 # memcache
-RUN pecl install memcache && docker-php-ext-enable memcache
+# Pre 8.0 requires 4.0.5.2
+RUN \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.0.0', '>');"); \
+  if [ "$php_cmp" = 1 ]; then \
+    pecl install memcache && docker-php-ext-enable memcache; \
+  else \
+    pecl install memcache-4.0.5.2 && docker-php-ext-enable memcache; \
+  fi
 
 # memcached
 RUN apt-get install -y libmemcached-dev
 RUN pecl install memcached && docker-php-ext-enable memcached
 
-# mongo?
-# this extension is no longer maintained and doesn't work with
-# recent PHP releases
-#RUN pecl install mongo && docker-php-ext-enable mongo
-
-# mongodb - need tests written for this maintained mongo extension
-#RUN pecl install mongodb && docker-php-ext-enable mongodb
-
 # uopz
-RUN pecl install uopz && docker-php-ext-enable uopz
+# Pre-8.0 requires 6.1.2
+RUN \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.0.0', '>');"); \
+  if [ "$php_cmp" = 1 ]; then \
+    pecl install uopz && docker-php-ext-enable uopz; \
+  else \
+    pecl install uopz-6.1.2 && docker-php-ext-enable uopz; \
+  fi
 
 # configure uopz to honor exit() and die() otherwise it just ignores these
 RUN echo "uopz.exit=1" > /usr/local/etc/php/conf.d/uopz-enable-exit.ini
@@ -169,6 +173,12 @@ ARG PHP_VER
 ENV PHP_VER=${PHP_VER}
 ARG PS1
 ENV PS1="New Relic > "
+
+# QOL aliases
+# `rebuild` - make clean + make agent + make tests
+# `integ` - run all integration tests
+RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
+  && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 
 WORKDIR /usr/src/myapp
 CMD ["bash"]
