@@ -275,6 +275,7 @@ func UnmarshalAppInfo(tbl flatbuffers.Table) *AppInfo {
 		TraceObserverPort:         app.TraceObserverPort(),
 		SpanQueueSize:             app.SpanQueueSize(),
 		HighSecurity:              app.HighSecurity(),
+		DockerId:                  string(app.DockerId()),
 	}
 
 	info.initSettings(app.Settings())
