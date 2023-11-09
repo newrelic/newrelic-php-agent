@@ -633,10 +633,7 @@ func (h *IntegrationDataHandler) IncomingTxnData(id newrelic.AgentRunID, sample 
 	h.Lock()
 	defer h.Unlock()
 
-	log.Debugf("integrationdatahandler incomingtxndata")
-
 	harvest := h.harvests[string(id)]
-	log.Debugf("harvest = %v", harvest)
 	if nil == harvest {
 		harvest = newrelic.NewHarvest(time.Now(), collector.NewHarvestLimits(nil))
 		// Save a little memory by reducing the event pools.
@@ -646,10 +643,6 @@ func (h *IntegrationDataHandler) IncomingTxnData(id newrelic.AgentRunID, sample 
 	}
 
 	sample.AggregateInto(harvest)
-	log.Debugf("harvest after aggregate into = %v", harvest)
-	t, _ := harvest.PhpPackages.Data(id, time.Now())
-	log.Debugf("php package after aggregate into =  %s", t)
-
 }
 
 func (h *IntegrationDataHandler) IncomingSpanBatch(batch newrelic.SpanBatch) {}
