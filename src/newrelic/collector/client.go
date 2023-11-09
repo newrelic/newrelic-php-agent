@@ -336,8 +336,6 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 		return RPMResponse{Err: err}
 	}
 
-	log.Debugf("perform - RPM name is %s", cmd.Name)
-
 	req.Header.Add("Accept-Encoding", "identity, deflate")
 	req.Header.Add("Content-Type", "application/octet-stream")
 	req.Header.Add("User-Agent", cs.userAgent())
