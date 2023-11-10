@@ -14,6 +14,7 @@ Currently, the PHP agent has only been developed and compiled on Linux systems. 
 - Fully supported for building from source
     - Ubuntu 16.04+
     - CentOS/RHEL 7+
+    - Debian 10+
 - Supported in binary form only (may require experimentation to build)
     - FreeBSD
     - Alpine Linux
