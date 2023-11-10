@@ -168,7 +168,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	}
 
 	if n := txn.PhpPackages(nil); n != nil {
-		h.PhpPackages.AddEventFromData(n.Data())
+		h.PhpPackages.AddPhpPackagesFromData(n.Data())
 	}
 
 	if trace := txn.Trace(nil); trace != nil {

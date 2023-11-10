@@ -30,7 +30,7 @@ func (packages *PhpPackages) NumSaved() float64 {
 	return float64(packages.numSeen)
 }
 
-// newAnalyticsEvents returns a new event reservoir with capacity max.
+// newPhpPackages returns a new PhpPackages struct.
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
 		numSeen: 0,
@@ -40,9 +40,7 @@ func NewPhpPackages() *PhpPackages {
 	return p
 }
 
-// AddEvent observes the occurrence of an analytics event. If the
-// reservoir is full, sampling occurs. Note, when sampling occurs, it
-// is possible the event may be discarded instead of added.
+// SetPhpPacakges sets the observed package list.
 func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 
 	if nil == packages {
@@ -57,8 +55,8 @@ func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 	return nil
 }
 
-// AddPHPPacakgesFromData observes the PHP packages info from the agent.
-func (packages *PhpPackages) AddEventFromData(data []byte) {
+// AddPhpPackagesFromData observes the PHP packages info from the agent.
+func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) {
 	packages.SetPhpPackages(data)
 }
 
