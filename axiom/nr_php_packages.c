@@ -17,6 +17,11 @@
 #include "util_hashmap_private.h"
 #include "util_strings.h"
 
+typedef struct {
+  nrbuf_t* buf;
+  bool package_added;
+} nr_php_package_json_builder_t;
+
 nr_php_package_t* nr_php_package_create(char* name, char* version) {
   nr_php_package_t* p = NULL;
 
@@ -92,7 +97,7 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
     return NULL;
   }
   buf = nr_buffer_create(0, 0);
-   nr_buffer_add(buf, NR_PSTR("[\""));
+  nr_buffer_add(buf, NR_PSTR("[\""));
   nr_buffer_add(buf, package->package_name, nr_strlen(package->package_name));
   nr_buffer_add(buf, NR_PSTR("\",\""));
   nr_buffer_add(buf, package->package_version,
@@ -106,34 +111,39 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
   return json;
 }
 
-bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
-  size_t num_buckets;
-  size_t i;
-  nr_hashmap_bucket_t* bucket;
-  bool package_added = false;
+static void apply_package_to_json_conversion(void* value,
+                                             const char* key,
+                                             size_t key_len,
+                                             void* user_data) {
+  nr_php_package_json_builder_t* json_builder
+      = (nr_php_package_json_builder_t*)user_data;
   char* package_json;
+
+  (void)key;
+  (void)key_len;
+
+  package_json = nr_php_package_to_json((nr_php_package_t*)value);
+  if (package_json) {
+    if (json_builder->package_added) {
+      nr_buffer_add(json_builder->buf, NR_PSTR(","));
+    } else {
+      json_builder->package_added = true;
+    }
+    nr_buffer_add(json_builder->buf, package_json, nr_strlen(package_json));
+    nr_free(package_json);
+  }
+}
+
+bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
+  nr_php_package_json_builder_t json_builder = {buf, false};
 
   if (NULL == h || NULL == buf) {
     return false;
   }
 
-  num_buckets = nr_hashmap_count_buckets(h);
   nr_buffer_add(buf, NR_PSTR("["));
-
-  for (i = 0; i < num_buckets; i++) {
-    for (bucket = h->buckets[i]; NULL != bucket; bucket = bucket->next) {
-      package_json = nr_php_package_to_json((nr_php_package_t*)bucket->value);
-      if (package_json) {
-        if (package_added) {
-          nr_buffer_add(buf, NR_PSTR(","));
-        }
-        nr_buffer_add(buf, package_json, nr_strlen(package_json));
-        nr_free(package_json);
-        package_added = true;
-      }
-    }
-  }
-
+  nr_hashmap_apply(h, apply_package_to_json_conversion, &json_builder);
+  
   nr_buffer_add(buf, NR_PSTR("]"));
   return true;
 }
