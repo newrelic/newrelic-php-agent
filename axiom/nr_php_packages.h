@@ -126,13 +126,4 @@ extern bool nr_php_packages_to_json_buffer(nr_php_packages_t* hashmap,
  */
 extern char* nr_php_packages_to_json(nr_php_packages_t* h);
 
-/*
- * Purpose : Returns how many buckets are in the collection
- *
- * Params  : 1. A pointer to nr_php_packages_t
- *
- * Returns : The number of buckets in the collection
- */
-extern size_t nr_hashmap_count_buckets(const nr_php_packages_t* hashmap);
-
 #endif /* nr_php_packages_HDR */

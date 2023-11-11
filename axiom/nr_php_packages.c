@@ -84,10 +84,6 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
   nr_hashmap_set(*h, p->package_name, nr_strlen(p->package_name), p);
 }
 
-size_t nr_hashmap_count_buckets(const nr_php_packages_t* hashmap) {
-  return (size_t)(1 << hashmap->log2_num_buckets);
-}
-
 char* nr_php_package_to_json(nr_php_package_t* package) {
   char* json;
   nrbuf_t* buf = NULL;
@@ -143,7 +139,7 @@ bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
 
   nr_buffer_add(buf, NR_PSTR("["));
   nr_hashmap_apply(h, apply_package_to_json_conversion, &json_builder);
-  
+
   nr_buffer_add(buf, NR_PSTR("]"));
   return true;
 }
