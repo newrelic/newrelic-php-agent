@@ -108,7 +108,7 @@ char* nr_php_package_to_json(nr_php_package_t* package) {
     return NULL;
   }
   buf = nr_buffer_create(0, 0);
-  nr_buffer_add(buf, NR_PSTR("[\""));
+   nr_buffer_add(buf, NR_PSTR("[\""));
   nr_buffer_add(buf, package->package_name, nr_strlen(package->package_name));
   nr_buffer_add(buf, NR_PSTR("\",\""));
   nr_buffer_add(buf, package->package_version,
