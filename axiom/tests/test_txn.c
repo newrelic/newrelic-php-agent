@@ -8559,8 +8559,8 @@ static void test_nr_txn_add_php_package(void) {
   json = nr_php_packages_to_json(txn->php_packages);
 
   tlib_pass_if_str_equal("correct json",
-                         "[[\"Laravel\",\"8.83.27\",{}],["
-                         "\"Slim\",\"4.12.0\",{}]]",
+                         "[[\"Laravel\",\"8.83.27\",{}],"
+                         "[\"Slim\",\"4.12.0\",{}]]",
                          json);
 
   nr_free(json);
