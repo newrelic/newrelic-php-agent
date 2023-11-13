@@ -144,12 +144,12 @@ static void apply_package_to_json_conversion(void* value,
 bool nr_php_packages_to_json_buffer(nr_php_packages_t* h, nrbuf_t* buf) {
   nr_php_package_json_builder_t json_builder = {buf, false};
 
-  if (NULL == h || NULL == buf) {
+  if (NULL == h || NULL == h->data || NULL == buf) {
     return false;
   }
 
   nr_buffer_add(buf, NR_PSTR("["));
-  nr_hashmap_apply(h, apply_package_to_json_conversion, &json_builder);
+  nr_hashmap_apply(h->data, apply_package_to_json_conversion, &json_builder);
 
   nr_buffer_add(buf, NR_PSTR("]"));
   return true;
