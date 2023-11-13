@@ -67,7 +67,7 @@ static void test_php_package_to_json(void) {
 
 static void test_php_packages_to_json_buffer(void) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
-  nr_php_packages_t* hashmap = NULL;
+  nr_php_packages_t* collection = NULL;
   nr_php_package_t* package1;
   nr_php_package_t* package2;
   nr_php_package_t* package3;
@@ -81,26 +81,26 @@ static void test_php_packages_to_json_buffer(void) {
   // Add package with same key and same value. No action will happen
   package4 = nr_php_package_create("Package Two", "2.0.0");
 
-  nr_php_packages_add_package(&hashmap, package1);
-  nr_php_packages_add_package(&hashmap, package2);
-  nr_php_packages_add_package(&hashmap, package3);
-  nr_php_packages_add_package(&hashmap, package4);
+  nr_php_packages_add_package(&collection, package1);
+  nr_php_packages_add_package(&collection, package2);
+  nr_php_packages_add_package(&collection, package3);
+  nr_php_packages_add_package(&collection, package4);
 
   // Total package count should be 2 because two packages were duplicates with
   // the same key
-  count = nr_php_packages_count(hashmap);
+  count = nr_php_packages_count(collection);
   tlib_pass_if_int_equal("package count", 2, count);
 
   // Test: adding packages to buffer
-  tlib_pass_if_bool_equal("filled hashmap bool check", true,
-                          nr_php_packages_to_json_buffer(hashmap, buf));
+  tlib_pass_if_bool_equal("filled collection bool check", true,
+                          nr_php_packages_to_json_buffer(collection, buf));
 
   nr_buffer_add(buf, NR_PSTR("\0"));
   tlib_pass_if_str_equal(
-      "filled hashmap",
+      "filled collection",
       "[[\"Package One\",\"11.0\",{}],[\"Package Two\",\"2.0.0\",{}]]",
       nr_buffer_cptr(buf));
-  nr_hashmap_destroy(&hashmap);
+  nr_php_packages_destroy(&collection);
   nr_buffer_destroy(&buf);
 }
 
