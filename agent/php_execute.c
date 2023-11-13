@@ -1278,7 +1278,6 @@ static inline void nr_php_execute_segment_end(
   }
 
   duration = nr_time_duration(stacked->start_time, stacked->stop_time);
-
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
@@ -1808,6 +1807,8 @@ static inline void nr_php_observer_exception_segments_end(
 void nr_php_observer_segment_end(zval* exception) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
+  nrtime_t txn_start_time = 0;
+
   /*
    * If we have a stacked segment that missed an OAPI func_end call, add an
    * exception (if not null) and close then get the current segment and return
@@ -1818,7 +1819,7 @@ void nr_php_observer_segment_end(zval* exception) {
   if (NULL == NRPRG(txn)) {
     return;
   }
-
+  txn_start_time = nr_txn_start_time(NRPRG(txn));
   if (NULL != exception) {
     nr_status_t status;
 
@@ -1842,6 +1843,24 @@ void nr_php_observer_segment_end(zval* exception) {
         zend_bailout();
       }
     }
+
+    /*
+     * During nr_zend_call_oapi_special_clean, the transaction may have been
+     * ended and/or a new transaction may have started.  To detect this, we
+     * compare the currently active transaction's start time with the
+     * transaction start time we saved before.
+     *
+     * Just comparing the transaction pointer is not enough, as a newly
+     * started transaction might actually obtain the same address as a
+     * transaction freed before.
+     */
+    if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+      nrl_verbosedebug(
+          NRL_AGENT, "%s txn ended and/or started while in a wrapped function",
+          __func__);
+      return;
+    }
+
     /*
      * We are only here because there is a dangling segment which means
      * nr_php_observer_fcall_end didn't get called due to unhandled
@@ -1926,7 +1945,8 @@ void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data->prev_execute_data) {
-    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data", __func__);
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data",
+                     __func__);
     return;
   }
 
@@ -1958,7 +1978,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
    * resort.
    */
 
-  /* 
+  /*
    * When Observer API is used, this code executes in the context of
    * zend_execute and not in the context of VM (as was the case pre-OAPI),
    * therefore we need to ensure we're dealing with a user function. We cannot
@@ -1970,7 +1990,8 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
     return;
   }
   if (!ZEND_USER_CODE(execute_data->prev_execute_data->func->type)) {
-    nrl_verbosedebug(NRL_AGENT, "%s: caller is php internal function", __func__);
+    nrl_verbosedebug(NRL_AGENT, "%s: caller is php internal function",
+                     __func__);
     return;
   }
 
@@ -1981,30 +2002,34 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
 
   const zend_op* prev_opline = execute_data->prev_execute_data->opline;
 
-  /* 
-   * Extra safety check. Previously, we instrumented by overwritting ZEND_DO_FCALL.
-   * Within OAPI, for consistency's sake, we will ensure the same
+  /*
+   * Extra safety check. Previously, we instrumented by overwritting
+   * ZEND_DO_FCALL. Within OAPI, for consistency's sake, we will ensure the same
    */
   if (ZEND_DO_FCALL != prev_opline->opcode) {
-    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name",
+                     __func__);
     return;
   }
-  prev_opline -= 1; // Checks previous opcode
+  prev_opline -= 1;  // Checks previous opcode
   if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
-    prev_opline -= 1; // Checks previous opcode
+    prev_opline -= 1;  // Checks previous opcode
   }
   if (ZEND_SEND_ARRAY == prev_opline->opcode) {
-
     if (UNEXPECTED((NULL == execute_data->func))) {
       nrl_verbosedebug(NRL_AGENT, "%s: cannot get current function", __func__);
       return;
     }
-    if (UNEXPECTED(NULL == execute_data->prev_execute_data->func->common.function_name)) {
-      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name", __func__);
+    if (UNEXPECTED(
+            NULL
+            == execute_data->prev_execute_data->func->common.function_name)) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name",
+                       __func__);
       return;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG(cufa_callback), execute_data->func,
+    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
+                                        execute_data->func,
                                         execute_data->prev_execute_data);
   }
 }
@@ -2012,6 +2037,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
 static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
+  nrtime_t txn_start_time = 0;
   int zcaught = 0;
   nr_php_execute_metadata_t* metadata = NULL;
   NR_UNUSED_FUNC_RETURN_VALUE;
@@ -2021,7 +2047,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
 
   NRTXNGLOBAL(execute_count) += 1;
-
+  txn_start_time = nr_txn_start_time(NRPRG(txn));
   /*
    * Handle here, but be aware the classes might not be loaded yet.
    */
@@ -2033,15 +2059,16 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
     /*
-     * For PHP 7+, call_user_func_array() is flattened into an inline by default. Because
-     * of this, we must check the opcodes set to see whether we are calling it flattened.
-     * If we have a cufa callback, we want to call that here. This will create the wraprec
-     * for the user function we want to instrument and thus must be called before we search
-     * the wraprecs
+     * For PHP 7+, call_user_func_array() is flattened into an inline by
+     * default. Because of this, we must check the opcodes set to see whether we
+     * are calling it flattened. If we have a cufa callback, we want to call
+     * that here. This will create the wraprec for the user function we want to
+     * instrument and thus must be called before we search the wraprecs
      *
-     * For non-OAPI, this is handled in php_vm.c by overwriting the ZEND_DO_FCALL opcode.
+     * For non-OAPI, this is handled in php_vm.c by overwriting the
+     * ZEND_DO_FCALL opcode.
      */
-     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
+    nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
   /*
@@ -2154,6 +2181,24 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     zend_bailout();
   }
 
+  /*
+   * During nr_zend_call_oapi_special_before, the transaction may have been
+   * ended and/or a new transaction may have started.  To detect this, we
+   * compare the currently active transaction's start time with the transaction
+   * start time we saved before.
+   *
+   * Just comparing the transaction pointer is not enough, as a newly
+   * started transaction might actually obtain the same address as a
+   * transaction freed before.
+   */
+  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s txn ended and/or started while in a wrapped function",
+                     __func__);
+
+    return;
+  }
+
   nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
   /*
    * Check for, and handle, frameworks.
@@ -2170,10 +2215,12 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   nruserfn_t* wraprec = NULL;
   bool create_metric = false;
   nr_php_execute_metadata_t* metadata = NULL;
+  nrtime_t txn_start_time = 0;
 
   if (NULL == NRPRG(txn)) {
     return;
   }
+  txn_start_time = nr_txn_start_time(NRPRG(txn));
 
   /*
    * Let's get the framework info.
@@ -2257,9 +2304,25 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
       zend_bailout();
     }
   }
+  /*
+   * During nr_zend_call_orig_execute_special, the transaction may have been
+   * ended and/or a new transaction may have started.  To detect this, we
+   * compare the currently active transaction's start time with the transaction
+   * start time we saved before.
+   *
+   * Just comparing the transaction pointer is not enough, as a newly
+   * started transaction might actually obtain the same address as a
+   * transaction freed before.
+   */
+  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s txn ended and/or started while in a wrapped function",
+                     __func__);
+
+    return;
+  }
 
   nr_php_execute_segment_end(segment, segment->metadata, create_metric);
-
   /*
    * Clear the uncaught exception globals.  This will also take care of the case
    * of an exception that was thrown for this segment but then was caught as

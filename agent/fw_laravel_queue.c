@@ -17,11 +17,10 @@
 #include "fw_laravel_queue.h"
 
 /*
- * This file includes functions for instrumenting Laravel's Queue component. As
- * with our primary Laravel instrumentation, all 4.x, 5.x  and 6.x versions are
- * supported.
+ * This file includes functions for instrumenting Laravel's Queue component.
+ * Supports the same versions as our our primary Laravel instrumentation.
  *
- * Userland docs for this can be found at: http://laravel.com/docs/5.0/queues
+ * Userland docs for this can be found at: https://laravel.com/docs/10.x/queues
  * (use the dropdown to change to other versions)
  *
  * As with most of our framework files, the entry point is in the last
@@ -40,7 +39,318 @@ static int nr_laravel_queue_is_sync_job(zval* job TSRMLS_DC) {
   return nr_php_object_instanceof_class(
       job, "Illuminate\\Queue\\Jobs\\SyncJob" TSRMLS_CC);
 }
+/*
+ * Iterator function and supporting struct to walk an nrobj_t hash to extract
+ * CATMQ headers in a case insensitive manner.
+ */
+typedef struct {
+  const char* id;
+  const char* synthetics;
+  const char* transaction;
+  const char* dt_payload;
+  const char* traceparent;
+  const char* tracestate;
+} nr_laravel_queue_headers_t;
 
+static nr_status_t nr_laravel_queue_iterate_headers(
+    const char* key,
+    const nrobj_t* val,
+    nr_laravel_queue_headers_t* headers) {
+  char* key_lc;
+
+  if (NULL == headers) {
+    return NR_SUCCESS;
+  }
+
+  key_lc = nr_string_to_lowercase(key);
+  if (NULL == key_lc) {
+    return NR_SUCCESS;
+  }
+
+  if (0 == nr_strcmp(key_lc, X_NEWRELIC_ID_MQ_LOWERCASE)) {
+    headers->id = nro_get_string(val, NULL);
+  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_SYNTHETICS_MQ_LOWERCASE)) {
+    headers->synthetics = nro_get_string(val, NULL);
+  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_TRANSACTION_MQ_LOWERCASE)) {
+    headers->transaction = nro_get_string(val, NULL);
+  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_DT_PAYLOAD_MQ_LOWERCASE)) {
+    headers->dt_payload = nro_get_string(val, NULL);
+  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_W3C_TRACEPARENT_MQ_LOWERCASE)) {
+    headers->traceparent = nro_get_string(val, NULL);
+  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_W3C_TRACESTATE_MQ_LOWERCASE)) {
+    headers->tracestate = nro_get_string(val, NULL);
+  }
+
+  nr_free(key_lc);
+  return NR_SUCCESS;
+}
+
+/*
+ * Purpose : Parse a Laravel 4.1+ job object for CATMQ metadata and update the
+ *           transaction type accordingly.
+ *
+ * Params  : 1. The job object.
+ */
+static void nr_laravel_queue_set_cat_txn(zval* job TSRMLS_DC) {
+  zval* json = NULL;
+  nrobj_t* payload = NULL;
+  nr_laravel_queue_headers_t headers = {NULL, NULL, NULL, NULL, NULL, NULL};
+
+  /*
+   * We're not interested in SyncJob instances, since they don't run in a
+   * separate queue worker and hence don't need to be linked via CATMQ.
+   */
+  if (nr_laravel_queue_is_sync_job(job TSRMLS_CC)) {
+    return;
+  }
+
+  /*
+   * Let's see if we can access the payload.
+   */
+  if (!nr_php_object_has_method(job, "getRawBody" TSRMLS_CC)) {
+    return;
+  }
+
+  json = nr_php_call(job, "getRawBody");
+  if (!nr_php_is_zval_non_empty_string(json)) {
+    goto end;
+  }
+
+  /*
+   * We've got it. Let's decode the payload and extract our CATMQ properties.
+   *
+   * Our nro code doesn't handle NULLs particularly gracefully, but it doesn't
+   * matter here, as we're not turning this back into JSON and aren't
+   * interested in the properties that could include NULLs.
+   */
+  payload = nro_create_from_json(Z_STRVAL_P(json));
+  nro_iteratehash(payload, (nrhashiter_t)nr_laravel_queue_iterate_headers,
+                  (void*)&headers);
+
+  if (headers.id && headers.transaction) {
+    nr_header_set_cat_txn(NRPRG(txn), headers.id, headers.transaction);
+  }
+
+  if (headers.synthetics) {
+    nr_header_set_synthetics_txn(NRPRG(txn), headers.synthetics);
+  }
+
+  if (headers.dt_payload || headers.traceparent) {
+
+    nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
+        headers.dt_payload, headers.traceparent, headers.tracestate);
+
+    nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
+                                                         "Other");
+    nr_hashmap_destroy(&header_map);
+  }
+
+end:
+  nr_php_zval_free(&json);
+  nro_delete(payload);
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+
+/*
+ * Purpose : Retrieve the txn name for a job which consists of:
+ *           1. The job name
+ *           2. The job connection type
+ *           3. The job queue
+ *
+ *           Formatting is "job_name (connection_type:job_queue)"
+ *
+ * Params  : 1. The job object.
+ *
+ * Returns : The txn name for the job, which is owned by the caller, or NULL if
+ * it cannot be found.
+ */
+static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
+  char* name = NULL;
+  char* resolve_name = NULL;
+  char* connection_name = NULL;
+  char* queue_name = NULL;
+  zval* resolve_name_zval = NULL;
+  zval* connection_name_zval = NULL;
+  zval* queue_name_zval = NULL;
+
+  /*
+   * Laravel 7+ includes following methods for Job
+   * https://laravel.com/api/7.x/Illuminate/Queue/Jobs/Job.html
+   * Job::getName(): this is not needed as sometimes it will provide a
+   * CallQueuedHandler job with the actual job wrapped inside
+   *
+   * Job::resolveName(): inside "resolveName" method, there are actually three
+   * methods being called (resolve, getName and payload) so we will use it
+   * instead of getName. This provides us the wrapped name when jobname is
+   * Illuminate\Queue\CallQueuedHandler@call Job::getConnectionName()
+   *
+   * Job::getQueue()
+   *
+   */
+
+  connection_name_zval = nr_php_call(job, "getConnectionName");
+
+  if (nr_php_is_zval_non_empty_string(connection_name_zval)) {
+    connection_name = nr_strndup(Z_STRVAL_P(connection_name_zval),
+                                 Z_STRLEN_P(connection_name_zval));
+  } else {
+    connection_name = nr_strdup("unknown");
+  }
+
+  nr_php_zval_free(&connection_name_zval);
+
+  queue_name_zval = nr_php_call(job, "getQueue");
+
+  if (nr_php_is_zval_non_empty_string(queue_name_zval)) {
+    queue_name
+        = nr_strndup(Z_STRVAL_P(queue_name_zval), Z_STRLEN_P(queue_name_zval));
+  } else {
+    queue_name = nr_strdup("default");
+  }
+
+  nr_php_zval_free(&queue_name_zval);
+
+  resolve_name_zval = nr_php_call(job, "resolveName");
+
+  if (nr_php_is_zval_non_empty_string(resolve_name_zval)) {
+    resolve_name = nr_strndup(Z_STRVAL_P(resolve_name_zval),
+                              Z_STRLEN_P(resolve_name_zval));
+  } else {
+    resolve_name = nr_strdup("unknown");
+  }
+
+  nr_php_zval_free(&resolve_name_zval);
+
+  name = nr_formatf("%s (%s:%s)", resolve_name, connection_name, queue_name);
+
+  return name;
+}
+
+/*
+ * Handle:
+ *   Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent(Job $job):void
+ */
+NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
+  zval* job = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
+
+  /*
+   * End the current txn in preparation for the Job txn.
+   */
+  nr_php_txn_end(1, 0);
+
+  /*
+   * Laravel 7+ passes Job as the first parameter.
+   */
+  char* txn_name = NULL;
+
+  job = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  txn_name = nr_laravel_queue_job_txn_name(job);
+
+  /*
+   * Begin the transaction we'll actually record.
+   */
+
+  if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
+    nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
+
+    if (NULL == txn_name) {
+      txn_name = nr_strdup("unknown");
+    }
+
+    nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
+
+    nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
+                    NR_OK_TO_OVERWRITE);
+  }
+  nr_php_arg_release(&job);
+  NR_PHP_WRAPPER_CALL;
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Handle:
+ *   Illuminate\\Queue\\Worker::raiseBeforeJobEvent(string $connectionName, Job
+ * $job):void
+ */
+NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
+  zval* job = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
+
+  /*
+   * End the current txn to prepare for the Job txn.
+   */
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+
+  /*
+   * Laravel 7 and later passes Job as the second parameter.
+   */
+  char* txn_name = NULL;
+
+  job = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
+  txn_name = nr_laravel_queue_job_txn_name(job);
+
+  /*
+   * Begin the transaction we'll actually record.
+   */
+
+  if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
+    nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
+
+    if (NULL == txn_name) {
+      txn_name = nr_strdup("unknown");
+    }
+
+    nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
+
+    nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
+                    NR_OK_TO_OVERWRITE);
+  }
+  nr_php_arg_release(&job);
+  NR_PHP_WRAPPER_CALL;
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Handle:
+ *   Illuminate\\Queue\\Worker::raiseAfterJobEvent(string $connectionName, Job
+ * $job):void Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent(Job $job):void
+ */
+NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseAfterJobEvent_before) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
+
+  /*
+   * If we made it here, we are assured there are no uncaught exceptions (as it
+   * would be noticed with the oapi exception handling before calling this
+   * callback so no need to check before ending the txn.
+   */
+
+  /*
+   * End the real transaction and then start a new transaction so our
+   * instrumentation continues to fire, knowing that we'll ignore that
+   * transaction either when Worker::process() is called again or when
+   * WorkCommand::handle() exits.
+   */
+  nr_php_txn_end(0, 0 TSRMLS_CC);
+  nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+}
+NR_PHP_WRAPPER_END
+
+#else
 /*
  * Purpose : Extract the actual job name from a job that used CallQueuedHandler
  *           to enqueue a serialised object.
@@ -234,236 +544,7 @@ static char* nr_laravel_queue_job_name(zval* job TSRMLS_DC) {
 }
 
 /*
- * Iterator function and supporting struct to walk an nrobj_t hash to extract
- * CATMQ headers in a case insensitive manner.
- */
-typedef struct {
-  const char* id;
-  const char* synthetics;
-  const char* transaction;
-  const char* dt_payload;
-  const char* traceparent;
-  const char* tracestate;
-} nr_laravel_queue_headers_t;
-
-static nr_status_t nr_laravel_queue_iterate_headers(
-    const char* key,
-    const nrobj_t* val,
-    nr_laravel_queue_headers_t* headers) {
-  char* key_lc;
-
-  if (NULL == headers) {
-    return NR_SUCCESS;
-  }
-
-  key_lc = nr_string_to_lowercase(key);
-  if (NULL == key_lc) {
-    return NR_SUCCESS;
-  }
-
-  if (0 == nr_strcmp(key_lc, X_NEWRELIC_ID_MQ_LOWERCASE)) {
-    headers->id = nro_get_string(val, NULL);
-  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_SYNTHETICS_MQ_LOWERCASE)) {
-    headers->synthetics = nro_get_string(val, NULL);
-  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_TRANSACTION_MQ_LOWERCASE)) {
-    headers->transaction = nro_get_string(val, NULL);
-  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_DT_PAYLOAD_MQ_LOWERCASE)) {
-    headers->dt_payload = nro_get_string(val, NULL);
-  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_W3C_TRACEPARENT_MQ_LOWERCASE)) {
-    headers->traceparent = nro_get_string(val, NULL);
-  } else if (0 == nr_strcmp(key_lc, X_NEWRELIC_W3C_TRACESTATE_MQ_LOWERCASE)) {
-    headers->tracestate = nro_get_string(val, NULL);
-  }
-
-  nr_free(key_lc);
-  return NR_SUCCESS;
-}
-
-/*
- * Purpose : Parse a Laravel 4.1+ job object for CATMQ metadata and update the
- *           transaction type accordingly.
- *
- * Params  : 1. The job object.
- */
-static void nr_laravel_queue_set_cat_txn(zval* job TSRMLS_DC) {
-  zval* json = NULL;
-  nrobj_t* payload = NULL;
-  nr_laravel_queue_headers_t headers = {NULL, NULL, NULL, NULL};
-
-  /*
-   * We're not interested in SyncJob instances, since they don't run in a
-   * separate queue worker and hence don't need to be linked via CATMQ.
-   */
-  if (nr_laravel_queue_is_sync_job(job TSRMLS_CC)) {
-    return;
-  }
-
-  /*
-   * Let's see if we can access the payload.
-   */
-  if (!nr_php_object_has_method(job, "getRawBody" TSRMLS_CC)) {
-    return;
-  }
-
-  json = nr_php_call(job, "getRawBody");
-  if (!nr_php_is_zval_non_empty_string(json)) {
-    goto end;
-  }
-
-  /*
-   * We've got it. Let's decode the payload and extract our CATMQ properties.
-   *
-   * Our nro code doesn't handle NULLs particularly gracefully, but it doesn't
-   * matter here, as we're not turning this back into JSON and aren't
-   * interested in the properties that could include NULLs.
-   */
-  payload = nro_create_from_json(Z_STRVAL_P(json));
-  nro_iteratehash(payload, (nrhashiter_t)nr_laravel_queue_iterate_headers,
-                  (void*)&headers);
-
-  if (headers.id && headers.transaction) {
-    nr_header_set_cat_txn(NRPRG(txn), headers.id, headers.transaction);
-  }
-
-  if (headers.synthetics) {
-    nr_header_set_synthetics_txn(NRPRG(txn), headers.synthetics);
-  }
-
-  if (headers.dt_payload || headers.traceparent) {
-    char* dt_payload = nr_strdup(headers.dt_payload);
-    char* tracestate = nr_strdup(headers.tracestate);
-    char* traceparent = nr_strdup(headers.traceparent);
-
-    nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
-        dt_payload, traceparent, tracestate);
-
-    nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
-                                                         "Other");
-    nr_free(dt_payload);
-    nr_free(tracestate);
-    nr_free(traceparent);
-    nr_hashmap_destroy(&header_map);
-  }
-
-end:
-  nr_php_zval_free(&json);
-  nro_delete(payload);
-}
-
-/*
- * Purpose : Parse the decoded payload array from a Laravel 4.0 job and set the
- *           transaction name accordingly.
- *
- * Params  : 1. The payload array.
- */
-static void nr_laravel_queue_name_from_payload_array(
-    const zval* payload TSRMLS_DC) {
-  const zval* job = nr_php_zend_hash_find(Z_ARRVAL_P(payload), "job");
-
-  /*
-   * If the payload contains a "job" entry, we'll
-   * use that for the name. Otherwise, there's no standard entry we can look
-   * at, so we'll just bail.
-   */
-  if (!nr_php_is_zval_non_empty_string(job)) {
-    return;
-  }
-
-  nr_txn_set_path("Laravel", NRPRG(txn), Z_STRVAL_P(job), NR_PATH_TYPE_CUSTOM,
-                  NR_OK_TO_OVERWRITE);
-}
-
-/*
- * Purpose : Parse the decoded payload array from a Laravel 4.0 job and set the
- *           transaction type accordingly.
- *
- * Params  : 1. The payload array.
- */
-static void nr_laravel_queue_set_cat_txn_from_payload_array(
-    const zval* payload TSRMLS_DC) {
-  const zval* id = NULL;
-  const zval* synthetics = NULL;
-  const zval* transaction = NULL;
-  const zval* dt_payload = NULL;
-  const zval* traceparent = NULL;
-  const zval* tracestate = NULL;
-
-  /*
-   * This is ugly, but actually very simple: we want to get the array values
-   * for the metadata keys, and if they're set, we'll call
-   * nr_header_set_cat_txn and (optionally) nr_header_set_synthetics_txn to set
-   * the transaction type and attributes.
-   */
-  id = nr_php_zend_hash_find(Z_ARRVAL_P(payload), X_NEWRELIC_ID_MQ);
-  synthetics
-      = nr_php_zend_hash_find(Z_ARRVAL_P(payload), X_NEWRELIC_SYNTHETICS_MQ);
-  transaction
-      = nr_php_zend_hash_find(Z_ARRVAL_P(payload), X_NEWRELIC_TRANSACTION_MQ);
-  dt_payload
-      = nr_php_zend_hash_find(Z_ARRVAL_P(payload), X_NEWRELIC_DT_PAYLOAD_MQ);
-  traceparent = nr_php_zend_hash_find(Z_ARRVAL_P(payload),
-                                      X_NEWRELIC_W3C_TRACEPARENT_MQ);
-  tracestate = nr_php_zend_hash_find(Z_ARRVAL_P(payload),
-                                     X_NEWRELIC_W3C_TRACEPARENT_MQ);
-
-  if (!nr_php_is_zval_non_empty_string(id)
-      || !nr_php_is_zval_non_empty_string(transaction)) {
-    return;
-  }
-
-  nr_header_set_cat_txn(NRPRG(txn), Z_STRVAL_P(id), Z_STRVAL_P(transaction));
-
-  if (nr_php_is_zval_non_empty_string(synthetics)) {
-    nr_header_set_synthetics_txn(NRPRG(txn), Z_STRVAL_P(synthetics));
-  }
-
-  if (nr_php_is_zval_non_empty_string(dt_payload)) {
-    nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
-        Z_STRVAL_P(dt_payload), Z_STRVAL_P(traceparent),
-        Z_STRVAL_P(tracestate));
-
-    nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
-                                                         "Other");
-    nr_hashmap_destroy(&header_map);
-  }
-}
-
-/*
  * Handle:
- *   Illuminate\Queue\Jobs\Job::resolveAndFire (array $payload): void
- *
- * Although this function exists on all versions of Laravel, we only hook this
- * on Laravel 4.0, as we have better ways of getting the job name directly in
- * the Worker::process() callback on other versions.
- */
-NR_PHP_WRAPPER(nr_laravel_queue_job_resolveandfire) {
-  zval* payload = NULL;
-
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
-
-  payload = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_php_is_zval_valid_array(payload)) {
-    goto end;
-  }
-
-  nr_laravel_queue_name_from_payload_array(payload TSRMLS_CC);
-  nr_laravel_queue_set_cat_txn_from_payload_array(payload TSRMLS_CC);
-
-end:
-  NR_PHP_WRAPPER_CALL;
-  nr_php_arg_release(&payload);
-}
-NR_PHP_WRAPPER_END
-
-/*
- * Handle:
- *   (Laravel 4.0)
- *   Illuminate\Queue\Worker::process (Job $job, int $delay): void
- *
- *   (Laravel 4.1+)
  *   Illuminate\Queue\Worker::process (string $connection, Job $job, int
  * $maxTries = 0, int $delay = 0): void
  */
@@ -488,64 +569,38 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
   if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL TSRMLS_CC)) {
     nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
 
+    /*
+     * Laravel passed the name of the connection
+     * as the first parameter.
+     */
+    char* connection_name = NULL;
+    char* job_name;
+    char* txn_name = NULL;
+
     connection = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     if (nr_php_is_zval_non_empty_string(connection)) {
-      /*
-       * Laravel 4.1 and later (including 5.x) pass the name of the connection
-       * as the first parameter.
-       */
-      char* connection_name = NULL;
-      char* job_name;
-      char* txn_name = NULL;
-
-      if (nr_php_is_zval_non_empty_string(connection)) {
-        connection_name
-            = nr_strndup(Z_STRVAL_P(connection), Z_STRLEN_P(connection));
-      } else {
-        connection_name = nr_strdup("unknown");
-      }
-
-      job = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-      job_name = nr_laravel_queue_job_name(job TSRMLS_CC);
-      if (NULL == job_name) {
-        job_name = nr_strdup("unknown job");
-      }
-
-      txn_name = nr_formatf("%s (%s)", job_name, connection_name);
-
-      nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
-
-      nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
-                      NR_OK_TO_OVERWRITE);
-
-      nr_free(connection_name);
-      nr_free(job_name);
-      nr_free(txn_name);
+      connection_name
+          = nr_strndup(Z_STRVAL_P(connection), Z_STRLEN_P(connection));
     } else {
-      /*
-       * Laravel 4.0 only provides the job to this method, and the Job class
-       * doesn't provide a getRawBody method. We'll hook the resolveAndFire
-       * method on the job argument (which is the first argument, so is
-       * normally the connection on newer versions), since that gets the
-       * payload, and then use that to name if we can.
-       */
-      if (nr_php_is_zval_valid_object(connection)) {
-        const char* klass = nr_php_class_entry_name(Z_OBJCE_P(connection));
-        char* method = nr_formatf("%s::resolveAndFire", klass);
-
-        nr_php_wrap_user_function(
-            method, nr_strlen(method),
-            nr_laravel_queue_job_resolveandfire TSRMLS_CC);
-
-        nr_free(method);
-      }
-
-      /*
-       * We'll set a fallback name just in case.
-       */
-      nr_txn_set_path("Laravel", NRPRG(txn), "unknown job", NR_PATH_TYPE_CUSTOM,
-                      NR_OK_TO_OVERWRITE);
+      connection_name = nr_strdup("unknown");
     }
+
+    job = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    job_name = nr_laravel_queue_job_name(job TSRMLS_CC);
+    if (NULL == job_name) {
+      job_name = nr_strdup("unknown job");
+    }
+
+    txn_name = nr_formatf("%s (%s)", job_name, connection_name);
+
+    nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
+
+    nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
+                    NR_OK_TO_OVERWRITE);
+
+    nr_free(connection_name);
+    nr_free(job_name);
+    nr_free(txn_name);
   }
 
   NR_PHP_WRAPPER_CALL;
@@ -598,18 +653,27 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
    * End the real transaction and then start a new transaction so our
    * instrumentation continues to fire, knowing that we'll ignore that
    * transaction either when Worker::process() is called again or when
-   * WorkCommand::fire() exits.
+   * WorkCommand::handle() exits.
    */
   nr_php_txn_end(0, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
 }
 NR_PHP_WRAPPER_END
 
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+
+#else
+
 /*
  * Handle:
- *   Illuminate\Queue\Console\WorkCommand::fire (): void
+ *   This changed in Laravel 5.5+ to be:
+ *   Illuminate\Queue\Console\WorkCommand::handle (): void
+ *
  */
-NR_PHP_WRAPPER(nr_laravel_queue_workcommand_fire) {
+NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
@@ -624,8 +688,8 @@ NR_PHP_WRAPPER(nr_laravel_queue_workcommand_fire) {
    * aren't executed if we're not actually in a transaction.
    *
    * So instead, what we'll do is to keep recording, but ensure that we ignore
-   * the transaction after WorkCommand::fire() has finished executing, at which
-   * point no more jobs can be run.
+   * the transaction after WorkCommand::handle() has finished executing, at
+   * which point no more jobs can be run.
    */
 
   /*
@@ -635,7 +699,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_workcommand_fire) {
                             nr_laravel_queue_worker_process TSRMLS_CC);
 
   /*
-   * Actually execute the command's fire() method.
+   * Actually execute the command's handle() method.
    */
   NR_PHP_WRAPPER_CALL;
 
@@ -645,6 +709,8 @@ NR_PHP_WRAPPER(nr_laravel_queue_workcommand_fire) {
   nr_php_txn_end(1, 0 TSRMLS_CC);
 }
 NR_PHP_WRAPPER_END
+
+#endif
 
 /*
  * This supports the mapping of outbound payload headers to their
@@ -784,17 +850,52 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * that we can disable the default transaction and add listeners to generate
    * appropriate background transactions when handling jobs.
    */
-  nr_php_wrap_user_function(
-      NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::fire"),
-      nr_laravel_queue_workcommand_fire TSRMLS_CC);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
   /*
-   * Laravel 5.5 renamed the methods on all its command classes from `fire`
-   * to `handle`.  As a result, we also need to hook the following.
+   * Here's the problem: we want to record individual transactions for each job
+   * that is executed, but don't want to record a transaction for the actual
+   * queue:work command, since it spends most of its time sleeping.
+   *
+   * We use the raiseBeforeJobEvent and raiseAfterJobEvent listeners which we
+   * can use to name the Laravel Job and capture the true time that the job
+   * took.
    */
+
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"), NULL,
+      nr_laravel_queue_worker_raiseBeforeJobEvent_after, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\Worker::raiseAfterJobEvent"),
+      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
+      nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent"),
+      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
+
+#else
+
+  /*
+   * Here's the problem: we want to record individual transactions for each job
+   * that is executed, but don't want to record a transaction for the actual
+   * queue:work command, since it spends most of its time sleeping. The naive
+   * approach would be to end the transaction immediately and instrument
+   * Worker::process(). The issue with that is that instrumentation hooks
+   * aren't executed if we're not actually in a transaction.
+   *
+   * So instead, what we'll do is to keep recording, but ensure that we ignore
+   * the transaction after WorkCommand::handle() has finished executing, at
+   * which point no more jobs can be run.
+   */
+
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::handle"),
-      nr_laravel_queue_workcommand_fire TSRMLS_CC);
+      nr_laravel_queue_workcommand_handle TSRMLS_CC);
+#endif
 
   /*
    * Hook the method that creates the JSON payloads for queued jobs so that we
