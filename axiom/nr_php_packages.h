@@ -16,7 +16,9 @@ typedef struct _nr_php_package_t {
   char* package_version;
 } nr_php_package_t;
 
-typedef nr_hashmap_t nr_php_packages_t;
+typedef struct _nr_php_packages_t {
+  nr_hashmap_t* data;
+} nr_php_packages_t;
 
 /*
  * Purpose : Create a new php package
@@ -67,7 +69,10 @@ extern void nr_php_packages_add_package(nr_php_packages_t** h,
  * Returns : Nothing, it is void
  */
 static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
-  nr_hashmap_destroy(h);
+  if (nrlikely(h)) {
+    nr_hashmap_destroy(&(*h)->data);
+    *h = NULL;
+  } 
 }
 
 /*
@@ -78,7 +83,10 @@ static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
  * Returns : The number of elements in the collection
  */
 static inline size_t nr_php_packages_count(nr_php_packages_t* h) {
-  return nr_hashmap_count(h);
+  if (nrlikely(h)) {
+    return nr_hashmap_count(h->data);
+  }
+  return 0;
 }
 
 /*
@@ -93,7 +101,10 @@ static inline size_t nr_php_packages_count(nr_php_packages_t* h) {
 static inline int nr_php_packages_has_package(nr_php_packages_t* h,
                                               char* package_name,
                                               size_t package_len) {
-  return nr_hashmap_has(h, package_name, package_len);
+  if (nrlikely(h)) {
+    return nr_hashmap_has(h->data, package_name, package_len);
+  }
+  return 0;
 }
 
 /*
