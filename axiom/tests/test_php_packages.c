@@ -30,7 +30,7 @@ static void test_php_adding_packages_to_hashmap(void) {
   nr_php_package_t* package1;
   nr_php_package_t* package2;
   nr_php_package_t* package3;
-  nr_php_packages_t* hm = NULL;
+  nr_php_packages_t* hm = nr_php_packages_create();
   int count;
 
   // Test: create multiple new packages and add to hashmap
@@ -39,10 +39,10 @@ static void test_php_adding_packages_to_hashmap(void) {
   package3 = nr_php_package_create("Package Three", "12.3.0");
   /* Should not crash: */
   nr_php_packages_add_package(NULL, package1);
-  nr_php_packages_add_package(&hm, NULL);
-  nr_php_packages_add_package(&hm, package1);
-  nr_php_packages_add_package(&hm, package2);
-  nr_php_packages_add_package(&hm, package3);
+  nr_php_packages_add_package(hm, NULL);
+  nr_php_packages_add_package(hm, package1);
+  nr_php_packages_add_package(hm, package2);
+  nr_php_packages_add_package(hm, package3);
 
   count = nr_php_packages_count(hm);
 
@@ -67,7 +67,7 @@ static void test_php_package_to_json(void) {
 
 static void test_php_packages_to_json_buffer(void) {
   nrbuf_t* buf = nr_buffer_create(0, 0);
-  nr_php_packages_t* collection = NULL;
+  nr_php_packages_t* collection = nr_php_packages_create();
   nr_php_package_t* package1;
   nr_php_package_t* package2;
   nr_php_package_t* package3;
@@ -81,10 +81,10 @@ static void test_php_packages_to_json_buffer(void) {
   // Add package with same key and same value. No action will happen
   package4 = nr_php_package_create("Package Two", "2.0.0");
 
-  nr_php_packages_add_package(&collection, package1);
-  nr_php_packages_add_package(&collection, package2);
-  nr_php_packages_add_package(&collection, package3);
-  nr_php_packages_add_package(&collection, package4);
+  nr_php_packages_add_package(collection, package1);
+  nr_php_packages_add_package(collection, package2);
+  nr_php_packages_add_package(collection, package3);
+  nr_php_packages_add_package(collection, package4);
 
   // Total package count should be 2 because two packages were duplicates with
   // the same key
@@ -106,7 +106,7 @@ static void test_php_packages_to_json_buffer(void) {
 
 static void test_php_packages_to_json(void) {
   char* json;
-  nr_php_packages_t* h = NULL;
+  nr_php_packages_t* h = nr_php_packages_create();
   nr_php_package_t* package1;
   nr_php_package_t* package2;
 
@@ -117,8 +117,8 @@ static void test_php_packages_to_json(void) {
   package1 = nr_php_package_create("Package One", "10.1.0");
   package2 = nr_php_package_create("Package Two", "11.2.0");
 
-  nr_php_packages_add_package(&h, package1);
-  nr_php_packages_add_package(&h, package2);
+  nr_php_packages_add_package(h, package1);
+  nr_php_packages_add_package(h, package2);
 
   json = nr_php_packages_to_json(h);
 
@@ -134,15 +134,15 @@ static void test_php_packages_to_json(void) {
 static void test_php_package_exists_in_hashmap(void) {
   nr_php_package_t* package1;
   nr_php_package_t* package2;
-  nr_php_packages_t* hm = NULL;
+  nr_php_packages_t* hm = nr_php_packages_create();
   int exists;
 
   // Test: check if package exists in hashmap
   package1 = nr_php_package_create("Package One", "10.1.0");
   package2 = nr_php_package_create("Package Two", "11.2.0");
 
-  nr_php_packages_add_package(&hm, package1);
-  nr_php_packages_add_package(&hm, package2);
+  nr_php_packages_add_package(hm, package1);
+  nr_php_packages_add_package(hm, package2);
 
   exists = nr_php_packages_has_package(hm, package1->package_name,
                                        nr_strlen(package1->package_name));
@@ -156,15 +156,15 @@ static void test_php_package_without_version(void) {
   char* json;
   nr_php_package_t* package1;
   nr_php_package_t* package2;
-  nr_php_packages_t* hm = NULL;
+  nr_php_packages_t* hm = nr_php_packages_create();
 
   // Test: Passing NULL as the version does not cause crash and adds it to the
   // hashmap as a empty string with a space
   package1 = nr_php_package_create("Package One", NULL);
   package2 = nr_php_package_create("Package Two", NULL);
 
-  nr_php_packages_add_package(&hm, package1);
-  nr_php_packages_add_package(&hm, package2);
+  nr_php_packages_add_package(hm, package1);
+  nr_php_packages_add_package(hm, package2);
   json = nr_php_packages_to_json(hm);
 
   tlib_pass_if_str_equal(

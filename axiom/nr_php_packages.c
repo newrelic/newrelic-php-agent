@@ -54,7 +54,23 @@ void nr_php_package_destroy(nr_php_package_t* p) {
   }
 }
 
-void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
+nr_php_packages_t* nr_php_packages_create() {
+  nr_php_packages_t* h = NULL;
+  h = (nr_php_packages_t*)nr_malloc(sizeof(nr_php_packages_t));
+  if (NULL == h) {
+    return NULL;
+  }
+
+  h->data
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
+  if (NULL == h->data) {
+    nr_free(h);
+    return NULL;
+  }
+  return h;
+}
+
+void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
   nr_php_package_t* package;
   if (NULL == h) {
     return;
@@ -64,25 +80,9 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
     return;
   }
 
-  if (NULL == *h) {
-    *h = (nr_php_packages_t*)nr_malloc(sizeof(nr_php_packages_t));
-    if (NULL == *h) {
-      return;
-    }
-    (*h)->data = NULL;
-  }
-
-  if (NULL == (*h)->data) {
-    (*h)->data
-        = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
-    if (NULL == (*h)->data) {
-      return;
-    }
-  }
-
   // If package with the same key already exists, we will check if the value is
   // different. If it is different, then we will update the value of the package
-  package = (nr_php_package_t*)nr_hashmap_get((*h)->data, p->package_name,
+  package = (nr_php_package_t*)nr_hashmap_get(h->data, p->package_name,
                                               nr_strlen(p->package_name));
   if (NULL != package) {
     if (0 != nr_strcmp(package->package_version, p->package_version)) {
@@ -93,7 +93,7 @@ void nr_php_packages_add_package(nr_php_packages_t** h, nr_php_package_t* p) {
     return;
   }
 
-  nr_hashmap_set((*h)->data, p->package_name, nr_strlen(p->package_name), p);
+  nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

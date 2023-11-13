@@ -42,23 +42,28 @@ extern nr_php_package_t* nr_php_package_create(char* name, char* version);
 extern void nr_php_package_destroy(nr_php_package_t* p);
 
 /*
- * Purpose : Add new php package to collection. If the collection does not exist
- *           and this is the first package being added, then a new collection
- *           will be created. If a package with the same key but different value
- *           is added, then the old value will be freed and the newer value will
- *           be kept. If a duplicate package with the same key and value is
- *           added, no action will be taken. This function also frees the
- *           package being added, so the user does not need to call
+ * Purpose : Allocate memory for new collection that will hold packages
+ *
+ * Returns : A collection that is allocated of type nr_php_packages_t
+ */
+extern nr_php_packages_t* nr_php_packages_create(void);
+
+/*
+ * Purpose : Add new php package to collection. If a package with the same key
+ *           but different value is added, then the old value will be freed and
+ *           the newer value will be kept. If a duplicate package with the same
+ *           key and value is added, no action will be taken. This function also
+ *           frees the package being added, so the user does not need to call
  *           nr_php_package_destroy()
  *
- * Params  : 1. A pointer to the pointer to nr_php_packages_t where packages
+ * Params  : 1. A pointer to nr_php_packages_t where packages
  *              will be added
  *           2. A pointer to the php package that needs to be added to the
  *              collection
  *
  * Returns : Nothing, it is void
  */
-extern void nr_php_packages_add_package(nr_php_packages_t** h,
+extern void nr_php_packages_add_package(nr_php_packages_t* h,
                                         nr_php_package_t* p);
 
 /*

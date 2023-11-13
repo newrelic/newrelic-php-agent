@@ -539,6 +539,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
   nt->log_events = nr_log_events_create(app->limits.log_events);
+  nt->php_packages = nr_php_packages_create();
 
   /*
    * reset flag for creation of one-time logging metrics
@@ -3478,5 +3479,5 @@ void nr_txn_add_php_package(nrtxn_t* txn,
   }
 
   p = nr_php_package_create(package_name, package_version);
-  nr_php_packages_add_package(&txn->php_packages, p);
+  nr_php_packages_add_package(txn->php_packages, p);
 }
