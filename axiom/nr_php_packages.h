@@ -75,7 +75,9 @@ extern void nr_php_packages_add_package(nr_php_packages_t* h,
  */
 static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
   if (nrlikely(h)) {
-    nr_hashmap_destroy(&(*h)->data);
+    if (NULL != (*h)->data)) {
+      nr_hashmap_destroy(&(*h)->data);
+    }
     nr_free(*h);
     *h = NULL;
   }
