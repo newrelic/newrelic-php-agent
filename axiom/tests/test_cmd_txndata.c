@@ -1114,6 +1114,7 @@ static void test_encode_php_packages(void) {
 
   nr_memset(&txn, 0, sizeof(txn));
   txn.status.recording = 1;
+  txn.php_packages = nr_php_packages_create();
   nr_txn_add_php_package(&txn, "TEST_PACKAGE_1", "1.2.3");
   nr_txn_add_php_package(&txn, "TEST_PACKAGE_2", "4.5.6");
   nr_txn_add_php_package(&txn, "TEST_PACKAGE_3", "7.8.9");
@@ -1143,7 +1144,7 @@ static void test_encode_php_packages(void) {
                           0
                               != nr_flatbuffers_table_read_union(
                                   &tbl, &tbl, TRANSACTION_FIELD_PHP_PACKAGES),
-                          "trace missing");
+                          "php packages missing");
   if (0 != did_pass) {
     goto done;
   }
