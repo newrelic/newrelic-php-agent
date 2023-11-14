@@ -813,19 +813,11 @@ static nrframework_t nr_try_detect_framework(
     const char* filename,
     const size_t filename_len TSRMLS_DC) {
   nrframework_t detected = NR_FW_UNSET;
-  const char* filename_suffix;
   size_t i;
 
   for (i = 0; i < num_frameworks; i++) {
-    size_t file_to_check_len = frameworks[i].file_to_check_len;
-    if (filename_len < file_to_check_len) {
-      /* No point in checking if checked filename is shorter than 'magic' file
-       * pattern */
-      continue;
-    }
-    /* Check if filename ends with the desired pattern */
-    filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stricmp(filename_suffix, frameworks[i].file_to_check) == 0) {
+    if (nr_striendswith(filename, filename_len, frameworks[i].file_to_check,
+                        frameworks[i].file_to_check_len)) {
       /*
        * If we have a special check function and it tells us to ignore
        * the file name because some other condition wasn't met, continue
@@ -889,19 +881,11 @@ static nrframework_t nr_try_force_framework(
 
 static void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
-  const char* filename_suffix;
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
-    size_t file_to_check_len = libraries[i].file_to_check_len;
-    if (filename_len < file_to_check_len) {
-      /* No point in checking if checked filename is shorter than 'magic' file
-       * pattern */
-      continue;
-    }
-    /* Check if filename ends with the desired pattern */
-    filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stricmp(filename_suffix, libraries[i].file_to_check) == 0) {
+    if (nr_striendswith(filename, filename_len, libraries[i].file_to_check,
+                        libraries[i].file_to_check_len)) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
@@ -918,21 +902,13 @@ static void nr_execute_handle_library(const char* filename,
 static void nr_execute_handle_logging_framework(const char* filename,
                                                 const size_t filename_len
                                                     TSRMLS_DC) {
-  const char* filename_suffix;
   bool is_enabled = false;
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
-    size_t file_to_check_len = logging_frameworks[i].file_to_check_len;
-    if (filename_len < file_to_check_len) {
-      /* No point in checking if checked filename is shorter than 'magic' file
-       * pattern */
-      continue;
-    }
-
-    /* Check if filename ends with the desired pattern */
-    filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stricmp(filename_suffix, logging_frameworks[i].file_to_check) == 0) {
+    if (nr_striendswith(filename, filename_len,
+                        logging_frameworks[i].file_to_check,
+                        logging_frameworks[i].file_to_check_len)) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
