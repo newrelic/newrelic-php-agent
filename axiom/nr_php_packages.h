@@ -120,7 +120,7 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
  *
  * Params  : 1. A pointer to the package
  *
- * Returns : Returns the package in json format
+ * Returns : An allocated string containing the JSON representation of the package.  Caller takes ownership of this string.
  */
 extern char* nr_php_package_to_json(nr_php_package_t* package);
 
