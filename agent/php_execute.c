@@ -713,7 +713,8 @@ static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC) {
 static nrframework_t nr_try_detect_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
-    const char* filename TSRMLS_DC);
+    const char* filename,
+    const size_t filename_len TSRMLS_DC);
 static nrframework_t nr_try_force_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
@@ -773,7 +774,8 @@ void nr_framework_create_metric(TSRMLS_D) {
  */
 static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
                                         size_t num_frameworks,
-                                        const char* filename TSRMLS_DC) {
+                                        const char* filename,
+                                        const size_t filename_len TSRMLS_DC) {
   if (NR_FW_UNSET != NRPRG(current_framework)) {
     return;
   }
@@ -781,8 +783,8 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
   if (NR_FW_UNSET == NRINI(force_framework)) {
     nrframework_t detected_framework = NR_FW_UNSET;
 
-    detected_framework = nr_try_detect_framework(frameworks, num_frameworks,
-                                                 filename TSRMLS_CC);
+    detected_framework = nr_try_detect_framework(
+        frameworks, num_frameworks, filename, filename_len TSRMLS_CC);
     if (NR_FW_UNSET != detected_framework) {
       NRPRG(current_framework) = detected_framework;
     }
@@ -808,13 +810,23 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
 static nrframework_t nr_try_detect_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
-    const char* filename TSRMLS_DC) {
+    const char* filename,
+    const size_t filename_len TSRMLS_DC) {
   nrframework_t detected = NR_FW_UNSET;
   char* filename_lower = nr_string_to_lowercase(filename);
+  const char* filename_suffix;
   size_t i;
 
   for (i = 0; i < num_frameworks; i++) {
-    if (nr_stridx(filename_lower, frameworks[i].file_to_check) >= 0) {
+    size_t file_to_check_len = frameworks[i].file_to_check_len;
+    if (filename_len < file_to_check_len) {
+      /* No point in checking if checked filename is shorter than 'magic' file
+       * pattern */
+      continue;
+    }
+    /* Check if filename ends with the desired pattern */
+    filename_suffix = filename_lower + (filename_len - file_to_check_len);
+    if (nr_stridx(filename_suffix, frameworks[i].file_to_check) >= 0) {
       /*
        * If we have a special check function and it tells us to ignore
        * the file name because some other condition wasn't met, continue
@@ -877,12 +889,22 @@ static nrframework_t nr_try_force_framework(
   return NR_FW_UNSET;
 }
 
-static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
+static void nr_execute_handle_library(const char* filename,
+                                      const size_t filename_len TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
+  const char* filename_suffix;
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
-    if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
+    size_t file_to_check_len = libraries[i].file_to_check_len;
+    if (filename_len < file_to_check_len) {
+      /* No point in checking if checked filename is shorter than 'magic' file
+       * pattern */
+      continue;
+    }
+    /* Check if filename ends with the desired pattern */
+    filename_suffix = filename_lower + (filename_len - file_to_check_len);
+    if (nr_stridx(filename_suffix, libraries[i].file_to_check) >= 0) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
@@ -898,14 +920,25 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   nr_free(filename_lower);
 }
 
-static void nr_execute_handle_logging_framework(
-    const char* filename TSRMLS_DC) {
+static void nr_execute_handle_logging_framework(const char* filename,
+                                                const size_t filename_len
+                                                    TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
+  const char* filename_suffix;
   bool is_enabled = false;
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+    size_t file_to_check_len = logging_frameworks[i].file_to_check_len;
+    if (filename_len < file_to_check_len) {
+      /* No point in checking if checked filename is shorter than 'magic' file
+       * pattern */
+      continue;
+    }
+
+    /* Check if filename ends with the desired pattern */
+    filename_suffix = filename_lower + (filename_len - file_to_check_len);
+    if (nr_stridx(filename_suffix, logging_frameworks[i].file_to_check) >= 0) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
@@ -932,12 +965,20 @@ static void nr_execute_handle_logging_framework(
  *
  * Params  : 1. Full name of a PHP file.
  */
-static void nr_php_user_instrumentation_from_file(
-    const char* filename TSRMLS_DC) {
-  nr_execute_handle_framework(all_frameworks, num_all_frameworks,
-                              filename TSRMLS_CC);
-  nr_execute_handle_library(filename TSRMLS_CC);
-  nr_execute_handle_logging_framework(filename TSRMLS_CC);
+static void nr_php_user_instrumentation_from_file(const char* filename,
+                                                  const size_t filename_len
+                                                      TSRMLS_DC) {
+  /* short circuit if filename_len is 0; a single place short circuit */
+  if (0 == filename_len) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s - received invalid filename_len for file=%s", __func__,
+                     filename);
+    return;
+  }
+  nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
+                              filename_len TSRMLS_CC);
+  nr_execute_handle_library(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
 }
 
 /*
@@ -948,6 +989,7 @@ static void nr_php_user_instrumentation_from_file(
 static void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
+  size_t filename_len = nr_php_op_array_file_name_len(op_array);
 
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
     nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
@@ -956,7 +998,7 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   /*
    * Check for, and handle, frameworks and libraries.
    */
-  nr_php_user_instrumentation_from_file(filename TSRMLS_CC);
+  nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
 
   nr_txn_match_file(NRPRG(txn), filename);
 
@@ -1681,6 +1723,7 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   nr_php_string_hash_key_t* key_str = NULL;
   zval* val = NULL;
   const char* filename;
+  size_t filename_len;
 
   status = nr_php_call(NULL, "opcache_get_status");
 
@@ -1725,8 +1768,9 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
     (void)val;
 
     filename = ZEND_STRING_VALUE(key_str);
+    filename_len = ZEND_STRING_LEN(key_str);
 
-    nr_php_user_instrumentation_from_file(filename TSRMLS_CC);
+    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
   }
   ZEND_HASH_FOREACH_END();
 
