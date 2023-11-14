@@ -310,6 +310,7 @@ typedef struct _nr_framework_table_t {
   const char* framework_name;
   const char* config_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_framework_special_fn_t special;
   nr_framework_enable_fn_t enable;
   nrframework_t detected;
@@ -322,15 +323,16 @@ typedef struct _nr_framework_table_t {
  *
  * Note that all paths should be in lowercase.
  */
+// clang-format: off
 static const nr_framework_table_t all_frameworks[] = {
     /*
      * Watch out:
      *   cake1.2 and cake1.3 use a subdirectory named 'cake' (lower case)
      *   cake2.0 and on use a subdirectory named 'Cake' (upper case file name)
      */
-    {"CakePHP", "cakephp", "cake/libs/object.php", nr_cakephp_special_1,
+    {"CakePHP", "cakephp", NR_PSTR ("cake/libs/object.php"), nr_cakephp_special_1,
      nr_cakephp_enable_1, NR_FW_CAKEPHP},
-    {"CakePHP", "cakephp", "cake/core/app.php", nr_cakephp_special_2,
+    {"CakePHP", "cakephp", NR_PSTR ("cake/core/app.php"), nr_cakephp_special_2,
      nr_cakephp_enable_2, NR_FW_CAKEPHP},
 
     /*
@@ -340,87 +342,88 @@ static const nr_framework_table_t all_frameworks[] = {
      * specifically a problem for Expression Engine (look for expression_engine,
      * below.)
      */
-    {"CodeIgniter", "codeigniter", "codeigniter.php", 0, nr_codeigniter_enable,
+    {"CodeIgniter", "codeigniter", NR_PSTR ("codeigniter.php"), 0, nr_codeigniter_enable,
      NR_FW_CODEIGNITER},
 
-    {"Drupal8", "drupal8", "core/includes/bootstrap.inc", 0, nr_drupal8_enable,
+    {"Drupal8", "drupal8", NR_PSTR ("core/includes/bootstrap.inc"), 0, nr_drupal8_enable,
      NR_FW_DRUPAL8},
-    {"Drupal", "drupal", "includes/common.inc", 0, nr_drupal_enable,
+    {"Drupal", "drupal", NR_PSTR ("includes/common.inc"), 0, nr_drupal_enable,
      NR_FW_DRUPAL},
 
-    {"Joomla", "joomla", "joomla/import.php", 0, nr_joomla_enable,
+    {"Joomla", "joomla", NR_PSTR ("joomla/import.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* <= Joomla 1.5 */
-    {"Joomla", "joomla", "libraries/joomla/factory.php", 0, nr_joomla_enable,
+    {"Joomla", "joomla", NR_PSTR ("libraries/joomla/factory.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
-    {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
+    {"Kohana", "kohana", NR_PSTR ("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
+    {"Kohana", "kohana", NR_PSTR ("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
 
     /* See below: Zend, the legacy project of Laminas, which shares much
        of the instrumentation implementation with Laminas */
-    {"Laminas3", "laminas3", "laminas/mvc/application.php", 0,
+    {"Laminas3", "laminas3", NR_PSTR ("laminas/mvc/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
-    {"Laminas3", "laminas3", "laminas-mvc/src/application.php", 0,
+    {"Laminas3", "laminas3", NR_PSTR ("laminas-mvc/src/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
 
-    {"Laravel", "laravel", "illuminate/foundation/application.php", 0,
+    {"Laravel", "laravel", NR_PSTR ("illuminate/foundation/application.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL},
-    {"Laravel", "laravel", "bootstrap/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR ("bootstrap/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 4.x */
-    {"Laravel", "laravel", "storage/framework/compiled.php", 0,
+    {"Laravel", "laravel", NR_PSTR ("storage/framework/compiled.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL}, /* 5.0.0-14 */
-    {"Laravel", "laravel", "vendor/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR ("vendor/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
-    {"Laravel", "laravel", "bootstrap/cache/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR ("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
-    {"Laravel", "laravel", "bootstrap/app.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR ("bootstrap/app.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 8+ */
 
-    {"Lumen", "lumen", "lumen-framework/src/helpers.php", 0, nr_lumen_enable,
+    {"Lumen", "lumen", NR_PSTR ("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
      NR_FW_LUMEN},
 
-    {"Magento", "magento", "app/mage.php", 0, nr_magento1_enable,
+    {"Magento", "magento", NR_PSTR ("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
-    {"Magento2", "magento2", "magento/framework/app/bootstrap.php", 0,
+    {"Magento2", "magento2", NR_PSTR ("magento/framework/app/bootstrap.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
-    {"MediaWiki", "mediawiki", "includes/webstart.php", 0, nr_mediawiki_enable,
+    {"MediaWiki", "mediawiki", NR_PSTR ("includes/webstart.php"), 0, nr_mediawiki_enable,
      NR_FW_MEDIAWIKI},
 
-    {"Silex", "silex", "silex/application.php", 0, nr_silex_enable,
+    {"Silex", "silex", NR_PSTR ("silex/application.php"), 0, nr_silex_enable,
      NR_FW_SILEX},
 
-    {"Slim", "slim", "slim/slim/app.php", 0, nr_slim_enable,
+    {"Slim", "slim", NR_PSTR ("slim/slim/app.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 3.x */
-    {"Slim", "slim", "slim/slim/slim.php", 0, nr_slim_enable,
+    {"Slim", "slim", NR_PSTR ("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
-    {"Symfony", "symfony1", "sfcontext.class.php", 0, nr_symfony1_enable,
+    {"Symfony", "symfony1", NR_PSTR ("sfcontext.class.php"), 0, nr_symfony1_enable,
      NR_FW_SYMFONY1},
-    {"Symfony", "symfony1", "sfconfig.class.php", 0, nr_symfony1_enable,
+    {"Symfony", "symfony1", NR_PSTR ("sfconfig.class.php"), 0, nr_symfony1_enable,
      NR_FW_SYMFONY1},
-    {"Symfony2", "symfony2", "bootstrap.php.cache", 0, nr_symfony2_enable,
+    {"Symfony2", "symfony2", NR_PSTR ("bootstrap.php.cache"), 0, nr_symfony2_enable,
      NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony2", "symfony2",
-     "symfony/bundle/frameworkbundle/frameworkbundle.php", 0,
+     NR_PSTR ("symfony/bundle/frameworkbundle/frameworkbundle.php"), 0,
      nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
-    {"Symfony4", "symfony4", "http-kernel/httpkernel.php", 0,
+    {"Symfony4", "symfony4", NR_PSTR ("http-kernel/httpkernel.php"), 0,
      nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5 */
 
-    {"WordPress", "wordpress", "wp-config.php", 0, nr_wordpress_enable,
+    {"WordPress", "wordpress", NR_PSTR ("wp-config.php"), 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
 
-    {"Yii", "yii", "framework/yii.php", 0, nr_yii_enable, NR_FW_YII},
-    {"Yii", "yii", "framework/yiilite.php", 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR ("framework/yii.php"), 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR ("framework/yiilite.php"), 0, nr_yii_enable, NR_FW_YII},
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
-    {"Zend", "zend", "zend/loader.php", 0, nr_zend_enable, NR_FW_ZEND},
-    {"Zend2", "zend2", "zend/mvc/application.php", 0, nr_fw_zend2_enable,
+    {"Zend", "zend", NR_PSTR ("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
+    {"Zend2", "zend2", NR_PSTR ("zend/mvc/application.php"), 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
-    {"Zend2", "zend2", "zend-mvc/src/application.php", 0, nr_fw_zend2_enable,
+    {"Zend2", "zend2", NR_PSTR ("zend-mvc/src/application.php"), 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
 };
+// clang-format: on
 static const int num_all_frameworks
     = sizeof(all_frameworks) / sizeof(nr_framework_table_t);
 
