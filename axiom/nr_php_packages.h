@@ -141,7 +141,7 @@ extern bool nr_php_packages_to_json_buffer(nr_php_packages_t* hashmap,
  *
  * Params  : 1. A pointer to nr_php_packages_t
  *
- * Returns : A JSON
+ * Returns : An allocated string containing the JSON representation of the packages collection.  Caller takes ownership of this string.
  */
 extern char* nr_php_packages_to_json(nr_php_packages_t* h);
 
