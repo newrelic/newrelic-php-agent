@@ -18,4 +18,6 @@ extern bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* prefix);
 
 extern char* nr_matcher_match(nr_matcher_t* matcher, const char* input);
 
+extern char* nr_matcher_match_core(nr_matcher_t* matcher, const char* input);
+
 #endif

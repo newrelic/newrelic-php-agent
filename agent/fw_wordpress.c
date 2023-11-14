@@ -41,24 +41,6 @@ static nr_matcher_t* create_matcher_for_constant(const char* constant,
   return NULL;
 }
 
-static char* try_match_regex(const nr_regex_t* regex, const char* filename) {
-  char* plugin = NULL;
-  nr_regex_substrings_t* ss = NULL;
-
-  ss = nr_regex_match_capture(regex, filename, nr_strlen(filename));
-  if (NULL == ss) {
-    return NULL;
-  }
-
-  /*
-   * The last substring will be the plugin or theme name.
-   */
-  plugin = nr_regex_substrings_get(ss, nr_regex_substrings_count(ss));
-  nr_regex_substrings_destroy(&ss);
-
-  return plugin;
-}
-
 static char* nr_wordpress_strip_php_suffix(char* filename) {
   char* retval = NULL;
   char* ext_offset_ptr = NULL;
@@ -85,23 +67,21 @@ static char* nr_wordpress_strip_php_suffix(char* filename) {
   return retval;
 }
 
-static const nr_regex_t* nr_wordpress_core_regex(TSRMLS_D) {
-  nr_regex_t* regex = NULL;
+static nr_matcher_t* nr_wordpress_core_matcher() {
+  nr_matcher_t* matcher = NULL;
 
-  if (NRPRG(wordpress_core_regex)) {
-    return NRPRG(wordpress_core_regex);
+  if (NRPRG(wordpress_core_matcher)) {
+    return NRPRG(wordpress_core_matcher);
   }
 
-  /*
-   * This will get all the Wordpress core functions located in the `wp-includes`
-   * (or a subdirectory off of that directory) directory.
-   */
+  matcher = create_matcher_for_constant("WPINC", "");
+  if (NULL == matcher) {
+    matcher = nr_matcher_create();
+    nr_matcher_add_prefix(matcher, "/wp-includes");
+  }
 
-  regex
-      = nr_regex_create("wp-includes.*?/([^/]*)[.]php$", NR_REGEX_CASELESS, 1);
-
-  NRPRG(wordpress_core_regex) = regex;
-  return regex;
+  NRPRG(wordpress_core_matcher) = matcher;
+  return matcher;
 }
 
 static nr_matcher_t* nr_wordpress_plugin_matcher() {
@@ -197,11 +177,12 @@ char* nr_php_wordpress_theme_match_matcher(const char* filename) {
   return theme;
 }
 
-char* nr_php_wordpress_core_match_regex(const char* filename TSRMLS_DC) {
-  char* plugin = NULL;
-  plugin = try_match_regex(nr_wordpress_core_regex(TSRMLS_C), filename);
-  nr_regex_destroy(&NRPRG(wordpress_core_regex));
-  return plugin;
+char* nr_php_wordpress_core_match_matcher(const char* filename) {
+  char* core = NULL;
+  core = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
+  core = nr_wordpress_strip_php_suffix(core);
+  nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
+  return core;
 }
 
 static void nr_wordpress_create_metric(nr_segment_t* segment,
@@ -269,7 +250,8 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
     goto cache_and_return;
   }
 
-  plugin = try_match_regex(nr_wordpress_core_regex(TSRMLS_C), filename);
+  plugin = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
+  plugin = nr_wordpress_strip_php_suffix(plugin);
   if (plugin) {
     /*
      * The core wordpress functions are anonymized, so we don't need to return
