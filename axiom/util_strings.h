@@ -16,6 +16,7 @@
 
 #include "nr_axiom.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "util_object.h"
@@ -436,6 +437,33 @@ static inline int nr_toupper(int c) {
     return c & 0xdf;
   }
   return c;
+}
+
+/*
+ * Purpose : Checks whether a string ends with the specified pattern. Note that
+ * nr_striendswith is case-insensitive.
+ *
+ * Params  : 1. The input string to examine.
+ *           2. The input string length.
+ *           3. The pattern to look for at the end of the string.
+ *           4. The pattern length.
+ *
+ * Returns : The true if input string ends with the pattern or false otherwise.
+ */
+static inline bool nr_striendswith(const char* s,
+                                   const size_t slen,
+                                   const char* pattern,
+                                   const size_t pattern_len) {
+  const char* suffix;
+
+  if (slen < pattern_len) {
+    /* input shorter than pattern */
+    return false;
+  }
+
+  /* compare input's suffix with the pattern and return result */
+  suffix = s + (slen - pattern_len);
+  return 0 == nr_stricmp(suffix, pattern);
 }
 
 #endif /* UTIL_STRINGS_HDR */
