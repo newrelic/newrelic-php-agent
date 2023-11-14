@@ -335,7 +335,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 	m.QuitTestProcessor()
 }
 
-func TestProcessorHarvestEmptyPhpPackages(t *testing.T) {
+func TestProcessorHarvestPhpPackages(t *testing.T) {
 	m := NewMockedProcessor(1)
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
