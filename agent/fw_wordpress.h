@@ -21,12 +21,21 @@
 char* nr_php_wordpress_core_match_regex(const char* filename TSRMLS_DC);
 
 /*
- * Purpose : ONLY for testing to verify that the appropriate regex was created
+ * Purpose : ONLY for testing to verify that the appropriate matcher was created
  *           for determining if a filename belongs to a plugin. It destroys
- *           the regex at the end so again, this is only for testing purposes.
+ *           the matcher at the end so again, this is only for testing purposes.
  *
  * Returns : The matching plugin; otherwise NULL
  */
-char* nr_php_wordpress_plugin_match_regex(const char* filename TSRMLS_DC);
+char* nr_php_wordpress_plugin_match_matcher(const char* filename);
+
+/*
+ * Purpose : ONLY for testing to verify that the appropriate matcher was created
+ *           for determining if a filename belongs to a theme. It destroys
+ *           the matcher at the end so again, this is only for testing purposes.
+ *
+ * Returns : The matching theme; otherwise NULL
+ */
+char* nr_php_wordpress_theme_match_matcher(const char* filename);
 
 #endif /* FW_WORDPRESS_HDR */
