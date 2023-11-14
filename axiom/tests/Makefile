@@ -152,6 +152,7 @@ TESTS := \
   test_log_events \
   test_log_level \
   test_logging \
+  test_matcher \
   test_math \
   test_memory \
   test_metrics \
