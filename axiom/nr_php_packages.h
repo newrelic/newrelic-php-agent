@@ -89,7 +89,7 @@ static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
  * Returns : The number of elements in the collection
  */
 static inline size_t nr_php_packages_count(nr_php_packages_t* h) {
-  if (nrlikely(h)) {
+  if (nrlikely(NULL != h && NULL != h->data)) {
     return nr_hashmap_count(h->data);
   }
   return 0;
