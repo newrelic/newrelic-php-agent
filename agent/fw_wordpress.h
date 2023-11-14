@@ -11,14 +11,14 @@
 #define FW_WORDPRESS_HDR
 
 /*
- * Purpose : ONLY for testing to verify that the appropriate regex was created
+ * Purpose : ONLY for testing to verify that the appropriate matcher was created
  *           for determining if a filename belongs to the WP core (located
- *           off of the `wp-includes` directory). It destroys the regex at
+ *           off of the `wp-includes` directory). It destroys the matcher at
  *           the end so again, this is only for testing purposes.
  *
  * Returns : The matching core name; otherwise NULL.
  */
-char* nr_php_wordpress_core_match_regex(const char* filename TSRMLS_DC);
+char* nr_php_wordpress_core_match_matcher(const char* filename);
 
 /*
  * Purpose : ONLY for testing to verify that the appropriate matcher was created

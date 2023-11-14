@@ -55,7 +55,7 @@ bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* prefix) {
   return nr_vector_push_back(&matcher->prefixes, prefix_lc);
 }
 
-char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
+static char* nr_matcher_match_internal(nr_matcher_t* matcher, const char* input, bool core) {
   size_t i;
   char* input_lc;
   char* match = NULL;
@@ -77,11 +77,20 @@ char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
       const char* slash;
 
       found += nr_strlen(prefix);
-      slash = nr_strchr(found, '/');
+      if (true == core) {
+        slash = nr_strrchr(found, '/');
+      } else {
+        slash = nr_strchr(found, '/');
+      }
       if (NULL == slash) {
         match = nr_strdup(found);
       } else {
-        match = nr_strndup(found, slash - found);
+        if (true == core) {
+            const char *offset = input + nr_strlen(input);
+            match = nr_strndup(slash + 1, offset - slash);
+        } else {
+            match = nr_strndup(found, slash - found);
+        }
       }
       break;
     }
@@ -89,4 +98,12 @@ char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
 
   nr_free(input_lc);
   return match;
+}
+
+char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
+    return nr_matcher_match_internal(matcher, input, false);
+}
+
+char* nr_matcher_match_core(nr_matcher_t* matcher, const char* input) {
+    return nr_matcher_match_internal(matcher, input, true);
 }
