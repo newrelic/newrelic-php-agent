@@ -258,11 +258,13 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
   plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
+  plugin = nr_wordpress_strip_php_suffix(plugin);
   if (plugin) {
     goto cache_and_return;
   }
 
   plugin = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
+  plugin = nr_wordpress_strip_php_suffix(plugin);
   if (plugin) {
     goto cache_and_return;
   }
