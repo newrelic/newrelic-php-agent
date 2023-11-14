@@ -49,6 +49,9 @@ func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 	if nil != packages.data {
 		log.Debugf("SetPhpPackages - data field was not nil |^%s| - overwriting data", packages.data)
 	}
+	if nil == data {
+		return fmt.Errorf("data is nil!")
+	}
 	packages.numSeen = 1
 	packages.data = data
 
@@ -56,8 +59,8 @@ func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 }
 
 // AddPhpPackagesFromData observes the PHP packages info from the agent.
-func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) {
-	packages.SetPhpPackages(data)
+func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
+	return packages.SetPhpPackages(data)
 }
 
 // CollectorJSON marshals events to JSON according to the schema expected
