@@ -64,6 +64,7 @@ var (
 	sampleSpanEvent   = []byte("belated birthday")
 	sampleLogEvent    = []byte("log event test birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
+	samplePhpPackages = []byte(`["package", "1.2.3",{}]`)
 )
 
 type ClientReturn struct {
@@ -186,6 +187,9 @@ var (
 	})
 	txnLogEventSample = AggregaterIntoFn(func(h *Harvest) {
 		h.LogEvents.AddEventFromData(sampleLogEvent, SamplingPriority(0.8))
+	})
+	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
+		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
 	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
@@ -326,6 +330,36 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
+	}
+
+	m.QuitTestProcessor()
+}
+
+func TestProcessorHarvestEmptyPhpPackages(t *testing.T) {
+	m := NewMockedProcessor(1)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnPhpPackagesSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestPhpPackages,
+	}
+	/* collect metrics */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp := <-m.clientParams
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	expected := `["Jars",["package", "1.2.3",{}]]`
+
+	if string(cp.data) != expected {
+		t.Fatalf("expected: '%s' got: '%s'", expected, string(cp.data))
 	}
 
 	m.QuitTestProcessor()

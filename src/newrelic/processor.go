@@ -72,8 +72,9 @@ const (
 	HarvestErrorEvents  HarvestType = (1 << 6)
 	HarvestSpanEvents   HarvestType = (1 << 7)
 	HarvestLogEvents    HarvestType = (1 << 8)
-	HarvestDefaultData  HarvestType = HarvestMetrics | HarvestErrors | HarvestSlowSQLs | HarvestTxnTraces
-	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents
+	HarvestPhpPackages  HarvestType = (1 << 9)
+	HarvestDefaultData  HarvestType = HarvestMetrics | HarvestErrors | HarvestSlowSQLs | HarvestTxnTraces | HarvestPhpPackages
+	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents | HarvestPhpPackages
 )
 
 // ProcessorHarvest represents a processor harvest event: when this is received by a
@@ -754,6 +755,14 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		logEvents := harvest.LogEvents
 		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
 		considerHarvestPayload(logEvents, args, duc)
+
+	}
+	if ht&HarvestPhpPackages == HarvestPhpPackages {
+		log.Debugf("harvesting php packages")
+
+		phpPackages := harvest.PhpPackages
+		harvest.PhpPackages = NewPhpPackages()
+		considerHarvestPayload(phpPackages, args, duc)
 
 	}
 	// Only harvest data usage metrics if metrics are being harvested
