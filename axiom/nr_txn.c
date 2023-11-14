@@ -3496,7 +3496,6 @@ void nr_txn_add_php_package(nrtxn_t* txn,
 
   p = nr_php_package_create(package_name, package_version);
   nr_php_packages_add_package(txn->php_packages, p);
-
   nrl_verbosedebug(NRL_INSTRUMENT, "Detected package %s, version %s",
                    package_name, package_version);
 }
