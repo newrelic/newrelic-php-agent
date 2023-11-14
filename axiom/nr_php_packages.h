@@ -37,7 +37,7 @@ extern nr_php_package_t* nr_php_package_create(char* name, char* version);
  *
  * Params  : The php package to free
  *
- * Returns : Nothing, it is void
+ * Returns : Nothing
  */
 extern void nr_php_package_destroy(nr_php_package_t* p);
 
