@@ -71,7 +71,7 @@ extern void nr_php_packages_add_package(nr_php_packages_t* h,
  *
  * Params  : 1. A pointer to the pointer of nr_php_packages_t
  *
- * Returns : Nothing, it is void
+ * Returns : Nothing
  */
 static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
   if (nrlikely(h)) {
