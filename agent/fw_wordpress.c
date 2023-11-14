@@ -23,7 +23,7 @@
 #define NR_WORDPRESS_PLUGIN_PREFIX "Framework/WordPress/Plugin/"
 
 static nr_matcher_t* create_matcher_for_constant(const char* constant,
-                                              const char* suffix) {
+                                                 const char* suffix) {
   zval* value = nr_php_get_constant(constant);
 
   if (nr_php_is_zval_valid_string(value)) {

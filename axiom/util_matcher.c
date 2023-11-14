@@ -55,7 +55,9 @@ bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* prefix) {
   return nr_vector_push_back(&matcher->prefixes, prefix_lc);
 }
 
-static char* nr_matcher_match_internal(nr_matcher_t* matcher, const char* input, bool core) {
+static char* nr_matcher_match_internal(nr_matcher_t* matcher,
+                                       const char* input,
+                                       bool core) {
   size_t i;
   char* input_lc;
   char* match = NULL;
@@ -86,10 +88,10 @@ static char* nr_matcher_match_internal(nr_matcher_t* matcher, const char* input,
         match = nr_strdup(found);
       } else {
         if (true == core) {
-            const char *offset = input + nr_strlen(input);
-            match = nr_strndup(slash + 1, offset - slash);
+          const char* offset = input + nr_strlen(input);
+          match = nr_strndup(slash + 1, offset - slash);
         } else {
-            match = nr_strndup(found, slash - found);
+          match = nr_strndup(found, slash - found);
         }
       }
       break;
@@ -101,9 +103,9 @@ static char* nr_matcher_match_internal(nr_matcher_t* matcher, const char* input,
 }
 
 char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
-    return nr_matcher_match_internal(matcher, input, false);
+  return nr_matcher_match_internal(matcher, input, false);
 }
 
 char* nr_matcher_match_core(nr_matcher_t* matcher, const char* input) {
-    return nr_matcher_match_internal(matcher, input, true);
+  return nr_matcher_match_internal(matcher, input, true);
 }
