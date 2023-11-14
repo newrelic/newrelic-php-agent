@@ -470,30 +470,32 @@ nrframework_t nr_php_framework_from_config(const char* config_name) {
 typedef struct _nr_library_table_t {
   const char* library_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_library_enable_fn_t enable;
 } nr_library_table_t;
 
 /*
  * Note that all paths should be in lowercase.
  */
+// clang-format: off
 static nr_library_table_t libraries[] = {
-    {"Doctrine 2", "doctrine/orm/query.php", nr_doctrine2_enable},
-    {"Guzzle 3", "guzzle/http/client.php", nr_guzzle3_enable},
-    {"Guzzle 4-5", "hasemitterinterface.php", nr_guzzle4_enable},
-    {"Guzzle 6", "guzzle/src/functions_include.php", nr_guzzle6_enable},
+    {"Doctrine 2", NR_PSTR ("doctrine/orm/query.php"), nr_doctrine2_enable},
+    {"Guzzle 3", NR_PSTR ("guzzle/http/client.php"), nr_guzzle3_enable},
+    {"Guzzle 4-5", NR_PSTR ("hasemitterinterface.php"), nr_guzzle4_enable},
+    {"Guzzle 6", NR_PSTR ("guzzle/src/functions_include.php"), nr_guzzle6_enable},
 
-    {"MongoDB", "mongodb/src/client.php", nr_mongodb_enable},
+    {"MongoDB", NR_PSTR ("mongodb/src/client.php"), nr_mongodb_enable},
 
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin. While BaseTestRunner isn't the very first file to load,
      * it contains the test status constants and loads before tests can run.
      */
-    {"PHPUnit", "phpunit/src/runner/basetestrunner.php", nr_phpunit_enable},
-    {"PHPUnit", "phpunit/runner/basetestrunner.php", nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR ("phpunit/src/runner/basetestrunner.php"), nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR ("phpunit/runner/basetestrunner.php"), nr_phpunit_enable},
 
-    {"Predis", "predis/src/client.php", nr_predis_enable},
-    {"Predis", "predis/client.php", nr_predis_enable},
+    {"Predis", NR_PSTR ("predis/src/client.php"), nr_predis_enable},
+    {"Predis", NR_PSTR ("predis/client.php"), nr_predis_enable},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -501,14 +503,14 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all. This is
      * necessary for Magento in particular, which is built on ZF1.
      */
-    {"Zend_Http", "zend/http/client.php", nr_zend_http_enable},
+    {"Zend_Http", NR_PSTR ("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", "laminas-http/src/client.php", nr_laminas_http_enable},
+    {"Laminas_Http", NR_PSTR ("laminas-http/src/client.php"), nr_laminas_http_enable},
 
     /*
      * Other frameworks, detected only, but not specifically
@@ -516,70 +518,73 @@ static nr_library_table_t libraries[] = {
      * detection of a supported framework or library later (since a transaction
      * can only have one framework).
      */
-    {"Aura1", "aura/framework/system.php", NULL},
-    {"Aura2", "aura/di/src/containerinterface.php", NULL},
-    {"Aura3", "aura/di/src/containerconfiginterface.php", NULL},
-    {"CakePHP3", "cakephp/src/core/functions.php", NULL},
-    {"Fuel", "fuel/core/classes/fuel.php", NULL},
-    {"Lithium", "lithium/core/libraries.php", NULL},
-    {"Phpbb", "phpbb/request/request.php", NULL},
-    {"Phpixie2", "phpixie/core/classes/phpixie/pixie.php", NULL},
-    {"Phpixie3", "phpixie/framework.php", NULL},
-    {"React", "react/event-loop/src/loopinterface.php", NULL},
-    {"SilverStripe", "injector/silverstripeinjectioncreator.php", NULL},
-    {"SilverStripe4", "silverstripeserviceconfigurationlocator.php", NULL},
-    {"Typo3", "classes/typo3/flow/core/bootstrap.php", NULL},
-    {"Typo3", "typo3/sysext/core/classes/core/bootstrap.php", NULL},
-    {"Yii2", "yii2/baseyii.php", NULL},
+    {"Aura1", NR_PSTR ("aura/framework/system.php"), NULL},
+    {"Aura2", NR_PSTR ("aura/di/src/containerinterface.php"), NULL},
+    {"Aura3", NR_PSTR ("aura/di/src/containerconfiginterface.php"), NULL},
+    {"CakePHP3", NR_PSTR ("cakephp/src/core/functions.php"), NULL},
+    {"Fuel", NR_PSTR ("fuel/core/classes/fuel.php"), NULL},
+    {"Lithium", NR_PSTR ("lithium/core/libraries.php"), NULL},
+    {"Phpbb", NR_PSTR ("phpbb/request/request.php"), NULL},
+    {"Phpixie2", NR_PSTR ("phpixie/core/classes/phpixie/pixie.php"), NULL},
+    {"Phpixie3", NR_PSTR ("phpixie/framework.php"), NULL},
+    {"React", NR_PSTR ("react/event-loop/src/loopinterface.php"), NULL},
+    {"SilverStripe", NR_PSTR ("injector/silverstripeinjectioncreator.php"), NULL},
+    {"SilverStripe4", NR_PSTR ("silverstripeserviceconfigurationlocator.php"), NULL},
+    {"Typo3", NR_PSTR ("classes/typo3/flow/core/bootstrap.php"), NULL},
+    {"Typo3", NR_PSTR ("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
+    {"Yii2", NR_PSTR ("yii2/baseyii.php"), NULL},
 
     /*
      * Other CMS (content management systems), detected only, but
      * not specifically instrumented.
      */
-    {"Moodle", "moodlelib.php", NULL},
+    {"Moodle", NR_PSTR ("moodlelib.php"), NULL},
     /*
      * It is likely that this will never be found, since the CodeIgniter.php
      * will get loaded first, and as such mark this transaction as belonging to
      * CodeIgniter, and not Expession Engine.
      */
-    {"ExpressionEngine", "system/expressionengine/config/config.php", NULL},
+    {"ExpressionEngine", NR_PSTR ("system/expressionengine/config/config.php"), NULL},
     /*
      * ExpressionEngine 5, however, has a very obvious file we can look for.
      */
-    {"ExpressionEngine5", "expressionengine/boot/boot.php", NULL},
+    {"ExpressionEngine5", NR_PSTR ("expressionengine/boot/boot.php"), NULL},
     /*
      * DokuWiki uses doku.php as an entry point, but has other files that are
      * loaded directly that this won't pick up. That's probably OK for
      * supportability metrics, but we'll add the most common name for the
      * configuration file as well just in case.
      */
-    {"DokuWiki", "doku.php", NULL},
-    {"DokuWiki", "conf/dokuwiki.php", NULL},
+    {"DokuWiki", NR_PSTR ("doku.php"), NULL},
+    {"DokuWiki", NR_PSTR ("conf/dokuwiki.php"), NULL},
 
     /*
      * SugarCRM no longer has a community edition, so this likely only works
      * with older versions.
      */
-    {"SugarCRM", "sugarobjects/sugarconfig.php", NULL},
+    {"SugarCRM", NR_PSTR ("sugarobjects/sugarconfig.php"), NULL},
 
-    {"Xoops", "class/xoopsload.php", NULL},
-    {"E107", "e107_handlers/e107_class.php", NULL},
+    {"Xoops", NR_PSTR ("class/xoopsload.php"), NULL},
+    {"E107", NR_PSTR ("e107_handlers/e107_class.php"), NULL},
 };
+// clang-format: on
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+// clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
-    {"Monolog", "monolog/logger.php", nr_monolog_enable},
+    {"Monolog", NR_PSTR ("monolog/logger.php"), nr_monolog_enable},
     /* Consolidation/Log - Logging for PHP */
-    {"Consolidation/Log", "consolidation/log/src/logger.php", NULL},
+    {"Consolidation/Log", NR_PSTR ("consolidation/log/src/logger.php"), NULL},
     /* laminas-log - Logging for PHP */
-    {"laminas-log", "laminas-log/src/logger.php", NULL},
+    {"laminas-log", NR_PSTR ("laminas-log/src/logger.php"), NULL},
     /* cakephp-log - Logging for PHP */
-    {"cakephp-log", "cakephp/log/log.php", NULL},
+    {"cakephp-log", NR_PSTR ("cakephp/log/log.php"), NULL},
     /* Analog - Logging for PHP */
-    {"Analog", "analog/analog.php", NULL},
+    {"Analog", NR_PSTR ("analog/analog.php"), NULL},
 };
+// clang-format: on
 
 static size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
