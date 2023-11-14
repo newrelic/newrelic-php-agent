@@ -55,7 +55,6 @@ int nr_get_daemon_fd(void) {
   return 0;
 }
 
-
 static void test_encode_errors(void) {
   nrtxn_t txn;
   nr_flatbuffers_table_t tbl;
@@ -1106,6 +1105,65 @@ done:
   nr_txn_destroy_fields(&txn);
 }
 
+static void test_encode_php_packages(void) {
+  nrtxn_t txn;
+  nr_flatbuffers_table_t tbl;
+  nr_flatbuffer_t* fb;
+  int data_type;
+  int did_pass;
+
+  nr_memset(&txn, 0, sizeof(txn));
+  txn.status.recording = 1;
+  nr_txn_add_php_package(&txn, "TEST_PACKAGE_1", "1.2.3");
+  nr_txn_add_php_package(&txn, "TEST_PACKAGE_2", "4.5.6");
+  nr_txn_add_php_package(&txn, "TEST_PACKAGE_3", "7.8.9");
+
+  fb = nr_txndata_encode(&txn);
+  nr_flatbuffers_table_init_root(&tbl, nr_flatbuffers_data(fb),
+                                 nr_flatbuffers_len(fb));
+
+  data_type = nr_flatbuffers_table_read_i8(&tbl, MESSAGE_FIELD_DATA_TYPE,
+                                           MESSAGE_BODY_NONE);
+  did_pass = tlib_pass_if_true(__func__, MESSAGE_BODY_TXN == data_type,
+                               "data_type=%d", data_type);
+  if (0 != did_pass) {
+    goto done;
+  }
+
+  did_pass = tlib_pass_if_true(
+      __func__,
+      0 != nr_flatbuffers_table_read_union(&tbl, &tbl, MESSAGE_FIELD_DATA),
+      "transaction data missing");
+  if (0 != did_pass) {
+    goto done;
+  }
+
+  did_pass
+      = tlib_pass_if_true(__func__,
+                          0
+                              != nr_flatbuffers_table_read_union(
+                                  &tbl, &tbl, TRANSACTION_FIELD_PHP_PACKAGES),
+                          "trace missing");
+  if (0 != did_pass) {
+    goto done;
+  }
+
+  tlib_pass_if_bytes_equal_f(
+      __func__,
+      NR_PSTR("["
+              "[\"TEST_PACKAGE_3\",\"7.8.9\",{}],"
+              "[\"TEST_PACKAGE_1\",\"1.2.3\",{}],"
+              "[\"TEST_PACKAGE_2\",\"4.5.6\",{}]"
+              "]"),
+      nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),
+      nr_flatbuffers_table_read_vector_len(&tbl, EVENT_FIELD_DATA), __FILE__,
+      __LINE__);
+
+done:
+  nr_flatbuffers_destroy(&fb);
+  nr_txn_destroy_fields(&txn);
+}
+
 static void test_bad_daemon_fd(void) {
   nrtxn_t txn;
   nr_status_t st;
@@ -1213,6 +1271,7 @@ void test_main(void* p NRUNUSED) {
   test_encode_trace();
   test_encode_txn_event();
   test_encode_log_events();
+  test_encode_php_packages();
 
   test_bad_daemon_fd();
   test_null_txn();
