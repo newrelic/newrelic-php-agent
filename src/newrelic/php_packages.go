@@ -67,10 +67,10 @@ func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
 // by the collector.
 func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
 	if nil == packages {
-		return nil, fmt.Errorf("CollecorJSON: packages is nil")
+		return []byte(`["Jars",[]]`), nil
 	}
-	if nil == packages.data {
-		return nil, fmt.Errorf("CollecorJSON: packages.data is nil")
+	if nil == packages.data || 0 == packages.numSeen {
+		return []byte(`["Jars",[]]`), nil
 	}
 
 	buf := &bytes.Buffer{}
