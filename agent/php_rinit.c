@@ -97,6 +97,8 @@ PHP_RINIT_FUNCTION(newrelic) {
       "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
       NR_REGEX_CASELESS, 0);
 
+  NRPRG(check_cufa) = false;
+
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
   NRPRG(datastore_connections) = nr_hashmap_create(

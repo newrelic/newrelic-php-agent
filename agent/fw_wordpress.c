@@ -479,11 +479,17 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
      */
     char* old_tag = NRPRG(wordpress_tag);
 
+    NRPRG(check_cufa) = true;
+
     NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
     NR_PHP_WRAPPER_CALL;
     nr_free(NRPRG(wordpress_tag));
     NRPRG(wordpress_tag) = old_tag;
+    if (NULL == NRPRG(wordpress_tag)) {
+      NRPRG(check_cufa) = false;
+    }
   } else {
+    NRPRG(check_cufa) = false;
     NR_PHP_WRAPPER_CALL;
   }
 
@@ -561,11 +567,18 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
        */
       char* old_tag = NRPRG(wordpress_tag);
 
+      NRPRG(check_cufa) = true;
+
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
+
       NR_PHP_WRAPPER_CALL;
       nr_free(NRPRG(wordpress_tag));
       NRPRG(wordpress_tag) = old_tag;
+      if (NULL == NRPRG(wordpress_tag)) {
+        NRPRG(check_cufa) = false;
+      }
     } else {
+      NRPRG(check_cufa) = false;
       NR_PHP_WRAPPER_CALL;
     }
 
