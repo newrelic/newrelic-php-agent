@@ -89,8 +89,12 @@ func TestCollectorJSON(t *testing.T) {
 	id := AgentRunID(`12345`)
 
 	json, err := nilpkg.CollectorJSON(id)
-	if !strings.Contains(err.Error(), "packages is nil") {
-		t.Fatalf("Expected error 'packages is nil!', got '%s'", err.Error())
+	if nil != err {
+		t.Fatalf("Expected nil error, got %s", err.Error())
+	}
+	expectedJSON := `["Jars",[]]`
+	if expectedJSON != string(json) {
+		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
 	// test with valid pkgs
@@ -99,27 +103,26 @@ func TestCollectorJSON(t *testing.T) {
 		t.Fatalf("Expected not nil")
 	}
 	json, err = pkg.CollectorJSON(id)
-	if !strings.Contains(err.Error(), "data is nil") {
-		t.Fatalf("Expected error 'data is nil!', got '%s'", err.Error())
+	if nil != err {
+		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	if "" != string(json) {
-		t.Fatalf("Expected '', got '%s'", string(json))
+	expectedJSON = `["Jars",[]]`
+	if expectedJSON != string(json) {
+		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
-	pkg.SetPhpPackages([]byte("[\"package\", \"1.2.3\",{}]"))
+	pkg.SetPhpPackages([]byte(`["package", "1.2.3",{}]`))
 
 	json, err = pkg.CollectorJSON(id)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	expectedJSON := "[\"Jars\",[\"package\", \"1.2.3\",{}]]"
+	expectedJSON = `["Jars",["package", "1.2.3",{}]]`
 	if expectedJSON != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
 	// Data method should return same values
-	pkg.SetPhpPackages([]byte("[\"package\", \"1.2.3\",{}]"))
-
 	now := time.Now()
 	json, err = pkg.Data(id, now)
 	if nil != err {
