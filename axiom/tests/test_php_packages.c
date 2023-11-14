@@ -38,6 +38,7 @@ static void test_php_adding_packages_to_hashmap(void) {
   package2 = nr_php_package_create("Package Two", "11.2.0");
   package3 = nr_php_package_create("Package Three", "12.3.0");
   /* Should not crash: */
+  
   nr_php_packages_add_package(NULL, package1);
   nr_php_packages_add_package(hm, NULL);
   nr_php_packages_add_package(hm, package1);
