@@ -802,6 +802,8 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
   }
 }
 
+#define STR_AND_LEN(v) v, v##_len
+
 /*
  * Attempt to detect a framework.
  * Call the appropriate enable function if we find the framework.
@@ -816,8 +818,8 @@ static nrframework_t nr_try_detect_framework(
   size_t i;
 
   for (i = 0; i < num_frameworks; i++) {
-    if (nr_striendswith(filename, filename_len, frameworks[i].file_to_check,
-                        frameworks[i].file_to_check_len)) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(frameworks[i].file_to_check))) {
       /*
        * If we have a special check function and it tells us to ignore
        * the file name because some other condition wasn't met, continue
@@ -884,8 +886,8 @@ static void nr_execute_handle_library(const char* filename,
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
-    if (nr_striendswith(filename, filename_len, libraries[i].file_to_check,
-                        libraries[i].file_to_check_len)) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(libraries[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
@@ -906,9 +908,8 @@ static void nr_execute_handle_logging_framework(const char* filename,
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_striendswith(filename, filename_len,
-                        logging_frameworks[i].file_to_check,
-                        logging_frameworks[i].file_to_check_len)) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(logging_frameworks[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
@@ -924,6 +925,8 @@ static void nr_execute_handle_logging_framework(const char* filename,
     }
   }
 }
+
+#undef STR_AND_LEN
 
 /*
  * Purpose : Detect library and framework usage from a PHP file.
