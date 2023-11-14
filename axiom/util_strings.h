@@ -461,6 +461,11 @@ static inline bool nr_striendswith(const char* s,
     return false;
   }
 
+  if (NULL == s) {
+    /* invalid input */
+    return false;
+  }
+
   /* compare input's suffix with the pattern and return result */
   suffix = s + (slen - pattern_len);
   return 0 == nr_stricmp(suffix, pattern);
