@@ -813,7 +813,6 @@ static nrframework_t nr_try_detect_framework(
     const char* filename,
     const size_t filename_len TSRMLS_DC) {
   nrframework_t detected = NR_FW_UNSET;
-  char* filename_lower = nr_string_to_lowercase(filename);
   const char* filename_suffix;
   size_t i;
 
@@ -826,7 +825,7 @@ static nrframework_t nr_try_detect_framework(
     }
     /* Check if filename ends with the desired pattern */
     filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stridx(filename_suffix, frameworks[i].file_to_check) >= 0) {
+    if (nr_stricmp(filename_suffix, frameworks[i].file_to_check) == 0) {
       /*
        * If we have a special check function and it tells us to ignore
        * the file name because some other condition wasn't met, continue
@@ -850,7 +849,6 @@ static nrframework_t nr_try_detect_framework(
   }
 
 end:
-  nr_free(filename_lower);
   return detected;
 }
 
@@ -891,7 +889,6 @@ static nrframework_t nr_try_force_framework(
 
 static void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
-  char* filename_lower = nr_string_to_lowercase(filename);
   const char* filename_suffix;
   size_t i;
 
@@ -904,7 +901,7 @@ static void nr_execute_handle_library(const char* filename,
     }
     /* Check if filename ends with the desired pattern */
     filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stridx(filename_suffix, libraries[i].file_to_check) >= 0) {
+    if (nr_stricmp(filename_suffix, libraries[i].file_to_check) == 0) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
@@ -916,14 +913,11 @@ static void nr_execute_handle_library(const char* filename,
       }
     }
   }
-
-  nr_free(filename_lower);
 }
 
 static void nr_execute_handle_logging_framework(const char* filename,
                                                 const size_t filename_len
                                                     TSRMLS_DC) {
-  char* filename_lower = nr_string_to_lowercase(filename);
   const char* filename_suffix;
   bool is_enabled = false;
   size_t i;
@@ -938,7 +932,7 @@ static void nr_execute_handle_logging_framework(const char* filename,
 
     /* Check if filename ends with the desired pattern */
     filename_suffix = filename_lower + (filename_len - file_to_check_len);
-    if (nr_stridx(filename_suffix, logging_frameworks[i].file_to_check) >= 0) {
+    if (nr_stricmp(filename_suffix, logging_frameworks[i].file_to_check) == 0) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
@@ -953,8 +947,6 @@ static void nr_execute_handle_logging_framework(const char* filename,
           NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
-
-  nr_free(filename_lower);
 }
 
 /*
