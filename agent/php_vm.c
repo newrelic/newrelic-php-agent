@@ -109,6 +109,14 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
   }
 
   /*
+   * If we don't have haven't instrumented hooks that require this, skip to the
+   * end.
+   */
+  if (false == NRPRG(check_cufa)) {
+    goto call_previous_and_return;
+  }
+
+  /*
    * Since we're in the middle of a function call, the Zend Engine is actually
    * only partway through constructing the new function frame. As a result, it
    * hasn't yet replaced the execute_data global with the details of the

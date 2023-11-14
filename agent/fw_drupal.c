@@ -608,12 +608,16 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all) {
   NRPRG(drupal_module_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
   NRPRG(drupal_module_invoke_all_hook_len) = Z_STRLEN_P(hook);
+  NRPRG(check_cufa) = true;
 
   NR_PHP_WRAPPER_CALL;
 
   nr_free(NRPRG(drupal_module_invoke_all_hook));
   NRPRG(drupal_module_invoke_all_hook) = prev_hook;
   NRPRG(drupal_module_invoke_all_hook_len) = prev_hook_len;
+  if (NULL == NRPRG(drupal_module_invoke_all_hook)) {
+    NRPRG(check_cufa) = false;
+  }
 
 leave:
   nr_php_arg_release(&hook);
