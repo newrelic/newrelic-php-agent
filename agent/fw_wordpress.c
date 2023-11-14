@@ -513,6 +513,63 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Wrap the wordpress function add_filter
+ * 
+ * function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 )
+ *
+ * @param string   $hook_name     The name of the filter to add the callback to.
+* @param callable $callback      The callback to be run when the filter is applied.
+* @param int      $priority      Optional. Used to specify the order in which the functions
+*                                associated with a particular filter are executed.
+*                                Lower numbers correspond with earlier execution,
+*                                and functions with the same priority are executed
+*                                in the order in which they were added to the filter. Default 10.
+* @param int      $accepted_args Optional. The number of arguments the function accepts. Default 1.
+* @return true Always returns true.
+ */
+
+NR_PHP_WRAPPER(nr_wordpress_add_filter) {
+  /* Wordpress's add_action() is just a wrapper around add_filter(),
+   * so we only need to instrument this function */
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+  const char* filename = NULL;
+  bool wrap_hook = true;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+
+  /*
+   * We only want to hook the function being called if this is a WordPress
+   * function, we're instrumenting hooks, and WordPress is currently executing
+   * hooks (denoted by the wordpress_tag being set).
+   */
+  if ((NR_FW_WORDPRESS != NRPRG(current_framework))
+      || (0 == NRINI(wordpress_hooks))) {
+    wrap_hook = false;
+  }
+
+  if (NRINI(wordpress_hooks_skip_filename)
+      && 0 != nr_strlen(NRINI(wordpress_hooks_skip_filename))) {
+    filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+
+    if (nr_strstr(filename, NRINI(wordpress_hooks_skip_filename))) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "skipping hooks for function from %s",
+                       filename);
+      wrap_hook = false;
+    }
+  }
+
+  if (true == wrap_hook) {
+    zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    /* the callback here can be any PHP callable. nr_php_wrap_generic_callable
+   * checks that a valid callable is passed */
+    nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
+    nr_php_arg_release(&callback);
+  }
+}
+NR_PHP_WRAPPER_END
+
 void nr_wordpress_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters TSRMLS_CC);
@@ -525,7 +582,7 @@ void nr_wordpress_enable(TSRMLS_D) {
 
   nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                             nr_wordpress_exec_handle_tag TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("add_filter"),
+                            nr_wordpress_add_filter);
 
-  nr_php_add_call_user_func_array_pre_callback(
-      nr_wordpress_call_user_func_array TSRMLS_CC);
 }
