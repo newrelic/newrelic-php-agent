@@ -109,7 +109,7 @@ static inline size_t nr_php_packages_count(nr_php_packages_t* h) {
 static inline int nr_php_packages_has_package(nr_php_packages_t* h,
                                               char* package_name,
                                               size_t package_len) {
-  if (nrlikely(h)) {
+  if (nrlikely(NULL != h && NULL != h->data)) {
     return nr_hashmap_has(h->data, package_name, package_len);
   }
   return 0;
