@@ -311,41 +311,6 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 NR_PHP_WRAPPER_END
 
 /*
- * A call_user_func_array() callback to ensure that we wrap each hook function.
- */
-static void nr_wordpress_call_user_func_array(zend_function* func,
-                                              const zend_function* caller
-                                                  NRUNUSED TSRMLS_DC) {
-  const char* filename;
-  /*
-   * We only want to hook the function being called if this is a WordPress
-   * function, we're instrumenting hooks, and WordPress is currently executing
-   * hooks (denoted by the wordpress_tag being set).
-   */
-  if ((NR_FW_WORDPRESS != NRPRG(current_framework))
-      || (0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
-    return;
-  }
-
-  if (NRINI(wordpress_hooks_skip_filename)
-      && 0 != nr_strlen(NRINI(wordpress_hooks_skip_filename))) {
-    filename = nr_php_op_array_file_name(&func->op_array);
-
-    if (nr_strstr(filename, NRINI(wordpress_hooks_skip_filename))) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "skipping hooks for function from %s",
-                       filename);
-      return;
-    }
-  }
-
-  /*
-   * We'll wrap this as a callable to handle anonymous functions being
-   * registered.
-   */
-  nr_php_wrap_callable(func, nr_wordpress_wrap_hook TSRMLS_CC);
-}
-
-/*
  * Some plugins generate transient tag names. We can detect these by checking
  * the substrings returned from our regex rule. If the tag is transient, we
  * assemble a new name without the offending hex.
@@ -515,7 +480,7 @@ NR_PHP_WRAPPER_END
 
 /*
  * Wrap the wordpress function add_filter
- * 
+ *
  * function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 )
  *
  * @param string   $hook_name     The name of the filter to add the callback to.
