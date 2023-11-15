@@ -21,7 +21,10 @@ typedef struct _nr_php_packages_t {
 } nr_php_packages_t;
 
 /*
- * Purpose : Create a new php package
+ * Purpose : Create a new php package. If the name is null, then no package will
+ *           be created. If the version is null (version = NULL), then
+ *           the package will still be created and the version will be set to an
+ *           empty string with a space.
  *
  * Params  : 1. Package name
  *           2. Package version
@@ -50,11 +53,9 @@ extern nr_php_packages_t* nr_php_packages_create(void);
 
 /*
  * Purpose : Add new php package to collection. If a package with the same key
- *           but different value is added, then the old value will be freed and
- *           the newer value will be kept. If a duplicate package with the same
- *           key and value is added, no action will be taken. This function also
- *           frees the package being added, so the user does not need to call
- *           nr_php_package_destroy()
+ *           but different value is added, then the newer value will be kept. 
+ *           Regardless of whether or not there is a name collision,
+ *           the caller is not responsible for destroying the package
  *
  * Params  : 1. A pointer to nr_php_packages_t where packages
  *              will be added
