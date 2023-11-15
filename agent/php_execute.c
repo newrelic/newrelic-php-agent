@@ -1894,13 +1894,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
-  /*
-   * If there is custom instrumentation or tt detail is more than 0, start the
-   * segment.
-   */
-  if ((NULL == wraprec) && !(NRINI(tt_detail) && NR_OP_ARRAY->function_name)) {
-    return;
-  }
+
   /*
    * Check if it's a custom error handler.  Even with some custom error
    * handlers, fcall might not get called. But we don't need to wait for
@@ -2013,11 +2007,11 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   wraprec = segment->wraprec;
 
   if (wraprec && wraprec->is_exception_handler) {
-      /*
-       * An exception handler removes the global exception in fcall_begin
-       * and does not have a return value, like fcall_end during an
-       * uncaught exception
-       */
+    /*
+     * An exception handler removes the global exception in fcall_begin
+     * and does not have a return value, like fcall_end during an
+     * uncaught exception
+     */
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
     zval exception;
     ZVAL_OBJ(&exception, EG(exception));
@@ -2063,6 +2057,10 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
       zend_bailout();
     }
   } else if (!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name)) {
+    /*
+     * If there is no custom instrumentation and tt detail is not more than 0,
+     * do not record the segment
+     */
     nr_php_stacked_segment_deinit(segment);
     return;
   }
