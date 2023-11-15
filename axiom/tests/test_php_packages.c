@@ -59,6 +59,8 @@ static void test_php_package_to_json(void) {
 
   // Test: convert package to json
   package1 = nr_php_package_create("TestPackage", "7.2.0");
+  // Ensure passing NULL does not cause crash
+  json = nr_php_package_to_json(NULL);
   json = nr_php_package_to_json(package1);
   tlib_pass_if_str_equal("valid package", "[\"TestPackage\",\"7.2.0\",{}]",
                          json);
@@ -97,6 +99,10 @@ static void test_php_packages_to_json_buffer(void) {
   count = nr_php_packages_count(collection);
   tlib_pass_if_int_equal("package count", 3, count);
 
+  // Ensure passing NULL does not cause crash
+  nr_php_packages_to_json_buffer(NULL, NULL);
+  nr_php_packages_to_json_buffer(collection, NULL);
+  nr_php_packages_to_json_buffer(NULL, buf);
   // Test: adding packages to buffer
   tlib_pass_if_bool_equal("filled collection bool check", true,
                           nr_php_packages_to_json_buffer(collection, buf));
