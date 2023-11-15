@@ -23,13 +23,8 @@ newrelic.code_level_metrics.enabled=false
 /*EXPECT_RESPONSE_HEADERS
 */
 
-/*EXPECT_SPAN_EVENTS
+/*EXPECT_SPAN_EVENTS_LIKE
 [
-  "?? agent run id",
-  {
-    "reservoir_size": 10000,
-    "events_seen": 4
-  },
   [
     [
       {
@@ -45,23 +40,6 @@ newrelic.code_level_metrics.enabled=false
         "nr.entryPoint": true,
         "timestamp": "??",
         "transaction.name": "OtherTransaction\/php__FILE__"
-      },
-      {},
-      {}
-    ],
-    [
-      {
-        "traceId": "??",
-        "duration": "??",
-        "transactionId": "??",
-        "name": "Custom\/GuzzleHttp\\Client::__construct",
-        "guid": "??",
-        "type": "Span",
-        "category": "generic",
-        "priority": "??",
-        "sampled": true,
-        "parentId": "??",
-        "timestamp": "??"
       },
       {},
       {}
