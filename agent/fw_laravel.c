@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "nr_php_packages.h"
+#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_user_instrument.h"
@@ -958,6 +960,9 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   (void)wraprec;
 
   version = nr_laravel_version(this_var TSRMLS_CC);
+
+  // Add php package to transaction
+  nr_txn_add_php_package(NRPRG(txn), "Laravel", version);
 
   if (version) {
     nrl_debug(NRL_FRAMEWORK, "Laravel version is " NRP_FMT, NRP_PHP(version));
