@@ -15,6 +15,7 @@
 #include "nr_txn.h"
 #include "php_extension.h"
 #include "util_hashmap.h"
+#include "util_matcher.h"
 #include "util_vector.h"
 
 #define PHP_NEWRELIC_EXT_NAME "newrelic"
@@ -378,13 +379,13 @@ int symfony1_in_dispatch; /* Whether we are currently within a
 int symfony1_in_error404; /* Whether we are currently within a
                              sfError404Exception::printStackTrace() frame */
 
-char* wordpress_tag;                   /* The current WordPress tag */
-nr_regex_t* wordpress_hook_regex;      /* Regex to sanitize hook names */
-nr_regex_t* wordpress_plugin_regex;    /* Regex for plugin filenames */
-nr_regex_t* wordpress_theme_regex;     /* Regex for theme filenames */
-nr_regex_t* wordpress_core_regex;      /* Regex for plugin filenames */
-nr_hashmap_t* wordpress_file_metadata; /* Metadata for plugin and theme names
-                                          given a filename */
+char* wordpress_tag;                    /* The current WordPress tag */
+nr_regex_t* wordpress_hook_regex;       /* Regex to sanitize hook names */
+nr_matcher_t* wordpress_plugin_matcher; /* Matcher for plugin filenames */
+nr_matcher_t* wordpress_theme_matcher;  /* Matcher for theme filenames */
+nr_matcher_t* wordpress_core_matcher;   /* Matcher for plugin filenames */
+nr_hashmap_t* wordpress_file_metadata;  /* Metadata for plugin and theme names
+                                           given a filename */
 
 char* doctrine_dql; /* The current Doctrine DQL. Only non-NULL while a Doctrine
                        object is on the stack. */

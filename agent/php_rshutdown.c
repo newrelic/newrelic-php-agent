@@ -96,10 +96,10 @@ int nr_php_post_deactivate(void) {
   nr_php_remove_transient_user_instrumentation();
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
-  nr_regex_destroy(&NRPRG(wordpress_plugin_regex));
-  nr_regex_destroy(&NRPRG(wordpress_core_regex));
+  nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
+  nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
   nr_regex_destroy(&NRPRG(wordpress_hook_regex));
-  nr_regex_destroy(&NRPRG(wordpress_theme_regex));
+  nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
   nr_hashmap_destroy(&NRPRG(wordpress_file_metadata));
 
   nr_free(NRPRG(mysql_last_conn));

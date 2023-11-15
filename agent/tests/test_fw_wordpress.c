@@ -25,55 +25,55 @@ tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
 /*
- * This will test whether the regular expression checking works to determine
+ * This will test whether the matcher checking works to determine
  * the name of a plugin from a filename when the "plugin" is a .php file.
  */
-static void test_wordpress_core_regex(TSRMLS_D) {
+static void test_wordpress_core_matcher() {
   char* plugin = NULL;
 
   /* Test with invalid input. */
-  plugin = nr_php_wordpress_core_match_regex(NULL TSRMLS_CC);
+  plugin = nr_php_wordpress_core_match_matcher(NULL);
   tlib_pass_if_null(
-      "Wordpress function regex matching should return NULL when given NULL.",
+      "Wordpress function matcher matching should return NULL when given NULL.",
       plugin);
 
-  plugin = nr_php_wordpress_core_match_regex(
-      "/wp-content/plugins/affiliatelite.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_core_match_matcher(
+      "/wp-content/plugins/affiliatelite.php");
   tlib_pass_if_null(
-      "wordpress core regex matching should not work from the regular plugins "
+      "wordpress core matcher matching should not work from the regular plugins "
       "directory",
       plugin);
 
-  plugin = nr_php_wordpress_core_match_regex(
-      "/www-data/premium.wpmudev.org/wp-content/affiliatelite.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_core_match_matcher(
+      "/www-data/premium.wpmudev.org/wp-content/affiliatelite.php");
   tlib_pass_if_null(
-      "wordpress core regex matching should not work from a non-standard "
+      "wordpress core matcher matching should not work from a non-standard "
       "directory.",
       plugin);
 
   /* Test with valid input. */
 
-  plugin = nr_php_wordpress_core_match_regex(
-      "/wordpress/wordpress/wp-includes/query.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_core_match_matcher(
+      "/wordpress/wordpress/wp-includes/query.php");
   tlib_pass_if_not_null(
-      "wordpress core regex matching should work from a standard "
+      "wordpress core matcher matching should work from a standard "
       "directory.",
       plugin);
   tlib_pass_if_str_equal(
-      "wordpress core regex matching should work from a standard "
+      "wordpress core matcher matching should work from a standard "
       "directory.",
       "query", plugin);
 
   nr_free(plugin);
 
-  plugin = nr_php_wordpress_core_match_regex(
-      "/wordpress/wordpress/wp-includes/block/query.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_core_match_matcher(
+      "/wordpress/wordpress/wp-includes/block/query.php");
   tlib_pass_if_not_null(
-      "wordpress core regex matching should work from a standard "
+      "wordpress core matcher matching should work from a standard "
       "directory with a subdirectory",
       plugin);
   tlib_pass_if_str_equal(
-      "wordpress core regex matching should work from a standard "
+      "wordpress core matcher matching should work from a standard "
       "directory with a subdirectory.",
       "query", plugin);
 
@@ -81,44 +81,44 @@ static void test_wordpress_core_regex(TSRMLS_D) {
 }
 
 /*
- * This will test whether the regular expression checking works to determine
+ * This will test whether the matcher checking works to determine
  * the name of a plugin from a filename when the plugin is not a .php file
  */
-static void test_wordpress_plugin_regex(TSRMLS_D) {
+static void test_wordpress_plugin_matcher() {
   char* plugin = NULL;
   char* filename
       = "/www-data/premium.wpmudev.org/wp-content/plugins/plugin/"
         "affiliatelite.php";
 
   /* Test with invalid input. */
-  plugin = nr_php_wordpress_plugin_match_regex(NULL TSRMLS_CC);
+  plugin = nr_php_wordpress_plugin_match_matcher(NULL);
   tlib_pass_if_null(
-      "Wordpress plugin regex should return NULL when given NULL.", plugin);
+      "Wordpress plugin matcher should return NULL when given NULL.", plugin);
 
-  plugin = nr_php_wordpress_plugin_match_regex(
-      "/wp-content/affiliatelite.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_plugin_match_matcher(
+      "/wp-content/affiliatelite.php");
   tlib_pass_if_null(
-      "Wordpress plugin regex should return NULL if the filename is not in the "
+      "Wordpress plugin matcher should return NULL if the filename is not in the "
       "correct plugin directory.",
       plugin);
 
   /* Test with valid input. */
 
-  plugin = nr_php_wordpress_plugin_match_regex(
-      "/wp-content/plugins/affiliatelite.php" TSRMLS_CC);
+  plugin = nr_php_wordpress_plugin_match_matcher(
+      "/wp-content/plugins/affiliatelite.php");
   tlib_pass_if_not_null(
-      "Wordpress plugin regex should return plugin name even if the plugin is "
+      "Wordpress plugin matcher should return plugin name even if the plugin is "
       "a function "
       "not a directory.",
       plugin);
-  tlib_pass_if_str_equal("Wordpress plugin regex should work.", "affiliatelite",
+  tlib_pass_if_str_equal("Wordpress plugin matcher should work.", "affiliatelite",
                          plugin);
 
   nr_free(plugin);
 
-  plugin = nr_php_wordpress_plugin_match_regex(filename TSRMLS_CC);
-  tlib_pass_if_not_null("Wordpress plugin regex should work.", plugin);
-  tlib_pass_if_str_equal("Wordpress plugin regex should work.", "plugin",
+  plugin = nr_php_wordpress_plugin_match_matcher(filename);
+  tlib_pass_if_not_null("Wordpress plugin matcher should work.", plugin);
+  tlib_pass_if_str_equal("Wordpress plugin matcher should work.", "plugin",
                          plugin);
   nr_free(plugin);
 }
@@ -128,7 +128,7 @@ void test_main(void* p NRUNUSED) {
   void*** tsrm_ls = NULL;
 #endif /* ZTS && !PHP7 */
   tlib_php_engine_create("" PTSRMLS_CC);
-  test_wordpress_plugin_regex(TSRMLS_C);
-  test_wordpress_core_regex(TSRMLS_C);
+  test_wordpress_plugin_matcher();
+  test_wordpress_core_matcher();
   tlib_php_engine_destroy(TSRMLS_C);
 }
