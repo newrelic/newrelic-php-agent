@@ -36,6 +36,7 @@ type Test struct {
 	spanEventsLike []byte
 	logEvents      []byte
 	metrics        []byte
+	metricsExist   []byte
 	slowSQLs       []byte
 	tracedErrors   []byte
 	txnTraces      []byte
@@ -555,6 +556,15 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	if nil == harvest && t.GetExpectHarvest() {
 		t.Fatal(errors.New("no harvest received"))
 		return
+	}
+
+	if nil != t.metricsExist {
+		for _, name := range strings.Split(strings.TrimSpace(string(t.metricsExist)), "\n") {
+			name = strings.TrimSpace(name)
+			if !harvest.Metrics.Has(name) {
+				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", name, harvest.Metrics.DebugJSON()))
+			}
+		}
 	}
 
 	// if we expect a harvest and these is not, then we run our tests as per normal
