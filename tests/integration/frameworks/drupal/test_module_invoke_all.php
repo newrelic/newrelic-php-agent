@@ -41,6 +41,7 @@ f
                                                                     [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},    [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_with_arg"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/f"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/g"},                [1, "??", "??", "??", "??", "??"]],
@@ -54,7 +55,6 @@ f
   ]
 ]
 */
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function module_invoke_all($f) {
