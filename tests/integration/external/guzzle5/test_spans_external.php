@@ -28,7 +28,6 @@ newrelic.transaction_tracer.detail = 0
 
 /*EXPECT_SPAN_EVENTS_LIKE
 [
-  [
     [
       {
         "traceId": "??",
@@ -93,7 +92,6 @@ newrelic.transaction_tracer.detail = 0
         "http.statusCode": 200
       }
     ]
-  ]
 ]
 */
 

@@ -23,7 +23,6 @@ newrelic.code_level_metrics.enabled=false
 
 /*EXPECT_SPAN_EVENTS_LIKE
 [
-  [
     [
       {
         "traceId": "??",
@@ -65,7 +64,6 @@ newrelic.code_level_metrics.enabled=false
         "http.statusCode": 200
       }
     ]
-  ]
 ]
 */
 
