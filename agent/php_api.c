@@ -162,7 +162,7 @@ PHP_FUNCTION(newrelic_notice_error) {
   if (exc) {
     if (NR_SUCCESS
         == nr_php_error_record_exception(
-            NRPRG(txn), exc, priority, "Noticed exception ", NULL TSRMLS_CC)) {
+            NRPRG(txn), exc, priority, true, "Noticed exception ", NULL TSRMLS_CC)) {
       RETURN_TRUE;
     } else {
       nrl_debug(NRL_API, "newrelic_notice_error: invalid exception argument");
@@ -174,7 +174,7 @@ PHP_FUNCTION(newrelic_notice_error) {
     char* buf = nr_strndup(errormsgstr, errormsglen);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
 
-    nr_txn_record_error(NRPRG(txn), priority, buf, errclass, stack_json);
+    nr_txn_record_error(NRPRG(txn), priority, true, buf, errclass, stack_json);
 
     nr_free(buf);
     nr_free(stack_json);

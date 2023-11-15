@@ -137,6 +137,7 @@ extern void nr_php_error_install_exception_handler(TSRMLS_D);
 extern nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                                  zval* exception,
                                                  int priority,
+                                                 bool add_to_segment,
                                                  const char* prefix,
                                                  zend_llist* filters TSRMLS_DC);
 

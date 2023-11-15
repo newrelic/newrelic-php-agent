@@ -1397,7 +1397,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
        * they'll see with and without an exception handler installed.
        */
       nr_php_error_record_exception(
-          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
           "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
     }
 

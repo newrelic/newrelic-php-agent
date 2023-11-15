@@ -1301,43 +1301,43 @@ static void test_record_error(void) {
    * Nothing to test after these calls since no txn is provided.
    * However, we want to ensure that the stack parameter is freed.
    */
-  nr_txn_record_error(NULL, 0, NULL, NULL, NULL);
-  nr_txn_record_error(0, 2, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(NULL, 0, true, NULL, NULL, NULL);
+  nr_txn_record_error(0, 2, true, "msg", "class", "[\"A\",\"B\"]");
 
   txn->options.err_enabled = 0;
-  nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error no err_enabled", 0 == txn->error,
                     "txn->error=%p", txn->error);
   txn->options.err_enabled = 1;
 
   txn->status.recording = 0;
-  nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error no recording", 0 == txn->error,
                     "txn->error=%p", txn->error);
   txn->status.recording = 1;
 
-  nr_txn_record_error(txn, 2, 0, "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, 0, "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error no errmsg", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
-  nr_txn_record_error(txn, 2, "msg", 0, "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", 0, "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error no class", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
-  nr_txn_record_error(txn, 2, "", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error empty errmsg", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
-  nr_txn_record_error(txn, 2, "msg", "", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", "", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error empty class", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
-  nr_txn_record_error(txn, 2, "msg", "class", 0);
+  nr_txn_record_error(txn, 2, true, "msg", "class", 0);
   tlib_pass_if_true("nr_txn_record_error no stack", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
   /* Success when no previous error */
-  nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("no previous error", 0 != txn->error, "txn->error=%p",
                     txn->error);
   tlib_pass_if_true("no previous error", 2 == nr_error_priority(txn->error),
@@ -1349,7 +1349,7 @@ static void test_record_error(void) {
                     NRSAFESTR(nr_error_get_message(txn->error)));
 
   /* Failure with lower priority error than existing */
-  nr_txn_record_error(txn, 1, "newmsg", "newclass", "[]");
+  nr_txn_record_error(txn, 1, true, "newmsg", "newclass", "[]");
   tlib_pass_if_true("lower priority", 0 != txn->error, "txn->error=%p",
                     txn->error);
   tlib_pass_if_true("lower priority", 2 == nr_error_priority(txn->error),
@@ -1361,7 +1361,7 @@ static void test_record_error(void) {
                     NRSAFESTR(nr_error_get_message(txn->error)));
 
   /* Replace error when higher priority than existing */
-  nr_txn_record_error(txn, 3, "newmsg", "newclass", "[\"C\",\"D\"]");
+  nr_txn_record_error(txn, 3, true, "newmsg", "newclass", "[\"C\",\"D\"]");
   tlib_pass_if_true("higher priority", 0 != txn->error, "txn->error=%p",
                     txn->error);
   tlib_pass_if_true("higher priority", 3 == nr_error_priority(txn->error),
@@ -1373,7 +1373,7 @@ static void test_record_error(void) {
                     NRSAFESTR(nr_error_get_message(txn->error)));
 
   txn->high_security = 1;
-  nr_txn_record_error(txn, 4, "don't show me", "high_security",
+  nr_txn_record_error(txn, 4, true, "don't show me", "high_security",
                       "[\"C\",\"D\"]");
   tlib_pass_if_true("high security error message stripped", 0 != txn->error,
                     "txn->error=%p", txn->error);
@@ -1397,7 +1397,7 @@ static void test_record_error(void) {
   txn->distributed_trace = nr_distributed_trace_create();
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
 
-  nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   tlib_pass_if_null("nr_txn_record_error no span_id for error", txn->error);
   txn->options.distributed_tracing_enabled = 0;
   txn->options.span_events_enabled = 0;
@@ -1419,7 +1419,7 @@ static void test_record_error(void) {
    */
   nr_error_destroy(&txn->error);
   txn->error = 0;
-  nr_txn_record_error(txn, 3, "oldmsg", "oldclass", "[\"C\",\"D\"]");
+  nr_txn_record_error(txn, 3, true, "oldmsg", "oldclass", "[\"C\",\"D\"]");
   /* Change the environment to create an error condition.  */
   txn->options.distributed_tracing_enabled = 1;
   txn->options.span_events_enabled = 1;
@@ -1427,7 +1427,7 @@ static void test_record_error(void) {
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   /*Even though it is higher priority, it should not replace the existing error
    * because of the error condition.*/
-  nr_txn_record_error(txn, 5, "newmsg", "newclass", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 5, true, "newmsg", "newclass", "[\"A\",\"B\"]");
   tlib_pass_if_not_null("nr_txn_record_error previous error is not destroyed",
                         txn->error);
   tlib_pass_if_not_null("previous error is not destroyed", txn->error);
@@ -1972,7 +1972,7 @@ static nrtxn_t* create_full_txn_and_reset(nrapp_t* app) {
   /*
    * Add an Error
    */
-  nr_txn_record_error(txn, 1, "my_errmsg", "my_errclass",
+  nr_txn_record_error(txn, 1, true, "my_errmsg", "my_errclass",
                       "[\"Zink called on line 123 of script.php\","
                       "\"Zonk called on line 456 of hack.php\"]");
   tlib_pass_if_true("error added", 0 != txn->error, "txn->error=%p",
@@ -4641,7 +4641,7 @@ static void test_txn_dt_cross_agent_testcase(nrapp_t* app,
   if (raises_exception) {
     txn->options.err_enabled = 1;
     txn->error = NULL;
-    nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+    nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   }
 
   /*
@@ -4708,7 +4708,7 @@ static void test_txn_dt_cross_agent_testcase(nrapp_t* app,
     nrobj_t* data;
     nr_analytics_event_t* error_event_analytics;
 
-    nr_txn_record_error(txn, 100, "error", "class", "{}");
+    nr_txn_record_error(txn, 100, true, "error", "class", "{}");
     error_event_analytics = nr_error_to_event(txn);
     data = nro_create_from_json(nr_analytics_event_json(error_event_analytics));
     error_event = nro_copy(nro_get_array_hash(data, 1, NULL));
@@ -4904,7 +4904,7 @@ static void test_txn_trace_context_cross_agent_testcase(nrapp_t* app,
   if (raises_exception) {
     txn->options.err_enabled = 1;
     txn->error = NULL;
-    nr_txn_record_error(txn, 2, "msg", "class", "[\"A\",\"B\"]");
+    nr_txn_record_error(txn, 2, true, "msg", "class", "[\"A\",\"B\"]");
   }
 
   /*
@@ -4995,7 +4995,7 @@ static void test_txn_trace_context_cross_agent_testcase(nrapp_t* app,
     nrobj_t* error_data;
     nr_analytics_event_t* error_event_analytics;
 
-    nr_txn_record_error(txn, 100, "error", "class", "{}");
+    nr_txn_record_error(txn, 100, true, "error", "class", "{}");
     error_event_analytics = nr_error_to_event(txn);
     error_data
         = nro_create_from_json(nr_analytics_event_json(error_event_analytics));
@@ -5588,7 +5588,7 @@ static void test_allow_raw_messages_lasp(void) {
   nro_set_hash_boolean(security_policies, "allow_raw_exception_messages", true);
   nr_txn_enforce_security_settings(&txn->options, connect_reply,
                                    security_policies);
-  nr_txn_record_error(txn, 2, "", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 2, true, "", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("nr_txn_record_error empty errmsg", 0 == txn->error,
                     "txn->error=%p", txn->error);
 
@@ -5600,7 +5600,7 @@ static void test_allow_raw_messages_lasp(void) {
                        false);
   nr_txn_enforce_security_settings(&txn->options, connect_reply,
                                    security_policies);
-  nr_txn_record_error(txn, 4, "don't show", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 4, true, "don't show", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("security setting error message stripped", 0 != txn->error,
                     "txn->error=%p", txn->error);
   tlib_pass_if_true("security setting error message stripped",
@@ -5617,7 +5617,7 @@ static void test_allow_raw_messages_lasp(void) {
   nro_set_hash_boolean(security_policies, "allow_raw_exception_messages", true);
   nr_txn_enforce_security_settings(&txn->options, connect_reply,
                                    security_policies);
-  nr_txn_record_error(txn, 4, "don't show", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 4, true, "don't show", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("security setting error message stripped", 0 != txn->error,
                     "txn->error=%p", txn->error);
   tlib_pass_if_true("security setting error message stripped",
@@ -5635,7 +5635,7 @@ static void test_allow_raw_messages_lasp(void) {
                        false);
   nr_txn_enforce_security_settings(&txn->options, connect_reply,
                                    security_policies);
-  nr_txn_record_error(txn, 4, "don't show", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 4, true, "don't show", "class", "[\"A\",\"B\"]");
   tlib_pass_if_true("security setting error message stripped", 0 != txn->error,
                     "txn->error=%p", txn->error);
   tlib_pass_if_true("security setting error message stripped",
@@ -8009,12 +8009,12 @@ static void test_segment_record_error(void) {
 
   /* No error attributes added if error collection isn't enabled */
   txn->options.err_enabled = 0;
-  nr_txn_record_error(txn, 1, "msg", "class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 1, true, "msg", "class", "[\"A\",\"B\"]");
   tlib_pass_if_null("No segment error created", segment->error);
   txn->options.err_enabled = 1;
 
   /* Normal operation */
-  nr_txn_record_error(txn, 1, "error message", "error class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 1, true, "error message", "error class", "[\"A\",\"B\"]");
 
   tlib_pass_if_not_null("Txn error event created", txn->error);
   tlib_pass_if_not_null("Segment error created", segment->error);
@@ -8030,7 +8030,7 @@ static void test_segment_record_error(void) {
                          nr_error_get_klass(txn->error));
 
   /* Multiple errors on the same segment */
-  nr_txn_record_error(txn, 1, "error message 2", "error class 2",
+  nr_txn_record_error(txn, 1, true, "error message 2", "error class 2",
                       "[\"A\",\"B\"]");
 
   tlib_pass_if_str_equal("Segment error.message overwritten", "error message 2",
@@ -8049,7 +8049,7 @@ static void test_segment_record_error(void) {
 
   /* High_security */
   txn->high_security = 1;
-  nr_txn_record_error(txn, 1, "Highly secure message", "error class",
+  nr_txn_record_error(txn, 1, true, "Highly secure message", "error class",
                       "[\"A\",\"B\"]");
   tlib_pass_if_not_null("Segment error created", segment->error);
   tlib_pass_if_str_equal("Secure error.message",
@@ -8067,7 +8067,7 @@ static void test_segment_record_error(void) {
 
   /* allow_raw_exception_messages */
   txn->options.allow_raw_exception_messages = 0;
-  nr_txn_record_error(txn, 1, "Another highly secure message",
+  nr_txn_record_error(txn, 1, true, "Another highly secure message",
                       "another error class", "[\"A\",\"B\"]");
   tlib_pass_if_not_null("Segment error created", segment->error);
   tlib_pass_if_str_equal("Secure error message",

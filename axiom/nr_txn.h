@@ -468,6 +468,7 @@ extern nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority);
 
 extern void nr_txn_record_error(nrtxn_t* txn,
                                 int priority,
+                                bool add_to_segment,
                                 const char* errmsg,
                                 const char* errclass,
                                 const char* stacktrace_json);

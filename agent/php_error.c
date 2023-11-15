@@ -273,7 +273,7 @@ PHP_FUNCTION(newrelic_exception_handler) {
 
   nr_php_error_record_exception(
       NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
-      "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+      true, "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   /*
    * Finally, we need to generate an E_ERROR to match what PHP would have done
    * if this handler wasn't installed. Happily, PHP exposes an API function
@@ -603,8 +603,8 @@ void nr_php_error_cb(int type,
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = get_error_type_string(type);
 
-    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), msg,
-                        errclass, stack_json);
+    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
+                        msg, errclass, stack_json);
 
     /*
      * Error Fingerprinting Callback
@@ -645,6 +645,7 @@ void nr_php_error_cb(int type,
 nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                           zval* exception,
                                           int priority,
+                                          bool add_to_segment,
                                           const char* prefix,
                                           zend_llist* filters TSRMLS_DC) {
   zend_class_entry* ce;
@@ -715,7 +716,9 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                            stack_json);
   }
 
-  nr_txn_record_error(NRPRG(txn), priority, error_message, klass, stack_json);
+  nr_txn_record_error(NRPRG(txn), priority,
+                      add_to_segment,
+                      error_message, klass, stack_json);
 
   nr_free(error_message);
   nr_free(file);

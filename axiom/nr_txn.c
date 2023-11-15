@@ -1549,6 +1549,7 @@ nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority) {
 
 void nr_txn_record_error(nrtxn_t* txn,
                          int priority,
+                         bool add_to_segment,
                          const char* errmsg,
                          const char* errclass,
                          const char* stacktrace_json) {
@@ -1594,7 +1595,7 @@ void nr_txn_record_error(nrtxn_t* txn,
 
     current_segment = nr_txn_get_current_segment(txn, NULL);
 
-    if (current_segment) {
+    if (current_segment && add_to_segment) {
       nr_segment_set_error(current_segment, errmsg, errclass);
       nrl_verbosedebug(NRL_TXN,
                        "recording segment error: msg='%.48s' cls='%.48s'"
