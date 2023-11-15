@@ -1748,24 +1748,6 @@ end:
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
 
-void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
-  /*
-   * The issue is, with OAPI, only the most recent exception is exposed in the
-   * error handler. If function `a` calls function `b` calls function `c` calls
-   * function `d` which throws an exception that `c` catches and that `c' then
-   * throws an exception that `b` catches but then b throws an exception that is
-   * uncaught, only the latest exception thrown by `b` gets passed to the error
-   * handler.
-   *
-   * To solve this, this function gets called with every exception regardless of
-   * whether it is caught or not.
-   */
-
-  if (nrunlikely(NULL == exception || NULL == exception_this)) {
-    return;
-  }
-}
-
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data->prev_execute_data) {

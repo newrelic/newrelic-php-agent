@@ -108,6 +108,4 @@ extern void nr_framework_create_metric(TSRMLS_D);
 
 extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
 
-extern void php_observer_handle_exception_hook(zval* exception, zval* exception_this);
-
 #endif /* PHP_EXECUTE_HDR */

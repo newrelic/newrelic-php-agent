@@ -89,8 +89,6 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 
-static void (*original_zend_throw_exception_hook)(zend_object* ex);
-
 void nr_php_observer_minit() {
   /*
    * Register the Observer API handlers.
@@ -99,41 +97,11 @@ void nr_php_observer_minit() {
   zend_observer_error_register(nr_php_error_cb);
 
   /*
-   * Overwrite the exception_hook.  Note: This ONLY notifies when an exception
-   * is thrown.  It gives no indication if that exception was subsequently
-   * caught or not.
-   */
-  original_zend_throw_exception_hook = zend_throw_exception_hook;
-  zend_throw_exception_hook = nr_throw_exception_hook;
-  /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
    * execute hook.  orig_execute is called various ways in various places, so
    * turn it into a no_op when using OAPI.
    */
   NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
-}
-
-void nr_throw_exception_hook(zend_object* exception) {
-  zval new_exception;
-  zval* exception_zval = NULL;
-
-  /*
-   * Don't track the exception if we don't have a valid txn.
-   */
-  if (NULL != NRPRG(txn)) {
-    /*
-     * Since PHP 7, EG(exception) is stored as a zend_object, and is therefore
-     * only wrapped in a zval when it actually needs to be.
-     */
-    ZVAL_OBJ(&new_exception, exception);
-    exception_zval = &new_exception;
-
-    php_observer_handle_exception_hook(exception_zval,
-                                       &(EG(current_execute_data)->This));
-  }
-  if (original_zend_throw_exception_hook != NULL) {
-    original_zend_throw_exception_hook(exception);
-  }
 }
 
 #endif
