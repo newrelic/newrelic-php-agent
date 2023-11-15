@@ -53,7 +53,7 @@ extern nr_php_packages_t* nr_php_packages_create(void);
 
 /*
  * Purpose : Add new php package to collection. If a package with the same key
- *           but different value is added, then the newer value will be kept. 
+ *           but different value is added, then the newer value will be kept.
  *           Regardless of whether or not there is a name collision,
  *           the caller is not responsible for destroying the package
  *
@@ -121,7 +121,8 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
  *
  * Params  : 1. A pointer to the package
  *
- * Returns : An allocated string containing the JSON representation of the package.  Caller takes ownership of this string.
+ * Returns : An allocated string containing the JSON representation of the
+ *           package.  Caller takes ownership of this string.
  */
 extern char* nr_php_package_to_json(nr_php_package_t* package);
 
@@ -142,7 +143,8 @@ extern bool nr_php_packages_to_json_buffer(nr_php_packages_t* hashmap,
  *
  * Params  : 1. A pointer to nr_php_packages_t
  *
- * Returns : An allocated string containing the JSON representation of the packages collection.  Caller takes ownership of this string.
+ * Returns : An allocated string containing the JSON representation of the
+ *           packages collection.  Caller takes ownership of this string.
  */
 extern char* nr_php_packages_to_json(nr_php_packages_t* h);
 

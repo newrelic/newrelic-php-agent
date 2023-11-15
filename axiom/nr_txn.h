@@ -1158,7 +1158,7 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
  *
  */
 void nr_txn_add_php_package(nrtxn_t* txn,
-                                   char* package_name,
-                                   char* package_version);
+                            char* package_name,
+                            char* package_version);
 
 #endif /* NR_TXN_HDR */
