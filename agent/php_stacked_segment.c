@@ -34,13 +34,6 @@ nr_segment_t* nr_php_stacked_segment_init(nr_segment_t* stacked TSRMLS_DC) {
   if (NULL == stacked) {
     return NULL;
   }
-
-  stacked->metadata = nr_calloc(1, sizeof(nr_php_execute_metadata_t));
-  if (NULL == stacked->metadata) {
-    nr_free(stacked);
-    return NULL;
-  }
-
 #endif
 
   stacked->txn = NRPRG(txn);
@@ -66,8 +59,6 @@ void nr_php_stacked_segment_deinit(nr_segment_t* stacked TSRMLS_DC) {
   /*
    * This is allocated differently for OAPI and hence needs to be freed.
    */
-  nr_php_execute_metadata_release(stacked->metadata);
-  nr_free(stacked->metadata);
   nr_free(stacked);
 #endif
 }
@@ -79,37 +70,11 @@ void nr_php_stacked_segment_unwind(TSRMLS_D) {
 
   while (NRTXN(force_current_segment)
          && (NRTXN(segment_root) != NRTXN(force_current_segment))) {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    /*
-     * With OAPI, we need to gracefully close off the stacked segments with
-     * their naming contexts.
-     */
-    nr_php_observer_segment_end(NRPRG(uncaught_exception));
-
-#else
     nr_segment_t* stacked = NRTXN(force_current_segment);
     nr_segment_t* segment
         = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_segment_end(&segment);
-
-#endif
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  /*
-   * If OAPI we need to record the uncaught exception (if it exists) on the root
-   * segment as well.
-   */
-  if (NULL != NRPRG(uncaught_exception)) {
-    if (NRTXN(segment_root) == NRTXN(force_current_segment)) {
-      nr_php_error_record_exception_segment(
-          NRPRG(txn), NRPRG(uncaught_exception),
-          &NRPRG(exception_filters) TSRMLS_CC);
-    }
-  }
-  php_observer_clear_uncaught_exception_globals();
-#endif
 }
 
 nr_segment_t* nr_php_stacked_segment_move_to_heap(
@@ -141,8 +106,6 @@ nr_segment_t* nr_php_stacked_segment_move_to_heap(
   /*
    * This is allocated differently for OAPI and hence needs to be freed.
    */
-  nr_php_execute_metadata_release(stacked->metadata);
-  nr_free(stacked->metadata);
   nr_free(stacked);
 #endif
 

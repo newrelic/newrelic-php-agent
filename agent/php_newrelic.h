@@ -465,17 +465,6 @@ int php_cur_stack_depth; /* Total current depth of PHP stack, measured in PHP
 
 nrphpcufafn_t
     cufa_callback; /* The current call_user_func_array callback, if any */
-
-/*
- * The exception happens whether the exception was caught or not.  Keep track of
- * the execute_data frame to determine if it was uncaught and so we can compare
- * to determine if we need to propagate the exception or not. */
-zval* uncaught_exception; /* The last exception that occurred. Does need to be
-                             freed. */
-zval* uncaught_exeption_execute_data_this; /* Keep track of the execute data
-                                              that the last exception occurred
-                                              on. Does not need to be freed. */
-
 /*
  * We instrument database connection constructors and store the instance
  * information in a hash keyed by a string containing the connection resource

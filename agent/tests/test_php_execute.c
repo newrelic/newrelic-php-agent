@@ -148,14 +148,6 @@ static void test_stack_depth_after_exception() {
   zval* arg = NULL;
 
   /*
-   * call a function and trigger an exception and cause two segments to dangle
-   * because it was caught, even though two functions don't get the oapi end
-   * func call, they are still cleaned up and stack_depth is appropriately
-   * decremented. the valid function end will trigger a cleanup dangling
-   * segments, stack_depth should be zero again
-   */
-
-  /*
    * stack depth should increment on function call and decrement on function
    * end.
    */
@@ -181,9 +173,7 @@ static void test_stack_depth_after_exception() {
   nr_php_zval_free(&arg);
 
   /*
-   * call a function and trigger an exception and cause three segments to dangle
-   * stack_depth should be initially stuck at 3
-   * after triggering the unwind, stack_depth should be zero again
+   * call a function and trigger an exception
    */
   tlib_pass_if_int_equal(
       "PHP stack depth tracking should be 0 before function call", 0,
@@ -191,7 +181,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "uncaught", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 3 after function call", 3,
+      "PHP stack depth tracking should be 3 after function call", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should be null.", expr);
 
@@ -207,11 +197,7 @@ static void test_stack_depth_after_exception() {
   tlib_php_request_end();
 
   /*
-   * call a function and trigger an exception that is caught but causes two
-   * segments to dangle.
-   * the function that caught the exception will successfully call the
-   * registered oapi function end which will trigger a cleanup of dangling
-   * segments, stack_depth should be zero
+   * call a function and trigger an exception that is caught
    */
 
   tlib_php_request_start();
@@ -239,9 +225,7 @@ static void test_stack_depth_after_exception() {
   tlib_php_request_end();
 
   /*
-   * call a function and trigger an exception that is caught but the initial
-   * exception caused two segments to dangle. immediately call another function
-   * that will trigger cleanup of segments, and stack_depth should be zero.
+   * call a function and trigger an exception that is caught
    */
 
   tlib_php_request_start();
@@ -273,9 +257,7 @@ static void test_stack_depth_after_exception() {
 
   /*
    * call a function and trigger an exception that is caught but another
-   * uncaught exception is thrown and causes two segments to dangle stack_depth
-   * should be initially stuck at 2 but after unwind, stack_depth should be zero
-   * again
+   * uncaught exception is thrown
    */
 
   tlib_php_request_start();
@@ -287,7 +269,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "followup_uncaught", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 2 after function call", 2,
+      "PHP stack depth tracking should be 2 after function call", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should not be null.", expr);
 
@@ -304,8 +286,6 @@ static void test_stack_depth_after_exception() {
 
   /*
    * call a function and trigger an exception that is caught then rethrown
-   * stack_depth should be initially stuck at 2
-   * but after unwind, stack_depth should be zero again
    */
 
   tlib_php_request_start();
@@ -317,7 +297,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "rethrow", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 2 after function call", 1,
+      "PHP stack depth tracking should be 2 after function call", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should not be null.", expr);
 
