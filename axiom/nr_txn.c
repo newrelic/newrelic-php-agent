@@ -3474,10 +3474,6 @@ void nr_txn_add_php_package(nrtxn_t* txn,
     return;
   }
 
-  if (nr_strempty(package_version)) {
-    return;
-  }
-
   p = nr_php_package_create(package_name, package_version);
   nr_php_packages_add_package(txn->php_packages, p);
 }
