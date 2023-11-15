@@ -1,0 +1,1808 @@
+
+# PHP=8.2
+running tests/integration/api/add_custom_parameter/test_bad_input.php
+running tests/integration/api/add_custom_parameter/test_key_conversions.php
+running tests/integration/api/add_custom_parameter/test_span_event.php
+running tests/integration/api/add_custom_parameter/test_span_event.php5.php
+running tests/integration/api/add_custom_parameter/test_value_conversions.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_disabled.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter_logging_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter_logging_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_invalid.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_parameters.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_parameters.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off_logging_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off_logging_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_overwrite.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_overwrite.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_te_off.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_te_off.php5.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_types.php
+running tests/integration/api/add_custom_span_parameter/test_span_event_parameter_types.php5.php
+running tests/integration/api/add_custom_tracer/test_happy.php
+running tests/integration/api/add_custom_tracer/test_not_user_function.php
+running tests/integration/api/add_custom_tracer/test_short_segments.php
+running tests/integration/api/custom_metric/test_bad_input.php
+running tests/integration/api/custom_metric/test_bad_input.php8.php
+running tests/integration/api/custom_metric/test_happy.php
+running tests/integration/api/custom_metric/test_happy_logging_off.php
+running tests/integration/api/datastore/test_all_parameters_no_children.php
+running tests/integration/api/datastore/test_all_parameters_nosql.php
+running tests/integration/api/datastore/test_all_parameters_sql_no_query.php
+running tests/integration/api/datastore/test_all_parameters_sql_obfuscated.php
+running tests/integration/api/datastore/test_all_parameters_sql_obfuscated_logging_off.php
+running tests/integration/api/datastore/test_all_parameters_sql_raw.php
+running tests/integration/api/datastore/test_basic.php
+running tests/integration/api/datastore/test_invalid_parameters.php
+running tests/integration/api/datastore/test_recording_disabled.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_after_create.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace_noarg.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace_noarg.php8.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_intrinsics.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_no_txn.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_version_0.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_version_1.php
+running tests/integration/api/distributed_trace/newrelic/test_accept_version_2.php
+running tests/integration/api/distributed_trace/newrelic/test_create_intrinsics.php
+running tests/integration/api/distributed_trace/newrelic/test_create_payload_span_events_disabled.php
+running tests/integration/api/distributed_trace/newrelic/test_create_transaction_off_span_on_cat_off.php
+running tests/integration/api/distributed_trace/newrelic/test_create_transaction_off_span_on_cat_on.php
+running tests/integration/api/distributed_trace/newrelic/test_disabled_accept.php
+running tests/integration/api/distributed_trace/newrelic/test_disabled_create.php
+running tests/integration/api/distributed_trace/newrelic/test_enabled.php
+running tests/integration/api/distributed_trace/newrelic/test_keep_span_with_payload.php
+running tests/integration/api/distributed_trace/newrelic/test_keep_span_with_payload.php5.php
+running tests/integration/api/distributed_trace/newrelic/test_recording_disabled.php
+running tests/integration/api/enable_params/test_disable_1.php
+running tests/integration/api/enable_params/test_disable_2.php
+running tests/integration/api/enable_params/test_enable_1.php
+running tests/integration/api/enable_params/test_enable_2.php
+running tests/integration/api/enable_params/test_enable_3.php
+running tests/integration/api/enable_params/test_enable_4.php
+running tests/integration/api/enable_params/test_enable_5.php
+running tests/integration/api/enable_params/test_enable_6.php
+running tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php
+running tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php7.php
+running tests/integration/api/error_group_callback/test_error_group_callback_bad_params.php
+running tests/integration/api/error_group_callback/test_error_group_callback_bad_return_null.php
+running tests/integration/api/error_group_callback/test_error_group_callback_bad_return_num.php
+running tests/integration/api/error_group_callback/test_error_group_callback_clobber.php
+running tests/integration/api/error_group_callback/test_error_group_callback_empty_callback.php
+running tests/integration/api/error_group_callback/test_error_group_callback_error_non_web.php
+running tests/integration/api/error_group_callback/test_error_group_callback_error_web.php
+running tests/integration/api/error_group_callback/test_error_group_callback_exception_non_web.php
+running tests/integration/api/error_group_callback/test_error_group_callback_exception_web.php
+running tests/integration/api/error_group_callback/test_error_group_callback_max_string_len.php
+running tests/integration/api/ignore_transaction/test_ignore.php
+running tests/integration/api/internal/test_get_metric_table.php
+running tests/integration/api/internal/test_get_request_metadata_cat.php
+running tests/integration/api/internal/test_get_request_metadata_dt.php
+running tests/integration/api/metadata/test_linking_metadata_dt.php
+running tests/integration/api/metadata/test_linking_metadata_dt_logging_off.php
+running tests/integration/api/metadata/test_linking_metadata_invalid.php
+running tests/integration/api/metadata/test_linking_metadata_invalid.php8.php
+running tests/integration/api/metadata/test_linking_metadata_no_dt.php
+running tests/integration/api/metadata/test_trace_metadata_dt.php
+running tests/integration/api/metadata/test_trace_metadata_invalid.php
+running tests/integration/api/metadata/test_trace_metadata_invalid.php8.php
+running tests/integration/api/metadata/test_trace_metadata_no_dt.php
+running tests/integration/api/notice_error/test_bad_inputs.php
+running tests/integration/api/notice_error/test_errors_not_filtered.php
+running tests/integration/api/notice_error/test_exceptions_not_filtered.php
+running tests/integration/api/notice_error/test_last_error_wins.php
+running tests/integration/api/notice_error/test_not_recording.php
+running tests/integration/api/notice_error/test_prioritize_api.php
+running tests/integration/api/notice_error/test_priority.php
+running tests/integration/api/notice_error/test_uncaught_is_ultimate.php
+running tests/integration/api/other/test_end_transaction_nested.php
+running tests/integration/api/other/test_ignore_apdex.php
+running tests/integration/api/other/test_is_sampled_cancelled_txn.php
+running tests/integration/api/other/test_is_sampled_dt_disabled.php
+running tests/integration/api/other/test_is_sampled_dt_enabled.php
+running tests/integration/api/other/test_is_sampled_extra_param.php
+running tests/integration/api/other/test_is_sampled_extra_param.php8.php
+running tests/integration/api/other/test_set_user_attributes_happy.php
+running tests/integration/api/other/test_start_and_end_transaction.php
+running tests/integration/api/record_custom_event/test_NAN.php
+running tests/integration/api/record_custom_event/test_attributes_exclude.php
+running tests/integration/api/record_custom_event/test_bad_event_type.php
+running tests/integration/api/record_custom_event/test_bad_keys.php
+running tests/integration/api/record_custom_event/test_custom_insights_events_disabled.php
+running tests/integration/api/record_custom_event/test_custom_insights_events_enabled.php
+running tests/integration/api/record_custom_event/test_empty_array.php
+running tests/integration/api/record_custom_event/test_empty_strings_in_array.php
+running tests/integration/api/record_custom_event/test_end_of_transaction.php
+running tests/integration/api/record_custom_event/test_happy_path.php
+running tests/integration/api/record_custom_event/test_huge_parameter_list.php
+running tests/integration/api/record_custom_event/test_long_key.php
+running tests/integration/api/record_custom_event/test_long_type.php
+running tests/integration/api/record_custom_event/test_long_value.php
+running tests/integration/api/record_custom_event/test_multiple_events.php
+running tests/integration/api/record_custom_event/test_one_parameter.php
+running tests/integration/api/record_custom_event/test_value_datatypes.php
+running tests/integration/api/record_custom_event/test_value_nested_array.php
+running tests/integration/api/rum/test_bad_input_1.php
+running tests/integration/api/rum/test_bad_input_2.php
+running tests/integration/api/rum/test_disable_autorum.php
+running tests/integration/api/rum/test_footer_1.php
+running tests/integration/api/rum/test_footer_2.php
+running tests/integration/api/rum/test_footer_3.php
+running tests/integration/api/rum/test_footer_4.php
+running tests/integration/api/rum/test_footer_5.php
+running tests/integration/api/rum/test_header_1.php
+running tests/integration/api/rum/test_header_2.php
+running tests/integration/api/rum/test_header_3.php
+running tests/integration/api/rum/test_header_4.php
+running tests/integration/api/rum/test_too_many_args_1.php
+running tests/integration/api/rum/test_too_many_args_2.php
+running tests/integration/api/set_appname/test_already_ended.php
+running tests/integration/api/set_appname/test_appname_license.php
+running tests/integration/api/set_appname/test_appname_switch_license.php
+running tests/integration/api/set_appname/test_appname_switch_license_lasp.php
+running tests/integration/api/set_appname/test_bad_params.php
+running tests/integration/api/set_appname/test_bad_params.php8.php
+running tests/integration/api/set_appname/test_no_license.php
+running tests/integration/api/set_appname/test_transmit_false.php
+running tests/integration/api/set_appname/test_transmit_int.php
+running tests/integration/api/set_appname/test_transmit_true.php
+running tests/integration/api/set_user_id/test_set_user_id.php
+running tests/integration/api/set_user_id/test_set_user_id_empty_string.php
+running tests/integration/api/set_user_id/test_set_user_id_error.php
+running tests/integration/api/set_user_id/test_set_user_id_exceeds_maxlen.php
+running tests/integration/api/set_user_id/test_set_user_id_exception.php
+running tests/integration/api/set_user_id/test_set_user_id_noarg.php
+running tests/integration/api/set_user_id/test_set_user_id_non_string.php
+running tests/integration/api/set_user_id/test_set_user_id_null.php
+running tests/integration/attributes/test_disabled.php
+running tests/integration/attributes/test_disabled_all.php
+running tests/integration/attributes/test_disabled_browser.php
+running tests/integration/attributes/test_disabled_old.php
+running tests/integration/attributes/test_empty_request.php
+running tests/integration/attributes/test_enabled.php
+running tests/integration/attributes/test_enabled_browser.php
+running tests/integration/attributes/test_enabled_browser_old.php
+running tests/integration/attributes/test_filtering_1.php
+running tests/integration/attributes/test_filtering_10.php
+running tests/integration/attributes/test_filtering_11.php
+running tests/integration/attributes/test_filtering_12.php
+running tests/integration/attributes/test_filtering_2.php
+running tests/integration/attributes/test_filtering_3.php
+running tests/integration/attributes/test_filtering_4.php
+running tests/integration/attributes/test_filtering_5.php
+running tests/integration/attributes/test_filtering_6.php
+running tests/integration/attributes/test_filtering_7.php
+running tests/integration/attributes/test_filtering_8.php
+running tests/integration/attributes/test_filtering_9.php
+running tests/integration/attributes/test_precedence.php
+running tests/integration/attributes/test_precedence_browser.php
+running tests/integration/attributes/test_response_headers.php
+running tests/integration/attributes/test_response_ini.php
+running tests/integration/attributes/test_response_ini_set.php
+running tests/integration/attributes/test_response_whitespace.php
+running tests/integration/attributes/test_transaction_background.php
+running tests/integration/attributes/test_transaction_closure_clm.php
+running tests/integration/attributes/test_transaction_closure_clm_off.php
+running tests/integration/attributes/test_transaction_namespace2_clm.php
+running tests/integration/attributes/test_transaction_namespace2_clm_off.php
+running tests/integration/attributes/test_transaction_namespace_clm.php
+running tests/integration/attributes/test_transaction_namespace_clm_off.php
+running tests/integration/attributes/test_transaction_namespace_len_clm.php
+running tests/integration/attributes/test_transaction_namespace_len_clm_off.php
+running tests/integration/attributes/test_transaction_nested_user_functions_clm.php
+running tests/integration/attributes/test_transaction_nested_user_functions_clm_off.php
+running tests/integration/attributes/test_transaction_non_web.php
+running tests/integration/attributes/test_transaction_non_web_clm.php
+running tests/integration/attributes/test_transaction_non_web_clm_off.php
+running tests/integration/attributes/test_transaction_web.php
+running tests/integration/attributes/test_transaction_web_clm.php
+running tests/integration/attributes/test_transaction_web_clm_off.php
+running tests/integration/basic/test_call_user_func_array_0.php
+running tests/integration/basic/test_dl.php
+running tests/integration/basic/test_internal_function.php
+running tests/integration/basic/test_output_buffer.php
+running tests/integration/basic/test_output_buffer_logging_off.php
+running tests/integration/distributed_tracing/newrelic/test_error_intrinsic.php
+running tests/integration/distributed_tracing/newrelic/test_error_intrinsic_error.php
+running tests/integration/distributed_tracing/newrelic/test_error_intrinsic_exception.php
+running tests/integration/distributed_tracing/newrelic/test_inbound_payload_rejects_if_no_tx_or_id.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_disabled_errors.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_disabled_txns.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_enabled_errors.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_enabled_txns.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_notset_errors.php
+running tests/integration/distributed_tracing/newrelic/test_intrinsics_notset_txns.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_exception.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_createBeforeAccept.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_majorVersion.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_multiple.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_multiple_logging_off.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_null.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount_httpsafe.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount_logging_off.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_parseexception.php
+running tests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_success.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_empty_array.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_happy.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_happy_logging_off.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_nonref.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_wrong_arg_type.php
+running tests/integration/distributed_tracing/w3c/test_insert_dt_headers_wrong_arg_type.php8.php
+running tests/integration/distributed_tracing/w3c/test_invalid_inbound.php
+running tests/integration/distributed_tracing/w3c/test_valid_inbound_headers.php
+running tests/integration/distributed_tracing/w3c/test_valid_inbound_headers_logging_off.php
+running tests/integration/distributed_tracing/w3c/test_valid_inbound_headers_parsed_key.php
+running tests/integration/distributed_tracing/w3c/test_valid_inbound_no_sampled.php
+running tests/integration/distributed_tracing/w3c/test_valid_inbound_non_newrelic.php
+running tests/integration/distributed_tracing/w3c/test_valid_no_nr_state.php
+running tests/integration/errors/test_E_COMPILE_ERROR.zend.php
+running tests/integration/errors/test_E_COMPILE_WARNING.php
+running tests/integration/errors/test_E_COMPILE_WARNING.php8.php
+running tests/integration/errors/test_E_DEPRECATED_1.php
+running tests/integration/errors/test_E_DEPRECATED_2.php5.php
+running tests/integration/errors/test_E_DEPRECATED_2.php7.php
+running tests/integration/errors/test_E_DEPRECATED_2.php8.php
+running tests/integration/errors/test_E_DEPRECATED_2.php81.php
+running tests/integration/errors/test_E_DEPRECATED_payload1.php
+running tests/integration/errors/test_E_DEPRECATED_payload2.php
+running tests/integration/errors/test_E_DEPRECATED_payload3.php
+running tests/integration/errors/test_E_ERROR.php5.php
+running tests/integration/errors/test_E_ERROR.php7.0.0.php
+running tests/integration/errors/test_E_ERROR.php7.0.1.php
+running tests/integration/errors/test_E_ERROR.php7.4.php
+running tests/integration/errors/test_E_NOTICE.php
+running tests/integration/errors/test_E_NOTICE.php8.php
+running tests/integration/errors/test_E_PARSE.zend.php
+running tests/integration/errors/test_E_PARSE.zend.php8.php
+running tests/integration/errors/test_E_RECOVERABLE.php5.php
+running tests/integration/errors/test_E_RECOVERABLE.php7.4.php
+running tests/integration/errors/test_E_RECOVERABLE.php7.php
+running tests/integration/errors/test_E_STRICT.php5.php
+running tests/integration/errors/test_E_STRICT.php7.php
+running tests/integration/errors/test_E_USER_DEPRECATED.php
+running tests/integration/errors/test_E_USER_ERROR.php
+running tests/integration/errors/test_E_USER_NOTICE.php
+running tests/integration/errors/test_E_USER_WARNING.php
+running tests/integration/errors/test_E_WARNING.php5.php
+running tests/integration/errors/test_E_WARNING.php7.php
+running tests/integration/errors/test_E_WARNING.php8.php
+running tests/integration/errors/test_error_reporting_obeyed.php
+running tests/integration/errors/test_exception.php
+running tests/integration/errors/test_exception_no_exception_handler.php
+running tests/integration/errors/test_exception_restored_no_exception_handler.php
+running tests/integration/errors/test_ignore_E_WARNING.php
+running tests/integration/errors/test_ignore_E_WARNING.php8.php
+running tests/integration/errors/test_ignore_all_except_E_WARNING.php5.php
+running tests/integration/errors/test_ignore_all_except_E_WARNING.php7.php
+running tests/integration/errors/test_ignore_all_except_E_WARNING.php8.php
+running tests/integration/errors/test_ignore_exception.php
+running tests/integration/errors/test_ignore_exception_subclass.php
+running tests/integration/errors/test_ignore_throwable.php
+running tests/integration/errors/test_ignored_top_level_exception_closure.php
+running tests/integration/errors/test_ignored_top_level_exception_function.php
+running tests/integration/errors/test_ignored_top_level_exception_instance_method.php
+running tests/integration/errors/test_ignored_top_level_exception_restore.php
+running tests/integration/errors/test_ignored_top_level_exception_static_method.php
+running tests/integration/errors/test_large_error_message.php
+running tests/integration/errors/test_restore_top_level_exception_internal_function.php
+running tests/integration/errors/test_top_level_exception_closure.php
+running tests/integration/errors/test_top_level_exception_function.php
+running tests/integration/errors/test_top_level_exception_instance_method.php
+running tests/integration/errors/test_top_level_exception_internal_function.php
+running tests/integration/errors/test_top_level_exception_restore.php
+running tests/integration/errors/test_top_level_exception_static_method.php
+running tests/integration/errors/test_top_level_exception_tracer.php
+running tests/integration/errors/test_top_level_exception_tracer_logging_off.php
+running tests/integration/events/test_database_duration.php
+running tests/integration/events/test_empty.php
+running tests/integration/external/curl_exec/test_cat_and_synthetics_disabled.php
+running tests/integration/external/curl_exec/test_cat_disabled.php
+running tests/integration/external/curl_exec/test_cat_disabled_by_default.php
+running tests/integration/external/curl_exec/test_cat_request_headers_empty_array.php
+running tests/integration/external/curl_exec/test_cat_request_headers_present.php
+running tests/integration/external/curl_exec/test_cat_request_headers_present_array.php
+running tests/integration/external/curl_exec/test_cat_request_headers_referenced_array.php
+running tests/integration/external/curl_exec/test_cat_response_header_anonymous.php
+running tests/integration/external/curl_exec/test_cat_response_header_function.php
+running tests/integration/external/curl_exec/test_cat_response_header_returned.php
+running tests/integration/external/curl_exec/test_cat_response_header_to_file.php
+running tests/integration/external/curl_exec/test_cat_response_header_to_stdout.php
+running tests/integration/external/curl_exec/test_cat_simple.php
+running tests/integration/external/curl_exec/test_dt_correct_span_is_external.php
+running tests/integration/external/curl_exec/test_dt_enabled_cat_enabled.php
+running tests/integration/external/curl_exec/test_dt_newrelic_header_disabled.php
+running tests/integration/external/curl_exec/test_dt_request_header.php
+running tests/integration/external/curl_exec/test_dt_request_header_w3c_only.php
+running tests/integration/external/curl_exec/test_dt_request_headers_empty_array.php
+running tests/integration/external/curl_exec/test_dt_request_headers_present.php
+running tests/integration/external/curl_exec/test_dt_request_headers_present_array.php
+running tests/integration/external/curl_exec/test_dt_request_headers_present_array_logging_off.php
+running tests/integration/external/curl_exec/test_dt_request_headers_referenced_array.php
+running tests/integration/external/curl_exec/test_dt_simple.php
+running tests/integration/external/curl_exec/test_dt_span_customrequest.php
+running tests/integration/external/curl_exec/test_dt_unique_headers.php
+running tests/integration/external/curl_exec/test_file_proto.php
+running tests/integration/external/curl_exec/test_http.php
+running tests/integration/external/curl_exec/test_malformed_url.php
+running tests/integration/external/curl_exec/test_missing_handle.php
+running tests/integration/external/curl_exec/test_request_headers_referenced_array.php
+running tests/integration/external/curl_exec/test_span_sets_method.php
+running tests/integration/external/curl_exec/test_synthetics.php
+running tests/integration/external/curl_exec/test_synthetics_disabled.php
+running tests/integration/external/curl_exec/test_synthetics_with_cat_disabled.php
+running tests/integration/external/curl_exec/test_synthetics_with_dt.php
+running tests/integration/external/curl_exec/test_synthetics_with_dt_logging_off.php
+running tests/integration/external/curl_exec/test_type_mismatch.php
+running tests/integration/external/curl_multi_exec/test_cat_simple.php
+running tests/integration/external/curl_multi_exec/test_curl_multi_exec_params.php
+running tests/integration/external/curl_multi_exec/test_custom_header.php
+running tests/integration/external/curl_multi_exec/test_dt_custom_header.php
+running tests/integration/external/curl_multi_exec/test_dt_custom_header_logging_off.php
+running tests/integration/external/curl_multi_exec/test_dt_newrelic_header_disabled.php
+running tests/integration/external/curl_multi_exec/test_dt_simple.php
+running tests/integration/external/curl_multi_exec/test_exec_add_handles.php
+running tests/integration/external/curl_multi_exec/test_exec_remove_handles.php
+running tests/integration/external/curl_multi_exec/test_exec_remove_handles_logging_off.php
+running tests/integration/external/curl_multi_exec/test_http.php
+running tests/integration/external/curl_multi_exec/test_malformed_url.php
+running tests/integration/external/curl_multi_exec/test_missing_arg.php
+running tests/integration/external/curl_multi_exec/test_simple.php
+running tests/integration/external/curl_multi_exec/test_span_sets_method.php
+running tests/integration/external/curl_multi_exec/test_txn_restart.php
+running tests/integration/external/curl_multi_exec/test_txn_stop.php
+running tests/integration/external/curl_multi_exec/test_type_mismatch.php
+running tests/integration/external/drupal6/test_basic.php
+running tests/integration/external/drupal6/test_cat_and_synthetics_disabled.php
+running tests/integration/external/drupal6/test_cat_disabled.php
+running tests/integration/external/drupal6/test_cross_process_empty_headers.php
+running tests/integration/external/drupal6/test_cross_process_existing_header.php
+running tests/integration/external/drupal6/test_cross_process_no_headers.php
+running tests/integration/external/drupal6/test_dt_empty_headers.php
+running tests/integration/external/drupal6/test_dt_existing_headers.php
+running tests/integration/external/drupal6/test_dt_newrelic_header_disabled.php
+running tests/integration/external/drupal6/test_dt_no_headers.php
+running tests/integration/external/drupal6/test_multiple_calls.php
+running tests/integration/external/drupal6/test_span_externals.php
+running tests/integration/external/drupal6/test_span_externals_clm_off.php
+running tests/integration/external/drupal6/test_spans_post.php
+running tests/integration/external/drupal6/test_spans_post_clm_off.php
+running tests/integration/external/drupal6/test_synthetics.php
+running tests/integration/external/drupal6/test_synthetics_disabled.php
+running tests/integration/external/drupal6/test_synthetics_with_cat_disabled.php
+running tests/integration/external/drupal6/test_synthetics_with_dt.php
+running tests/integration/external/drupal7/test_bad_params_integer_headers.php
+running tests/integration/external/drupal7/test_bad_params_integer_options.php
+running tests/integration/external/drupal7/test_bad_params_null_headers.php
+running tests/integration/external/drupal7/test_bad_params_null_options.php
+running tests/integration/external/drupal7/test_bad_url.php
+running tests/integration/external/drupal7/test_basic.php
+running tests/integration/external/drupal7/test_cat_and_synthetics_disabled.php
+running tests/integration/external/drupal7/test_cat_disabled.php
+running tests/integration/external/drupal7/test_cross_process_empty_headers.php
+running tests/integration/external/drupal7/test_cross_process_empty_options.php
+running tests/integration/external/drupal7/test_cross_process_existing_header.php
+running tests/integration/external/drupal7/test_cross_process_no_options.php
+running tests/integration/external/drupal7/test_dt_empty_headers.php
+running tests/integration/external/drupal7/test_dt_existing_headers.php
+running tests/integration/external/drupal7/test_dt_newrelic_header_disabled.php
+running tests/integration/external/drupal7/test_dt_no_headers.php
+running tests/integration/external/drupal7/test_multiple_calls.php
+running tests/integration/external/drupal7/test_spans_post.php
+running tests/integration/external/drupal7/test_spans_post_clm.php
+running tests/integration/external/drupal7/test_spans_post_clm_off.php
+running tests/integration/external/drupal7/test_spans_sets_external_span_correctly.php
+running tests/integration/external/drupal7/test_spans_sets_external_span_correctly_clm_off.php
+running tests/integration/external/drupal7/test_synthetics.php
+running tests/integration/external/drupal7/test_synthetics_disabled.php
+running tests/integration/external/drupal7/test_synthetics_with_cat_disabled.php
+running tests/integration/external/drupal7/test_synthetics_with_dt.php
+running tests/integration/external/file_get_contents/test_cat_and_synthetics_disabled.php
+running tests/integration/external/file_get_contents/test_cat_context_provided.php
+running tests/integration/external/file_get_contents/test_cat_default_context.php
+running tests/integration/external/file_get_contents/test_cat_disabled.php
+running tests/integration/external/file_get_contents/test_cat_no_context.php
+running tests/integration/external/file_get_contents/test_dt_context_provided.php
+running tests/integration/external/file_get_contents/test_dt_context_provided_logging_off.php
+running tests/integration/external/file_get_contents/test_dt_default_context.php
+running tests/integration/external/file_get_contents/test_dt_disabled.php
+running tests/integration/external/file_get_contents/test_dt_disabled_cat_disabled.php
+running tests/integration/external/file_get_contents/test_dt_newrelic_header_disabled.php
+running tests/integration/external/file_get_contents/test_dt_no_context.php
+running tests/integration/external/file_get_contents/test_http_response_header_cv.php
+running tests/integration/external/file_get_contents/test_remove_headers_from_context.php
+running tests/integration/external/file_get_contents/test_spans_are_created_correctly.php
+running tests/integration/external/file_get_contents/test_synthetics_context_provided.php
+running tests/integration/external/file_get_contents/test_synthetics_default_context.php
+running tests/integration/external/file_get_contents/test_synthetics_disabled.php
+running tests/integration/external/file_get_contents/test_synthetics_no_context.php
+running tests/integration/external/file_get_contents/test_synthetics_with_cat_disabled.php
+running tests/integration/external/file_get_contents/test_synthetics_with_dt.php
+running tests/integration/external/file_get_contents/test_synthetics_with_dt_logging_off.php
+running tests/integration/external/guzzle5/test_cat.php
+running tests/integration/external/guzzle5/test_dt.php
+running tests/integration/external/guzzle5/test_dt_newrelic_header_disabled.php
+running tests/integration/external/guzzle5/test_dt_synthetics.php
+running tests/integration/external/guzzle5/test_dt_synthetics_logging_off.php
+running tests/integration/external/guzzle5/test_no_cat_no_dt.php
+running tests/integration/external/guzzle5/test_spans_external.php
+running tests/integration/external/guzzle5/test_spans_external.php5.php
+running tests/integration/external/guzzle6/test_cat.php
+running tests/integration/external/guzzle6/test_dt.php
+running tests/integration/external/guzzle6/test_dt_newrelic_header_disabled.php
+running tests/integration/external/guzzle6/test_dt_synthetics.php
+running tests/integration/external/guzzle6/test_dt_synthetics_logging_off.php
+running tests/integration/external/guzzle6/test_no_cat_no_dt.php
+running tests/integration/external/guzzle6/test_spans_are_created_correctly.php
+running tests/integration/external/guzzle6/test_spans_are_created_correctly.php5.php
+running tests/integration/external/guzzle7/test_cat.php
+running tests/integration/external/guzzle7/test_dt.php
+running tests/integration/external/guzzle7/test_dt_newrelic_header_disabled.php
+running tests/integration/external/guzzle7/test_dt_synthetics.php
+running tests/integration/external/guzzle7/test_no_cat_no_dt.php
+running tests/integration/external/guzzle7/test_spans_are_created_correctly.php
+running tests/integration/external/http/test_v1_cat.php
+running tests/integration/external/http/test_v1_cat_and_synthetics_disabled.php
+running tests/integration/external/http/test_v1_cat_disabled.php
+running tests/integration/external/http/test_v1_synthetics.php
+running tests/integration/external/http/test_v1_synthetics_disabled.php
+running tests/integration/external/http/test_v1_synthetics_with_cat_disabled.php
+running tests/integration/external/http/test_v2_cat.php
+running tests/integration/external/test_curl_multi_add_remove_handles.php
+running tests/integration/frameworks/drupal/test_invoke_all_with.php
+running tests/integration/frameworks/laravel/test_artisan_name.php
+running tests/integration/frameworks/laravel/test_artisan_name_logging_off.php
+running tests/integration/frameworks/laravel/test_artisan_name_non_input.php
+running tests/integration/frameworks/laravel/test_artisan_name_non_string.php
+running tests/integration/frameworks/laravel/test_http_options_naming.php
+running tests/integration/frameworks/magento/test_temp_tables.php
+running tests/integration/frameworks/magento/test_temp_tables_logging_off.php
+running tests/integration/frameworks/silex/test_basic.php
+running tests/integration/frameworks/silex/test_basic_logging_off.php
+running tests/integration/frameworks/silex/test_invalid_attributes.php
+running tests/integration/frameworks/silex/test_invalid_request.php
+running tests/integration/frameworks/wordpress/test_site_specific_tables.php
+running tests/integration/frameworks/wordpress/test_site_specific_tables_logging_off.php
+running tests/integration/frameworks/wordpress/test_wordpress_apply_filters.php
+running tests/integration/frameworks/wordpress/test_wordpress_do_action.php
+running tests/integration/ini/capture_params/test_disabled.php
+running tests/integration/ini/capture_params/test_enabled.php
+running tests/integration/ini/capture_params/test_lasp_disabled.php
+running tests/integration/ini/test_analytics_events_disabled.php
+running tests/integration/ini/test_dt_enabled_default.php
+running tests/integration/ini/test_dt_enabled_default.php5.php
+running tests/integration/ini/test_force_framework_0.php
+running tests/integration/ini/test_force_framework_1.php
+running tests/integration/ini/test_force_framework_2.php
+running tests/integration/ini/test_force_framework_3.php
+running tests/integration/ini/test_force_framework_5.php
+running tests/integration/ini/test_force_framework_6.php
+running tests/integration/ini/test_host_display_name.php
+running tests/integration/ini/test_ini_001.php
+running tests/integration/ini/test_ini_002.php
+running tests/integration/ini/test_ini_003.php
+running tests/integration/ini/test_ini_003_logging_off.php
+running tests/integration/ini/test_ini_004.php
+running tests/integration/ini/test_transaction_events_disabled.php
+running tests/integration/ini/test_transaction_tracer_max_segments.php
+running tests/integration/ini/test_transaction_tracer_max_segments_nested.php
+running tests/integration/ini/test_transaction_tracer_max_segments_nested.php5.php
+running tests/integration/ini/test_transaction_tracer_max_segments_no_cap.php
+running tests/integration/ini/test_transaction_tracer_max_segments_with_datastore.php
+running tests/integration/ini/test_transaction_tracer_max_segments_with_datastore.php5.php
+running tests/integration/lang/test_generator_5.6-7.0.php
+running tests/integration/lang/test_generator_7.1.php
+running tests/integration/logging/analog/test_supportability_metric.php
+running tests/integration/logging/cakephp-log/test_supportability_metric.php
+running tests/integration/logging/consolidation-log/test_supportability_metric.php
+running tests/integration/logging/laminas-log/test_supportability_metric.php
+running tests/integration/logging/monolog2/test_monolog_basic.php
+running tests/integration/logging/monolog2/test_monolog_basic_clm.php
+running tests/integration/logging/monolog2/test_monolog_basic_clm_off.php
+running tests/integration/logging/monolog2/test_monolog_cat.php
+running tests/integration/logging/monolog2/test_monolog_context_default.php
+running tests/integration/logging/monolog2/test_monolog_context_exception.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_extra1.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_extra2.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_extra3.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_extra4.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_extra5.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule1.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule10.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule11.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule2.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule3.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule4.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule5.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule6.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule7.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule8.php
+running tests/integration/logging/monolog2/test_monolog_context_filter_rule9.php
+running tests/integration/logging/monolog2/test_monolog_context_hsm_disable_forwarding.php
+running tests/integration/logging/monolog2/test_monolog_context_limits_1.php
+running tests/integration/logging/monolog2/test_monolog_context_limits_2.php
+running tests/integration/logging/monolog2/test_monolog_context_precedence_1.php
+running tests/integration/logging/monolog2/test_monolog_context_precedence_2.php
+running tests/integration/logging/monolog2/test_monolog_context_simple.php
+running tests/integration/logging/monolog2/test_monolog_decoration_and_forwarding.php
+running tests/integration/logging/monolog2/test_monolog_decoration_basic.php
+running tests/integration/logging/monolog2/test_monolog_decoration_multiple_handlers.php
+running tests/integration/logging/monolog2/test_monolog_disable_forwarding.php
+running tests/integration/logging/monolog2/test_monolog_disable_logging.php
+running tests/integration/logging/monolog2/test_monolog_disable_metrics.php
+running tests/integration/logging/monolog2/test_monolog_drop_empty.php
+running tests/integration/logging/monolog2/test_monolog_escape_chars.php
+running tests/integration/logging/monolog2/test_monolog_hsm_disable_forwarding.php
+running tests/integration/logging/monolog2/test_monolog_large_message_limit.php
+running tests/integration/logging/monolog2/test_monolog_large_message_limit_drops.php
+running tests/integration/logging/monolog2/test_monolog_limit_log_events.php
+running tests/integration/logging/monolog2/test_monolog_limit_zero_events.php
+running tests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid1.php
+running tests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid2.php
+running tests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid3.php
+running tests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid4.php
+running tests/integration/logging/monolog2/test_monolog_log_level_filter.php
+running tests/integration/logging/monolog2/test_monolog_log_level_filter_invalid.php
+running tests/integration/logging/monolog2/test_monolog_truncate_long_msgs.php
+running tests/integration/logging/monolog3/test_monolog_basic.php
+running tests/integration/logging/monolog3/test_monolog_basic_clm.php
+running tests/integration/logging/monolog3/test_monolog_basic_clm_off.php
+running tests/integration/logging/monolog3/test_monolog_cat.php
+running tests/integration/logging/monolog3/test_monolog_context_default.php
+running tests/integration/logging/monolog3/test_monolog_context_exception.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_extra1.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_extra2.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_extra3.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_extra4.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_extra5.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule1.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule10.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule11.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule2.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule3.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule4.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule5.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule6.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule7.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule8.php
+running tests/integration/logging/monolog3/test_monolog_context_filter_rule9.php
+running tests/integration/logging/monolog3/test_monolog_context_hsm_disable_forwarding.php
+running tests/integration/logging/monolog3/test_monolog_context_limits_1.php
+running tests/integration/logging/monolog3/test_monolog_context_limits_2.php
+running tests/integration/logging/monolog3/test_monolog_context_precedence_1.php
+running tests/integration/logging/monolog3/test_monolog_context_precedence_2.php
+running tests/integration/logging/monolog3/test_monolog_context_simple.php
+running tests/integration/logging/monolog3/test_monolog_decoration_and_forwarding.php
+running tests/integration/logging/monolog3/test_monolog_decoration_basic.php
+running tests/integration/logging/monolog3/test_monolog_decoration_multiple_handlers.php
+running tests/integration/logging/monolog3/test_monolog_disable_forwarding.php
+running tests/integration/logging/monolog3/test_monolog_disable_logging.php
+running tests/integration/logging/monolog3/test_monolog_disable_metrics.php
+running tests/integration/logging/monolog3/test_monolog_drop_empty.php
+running tests/integration/logging/monolog3/test_monolog_escape_chars.php
+running tests/integration/logging/monolog3/test_monolog_hsm_disable_forwarding.php
+running tests/integration/logging/monolog3/test_monolog_large_message_limit.php
+running tests/integration/logging/monolog3/test_monolog_large_message_limit_drops.php
+running tests/integration/logging/monolog3/test_monolog_limit_log_events.php
+running tests/integration/logging/monolog3/test_monolog_limit_zero_events.php
+running tests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid1.php
+running tests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid2.php
+running tests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid3.php
+running tests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid4.php
+running tests/integration/logging/monolog3/test_monolog_log_level_filter.php
+running tests/integration/logging/monolog3/test_monolog_log_level_filter_invalid.php
+running tests/integration/logging/monolog3/test_monolog_truncate_long_msgs.php
+running tests/integration/memcache/test_add.php
+running tests/integration/memcache/test_add.php82.php
+running tests/integration/memcache/test_incr_decr.php
+running tests/integration/memcache/test_incr_decr.php82.php
+running tests/integration/memcache/test_memcache_add.php
+running tests/integration/memcache/test_memcache_add.php82.php
+running tests/integration/memcache/test_memcache_add_logging_off.php
+running tests/integration/memcache/test_memcache_add_logging_off.php82.php
+running tests/integration/memcache/test_memcache_incr_decr.php
+running tests/integration/memcache/test_memcache_incr_decr.php82.php
+running tests/integration/memcache/test_memcache_replace.php
+running tests/integration/memcache/test_memcache_replace.php82.php
+running tests/integration/memcache/test_memcache_set.php
+running tests/integration/memcache/test_memcache_set.php82.php
+running tests/integration/memcache/test_replace.php
+running tests/integration/memcache/test_replace.php82.php
+running tests/integration/memcache/test_set.php
+running tests/integration/memcache/test_set.php82.php
+running tests/integration/memcached/test_basic.php
+running tests/integration/memcached/test_basic_logging_off.php
+running tests/integration/memcached/test_by_key.php
+running tests/integration/memcached/test_cas.php5.php
+running tests/integration/memcached/test_cas.php7.php
+running tests/integration/memcached/test_cas_by_key.php5.php
+running tests/integration/memcached/test_cas_by_key.php7.php
+running tests/integration/memcached/test_concat.php
+running tests/integration/memcached/test_concat_by_key.php
+running tests/integration/memcached/test_concat_by_key_logging_off.php
+running tests/integration/memcached/test_multi.php
+running tests/integration/memcached/test_multi_by_key.php
+running tests/integration/mongo/test_execute.php
+running tests/integration/mongo/test_execute_logging_off.php
+running tests/integration/mongo/test_find.php
+running tests/integration/mysql/test_db_query.php
+running tests/integration/mysql/test_db_query_error.php
+running tests/integration/mysql/test_db_query_logging_off.php
+running tests/integration/mysql/test_query.php
+running tests/integration/mysql/test_query_error.php
+running tests/integration/mysql/test_unbuffered_query.php
+running tests/integration/mysql/test_unbuffered_query_logging_off.php
+running tests/integration/mysqli/test_bind_param_object_oo.php
+running tests/integration/mysqli/test_bind_param_object_oo_logging_off.php
+running tests/integration/mysqli/test_bind_param_oo.php
+running tests/integration/mysqli/test_bind_param_proc.php
+running tests/integration/mysqli/test_explain_connect.php
+running tests/integration/mysqli/test_explain_construct.php
+running tests/integration/mysqli/test_explain_database_no_user.php
+running tests/integration/mysqli/test_explain_database_no_user_logging_off.php
+running tests/integration/mysqli/test_explain_init_oo.php
+running tests/integration/mysqli/test_explain_init_oo_persistent.php
+running tests/integration/mysqli/test_explain_init_proc.php
+running tests/integration/mysqli/test_explain_leading_whitespace.php
+running tests/integration/mysqli/test_explain_options_garbage.php
+running tests/integration/mysqli/test_explain_real_connect_garbage.php
+running tests/integration/mysqli/test_explain_real_connect_garbage_logging_off.php
+running tests/integration/mysqli/test_explain_reused_id.php
+running tests/integration/mysqli/test_explain_select_db_oo.php
+running tests/integration/mysqli/test_explain_select_db_proc.php
+running tests/integration/mysqli/test_multi_query_oo.php
+running tests/integration/mysqli/test_multi_query_proc.php
+running tests/integration/mysqli/test_multi_query_proc_logging_off.php
+running tests/integration/mysqli/test_mysqli_query_1.php
+running tests/integration/mysqli/test_null_connect_proc.php
+running tests/integration/mysqli/test_null_construct_oo.php
+running tests/integration/mysqli/test_null_rc_oo.php
+running tests/integration/mysqli/test_null_rc_proc.php
+running tests/integration/mysqli/test_null_stmt_construct.php
+running tests/integration/mysqli/test_prepare_oo.php
+running tests/integration/mysqli/test_prepare_proc.php
+running tests/integration/mysqli/test_query_oo.php
+running tests/integration/mysqli/test_query_proc.php
+running tests/integration/mysqli/test_real_query_oo.php
+running tests/integration/mysqli/test_real_query_oo_logging_off.php
+running tests/integration/mysqli/test_real_query_proc.php
+running tests/integration/mysqli/test_stmt_prepare_oo.php
+running tests/integration/mysqli/test_stmt_prepare_proc.php
+running tests/integration/mysqli/test_subclassing.php
+running tests/integration/mysqli/test_subclassing.php81.php
+running tests/integration/output/test_clean_after_footer.php
+running tests/integration/output/test_clean_after_header_5.3.php
+running tests/integration/output/test_clean_after_header_5.4.php
+running tests/integration/output/test_clean_before_header.php
+running tests/integration/output/test_flush.php
+running tests/integration/output/test_mimetype_json.php
+running tests/integration/output/test_output_handler.php
+running tests/integration/pdo/test_bad_input_1.php
+running tests/integration/pdo/test_bad_input_1_logging_off.php
+running tests/integration/pdo/test_empty_driver_options.php
+running tests/integration/pdo/test_empty_driver_options.php81.php
+running tests/integration/pdo/test_instance_slow_sql_1.php
+running tests/integration/pdo/test_instance_slow_sql_1.php81.php
+running tests/integration/pdo/test_instance_slow_sql_2.php
+running tests/integration/pdo/test_instance_slow_sql_2.php81.php
+running tests/integration/pdo/test_instance_slow_sql_for_update.php
+running tests/integration/pdo/test_instance_slow_sql_found_rows.php
+running tests/integration/pdo/test_instance_slow_sql_found_rows.php81.php
+running tests/integration/pdo/test_instance_slow_sql_lock.php
+running tests/integration/pdo/test_instance_slow_sql_semicolon.php
+running tests/integration/pdo/test_null_options.php
+running tests/integration/pdo/test_null_options.php81.php
+running tests/integration/pdo/test_persistent_conn.php
+running tests/integration/pdo/test_persistent_conn.php81.php
+running tests/integration/pdo/test_prepared_stmt_params.php
+running tests/integration/pdo/test_prepared_stmt_params.php81.php
+running tests/integration/pdo/test_query_1.php
+running tests/integration/pdo/test_query_1.php81.php
+running tests/integration/pdo/test_query_2.php
+running tests/integration/pdo/test_query_2_logging_off.php
+running tests/integration/pdo/test_query_3.php
+running tests/integration/pdo/test_query_4.php
+running tests/integration/pdo/test_slow_sql_1.php
+running tests/integration/pdo/test_slow_sql_1.php81.php
+running tests/integration/pdo/test_slow_sql_2.php
+running tests/integration/pdo/test_slow_sql_2.php81.php
+running tests/integration/pdo/test_slow_sql_for_update.php
+running tests/integration/pdo/test_slow_sql_found_rows.php
+running tests/integration/pdo/test_slow_sql_found_rows.php81.php
+running tests/integration/pdo/test_slow_sql_lock.php
+running tests/integration/pdo/test_slow_sql_semicolon.php
+running tests/integration/pgsql/test_pg_execute_mixed_use.php
+running tests/integration/pgsql/test_pg_execute_mixed_use_logging_off.php
+running tests/integration/pgsql/test_pg_execute_with_resource.php
+running tests/integration/pgsql/test_pg_execute_without_resource.php
+running tests/integration/pgsql/test_pg_query_error.php
+running tests/integration/pgsql/test_pg_query_params_error.php
+running tests/integration/pgsql/test_pg_query_params_error_logging_off.php
+running tests/integration/pgsql/test_pg_query_params_with_resource.php
+running tests/integration/pgsql/test_pg_query_params_without_resource.php
+running tests/integration/pgsql/test_pg_query_with_resource.php
+running tests/integration/pgsql/test_pg_query_with_resource_logging_off.php
+running tests/integration/pgsql/test_pg_query_without_resource.php
+running tests/integration/predis/test_basic.php
+running tests/integration/predis/test_basic_logging_off.php
+running tests/integration/predis/test_basic_reporting_disabled.php
+running tests/integration/predis/test_cross_transaction.php
+running tests/integration/predis/test_instance_basic.php
+running tests/integration/predis/test_pipeline.php
+running tests/integration/predis/test_pipeline_atomic.php
+running tests/integration/predis/test_pipeline_fire_and_forget.php
+running tests/integration/predis/test_pipeline_fire_and_forget_logging_off.php
+running tests/integration/predis/test_txn_restarted.php
+running tests/integration/queue/test_basic.php
+running tests/integration/queue/test_basic_logging_off.php
+running tests/integration/queue/test_capitalized.php
+running tests/integration/queue/test_malformed.php
+running tests/integration/queue/test_with_prefix.php
+running tests/integration/redis/test_basic.php
+running tests/integration/redis/test_basic_logging_off.php
+running tests/integration/redis/test_bitops.php
+running tests/integration/redis/test_decr.php
+running tests/integration/redis/test_geo.php
+running tests/integration/redis/test_hash.php
+running tests/integration/redis/test_incr.php
+running tests/integration/redis/test_instance_basic.php
+running tests/integration/redis/test_instance_bitops.php
+running tests/integration/redis/test_instance_decr.php
+running tests/integration/redis/test_instance_geo.php
+running tests/integration/redis/test_instance_hash.php
+running tests/integration/redis/test_instance_incr.php
+running tests/integration/redis/test_instance_list.php
+running tests/integration/redis/test_instance_set.php
+running tests/integration/redis/test_instance_set.redis6.php
+running tests/integration/redis/test_instance_setex.php
+running tests/integration/redis/test_instance_stream.redis5.php
+running tests/integration/redis/test_instance_zset.php
+running tests/integration/redis/test_instance_zset.redis5.php
+running tests/integration/redis/test_list.php
+running tests/integration/redis/test_list_logging_off.php
+running tests/integration/redis/test_set.php
+running tests/integration/redis/test_set.redis6.php
+running tests/integration/redis/test_setex.php
+running tests/integration/redis/test_stream.redis5.php
+running tests/integration/redis/test_zset.php
+running tests/integration/redis/test_zset.redis5.php
+running tests/integration/span_events/test_span_events_are_created_from_segments.php
+running tests/integration/span_events/test_span_events_are_created_from_segments.php5.php
+running tests/integration/span_events/test_span_events_are_created_upon_caught_error.php
+running tests/integration/span_events/test_span_events_are_created_upon_caught_error.php5.php
+running tests/integration/span_events/test_span_events_are_created_upon_caught_exception.php
+running tests/integration/span_events/test_span_events_are_created_upon_caught_exception.php5.php
+running tests/integration/span_events/test_span_events_are_created_upon_exit.php
+running tests/integration/span_events/test_span_events_are_created_upon_exit.php5.php
+running tests/integration/span_events/test_span_events_are_created_upon_uncaught_error.php
+running tests/integration/span_events/test_span_events_are_created_upon_uncaught_error.php5.php
+running tests/integration/span_events/test_span_events_are_created_upon_uncaught_exception.php
+running tests/integration/span_events/test_span_events_are_created_upon_uncaught_exception.php5.php
+running tests/integration/span_events/test_span_events_error_collector_disabled.php
+running tests/integration/span_events/test_span_events_error_collector_disabled.php5.php
+running tests/integration/span_events/test_span_events_exception_caught_nested.php
+running tests/integration/span_events/test_span_events_exception_caught_nested.php5.php
+running tests/integration/span_events/test_span_events_exception_caught_nested_rethrown.php
+running tests/integration/span_events/test_span_events_exception_caught_nested_rethrown.php5.php
+running tests/integration/span_events/test_span_events_exception_caught_notice_error.php
+running tests/integration/span_events/test_span_events_exception_caught_notice_error.php5.php
+running tests/integration/span_events/test_span_events_exception_caught_notice_error_nested.php
+running tests/integration/span_events/test_span_events_exception_caught_notice_error_nested.php5.php
+running tests/integration/span_events/test_span_events_exception_caught_same_span.php
+running tests/integration/span_events/test_span_events_exception_caught_same_span.php5.php
+running tests/integration/span_events/test_span_events_exception_uncaught_nested.php
+running tests/integration/span_events/test_span_events_exception_uncaught_nested.php5.php
+running tests/integration/span_events/test_span_events_exist_when_no_segments.php
+running tests/integration/span_events/test_span_events_hsm_error.php
+running tests/integration/span_events/test_span_events_hsm_error.php5.php
+running tests/integration/span_events/test_span_events_max_samples_stored1.php
+running tests/integration/span_events/test_span_events_max_samples_stored2.php
+running tests/integration/span_events/test_span_events_max_samples_stored3.php
+running tests/integration/span_events/test_span_events_max_samples_stored4.php
+running tests/integration/span_events/test_span_events_max_samples_stored5.php
+running tests/integration/span_events/test_span_events_max_samples_stored6.php
+running tests/integration/span_events/test_span_events_max_samples_stored7.php
+running tests/integration/span_events/test_span_events_max_samples_stored8.php
+running tests/integration/span_events/test_span_events_max_samples_stored_invalid1.php
+running tests/integration/span_events/test_span_events_max_samples_stored_invalid2.php
+running tests/integration/span_events/test_span_events_notice_error.php
+running tests/integration/span_events/test_span_events_notice_error.php5.php
+running tests/integration/span_events/test_span_events_off_dt_on_cat_off.php
+running tests/integration/span_events/test_span_events_off_dt_on_cat_on.php
+running tests/integration/span_events/test_span_events_on_dt_off_cat_off.php
+running tests/integration/span_events/test_span_events_on_dt_off_cat_on.php
+running tests/integration/span_events/test_span_events_on_dt_on.php
+running tests/integration/span_events/test_span_events_on_dt_on.php5.php
+running tests/integration/span_events/test_span_events_root_parent.php
+running tests/integration/span_events/test_span_events_root_parent.php5.php
+running tests/integration/span_events/test_span_events_special_max_10.php
+running tests/integration/span_events/test_span_events_special_max_disabled.php
+running tests/integration/sqlite/test_bad_input_1.php
+running tests/integration/sqlite/test_bad_input_2.php
+running tests/integration/sqlite/test_bad_input_3.php
+running tests/integration/sqlite/test_bad_input_4.php
+running tests/integration/sqlite/test_bad_input_5.php
+running tests/integration/sqlite/test_exec.php
+running tests/integration/sqlite/test_exec_logging_off.php
+running tests/integration/sqlite/test_query_1.php
+running tests/integration/sqlite/test_query_2.php
+running tests/integration/sqlite/test_unbuffered_1.php
+running tests/integration/sqlite/test_unbuffered_2.php
+running tests/integration/sqlite/test_unbuffered_2_logging_off.php
+running tests/integration/sqlite3/test_bad_input_1.php
+running tests/integration/sqlite3/test_bad_input_2.php
+running tests/integration/sqlite3/test_bad_input_3.php
+running tests/integration/sqlite3/test_bad_input_3_logging_off.php
+running tests/integration/sqlite3/test_bad_input_4.php
+running tests/integration/sqlite3/test_bad_input_5.php
+running tests/integration/sqlite3/test_bad_sql_1.php
+running tests/integration/sqlite3/test_bad_sql_2.php
+running tests/integration/sqlite3/test_query.php
+running tests/integration/sqlite3/test_query_logging_off.php
+running tests/integration/sqlite3/test_querysingle_1.php
+running tests/integration/sqlite3/test_querysingle_2.php
+running tests/integration/sqlitedatabase/test_bad_input_1.php
+running tests/integration/sqlitedatabase/test_bad_input_2.php
+running tests/integration/sqlitedatabase/test_bad_input_3.php
+running tests/integration/sqlitedatabase/test_query.php
+running tests/integration/sqlitedatabase/test_query_logging_off.php
+running tests/integration/sqlitedatabase/test_unbuffered.php
+running tests/integration/synthetics/test_bad_header.php
+running tests/integration/synthetics/test_disabled.php
+running tests/integration/synthetics/test_happy_path.php
+running tests/integration/synthetics/test_happy_path_with_cat.php
+running tests/integration/synthetics/test_happy_path_with_dt.php
+running tests/integration/uopz/test_001.php
+running tests/integration/uopz/test_002.php
+running tests/integration/uopz/test_003.php
+running tests/integration/uopz/test_004.php
+running tests/integration/uopz/test_005.php
+running tests/integration/uopz/test_006.php
+running tests/integration/uopz/test_007.php
+running tests/integration/uopz/test_008.php
+running tests/integration/uopz/test_009.php
+running tests/integration/uopz/test_010.php
+running tests/integration/uopz/test_011.php
+running tests/integration/uopz/test_012.php
+running tests/integration/uopz/test_013.php
+running tests/integration/uopz/test_014.php
+running tests/integration/uopz/test_015.php
+running tests/integration/uopz/test_016.php
+running tests/integration/uopz/test_017.php
+running tests/integration/uopz/test_018.php
+running tests/integration/uopz/test_019.php
+running tests/integration/uopz/test_020.php
+running tests/integration/uopz/test_021.php
+running tests/regression/test_disable_functions.php
+running tests/regression/test_php_1097_chunking_header.php
+running tests/regression/test_php_1179_pdo_options_crash.php
+running tests/regression/test_php_2051_restarted_within_wrapper.php
+running tests/regression/test_php_579_get_content_type.php
+[1;32mpass - [0mtests/integration/api/add_custom_parameter/test_bad_input.php
+[1;32mpass - [0mtests/integration/api/add_custom_parameter/test_key_conversions.php
+[1;32mpass - [0mtests/integration/api/add_custom_parameter/test_span_event.php
+[1;32mpass - [0mtests/integration/api/add_custom_parameter/test_span_event.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_parameter/test_value_conversions.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_disabled.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_duplicate_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter_logging_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_filter_logging_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_invalid.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_key_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_parameters.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_parameters.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_max_value_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off_logging_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_parameters_te_off_logging_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_maxplus_span_and_te_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_overwrite.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_overwrite.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_te_off.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_te_off.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_types.php
+[1;32mpass - [0mtests/integration/api/add_custom_span_parameter/test_span_event_parameter_types.php5.php
+[1;32mpass - [0mtests/integration/api/add_custom_tracer/test_happy.php
+[1;32mpass - [0mtests/integration/api/add_custom_tracer/test_not_user_function.php
+[1;32mpass - [0mtests/integration/api/add_custom_tracer/test_short_segments.php
+[1;33mskip -[0m tests/integration/api/custom_metric/test_bad_input.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/custom_metric/test_bad_input.php8.php
+[1;32mpass - [0mtests/integration/api/custom_metric/test_happy.php
+[1;32mpass - [0mtests/integration/api/custom_metric/test_happy_logging_off.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_no_children.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_nosql.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_sql_no_query.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_sql_obfuscated.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_sql_obfuscated_logging_off.php
+[1;32mpass - [0mtests/integration/api/datastore/test_all_parameters_sql_raw.php
+[1;32mpass - [0mtests/integration/api/datastore/test_basic.php
+[1;32mpass - [0mtests/integration/api/datastore/test_invalid_parameters.php
+[1;32mpass - [0mtests/integration/api/datastore/test_recording_disabled.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_after_create.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace.php
+[1;33mskip -[0m tests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace_noarg.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_distributed_trace_noarg.php8.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_intrinsics.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_no_txn.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_version_0.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_version_1.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_accept_version_2.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_create_intrinsics.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_create_payload_span_events_disabled.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_create_transaction_off_span_on_cat_off.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_create_transaction_off_span_on_cat_on.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_disabled_accept.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_disabled_create.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_enabled.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_keep_span_with_payload.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_keep_span_with_payload.php5.php
+[1;32mpass - [0mtests/integration/api/distributed_trace/newrelic/test_recording_disabled.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_disable_1.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_disable_2.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_enable_1.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_enable_2.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_enable_3.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_enable_4.php
+[1;32mpass - [0mtests/integration/api/enable_params/test_enable_5.php
+[1;33mskip -[0m tests/integration/api/enable_params/test_enable_6.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php
+[1;33mskip -[0m tests/integration/api/error_group_callback/test_error_group_callback_bad_callback.php7.php # [1;33mskip: PHP 8.0+ treats this as a Fatal error rather than an exception.[0m
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_bad_params.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_bad_return_null.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_bad_return_num.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_clobber.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_empty_callback.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_error_non_web.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_error_web.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_exception_non_web.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_exception_web.php
+[1;32mpass - [0mtests/integration/api/error_group_callback/test_error_group_callback_max_string_len.php
+[1;32mpass - [0mtests/integration/api/ignore_transaction/test_ignore.php
+[1;32mpass - [0mtests/integration/api/internal/test_get_metric_table.php
+[1;32mpass - [0mtests/integration/api/internal/test_get_request_metadata_cat.php
+[1;32mpass - [0mtests/integration/api/internal/test_get_request_metadata_dt.php
+[1;32mpass - [0mtests/integration/api/metadata/test_linking_metadata_dt.php
+[1;32mpass - [0mtests/integration/api/metadata/test_linking_metadata_dt_logging_off.php
+[1;33mskip -[0m tests/integration/api/metadata/test_linking_metadata_invalid.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/metadata/test_linking_metadata_invalid.php8.php
+[1;32mpass - [0mtests/integration/api/metadata/test_linking_metadata_no_dt.php
+[1;32mpass - [0mtests/integration/api/metadata/test_trace_metadata_dt.php
+[1;33mskip -[0m tests/integration/api/metadata/test_trace_metadata_invalid.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/metadata/test_trace_metadata_invalid.php8.php
+[1;32mpass - [0mtests/integration/api/metadata/test_trace_metadata_no_dt.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_bad_inputs.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_errors_not_filtered.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_exceptions_not_filtered.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_last_error_wins.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_not_recording.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_prioritize_api.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_priority.php
+[1;32mpass - [0mtests/integration/api/notice_error/test_uncaught_is_ultimate.php
+[1;32mpass - [0mtests/integration/api/other/test_end_transaction_nested.php
+[1;32mpass - [0mtests/integration/api/other/test_ignore_apdex.php
+[1;32mpass - [0mtests/integration/api/other/test_is_sampled_cancelled_txn.php
+[1;32mpass - [0mtests/integration/api/other/test_is_sampled_dt_disabled.php
+[1;32mpass - [0mtests/integration/api/other/test_is_sampled_dt_enabled.php
+[1;33mskip -[0m tests/integration/api/other/test_is_sampled_extra_param.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/other/test_is_sampled_extra_param.php8.php
+[1;32mpass - [0mtests/integration/api/other/test_set_user_attributes_happy.php
+[1;32mpass - [0mtests/integration/api/other/test_start_and_end_transaction.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_NAN.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_attributes_exclude.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_bad_event_type.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_bad_keys.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_custom_insights_events_disabled.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_custom_insights_events_enabled.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_empty_array.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_empty_strings_in_array.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_end_of_transaction.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_happy_path.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_huge_parameter_list.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_long_key.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_long_type.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_long_value.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_multiple_events.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_one_parameter.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_value_datatypes.php
+[1;32mpass - [0mtests/integration/api/record_custom_event/test_value_nested_array.php
+[1;33mskip -[0m tests/integration/api/rum/test_bad_input_1.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/api/rum/test_bad_input_2.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/rum/test_disable_autorum.php
+[1;32mpass - [0mtests/integration/api/rum/test_footer_1.php
+[1;32mpass - [0mtests/integration/api/rum/test_footer_2.php
+[1;32mpass - [0mtests/integration/api/rum/test_footer_3.php
+[1;32mpass - [0mtests/integration/api/rum/test_footer_4.php
+[1;32mpass - [0mtests/integration/api/rum/test_footer_5.php
+[1;32mpass - [0mtests/integration/api/rum/test_header_1.php
+[1;32mpass - [0mtests/integration/api/rum/test_header_2.php
+[1;32mpass - [0mtests/integration/api/rum/test_header_3.php
+[1;32mpass - [0mtests/integration/api/rum/test_header_4.php
+[1;33mskip -[0m tests/integration/api/rum/test_too_many_args_1.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/api/rum/test_too_many_args_2.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/set_appname/test_already_ended.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_appname_license.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_appname_switch_license.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_appname_switch_license_lasp.php
+[1;33mskip -[0m tests/integration/api/set_appname/test_bad_params.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/api/set_appname/test_bad_params.php8.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_no_license.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_transmit_false.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_transmit_int.php
+[1;32mpass - [0mtests/integration/api/set_appname/test_transmit_true.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_empty_string.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_error.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_exceeds_maxlen.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_exception.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_noarg.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_non_string.php
+[1;32mpass - [0mtests/integration/api/set_user_id/test_set_user_id_null.php
+[1;32mpass - [0mtests/integration/attributes/test_disabled.php
+[1;32mpass - [0mtests/integration/attributes/test_disabled_all.php
+[1;33mwarn -[0m tests/integration/attributes/test_disabled_browser.php # [1;33mwarn: test outcome depends on the values in runtime environment[0m
+[1;32mpass - [0mtests/integration/attributes/test_disabled_old.php
+[1;32mpass - [0mtests/integration/attributes/test_empty_request.php
+[1;32mpass - [0mtests/integration/attributes/test_enabled.php
+[1;33mwarn -[0m tests/integration/attributes/test_enabled_browser.php # [1;33mwarn: test outcome depends on the values in runtime environment[0m
+[1;33mwarn -[0m tests/integration/attributes/test_enabled_browser_old.php # [1;33mwarn: test outcome depends on the values in runtime environment[0m
+[1;32mpass - [0mtests/integration/attributes/test_filtering_1.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_10.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_11.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_12.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_2.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_3.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_4.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_5.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_6.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_7.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_8.php
+[1;32mpass - [0mtests/integration/attributes/test_filtering_9.php
+[1;32mpass - [0mtests/integration/attributes/test_precedence.php
+[1;33mwarn -[0m tests/integration/attributes/test_precedence_browser.php # [1;33mwarn: test outcome depends on the values in runtime environment[0m
+[1;32mpass - [0mtests/integration/attributes/test_response_headers.php
+[1;32mpass - [0mtests/integration/attributes/test_response_ini.php
+[1;32mpass - [0mtests/integration/attributes/test_response_ini_set.php
+[1;32mpass - [0mtests/integration/attributes/test_response_whitespace.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_background.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_closure_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_closure_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace2_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace2_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace_len_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_namespace_len_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_nested_user_functions_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_nested_user_functions_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_non_web.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_non_web_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_non_web_clm_off.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_web.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_web_clm.php
+[1;32mpass - [0mtests/integration/attributes/test_transaction_web_clm_off.php
+[1;32mpass - [0mtests/integration/basic/test_call_user_func_array_0.php
+[1;32mpass - [0mtests/integration/basic/test_dl.php
+[1;32mpass - [0mtests/integration/basic/test_internal_function.php
+[1;32mpass - [0mtests/integration/basic/test_output_buffer.php
+[1;32mpass - [0mtests/integration/basic/test_output_buffer_logging_off.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_error_intrinsic.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_error_intrinsic_error.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_error_intrinsic_exception.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_inbound_payload_rejects_if_no_tx_or_id.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_disabled_errors.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_disabled_txns.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_enabled_errors.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_enabled_txns.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_notset_errors.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_intrinsics_notset_txns.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_exception.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_createBeforeAccept.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_majorVersion.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_multiple.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_multiple_logging_off.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_null.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount_httpsafe.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_ignored_untrustedAccount_logging_off.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_parseexception.php
+[1;32mpass - [0mtests/integration/distributed_tracing/newrelic/test_supportability_acceptpayload_success.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_insert_dt_headers_empty_array.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_insert_dt_headers_happy.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_insert_dt_headers_happy_logging_off.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_insert_dt_headers_nonref.php
+[1;33mskip -[0m tests/integration/distributed_tracing/w3c/test_insert_dt_headers_wrong_arg_type.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_insert_dt_headers_wrong_arg_type.php8.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_invalid_inbound.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_inbound_headers.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_inbound_headers_logging_off.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_inbound_headers_parsed_key.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_inbound_no_sampled.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_inbound_non_newrelic.php
+[1;32mpass - [0mtests/integration/distributed_tracing/w3c/test_valid_no_nr_state.php
+[1;32mpass - [0mtests/integration/errors/test_E_COMPILE_ERROR.zend.php
+[1;33mskip -[0m tests/integration/errors/test_E_COMPILE_WARNING.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_COMPILE_WARNING.php8.php
+[1;33mskip -[0m tests/integration/errors/test_E_DEPRECATED_1.php # [1;33mskip: requires PHP 5.3 or 5.4[0m
+[1;33mskip -[0m tests/integration/errors/test_E_DEPRECATED_2.php5.php # [1;33mskip: requires PHP 5.5+ or HHVM[0m
+[1;33mskip -[0m tests/integration/errors/test_E_DEPRECATED_2.php7.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_E_DEPRECATED_2.php8.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_DEPRECATED_2.php81.php
+[1;32mpass - [0mtests/integration/errors/test_E_DEPRECATED_payload1.php
+[1;32mpass - [0mtests/integration/errors/test_E_DEPRECATED_payload2.php
+[1;32mpass - [0mtests/integration/errors/test_E_DEPRECATED_payload3.php
+[1;33mskip -[0m tests/integration/errors/test_E_ERROR.php5.php # [1;33mskip: PHP 7 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_E_ERROR.php7.0.0.php # [1;33mskip: test is for PHP 7.0.0 only[0m
+[1;33mskip -[0m tests/integration/errors/test_E_ERROR.php7.0.1.php # [1;33mskip: PHP >= 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_ERROR.php7.4.php
+[1;33mskip -[0m tests/integration/errors/test_E_NOTICE.php # [1;33mskip: PHP > 7.4 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_NOTICE.php8.php
+[1;33mskip -[0m tests/integration/errors/test_E_PARSE.zend.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_PARSE.zend.php8.php
+[1;33mskip -[0m tests/integration/errors/test_E_RECOVERABLE.php5.php # [1;33mskip: PHP 7 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_RECOVERABLE.php7.4.php
+[1;33mskip -[0m tests/integration/errors/test_E_RECOVERABLE.php7.php # [1;33mskip: PHP >= 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_E_STRICT.php5.php # [1;33mskip: PHP 7 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_E_STRICT.php7.php # [1;33mskip: PHP >= 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_USER_DEPRECATED.php
+[1;32mpass - [0mtests/integration/errors/test_E_USER_ERROR.php
+[1;32mpass - [0mtests/integration/errors/test_E_USER_NOTICE.php
+[1;32mpass - [0mtests/integration/errors/test_E_USER_WARNING.php
+[1;33mskip -[0m tests/integration/errors/test_E_WARNING.php5.php # [1;33mskip: PHP 7 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_E_WARNING.php7.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_E_WARNING.php8.php
+[1;32mpass - [0mtests/integration/errors/test_error_reporting_obeyed.php
+[1;32mpass - [0mtests/integration/errors/test_exception.php
+[1;32mpass - [0mtests/integration/errors/test_exception_no_exception_handler.php
+[1;32mpass - [0mtests/integration/errors/test_exception_restored_no_exception_handler.php
+[1;33mskip -[0m tests/integration/errors/test_ignore_E_WARNING.php # [1;33mskip: PHP > 7.4 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_ignore_E_WARNING.php8.php
+[1;33mskip -[0m tests/integration/errors/test_ignore_all_except_E_WARNING.php5.php # [1;33mskip: PHP 7 not supported[0m
+[1;33mskip -[0m tests/integration/errors/test_ignore_all_except_E_WARNING.php7.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;32mpass - [0mtests/integration/errors/test_ignore_all_except_E_WARNING.php8.php
+[1;32mpass - [0mtests/integration/errors/test_ignore_exception.php
+[1;32mpass - [0mtests/integration/errors/test_ignore_exception_subclass.php
+[1;32mpass - [0mtests/integration/errors/test_ignore_throwable.php
+[1;32mpass - [0mtests/integration/errors/test_ignored_top_level_exception_closure.php
+[1;32mpass - [0mtests/integration/errors/test_ignored_top_level_exception_function.php
+[1;32mpass - [0mtests/integration/errors/test_ignored_top_level_exception_instance_method.php
+[1;32mpass - [0mtests/integration/errors/test_ignored_top_level_exception_restore.php
+[1;32mpass - [0mtests/integration/errors/test_ignored_top_level_exception_static_method.php
+[1;32mpass - [0mtests/integration/errors/test_large_error_message.php
+[1;32mpass - [0mtests/integration/errors/test_restore_top_level_exception_internal_function.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_closure.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_function.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_instance_method.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_internal_function.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_restore.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_static_method.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_tracer.php
+[1;32mpass - [0mtests/integration/errors/test_top_level_exception_tracer_logging_off.php
+[1;32mpass - [0mtests/integration/events/test_database_duration.php
+[1;32mpass - [0mtests/integration/events/test_empty.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_and_synthetics_disabled.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_disabled.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_disabled_by_default.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_request_headers_empty_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_request_headers_present.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_request_headers_present_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_request_headers_referenced_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_response_header_anonymous.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_response_header_function.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_response_header_returned.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_response_header_to_file.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_response_header_to_stdout.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_cat_simple.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_correct_span_is_external.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_enabled_cat_enabled.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_newrelic_header_disabled.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_header.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_header_w3c_only.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_headers_empty_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_headers_present.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_headers_present_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_headers_present_array_logging_off.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_request_headers_referenced_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_simple.php
+[1;33mskip -[0m tests/integration/external/curl_exec/test_dt_span_customrequest.php # [1;33mskip: PHP >= 7.4.0: passing ArrayObject to curl_setopt doesn't work[0m
+[1;32mpass - [0mtests/integration/external/curl_exec/test_dt_unique_headers.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_file_proto.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_http.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_malformed_url.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_missing_handle.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_request_headers_referenced_array.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_span_sets_method.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_synthetics.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_synthetics_disabled.php
+xfail - tests/integration/external/curl_exec/test_synthetics_with_cat_disabled.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_synthetics_with_dt.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_synthetics_with_dt_logging_off.php
+[1;32mpass - [0mtests/integration/external/curl_exec/test_type_mismatch.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_cat_simple.php
+[1;33mwarn -[0m tests/integration/external/curl_multi_exec/test_curl_multi_exec_params.php # [1;33mwarn: this test fails on musl platform[0m
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_custom_header.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_dt_custom_header.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_dt_custom_header_logging_off.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_dt_newrelic_header_disabled.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_dt_simple.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_exec_add_handles.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_exec_remove_handles.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_exec_remove_handles_logging_off.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_http.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_malformed_url.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_missing_arg.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_simple.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_span_sets_method.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_txn_restart.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_txn_stop.php
+[1;32mpass - [0mtests/integration/external/curl_multi_exec/test_type_mismatch.php
+[1;33mskip -[0m tests/integration/external/drupal6/test_basic.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_cat_and_synthetics_disabled.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_cat_disabled.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_cross_process_empty_headers.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_cross_process_existing_header.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_cross_process_no_headers.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_dt_empty_headers.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_dt_existing_headers.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_dt_newrelic_header_disabled.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_dt_no_headers.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_multiple_calls.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_span_externals.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_span_externals_clm_off.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_spans_post.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_spans_post_clm_off.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_synthetics.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_synthetics_disabled.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_synthetics_with_cat_disabled.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal6/test_synthetics_with_dt.php # [1;33mskip: PHP > 7.4.0 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_bad_params_integer_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_bad_params_integer_options.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_bad_params_null_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_bad_params_null_options.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_bad_url.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_basic.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cat_and_synthetics_disabled.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cat_disabled.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cross_process_empty_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cross_process_empty_options.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cross_process_existing_header.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_cross_process_no_options.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_dt_empty_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_dt_existing_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_dt_newrelic_header_disabled.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_dt_no_headers.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_multiple_calls.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_spans_post.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_spans_post_clm.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_spans_post_clm_off.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_spans_sets_external_span_correctly.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_spans_sets_external_span_correctly_clm_off.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_synthetics.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_synthetics_disabled.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_synthetics_with_cat_disabled.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;33mskip -[0m tests/integration/external/drupal7/test_synthetics_with_dt.php # [1;33mskip: PHP >= 8.2 not supported[0m
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_cat_and_synthetics_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_cat_context_provided.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_cat_default_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_cat_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_cat_no_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_context_provided.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_context_provided_logging_off.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_default_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_disabled_cat_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_newrelic_header_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_dt_no_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_http_response_header_cv.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_remove_headers_from_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_spans_are_created_correctly.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_context_provided.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_default_context.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_no_context.php
+xfail - tests/integration/external/file_get_contents/test_synthetics_with_cat_disabled.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_with_dt.php
+[1;32mpass - [0mtests/integration/external/file_get_contents/test_synthetics_with_dt_logging_off.php
+[1;33mskip -[0m tests/integration/external/guzzle5/test_cat.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_dt.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_dt_newrelic_header_disabled.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_dt_synthetics.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_dt_synthetics_logging_off.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_no_cat_no_dt.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_spans_external.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle5/test_spans_external.php5.php # [1;33mskip: PHP < 7.4 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_cat.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_dt.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_dt_newrelic_header_disabled.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_dt_synthetics.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_dt_synthetics_logging_off.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_no_cat_no_dt.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_spans_are_created_correctly.php # [1;33mskip: PHP < 8.0 required[0m
+[1;33mskip -[0m tests/integration/external/guzzle6/test_spans_are_created_correctly.php5.php # [1;33mskip: PHP < 8.0 required[0m
+[1;32mpass - [0mtests/integration/external/guzzle7/test_cat.php
+[1;32mpass - [0mtests/integration/external/guzzle7/test_dt.php
+[1;32mpass - [0mtests/integration/external/guzzle7/test_dt_newrelic_header_disabled.php
+[1;32mpass - [0mtests/integration/external/guzzle7/test_dt_synthetics.php
+[1;32mpass - [0mtests/integration/external/guzzle7/test_no_cat_no_dt.php
+[1;32mpass - [0mtests/integration/external/guzzle7/test_spans_are_created_correctly.php
+[1;33mskip -[0m tests/integration/external/http/test_v1_cat.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v1_cat_and_synthetics_disabled.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v1_cat_disabled.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v1_synthetics.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v1_synthetics_disabled.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v1_synthetics_with_cat_disabled.php # [1;33mskip: http extension required[0m
+[1;33mskip -[0m tests/integration/external/http/test_v2_cat.php # [1;33mskip: http extension required[0m
+[1;32mpass - [0mtests/integration/external/test_curl_multi_add_remove_handles.php
+[1;32mpass - [0mtests/integration/frameworks/drupal/test_invoke_all_with.php
+[1;32mpass - [0mtests/integration/frameworks/laravel/test_artisan_name.php
+[1;32mpass - [0mtests/integration/frameworks/laravel/test_artisan_name_logging_off.php
+[1;32mpass - [0mtests/integration/frameworks/laravel/test_artisan_name_non_input.php
+[1;32mpass - [0mtests/integration/frameworks/laravel/test_artisan_name_non_string.php
+[1;32mpass - [0mtests/integration/frameworks/laravel/test_http_options_naming.php
+[1;32mpass - [0mtests/integration/frameworks/magento/test_temp_tables.php
+[1;32mpass - [0mtests/integration/frameworks/magento/test_temp_tables_logging_off.php
+[1;32mpass - [0mtests/integration/frameworks/silex/test_basic.php
+[1;32mpass - [0mtests/integration/frameworks/silex/test_basic_logging_off.php
+[1;32mpass - [0mtests/integration/frameworks/silex/test_invalid_attributes.php
+[1;32mpass - [0mtests/integration/frameworks/silex/test_invalid_request.php
+[1;32mpass - [0mtests/integration/frameworks/wordpress/test_site_specific_tables.php
+[1;32mpass - [0mtests/integration/frameworks/wordpress/test_site_specific_tables_logging_off.php
+[1;32mpass - [0mtests/integration/frameworks/wordpress/test_wordpress_apply_filters.php
+[1;32mpass - [0mtests/integration/frameworks/wordpress/test_wordpress_do_action.php
+[1;32mpass - [0mtests/integration/ini/capture_params/test_disabled.php
+[1;32mpass - [0mtests/integration/ini/capture_params/test_enabled.php
+[1;32mpass - [0mtests/integration/ini/capture_params/test_lasp_disabled.php
+[1;32mpass - [0mtests/integration/ini/test_analytics_events_disabled.php
+[1;32mpass - [0mtests/integration/ini/test_dt_enabled_default.php
+[1;32mpass - [0mtests/integration/ini/test_dt_enabled_default.php5.php
+[1;32mpass - [0mtests/integration/ini/test_force_framework_0.php
+[1;32mpass - [0mtests/integration/ini/test_force_framework_1.php
+[1;32mpass - [0mtests/integration/ini/test_force_framework_2.php
+xfail - tests/integration/ini/test_force_framework_3.php
+xfail - tests/integration/ini/test_force_framework_5.php
+[1;32mpass - [0mtests/integration/ini/test_force_framework_6.php
+[1;32mpass - [0mtests/integration/ini/test_host_display_name.php
+[1;32mpass - [0mtests/integration/ini/test_ini_001.php
+[1;32mpass - [0mtests/integration/ini/test_ini_002.php
+[1;32mpass - [0mtests/integration/ini/test_ini_003.php
+[1;32mpass - [0mtests/integration/ini/test_ini_003_logging_off.php
+[1;32mpass - [0mtests/integration/ini/test_ini_004.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_events_disabled.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments_nested.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments_nested.php5.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments_no_cap.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments_with_datastore.php
+[1;32mpass - [0mtests/integration/ini/test_transaction_tracer_max_segments_with_datastore.php5.php
+[1;33mskip -[0m tests/integration/lang/test_generator_5.6-7.0.php # [1;33mskip: generator priming changed in PHP 7.1[0m
+[1;32mpass - [0mtests/integration/lang/test_generator_7.1.php
+[1;32mpass - [0mtests/integration/logging/analog/test_supportability_metric.php
+[1;32mpass - [0mtests/integration/logging/cakephp-log/test_supportability_metric.php
+[1;32mpass - [0mtests/integration/logging/consolidation-log/test_supportability_metric.php
+[1;32mpass - [0mtests/integration/logging/laminas-log/test_supportability_metric.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_basic.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_basic_clm.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_basic_clm_off.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_cat.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_default.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_exception.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_extra1.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_extra2.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_extra3.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_extra4.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_extra5.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule1.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule10.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule11.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule2.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule3.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule4.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule5.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule6.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule7.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule8.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_filter_rule9.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_hsm_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_limits_1.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_limits_2.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_precedence_1.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_precedence_2.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_context_simple.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_decoration_and_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_decoration_basic.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_decoration_multiple_handlers.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_disable_logging.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_disable_metrics.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_drop_empty.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_escape_chars.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_hsm_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_large_message_limit.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_large_message_limit_drops.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_limit_log_events.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_limit_zero_events.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid1.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid2.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid3.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_events_max_samples_stored_invalid4.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_level_filter.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_log_level_filter_invalid.php
+[1;32mpass - [0mtests/integration/logging/monolog2/test_monolog_truncate_long_msgs.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_basic.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_basic_clm.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_basic_clm_off.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_cat.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_default.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_exception.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_extra1.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_extra2.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_extra3.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_extra4.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_extra5.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule1.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule10.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule11.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule2.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule3.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule4.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule5.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule6.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule7.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule8.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_filter_rule9.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_hsm_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_limits_1.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_limits_2.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_precedence_1.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_precedence_2.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_context_simple.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_decoration_and_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_decoration_basic.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_decoration_multiple_handlers.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_disable_logging.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_disable_metrics.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_drop_empty.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_escape_chars.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_hsm_disable_forwarding.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_large_message_limit.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_large_message_limit_drops.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_limit_log_events.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_limit_zero_events.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid1.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid2.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid3.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_events_max_samples_stored_invalid4.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_level_filter.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_log_level_filter_invalid.php
+[1;32mpass - [0mtests/integration/logging/monolog3/test_monolog_truncate_long_msgs.php
+[1;33mskip -[0m tests/integration/memcache/test_add.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_add.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_incr_decr.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_incr_decr.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_memcache_add.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_memcache_add.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_memcache_add_logging_off.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_memcache_add_logging_off.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_memcache_incr_decr.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_memcache_incr_decr.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_memcache_replace.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_memcache_replace.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_memcache_set.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_memcache_set.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_replace.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_replace.php82.php
+[1;33mskip -[0m tests/integration/memcache/test_set.php # [1;33mskip: test for PHP 8.2 separate[0m
+[1;32mpass - [0mtests/integration/memcache/test_set.php82.php
+[1;32mpass - [0mtests/integration/memcached/test_basic.php
+[1;32mpass - [0mtests/integration/memcached/test_basic_logging_off.php
+[1;32mpass - [0mtests/integration/memcached/test_by_key.php
+[1;33mskip -[0m tests/integration/memcached/test_cas.php5.php # [1;33mskip: PHP 5 only test[0m
+[1;32mpass - [0mtests/integration/memcached/test_cas.php7.php
+[1;33mskip -[0m tests/integration/memcached/test_cas_by_key.php5.php # [1;33mskip: PHP 5 only test[0m
+[1;32mpass - [0mtests/integration/memcached/test_cas_by_key.php7.php
+[1;32mpass - [0mtests/integration/memcached/test_concat.php
+[1;32mpass - [0mtests/integration/memcached/test_concat_by_key.php
+[1;32mpass - [0mtests/integration/memcached/test_concat_by_key_logging_off.php
+[1;32mpass - [0mtests/integration/memcached/test_multi.php
+[1;32mpass - [0mtests/integration/memcached/test_multi_by_key.php
+[1;33mskip -[0m tests/integration/mongo/test_execute.php # [1;33mskip: mongo extension required[0m
+[1;33mskip -[0m tests/integration/mongo/test_execute_logging_off.php # [1;33mskip: mongo extension required[0m
+[1;33mskip -[0m tests/integration/mongo/test_find.php # [1;33mskip: mongo extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_db_query.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_db_query_error.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_db_query_logging_off.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_query.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_query_error.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_unbuffered_query.php # [1;33mskip: mysql extension required[0m
+[1;33mskip -[0m tests/integration/mysql/test_unbuffered_query_logging_off.php # [1;33mskip: mysql extension required[0m
+[1;32mpass - [0mtests/integration/mysqli/test_bind_param_object_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_bind_param_object_oo_logging_off.php
+[1;32mpass - [0mtests/integration/mysqli/test_bind_param_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_bind_param_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_connect.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_construct.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_database_no_user.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_database_no_user_logging_off.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_init_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_init_oo_persistent.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_init_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_leading_whitespace.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_options_garbage.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_real_connect_garbage.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_real_connect_garbage_logging_off.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_reused_id.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_select_db_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_explain_select_db_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_multi_query_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_multi_query_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_multi_query_proc_logging_off.php
+[1;32mpass - [0mtests/integration/mysqli/test_mysqli_query_1.php
+[1;32mpass - [0mtests/integration/mysqli/test_null_connect_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_null_construct_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_null_rc_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_null_rc_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_null_stmt_construct.php
+[1;32mpass - [0mtests/integration/mysqli/test_prepare_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_prepare_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_query_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_query_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_real_query_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_real_query_oo_logging_off.php
+[1;32mpass - [0mtests/integration/mysqli/test_real_query_proc.php
+[1;32mpass - [0mtests/integration/mysqli/test_stmt_prepare_oo.php
+[1;32mpass - [0mtests/integration/mysqli/test_stmt_prepare_proc.php
+[1;33mskip -[0m tests/integration/mysqli/test_subclassing.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/mysqli/test_subclassing.php81.php
+[1;32mpass - [0mtests/integration/output/test_clean_after_footer.php
+[1;33mskip -[0m tests/integration/output/test_clean_after_header_5.3.php # [1;33mskip: requires PHP < 5.4[0m
+[1;32mpass - [0mtests/integration/output/test_clean_after_header_5.4.php
+[1;32mpass - [0mtests/integration/output/test_clean_before_header.php
+[1;32mpass - [0mtests/integration/output/test_flush.php
+[1;32mpass - [0mtests/integration/output/test_mimetype_json.php
+[1;32mpass - [0mtests/integration/output/test_output_handler.php
+[1;32mpass - [0mtests/integration/pdo/test_bad_input_1.php
+[1;32mpass - [0mtests/integration/pdo/test_bad_input_1_logging_off.php
+[1;33mskip -[0m tests/integration/pdo/test_empty_driver_options.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_empty_driver_options.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_instance_slow_sql_1.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_1.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_instance_slow_sql_2.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_2.php81.php
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_for_update.php
+[1;33mskip -[0m tests/integration/pdo/test_instance_slow_sql_found_rows.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_found_rows.php81.php
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_lock.php
+[1;32mpass - [0mtests/integration/pdo/test_instance_slow_sql_semicolon.php
+[1;33mskip -[0m tests/integration/pdo/test_null_options.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_null_options.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_persistent_conn.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_persistent_conn.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_prepared_stmt_params.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_prepared_stmt_params.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_query_1.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_query_1.php81.php
+[1;32mpass - [0mtests/integration/pdo/test_query_2.php
+[1;32mpass - [0mtests/integration/pdo/test_query_2_logging_off.php
+[1;32mpass - [0mtests/integration/pdo/test_query_3.php
+[1;32mpass - [0mtests/integration/pdo/test_query_4.php
+[1;33mskip -[0m tests/integration/pdo/test_slow_sql_1.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_1.php81.php
+[1;33mskip -[0m tests/integration/pdo/test_slow_sql_2.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_2.php81.php
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_for_update.php
+[1;33mskip -[0m tests/integration/pdo/test_slow_sql_found_rows.php # [1;33mskip: PHP >= 8.1.0 not supported[0m
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_found_rows.php81.php
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_lock.php
+[1;32mpass - [0mtests/integration/pdo/test_slow_sql_semicolon.php
+[1;33mskip -[0m tests/integration/pgsql/test_pg_execute_mixed_use.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_execute_mixed_use_logging_off.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_execute_with_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_execute_without_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_error.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_params_error.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_params_error_logging_off.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_params_with_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_params_without_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_with_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_with_resource_logging_off.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;33mskip -[0m tests/integration/pgsql/test_pg_query_without_resource.php # [1;33mskip: unable to connect to pgsql server[0m
+[1;32mpass - [0mtests/integration/predis/test_basic.php
+[1;32mpass - [0mtests/integration/predis/test_basic_logging_off.php
+[1;32mpass - [0mtests/integration/predis/test_basic_reporting_disabled.php
+[1;32mpass - [0mtests/integration/predis/test_cross_transaction.php
+[1;32mpass - [0mtests/integration/predis/test_instance_basic.php
+[1;32mpass - [0mtests/integration/predis/test_pipeline.php
+[1;32mpass - [0mtests/integration/predis/test_pipeline_atomic.php
+[1;32mpass - [0mtests/integration/predis/test_pipeline_fire_and_forget.php
+[1;32mpass - [0mtests/integration/predis/test_pipeline_fire_and_forget_logging_off.php
+[1;32mpass - [0mtests/integration/predis/test_txn_restarted.php
+[1;32mpass - [0mtests/integration/queue/test_basic.php
+[1;32mpass - [0mtests/integration/queue/test_basic_logging_off.php
+[1;32mpass - [0mtests/integration/queue/test_capitalized.php
+[1;32mpass - [0mtests/integration/queue/test_malformed.php
+[1;32mpass - [0mtests/integration/queue/test_with_prefix.php
+[1;32mpass - [0mtests/integration/redis/test_basic.php
+[1;32mpass - [0mtests/integration/redis/test_basic_logging_off.php
+[1;32mpass - [0mtests/integration/redis/test_bitops.php
+[1;32mpass - [0mtests/integration/redis/test_decr.php
+[1;32mpass - [0mtests/integration/redis/test_geo.php
+[1;32mpass - [0mtests/integration/redis/test_hash.php
+[1;32mpass - [0mtests/integration/redis/test_incr.php
+[1;32mpass - [0mtests/integration/redis/test_instance_basic.php
+[1;32mpass - [0mtests/integration/redis/test_instance_bitops.php
+[1;32mpass - [0mtests/integration/redis/test_instance_decr.php
+[1;32mpass - [0mtests/integration/redis/test_instance_geo.php
+[1;32mpass - [0mtests/integration/redis/test_instance_hash.php
+[1;32mpass - [0mtests/integration/redis/test_instance_incr.php
+[1;32mpass - [0mtests/integration/redis/test_instance_list.php
+[1;32mpass - [0mtests/integration/redis/test_instance_set.php
+[1;32mpass - [0mtests/integration/redis/test_instance_set.redis6.php
+[1;32mpass - [0mtests/integration/redis/test_instance_setex.php
+[1;32mpass - [0mtests/integration/redis/test_instance_stream.redis5.php
+[1;32mpass - [0mtests/integration/redis/test_instance_zset.php
+[1;32mpass - [0mtests/integration/redis/test_instance_zset.redis5.php
+[1;32mpass - [0mtests/integration/redis/test_list.php
+[1;32mpass - [0mtests/integration/redis/test_list_logging_off.php
+[1;32mpass - [0mtests/integration/redis/test_set.php
+[1;32mpass - [0mtests/integration/redis/test_set.redis6.php
+[1;32mpass - [0mtests/integration/redis/test_setex.php
+[1;32mpass - [0mtests/integration/redis/test_stream.redis5.php
+[1;32mpass - [0mtests/integration/redis/test_zset.php
+[1;32mpass - [0mtests/integration/redis/test_zset.redis5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_from_segments.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_from_segments.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_caught_error.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_caught_error.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_caught_exception.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_caught_exception.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_exit.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_exit.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_uncaught_error.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_uncaught_error.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_uncaught_exception.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_are_created_upon_uncaught_exception.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_error_collector_disabled.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_error_collector_disabled.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_nested.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_nested.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_nested_rethrown.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_nested_rethrown.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_notice_error.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_notice_error.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_notice_error_nested.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_notice_error_nested.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_same_span.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_caught_same_span.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_uncaught_nested.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exception_uncaught_nested.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_exist_when_no_segments.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_hsm_error.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_hsm_error.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored1.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored2.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored3.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored4.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored6.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored7.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored8.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored_invalid1.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_max_samples_stored_invalid2.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_notice_error.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_notice_error.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_off_dt_on_cat_off.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_off_dt_on_cat_on.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_on_dt_off_cat_off.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_on_dt_off_cat_on.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_on_dt_on.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_on_dt_on.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_root_parent.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_root_parent.php5.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_special_max_10.php
+[1;32mpass - [0mtests/integration/span_events/test_span_events_special_max_disabled.php
+[1;33mskip -[0m tests/integration/sqlite/test_bad_input_1.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_bad_input_2.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_bad_input_3.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_bad_input_4.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_bad_input_5.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_exec.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_exec_logging_off.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_query_1.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_query_2.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_unbuffered_1.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_unbuffered_2.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlite/test_unbuffered_2_logging_off.php # [1;33mskip: sqlite extension required[0m
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_1.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_2.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_3.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_3_logging_off.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_4.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_input_5.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_sql_1.php
+[1;32mpass - [0mtests/integration/sqlite3/test_bad_sql_2.php
+[1;32mpass - [0mtests/integration/sqlite3/test_query.php
+[1;32mpass - [0mtests/integration/sqlite3/test_query_logging_off.php
+[1;32mpass - [0mtests/integration/sqlite3/test_querysingle_1.php
+[1;32mpass - [0mtests/integration/sqlite3/test_querysingle_2.php
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_bad_input_1.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_bad_input_2.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_bad_input_3.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_query.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_query_logging_off.php # [1;33mskip: sqlite extension required[0m
+[1;33mskip -[0m tests/integration/sqlitedatabase/test_unbuffered.php # [1;33mskip: sqlite extension required[0m
+[1;32mpass - [0mtests/integration/synthetics/test_bad_header.php
+[1;32mpass - [0mtests/integration/synthetics/test_disabled.php
+[1;32mpass - [0mtests/integration/synthetics/test_happy_path.php
+[1;32mpass - [0mtests/integration/synthetics/test_happy_path_with_cat.php
+[1;32mpass - [0mtests/integration/synthetics/test_happy_path_with_dt.php
+[1;33mskip -[0m tests/integration/uopz/test_001.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_002.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_003.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_004.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_005.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_006.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_007.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_008.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_009.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_010.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_011.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_012.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_013.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_014.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_015.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_016.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_017.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_018.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_019.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_020.php # [1;33mskip: uopz extension required[0m
+[1;33mskip -[0m tests/integration/uopz/test_021.php # [1;33mskip: uopz extension required[0m
+[1;32mpass - [0mtests/regression/test_disable_functions.php
+[1;32mpass - [0mtests/regression/test_php_1097_chunking_header.php
+[1;32mpass - [0mtests/regression/test_php_1179_pdo_options_crash.php
+[1;32mpass - [0mtests/regression/test_php_2051_restarted_within_wrapper.php
+[1;32mpass - [0mtests/regression/test_php_579_get_content_type.php
+# 704 passed
+# 187 skipped
+# 5 warned
+# [1;32m0[0m [1;32mfailed[0m
+# 4 expected fail
+# PHP=8.2
