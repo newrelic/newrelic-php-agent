@@ -74,7 +74,7 @@ extern void nr_php_packages_add_package(nr_php_packages_t* h,
  * Returns : Nothing
  */
 static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
-  if (nrlikely(h)) {
+  if (nrlikely(NULL != h && NULL != *h)) {
     if (NULL != (*h)->data) {
       nr_hashmap_destroy(&(*h)->data);
     }
