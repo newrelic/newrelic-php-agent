@@ -49,6 +49,7 @@ b4
     [{"name":"Supportability/framework/Drupal8/forced"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback_instrumented"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback_instrumented",
