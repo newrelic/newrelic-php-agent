@@ -20,7 +20,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.threshold = 0
-newrelic.transaction_tracer.detail = 1
+newrelic.transaction_tracer.detail = 0
 */
 
 /*EXPECT_RESPONSE_HEADERS
