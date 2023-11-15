@@ -38,7 +38,7 @@ static void test_php_adding_packages_to_hashmap(void) {
   package2 = nr_php_package_create("Package Two", "11.2.0");
   package3 = nr_php_package_create("Package Three", "12.3.0");
   /* Should not crash: */
-  
+
   nr_php_packages_add_package(NULL, package1);
   nr_php_packages_add_package(hm, NULL);
   nr_php_packages_add_package(hm, package1);
@@ -73,6 +73,7 @@ static void test_php_packages_to_json_buffer(void) {
   nr_php_package_t* package2;
   nr_php_package_t* package3;
   nr_php_package_t* package4;
+  nr_php_package_t* package5;
   int count;
 
   package1 = nr_php_package_create("Package One", "1.0.0");
@@ -81,26 +82,30 @@ static void test_php_packages_to_json_buffer(void) {
   package3 = nr_php_package_create("Package Two", "2.0.0");
   // Add package with same key and same value. No action will happen
   package4 = nr_php_package_create("Package Two", "2.0.0");
+  // Ensure passing NULL as the version does not cause crash and adds it to the
+  // collection as a empty string with a space
+  package5 = nr_php_package_create("Package Three", NULL);
 
   nr_php_packages_add_package(collection, package1);
   nr_php_packages_add_package(collection, package2);
   nr_php_packages_add_package(collection, package3);
   nr_php_packages_add_package(collection, package4);
+  nr_php_packages_add_package(collection, package5);
 
   // Total package count should be 2 because two packages were duplicates with
   // the same key
   count = nr_php_packages_count(collection);
-  tlib_pass_if_int_equal("package count", 2, count);
+  tlib_pass_if_int_equal("package count", 3, count);
 
   // Test: adding packages to buffer
   tlib_pass_if_bool_equal("filled collection bool check", true,
                           nr_php_packages_to_json_buffer(collection, buf));
 
   nr_buffer_add(buf, NR_PSTR("\0"));
-  tlib_pass_if_str_equal(
-      "filled collection",
-      "[[\"Package One\",\"11.0\",{}],[\"Package Two\",\"2.0.0\",{}]]",
-      nr_buffer_cptr(buf));
+  tlib_pass_if_str_equal("filled collection",
+                         "[[\"Package One\",\"11.0\",{}],[\"Package "
+                         "Three\",\" \",{}],[\"Package Two\",\"2.0.0\",{}]]",
+                         nr_buffer_cptr(buf));
   nr_php_packages_destroy(&collection);
   nr_buffer_destroy(&buf);
 }
@@ -110,6 +115,7 @@ static void test_php_packages_to_json(void) {
   nr_php_packages_t* h = nr_php_packages_create();
   nr_php_package_t* package1;
   nr_php_package_t* package2;
+  nr_php_package_t* package3;
 
   // Test: passing NULL does not crash
   tlib_pass_if_null("NULL package", nr_php_packages_to_json(NULL));
@@ -117,16 +123,20 @@ static void test_php_packages_to_json(void) {
   // Test: convert all packages in hashmap to json
   package1 = nr_php_package_create("Package One", "10.1.0");
   package2 = nr_php_package_create("Package Two", "11.2.0");
+  // Ensure passing NULL as the version does not cause crash and adds it to the
+  // collection as a empty string with a space
+  package3 = nr_php_package_create("Package Three", NULL);
 
   nr_php_packages_add_package(h, package1);
   nr_php_packages_add_package(h, package2);
+  nr_php_packages_add_package(h, package3);
 
   json = nr_php_packages_to_json(h);
 
-  tlib_pass_if_str_equal(
-      "full hashmap",
-      "[[\"Package One\",\"10.1.0\",{}],[\"Package Two\",\"11.2.0\",{}]]",
-      json);
+  tlib_pass_if_str_equal("full hashmap",
+                         "[[\"Package One\",\"10.1.0\",{}],[\"Package "
+                         "Three\",\" \",{}],[\"Package Two\",\"11.2.0\",{}]]",
+                         json);
 
   nr_free(json);
   nr_php_packages_destroy(&h);

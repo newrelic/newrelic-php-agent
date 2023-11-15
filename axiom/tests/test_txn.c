@@ -8543,6 +8543,8 @@ static void test_nr_txn_add_php_package(void) {
   char* package_version1 = "8.83.27";
   char* package_name2 = "Slim";
   char* package_version2 = "4.12.0";
+  char* package_name3 = "Drupal";
+  char* package_version3 = NULL;
   nrtxn_t* txn = new_txn(0);
 
   /*
@@ -8556,11 +8558,12 @@ static void test_nr_txn_add_php_package(void) {
   // Test: add php packages to transaction
   nr_txn_add_php_package(txn, package_name1, package_version1);
   nr_txn_add_php_package(txn, package_name2, package_version2);
+  nr_txn_add_php_package(txn, package_name3, package_version3);
   json = nr_php_packages_to_json(txn->php_packages);
 
   tlib_pass_if_str_equal("correct json",
                          "[[\"Laravel\",\"8.83.27\",{}],"
-                         "[\"Slim\",\"4.12.0\",{}]]",
+                         "[\"Drupal\",\" \",{}],[\"Slim\",\"4.12.0\",{}]]",
                          json);
 
   nr_free(json);
