@@ -29,6 +29,7 @@
 #include "nr_span_queue.h"
 #include "nr_synthetics.h"
 #include "nr_distributed_trace.h"
+#include "nr_php_packages.h"
 #include "util_apdex.h"
 #include "util_buffer.h"
 #include "util_hashmap.h"
@@ -57,9 +58,9 @@ typedef enum _nr_tt_recordsql_t {
  */
 typedef struct _nrtxnopt_t {
   int custom_events_enabled; /* Whether or not to capture custom events */
-  size_t custom_events_max_samples_stored; /* The maximum number of custom events
-                                              per transaction */
-  int synthetics_enabled;    /* Whether or not to enable Synthetics support */
+  size_t custom_events_max_samples_stored; /* The maximum number of custom
+                                              events per transaction */
+  int synthetics_enabled; /* Whether or not to enable Synthetics support */
   int instance_reporting_enabled; /* Whether to capture datastore instance host
                                      and port */
   int database_name_reporting_enabled; /* Whether to include database name in
@@ -119,9 +120,10 @@ typedef struct _nrtxnopt_t {
   nrtime_t span_queue_batch_timeout; /* Span queue batch timeout in us. */
   bool logging_enabled; /* An overall configuration for enabling/disabling all
                            application logging features */
-  bool log_decorating_enabled;  /* Whether log decorating is enabled */
-  bool log_forwarding_enabled;  /* Whether log forwarding is enabled */
-  bool log_forwarding_context_data_enabled; /* Whether context data is forwarded with logs */
+  bool log_decorating_enabled; /* Whether log decorating is enabled */
+  bool log_forwarding_enabled; /* Whether log forwarding is enabled */
+  bool log_forwarding_context_data_enabled; /* Whether context data is forwarded
+                                               with logs */
   int log_forwarding_log_level; /* minimum log level to forward to the collector
                                  */
   size_t log_events_max_samples_stored; /* The maximum number of log events per
@@ -273,8 +275,9 @@ typedef struct _nrtxn_t {
   nr_file_naming_t* match_filenames; /* Filenames to match on for txn naming */
 
   nr_analytics_events_t*
-      custom_events;           /* Custom events created through the API. */
-  nr_log_events_t* log_events; /* Log events pool */
+      custom_events;               /* Custom events created through the API. */
+  nr_log_events_t* log_events;     /* Log events pool */
+  nr_php_packages_t* php_packages; /* Detected php packages */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -1153,5 +1156,17 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
     return nr_slab_next(txn->segment_slab);
   }
 }
+
+/*
+ * Purpose : Add php packages to transaction
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Package version
+ *
+ */
+void nr_txn_add_php_package(nrtxn_t* txn,
+                            char* package_name,
+                            char* package_version);
 
 #endif /* NR_TXN_HDR */
