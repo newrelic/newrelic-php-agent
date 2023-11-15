@@ -16,7 +16,7 @@ require("skipif.inc");
 /*INI
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.threshold = 0
-newrelic.transaction_tracer.detail = 0
+newrelic.transaction_tracer.detail = 1
 */
 
 
