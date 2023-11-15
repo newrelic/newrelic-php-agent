@@ -61,8 +61,7 @@ nr_php_packages_t* nr_php_packages_create() {
     return NULL;
   }
 
-  h->data
-      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
+  h->data = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_php_package_destroy);
   if (NULL == h->data) {
     nr_free(h);
     return NULL;

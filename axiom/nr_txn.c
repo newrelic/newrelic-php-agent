@@ -60,8 +60,10 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS) \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
+#define NR_TXN_ATTR(X, NAME, DESTS)                     \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
+    (NAME), (DESTS)                                     \
+  }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",
@@ -3429,7 +3431,8 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     event_dropped = true;
   } else {
     /* event passed log level filter so add it */
-    e = log_event_create(log_level_name, log_message, timestamp, context_attributes, txn, app);
+    e = log_event_create(log_level_name, log_message, timestamp,
+                         context_attributes, txn, app);
     if (NULL == e) {
       nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
       event_dropped = true;
@@ -3479,8 +3482,8 @@ void nr_txn_record_log_event(nrtxn_t* txn,
 }
 
 void nr_txn_add_php_package(nrtxn_t* txn,
-                                   char* package_name,
-                                   char* package_version) {
+                            char* package_name,
+                            char* package_version) {
   nr_php_package_t* p = NULL;
 
   if (nrunlikely(NULL == txn)) {
