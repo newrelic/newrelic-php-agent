@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 #include "php_stacked_segment.h"
 #include "util_logging.h"
 #include "php_execute.h"
 #include "php_error.h"
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 /*
  * Purpose : Add a stacked segment to the stacked segment stack. The top

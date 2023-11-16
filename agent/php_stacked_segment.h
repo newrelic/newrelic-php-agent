@@ -5,8 +5,6 @@
 
 #ifndef PHP_STACKED_SEGMENT_HDR
 #define PHP_STACKED_SEGMENT_HDR
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 #include "nr_segment.h"
 
@@ -258,6 +256,8 @@
 // clang-format on
 
 #include "php_agent.h"
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 /*
  * Purpose : Initialize a stacked segment.
