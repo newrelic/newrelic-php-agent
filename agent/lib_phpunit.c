@@ -692,4 +692,18 @@ void nr_phpunit_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("PHPUnit\\Framework\\TestResult::addError"),
       nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
+
+  char* string = "PHPUnit\\Runner\\Version::id();";
+  zval retval;
+  int result
+      = zend_eval_string(string, &retval, "Retrieve PHPUnit Version" TSRMLS_CC);
+
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
+      char* version = Z_STRVAL(retval);
+      // Add php package to transaction
+      nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
+      zval_dtor(&retval);
+    }
+  }
 }
