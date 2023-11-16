@@ -361,7 +361,8 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    * We have to manually force this segment as the current segment on
    * the transaction, otherwise the previously forced stacked segment
    * will be used as parent for segments that should rather be
-   * parented to this segment.
+   * parented to this segment. For OAPI, no stacked segments are used
+   * and therefore parenting is automatically handled.
    *
    * This solution of purely for Zend_Http_Client issues related to older
    * versions of the Zend framework.
@@ -379,7 +380,10 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    * Implement a solution just for `Zend_Http_Client` (e. g. deleting all child
    * segments from the `request` related segment).
    */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
   NRTXN(force_current_segment) = segment;
+#endif
 
   nr_zend_http_client_request_add_request_headers(this_var, segment TSRMLS_CC);
 
@@ -410,7 +414,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    *
    * Therefore we delete all children of the segment. Afterwards we set
    * the forced current of the transaction back to the segments parent,
-   * thus restoring the stacked segment stack.
+   * thus restoring the stacked segment stack (non-OAPI only).
    */
 
   if (segment) {
@@ -421,7 +425,10 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
 
       nr_segment_discard(&child);
     }
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     NRTXN(force_current_segment) = segment->parent;
+#endif
   }
 
   nr_segment_external_end(&segment, &external_params);

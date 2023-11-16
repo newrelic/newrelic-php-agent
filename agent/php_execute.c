@@ -1273,7 +1273,8 @@ static inline void nr_php_execute_segment_end(
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(stacked, metadata);
     }
-    nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
+    // There are no stacked segments for OAPI.
+    nr_segment_t* s = stacked;
 
 #else
 
@@ -1294,7 +1295,12 @@ static inline void nr_php_execute_segment_end(
 
     nr_segment_end(&s);
   } else {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    nr_segment_discard(&stacked);
+#else
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
+#endif // OAPI
   }
 }
 
@@ -1305,6 +1311,8 @@ static inline void nr_php_execute_segment_end(
  * If the flag is NULL, then we've only added a couple of CPU instructions to
  * the call path and thus the overhead is (hopefully) very low.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   int zcaught = 0;
   nrtime_t txn_start_time;
@@ -1478,6 +1486,7 @@ static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 }
+#endif // not OAPI
 
 static void nr_php_max_nesting_level_reached(TSRMLS_D) {
   /*
@@ -1516,6 +1525,8 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
  * the presence of longjmp as from zend_bailout when processing zend internal
  * errors, as for example when calling php_error.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
   /*
    * We do not use zend_try { ... } mechanisms here because zend_try
@@ -1533,10 +1544,6 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
    * zend_catch is called to avoid catastrophe on the way to a premature
    * exit, maintaining this counter perfectly is not a necessity.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  zval* func_return_value = NULL;
-#endif
 
   NRPRG(php_cur_stack_depth) += 1;
 
@@ -1563,6 +1570,7 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
 
   return;
 }
+#endif // not OAPI
 
 static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
@@ -1746,7 +1754,7 @@ end:
  * See nr_php_observer.h/c for more information.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ and OAPI */
 
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
@@ -1900,7 +1908,8 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
         "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   }
 
-  segment = nr_php_stacked_segment_init(segment);
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
   if (nrunlikely(NULL == segment)) {
     nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
     return;
@@ -1974,7 +1983,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * been created if we are recording and if wraprec is set or if tt is greater
    * than 0.
    */
-  segment = NRTXN(force_current_segment);
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
   if (nrunlikely(NULL == segment)) {
     /*
      * Most likely caused by txn ending prematurely and closing all segments. We
@@ -1983,6 +1992,10 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
   if (nrunlikely(NRPRG(txn)->segment_root == segment)) {
+    /*
+     * There should be no fcall_end associated with the segment root, If we are
+     * here, it is most likely due to an API call to newrelic_end_transaction
+     */
     return;
   }
 
@@ -2043,7 +2056,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      * If there is no custom instrumentation and tt detail is not more than 0,
      * do not record the segment
      */
-    nr_php_stacked_segment_deinit(segment);
+    nr_segment_discard(&segment);
     return;
   }
   /*

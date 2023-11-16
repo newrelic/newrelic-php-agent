@@ -5,6 +5,8 @@
 
 #ifndef PHP_STACKED_SEGMENT_HDR
 #define PHP_STACKED_SEGMENT_HDR
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 #include "nr_segment.h"
 
@@ -315,4 +317,5 @@ extern void nr_php_stacked_segment_unwind(TSRMLS_D);
 extern nr_segment_t* nr_php_stacked_segment_move_to_heap(
     nr_segment_t* stacked TSRMLS_DC);
 
+#endif /* not OAPI */
 #endif /* PHP_STACKED_SEGMENT_HDR */

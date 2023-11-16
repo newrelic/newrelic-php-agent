@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 #include "php_stacked_segment.h"
 #include "util_logging.h"
 #include "php_execute.h"
@@ -28,13 +30,6 @@ nr_segment_t* nr_php_stacked_segment_init(nr_segment_t* stacked TSRMLS_DC) {
   if (!nr_php_recording(TSRMLS_C)) {
     return NULL;
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  stacked = nr_calloc(1, sizeof(nr_segment_t));
-  if (NULL == stacked) {
-    return NULL;
-  }
-#endif
 
   stacked->txn = NRPRG(txn);
   NR_PHP_CURRENT_STACKED_PUSH(stacked);
@@ -54,13 +49,6 @@ void nr_php_stacked_segment_deinit(nr_segment_t* stacked TSRMLS_DC) {
   nr_free(stacked->id);
 
   NR_PHP_CURRENT_STACKED_POP(stacked);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  /*
-   * This is allocated differently for OAPI and hence needs to be freed.
-   */
-  nr_free(stacked);
-#endif
 }
 
 void nr_php_stacked_segment_unwind(TSRMLS_D) {
@@ -101,13 +89,7 @@ nr_segment_t* nr_php_stacked_segment_move_to_heap(
   nr_segment_set_parent(s, stacked->parent);
 
   NR_PHP_CURRENT_STACKED_POP(stacked);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  /*
-   * This is allocated differently for OAPI and hence needs to be freed.
-   */
-  nr_free(stacked);
-#endif
 
   return s;
 }
+#endif /* not OAPI */
