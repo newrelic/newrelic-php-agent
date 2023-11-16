@@ -2,6 +2,7 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_error.h"
