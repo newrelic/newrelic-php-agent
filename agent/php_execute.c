@@ -2077,6 +2077,12 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
 
+  /*
+   * Reassign segment to the current segment, as some before/after wraprecs
+   * start and then stop a segment. If that happened, we want to ensure we
+   * get the now-current segment
+   */
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);
