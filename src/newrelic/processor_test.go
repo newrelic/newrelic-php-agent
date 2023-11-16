@@ -264,8 +264,8 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	time1 := strings.Split(string(cp3.data), ",")[1]
 	time2 := strings.Split(string(cp3.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1410,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1330,0,0,0,0]],` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1333,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != usageMetrics {
 		t.Fatal(string(got))
@@ -318,8 +318,8 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 	time1 := strings.Split(string(cp_usage.data), ",")[1]
 	time2 := strings.Split(string(cp_usage.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1362,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1330,0,0,0,0]],` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1285,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,32,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
 		t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
