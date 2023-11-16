@@ -259,7 +259,13 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
      * after function properly
      */
     NRPRG(drupal_http_request_segment)
-        = nr_segment_start(NRPRG(txn), NRTXN(segment_root), NULL);
+        = nr_segment_start(NRPRG(txn), NULL, NULL);
+    /*
+     * The new segment needs to have the wraprec data attached, so that
+     * fcall_end is able to properly dispatch to the after wrapper, as
+     * this new segment is now at the top of the segment stack.
+     */
+    NRPRG(drupal_http_request_segment)->wraprec = auto_segment->wraprec;
   }
 }
 NR_PHP_WRAPPER_END
