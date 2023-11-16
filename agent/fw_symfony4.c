@@ -197,6 +197,59 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+static char* nr_symfony_version(zval* app TSRMLS_DC) {
+  char* retval = NULL;
+  zval* version = NULL;
+  zend_class_entry* ce = NULL;
+
+  if (0 == nr_php_is_zval_valid_object(app)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
+                     __func__);
+    return NULL;
+  }
+
+  ce = Z_OBJCE_P(app);
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
+                     __func__);
+    return NULL;
+  }
+
+  version = nr_php_get_class_constant(ce, "VERSION");
+  if (NULL == version) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
+                     __func__);
+    return NULL;
+  }
+
+  if (nr_php_is_zval_valid_string(version)) {
+    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: expected VERSION be a valid string, got type %d",
+                     __func__, Z_TYPE_P(version));
+  }
+
+  nr_php_zval_free(&version);
+  return retval;
+}
+
+NR_PHP_WRAPPER(nr_symfony_application_construct) {
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  char* version = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  version = nr_symfony_version(this_var TSRMLS_CC);
+  // Add php package to transaction
+  nr_txn_add_php_package(NRPRG(txn), "symfony/symfony", version);
+
+  nr_free(version);
+  nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
 void nr_symfony4_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -250,4 +303,7 @@ void nr_symfony4_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
         NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
      nr_symfony4_console_application_run TSRMLS_CC);
+
+  nr_php_wrap_user_function(NR_PSTR("App\\Kernel::__construct"),
+                            nr_symfony_application_construct TSRMLS_CC);
 }
