@@ -92,7 +92,6 @@ func NewMockedProcessor(numberOfHarvestPayload int) *MockedProcessor {
 
 	client := collector.ClientFn(func(cmd *collector.RpmCmd, cs collector.RpmControls) collector.RPMResponse {
 		data, err := cs.Collectible.CollectorJSON(false)
-		fmt.Printf("clientfn: cmd.name = %s, data = '%s'\n", cmd.Name, string(data))
 		cmd.Data = data
 		if nil != err {
 			return collector.RPMResponse{Err: err}
@@ -192,10 +191,6 @@ var (
 	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
 		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
 	})
-	txnDefaultDataSample = AggregaterIntoFn(func(h *Harvest) {
-		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
-		h.TxnTraces.AddTxnTrace(sampleTrace)
-	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for i := 0; i < times; i++ {
@@ -237,7 +232,7 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	m.DoConnect(t, &idOne)
 	m.DoAppInfo(t, nil, AppStateConnected)
 
-	m.TxnData(t, idOne, txnDefaultDataSample)
+	m.TxnData(t, idOne, txnTraceSample)
 
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
@@ -245,101 +240,92 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 		Type:       HarvestDefaultData,
 	}
 
-	// this code path will trigger four `harvestPayload` calls, so we need
+	// this code path will trigger three `harvestPayload` calls, so we need
 	// to pluck three items out of the clientParams channels
-	// collect txn
+	/* collect txn */
 	m.clientReturn <- ClientReturn{nil, nil, 202}
-	cp_txn := <-m.clientParams
-	// collect metrics
+	cp := <-m.clientParams
+	/* collect metrics */
 	m.clientReturn <- ClientReturn{nil, nil, 202}
-	cp_metrics := <-m.clientParams
+	cp2 := <-m.clientParams
+	/* collect usage metrics */
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp3 := <-m.clientParams
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
+
+	if string(cp.data) != toTest {
+		if string(cp2.data) != toTest {
+			t.Fatal(string(append(cp.data, cp2.data...)))
+		}
+	}
+	time1 := strings.Split(string(cp3.data), ",")[1]
+	time2 := strings.Split(string(cp3.data), ",")[2]
+	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1410,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1330,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
+	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != usageMetrics {
+		t.Fatal(string(got))
+	}
+
+	m.QuitTestProcessor()
+}
+
+// split Php Packages out from DefaultData test - trying to
+// combine the txn trace and php packages data did not work
+// as these goto different endpoints - combining them here
+// seemed to combine the data which is incorrect
+func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
+	m := NewMockedProcessor(2)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnPhpPackagesSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+
 	// collect php packages
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_pkgs := <-m.clientParams
+	// collect metrics
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_metrics := <-m.clientParams
 	// collect usage metrics
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_usage := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
 
-	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
-
-	if string(cp_txn.data) != toTest {
-		if string(cp_metrics.data) != toTest {
-			t.Fatal(string(append(cp_txn.data, cp_metrics.data...)))
+	// check pkgs and metric data - it appears these can
+	// come in different orders so check both
+	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
+	if toTestPkgs != string(cp_pkgs.data) {
+		if toTestPkgs != string(cp_metrics.data) {
+			t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
 		}
 	}
+
 	time1 := strings.Split(string(cp_usage.data), ",")[1]
 	time2 := strings.Split(string(cp_usage.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[3,1442,0,0,0,0]],` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1362,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1330,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,32,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
-		t.Fatal(string(got))
-	}
-
-	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
-	if toTestPkgs != string(cp_pkgs.data) {
-		t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
+		t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
 	}
 	m.QuitTestProcessor()
 }
-
-// split Php Packages out from DefaultData test - trying to
-// combine the txn trace and php packages data did not seem
-// to cause the harvested data to be in the same order
-// each run so the test failed
-
-// func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
-// 	m := NewMockedProcessor(2)
-
-// 	m.DoAppInfo(t, nil, AppStateUnknown)
-
-// 	m.DoConnect(t, &idOne)
-// 	m.DoAppInfo(t, nil, AppStateConnected)
-
-// 	m.TxnData(t, idOne, txnPhpPackagesSample)
-
-// 	m.processorHarvestChan <- ProcessorHarvest{
-// 		AppHarvest: m.p.harvests[idOne],
-// 		ID:         idOne,
-// 		Type:       HarvestDefaultData,
-// 	}
-
-// 	/* collect metrics */
-// 	m.clientReturn <- ClientReturn{nil, nil, 202}
-// 	cp_metrics := <-m.clientParams
-// 	/* collect php packages */
-// 	m.clientReturn <- ClientReturn{nil, nil, 202}
-// 	cp_pkgs := <-m.clientParams
-// 	/* collect usage metrics */
-// 	m.clientReturn <- ClientReturn{nil, nil, 202}
-// 	cp_usage := <-m.clientParams
-
-// 	<-m.p.trackProgress // unblock processor after harvest
-
-// 	if 0 == len(cp_metrics.data) {
-// 		t.Fatal("No metrics data!")
-// 	}
-
-// 	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
-// 	if toTestPkgs != string(cp_pkgs.data) {
-// 		t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
-// 	}
-
-// 	time1 := strings.Split(string(cp_usage.data), ",")[1]
-// 	time2 := strings.Split(string(cp_usage.data), ",")[2]
-// 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-// 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1333,0,0,0,0]],` +
-// 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
-// 		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
-// 	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
-// 		t.Fatal(string(got))
-// 	}
-// 	m.QuitTestProcessor()
-// }
 
 func TestProcessorHarvestCustomEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
