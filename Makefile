@@ -210,7 +210,7 @@ daemon_race: go-minimum-version daemon-protobuf Makefile | bin/
 
 .PHONY: daemon_test
 daemon_test: go-minimum-version daemon-protobuf
-	@$(GO) test $(GOFLAGS) ./...
+	$(GO) test -v -run TestProcessorHarvestDefaultData $(GOFLAGS) ./...
 
 .PHONY: daemon_bench
 daemon_bench: go-minimum-version daemon-protobuf
