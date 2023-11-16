@@ -747,7 +747,44 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline_clean) {
   predis_executePipeline_handle_stack();
 }
 NR_PHP_WRAPPER_END
-#endif /* OAPI */
+
+NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_before) {
+  (void)wraprec;
+
+  nr_segment_t* segment = NULL;
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment->wraprec = auto_segment->wraprec;
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_after) {
+  (void)wraprec;
+  char* operation = NULL;
+  zval* command_obj = NULL;
+  zval* conn = NULL;
+  nr_segment_datastore_params_t params = {
+    .datastore = {
+      .type = NR_DATASTORE_REDIS,
+    },
+  };
+
+  command_obj = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  conn = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  operation = nr_predis_get_operation_name_from_object(command_obj TSRMLS_CC);
+  params.operation = operation;
+
+  params.instance = nr_predis_retrieve_datastore_instance(conn TSRMLS_CC);
+
+  nr_segment_datastore_end(&auto_segment, &params);
+
+  nr_free(operation);
+  nr_php_arg_release(&command_obj);
+  nr_php_scope_release(&conn);
+}
+NR_PHP_WRAPPER_END
+
+#else
 
 NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
   char* operation = NULL;
@@ -781,6 +818,7 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
   nr_php_scope_release(&conn);
 }
 NR_PHP_WRAPPER_END
+#endif /* OAPI */
 
 void nr_predis_enable(TSRMLS_D) {
   /*
@@ -815,6 +853,15 @@ void nr_predis_enable(TSRMLS_D) {
       nr_predis_pipeline_executePipeline,
       nr_predis_pipeline_executePipeline_after,
       nr_predis_pipeline_executePipeline_clean);
+  /*
+   * Instrument Webdis connections, since they don't use the same
+   * writeRequest()/readResponse() pair as the other connection types.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Predis\\Connection\\WebdisConnection::executeCommand"),
+      nr_predis_webdisconnection_executeCommand_before,
+      nr_predis_webdisconnection_executeCommand_after,
+      nr_predis_webdisconnection_executeCommand_after);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
@@ -828,8 +875,6 @@ void nr_predis_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline TSRMLS_CC);
-#endif /* OAPI */
-
   /*
    * Instrument Webdis connections, since they don't use the same
    * writeRequest()/readResponse() pair as the other connection types.
@@ -837,4 +882,6 @@ void nr_predis_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Predis\\Connection\\WebdisConnection::executeCommand"),
       nr_predis_webdisconnection_executeCommand TSRMLS_CC);
+#endif /* OAPI */
+
 }
