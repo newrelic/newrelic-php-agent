@@ -13,10 +13,6 @@ import (
 	"newrelic/log"
 )
 
-// type PHPPackages struct {
-// 	data JSONString
-// }
-
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
 	numSeen int
