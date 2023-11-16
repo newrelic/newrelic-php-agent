@@ -36,7 +36,7 @@ func NewPhpPackages() *PhpPackages {
 	return p
 }
 
-// SetPhpPacakges sets the observed package list.
+// SetPhpPackages sets the observed package list.
 func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 
 	if nil == packages {
