@@ -88,7 +88,6 @@ static void test_php_packages_to_json_buffer(void) {
   // collection as a empty string with a space
   package5 = nr_php_package_create("Package Three", NULL);
 
-
   nr_php_packages_add_package(collection, package1);
   nr_php_packages_add_package(collection, package2);
   nr_php_packages_add_package(collection, package3);
