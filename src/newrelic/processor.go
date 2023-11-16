@@ -703,6 +703,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
 		harvest.SlowSQLs = NewSlowSQLs(limits.MaxSlowSQLs)
 		harvest.TxnTraces = NewTxnTraces()
+		harvest.PhpPackages = NewPhpPackages()
 		harvest.commandsProcessed = 0
 		harvest.pidSet = make(map[int]struct{})
 
