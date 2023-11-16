@@ -253,8 +253,13 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
    * checking a counter.
    */
   if (1 == NRPRG(drupal_http_request_depth)) {
+    /*
+     * Parent this segment to the txn root so as to not interfere with
+     * the OAPI default segment stack, which is used to dispatch to the
+     * after function properly
+     */
     NRPRG(drupal_http_request_segment)
-        = nr_segment_start(NRPRG(txn), NULL, NULL);
+        = nr_segment_start(NRPRG(txn), NRTXN(segment_root), NULL);
   }
 }
 NR_PHP_WRAPPER_END
