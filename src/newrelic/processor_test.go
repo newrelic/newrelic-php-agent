@@ -278,7 +278,7 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 
 	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
 	if toTestPkgs != string(cp_pkgs.data) {
-		t.Fatal(string(cp_pkgs.data))
+		t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
 	}
 	m.QuitTestProcessor()
 }
