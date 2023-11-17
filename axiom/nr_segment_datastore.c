@@ -118,6 +118,7 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
       nr_segment_t* child = nr_segment_children_get(&segment->children, i);
       nr_segment_discard(&child);
     }
+    nr_segment_children_deinit(&segment->children);
   }
 
   if (nr_datastore_is_sql(params->datastore.type)) {

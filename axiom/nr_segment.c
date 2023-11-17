@@ -217,7 +217,14 @@ bool nr_segment_init(nr_segment_t* segment,
    * segment a sibling of its parent's (possibly) already-existing children. */
   if (parent) {
     segment->parent = parent;
-    nr_segment_children_add(&parent->children, segment);
+    /*
+     * if specifying a parent whose async context is different from our own
+     * the segment cannot wait until ending to add itself to the parent's
+     * child list
+     */
+    if (segment->async_context != parent->async_context) {
+      nr_segment_children_add(&parent->children, segment);
+    }
   } /* Otherwise, the parent of this new segment is the current segment on the
        transaction */
   else {
@@ -236,7 +243,9 @@ bool nr_segment_init(nr_segment_t* segment,
     segment->parent = current_segment;
 
     if (NULL != current_segment) {
-      nr_segment_children_add(&current_segment->children, segment);
+      if (current_segment->async_context != segment->async_context) {
+        nr_segment_children_add(&current_segment->children, segment);
+      }
     }
     nr_txn_set_current_segment(txn, segment);
   }
@@ -725,6 +734,13 @@ bool nr_segment_end(nr_segment_t** segment_ptr) {
     segment->stop_time
         = nr_time_duration(nr_txn_start_time(txn), nr_get_time());
   }
+  if (segment->parent) {
+    // If the segment's async_context is different from it's parent's the
+    // segment has already been added as a child to its parent
+    if (segment->async_context == segment->parent->async_context) {
+      nr_segment_children_add(&segment->parent->children, segment);
+    }
+  }
 
   txn->segment_count += 1;
   nr_txn_retire_current_segment(txn, segment);
@@ -883,7 +899,9 @@ bool nr_segment_discard(nr_segment_t** segment_ptr) {
   }
 
   /* Unhook the segment from its parent. */
-  nr_segment_children_remove(&segment->parent->children, segment);
+  if(segment->parent->async_context != segment->async_context) {
+    nr_segment_children_remove(&segment->parent->children, segment);
+  }
 
   /* Reparent all children. */
   nr_segment_children_reparent(&segment->children, segment->parent);

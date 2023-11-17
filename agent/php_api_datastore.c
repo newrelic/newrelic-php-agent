@@ -208,6 +208,7 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
       nr_segment_t* child = nr_segment_children_get(&segment->children, i);
       nr_segment_discard(&child);
     }
+    nr_segment_children_deinit(&segment->children);
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     NRTXN(force_current_segment) = segment->parent;
