@@ -1232,8 +1232,14 @@ static void test_iendswith(void) {
   tlib_pass_if_bool_equal("input is NULL", false,
                           nr_striendswith(NULL, 4, NR_PSTR("bar")));
 
+  tlib_pass_if_bool_equal("pattern is NULL", false,
+                          nr_striendswith(NR_PSTR("foo"), NULL, 0));
+
   tlib_pass_if_bool_equal("input is empty", false,
                           nr_striendswith(NR_PSTR(""), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("pattern is empty", true,
+                          nr_striendswith(NR_PSTR("foo"), NR_PSTR("")));
 
   tlib_pass_if_bool_equal("input is too short", false,
                           nr_striendswith(NR_PSTR("ar"), NR_PSTR("bar")));
