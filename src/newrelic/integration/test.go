@@ -38,9 +38,11 @@ type Test struct {
 	metrics          []byte
 	metricsExist     []byte
 	metricsDontExist []byte
+	phpPackages      []byte
 	slowSQLs         []byte
 	tracedErrors     []byte
 	txnTraces        []byte
+
 	// Expected Output
 	expect                []byte
 	expectRegex           []byte
@@ -49,6 +51,10 @@ type Test struct {
 
 	// do we expect this test to produce a harvest
 	expectHarvest bool
+
+	// PHP packages tests have a config controlling how
+	// the actual packages installed is detected
+	phpPackagesConfig []byte
 
 	// Raw parsed test information used to construct the Tx.
 	// The settings and env do not include global env and
@@ -601,6 +607,17 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	t.comparePayload(t.slowSQLs, harvest.SlowSQLs, false)
 	t.comparePayload(t.tracedErrors, harvest.Errors, false)
 	t.comparePayload(t.txnTraces, harvest.TxnTraces, false)
+
+	// check php packages
+	if nil != t.phpPackages {
+		var pkgs *PhpPackagesCollection
+		if nil != t.phpPackagesConfig {
+			pkgs = NewPhpPackagesCollection([]byte(""))
+			err = pkgs.GatherInstalledPackages(t.Path)
+		} else {
+			pkgs = nil
+		}
+	}
 
 	if t.Failed && t.expect == nil && t.expectRegex == nil && t.expectScrubbed == nil {
 		// The test failed and there's no pre-existing expectation on the output
