@@ -3486,7 +3486,10 @@ void nr_txn_add_php_package(nrtxn_t* txn,
                             char* package_version) {
   nr_php_package_t* p = NULL;
 
+  nrl_verbosedebug(NRL_INSTRUMENT, "In nr_txn_add_php_package!");
+
   if (nrunlikely(NULL == txn)) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "txn is NULL!");
     return;
   }
 
