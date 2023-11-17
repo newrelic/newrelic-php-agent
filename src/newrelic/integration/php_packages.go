@@ -58,7 +58,7 @@ func NewPhpPackagesCollection(cfg []byte) *PhpPackagesCollection {
 
 // Given a configuration that defines how to find installed packages, detect
 // installed packages
-func (pkgs *PhpPackagesCollection) GatherInstalledPackages(path string) error {
+func (pkgs *PhpPackagesCollection) GatherInstalledPackages(path string) ([]PhpPackage, error) {
 	// if nil == pkgs {
 	// 	return fmt.Errorf("GatherInstallPackages(): pkgs is nil")
 	// }
@@ -68,7 +68,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages(path string) error {
 	jsonFile, err := os.Open(filepath.Dir(path) + "/" + pkgs.config.supported_list_file)
 	if err != nil {
 		fmt.Println(err)
-		return fmt.Errorf("error opening supported list %s", err.Error())
+		return nil, fmt.Errorf("error opening supported list %s", err.Error())
 	} else {
 		fmt.Printf("Successfully Opened %s\n", pkgs.config.supported_list_file)
 		defer jsonFile.Close()
@@ -86,7 +86,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages(path string) error {
 	err = json.Unmarshal([]byte(supported_json), &supported)
 	if nil != err {
 		fmt.Printf("Error unmarshalling supported list %s\n", err.Error())
-		return fmt.Errorf("Error unmarshalling supported list %s\n", err.Error())
+		return nil, fmt.Errorf("Error unmarshalling supported list %s\n", err.Error())
 	}
 	fmt.Printf("supported len = %d contents = %+v\n", len(supported), supported)
 
@@ -115,11 +115,12 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages(path string) error {
 				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, v.Version})
 			}
 		}
-		fmt.Printf("pkgs.packages len = %d contexts = %+v\n", len(pkgs.packages), pkgs.packages)
 	} else {
 		fmt.Printf("ERROR - unknown method '%s'\n", splitCmd[0])
-		return fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
+		return nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
 	}
 
-	return nil
+	fmt.Printf("pkgs.packages len = %d contexts = %+v\n", len(pkgs.packages), pkgs.packages)
+
+	return pkgs.packages, nil
 }

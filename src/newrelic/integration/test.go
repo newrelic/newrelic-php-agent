@@ -609,13 +609,21 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	t.comparePayload(t.txnTraces, harvest.TxnTraces, false)
 
 	// check php packages
+	var expectedPackages []PhpPackage
+	if nil != t.phpPackagesConfig {
+		expectedPkgsCollection := NewPhpPackagesCollection([]byte(""))
+		expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages(t.Path)
+	} else {
+		expectedPackages = nil
+	}
+	fmt.Printf("expected PHP packages = %+v\n", expectedPackages)
 	if nil != t.phpPackages {
-		var pkgs *PhpPackagesCollection
-		if nil != t.phpPackagesConfig {
-			pkgs = NewPhpPackagesCollection([]byte(""))
-			err = pkgs.GatherInstalledPackages(t.Path)
-		} else {
-			pkgs = nil
+		if nil == expectedPackages {
+			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", t.phpPackages))
+		}
+	} else {
+		if nil != expectedPackages {
+			t.Fail(fmt.Errorf("Expected PHP packages %+v, harvest contains none\n", expectedPackages))
 		}
 	}
 
