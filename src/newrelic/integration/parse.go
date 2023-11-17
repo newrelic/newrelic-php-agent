@@ -32,6 +32,7 @@ var (
 		"EXPECT_SPAN_EVENTS_LIKE": parseSpanEventsLike,
 		"EXPECT_LOG_EVENTS":       parseLogEvents,
 		"EXPECT_METRICS":          parseMetrics,
+		"EXPECT_METRICS_EXIST":    parseMetricsExist,
 		"EXPECT":                  parseExpect,
 		"EXPECT_REGEX":            parseExpectRegex,
 		"EXPECT_SCRUBBED":         parseExpectScrubbed,
@@ -222,6 +223,10 @@ func parseLogEvents(test *Test, content []byte) error {
 }
 func parseMetrics(test *Test, content []byte) error {
 	test.metrics = content
+	return nil
+}
+func parseMetricsExist(test *Test, content []byte) error {
+	test.metricsExist = content
 	return nil
 }
 func parseSlowSQLs(test *Test, content []byte) error {
