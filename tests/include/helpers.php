@@ -31,8 +31,8 @@ function force_error() {
  * A user function has to be called to force a transaction trace. PHP 7.1
  * includes dead code elimination, which means that we have to actually do
  * something that can't be eliminated: re-setting the error reporting level to
- * what it already is will do the job.
+ * what it already is will do the job. Additionally force non-zero duration for the segment not to be dropped.
  */
 function force_transaction_trace() {
-  error_reporting(error_reporting());
+  error_reporting(error_reporting()); time_nanosleep(0, 50000); // 50usec should be enough
 }
