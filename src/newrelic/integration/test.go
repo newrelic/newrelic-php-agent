@@ -39,7 +39,6 @@ type Test struct {
 	slowSQLs       []byte
 	tracedErrors   []byte
 	txnTraces      []byte
-	phpPackages    []byte
 
 	// Expected Output
 	expect                []byte
@@ -499,6 +498,73 @@ func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreat
 	}
 }
 
+func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
+	var expectedPackages []PhpPackage
+
+	if nil != t.phpPackagesConfig {
+		expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
+		fmt.Printf("%+v %t\n", expectedPkgsCollection, nil != err)
+		if nil != err {
+			t.Fatal(err)
+			return
+		}
+		expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
+		if nil != err {
+			t.Fatal(err)
+			return
+		}
+	} else {
+		expectedPackages = nil
+	}
+
+	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
+	if nil != err {
+		t.Fatal(err)
+		return
+	}
+	actualPackages, err := GetPhpPackagesFromData(audit)
+	if nil != err {
+		fmt.Printf("Error - could not get actual Packages")
+		t.Fatal(err)
+		return
+	}
+
+	fmt.Printf("expected PHP packages  = %+v\n", expectedPackages)
+	//fmt.Printf("harvested PHP packages = %+v\n", audit)
+	fmt.Printf("actual PHP packages    = %+v\n", actualPackages)
+	if nil != harvest.PhpPackages {
+		if nil == expectedPackages {
+			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
+		}
+		fmt.Printf("PHP packages expected = %s actual = %+v\n", expectedPackages, actualPackages)
+
+		// compare expected and actual lists of packages
+		// since package names should be identical, iterate over
+		// expected list and compare element by element with same
+		// position in actual list.  Name and version should match.
+		// this works because the functions which generate these
+		// lists sort them by package name for us
+		if len(expectedPackages) != len(actualPackages) {
+			t.Fail(fmt.Errorf("Expected and actual php packages differ in length %d vs %d: expected %+v actual %+v",
+				len(expectedPackages), len(actualPackages), expectedPackages, actualPackages))
+		}
+		for i, _ := range expectedPackages {
+			if expectedPackages[i].Name == actualPackages[i].Name {
+				if expectedPackages[i].Version == actualPackages[i].Version {
+					continue
+				}
+			}
+			t.Fail(fmt.Errorf("Expected and actual Php packages do not match: expected %+v actual %+v",
+				expectedPackages, actualPackages))
+			return
+		}
+	} else {
+		if nil != expectedPackages {
+			t.Fail(fmt.Errorf("Expected PHP packages %+v, harvest contains none\n", expectedPackages))
+		}
+	}
+}
+
 var (
 	MetricScrubRegexps = []*regexp.Regexp{
 		regexp.MustCompile(`CPU/User Time`),
@@ -589,23 +655,50 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	t.comparePayload(t.txnTraces, harvest.TxnTraces, false)
 
 	// check php packages
-	var expectedPackages []PhpPackage
-	if nil != t.phpPackagesConfig {
-		expectedPkgsCollection := NewPhpPackagesCollection([]byte(""))
-		expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages(t.Path)
-	} else {
-		expectedPackages = nil
-	}
-	fmt.Printf("expected PHP packages = %+v\n", expectedPackages)
-	if nil != t.phpPackages {
-		if nil == expectedPackages {
-			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", t.phpPackages))
-		}
-	} else {
-		if nil != expectedPackages {
-			t.Fail(fmt.Errorf("Expected PHP packages %+v, harvest contains none\n", expectedPackages))
-		}
-	}
+	t.comparePhpPackages(harvest)
+
+	// fmt.Println("Handling php packages compare")
+	// var expectedPackages []PhpPackage
+	// //	var expectedPackagesJSON []byte
+	// if nil != t.phpPackagesConfig {
+	// 	expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
+	// 	fmt.Printf("%+v %t\n", expectedPkgsCollection, nil != err)
+	// 	if nil != err {
+	// 		t.Fatal(err)
+	// 	}
+	// 	expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
+	// 	if nil != err {
+	// 		t.Fatal(err)
+	// 	}
+	// 	//		expectedPackagesJSON, _ = expectedPkgsCollection.CollectorJSON()
+	// } else {
+	// 	expectedPackages = nil
+	// 	//		expectedPackagesJSON = []byte("")
+	// }
+
+	// audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
+	// if nil != err {
+	// 	t.Fatal(err)
+	// 	return
+	// }
+	// actualPackages, err := GetPhpPackagesFromData(audit)
+	// if nil != err {
+	// 	fmt.Printf("Error - could not get actual Packages")
+	// }
+
+	// fmt.Printf("expected PHP packages  = %+v\n", expectedPackages)
+	// //fmt.Printf("harvested PHP packages = %+v\n", audit)
+	// fmt.Printf("actual PHP packages    = %+v\n", actualPackages)
+	// if nil != harvest.PhpPackages {
+	// 	if nil == expectedPackages {
+	// 		t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
+	// 	}
+	// 	fmt.Printf("PHP packages expected = %s actual = %+v\n", expectedPackages, actualPackages)
+	// } else {
+	// 	if nil != expectedPackages {
+	// 		t.Fail(fmt.Errorf("Expected PHP packages %+v, harvest contains none\n", expectedPackages))
+	// 	}
+	// }
 
 	if t.Failed && t.expect == nil && t.expectRegex == nil && t.expectScrubbed == nil {
 		// The test failed and there's no pre-existing expectation on the output
