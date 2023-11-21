@@ -503,7 +503,6 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 
 	if nil != t.phpPackagesConfig {
 		expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
-		fmt.Printf("%+v %t\n", expectedPkgsCollection, nil != err)
 		if nil != err {
 			t.Fatal(err)
 			return
@@ -512,6 +511,9 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		if nil != err {
 			t.Fatal(err)
 			return
+		}
+		if nil == expectedPackages || 0 == len(expectedPackages) {
+			t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packaged detected in environment!"))
 		}
 	} else {
 		expectedPackages = nil
@@ -524,20 +526,18 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	}
 	actualPackages, err := GetPhpPackagesFromData(audit)
 	if nil != err {
-		fmt.Printf("Error - could not get actual Packages")
 		t.Fatal(err)
 		return
 	}
 
-	fmt.Printf("expected PHP packages  = %+v\n", expectedPackages)
-	//fmt.Printf("harvested PHP packages = %+v\n", audit)
-	fmt.Printf("actual PHP packages    = %+v\n", actualPackages)
-	if nil != harvest.PhpPackages {
+	fmt.Printf("harvest.PhpPackages %+v\n", harvest.PhpPackages)
+	fmt.Printf("actualPackages %+v\n", actualPackages)
+	fmt.Printf("expectedPackages %+v\n", expectedPackages)
+
+	if nil != harvest.PhpPackages && 0 < harvest.PhpPackages.NumSaved() {
 		if nil == expectedPackages {
 			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
 		}
-		fmt.Printf("PHP packages expected = %s actual = %+v\n", expectedPackages, actualPackages)
-
 		// compare expected and actual lists of packages
 		// since package names should be identical, iterate over
 		// expected list and compare element by element with same
@@ -547,6 +547,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		if len(expectedPackages) != len(actualPackages) {
 			t.Fail(fmt.Errorf("Expected and actual php packages differ in length %d vs %d: expected %+v actual %+v",
 				len(expectedPackages), len(actualPackages), expectedPackages, actualPackages))
+			return
 		}
 		for i, _ := range expectedPackages {
 			if expectedPackages[i].Name == actualPackages[i].Name {
@@ -554,8 +555,8 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 					continue
 				}
 			}
-			t.Fail(fmt.Errorf("Expected and actual Php packages do not match: expected %+v actual %+v",
-				expectedPackages, actualPackages))
+			t.Fail(fmt.Errorf("Expected and actual Php packages do not match: expected %+v actual %+v. Complete expected %v actual %v.",
+				expectedPackages[i], actualPackages[i], expectedPackages, actualPackages))
 			return
 		}
 	} else {
@@ -656,49 +657,6 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 
 	// check php packages
 	t.comparePhpPackages(harvest)
-
-	// fmt.Println("Handling php packages compare")
-	// var expectedPackages []PhpPackage
-	// //	var expectedPackagesJSON []byte
-	// if nil != t.phpPackagesConfig {
-	// 	expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
-	// 	fmt.Printf("%+v %t\n", expectedPkgsCollection, nil != err)
-	// 	if nil != err {
-	// 		t.Fatal(err)
-	// 	}
-	// 	expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
-	// 	if nil != err {
-	// 		t.Fatal(err)
-	// 	}
-	// 	//		expectedPackagesJSON, _ = expectedPkgsCollection.CollectorJSON()
-	// } else {
-	// 	expectedPackages = nil
-	// 	//		expectedPackagesJSON = []byte("")
-	// }
-
-	// audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
-	// if nil != err {
-	// 	t.Fatal(err)
-	// 	return
-	// }
-	// actualPackages, err := GetPhpPackagesFromData(audit)
-	// if nil != err {
-	// 	fmt.Printf("Error - could not get actual Packages")
-	// }
-
-	// fmt.Printf("expected PHP packages  = %+v\n", expectedPackages)
-	// //fmt.Printf("harvested PHP packages = %+v\n", audit)
-	// fmt.Printf("actual PHP packages    = %+v\n", actualPackages)
-	// if nil != harvest.PhpPackages {
-	// 	if nil == expectedPackages {
-	// 		t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
-	// 	}
-	// 	fmt.Printf("PHP packages expected = %s actual = %+v\n", expectedPackages, actualPackages)
-	// } else {
-	// 	if nil != expectedPackages {
-	// 		t.Fail(fmt.Errorf("Expected PHP packages %+v, harvest contains none\n", expectedPackages))
-	// 	}
-	// }
 
 	if t.Failed && t.expect == nil && t.expectRegex == nil && t.expectScrubbed == nil {
 		// The test failed and there's no pre-existing expectation on the output
