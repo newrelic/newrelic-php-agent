@@ -74,8 +74,6 @@ nr_slowsqls_labelled_query_t* nr_doctrine2_lookup_input_query(TSRMLS_D) {
 }
 
 void nr_doctrine2_enable(TSRMLS_D) {
-  nrl_verbosedebug(NRL_INSTRUMENT, "in doctrine2 enabled");
   nr_php_wrap_user_function(NR_PSTR("Doctrine\\ORM\\Query::_doExecute"),
                             nr_doctrine2_cache_dql TSRMLS_CC);
-  nr_txn_add_php_package(NRPRG(txn), "doctrine/orm", "2.5.1");
 }
