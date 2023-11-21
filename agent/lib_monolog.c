@@ -12,9 +12,12 @@
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
+#include "lib_monolog_private.h"
 #include "nr_datastore_instance.h"
 #include "nr_segment_datastore.h"
+#include "nr_txn.h"
 #include "util_logging.h"
+#include "util_object.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_sleep.h"
@@ -26,19 +29,6 @@
 #define LOG_DECORATE_NAMESPACE_LC "newrelic\\monolog"
 #define LOG_DECORATE_PROC_FUNC_NAME \
   "newrelic_phpagent_monolog_decorating_processor"
-
-// clang-format off
-/*
- * This macro affects how instrumentation $context argument of
- * Monolog\Logger::addRecord works:
- *
- * 0 - $context argument will not be instrumented: its existance and value
- *     are ignored 
- * 1 - the message of the log record forwarded by the agent will have the value
- *     of $context appended to the value of $message.
- */
-// clang-format on
-#define HAVE_CONTEXT_IN_MESSAGE 0
 
 /*
  * Purpose : Convert Monolog\Logger::API to integer
@@ -155,123 +145,78 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
   return message;
 }
 
-#if HAVE_CONTEXT_IN_MESSAGE
 /*
- * Purpose : Format key of $context array's element as string
+ * Purpose : Convert a zval value from context data to a nrobj_t
  *
- * Params  : zend_hash_key
- * *
- * Returns : A new string representing zval; caller must free
+ * Params  : zval
  *
+ * Returns : nrobj_t* holding converted value
+ *           NULL otherwise
+ *
+ * Notes   : Only scalar and string types are supported.
+ *           Nested arrays are not converted and are ignored.
+ *           Other zval types are also ignored.
  */
-static char* nr_monolog_fmt_context_key(const zend_hash_key* hash_key) {
-  char* key_str = NULL;
-  zval* key = nr_php_zval_alloc();
-  if (nr_php_zend_hash_key_is_string(hash_key)) {
-    nr_php_zval_str(key, nr_php_zend_hash_key_string_value(hash_key));
-    key_str = nr_formatf("%s", Z_STRVAL_P(key));
-  } else if (nr_php_zend_hash_key_is_numeric(hash_key)) {
-    ZVAL_LONG(key, (zend_long)nr_php_zend_hash_key_integer(hash_key));
-    key_str = nr_formatf("%ld", (long)Z_LVAL_P(key));
-  } else {
-    /*
-     * This is a warning because this really, really shouldn't ever happen.
-     */
-    nrl_warning(NRL_INSTRUMENT, "%s: unexpected key type", __func__);
-    key_str = nr_formatf("unsupported-key-type");
-  }
-  nr_php_zval_free(&key);
-  return key_str;
-}
+nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
+    const zval* z TSRMLS_DC) {
+  nrobj_t* retobj = NULL;
 
-/*
- * Purpose : Format value of $context array's  element as string
- *
- * Params  : zval value
- * *
- * Returns : A new string representing zval; caller must free
- *
- */
-static char* nr_monolog_fmt_context_value(zval* zv) {
-  char* val_str = NULL;
-  zval* zv_str = NULL;
-
-  if (NULL == zv) {
-    return nr_strdup("");
+  if (NULL == z) {
+    return NULL;
   }
 
-  zv_str = nr_php_zval_alloc();
-  if (NULL == zv_str) {
-    return nr_strdup("");
+  nr_php_zval_unwrap(z);
+
+  switch (Z_TYPE_P(z)) {
+    case IS_NULL:
+      retobj = NULL;
+      break;
+
+    case IS_LONG:
+      retobj = nro_new_long((long)Z_LVAL_P(z));
+      break;
+
+    case IS_DOUBLE:
+      retobj = nro_new_double(Z_DVAL_P(z));
+      break;
+
+    case IS_TRUE:
+      retobj = nro_new_boolean(true);
+      break;
+
+    case IS_FALSE:
+      retobj = nro_new_boolean(false);
+      break;
+
+    case IS_STRING:
+      if (!nr_php_is_zval_valid_string(z)) {
+        retobj = NULL;
+      } else {
+        retobj = nro_new_string(Z_STRVAL_P(z));
+      }
+      break;
+
+    default:
+      /* any other type conversion to attribute not supported */
+      retobj = NULL;
+      break;
   }
 
-  ZVAL_DUP(zv_str, zv);
-  convert_to_string(zv_str);
-  val_str = nr_strdup(Z_STRVAL_P(zv_str));
-  nr_php_zval_free(&zv_str);
-
-  return val_str;
+  return retobj;
 }
 
 /*
- * Purpose : Format an element of $context array as "key => value" string
- *
- * Params  : zval value, pointer to string buffer to store formatted output
- * and hash key
- *
- * Side effect : string buffer is reallocated with each call.
- *
- * Returns : ZEND_HASH_APPLY_KEEP to keep iteration
- *
- */
-static int nr_monolog_fmt_context_item(zval* value,
-                                       char** strbuf,
-                                       zend_hash_key* hash_key TSRMLS_DC) {
-  NR_UNUSED_TSRMLS;
-  char* key = nr_monolog_fmt_context_key(hash_key);
-  char* val = nr_monolog_fmt_context_value(value);
-
-  char* kv_str = nr_formatf("%s => %s", key, val);
-  nr_free(key);
-  nr_free(val);
-
-  char* sep = nr_strlen(*strbuf) > 1 ? ", " : "";
-  *strbuf = nr_str_append(*strbuf, kv_str, sep);
-  nr_free(kv_str);
-
-  return ZEND_HASH_APPLY_KEEP;
-}
-
-/*
- * Purpose : Iterate over $context array and format each element
- *
- * Params  : string buffer to store formatted output and
- * Monolog\Logger::addRecord argument list
- *
- * Returns : A new string with Monolog's log context
- */
-static char* nr_monolog_fmt_context(char* strbuf,
-                                    HashTable* context TSRMLS_DC) {
-  strbuf = nr_str_append(strbuf, "[", "");
-
-  nr_php_zend_hash_zval_apply(context,
-                              (nr_php_zval_apply_t)nr_monolog_fmt_context_item,
-                              (void*)&strbuf TSRMLS_CC);
-
-  return nr_str_append(strbuf, "]", "");
-}
-
-/*
- * Purpose : Convert $context argument of Monolog\Logger::addRecord to a string
+ * Purpose : Get $context argument of Monolog\Logger::addRecord as `zval *`.
  *
  * Params  : # of Monolog\Logger::addRecord arguments, and
  * Monolog\Logger::addRecord argument list
  *
- * Returns : A new string with Monolog's log context
+ * Returns : zval* for context array on success (must be freed by caller)
+ *           NULL otherwise
+ *
  */
-static char* nr_monolog_get_context(const size_t argc,
-                                    NR_EXECUTE_PROTO TSRMLS_DC) {
-  char* context = nr_strdup("");
+static zval* nr_monolog_extract_context_data(const size_t argc,
+                                             NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* context_arg = NULL;
 
   if (3 > argc) {
@@ -298,45 +243,57 @@ static char* nr_monolog_get_context(const size_t argc,
     goto return_context;
   }
 
-  context = nr_monolog_fmt_context(context, Z_ARRVAL_P(context_arg) TSRMLS_CC);
-
 return_context:
-  nr_php_arg_release(&context_arg);
-  return context;
+  return context_arg;
 }
-#endif
 
 /*
- * Purpose : Combine $message and $context arguments of
- * Monolog\Logger::addRecord into a single string to be used as a message
- * property of the log event.
+ * Purpose : Convert $context array of Monolog\Logger::addRecord to
+ * attributes
  *
- * Params  : # of Monolog\Logger::addRecord arguments, and
- * Monolog\Logger::addRecord argument list
+ * Params  : zval* for context array from Monolog
  *
- * Returns : A new string with a log record message; caller must free
+ * Returns : nr_attributes representation of $context on success
+ *           NULL otherwise
+ *
  */
-static char* nr_monolog_build_message(const size_t argc,
-                                      NR_EXECUTE_PROTO TSRMLS_DC) {
-#if !HAVE_CONTEXT_IN_MESSAGE
-  /* Make the compiler happy - argc is not used when $context is ignored */
-  (void)argc;
-#endif
-  char* message_and_context = nr_strdup("");
+nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
+    zval* context_data TSRMLS_DC) {
+  zend_string* key;
+  zval* val;
 
-  char* message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  message_and_context = nr_str_append(message_and_context, message, "");
-  nr_free(message);
+  nr_attributes_t* attributes = NULL;
 
-#if HAVE_CONTEXT_IN_MESSAGE
-  char* context = nr_monolog_get_context(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_strempty(context)) {
-    message_and_context = nr_str_append(message_and_context, context, " ");
+  if (NULL == context_data || !nr_php_is_zval_valid_array(context_data)) {
+    return NULL;
   }
-  nr_free(context);
-#endif
 
-  return message_and_context;
+  attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
+  if (NULL == attributes) {
+    return NULL;
+  }
+
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
+    if (NULL == key) {
+      continue;
+    }
+
+    nrobj_t* obj = nr_monolog_context_data_zval_to_attribute_obj(val);
+
+    if (NULL != obj) {
+      nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+                                  ZSTR_VAL(key), obj);
+      nro_delete(obj);
+    } else {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: log context attribute '%s' dropped due to value "
+                       "being of unsupported type %d",
+                       __func__, ZSTR_VAL(key), Z_TYPE_P(val));
+    }
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return attributes;
 }
 
 /*
@@ -397,13 +354,22 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   int api = 0;
   size_t argc = 0;
   char* message = NULL;
+  nr_attributes_t* context_attributes = NULL;
   nrtime_t timestamp = nr_get_time();
 
   /* Values of $message and $timestamp arguments are needed only if log
    * forwarding is enabled so agent will get them conditionally */
   if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
     argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    message = nr_monolog_build_message(argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+    if (nr_txn_log_forwarding_context_data_enabled(NRPRG(txn))) {
+      zval* context_data = nr_monolog_extract_context_data(
+          argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      context_attributes
+          = nr_monolog_convert_context_data_to_attributes(context_data);
+      nr_php_arg_release(&context_data);
+    }
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -411,7 +377,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
-                          NRPRG(app));
+                          context_attributes, NRPRG(app));
 
   nr_free(level_name);
   nr_free(message);

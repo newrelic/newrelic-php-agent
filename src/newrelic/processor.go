@@ -695,8 +695,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		errors := harvest.Errors
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
-		spanEvents := harvest.SpanEvents
-		logEvents := harvest.LogEvents
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
@@ -709,8 +707,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		considerHarvestPayload(errors, args, duc)
 		considerHarvestPayload(slowSQLs, args, duc)
 		considerHarvestPayload(txnTraces, args, duc)
-		considerHarvestPayload(spanEvents, args, duc)
-		considerHarvestPayload(logEvents, args, duc)
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs

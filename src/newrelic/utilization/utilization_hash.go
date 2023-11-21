@@ -164,11 +164,6 @@ func Gather(config Config) *Data {
 	// Override whatever needs to be overridden.
 	uDat.Config = overrideFromConfig(config)
 
-	if uDat.Vendors.isEmpty() {
-		// Per spec, we MUST NOT send any vendors hash if it's empty.
-		uDat.Vendors = nil
-	}
-
 	return uDat
 }
 
@@ -202,6 +197,44 @@ func GatherDockerID(util *Data) error {
 	}
 
 	return nil
+}
+
+func OverrideDockerId(util *Data, id string) error {
+	if nil == util {
+		return fmt.Errorf("util is nil")
+	}
+	if nil == util.Vendors {
+		util.Vendors = &vendors{}
+	}
+	util.Vendors.Docker = &docker{ID: id}	
+	return nil	
+}
+
+func OverrideVendors(util *Data) {
+	if nil == util {
+		return
+	}
+	if util.Vendors.isEmpty() {
+		// Per spec, we MUST NOT send any vendors hash if it's empty.
+		util.Vendors = nil
+	}
+}
+
+func GetDockerId(util *Data) (string, error) {
+    id := ""
+    if nil == util {
+        return id, fmt.Errorf("Util is nil")
+    }
+    if util.Vendors.isEmpty() {
+        return id, fmt.Errorf("Vendors structure is empty")
+    }
+    if nil == util.Vendors.Docker {
+        return id, fmt.Errorf("Docker structure is empty")
+    }
+
+    id = util.Vendors.Docker.ID
+
+    return id, nil
 }
 
 func GatherMemory(util *Data) error {

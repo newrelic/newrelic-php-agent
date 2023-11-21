@@ -35,6 +35,7 @@ table App {
   metadata:                         string; // pre-computed json, added for PHP agent release 10.0
   log_events_max_samples_stored:    uint64; // added for PHP agent release 10.1
   custom_events_max_samples_stored: uint64; // added for PHP agent release 10.4
+  docker_id:                        string; // added for PHP agent release 10.14
 }
 
 enum AppStatus : byte { Unknown = 0, Disconnected = 1, InvalidLicense = 2,

@@ -120,6 +120,10 @@ ZEND_BEGIN_ARG_INFO_EX(newrelic_arginfo_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 #endif /* PHP 8.0+ */
 
+ZEND_BEGIN_ARG_INFO_EX(newrelic_get_request_metadata_arginfo, 0, 0, 0) 
+ZEND_ARG_INFO(0, transport) 
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_parameter_arginfo, 0, 0, 2)
 ZEND_ARG_INFO(0, parameter)
 ZEND_ARG_INFO(0, value)
@@ -180,7 +184,7 @@ ZEND_ARG_INFO(0, event_type)
 ZEND_ARG_ARRAY_INFO(0, parameters, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_span_parameter_arginfo, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_span_parameter_arginfo, 0, 0, 2)
 ZEND_ARG_INFO(0, key)
 ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
@@ -236,28 +240,36 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(newrelic_insert_distributed_trace_headers_arginfo,
                        0,
                        0,
-                       3)
+                       1)
 ZEND_ARG_INFO(1, headers)
 ZEND_END_ARG_INFO()
 
 /*
  * Other New Relic Functions
  */
-ZEND_BEGIN_ARG_INFO_EX(newrelic_curl_header_callback_arginfo, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(newrelic_curl_header_callback_arginfo, 0, 0, 2)
 ZEND_ARG_INFO(0, curl_resource)
 ZEND_ARG_INFO(0, header_data)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(newrelic_add_headers_to_context_arginfo, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(newrelic_add_headers_to_context_arginfo, 0, 0, 1)
 ZEND_ARG_INFO(0, stream_context)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(newrelic_remove_headers_from_context_arginfo, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(newrelic_remove_headers_from_context_arginfo, 0, 0, 1)
 ZEND_ARG_INFO(0, stream_context)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_exception_handler_arginfo, 0, 0, 1)
 ZEND_ARG_INFO(0, exception)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(newrelic_notice_error_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, exception)
+ZEND_ARG_INFO(0, errstr)
+ZEND_ARG_INFO(0, fname)
+ZEND_ARG_INFO(0, line_nr)
+ZEND_ARG_INFO(0, ctx)
 ZEND_END_ARG_INFO()
 
 /*
@@ -299,19 +311,18 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_add_custom_span_parameter, newrelic_add_custom_span_parameter_arginfo)
     PHP_FE(newrelic_set_user_id, newrelic_set_user_id_arginfo)
     PHP_FE(newrelic_set_error_group_callback, newrelic_set_error_group_callback_arginfo)
+    PHP_FE(newrelic_notice_error, newrelic_notice_error_arginfo)
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
     PHP_FE(newrelic_ignore_transaction, newrelic_arginfo_void)
     PHP_FE(newrelic_ignore_apdex, newrelic_arginfo_void)
     PHP_FE(newrelic_end_of_transaction, newrelic_arginfo_void)
-    PHP_FE(newrelic_notice_error, newrelic_arginfo_void)
     PHP_FE(newrelic_disable_autorum, newrelic_arginfo_void)
     PHP_FE(newrelic_is_sampled, newrelic_arginfo_void)
 #else
     PHP_FE(newrelic_ignore_transaction, 0)
     PHP_FE(newrelic_ignore_apdex, 0)
     PHP_FE(newrelic_end_of_transaction,0)
-    PHP_FE(newrelic_notice_error,0)
     PHP_FE(newrelic_disable_autorum, 0)
     PHP_FE(newrelic_is_sampled, 0)
 #endif /* PHP8+ */
@@ -327,13 +338,12 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_accept_distributed_trace_headers, newrelic_accept_distributed_trace_headers_arginfo)
     PHP_FE(newrelic_accept_distributed_trace_payload, newrelic_accept_distributed_trace_payload_arginfo)
     PHP_FE(newrelic_accept_distributed_trace_payload_httpsafe, newrelic_accept_distributed_trace_payload_httpsafe_arginfo)
+    PHP_FE(newrelic_get_request_metadata, newrelic_get_request_metadata_arginfo)
 
 #ifdef PHP8
-    PHP_FE(newrelic_get_request_metadata, newrelic_arginfo_void)
     PHP_FE(newrelic_get_linking_metadata, newrelic_arginfo_void)
     PHP_FE(newrelic_get_trace_metadata, newrelic_arginfo_void)
 #else
-    PHP_FE(newrelic_get_request_metadata, 0)
     PHP_FE(newrelic_get_linking_metadata, 0)
     PHP_FE(newrelic_get_trace_metadata, 0)
 #endif /* PHP 8 */

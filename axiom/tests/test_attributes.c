@@ -32,6 +32,7 @@ static char* nr_attribute_destination_modifier_to_json(
   obj = nro_new_hash();
   nro_set_hash_boolean(obj, "has_wildcard_suffix",
                        modifier->has_wildcard_suffix);
+  nro_set_hash_boolean(obj, "is_finalize_rule", modifier->is_finalize_rule);
   nro_set_hash_string(obj, "match", modifier->match);
   nro_set_hash_int(obj, "match_len", modifier->match_len);
   nro_set_hash_long(obj, "match_hash", modifier->match_hash);
@@ -241,6 +242,7 @@ static void test_destination_modifier_create(void) {
   test_modifier_as_json("exact match modifier created", modifier,
                         "{"
                         "\"has_wildcard_suffix\":false,"
+                        "\"is_finalize_rule\":false,"
                         "\"match\":\"alpha\","
                         "\"match_len\":5,"
                         "\"match_hash\":2000440672,"
@@ -253,6 +255,7 @@ static void test_destination_modifier_create(void) {
   test_modifier_as_json("wildcard modifier created", modifier,
                         "{"
                         "\"has_wildcard_suffix\":true,"
+                        "\"is_finalize_rule\":false,"
                         "\"match\":\"alpha\","
                         "\"match_len\":5,"
                         "\"match_hash\":2000440672,"
@@ -268,7 +271,7 @@ static void test_config_modify_destinations(void) {
   uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
   uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
   uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
-
+  uint32_t log = NR_ATTRIBUTE_DESTINATION_LOG;
   /* NULL config: Don't blow up! */
   nr_attribute_config_modify_destinations(0, "alpha", event, error);
 
@@ -283,6 +286,10 @@ static void test_config_modify_destinations(void) {
   nr_attribute_config_modify_destinations(config, "beta.*", 0, trace);
 
   nr_attribute_config_modify_destinations(config, "beta.alpha", 0, browser);
+  nr_attribute_config_modify_destinations(config, "beta.al*", 0, log);
+
+  nr_attribute_config_modify_destinations(config, "beta.alp", log, 0);
+  nr_attribute_config_modify_destinations(config, "beta.alph", 0, browser);
 
   test_config_as_json("modifiers created and in correct order", config,
                       "{"
@@ -291,6 +298,16 @@ static void test_config_modify_destinations(void) {
                       "["
                       "{"
                       "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":true,"
+                      "\"match\":\"\","
+                      "\"match_len\":0,"
+                      "\"match_hash\":0,"
+                      "\"include_destinations\":0,"
+                      "\"exclude_destinations\":32"
+                      "},"
+                      "{"
+                      "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.\","
                       "\"match_len\":5,"
                       "\"match_hash\":1419915658,"
@@ -299,6 +316,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.\","
                       "\"match_len\":5,"
                       "\"match_hash\":1419915658,"
@@ -307,6 +325,7 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.a\","
                       "\"match_len\":6,"
                       "\"match_hash\":4222617845,"
@@ -314,7 +333,17 @@ static void test_config_modify_destinations(void) {
                       "\"exclude_destinations\":0"
                       "},"
                       "{"
+                      "\"has_wildcard_suffix\":true,"
+                      "\"is_finalize_rule\":false,"
+                      "\"match\":\"beta.al\","
+                      "\"match_len\":7,"
+                      "\"match_hash\":3041978671,"
+                      "\"include_destinations\":0,"
+                      "\"exclude_destinations\":32"
+                      "},"
+                      "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.al\","
                       "\"match_len\":7,"
                       "\"match_hash\":3041978671,"
@@ -323,6 +352,25 @@ static void test_config_modify_destinations(void) {
                       "},"
                       "{"
                       "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
+                      "\"match\":\"beta.alp\","
+                      "\"match_len\":8,"
+                      "\"match_hash\":4236011699,"
+                      "\"include_destinations\":32,"
+                      "\"exclude_destinations\":0"
+                      "},"
+                      "{"
+                      "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
+                      "\"match\":\"beta.alph\","
+                      "\"match_len\":9,"
+                      "\"match_hash\":2625680436,"
+                      "\"include_destinations\":0,"
+                      "\"exclude_destinations\":8"
+                      "},"
+                      "{"
+                      "\"has_wildcard_suffix\":false,"
+                      "\"is_finalize_rule\":false,"
                       "\"match\":\"beta.alpha\","
                       "\"match_len\":10,"
                       "\"match_hash\":2601622409,"
@@ -344,6 +392,7 @@ static void test_config_copy(void) {
   uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
   uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
   uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
+  uint32_t log = NR_ATTRIBUTE_DESTINATION_LOG;
 
   config_copy = nr_attribute_config_copy(0);
   tlib_pass_if_true("copy NULL config", 0 == config_copy, "config_copy=%p",
@@ -374,6 +423,9 @@ static void test_config_copy(void) {
   nr_attribute_config_modify_destinations(config, "beta.", browser, 0);
   nr_attribute_config_modify_destinations(config, "beta.*", 0, trace);
 
+  nr_attribute_config_modify_destinations(config, "gamma.", log, 0);
+  nr_attribute_config_modify_destinations(config, "gamma.*", 0, trace);
+
   config_copy = nr_attribute_config_copy(config);
   config_copy_json = nr_attribute_config_to_json(config_copy);
   config_json = nr_attribute_config_to_json(config);
@@ -394,6 +446,7 @@ static void test_config_apply(void) {
   uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
   uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
   uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
+  uint32_t log = NR_ATTRIBUTE_DESTINATION_LOG;
 
   config = nr_attribute_config_create();
 
@@ -414,9 +467,10 @@ static void test_config_apply(void) {
   /*
    * Test that the destination modifier are applied in the correct order.
    */
-  nr_attribute_config_modify_destinations(config, "alpha.*", browser | trace,
+  nr_attribute_config_modify_destinations(config, "alpha.*", browser | trace | log,
                                           0);
   nr_attribute_config_modify_destinations(config, "alpha.beta", error, browser);
+  nr_attribute_config_modify_destinations(config, "alpha.b*", 0, log);
 
   destinations = nr_attribute_config_apply(config, "alpha.beta",
                                            nr_mkhash("alpha.beta", 0), event);
@@ -568,6 +622,7 @@ static void test_add(void) {
   uint32_t trace = NR_ATTRIBUTE_DESTINATION_TXN_TRACE;
   uint32_t error = NR_ATTRIBUTE_DESTINATION_ERROR;
   uint32_t browser = NR_ATTRIBUTE_DESTINATION_BROWSER;
+  uint32_t log = NR_ATTRIBUTE_DESTINATION_LOG;
   uint32_t all = NR_ATTRIBUTE_DESTINATION_ALL;
   nr_status_t st;
   nrobj_t* obj;
@@ -605,6 +660,8 @@ static void test_add(void) {
   tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
   st = nr_attributes_user_add_string(attributes, error, "gamma", "789");
   tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
+  st = nr_attributes_user_add_string(attributes, log, "delta", "abc");
+  tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
 
   st = nr_attributes_agent_add_long(attributes, browser | event, "psi", 123);
   tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
@@ -612,6 +669,8 @@ static void test_add(void) {
   tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
   st = nr_attributes_agent_add_string(attributes, browser | error, "theta",
                                       "789");
+  tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
+  st = nr_attributes_agent_add_string(attributes, log, "chi", "abc");
   tlib_pass_if_true("add success", NR_SUCCESS == st, "st=%d", (int)st);
 
   st = nr_attributes_agent_add_string(attributes, 0,
@@ -625,10 +684,10 @@ static void test_add(void) {
 
   test_user_attributes_as_json(
       "user attributes: all", attributes, all,
-      "{\"gamma\":\"789\",\"beta\":456,\"alpha\":123}");
+      "{\"delta\":\"abc\",\"gamma\":\"789\",\"beta\":456,\"alpha\":123}");
   test_agent_attributes_as_json(
       "agent attributes: all", attributes, all,
-      "{\"theta\":\"789\",\"omega\":456,\"psi\":123}");
+      "{\"chi\":\"abc\",\"theta\":\"789\",\"omega\":456,\"psi\":123}");
 
   test_user_attributes_as_json("user attributes: event", attributes, event,
                                "{\"alpha\":123}");

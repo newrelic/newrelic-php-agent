@@ -75,6 +75,7 @@ typedef struct _nrphpglobals_t {
   int apache_threaded; /* 1 if a threaded MPM is in use, 0 otherwise */
   int preload_framework_library_detection; /* Enables preloading framework and
                                               library detection */
+  char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
 
   /* Original PHP callback pointer contents */
   nrphperrfn_t orig_error_cb;

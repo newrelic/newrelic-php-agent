@@ -1239,6 +1239,47 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.application_logging.metrics.enabled = true
 
+; Setting: newrelic.application_logging.forwarding.context_data.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Control if context data associated with log messages is
+;          converted to log event attributes which are forwarded to New Relic.
+;
+;newrelic.application_logging.forwarding.context_data.enabled = false
+
+; Setting: newrelic.application_logging.forwarding.context_data.include
+;          newrelic.application_logging.forwarding.context_data.exclude
+; Type   : string
+; Scope  : per-directory
+; Default: none
+; Info   : This configuration options allow complete control over the
+;          context data array keys which are converted to log event attributes.
+;
+;          To include context data whose key is 'alpha', the configuration is:
+;          newrelic.application_logging.forwarding.context_data.include = alpha
+;
+;          To exclude context data whose key is 'alpha', the configuration is:
+;          newrelic.application_logging.forwarding.context_data.exclude = alpha
+;
+;          The newrelic.attributes.exclude and newrelic.attributes.include
+;          settings affect the conversion of custom data as well.
+;
+;          To exclude the attributes 'beta' and 'gamma' from all destinations,
+;          including log events, the configuration is:
+;          newrelic.attributes.exclude = beta,gamma
+;
+;          If one of the values in the comma separated list ends in a '*',
+;          it will match any suffix. For example, to exclude any attribute
+;          which begin with 'psi', the configuration is:
+;          newrelic.attributes.exclude = psi*
+;
+;          For more information, please refer to:
+;          https://docs.newrelic.com/docs/agents/manage-apm-agents/agent-metrics/agent-attributes
+;
+;newrelic.application_logging.forwarding.context_data.include = ""
+;newrelic.application_logging.forwarding.context_data.exclude = ""
+
 ; Setting: newrelic.code_level_metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory
