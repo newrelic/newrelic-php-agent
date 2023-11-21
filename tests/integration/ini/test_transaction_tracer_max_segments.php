@@ -82,7 +82,7 @@ newrelic.distributed_tracing_enabled=0
 
 
 function my_function(){
-    printf('');
+    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped, 50usec should be enough
 }
 
 newrelic_add_custom_tracer("my_function");

@@ -447,6 +447,11 @@ static nr_attribute_config_t* nr_php_create_attribute_config(TSRMLS_D) {
       NRINI(browser_monitoring_capture_attributes),
       NR_ATTRIBUTE_DESTINATION_BROWSER);
 
+  disabled_destinations |= nr_php_attribute_disable_destination_helper(
+      "newrelic.application_logging.forwarding.context_data.enabled",
+      NRINI(log_context_data_attributes.enabled), 0,
+      NR_ATTRIBUTE_DESTINATION_LOG);
+
   if (0 == NRINI(attributes.enabled)) {
     disabled_destinations |= NR_ATTRIBUTE_DESTINATION_ALL;
   }
@@ -490,6 +495,13 @@ static nr_attribute_config_t* nr_php_create_attribute_config(TSRMLS_D) {
   nr_php_modify_attribute_destinations(
       config, 0, NRINI(browser_monitoring_attributes.exclude), 0,
       NR_ATTRIBUTE_DESTINATION_BROWSER);
+
+  nr_php_modify_attribute_destinations(
+      config, 0, NRINI(log_context_data_attributes.include),
+      NR_ATTRIBUTE_DESTINATION_LOG, 0);
+  nr_php_modify_attribute_destinations(
+      config, 0, NRINI(log_context_data_attributes.exclude), 0,
+      NR_ATTRIBUTE_DESTINATION_LOG);
 
   nr_php_modify_attribute_destinations(config, 0, NRINI(attributes.include),
                                        NR_ATTRIBUTE_DESTINATION_ALL, 0);
@@ -747,6 +759,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
+  opts.log_forwarding_context_data_enabled
+      = NRINI(log_context_data_attributes.enabled);
   opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
@@ -797,6 +811,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   info.custom_events_max_samples_stored
       = NRINI(custom_events_max_samples_stored);
+  info.docker_id = nr_strdup(NR_PHP_PROCESS_GLOBALS(docker_id));
 
   NRPRG(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,

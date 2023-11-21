@@ -93,6 +93,7 @@ void nr_app_info_destroy_fields(nr_app_info_t* info) {
   nr_free(info->security_policies_token);
   nro_delete(info->supported_security_policies);
   nr_free(info->trace_observer_host);
+  nr_free(info->docker_id);
 }
 
 /*
@@ -277,8 +278,9 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
   app->info.span_events_max_samples_stored
       = info->span_events_max_samples_stored;
   app->info.log_events_max_samples_stored = info->log_events_max_samples_stored;
-  app->info.custom_events_max_samples_stored 
+  app->info.custom_events_max_samples_stored
       = info->custom_events_max_samples_stored;
+  app->info.docker_id = nr_strdup(info->docker_id);
   app->rnd = nr_random_create();
   nr_random_seed_from_time(app->rnd);
 

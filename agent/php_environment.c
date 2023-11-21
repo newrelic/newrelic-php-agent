@@ -511,6 +511,109 @@ static void nr_php_get_environment_variables(TSRMLS_D) {
                    __func__, NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
+#define MAX_LINE_COUNT (1000)  // Upper bound for number of lines to read
+/*
+ * Purpose:
+ *    Extract the 64-byte hexadecimal Docker cgroup ID from
+ *     /proc/self/mountinfo
+ */
+char* nr_php_parse_v2_docker_id(const char* cgroup_fname) {
+  char* line_ptr = NULL;
+  char* retval = NULL;
+  bool found = false;
+  int line_count = 0;
+  FILE* fd = NULL;
+  size_t len = 0;
+  nr_regex_t* line_regex = NULL;
+  nr_regex_substrings_t* ss = NULL;
+
+  if (NULL == cgroup_fname) {
+    return NULL;
+  }
+
+  // check if file exists
+  if (SUCCESS != access(cgroup_fname, F_OK)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: File not found: %s", __func__,
+                     cgroup_fname);
+    return NULL;
+  }
+
+  // open file
+  fd = fopen(cgroup_fname, "r");
+  if (NULL == fd) {
+    nrl_warning(NRL_AGENT, "%s: Failed to open %s", __func__, cgroup_fname);
+    return NULL;
+  }
+
+  // compile regex to extract target string from file line
+  line_regex = nr_regex_create("/docker/containers/([a-fA-F0-9]{64})/", 0, 0);
+
+  if (NULL == line_regex) {
+    nrl_error(NRL_AGENT, "%s: Error: line regex creation failed", __func__);
+    fclose(fd);
+    return NULL;
+  }
+
+  // clang-format off
+  /* 
+   * Example /proc/self/mountinfo file structure:
+   *   ...
+   *   795 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/vda1 rw
+   *   796 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/hostname /etc/hostname rw,relatime - ext4 /dev/vda1 rw
+   *   797 787 254:1 /docker/containers/ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5/hosts /etc/hosts rw,relatime - ext4 /dev/vda1 rw
+   *   ...
+   */
+
+  /*
+   * File parsing logic:
+   *  1. scan file line-by-line
+   *  2. regex search each line for '/docker/containers/' string followed by a string
+   *    a. 64 bytes long (not including null terminator)
+   *    b. comprised of only hexadecimal characters
+   *  3. extract the 64 byte substring following "/docker/containers/"
+   *  4. Assign the extracted & verified ID to the retval
+   *    a. Example ID: ec807d5258c06c355c07e2acb700f9029d820afe5836d6a7e19764773dc790f5
+   *  5. Set found = true and exit the loops
+   */
+  // clang-format on
+
+  while (FAILURE != getline(&line_ptr, &len, fd) && !found
+         && line_count++ < MAX_LINE_COUNT) {
+    ss = nr_regex_match_capture(line_regex, line_ptr, nr_strlen(line_ptr));
+    if (NULL == ss) {
+      continue;
+    }
+    retval = nr_regex_substrings_get(ss, 1);
+    nr_regex_substrings_destroy(&ss);
+    found = true;
+  }
+
+  nr_regex_destroy(&line_regex);
+  nr_free(line_ptr);
+  fclose(fd);
+  return retval;
+}
+#undef MAX_LINE_COUNT
+
+void nr_php_gather_v2_docker_id() {
+  char* dockerId = NULL;
+
+  // check if docker_id global already set
+  if (NULL != NR_PHP_PROCESS_GLOBALS(docker_id)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: Docker ID already set.", __func__);
+    return;
+  }
+
+  dockerId = nr_php_parse_v2_docker_id("/proc/self/mountinfo");
+  if (NULL != dockerId) {
+    NR_PHP_PROCESS_GLOBALS(docker_id) = dockerId;
+    nrl_verbosedebug(NRL_AGENT, "%s: Docker v2 ID: %s", __func__, dockerId);
+  } else {
+    nrl_warning(NRL_AGENT, "%s: Unable to read docker v2 container id",
+                __func__);
+  }
+}
+
 nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nrobj_t* env;
 
@@ -520,6 +623,7 @@ nrobj_t* nr_php_get_environment(TSRMLS_D) {
   nr_php_gather_dynamic_modules(env TSRMLS_CC);
   nr_php_gather_dispatcher_information(env);
   nr_php_get_environment_variables(TSRMLS_C);
+  nr_php_gather_v2_docker_id();
 
   return env;
 }
