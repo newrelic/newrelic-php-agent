@@ -10,3 +10,6 @@ pkg/
 integration-tests.log
 make/secrets.mk
 php_agent.log
+
+# Dev artifacts
+.vscode

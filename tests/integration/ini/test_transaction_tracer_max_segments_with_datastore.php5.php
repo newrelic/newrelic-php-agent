@@ -112,7 +112,7 @@ newrelic.code_level_metrics.enabled=false
 
 
 function my_function(){
-  printf('');
+    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped; duration needs to be shorter than datastore segment
 }
 
 newrelic_add_custom_tracer("my_function");
@@ -122,7 +122,7 @@ my_function();
 my_function();
 
 newrelic_record_datastore_segment(function () {
-    return 42;
+    time_nanosleep(0, 70000); return 42; // force non-zero duration for the segment not to be dropped; duration needs to be longer than user func segment
 }, array(
     'product'       => 'mysql',
     'collection'    => 'table',

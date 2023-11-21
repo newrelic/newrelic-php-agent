@@ -89,6 +89,7 @@ TEST_BINARIES = \
 	tests/test_internal_instrument \
 	tests/test_hash \
 	tests/test_mongodb \
+	tests/test_monolog \
 	tests/test_mysql \
 	tests/test_mysqli \
 	tests/test_output \
@@ -264,6 +265,8 @@ endif
 TEST_LIBS := $(PHP_EMBED_LIBRARY) $(shell $(PHP_CONFIG) --libs)
 TEST_LDFLAGS := $(shell $(PHP_CONFIG) --ldflags) $(EXPORT_DYNAMIC)
 TEST_LDFLAGS += $(USER_LDFLAGS)
+CROSS_AGENT_DIR := $(CURDIR)/../axiom/tests/cross_agent_tests
+EXTRA_CFLAGS += -DCROSS_AGENT_TESTS_DIR="\"$(CROSS_AGENT_DIR)\""
 
 #
 # Implicit rule to build test object files with the appropriate flags.
