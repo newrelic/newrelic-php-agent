@@ -34,6 +34,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	metadata := buf.CreateString(string(metadataJSON))
 	host := buf.CreateString(string(info.Hostname))
 	traceObserverHost := buf.CreateString(info.TraceObserverHost)
+	dockerId := buf.CreateString(info.DockerId)
 
 	protocol.AppStart(buf)
 	protocol.AppAddAgentLanguage(buf, lang)
@@ -50,6 +51,7 @@ func MarshalAppInfo(info *newrelic.AppInfo) ([]byte, error) {
 	protocol.AppAddTraceObserverPort(buf, info.TraceObserverPort)
 
 	protocol.AppAddHighSecurity(buf, info.HighSecurity)
+	protocol.AppAddDockerId(buf, dockerId)
 
 	appInfo := protocol.AppEnd(buf)
 

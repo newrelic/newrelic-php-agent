@@ -147,6 +147,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
   uint32_t host_name;
   uint32_t trace_observer_host;
   uint32_t metadata;
+  uint32_t docker_id;
   char* json_supported_security_policies;
 
   fb = nr_flatbuffers_create(0);
@@ -170,6 +171,8 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
       = nro_to_json(info->supported_security_policies);
   supported_security_policies
       = nr_flatbuffers_prepend_string(fb, json_supported_security_policies);
+
+  docker_id = nr_flatbuffers_prepend_string(fb, info->docker_id);
 
   metadata = nr_appinfo_prepend_metadata(info, fb);
 
@@ -206,6 +209,7 @@ nr_flatbuffer_t* nr_appinfo_create_query(const char* agent_run_id,
                                         agent_lang, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_FIELD_APPNAME, appname, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, APP_FIELD_LICENSE, license, 0);
+  nr_flatbuffers_object_prepend_uoffset(fb, APP_DOCKER_ID, docker_id, 0);
   appinfo = nr_flatbuffers_object_end(fb);
 
   if (agent_run_id && *agent_run_id) {

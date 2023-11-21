@@ -17,6 +17,13 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+static void nr_attribute_config_modify_destinations_internal(
+    nr_attribute_config_t* config,
+    const char* match,
+    uint32_t include_destinations,
+    uint32_t exclude_destinations,
+    bool finalize_destinations);
+
 /*
  * Returns : 1 if there is a match and 0 otherwise.
  */
@@ -97,10 +104,20 @@ void nr_attribute_config_disable_destinations(nr_attribute_config_t* config,
   config->disabled_destinations |= disabled_destinations;
 }
 
-nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
-    const char* match,
-    uint32_t include_destinations,
-    uint32_t exclude_destinations) {
+void nr_attribute_config_enable_destinations(nr_attribute_config_t* config,
+                                             uint32_t enabled_destinations) {
+  if (0 == config) {
+    return;
+  }
+
+  config->disabled_destinations &= ~enabled_destinations;
+}
+
+static nr_attribute_destination_modifier_t*
+nr_attribute_destination_modifier_create_internal(const char* match,
+                                                  uint32_t include_destinations,
+                                                  uint32_t exclude_destinations,
+                                                  int is_finalize_rule) {
   nr_attribute_destination_modifier_t* new_entry;
   int match_len;
   int has_wildcard_suffix;
@@ -121,6 +138,8 @@ nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
   new_entry = (nr_attribute_destination_modifier_t*)nr_zalloc(
       sizeof(nr_attribute_destination_modifier_t));
   new_entry->has_wildcard_suffix = has_wildcard_suffix;
+  new_entry->is_finalize_rule = is_finalize_rule;
+
   /* Use nr_strndup with match_len to avoid copying '*' suffix */
   new_entry->match = nr_strndup(match, match_len);
   new_entry->match_len = match_len;
@@ -130,6 +149,14 @@ nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
   new_entry->next = 0;
 
   return new_entry;
+}
+
+nr_attribute_destination_modifier_t* nr_attribute_destination_modifier_create(
+    const char* match,
+    uint32_t include_destinations,
+    uint32_t exclude_destinations) {
+  return nr_attribute_destination_modifier_create_internal(
+      match, include_destinations, exclude_destinations, false);
 }
 
 /*
@@ -162,10 +189,132 @@ static int nr_attribute_destination_modifier_compare(
   return 1;
 }
 
-void nr_attribute_config_modify_destinations(nr_attribute_config_t* config,
-                                             const char* match,
-                                             uint32_t include_destinations,
-                                             uint32_t exclude_destinations) {
+/*
+ * Purpose : Inspects current modifier list and adds finalize rules as needed.
+ *
+ * Params  : 1. Attribute configuration
+ *
+ * Notes   : Certain attributes like log context attributes expect the "include"
+ *           rules to act exclusively.
+ *           For example:
+ *             include = "A"
+ *             exclude = "B"
+ *             input = "A" "B" "C"
+ *             expected = "A"
+ *
+ *           Note that "C" was excluded because it was not in the include rules.
+ *           Also note an empty include rule means include everything and
+ *           and to exclude nothing.
+ *
+ *           All other attributes besides log context attributes do NOT have
+ *           this exclusive behavior for the include rules.  This function only
+ *           considers rules of the NR_ATTRIBUTE_DESTINATION_LOG destination.
+ *
+ *           The algorithm examines all input rules for the
+ *           NR_ATTRIBUTE_DESTINATION_LOG destination, and will create a new
+ *           rule of "exclude=*" with "is_finalize_rule=true" if any input 
+ *           rules exist.  The exception is if there is an input rule of "*"
+ *           for destination NR_ATTRIBUTE_DESTINATION_LOG.  In this case no 
+ *           finalize rule is added.
+ *
+ *           The net resulting effect is the exclusion of any attributes not
+ *           contained in the set of input rules for
+ *           NR_ATTRIBUTE_DESTINATION_LOG. The exception for if an "input=*"
+ *           rule is necessary since this input rule excludes nothing, making
+ *           the finalize rule of "exclude=*" unnecessary.
+ *
+ */
+static void nr_attribute_config_finalize_log_destination(
+    nr_attribute_config_t* config) {
+  nr_attribute_destination_modifier_t* cur = NULL;
+  nr_attribute_destination_modifier_t* prev = NULL;
+  nr_attribute_destination_modifier_t* next = NULL;
+  bool add_finalize_rule = false;
+
+  if (NULL == config || NULL == config->modifier_list) {
+    /* Since there is no configuration, no work to do. */
+    return;
+  }
+
+  /* remove any existing rules with is_finalize_rule = true */
+  cur = config->modifier_list;
+  while (NULL != cur) {
+    next = cur->next;
+
+    /* currently only finalize rules being created are for the
+     * NR_ATTRIBUTE_DESTINATION_LOG destination but check to
+     * be thorough and in case other finalize rules are created
+     * in the future.
+     */
+    if (cur->is_finalize_rule
+        && (cur->include_destinations & NR_ATTRIBUTE_DESTINATION_LOG)) {
+      nr_attribute_destination_modifier_destroy(&cur);
+      if (NULL != prev) {
+        prev->next = next;
+      } else {
+        config->modifier_list = next;
+      }
+    } else {
+      prev = cur;
+    }
+    cur = next;
+  }
+
+  /* unlikely but if all rules were finalize rules then no more work to do */
+  if (NULL == config->modifier_list) {
+    return;
+  }
+
+  /* now look for any include rules with a destination of
+   * NR_ATTRIBUTE_DESTINATION_LOG and evaluate if any
+   * finalize rules need to be added.
+   */
+  for (cur = config->modifier_list; cur; cur = cur->next) {
+    if (cur->include_destinations & NR_ATTRIBUTE_DESTINATION_LOG) {
+      if (cur->has_wildcard_suffix && 0 == cur->match_len) {
+          /* there is an include rule of "*" so no finalize is needed
+           * since all attributes are being explicitely included */
+          return;
+        }
+      add_finalize_rule = true;
+    }
+  }
+
+  /* a finalize rule is needed
+   * add an exclude rule of "*" which will remove any attributes which passed
+   * through the include rules and therefore are excluded implicitely
+   */
+  if (add_finalize_rule) {
+    nr_attribute_config_modify_destinations_internal(
+        config, "*", 0, NR_ATTRIBUTE_DESTINATION_LOG, true);
+  }
+}
+
+/*
+ * Purpose : Inserts a modifier rule into an attribute configuration.
+ *
+ * Params  : 1. Attribute config to add modifier to
+ *           2. String containing matching text for modifier
+ *           3. Destinations to apply match to as include rule
+ *           4. Destinations to apply match to as exclude rule
+ *           5. If true this is a finalize rule used to cause
+ *              include rules (on log destinations only currently)
+ *              to be exclusive to anything not in the set of all
+ *              include rules.
+ *              For normal modifiers (from user rules) this can be false.
+ *
+ * Notes   : The is_finalize_rule option is currently only used in
+ *           nr_attribute_config_finalize_log_destination() as it
+ *           is called while adding an attribute and without this
+ *           option there would be an infinite loop of adding and
+ *           finalizing.
+ */
+static void nr_attribute_config_modify_destinations_internal(
+    nr_attribute_config_t* config,
+    const char* match,
+    uint32_t include_destinations,
+    uint32_t exclude_destinations,
+    bool is_finalize_rule) {
   nr_attribute_destination_modifier_t* entry;
   nr_attribute_destination_modifier_t* new_entry;
   nr_attribute_destination_modifier_t** entry_ptr;
@@ -174,8 +323,8 @@ void nr_attribute_config_modify_destinations(nr_attribute_config_t* config,
     return;
   }
 
-  new_entry = nr_attribute_destination_modifier_create(
-      match, include_destinations, exclude_destinations);
+  new_entry = nr_attribute_destination_modifier_create_internal(
+      match, include_destinations, exclude_destinations, is_finalize_rule);
   if (0 == new_entry) {
     return;
   }
@@ -190,11 +339,14 @@ void nr_attribute_config_modify_destinations(nr_attribute_config_t* config,
       break;
     }
 
-    if (0 == cmp) {
+    /* if a finalize rule with the same name as a user rule is added (or vice
+     * verse), do not remove the existing one or else the user rule could be
+     * lost when finalizing */
+    if (0 == cmp && new_entry->is_finalize_rule == entry->is_finalize_rule) {
       entry->include_destinations |= new_entry->include_destinations;
       entry->exclude_destinations |= new_entry->exclude_destinations;
       nr_attribute_destination_modifier_destroy(&new_entry);
-      return;
+      goto finalize_modifier;
     }
 
     entry_ptr = &entry->next;
@@ -203,6 +355,24 @@ void nr_attribute_config_modify_destinations(nr_attribute_config_t* config,
 
   new_entry->next = entry;
   *entry_ptr = new_entry;
+
+finalize_modifier:
+  /* if an include modifier was added need to also add an exclude rule of "*"
+   * to have include rule act to exclude anything not included. Exception is
+   * if include rule was simply "*" which would allow everything so no
+   * exclude=* is required
+   */
+  if (!is_finalize_rule) {
+    nr_attribute_config_finalize_log_destination(config);
+  }
+}
+
+void nr_attribute_config_modify_destinations(nr_attribute_config_t* config,
+                                             const char* match,
+                                             uint32_t include_destinations,
+                                             uint32_t exclude_destinations) {
+  nr_attribute_config_modify_destinations_internal(
+      config, match, include_destinations, exclude_destinations, false);
 }
 
 static nr_attribute_destination_modifier_t*
@@ -213,6 +383,7 @@ nr_attribute_destination_modifier_copy(
   new_entry
       = (nr_attribute_destination_modifier_t*)nr_zalloc(sizeof(*new_entry));
   new_entry->has_wildcard_suffix = entry->has_wildcard_suffix;
+  new_entry->is_finalize_rule = entry->is_finalize_rule;
   new_entry->match = nr_strdup(entry->match);
   new_entry->match_len = entry->match_len;
   new_entry->match_hash = entry->match_hash;
@@ -650,14 +821,23 @@ nr_status_t nr_attributes_agent_add_string(nr_attributes_t* ats,
   return rv;
 }
 
+/*
+ * Purpose : Internal function to convert list of attributes to nro
+ *
+ * Params  : 1. List of attributes
+ *           2. Prefix to prepend to all attribute names
+ *              NULL indicates to use no prefix and is more efficient than ""
+ *           3. Attribute destinations
+ */
 static nrobj_t* nr_attributes_to_obj_internal(
     const nr_attribute_t* attribute_list,
+    const char* attribute_prefix,
     uint32_t destination) {
   nrobj_t* obj;
   const nr_attribute_t* attribute;
 
-  if (0 == attribute_list) {
-    return 0;
+  if (NULL == attribute_list) {
+    return NULL;
   }
 
   obj = nro_new_hash();
@@ -666,7 +846,14 @@ static nrobj_t* nr_attributes_to_obj_internal(
     if (0 == (attribute->destinations & destination)) {
       continue;
     }
-    nro_set_hash(obj, attribute->key, attribute->value);
+
+    if (nrlikely(NULL == attribute_prefix)) {
+      nro_set_hash(obj, attribute->key, attribute->value);
+    } else {
+      char* key = nr_formatf("%s%s", attribute_prefix, attribute->key);
+      nro_set_hash(obj, key, attribute->value);
+      nr_free(key);
+    }
   }
 
   return obj;
@@ -677,7 +864,7 @@ nrobj_t* nr_attributes_user_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->user_attribute_list,
+  return nr_attributes_to_obj_internal(attributes->user_attribute_list, NULL,
                                        destination);
 }
 
@@ -686,7 +873,17 @@ nrobj_t* nr_attributes_agent_to_obj(const nr_attributes_t* attributes,
   if (0 == attributes) {
     return 0;
   }
-  return nr_attributes_to_obj_internal(attributes->agent_attribute_list,
+  return nr_attributes_to_obj_internal(attributes->agent_attribute_list, NULL,
+                                       destination);
+}
+
+nrobj_t* nr_attributes_logcontext_to_obj(const nr_attributes_t* attributes,
+                                         uint32_t destination) {
+  if (NULL == attributes) {
+    return NULL;
+  }
+  return nr_attributes_to_obj_internal(attributes->user_attribute_list,
+                                       NR_LOG_CONTEXT_DATA_ATTRIBUTE_PREFIX,
                                        destination);
 }
 
@@ -713,6 +910,9 @@ static char* nr_attribute_debug_json(const nr_attribute_t* attribute) {
   }
   if (NR_ATTRIBUTE_DESTINATION_BROWSER & attribute->destinations) {
     nro_set_array_string(dests, 0, "browser");
+  }
+  if (NR_ATTRIBUTE_DESTINATION_LOG & attribute->destinations) {
+    nro_set_array_string(dests, 0, "log");
   }
 
   nro_set_hash(obj, "dests", dests);

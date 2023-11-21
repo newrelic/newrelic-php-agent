@@ -3276,6 +3276,18 @@ bool nr_txn_log_forwarding_enabled(nrtxn_t* txn) {
   return true;
 }
 
+bool nr_txn_log_forwarding_context_data_enabled(nrtxn_t* txn) {
+  if (!nr_txn_log_forwarding_enabled(txn)) {
+    return false;
+  }
+
+  if (!txn->options.log_forwarding_context_data_enabled) {
+    return false;
+  }
+
+  return true;
+}
+
 bool nr_txn_log_forwarding_log_level_verify(nrtxn_t* txn,
                                             const char* log_level_name) {
   int log_level;
@@ -3371,6 +3383,7 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
 static nr_log_event_t* log_event_create(const char* log_level_name,
                                         const char* log_message,
                                         nrtime_t timestamp,
+                                        nr_attributes_t* context_attributes,
                                         nrtxn_t* txn,
                                         nrapp_t* app) {
   nr_log_event_t* e = nr_log_event_create();
@@ -3380,6 +3393,7 @@ static nr_log_event_t* log_event_create(const char* log_level_name,
   nr_log_event_set_log_level(e, ENSURE_LOG_LEVEL_NAME(log_level_name));
   nr_log_event_set_message(e, log_message);
   nr_log_event_set_timestamp(e, timestamp);
+  nr_log_event_set_context_attributes(e, context_attributes);
 
   log_event_set_linking_metadata(e, txn, app);
 
@@ -3390,6 +3404,7 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
                                  const char* log_level_name,
                                  const char* log_message,
                                  nrtime_t timestamp,
+                                 nr_attributes_t* context_attributes,
                                  nrapp_t* app) {
   nr_log_event_t* e = NULL;
   bool event_dropped = false;
@@ -3411,7 +3426,7 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     event_dropped = true;
   } else {
     /* event passed log level filter so add it */
-    e = log_event_create(log_level_name, log_message, timestamp, txn, app);
+    e = log_event_create(log_level_name, log_message, timestamp, context_attributes, txn, app);
     if (NULL == e) {
       nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
       event_dropped = true;
@@ -3448,12 +3463,14 @@ void nr_txn_record_log_event(nrtxn_t* txn,
                              const char* log_level_name,
                              const char* log_message,
                              nrtime_t timestamp,
+                             nr_attributes_t* context_attributes,
                              nrapp_t* app) {
   if (nrunlikely(NULL == txn)) {
     return;
   }
 
-  nr_txn_add_log_event(txn, log_level_name, log_message, timestamp, app);
+  nr_txn_add_log_event(txn, log_level_name, log_message, timestamp,
+                       context_attributes, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
 }

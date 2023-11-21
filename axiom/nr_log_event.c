@@ -33,6 +33,9 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
   nr_free(event->entity_guid);
   nr_free(event->entity_name);
   nr_free(event->hostname);
+  if (NULL != event->context_attributes) {
+    nr_attributes_destroy(&(event->context_attributes));
+  }
 
   nr_realfree((void**)ptr);
 }
@@ -46,6 +49,8 @@ void nr_log_event_destroy(nr_log_event_t** ptr) {
  *           3. Value of the field (JSON value)
  *           4. Boolean indicating if this is the first field
  *           5. Boolean indicating if this field is required
+ *           6. Boolean indicating if this field should be quoted
+ *              (use false if including a JSON string, for example)
  *
  * Returns : True is data was added to buf.
  */
@@ -53,7 +58,8 @@ static bool add_log_field_to_buf(nrbuf_t* buf,
                                  const char* field_name,
                                  const char* field_value,
                                  const bool first,
-                                 const bool required) {
+                                 const bool required,
+                                 const bool quoted) {
   const char* final_value = field_value;
 
   if (NULL == buf || nr_strempty(field_name)) {
@@ -75,7 +81,11 @@ static bool add_log_field_to_buf(nrbuf_t* buf,
   nr_buffer_add(buf, field_name, nr_strlen(field_name));
   nr_buffer_add(buf, NR_PSTR("\""));
   nr_buffer_add(buf, NR_PSTR(":"));
-  nr_buffer_add_escape_json(buf, final_value);
+  if (quoted) {
+    nr_buffer_add_escape_json(buf, final_value);
+  } else {
+    nr_buffer_add(buf, final_value, nr_strlen(final_value));
+  }
 
   return true;
 }
@@ -99,6 +109,9 @@ char* nr_log_event_to_json(const nr_log_event_t* event) {
 }
 
 bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
+  char* json = NULL;
+  nrobj_t* log_attributes = NULL;
+
   if (NULL == event || NULL == buf) {
     return false;
   }
@@ -107,17 +120,33 @@ bool nr_log_event_to_json_buffer(const nr_log_event_t* event, nrbuf_t* buf) {
   nr_buffer_add(buf, NR_PSTR("{"));
 
   // only add non-empty fields
-  add_log_field_to_buf(buf, "message", event->message, true, true);
-  add_log_field_to_buf(buf, "level", event->log_level, false, true);
-  add_log_field_to_buf(buf, "trace.id", event->trace_id, false, false);
-  add_log_field_to_buf(buf, "span.id", event->span_id, false, false);
-  add_log_field_to_buf(buf, "entity.guid", event->entity_guid, false, false);
-  add_log_field_to_buf(buf, "entity.name", event->entity_name, false, false);
-  add_log_field_to_buf(buf, "hostname", event->hostname, false, false);
+  add_log_field_to_buf(buf, "message", event->message, true, true, true);
+  add_log_field_to_buf(buf, "level", event->log_level, false, true, true);
+  add_log_field_to_buf(buf, "trace.id", event->trace_id, false, false, true);
+  add_log_field_to_buf(buf, "span.id", event->span_id, false, false, true);
+  add_log_field_to_buf(buf, "entity.guid", event->entity_guid, false, false,
+                       true);
+  add_log_field_to_buf(buf, "entity.name", event->entity_name, false, false,
+                       true);
+  add_log_field_to_buf(buf, "hostname", event->hostname, false, false, true);
 
   // timestamp always present
   nr_buffer_add(buf, NR_PSTR(",\"timestamp\":"));
   nr_buffer_write_uint64_t_as_text(buf, event->timestamp);
+
+  // add attributes if present
+  if (NULL != event->context_attributes) {
+    log_attributes = nr_attributes_logcontext_to_obj(
+        event->context_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    if (0 < nro_getsize(log_attributes)) {
+      json = nro_to_json(log_attributes);
+      add_log_field_to_buf(buf, "attributes", json, false, false, false);
+      nr_free(json);
+    }
+
+    nro_delete(log_attributes);
+  }
 
   nr_buffer_add(buf, NR_PSTR("}"));
 
@@ -151,6 +180,14 @@ void nr_log_event_set_timestamp(nr_log_event_t* event, const nrtime_t time) {
     return;
   }
   event->timestamp = time / NR_TIME_DIVISOR_MS;
+}
+
+void nr_log_event_set_context_attributes(nr_log_event_t* event,
+                                         nr_attributes_t* context_attributes) {
+  if (NULL == event) {
+    return;
+  }
+  event->context_attributes = context_attributes;
 }
 
 void nr_log_event_set_trace_id(nr_log_event_t* event, const char* trace_id) {

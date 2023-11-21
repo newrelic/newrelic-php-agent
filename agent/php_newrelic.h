@@ -356,6 +356,9 @@ nr_php_ini_attribute_config_t
 nr_php_ini_attribute_config_t
     browser_monitoring_attributes; /* newrelic.browser_monitoring.attributes.*
                                     */
+nr_php_ini_attribute_config_t
+    log_context_data_attributes; /* newrelic.application_logging.forwarding.context_data.*
+                                  */
 
 nrinibool_t custom_events_enabled; /* newrelic.custom_insights_events.enabled */
 nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored

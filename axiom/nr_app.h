@@ -81,6 +81,7 @@ typedef struct _nr_app_info_t {
                                               the  daemon) */
   uint64_t custom_events_max_samples_stored; /* maximum number of custom events per min (for
                                               the  daemon) */
+  char* docker_id;          /* Docker container ID */
 } nr_app_info_t;
 
 /*
