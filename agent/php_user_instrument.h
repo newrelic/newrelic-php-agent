@@ -95,6 +95,9 @@ typedef struct _nruserfn_t {
   nr_string_len_t drupal_module_len;
   char* drupal_hook;
   nr_string_len_t drupal_hook_len;
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  char* wordpress_plugin_theme;
+#endif
 } nruserfn_t;
 
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
