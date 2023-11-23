@@ -64,3 +64,4 @@ To all [contributors](https://github.com/newrelic/newrelic-php-agent/graphs/cont
 
 ## License
 The PHP agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License and also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.
+
