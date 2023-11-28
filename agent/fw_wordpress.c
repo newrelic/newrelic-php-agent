@@ -27,6 +27,9 @@ static nr_matcher_t* create_matcher_for_constant(const char* constant,
   zval* value = nr_php_get_constant(constant);
 
   if (nr_php_is_zval_valid_string(value)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "Wordpress: found value = %s for constant=%s",
+                     Z_STRVAL_P(value), constant);
     nr_matcher_t* matcher = nr_matcher_create();
     char* prefix = nr_formatf("%s%s", Z_STRVAL_P(value), suffix);
 
@@ -35,6 +38,15 @@ static nr_matcher_t* create_matcher_for_constant(const char* constant,
     nr_free(prefix);
     nr_php_zval_free(&value);
     return matcher;
+  } else {
+    /*
+     * If the constant isn't set, that's not a problem, but if it is and it's
+     * an unexpected type we should log a message.
+     */
+    if (value) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: unexpected non-string value for %s",
+                       __func__, constant);
+    }
   }
 
   nr_php_zval_free(&value);
