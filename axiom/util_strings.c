@@ -442,3 +442,22 @@ char* nr_str_append(char* dest, const char* src, const char* delimiter) {
 
   return dest;
 }
+
+char* nr_file_basename(char* filename) {
+  char* retval = NULL;
+  size_t filename_len = 0;
+
+  if (NULL == filename) {
+    return NULL;
+  }
+
+  filename_len = nr_strlen(filename);
+
+  if (!nr_striendswith(filename, filename_len, NR_PSTR(".php"))) {
+    return filename;
+  }
+
+  retval = nr_strndup(filename, filename_len - (sizeof(".php") - 1));
+  nr_free(filename);
+  return retval;
+}

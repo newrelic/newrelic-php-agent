@@ -53,32 +53,6 @@ static nr_matcher_t* create_matcher_for_constant(const char* constant,
   return NULL;
 }
 
-static char* nr_wordpress_strip_php_suffix(char* filename) {
-  char* retval = NULL;
-  char* ext_offset_ptr = NULL;
-  size_t offset = 0;
-  if (NULL == filename) {
-    return NULL;
-  }
-  ext_offset_ptr = nr_strstr(filename, ".php");
-  if (NULL == ext_offset_ptr) {
-    // If we don't catch a .php extension, just return original
-    return filename;
-  }
-  offset = nr_strlen(filename) - nr_strlen(ext_offset_ptr);
-  if (0 >= offset) {
-    nr_free(filename);
-    return NULL;
-  }
-  retval = nr_strndup(filename, offset);
-  if (NULL == retval) {
-    nr_free(filename);
-    return NULL;
-  }
-  nr_free(filename);
-  return retval;
-}
-
 static nr_matcher_t* nr_wordpress_core_matcher() {
   nr_matcher_t* matcher = NULL;
 
@@ -176,7 +150,7 @@ static nr_matcher_t* nr_wordpress_theme_matcher() {
 char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
   char* plugin = NULL;
   plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_wordpress_strip_php_suffix(plugin);
+  plugin = nr_file_basename(plugin);
   nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
   return plugin;
 }
@@ -184,7 +158,7 @@ char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
 char* nr_php_wordpress_theme_match_matcher(const char* filename) {
   char* theme = NULL;
   theme = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  theme = nr_wordpress_strip_php_suffix(theme);
+  theme = nr_file_basename(theme);
   nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
   return theme;
 }
@@ -192,7 +166,7 @@ char* nr_php_wordpress_theme_match_matcher(const char* filename) {
 char* nr_php_wordpress_core_match_matcher(const char* filename) {
   char* core = NULL;
   core = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  core = nr_wordpress_strip_php_suffix(core);
+  core = nr_file_basename(core);
   nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
   return core;
 }
@@ -251,19 +225,19 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
   plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_wordpress_strip_php_suffix(plugin);
+  plugin = nr_file_basename(plugin);
   if (plugin) {
     goto cache_and_return;
   }
 
   plugin = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  plugin = nr_wordpress_strip_php_suffix(plugin);
+  plugin = nr_file_basename(plugin);
   if (plugin) {
     goto cache_and_return;
   }
 
   plugin = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  plugin = nr_wordpress_strip_php_suffix(plugin);
+  plugin = nr_file_basename(plugin);
   if (plugin) {
     /*
      * The core wordpress functions are anonymized, so we don't need to return

@@ -253,6 +253,16 @@ extern int nr_str_char_count(const char* s, char c);
 extern char* nr_str_append(char* dest, const char* src, const char* delimiter);
 
 /*
+ * Purpose : Strip the ".php" file extension from a file name
+ *
+ * Params  : 1. The string filename
+ *
+ * Returns : A newly allocated string stripped of the .php extension
+ *
+ */
+extern char* nr_file_basename(char* filename);
+
+/*
  * Purpose : Test for an alphanumeric character using the "C" locale. In the "C"
  *           locale, only the following are alphanumeric characters.
  *
