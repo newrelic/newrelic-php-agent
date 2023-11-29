@@ -9,8 +9,15 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
-static void nr_matcher_prefix_dtor(void* prefix, void* userdata NRUNUSED) {
-  nr_free(prefix);
+typedef struct {
+  char *cp;
+  int len;
+} matcher_prefix;
+
+static void nr_matcher_prefix_dtor(void* _p, void* userdata NRUNUSED) {
+  matcher_prefix* p = (matcher_prefix *)_p;
+  nr_free(p->cp);
+  nr_free(p);
 }
 
 nr_matcher_t* nr_matcher_create(void) {
@@ -31,30 +38,30 @@ void nr_matcher_destroy(nr_matcher_t** matcher_ptr) {
   nr_realfree((void**)matcher_ptr);
 }
 
-bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* prefix) {
-  size_t i;
-  char* prefix_lc;
-  size_t prefix_len;
+bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* str) {
+  int i;
+  matcher_prefix* prefix;
 
-  if (NULL == matcher || NULL == prefix) {
+  if (NULL == matcher || NULL == str) {
     return false;
   }
 
-  prefix_len = nr_strlen(prefix);
-  while (prefix_len > 0 && '/' == prefix[prefix_len - 1]) {
-    prefix_len--;
+  prefix = nr_calloc(1, sizeof(matcher_prefix));
+  prefix->len = nr_strlen(str);
+  while (prefix->len > 0 && '/' == str[prefix->len - 1]) {
+    prefix->len--;
   }
 
-  prefix_lc = nr_malloc(prefix_len + 2);
-  for (i = 0; i < prefix_len; i++) {
-    prefix_lc[i] = nr_tolower(prefix[i]);
+  prefix->len += 1;
+  prefix->cp = nr_malloc(prefix->len+1);
+  for (i = 0; i < prefix->len; i++) {
+    prefix->cp[i] = nr_tolower(str[i]);
   }
-  prefix_lc[prefix_len] = '/';
-  prefix_lc[prefix_len + 1] = '\0';
+  prefix->cp[prefix->len-1] = '/';
+  prefix->cp[prefix->len] = '\0';
 
-  return nr_vector_push_back(&matcher->prefixes, prefix_lc);
+  return nr_vector_push_back(&matcher->prefixes, prefix);
 }
-
 static char* nr_matcher_match_internal(nr_matcher_t* matcher,
                                        const char* input,
                                        bool core) {
@@ -72,13 +79,13 @@ static char* nr_matcher_match_internal(nr_matcher_t* matcher,
 
   for (i = 0; i < num_prefixes; i++) {
     const char* found;
-    const char* prefix = nr_vector_get(&matcher->prefixes, i);
+    const matcher_prefix* prefix = nr_vector_get(&matcher->prefixes, i);
 
-    found = nr_strstr(input, prefix);
+    found = nr_strstr(input, prefix->cp);
     if (found) {
       const char* slash;
 
-      found += nr_strlen(prefix);
+      found += prefix->len;
       if (true == core) {
         slash = nr_strrchr(found, '/');
       } else {
