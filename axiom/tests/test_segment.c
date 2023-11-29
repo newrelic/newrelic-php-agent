@@ -213,7 +213,9 @@ static void test_segment_start(void) {
       "be its parent",
       nr_txn_get_current_segment(txn, NULL), s);
 
-  /* Start a third segment.  Its sibling should be the second segment, t */
+  /* Start a third segment.  Its sibling should be the second segment, t.
+   * Segments are not added to their parent's children list until the segment
+   * is ended. */
   prev_parent = nr_txn_get_current_segment(txn, NULL);
   u = nr_segment_start(txn, NULL, NULL);
   tlib_pass_if_not_null("Starting a segment on a valid txn must succeed", u);
@@ -229,6 +231,13 @@ static void test_segment_start(void) {
       "current segment as parent",
       u->parent, prev_parent);
 
+  tlib_pass_if_true("Ending a well-formed segment must succeed",
+                    test_segment_end_and_keep(&u), "Expected true");
+  tlib_pass_if_size_t_equal("a fourth segment was allocated", 4,
+                            nr_txn_allocated_segment_count(txn));
+  tlib_pass_if_size_t_equal("4 started 2 ended", 2,
+                            nr_vector_size(&txn->default_parent_stack));
+
   tlib_pass_if_ptr_equal(
       "A segment started with a NULL parent must have the expected "
       "previous siblings",
@@ -238,13 +247,6 @@ static void test_segment_start(void) {
       "A segment started with a NULL parent must have the expected "
       "next siblings",
       nr_segment_children_get_next(&s->children, u));
-
-  tlib_pass_if_true("Ending a well-formed segment must succeed",
-                    nr_segment_end(&u), "Expected true");
-  tlib_pass_if_size_t_equal("a fourth segment was allocated", 4,
-                            nr_txn_allocated_segment_count(txn));
-  tlib_pass_if_size_t_equal("4 started 2 ended", 2,
-                            nr_vector_size(&txn->default_parent_stack));
 
   tlib_pass_if_size_t_equal(
       "The slab should be empty, we haven't discarded yet", 0,
@@ -291,6 +293,9 @@ static void test_segment_start_async(void) {
    * Test : Async operation. Starting a segment with an explicit parent,
    *        supplied as a parameter to nr_segment_start() has the expected
    *        impact on parent and sibling relationships.
+   *        Segments started with the same async context (with an implicit
+   *        parent) are not added to their parent's children list until the
+   *        segment is ended.
    */
   first_stepchild = nr_segment_start(txn, mother, "async_context");
   tlib_pass_if_not_null(
@@ -322,12 +327,6 @@ static void test_segment_start_async(void) {
       "A segment started with an explicit parent must have the explicit "
       "parent",
       first_stepchild->parent, mother);
-
-  tlib_pass_if_ptr_equal(
-      "A segment started with an explicit parent must have the explicit "
-      "previous siblings",
-      nr_segment_children_get_prev(&(mother->children), first_stepchild),
-      first_born);
 
   /*
    * Test : Async operation. Starting a segment with no parent and a new
@@ -375,6 +374,9 @@ static void test_segment_start_async(void) {
   /*
    * Test : Async operation. Starting a segment with no parent on the same
    *        context as first_grandchild should make it a child of that segment.
+   *        Segments started with the same async context (with an implicit
+   *        parent) are not added to their parent's children list until the
+   *        segment is ended.
    */
   great_grandchild = nr_segment_start(txn, NULL, "another_async");
   tlib_pass_if_not_null(
@@ -409,6 +411,7 @@ static void test_segment_start_async(void) {
       "on the same async context",
       great_grandchild->parent, first_grandchild);
 
+  test_segment_end_and_keep(&great_grandchild);
   tlib_pass_if_ptr_equal(
       "A segment started with an implicit parent must be a child of that "
       "parent",
@@ -420,12 +423,20 @@ static void test_segment_start_async(void) {
    *        supplied as a parameter to nr_segment_start() has the expected
    *        impact on subsequent sibling relationships.
    */
-  nr_segment_end(&first_born);
+  test_segment_end_and_keep(&first_born); // second sibling on mother
   third_born = nr_segment_start(txn, NULL, NULL);
+  test_segment_end_and_keep(&third_born); // third sibling on mother
+
   tlib_pass_if_ptr_equal(
       "A segment started with an explicit parent must have the explicit "
       "next siblings",
       nr_segment_children_get_next(&(mother->children), first_stepchild),
+      first_born);
+
+  tlib_pass_if_ptr_equal(
+      "A segment started with an explicit parent must have the explicit "
+      "next siblings",
+      nr_segment_children_get_next(&(mother->children), first_born),
       third_born);
 
   /* Clean up */
@@ -1451,6 +1462,15 @@ static void test_segment_discard(void) {
   B = nr_segment_start(&txn, A, NULL);
   C = nr_segment_start(&txn, B, NULL);
   D = nr_segment_start(&txn, B, NULL);
+  /*
+   * Normally, segments aren't added to their parent's children list
+   * until they are ended. In this test, we end the parent segment
+   * before its children (abnormal behavior), and therefore need to
+   * manually add the children to their perent's lists
+   */
+  nr_segment_children_add(&A->children, B);
+  nr_segment_children_add(&B->children, C);
+  nr_segment_children_add(&B->children, D);
 
   /* Allocate some fields, so we know those are getting destroyed. */
   A->id = nr_strdup("A");
@@ -1481,6 +1501,13 @@ static void test_segment_discard(void) {
    *          / \           C   D
    *         C   D
    */
+  /*
+   * Normally, when a segment is discarded, it was never added to its
+   * parent's children list. So for this test, we must manually remove
+   * it. This manual remove DOES happen during normal operation if a
+   * segment is sampled out via the segment heap and then discarded.
+   */
+  nr_segment_children_remove(&A->children, B);
   tlib_pass_if_true("delete node with kids", nr_segment_discard(&B),
                     "expected true");
   tlib_pass_if_size_t_equal("A has two children", 2,
@@ -1499,6 +1526,13 @@ static void test_segment_discard(void) {
    *             / \    =>    |
    * delete ->  C   D         D
    */
+  /*
+   * Normally, when a segment is discarded, it was never added to its
+   * parent's children list. So for this test, we must manually remove
+   * it. This manual remove DOES happen during normal operation if a
+   * segment is sampled out via the segment heap and then discarded.
+   */
+  nr_segment_children_remove(&A->children, C);
   tlib_pass_if_true("delete leaf node", nr_segment_discard(&C),
                     "expected true");
   tlib_pass_if_size_t_equal("A has one child", 1,

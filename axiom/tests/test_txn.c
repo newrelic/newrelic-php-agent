@@ -7802,13 +7802,9 @@ static void test_max_segments(void) {
    * Start a default and an async segment
    */
   s1 = nr_segment_start(txn, NULL, NULL);
-  s2 = nr_segment_start(txn, NULL, NULL);
-  s3 = nr_segment_start(txn, NULL, NULL);
-  s4 = nr_segment_start(txn, NULL, NULL);
-
-  nr_segment_set_parent(s2, s1);
-  nr_segment_set_parent(s3, s1);
-  nr_segment_set_parent(s4, s3);
+  s2 = nr_segment_start(txn, s1, NULL);
+  s3 = nr_segment_start(txn, s1, NULL);
+  s4 = nr_segment_start(txn, s3, NULL);
 
   nr_segment_set_timing(s1, 0, 10000);
   nr_segment_set_timing(s2, 2000, 10000);
