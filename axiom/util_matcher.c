@@ -62,13 +62,21 @@ bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* str) {
 
   return nr_vector_push_back(&matcher->prefixes, prefix);
 }
-static char* nr_matcher_match_internal(nr_matcher_t* matcher,
+
+#define SET_SAFE(p, v) do {\
+  if (NULL != p) *p = (v); \
+} while(0);
+static char* nr_matcher_match_internal(nr_matcher_t* matcher, 
                                        const char* input,
+                                       int input_len,
+                                       int* match_len,
                                        bool core) {
   size_t i;
   char* input_lc;
   char* match = NULL;
   size_t num_prefixes;
+
+  SET_SAFE(match_len, 0);
 
   if (NULL == matcher || NULL == input) {
     return NULL;
@@ -93,12 +101,15 @@ static char* nr_matcher_match_internal(nr_matcher_t* matcher,
       }
       if (NULL == slash) {
         match = nr_strdup(found);
+        SET_SAFE(match_len, input_len - (found-input));
       } else {
         if (true == core) {
-          const char* offset = input + nr_strlen(input);
+          const char* offset = input + input_len;
           match = nr_strndup(slash + 1, offset - slash);
+          SET_SAFE(match_len, offset - (slash+1));
         } else {
           match = nr_strndup(found, slash - found);
+          SET_SAFE(match_len, slash - found);
         }
       }
       break;
@@ -109,10 +120,18 @@ static char* nr_matcher_match_internal(nr_matcher_t* matcher,
   return match;
 }
 
+char* nr_matcher_match_ex(nr_matcher_t* matcher, const char* input, int input_len, int *match_len) {
+  return nr_matcher_match_internal(matcher, input, input_len, match_len, false);
+}
+
 char* nr_matcher_match(nr_matcher_t* matcher, const char* input) {
-  return nr_matcher_match_internal(matcher, input, false);
+  return nr_matcher_match_internal(matcher, input, nr_strlen(input), NULL, false);
+}
+
+char* nr_matcher_match_core_ex(nr_matcher_t* matcher, const char* input, int input_len, int *match_len) {
+  return nr_matcher_match_internal(matcher, input, input_len, match_len, true);
 }
 
 char* nr_matcher_match_core(nr_matcher_t* matcher, const char* input) {
-  return nr_matcher_match_internal(matcher, input, true);
+  return nr_matcher_match_internal(matcher, input, nr_strlen(input), NULL, true);
 }
