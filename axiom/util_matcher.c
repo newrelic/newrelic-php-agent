@@ -52,8 +52,8 @@ bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* str) {
     prefix->len--;
   }
 
-  prefix->len += 1;
-  prefix->cp = nr_malloc(prefix->len+1);
+  prefix->len += 1; // +1 for the trailing '/'
+  prefix->cp = nr_malloc(prefix->len+1); // +1 for the '\0'
   for (i = 0; i < prefix->len; i++) {
     prefix->cp[i] = nr_tolower(str[i]);
   }
