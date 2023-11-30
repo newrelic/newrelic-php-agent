@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "util_object.h"
+#include "util_memory.h"
 
 /*
  * Purpose : Convert a string to lower case, following USASCII rules, returning
@@ -246,21 +247,12 @@ extern int nr_str_char_count(const char* s, char c);
  *
  * Params  : 1. The destination string.
  *           2. The source string.
- *           3. The delimiter to separate the strings; NULL treated as empty string.
+ *           3. The delimiter to separate the strings; NULL treated as empty
+ * string.
  *
  * Returns : A newly allocated string containing both.
  */
 extern char* nr_str_append(char* dest, const char* src, const char* delimiter);
-
-/*
- * Purpose : Strip the ".php" file extension from a file name
- *
- * Params  : 1. The string filename
- *
- * Returns : A newly allocated string stripped of the .php extension
- *
- */
-extern char* nr_file_basename(char* filename);
 
 /*
  * Purpose : Test for an alphanumeric character using the "C" locale. In the "C"
@@ -479,6 +471,37 @@ static inline bool nr_striendswith(const char* s,
   /* compare input's suffix with the pattern and return result */
   suffix = s + (slen - pattern_len);
   return 0 == nr_stricmp(suffix, pattern);
+}
+
+/*
+ * Purpose : Strip the ".php" file extension from a file name
+ *
+ * Params  : 1. The string filename
+ *           2. The filename length
+ *
+ * Returns : A newly allocated string stripped of the .php extension
+ *
+ */
+static inline char* nr_file_basename(char* filename, int filename_len) {
+  char* retval = NULL;
+
+  if (NULL == filename || 0 >= filename_len) {
+    return NULL;
+  }
+
+  if (4 >= filename_len) {
+    /* if filename_len <= 4, there can't be a ".php" substring to remove. Assume
+     * the filename does not contain ".php" and return the original filename. */
+    return filename;
+  }
+
+  if (!nr_striendswith(filename, filename_len, NR_PSTR(".php"))) {
+    return filename;
+  }
+
+  retval = nr_strndup(filename, filename_len - (sizeof(".php") - 1));
+  nr_free(filename);
+  return retval;
 }
 
 #endif /* UTIL_STRINGS_HDR */

@@ -150,7 +150,7 @@ static nr_matcher_t* nr_wordpress_theme_matcher() {
 char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
   char* plugin = NULL;
   plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_file_basename(plugin);
+  plugin = nr_file_basename(plugin, nr_strlen(plugin));
   nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
   return plugin;
 }
@@ -158,7 +158,7 @@ char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
 char* nr_php_wordpress_theme_match_matcher(const char* filename) {
   char* theme = NULL;
   theme = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  theme = nr_file_basename(theme);
+  theme = nr_file_basename(theme, nr_strlen(theme));
   nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
   return theme;
 }
@@ -166,7 +166,7 @@ char* nr_php_wordpress_theme_match_matcher(const char* filename) {
 char* nr_php_wordpress_core_match_matcher(const char* filename) {
   char* core = NULL;
   core = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  core = nr_file_basename(core);
+  core = nr_file_basename(core, nr_strlen(core));
   nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
   return core;
 }
@@ -225,19 +225,19 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
   plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_file_basename(plugin);
+  plugin = nr_file_basename(plugin, nr_strlen(plugin));
   if (plugin) {
     goto cache_and_return;
   }
 
   plugin = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  plugin = nr_file_basename(plugin);
+  plugin = nr_file_basename(plugin, nr_strlen(plugin));
   if (plugin) {
     goto cache_and_return;
   }
 
   plugin = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  plugin = nr_file_basename(plugin);
+  plugin = nr_file_basename(plugin, nr_strlen(plugin));
   if (plugin) {
     /*
      * The core wordpress functions are anonymized, so we don't need to return
