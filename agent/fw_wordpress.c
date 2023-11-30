@@ -210,7 +210,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                      NRP_PHP(NRPRG(wordpress_tag)));
     return NULL;
   }
-  filename_len = func->op_array.filename->len; // temp hack - should be nr_php_function_filename_len(func);
+  filename_len = nr_php_function_filename_len(func);
 
   if (NRPRG(wordpress_file_metadata)) {
     if (nr_hashmap_get_into(NRPRG(wordpress_file_metadata), filename,
