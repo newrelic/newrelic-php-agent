@@ -46,14 +46,19 @@ bool nr_matcher_add_prefix(nr_matcher_t* matcher, const char* str) {
     return false;
   }
 
-  prefix = nr_calloc(1, sizeof(matcher_prefix));
+  if (NULL == (prefix = nr_calloc(1, sizeof(matcher_prefix)))) {
+    return false;
+  }
   prefix->len = nr_strlen(str);
   while (prefix->len > 0 && '/' == str[prefix->len - 1]) {
     prefix->len--;
   }
 
   prefix->len += 1; // +1 for the trailing '/'
-  prefix->cp = nr_malloc(prefix->len+1); // +1 for the '\0'
+  if (NULL == (prefix->cp = nr_malloc(prefix->len+1))) { // +1 for the '\0'
+    nr_matcher_prefix_dtor(prefix, NULL);
+    return false;
+  }
   for (i = 0; i < prefix->len; i++) {
     prefix->cp[i] = nr_tolower(str[i]);
   }
