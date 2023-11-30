@@ -149,24 +149,27 @@ static nr_matcher_t* nr_wordpress_theme_matcher() {
 
 char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
   char* plugin = NULL;
-  plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_file_basename(plugin, nr_strlen(plugin));
+  int plugin_len;
+  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, nr_strlen(filename), &plugin_len);
+  plugin = nr_file_basename(plugin, plugin_len);
   nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
   return plugin;
 }
 
 char* nr_php_wordpress_theme_match_matcher(const char* filename) {
   char* theme = NULL;
-  theme = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  theme = nr_file_basename(theme, nr_strlen(theme));
+  int plugin_len;
+  theme = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, nr_strlen(filename), &plugin_len);
+  theme = nr_file_basename(theme, plugin_len);
   nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
   return theme;
 }
 
 char* nr_php_wordpress_core_match_matcher(const char* filename) {
   char* core = NULL;
-  core = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  core = nr_file_basename(core, nr_strlen(core));
+  int plugin_len;
+  core = nr_matcher_match_core_ex(nr_wordpress_core_matcher(), filename, nr_strlen(filename), &plugin_len);
+  core = nr_file_basename(core, plugin_len);
   nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
   return core;
 }
@@ -193,6 +196,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   const char* filename = NULL;
   size_t filename_len;
   char* plugin = NULL;
+  int plugin_len;
 
   if (NULL == func) {
     return NULL;
@@ -206,7 +210,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                      NRP_PHP(NRPRG(wordpress_tag)));
     return NULL;
   }
-  filename_len = nr_strlen(filename);
+  filename_len = func->op_array.filename->len; // temp hack - should be nr_php_function_filename_len(func);
 
   if (NRPRG(wordpress_file_metadata)) {
     if (nr_hashmap_get_into(NRPRG(wordpress_file_metadata), filename,
@@ -224,20 +228,20 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "Wordpress: NOT found in cache: "
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
-  plugin = nr_matcher_match(nr_wordpress_plugin_matcher(), filename);
-  plugin = nr_file_basename(plugin, nr_strlen(plugin));
+  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_file_basename(plugin, plugin_len);
   if (plugin) {
     goto cache_and_return;
   }
 
-  plugin = nr_matcher_match(nr_wordpress_theme_matcher(), filename);
-  plugin = nr_file_basename(plugin, nr_strlen(plugin));
+  plugin = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_file_basename(plugin, plugin_len);
   if (plugin) {
     goto cache_and_return;
   }
 
-  plugin = nr_matcher_match_core(nr_wordpress_core_matcher(), filename);
-  plugin = nr_file_basename(plugin, nr_strlen(plugin));
+  plugin = nr_matcher_match_core_ex(nr_wordpress_core_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_file_basename(plugin, plugin_len);
   if (plugin) {
     /*
      * The core wordpress functions are anonymized, so we don't need to return
