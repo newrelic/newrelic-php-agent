@@ -2,7 +2,6 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_error.h"
@@ -198,16 +197,6 @@ end:
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_symfony_application_construct) {
-  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
-  nr_php_scope_release(&this_var);
-}
-NR_PHP_WRAPPER_END
-
 void nr_symfony4_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -261,7 +250,4 @@ void nr_symfony4_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
         NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
      nr_symfony4_console_application_run TSRMLS_CC);
-
-  nr_php_wrap_user_function(NR_PSTR("App\\Kernel::__construct"),
-                            nr_symfony_application_construct TSRMLS_CC);
 }
