@@ -46,8 +46,7 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Drupal 8+: cannot get zend_function entry for %.*s::%.*s",
                      NRSAFELEN(nr_php_class_entry_name_length(ce)),
-                     nr_php_class_entry_name(ce), NRSAFELEN(method_len),
-                     method);
+              nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
     return;
   }
 
@@ -380,7 +379,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
 
   module = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_non_empty_string(module)) {
-    goto leave;
+      goto leave;
   }
 
   nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
@@ -394,8 +393,8 @@ leave:
 NR_PHP_WRAPPER_END
 
 /*
- * Purpose : Handles ModuleHandlerInterface::invokeAllWith() call and ensure
- * that the relevant hook function is instrumented. At this point in the call
+ * Purpose : Handles ModuleHandlerInterface::invokeAllWith() call and ensure that the
+ *           relevant hook function is instrumented. At this point in the call
  *           stack, we do not know which module to instrument, so we
  *           must first wrap the callback passed into this function
  */
@@ -411,7 +410,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
 
   hook = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_non_empty_string(hook)) {
-    goto leave;
+      goto leave;
   }
 
   prev_hook = NRPRG(drupal_module_invoke_all_hook);
@@ -425,8 +424,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
    * with a special instrumentation callback in a different context.
    * In this scenario, we will be unable to instrument hooks and modules for
    * this particular call */
-  nr_php_wrap_generic_callable(callback,
-                               nr_drupal94_invoke_all_with_callback TSRMLS_CC);
+  nr_php_wrap_generic_callable(callback, nr_drupal94_invoke_all_with_callback TSRMLS_CC);
 
   NR_PHP_WRAPPER_CALL;
 
