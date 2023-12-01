@@ -533,6 +533,21 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+void nr_drupal_version(TSRMLS_D) {
+  char* string = "Drupal::VERSION;";
+  zval retval;
+  int result
+      = zend_eval_string(string, &retval, "Retrieve Drupal Version" TSRMLS_CC);
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
+      char* version = Z_STRVAL(retval);
+      // Add php package to transaction
+      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+      zval_dtor(&retval);
+    }
+  }
+}
+
 void nr_drupal8_enable(TSRMLS_D) {
   /*
    * Obtain a transation name if a page was cached.
@@ -585,19 +600,5 @@ void nr_drupal8_enable(TSRMLS_D) {
      */
     nr_php_wrap_user_function(NR_PSTR("Drupal\\views\\ViewExecutable::execute"),
                               nr_drupal8_wrap_view_execute TSRMLS_CC);
-  }
-
-  char* string = "Drupal::VERSION;";
-  zval retval;
-  int result
-      = zend_eval_string(string, &retval, "Retrieve Drupal Version" TSRMLS_CC);
-
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_STRING) {
-      char* version = Z_STRVAL(retval);
-      // Add php package to transaction
-      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-      zval_dtor(&retval);
-    }
   }
 }
