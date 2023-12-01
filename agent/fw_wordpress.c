@@ -65,16 +65,6 @@ static nr_matcher_t* create_matcher_for_constant(const char* constant,
 static inline char* nr_wordpress_strip_php_suffix(char* filename, int filename_len) {
   char* retval = NULL;
 
-  if (NULL == filename || 0 >= filename_len) {
-    return NULL;
-  }
-
-  if (4 >= filename_len) {
-    /* if filename_len <= 4, there can't be a ".php" substring to remove. Assume
-     * the filename does not contain ".php" and return the original filename. */
-    return filename;
-  }
-
   if (!nr_striendswith(filename, filename_len, NR_PSTR(".php"))) {
     return filename;
   }
