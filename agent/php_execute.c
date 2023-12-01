@@ -318,12 +318,13 @@ typedef struct _nr_vuln_mgmt_table_t {
 
 /* Note that all paths should be in lowercase. */
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-  {"Drupal", "core/lib/drupal.php", nr_drupal_version},
-  {"PHPUnit", "runner/version.php", nr_phpunit_version},
-  {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+    {"PHPUnit", "runner/version.php", nr_phpunit_version},
+    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
 };
 
-static size_t num_packages = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+static size_t num_packages
+    = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
 
 /*
  * Framework handling, definition and callbacks.
@@ -953,7 +954,7 @@ static void nr_execute_handle_logging_framework(
 static void nr_execute_handle_package(const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i = 0;
-  
+
   for (i = 0; i < num_packages; i++) {
     if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
       if (NULL != vuln_mgmt_packages[i].enable) {
