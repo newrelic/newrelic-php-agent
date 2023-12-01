@@ -108,6 +108,12 @@ typedef void (*nr_framework_enable_fn_t)(TSRMLS_D);
 typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
 
 /*
+ * Purpose: Enable monitoring on specific functions for a detected vulnerability
+ *          management package.
+ */
+typedef void (*nr_vuln_mgmt_enable_fn_t)(TSRMLS_D);
+
+/*
  * This code is used for function call debugging.
  */
 #define MAX_NR_EXECUTE_DEBUG_STRLEN (80)
@@ -302,6 +308,22 @@ static void nr_show_execute_params(NR_EXECUTE_PROTO, char* pbuf TSRMLS_DC) {
   (void)avail;
   (void)pos;
 }
+
+/* Package handling for Vulnerability Management */
+typedef struct _nr_vuln_mgmt_table_t {
+  const char* package_name;
+  const char* file_to_check;
+  nr_vuln_mgmt_enable_fn_t enable;
+} nr_vuln_mgmt_table_t;
+
+/* Note that all paths should be in lowercase. */
+static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
+  {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+  {"PHPUnit", "runner/version.php", nr_phpunit_version},
+  {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+};
+
+static size_t num_packages = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
 
 /*
  * Framework handling, definition and callbacks.
@@ -890,6 +912,21 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
   nr_free(filename_lower);
 }
 
+static void nr_execute_handle_package(const char* filename TSRMLS_DC) {
+  char* filename_lower = nr_string_to_lowercase(filename);
+  size_t i = 0;
+  
+  for (i = 0; i < num_packages; i++) {
+    if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
+      if (NULL != vuln_mgmt_packages[i].enable) {
+        vuln_mgmt_packages[i].enable(TSRMLS_C);
+      }
+    }
+  }
+
+  nr_free(filename_lower);
+}
+
 static void nr_execute_handle_logging_framework(
     const char* filename TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
@@ -930,6 +967,7 @@ static void nr_php_user_instrumentation_from_file(
                               filename TSRMLS_CC);
   nr_execute_handle_library(filename TSRMLS_CC);
   nr_execute_handle_logging_framework(filename TSRMLS_CC);
+  nr_execute_handle_package(filename TSRMLS_CC);
 }
 
 /*
