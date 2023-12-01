@@ -608,9 +608,6 @@ void nr_php_gather_v2_docker_id() {
   if (NULL != dockerId) {
     NR_PHP_PROCESS_GLOBALS(docker_id) = dockerId;
     nrl_verbosedebug(NRL_AGENT, "%s: Docker v2 ID: %s", __func__, dockerId);
-  } else {
-    nrl_warning(NRL_AGENT, "%s: Unable to read docker v2 container id",
-                __func__);
   }
 }
 
