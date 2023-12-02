@@ -109,7 +109,7 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
   }
 
   /*
-   * If we don't have haven't instrumented hooks that require this, skip to the
+   * If we don't have instrumented hooks that require this, skip to the
    * end.
    */
   if (false == NRPRG(check_cufa)) {
