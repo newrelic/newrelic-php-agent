@@ -361,10 +361,12 @@ static char* nr_guzzle_version(zval* app TSRMLS_DC) {
   }
 
   if (NULL == nr_php_get_class_constant(ce, "VERSION")) {
-    version = nr_php_get_class_constant(ce, "MAJOR_VERSION");
+    // If full version does not exist, then we will send empty string
+    return " ";
   } else {
     version = nr_php_get_class_constant(ce, "VERSION");
   }
+
   if (NULL == version) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
                      __func__);
@@ -373,10 +375,6 @@ static char* nr_guzzle_version(zval* app TSRMLS_DC) {
 
   if (nr_php_is_zval_valid_string(version)) {
     retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
-  } else if ((Z_TYPE_P(version) == IS_LONG)) {
-    zend_string* zstr = zend_long_to_str(Z_LVAL_P(version));
-    retval = strndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-    zend_string_release(zstr);
   } else {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: expected VERSION be a valid string, got type %d",
