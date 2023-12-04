@@ -21,6 +21,8 @@
 #define NR_WORDPRESS_HOOK_PREFIX "Framework/WordPress/Hook/"
 #define NR_WORDPRESS_PLUGIN_PREFIX "Framework/WordPress/Plugin/"
 
+static nr_regex_t* wordpress_hook_regex;
+
 static size_t zval_len_without_trailing_slash(const zval* zstr) {
   nr_string_len_t len = Z_STRLEN_P(zstr);
   const char* str = Z_STRVAL_P(zstr);
@@ -428,7 +430,7 @@ static char* nr_wordpress_clean_tag(const zval* tag TSRMLS_DC) {
     return NULL;
   }
 
-  regex = NRPRG(wordpress_hook_regex);
+  regex = wordpress_hook_regex;
   if (NULL == regex) {
     return NULL;
   }
@@ -593,4 +595,14 @@ void nr_wordpress_enable(TSRMLS_D) {
 
   nr_php_add_call_user_func_array_pre_callback(
       nr_wordpress_call_user_func_array TSRMLS_CC);
+}
+
+void nr_wordpress_minit(void) {
+  wordpress_hook_regex = nr_regex_create(
+      "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
+      NR_REGEX_CASELESS, 0);
+}
+
+void nr_wordpress_mshutdown(void) {
+  nr_regex_destroy(&wordpress_hook_regex);
 }
