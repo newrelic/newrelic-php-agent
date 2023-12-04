@@ -89,6 +89,8 @@ PHP_RINIT_FUNCTION(newrelic) {
     nr_php_extension_instrument_rescan(NRPRG(extensions) TSRMLS_CC);
   }
 
+  NRPRG(check_cufa) = false;
+
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
   NRPRG(datastore_connections) = nr_hashmap_create(
