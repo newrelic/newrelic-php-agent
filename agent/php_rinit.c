@@ -89,14 +89,6 @@ PHP_RINIT_FUNCTION(newrelic) {
     nr_php_extension_instrument_rescan(NRPRG(extensions) TSRMLS_CC);
   }
 
-  /*
-   * Compile regex for WordPress: includes logic for
-   * hook sanitization regex.
-   */
-  NRPRG(wordpress_hook_regex) = nr_regex_create(
-      "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
-      NR_REGEX_CASELESS, 0);
-
   NRPRG(check_cufa) = false;
 
   NRPRG(mysql_last_conn) = NULL;

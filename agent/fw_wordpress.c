@@ -21,6 +21,8 @@
 #define NR_WORDPRESS_HOOK_PREFIX "Framework/WordPress/Hook/"
 #define NR_WORDPRESS_PLUGIN_PREFIX "Framework/WordPress/Plugin/"
 
+static nr_regex_t* wordpress_hook_regex;
+
 static size_t zval_len_without_trailing_slash(const zval* zstr) {
   nr_string_len_t len = Z_STRLEN_P(zstr);
   const char* str = Z_STRVAL_P(zstr);
@@ -410,6 +412,10 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
   nr_php_wrap_callable(func, nr_wordpress_wrap_hook TSRMLS_CC);
 }
 
+static void free_tag(void* tag) {
+  nr_free(tag);
+}
+
 /*
  * Some plugins generate transient tag names. We can detect these by checking
  * the substrings returned from our regex rule. If the tag is transient, we
@@ -418,8 +424,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
  * Example: (old) add_option__transient_timeout_twccr_382402301f44c883bc0137_cat
  *          (new) add_option__transient_timeout_twccr_*_cat
  */
-static char* nr_wordpress_clean_tag(const zval* tag TSRMLS_DC) {
-  char* orig_tag = NULL;
+static char* nr_wordpress_clean_tag(const zval* tag) {
   char* clean_tag = NULL;
   nr_regex_t* regex = NULL;
   nr_regex_substrings_t* ss = NULL;
@@ -428,13 +433,21 @@ static char* nr_wordpress_clean_tag(const zval* tag TSRMLS_DC) {
     return NULL;
   }
 
-  regex = NRPRG(wordpress_hook_regex);
+  regex = wordpress_hook_regex;
   if (NULL == regex) {
     return NULL;
   }
 
-  orig_tag = nr_strndup(Z_STRVAL_P(tag), Z_STRLEN_P(tag));
-  ss = nr_regex_match_capture(regex, orig_tag, nr_strlen(orig_tag));
+  if (NULL == NRPRG(wordpress_clean_tag_cache)) {
+    NRPRG(wordpress_clean_tag_cache) = nr_hashmap_create(free_tag);
+  }
+
+  if (nr_hashmap_get_into(NRPRG(wordpress_clean_tag_cache), Z_STRVAL_P(tag),
+                          Z_STRLEN_P(tag), (void**)&clean_tag)) {
+    return clean_tag;
+  }
+
+  ss = nr_regex_match_capture(regex, Z_STRVAL_P(tag), Z_STRLEN_P(tag));
   clean_tag = nr_regex_substrings_get(ss, 5);
 
   /*
@@ -455,7 +468,9 @@ static char* nr_wordpress_clean_tag(const zval* tag TSRMLS_DC) {
   }
 
   nr_regex_substrings_destroy(&ss);
-  nr_free(orig_tag);
+
+  nr_hashmap_set(NRPRG(wordpress_clean_tag_cache), Z_STRVAL_P(tag),
+                 Z_STRLEN_P(tag), clean_tag);
 
   return clean_tag;
 }
@@ -481,9 +496,8 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
     NRPRG(check_cufa) = true;
 
-    NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
+    NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
     NR_PHP_WRAPPER_CALL;
-    nr_free(NRPRG(wordpress_tag));
     NRPRG(wordpress_tag) = old_tag;
     if (NULL == NRPRG(wordpress_tag)) {
       NRPRG(check_cufa) = false;
@@ -569,10 +583,9 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 
       NRPRG(check_cufa) = true;
 
-      NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
+      NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
-      nr_free(NRPRG(wordpress_tag));
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -606,4 +619,14 @@ void nr_wordpress_enable(TSRMLS_D) {
 
   nr_php_add_call_user_func_array_pre_callback(
       nr_wordpress_call_user_func_array TSRMLS_CC);
+}
+
+void nr_wordpress_minit(void) {
+  wordpress_hook_regex = nr_regex_create(
+      "(^([a-z_-]+[_-])([0-9a-f_.]+[0-9][0-9a-f.]+)(_{0,1}.*)$|(.*))",
+      NR_REGEX_CASELESS, 0);
+}
+
+void nr_wordpress_mshutdown(void) {
+  nr_regex_destroy(&wordpress_hook_regex);
 }
