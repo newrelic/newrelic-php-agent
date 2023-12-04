@@ -384,6 +384,7 @@ nr_regex_t* wordpress_theme_regex;     /* Regex for theme filenames */
 nr_regex_t* wordpress_core_regex;      /* Regex for plugin filenames */
 nr_hashmap_t* wordpress_file_metadata; /* Metadata for plugin and theme names
                                           given a filename */
+nr_hashmap_t* wordpress_clean_tag_cache; /* Cached clean tags */
 
 char* doctrine_dql; /* The current Doctrine DQL. Only non-NULL while a Doctrine
                        object is on the stack. */
