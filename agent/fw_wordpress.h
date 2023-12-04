@@ -29,4 +29,7 @@ char* nr_php_wordpress_core_match_regex(const char* filename TSRMLS_DC);
  */
 char* nr_php_wordpress_plugin_match_regex(const char* filename TSRMLS_DC);
 
+extern void nr_wordpress_minit(void);
+extern void nr_wordpress_mshutdown(void);
+
 #endif /* FW_WORDPRESS_HDR */

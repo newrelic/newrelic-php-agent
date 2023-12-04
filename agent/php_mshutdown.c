@@ -15,6 +15,7 @@
 #include "php_vm.h"
 #include "nr_agent.h"
 #include "util_logging.h"
+#include "fw_wordpress.h"
 
 #ifdef TAGS
 void zm_shutdown_newrelic(void); /* ctags landing pad only */
@@ -38,6 +39,8 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
    * It is assumed that this MSHUTDOWN is only done once per PHP process.
    */
   nrl_debug(NRL_INIT, "MSHUTDOWN processing started");
+
+  nr_wordpress_mshutdown();
 
   /* restore header handler */
   sapi_module.header_handler = NR_PHP_PROCESS_GLOBALS(orig_header_handler);

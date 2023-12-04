@@ -379,7 +379,6 @@ int symfony1_in_error404; /* Whether we are currently within a
                              sfError404Exception::printStackTrace() frame */
 
 char* wordpress_tag;                   /* The current WordPress tag */
-nr_regex_t* wordpress_hook_regex;      /* Regex to sanitize hook names */
 nr_regex_t* wordpress_plugin_regex;    /* Regex for plugin filenames */
 nr_regex_t* wordpress_theme_regex;     /* Regex for theme filenames */
 nr_regex_t* wordpress_core_regex;      /* Regex for plugin filenames */
