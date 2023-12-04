@@ -13,6 +13,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "fw_symfony_common.h"
+#include "nr_txn.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
@@ -528,6 +529,21 @@ end:
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
+
+void nr_drupal_version(TSRMLS_D) {
+  char* string = "Drupal::VERSION;";
+  zval retval;
+  int result
+      = zend_eval_string(string, &retval, "Retrieve Drupal Version" TSRMLS_CC);
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
+      char* version = Z_STRVAL(retval);
+      // Add php package to transaction
+      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+      zval_dtor(&retval);
+    }
+  }
+}
 
 void nr_drupal8_enable(TSRMLS_D) {
   /*

@@ -578,6 +578,21 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 }
 NR_PHP_WRAPPER_END
 
+void nr_wordpress_version(TSRMLS_D) {
+  char* string = "$GLOBALS['wp_version'];";
+  zval retval;
+  int result = zend_eval_string(string, &retval,
+                                "Retrieve Wordpress Version" TSRMLS_CC);
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
+      char* version = Z_STRVAL(retval);
+      // Add php package to transaction
+      nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+      zval_dtor(&retval);
+    }
+  }
+}
+
 void nr_wordpress_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters TSRMLS_CC);
