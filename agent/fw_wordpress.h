@@ -38,4 +38,7 @@ char* nr_php_wordpress_plugin_match_matcher(const char* filename);
  */
 char* nr_php_wordpress_theme_match_matcher(const char* filename);
 
+extern void nr_wordpress_minit(void);
+extern void nr_wordpress_mshutdown(void);
+
 #endif /* FW_WORDPRESS_HDR */
