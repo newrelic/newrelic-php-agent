@@ -533,10 +533,6 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		return
 	}
 
-	fmt.Printf("harvest.PhpPackages %+v\n", harvest.PhpPackages)
-	fmt.Printf("actualPackages %+v\n", actualPackages)
-	fmt.Printf("expectedPackages %+v\n", expectedPackages)
-
 	if nil != harvest.PhpPackages && 0 < harvest.PhpPackages.NumSaved() {
 		if nil == expectedPackages {
 			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
