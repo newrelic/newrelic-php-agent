@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"errors"
 
 	"golang.org/x/net/proxy"
 
@@ -73,6 +74,31 @@ type RPMResponse struct {
 	// should be used to avoid mismatch between StatusCode and Err.
 	Err                      error
 	disconnectSecurityPolicy bool
+}
+
+// All RPMResponse's should be created through newRPMResponse() methods.
+// You must either pass a status code, or an err.
+// If no error is passed, one is created when needed based on the status code.
+// Otherwise, the error is scrubbed of sensitive information
+func NewRPMResponseError(err error) RPMResponse {
+	return RPMResponse{
+		Err: removeURLFromError(err),
+	}
+}
+
+func removeURLFromError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// remove url from errors to avoid sensitive data leaks
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		ue.URL = "**REDACTED-URL**"
+	}
+
+
+	return err
 }
 
 func newRPMResponse(StatusCode int) RPMResponse {
@@ -212,7 +238,7 @@ func (l *limitClient) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 		resp := l.orig.Execute(cmd, cs)
 		return resp
 	case <-timer:
-		return RPMResponse{Err: fmt.Errorf("timeout after %v", l.timeout)}
+		return NewRPMResponseError(fmt.Errorf("timeout after %v", l.timeout))
 	}
 }
 
@@ -270,7 +296,7 @@ func NewClient(cfg *ClientConfig) (Client, error) {
 	if "" != cfg.Proxy {
 		url, err := parseProxy(cfg.Proxy)
 		if err != nil {
-			return nil, err
+			return nil, removeURLFromError(err)
 		}
 
 		switch url.Scheme {
@@ -323,17 +349,17 @@ type clientImpl struct {
 func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse {
 	deflated, err := Compress(cmd.Data)
 	if nil != err {
-		return RPMResponse{Err: err}
+		return NewRPMResponseError(err)
 	}
 
 	if l := deflated.Len(); l > cmd.MaxPayloadSize {
-		return RPMResponse{Err: fmt.Errorf("payload size too large: %d greater than %d", l, cmd.MaxPayloadSize)}
+		return NewRPMResponseError(fmt.Errorf("payload size too large: %d greater than %d", l, cmd.MaxPayloadSize))
 	}
 
 	req, err := http.NewRequest("POST", url, deflated)
 
 	if nil != err {
-		return RPMResponse{Err: err}
+		return NewRPMResponseError(err)
 	}
 
 	req.Header.Add("Accept-Encoding", "identity, deflate")
@@ -347,7 +373,7 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return RPMResponse{Err: err}
+		return NewRPMResponseError(err)
 	}
 
 	defer resp.Body.Close()
@@ -402,26 +428,13 @@ func (c *clientImpl) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 	// Create the JSON payload
 	data, err := cs.Collectible.CollectorJSON(false)
 	if nil != err {
-		return RPMResponse{Err: err}
+		return NewRPMResponseError(err)
 	}
 	cmd.Data = data
-
-	var audit []byte
-	if log.Auditing() {
-		audit, err = cs.Collectible.CollectorJSON(true)
-		if nil != err {
-			log.Errorf("unable to create audit json payload for '%s': %s", cmd.Name, err)
-			audit = cmd.Data
-		}
-		if nil == audit {
-			audit = cmd.Data
-		}
-	}
 
 	url := cmd.url(false)
 	cleanURL := cmd.url(true)
 
-	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, url, audit)
 	log.Debugf("command='%s' url='%s' max_payload_size_in_bytes='%d' payload={%s}", cmd.Name, cleanURL, cmd.MaxPayloadSize, cmd.Data)
 
 	resp := c.perform(url, *cmd, cs)
@@ -430,7 +443,6 @@ func (c *clientImpl) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 			cmd.Name, resp.Err.Error(), cleanURL)
 	}
 
-	log.Audit("command='%s' url='%s', status=%d, response={%s}", cmd.Name, url, resp.StatusCode, string(resp.Body))
 	log.Debugf("command='%s' url='%s', status=%d, response={%s}", cmd.Name, cleanURL, resp.StatusCode, string(resp.Body))
 
 	return resp

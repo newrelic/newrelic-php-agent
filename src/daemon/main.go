@@ -363,8 +363,18 @@ func main() {
 	}
 
 	log.Infof("%s", banner(cfg))
+	// Used to not log out the proxy, which has potentially secret credentials
+	var proxy bool = false
 	for i := range os.Args {
-		log.Debugf("ARGV[%d]: %s", i, os.Args[i])
+		if proxy {
+			log.Debugf("ARGV[%d]: **REDACTED**", i)
+			proxy = false
+		} else {
+			log.Debugf("ARGV[%d]: %s", i, os.Args[i])
+			if (os.Args[i] == "--proxy") {
+				proxy = true
+			}
+		}
 	}
 	log.Debugf("process role is %v", cfg.Role)
 
