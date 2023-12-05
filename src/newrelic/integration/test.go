@@ -519,7 +519,8 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 			t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packaged detected in environment!"))
 		}
 	} else {
-		expectedPackages = nil
+               // no configuration given for package (no EXPECT_PHP_PACKAGES in test case) so don't run test
+               return
 	}
 
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
