@@ -241,7 +241,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
       nrl_verbosedebug(NRL_FRAMEWORK,
                        "Wordpress: found in cache: "
                        "plugin= %s and filename=" NRP_FMT,
-                       plugin, NRP_FILENAME(filename));
+                       NRSAFESTR(plugin), NRP_FILENAME(filename));
       return plugin;
     }
   } else {
