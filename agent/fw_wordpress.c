@@ -481,18 +481,18 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+  if (nrlikely(0 != NRINI(wordpress_hooks))) {
+    NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
 
-  tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
-  if (1 == nr_php_is_zval_non_empty_string(tag)
-      || (0 != NRINI(wordpress_hooks))) {
-    /*
-     * Our general approach here is to set the wordpress_tag global, then let
-     * the call_user_func_array instrumentation take care of actually timing
-     * the hooks by checking if it's set.
-     */
-    char* old_tag = NRPRG(wordpress_tag);
+    if (1 == nr_php_is_zval_non_empty_string(tag)) {
+      /*
+      * Our general approach here is to set the wordpress_tag global, then let
+      * the call_user_func_array instrumentation take care of actually timing
+      * the hooks by checking if it's set.
+      */
+      char* old_tag = NRPRG(wordpress_tag);
 
     NRPRG(check_cufa) = true;
 
@@ -507,7 +507,8 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
     NR_PHP_WRAPPER_CALL;
   }
 
-  nr_php_arg_release(&tag);
+    nr_php_arg_release(&tag);
+  }
 }
 NR_PHP_WRAPPER_END
 
@@ -608,17 +609,19 @@ void nr_wordpress_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters TSRMLS_CC);
 
-  nr_php_wrap_user_function(NR_PSTR("apply_filters_ref_array"),
-                            nr_wordpress_exec_handle_tag TSRMLS_CC);
+  if (0 != NRINI(wordpress_hooks)) {
+    nr_php_wrap_user_function(NR_PSTR("apply_filters_ref_array"),
+                              nr_wordpress_exec_handle_tag TSRMLS_CC);
 
-  nr_php_wrap_user_function(NR_PSTR("do_action"),
-                            nr_wordpress_exec_handle_tag TSRMLS_CC);
+    nr_php_wrap_user_function(NR_PSTR("do_action"),
+                              nr_wordpress_exec_handle_tag TSRMLS_CC);
 
-  nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
-                            nr_wordpress_exec_handle_tag TSRMLS_CC);
+    nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
+                              nr_wordpress_exec_handle_tag TSRMLS_CC);
 
-  nr_php_add_call_user_func_array_pre_callback(
-      nr_wordpress_call_user_func_array TSRMLS_CC);
+    nr_php_add_call_user_func_array_pre_callback(
+        nr_wordpress_call_user_func_array TSRMLS_CC);
+  }
 }
 
 void nr_wordpress_minit(void) {
