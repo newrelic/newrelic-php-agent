@@ -13,6 +13,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_logging.h"
+#include "util_matcher.h"
 #include "util_memory.h"
 #include "util_regex.h"
 #include "util_strings.h"
@@ -23,99 +24,22 @@
 
 static nr_regex_t* wordpress_hook_regex;
 
-static size_t zval_len_without_trailing_slash(const zval* zstr) {
-  nr_string_len_t len = Z_STRLEN_P(zstr);
-  const char* str = Z_STRVAL_P(zstr);
-
-  if ((len > 0) && ('/' == str[len - 1])) {
-    len -= 1;
-  }
-
-  return (size_t)len;
-}
-
-static void add_wildcard_path_component(nrbuf_t* buf) {
-  nr_buffer_add(buf, NR_PSTR("/(.*?)/|plugins/([^/]*)[.]php$"));
-}
-
-static nr_regex_t* compile_regex_for_path(const zval* path) {
-  nrbuf_t* buf = nr_buffer_create(2 * Z_STRLEN_P(path), 0);
-  nr_regex_t* regex = NULL;
-
-  nr_regex_add_quoted_to_buffer(buf, Z_STRVAL_P(path),
-                                zval_len_without_trailing_slash(path));
-  add_wildcard_path_component(buf);
-  nr_buffer_add(buf, NR_PSTR("\0"));
-  regex = nr_regex_create(nr_buffer_cptr(buf), NR_REGEX_CASELESS, 1);
-
-  nr_buffer_destroy(&buf);
-  return regex;
-}
-
-static nr_regex_t* compile_regex_for_path_array(const zval* paths) {
-  nrbuf_t* buf = nr_buffer_create(0, 0);
-  int first = 1;
-  zval* path = NULL;
-  nr_regex_t* regex = NULL;
-
-  nr_buffer_add(buf, NR_PSTR("("));
-  ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(paths), path) {
-    if (!nr_php_is_zval_valid_string(path)) {
-      nrl_verbosedebug(NRL_FRAMEWORK,
-                       "%s: unexpected non-string value in path array",
-                       __func__);
-    } else {
-      if (first) {
-        first = 0;
-      } else {
-        nr_buffer_add(buf, NR_PSTR("|"));
-      }
-
-      nr_regex_add_quoted_to_buffer(buf, Z_STRVAL_P(path),
-                                    zval_len_without_trailing_slash(path));
-    }
-  }
-  ZEND_HASH_FOREACH_END();
-  nr_buffer_add(buf, NR_PSTR(")"));
-  add_wildcard_path_component(buf);
-  nr_buffer_add(buf, NR_PSTR("\0"));
-
-  /*
-   * If the first flag is still set, no valid theme paths existed and we
-   * should abort.
-   */
-  if (first) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: no valid elements in the path array",
-                     __func__);
-  } else {
-    regex = nr_regex_create(nr_buffer_cptr(buf), NR_REGEX_CASELESS, 1);
-  }
-
-  nr_buffer_destroy(&buf);
-  return regex;
-}
-
-static nr_regex_t* compile_regex_for_constant(const char* constant,
-                                              const char* suffix TSRMLS_DC) {
-  nr_regex_t* regex = NULL;
-  zval* value = nr_php_get_constant(constant TSRMLS_CC);
+static nr_matcher_t* create_matcher_for_constant(const char* constant,
+                                                 const char* suffix) {
+  zval* value = nr_php_get_constant(constant);
 
   if (nr_php_is_zval_valid_string(value)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Wordpress: found value = %s for constant=%s",
                      Z_STRVAL_P(value), constant);
+    nr_matcher_t* matcher = nr_matcher_create();
+    char* prefix = nr_formatf("%s%s", Z_STRVAL_P(value), suffix);
 
-    nrbuf_t* buf = nr_buffer_create(2 * Z_STRLEN_P(value), 0);
+    nr_matcher_add_prefix(matcher, prefix);
 
-    nr_regex_add_quoted_to_buffer(buf, Z_STRVAL_P(value),
-                                  zval_len_without_trailing_slash(value));
-    nr_buffer_add(buf, suffix, nr_strlen(suffix));
-    add_wildcard_path_component(buf);
-    nr_buffer_add(buf, NR_PSTR("\0"));
-
-    regex = nr_regex_create(nr_buffer_cptr(buf), NR_REGEX_CASELESS, 1);
-
-    nr_buffer_destroy(&buf);
+    nr_free(prefix);
+    nr_php_zval_free(&value);
+    return matcher;
   } else {
     /*
      * If the constant isn't set, that's not a problem, but if it is and it's
@@ -128,51 +52,52 @@ static nr_regex_t* compile_regex_for_constant(const char* constant,
   }
 
   nr_php_zval_free(&value);
-  return regex;
+  return NULL;
 }
 
-static char* try_match_regex(const nr_regex_t* regex, const char* filename) {
-  char* plugin = NULL;
-  nr_regex_substrings_t* ss = NULL;
+/*
+ * Purpose : Strip the ".php" file extension from a file name
+ *
+ * Params  : 1. The string filename
+ *           2. The filename length
+ *
+ * Returns : A newly allocated string stripped of the .php extension
+ *
+ */
+static inline char* nr_wordpress_strip_php_suffix(char* filename, int filename_len) {
+  char* retval = NULL;
 
-  ss = nr_regex_match_capture(regex, filename, nr_strlen(filename));
-  if (NULL == ss) {
-    return NULL;
+  if (!nr_striendswith(filename, filename_len, NR_PSTR(".php"))) {
+    return filename;
   }
 
-  /*
-   * The last substring will be the plugin or theme name.
-   */
-  plugin = nr_regex_substrings_get(ss, nr_regex_substrings_count(ss));
-  nr_regex_substrings_destroy(&ss);
-
-  return plugin;
+  retval = nr_strndup(filename, filename_len - (sizeof(".php") - 1));
+  nr_free(filename);
+  return retval;
 }
 
-static const nr_regex_t* nr_wordpress_core_regex(TSRMLS_D) {
-  nr_regex_t* regex = NULL;
+static nr_matcher_t* nr_wordpress_core_matcher() {
+  nr_matcher_t* matcher = NULL;
 
-  if (NRPRG(wordpress_core_regex)) {
-    return NRPRG(wordpress_core_regex);
+  if (NRPRG(wordpress_core_matcher)) {
+    return NRPRG(wordpress_core_matcher);
   }
 
-  /*
-   * This will get all the Wordpress core functions located in the `wp-includes`
-   * (or a subdirectory off of that directory) directory.
-   */
+  matcher = create_matcher_for_constant("WPINC", "");
+  if (NULL == matcher) {
+    matcher = nr_matcher_create();
+    nr_matcher_add_prefix(matcher, "/wp-includes");
+  }
 
-  regex
-      = nr_regex_create("wp-includes.*?/([^/]*)[.]php$", NR_REGEX_CASELESS, 1);
-
-  NRPRG(wordpress_core_regex) = regex;
-  return regex;
+  NRPRG(wordpress_core_matcher) = matcher;
+  return matcher;
 }
 
-static const nr_regex_t* nr_wordpress_plugin_regex(TSRMLS_D) {
-  nr_regex_t* regex = NULL;
+static nr_matcher_t* nr_wordpress_plugin_matcher() {
+  nr_matcher_t* matcher = NULL;
 
-  if (NRPRG(wordpress_plugin_regex)) {
-    return NRPRG(wordpress_plugin_regex);
+  if (NRPRG(wordpress_plugin_matcher)) {
+    return NRPRG(wordpress_plugin_matcher);
   }
 
   /*
@@ -187,34 +112,36 @@ static const nr_regex_t* nr_wordpress_plugin_regex(TSRMLS_D) {
    * the best.
    */
 
-  regex = compile_regex_for_constant("WP_PLUGIN_DIR", "" TSRMLS_CC);
-  if (!regex) {
-    regex = compile_regex_for_constant("WP_CONTENT_DIR", "/plugins" TSRMLS_CC);
+  matcher = create_matcher_for_constant("WP_PLUGIN_DIR", "");
+  if (NULL == matcher) {
+    matcher = create_matcher_for_constant("WP_CONTENT_DIR", "/plugins");
   }
 
   /*
    * Fallback if the constants didn't exist or were invalid.
    */
-  if (NULL == regex) {
+  if (NULL == matcher) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: neither WP_PLUGIN_DIR nor WP_CONTENT_DIR set",
                      __func__);
 
-    regex = nr_regex_create("plugins/(.*?)/|plugins/([^/]*)[.]php$",
-                            NR_REGEX_CASELESS, 1);
+    matcher = nr_matcher_create();
+    nr_matcher_add_prefix(matcher, "/wp-content/plugins");
   }
 
-  NRPRG(wordpress_plugin_regex) = regex;
-  return regex;
+  NRPRG(wordpress_plugin_matcher) = matcher;
+  return matcher;
 }
 
-static const nr_regex_t* nr_wordpress_theme_regex(TSRMLS_D) {
-  nr_regex_t* regex = NULL;
+static nr_matcher_t* nr_wordpress_theme_matcher() {
+  nr_matcher_t* matcher = NULL;
   zval* roots = NULL;
 
-  if (NRPRG(wordpress_theme_regex)) {
-    return NRPRG(wordpress_theme_regex);
+  if (NRPRG(wordpress_theme_matcher)) {
+    return NRPRG(wordpress_theme_matcher);
   }
+
+  matcher = nr_matcher_create();
 
   /*
    * WordPress 2.9.0 and later include get_theme_roots(), which will give us
@@ -223,36 +150,51 @@ static const nr_regex_t* nr_wordpress_theme_regex(TSRMLS_D) {
    */
   roots = nr_php_call(NULL, "get_theme_roots");
   if (nr_php_is_zval_valid_string(roots)) {
-    regex = compile_regex_for_path(roots);
+    nr_matcher_add_prefix(matcher, Z_STRVAL_P(roots));
   } else if (nr_php_is_zval_valid_array(roots)
              && (nr_php_zend_hash_num_elements(Z_ARRVAL_P(roots)) > 0)) {
-    regex = compile_regex_for_path_array(roots);
+    zval* path = NULL;
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(roots), path) {
+      if (nr_php_is_zval_valid_string(path)) {
+        nr_matcher_add_prefix(matcher, Z_STRVAL_P(path));
+      }
+    }
+    ZEND_HASH_FOREACH_END();
+  } else {
+    nr_matcher_add_prefix(matcher, "/wp-content/themes");
   }
+
   nr_php_zval_free(&roots);
 
-  /*
-   * Fallback path if get_theme_roots() failed to give us anything useful.
-   */
-  if (NULL == regex) {
-    regex = nr_regex_create("/wp-content/themes/(.*?)/", NR_REGEX_CASELESS, 1);
-  }
-
-  NRPRG(wordpress_theme_regex) = regex;
-  return regex;
+  NRPRG(wordpress_theme_matcher) = matcher;
+  return matcher;
 }
 
-char* nr_php_wordpress_plugin_match_regex(const char* filename TSRMLS_DC) {
+char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
   char* plugin = NULL;
-  plugin = try_match_regex(nr_wordpress_plugin_regex(TSRMLS_C), filename);
-  nr_regex_destroy(&NRPRG(wordpress_plugin_regex));
+  int plugin_len;
+  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, nr_strlen(filename), &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
+  nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
   return plugin;
 }
 
-char* nr_php_wordpress_core_match_regex(const char* filename TSRMLS_DC) {
-  char* plugin = NULL;
-  plugin = try_match_regex(nr_wordpress_core_regex(TSRMLS_C), filename);
-  nr_regex_destroy(&NRPRG(wordpress_core_regex));
-  return plugin;
+char* nr_php_wordpress_theme_match_matcher(const char* filename) {
+  char* theme = NULL;
+  int plugin_len;
+  theme = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, nr_strlen(filename), &plugin_len);
+  theme = nr_wordpress_strip_php_suffix(theme, plugin_len);
+  nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
+  return theme;
+}
+
+char* nr_php_wordpress_core_match_matcher(const char* filename) {
+  char* core = NULL;
+  int plugin_len;
+  core = nr_matcher_match_r_ex(nr_wordpress_core_matcher(), filename, nr_strlen(filename), &plugin_len);
+  core = nr_wordpress_strip_php_suffix(core, plugin_len);
+  nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
+  return core;
 }
 
 static void nr_wordpress_create_metric(nr_segment_t* segment,
@@ -277,6 +219,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   const char* filename = NULL;
   size_t filename_len;
   char* plugin = NULL;
+  int plugin_len;
 
   if (NULL == func) {
     return NULL;
@@ -290,7 +233,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                      NRP_PHP(NRPRG(wordpress_tag)));
     return NULL;
   }
-  filename_len = nr_strlen(filename);
+  filename_len = nr_php_function_filename_len(func);
 
   if (NRPRG(wordpress_file_metadata)) {
     if (nr_hashmap_get_into(NRPRG(wordpress_file_metadata), filename,
@@ -298,7 +241,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
       nrl_verbosedebug(NRL_FRAMEWORK,
                        "Wordpress: found in cache: "
                        "plugin= %s and filename=" NRP_FMT,
-                       plugin, NRP_FILENAME(filename));
+                       NRSAFESTR(plugin), NRP_FILENAME(filename));
       return plugin;
     }
   } else {
@@ -308,17 +251,20 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "Wordpress: NOT found in cache: "
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
-  plugin = try_match_regex(nr_wordpress_plugin_regex(TSRMLS_C), filename);
+  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
   if (plugin) {
     goto cache_and_return;
   }
 
-  plugin = try_match_regex(nr_wordpress_theme_regex(TSRMLS_C), filename);
+  plugin = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
   if (plugin) {
     goto cache_and_return;
   }
 
-  plugin = try_match_regex(nr_wordpress_core_regex(TSRMLS_C), filename);
+  plugin = nr_matcher_match_r_ex(nr_wordpress_core_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
   if (plugin) {
     /*
      * The core wordpress functions are anonymized, so we don't need to return
@@ -342,7 +288,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
 cache_and_return:
   /*
    * Even if plugin is NULL, we'll still cache that. Hooks in WordPress's core
-   * will be NULL, and we need not re-run the regexes each time.
+   * will be NULL, and we need not re-run the matchers each time.
    */
   nr_hashmap_set(NRPRG(wordpress_file_metadata), filename, filename_len,
                  plugin);
