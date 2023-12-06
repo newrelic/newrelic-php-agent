@@ -340,6 +340,13 @@ func (mt *MetricTable) Empty() bool {
 	return 0 == mt.count
 }
 
+// Has returns true if the given metric exists in the metric table (regardless
+// of scope).
+func (mt *MetricTable) Has(name string) bool {
+	_, ok := mt.metrics[name]
+	return ok
+}
+
 // Data marshals the collection to JSON according to the schema expected
 // by the collector.
 func (mt *MetricTable) Data(id AgentRunID, harvestStart time.Time) ([]byte,

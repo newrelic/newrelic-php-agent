@@ -1228,6 +1228,35 @@ static void test_str_append(void) {
   nr_free(str);
 }
 
+static void test_iendswith(void) {
+  tlib_pass_if_bool_equal("input is NULL", false,
+                          nr_striendswith(NULL, 4, NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("pattern is NULL", false,
+                          nr_striendswith(NR_PSTR("foo"), NULL, 0));
+
+  tlib_pass_if_bool_equal("input is empty", false,
+                          nr_striendswith(NR_PSTR(""), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("pattern is empty", true,
+                          nr_striendswith(NR_PSTR("foo"), NR_PSTR("")));
+
+  tlib_pass_if_bool_equal("input is too short", false,
+                          nr_striendswith(NR_PSTR("ar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal(
+      "no match", false, nr_striendswith(NR_PSTR("foobarbaz"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("not quite match", false,
+                          nr_striendswith(NR_PSTR("foobarr"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match", true,
+                          nr_striendswith(NR_PSTR("foobar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("exact match", true,
+                          nr_striendswith(NR_PSTR("bar"), NR_PSTR("bar")));
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -1265,6 +1294,7 @@ void test_main(void* p NRUNUSED) {
   test_formatf();
   test_strsplit();
   test_str_append();
+  test_iendswith();
 
   /*
    * character tests

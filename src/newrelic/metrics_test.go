@@ -301,3 +301,21 @@ func BenchmarkMetricTableCollectorJSON(b *testing.B) {
 		mt.CollectorJSON(AgentRunID("12345"), now)
 	}
 }
+
+func TestMetricTableHas(t *testing.T) {
+	mt := NewMetricTable(20, start)
+	mt.AddCount("foo", "", 1, 0)
+	mt.AddCount("bar", "quux", 1, 0)
+
+	if mt.Has("quux") {
+		t.Fatal("non-existent metric is reported as existing")
+	}
+
+	if !mt.Has("foo") {
+		t.Fatal("unscoped metric is reported as missing")
+	}
+
+	if !mt.Has("bar") {
+		t.Fatal("scoped metric is reported as missing")
+	}
+}
