@@ -67,7 +67,7 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
-      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+      IMAGE_VERSION: v2
     strategy:
       matrix:
         platform: [gnu, musl]
