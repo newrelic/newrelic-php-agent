@@ -35,6 +35,7 @@ type PhpPackagesConfiguration struct {
 	path                string
 	command             string
 	supported_list_file string
+	expected_packages   string
 }
 
 // composer package JSON
@@ -131,17 +132,25 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	}
 
 	// verify command and supported_list are defined
-	_, ok := params["command"]
-	if ok {
-		_, ok = params["supported_packages"]
-	}
+	var supported_list_file string
+	var expected_packages string
+	command, ok := params["command"]
 
+	// either expect a "supported_packages" key which specifies a file listing all possible packages agent
+	// can detect and this is used to filter the auto-discovered packages (by integration_runner using "command")
+	if ok {
+		supported_list_file, ok = params["supported_packages"]
+		// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
+		if !ok {
+			expected_packages, ok = params["expected_packages"]
+		}
+	}
 	if !ok {
-		return nil, fmt.Errorf("Improper php applications config - must include 'command' and 'supported_packages' keys, got %+v", params)
+		return nil, fmt.Errorf("Improper php applications config - got %+v", params)
 	}
 
 	p := &PhpPackagesCollection{
-		config: PhpPackagesConfiguration{command: params["command"], path: path, supported_list_file: params["supported_packages"]},
+		config: PhpPackagesConfiguration{command: command, path: path, supported_list_file: supported_list_file, expected_packages: expected_packages},
 	}
 
 	return p, nil
@@ -171,6 +180,10 @@ func LoadSupportedPackagesList(path, supported_list_file string) ([]string, erro
 	return supported, nil
 }
 
+func ParseExpectedPackagesList(expected_packages string) ([]string, error) {
+	return strings.Split(expected_packages, ","), nil
+}
+
 // Detects installed PHP packages
 //
 // Returns :  []PhpPackage with extracted package info, sorted by package name
@@ -186,10 +199,22 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		return nil, fmt.Errorf("GatherInstallPackages(): pkgs is nil")
 	}
 
-	supported, err := LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supported_list_file)
-	if nil != err {
-		return nil, err
+	var supported []string
+
+	if 0 < len(pkgs.config.supported_list_file) {
+		supported, err = LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supported_list_file)
+		if nil != err {
+			return nil, err
+		}
+	} else if 0 < len(pkgs.config.expected_packages) {
+		supported, err = ParseExpectedPackagesList(pkgs.config.expected_packages)
+		if nil != err {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("Error determining expected packages - supported_list_file and expected_packages are both empty")
 	}
+
 	splitCmd := strings.Split(pkgs.config.command, " ")
 	cmd := exec.Command(splitCmd[0], splitCmd[1:]...)
 	cmd.Dir = filepath.Dir(pkgs.config.path)
@@ -206,10 +231,38 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		detected := ComposerJSON{}
 		json.Unmarshal([]byte(out), &detected)
 		for _, v := range detected.Installed {
-			fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
+			//fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
 			if slices.Contains(supported, v.Name) {
-				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, v.Version})
+				var version string
+
+				// remove any 'v' from front of version string
+				if 0 < len(v.Version) && string(v.Version[0]) == "v" {
+					version = v.Version[1:]
+				} else {
+					version = v.Version
+				}
+				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, version})
+				//fmt.Printf("   -> %s in supported!\n", v.Name)
+			} else {
+				//fmt.Printf("   -> %s NOT in supported!\n", v.Name)
 			}
+		}
+	} else if 1 < len(splitCmd) && "wp-cli.phar" == splitCmd[1] {
+		lines := strings.Split(string(out), "\n")
+		version := ""
+		for _, line := range lines {
+			//fmt.Printf("line is |%s|\n", line)
+			splitLine := strings.Split(line, ":")
+			if 2 == len(splitLine) {
+				if "wordpress version" == strings.TrimSpace(strings.ToLower(splitLine[0])) {
+					version = strings.TrimSpace(splitLine[1])
+					//fmt.Printf("wordpress version is %s\n", version)
+					break
+				}
+			}
+		}
+		if 0 < len(version) {
+			pkgs.packages = append(pkgs.packages, PhpPackage{"wordpress", version})
 		}
 	} else {
 		return nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
