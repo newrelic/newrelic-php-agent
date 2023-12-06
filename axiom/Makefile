@@ -135,6 +135,7 @@ OBJS := \
 	util_json.o \
 	util_logging.o \
 	util_labels.o \
+	util_matcher.o \
 	util_md5.o \
 	util_memory.o \
 	util_metrics.o \

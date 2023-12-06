@@ -702,6 +702,11 @@ nr_php_op_array_scope_name(const zend_op_array* op_array) {
   return NULL;
 }
 
+static inline nr_string_len_t NRPURE
+nr_php_function_filename_len(zend_function* func) {
+  return func ? nr_php_op_array_file_name_len(&func->op_array) : 0;
+}
+
 static inline const char* NRPURE
 nr_php_ini_entry_name(const zend_ini_entry* entry) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
