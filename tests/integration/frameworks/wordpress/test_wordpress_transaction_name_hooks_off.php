@@ -26,6 +26,10 @@ Supportability/InstrumentedFunction/apply_filters
 WebTransaction/Action/template
 */
 
+/*EXPECT_METRICS_DONT_EXIST
+Framework/WordPress/Hook/template_include
+*/
+
 /*EXPECT_ERROR_EVENTS null */
 
 // Mock WordPress hooks; only a single callback for a given hook can be defined
