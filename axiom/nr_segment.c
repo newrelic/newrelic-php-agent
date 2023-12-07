@@ -660,6 +660,17 @@ bool nr_segment_set_name(nr_segment_t* segment, const char* name) {
 }
 
 bool nr_segment_set_parent(nr_segment_t* segment, nr_segment_t* parent) {
+  if (nr_segment_set_parent_delayed_child(segment, parent)) {
+    // parent can be NULL here if the segment's parent was already NULL
+    if (NULL != parent) {
+      nr_segment_children_add(&parent->children, segment);
+    }
+    return true;
+  }
+  return false;
+}
+
+bool nr_segment_set_parent_delayed_child(nr_segment_t* segment, nr_segment_t* parent) {
   nr_segment_t* ancestor = NULL;
 
   if (NULL == segment) {
@@ -695,7 +706,6 @@ bool nr_segment_set_parent(nr_segment_t* segment, nr_segment_t* parent) {
     nr_segment_children_remove(&segment->parent->children, segment);
   }
 
-  nr_segment_children_add(&parent->children, segment);
   segment->parent = parent;
 
   return true;

@@ -86,7 +86,7 @@ nr_segment_t* nr_php_stacked_segment_move_to_heap(
   }
 
   s->parent = NULL;
-  nr_segment_set_parent(s, stacked->parent);
+  nr_segment_set_parent_delayed_child(s, stacked->parent);
 
   NR_PHP_CURRENT_STACKED_POP(stacked);
 

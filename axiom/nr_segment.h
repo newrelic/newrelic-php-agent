@@ -372,6 +372,19 @@ extern bool nr_segment_set_name(nr_segment_t* segment, const char* name);
 extern bool nr_segment_set_parent(nr_segment_t* segment, nr_segment_t* parent);
 
 /*
+ * Purpose : Set the parent of a segment. Does not add the segment to its
+ *           parent's children list.
+ *
+ * Params  : 1. The pointer to the segment to be parented.
+ *           2. The pointer to the segment to become the new parent.
+ *
+ * Returns : true if successful, false otherwise. If the target segment
+ *           is an ancestor of the target parent, the function will return
+ *           false to prevent a cycle from being created.
+ */
+extern bool nr_segment_set_parent_delayed_child(nr_segment_t* segment, nr_segment_t* parent);
+
+/*
  * Purpose : Set the timing of a segment.
  *
  * Params  : 1. The pointer to the segment to be retimed.
