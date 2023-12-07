@@ -868,6 +868,17 @@ void nr_segment_destroy_tree(nr_segment_t* root) {
       root, (nr_segment_iter_t)nr_segment_destroy_children_callback, NULL);
 }
 
+void nr_segment_end_tree(nr_segment_t* curr, nr_segment_t* root) {
+  nr_segment_t* next;
+  if (NULL == curr || root == NULL) {return;}
+  next = curr->parent;
+  while (curr != root) {
+    nr_segment_end(&curr);
+    curr = next;
+    next = curr->parent;
+  }
+}
+
 bool nr_segment_discard(nr_segment_t** segment_ptr) {
   nr_segment_t* segment = NULL;
   nrtxn_t* txn = NULL;

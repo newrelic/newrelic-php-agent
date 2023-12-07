@@ -1238,6 +1238,7 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
 }
 
 void nr_txn_destroy_fields(nrtxn_t* txn) {
+  nr_segment_end_tree(nr_txn_get_current_segment(txn, NULL), txn->segment_root);
   nr_log_events_destroy(&txn->log_events);
   nr_analytics_events_destroy(&txn->custom_events);
   nr_attribute_config_destroy(&txn->attribute_config);

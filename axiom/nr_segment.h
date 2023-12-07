@@ -570,6 +570,20 @@ extern void nr_segment_heap_to_set(nr_minmax_heap_t* heap, nr_set_t* set);
 extern void nr_segment_destroy_tree(nr_segment_t* root);
 
 /*
+ * Purpose : end all active segments
+ *
+ * Params  : 1. the current active segment on a tree
+ *           2. The root segment for that tree (may not be the root
+ *                segment of the transaction in an async context)
+ *
+ * WARNING : This should only be called during transaction destruction.
+ *           In non-testing scenarios, if this is ever called with
+ *           curr != root, something has gone wrong
+ *
+ */
+extern void nr_segment_end_tree(nr_segment_t* curr, nr_segment_t* root);
+
+/*
  * Purpose : Discard and free a single segment.
  *
  * Params  : 1. The address of a segment.
