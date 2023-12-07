@@ -36,6 +36,7 @@ type PhpPackagesConfiguration struct {
 	command             string
 	supported_list_file string
 	expected_packages   string
+	package_name_only   bool
 }
 
 // composer package JSON
@@ -134,6 +135,8 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// verify command and supported_list are defined
 	var supported_list_file string
 	var expected_packages string
+	var package_name_only bool
+
 	command, ok := params["command"]
 
 	// either expect a "supported_packages" key which specifies a file listing all possible packages agent
@@ -145,12 +148,25 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 			expected_packages, ok = params["expected_packages"]
 		}
 	}
+	if ok {
+		options, ok := params["options"]
+		if ok {
+			if "package_name_only" == options {
+				package_name_only = true
+			}
+		}
+	}
 	if !ok {
 		return nil, fmt.Errorf("Improper php applications config - got %+v", params)
 	}
 
 	p := &PhpPackagesCollection{
-		config: PhpPackagesConfiguration{command: command, path: path, supported_list_file: supported_list_file, expected_packages: expected_packages},
+		config: PhpPackagesConfiguration{
+			command:             command,
+			path:                path,
+			supported_list_file: supported_list_file,
+			expected_packages:   expected_packages,
+			package_name_only:   package_name_only},
 	}
 
 	return p, nil
