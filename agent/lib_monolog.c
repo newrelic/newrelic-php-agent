@@ -511,4 +511,5 @@ void nr_monolog_enable(TSRMLS_D) {
                             nr_monolog_logger_pushhandler TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("Monolog\\Logger::addRecord"),
                             nr_monolog_logger_addrecord TSRMLS_CC);
+  nr_txn_add_php_package(NRPRG(txn), "monolog/monolog", " ");
 }
