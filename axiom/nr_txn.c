@@ -409,10 +409,10 @@ static void nr_segment_discard_wrapper(nr_segment_t* segment,
 
   txn = segment->txn;
 
-  if(segment->parent->async_context == segment->async_context) {
+  if(0 == segment->async_context) {
     /*
      * nr_segment_discard only removes the segment from its parent's
-     * children list if they are in separate async contexts. But at
+     * children list if they are in an async contexts. But at
      * the point of call of this function, all segments have been
      * added to their parent's children list.
      */
