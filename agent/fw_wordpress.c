@@ -215,6 +215,13 @@ static void free_wordpress_metadata(void* metadata) {
   nr_free(metadata);
 }
 
+static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
+                                       const char* hook_name) {
+    if (nr_time_duration(segment->start_time, segment->stop_time) >= NRINI(wordpress_hooks_threshold)) {
+      nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
+    }
+}
+
 static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   const char* filename = NULL;
   size_t filename_len;
@@ -527,8 +534,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
       NR_PHP_WRAPPER_CALL;
       if (0 == NRINI(wordpress_plugins)) {
-        nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                                   NRPRG(wordpress_tag));
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
       }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
@@ -620,8 +626,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 
       NR_PHP_WRAPPER_CALL;
       if (0 == NRINI(wordpress_plugins)) {
-        nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                                   NRPRG(wordpress_tag));
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
       }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
