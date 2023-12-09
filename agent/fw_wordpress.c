@@ -217,9 +217,19 @@ static void free_wordpress_metadata(void* metadata) {
 
 static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
                                        const char* hook_name) {
-    if (nr_time_duration(segment->start_time, segment->stop_time) >= NRINI(wordpress_hooks_threshold)) {
-      nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
-    }
+  // need to capture 'now' because segment has not finished yet and therefore
+  // can't use segment->stop_time
+  nrtime_t now = nr_txn_now_rel(segment->txn);
+  nrtime_t duration = nr_time_duration(segment->start_time, now);
+  if (duration >= NRINI(wordpress_hooks_threshold)) {
+    // only create metrics for hooks above threshold
+    nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "hook=%s, stop_time=" NR_TIME_FMT
+                     " start_time=" NR_TIME_FMT " duration=" NR_TIME_FMT "us",
+                     hook_name, now, segment->start_time, duration);
+  }
 }
 
 static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
