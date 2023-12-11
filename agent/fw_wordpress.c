@@ -342,7 +342,7 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #endif
 
   NR_PHP_WRAPPER_CALL;
-  if (NULL != plugin) {
+  if (NULL != plugin || NRINI(wordpress_core)) {
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
                               NRPRG(wordpress_tag));
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX, plugin);
@@ -440,7 +440,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     zend_function* zf = nr_php_zval_to_function(callback);
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
-      if (NULL != wordpress_plugin_theme) {
+      if (NULL != wordpress_plugin_theme || NRINI(wordpress_core)) {
         callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
         // We can cheat here: wraprecs on callables are always transient, so if
         // there's a wordpress_plugin_theme set we know it's from this transaction,

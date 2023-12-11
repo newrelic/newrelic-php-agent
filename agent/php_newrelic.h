@@ -270,6 +270,7 @@ nrinibool_t drupal_modules;  /* newrelic.framework.drupal.modules */
 nrinibool_t wordpress_hooks; /* newrelic.framework.wordpress.hooks */
 nrinitime_t wordpress_hooks_threshold; /* newrelic.framework.wordpress.hooks_threshold */
 nrinibool_t wordpress_plugins; /* newrelic.framework.wordpress.plugins */
+nrinibool_t wordpress_core; /* newrelic.framework.wordpress.core */
 nrinistr_t
     wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
                                     */

@@ -1179,9 +1179,17 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Type   : boolean
 ; Scope  : per-directory
 ; Default: false
-; Info   : Indicates if WordPress plugins are to be instrumented.
+; Info   : Indicates if WordPress plugins hook callbacks are to be instrumented.
 ;
 ;newrelic.framework.wordpress.plugins = false
+
+; Setting: newrelic.framework.wordpress.core
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Indicates if WordPress core hook callbacks are to be instrumented.
+;
+;newrelic.framework.wordpress.core = false
 
 ; Setting: newrelic.application_logging.enabled
 ; Type   : boolean
