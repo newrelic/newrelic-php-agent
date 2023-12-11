@@ -251,17 +251,6 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                    "Wordpress: NOT found in cache: "
                    "filename=" NRP_FMT,
                    NRP_FILENAME(filename));
-  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, filename_len, &plugin_len);
-  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
-  if (plugin) {
-    goto cache_and_return;
-  }
-
-  plugin = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, filename_len, &plugin_len);
-  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
-  if (plugin) {
-    goto cache_and_return;
-  }
 
   plugin = nr_matcher_match_r_ex(nr_wordpress_core_matcher(), filename, filename_len, &plugin_len);
   plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
@@ -277,13 +266,27 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                      "tag=" NRP_FMT " filename=" NRP_FMT,
                      NRP_PHP(NRPRG(wordpress_tag)), NRP_FILENAME(filename));
     /* We can discard the plugin value, since these functions are anonymous. */
-  } else {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "Wordpress: cannot determine plugin name:"
-                     " unexpected format, tag=" NRP_FMT " filename=" NRP_FMT,
-                     NRP_PHP(NRPRG(wordpress_tag)), NRP_FILENAME(filename));
+    nr_free(plugin);
+    /* Even if plugin is NULL, we'll still cache that. */
+    goto cache_and_return;
   }
-  nr_free(plugin);
+
+  plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
+  if (plugin) {
+    goto cache_and_return;
+  }
+
+  plugin = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename, filename_len, &plugin_len);
+  plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
+  if (plugin) {
+    goto cache_and_return;
+  }
+
+  nrl_verbosedebug(NRL_FRAMEWORK,
+                    "Wordpress: cannot determine plugin name:"
+                    " unexpected format, tag=" NRP_FMT " filename=" NRP_FMT,
+                    NRP_PHP(NRPRG(wordpress_tag)), NRP_FILENAME(filename));
 
 cache_and_return:
   /*
