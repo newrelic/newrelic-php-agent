@@ -89,8 +89,7 @@ function test_redis() {
   tap_equal(2, $redis->rPush($key, 'C'), 'append C');
   tap_equal(3, $redis->lPush($key, 'A'), 'prepend A');
 
-  /* Redis->lGet is deprecated, but use it once to verify it works */
-  tap_equal('A', @$redis->lGet($key, 0), 'retrieve element 0');
+  tap_equal('A', $redis->lIndex($key, 0), 'retrieve element 0');
   tap_equal('B', $redis->lIndex($key, 1), 'retrieve element 1');
   tap_equal('C', $redis->lIndex($key, 2), 'retrieve element 2');
   tap_equal('C', $redis->lIndex($key, -1), 'retrieve last element');
@@ -119,8 +118,7 @@ function test_redis() {
 
   tap_equal(4, $redis->rpush($key, 'A', 'B', 'B', 'C'), 'add new elements');
 
-  /* Redis->lRemove is depreacted, but use it once to verity it works */
-  tap_equal(1, @$redis->lRemove($key, 'B', 1), 'remove first occurence of B');
+  tap_equal(1, @$redis->lRem($key, 'B', 1), 'remove first occurence of B');
   tap_equal(['A', 'B', 'C'], $redis->lrange($key, 0, -1), 'verify list elements');
   tap_equal(0, $redis->lRem($key, 'NOT_IN_LIST', 1), 'remove missing element');
 
@@ -146,7 +144,6 @@ redis_trace_nodes_match($txn, [
   'Datastore/operation/Redis/del',
   'Datastore/operation/Redis/exists',
   'Datastore/operation/Redis/expire',
-  'Datastore/operation/Redis/lget',
   'Datastore/operation/Redis/lindex',
   'Datastore/operation/Redis/linsert',
   'Datastore/operation/Redis/llen',
@@ -155,7 +152,6 @@ redis_trace_nodes_match($txn, [
   'Datastore/operation/Redis/lpushx',
   'Datastore/operation/Redis/lrange',
   'Datastore/operation/Redis/lrem',
-  'Datastore/operation/Redis/lremove',
   'Datastore/operation/Redis/lset',
   'Datastore/operation/Redis/ltrim',
   'Datastore/operation/Redis/rpop',
