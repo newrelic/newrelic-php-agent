@@ -30,7 +30,7 @@ ok - verify list elements
 */
 
 /*EXPECT_METRICS_EXIST
-Datastore/operation/Redis/lRem
+Datastore/operation/Redis/lrem
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');

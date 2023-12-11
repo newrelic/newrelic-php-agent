@@ -31,7 +31,7 @@ ok - retrieve element 0
 */
 
 /*EXPECT_METRICS_EXIST
-Datastore/operation/Redis/lGet
+Datastore/operation/Redis/lget
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
