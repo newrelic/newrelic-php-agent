@@ -61,3 +61,4 @@ function test_redis() {
   tap_equal(1, @$redis->lRemove($key, 'B', 1), 'remove first occurence of B');
   tap_equal(['A', 'B', 'C'], $redis->lrange($key, 0, -1), 'verify list elements');
 }
+test_redis();

@@ -63,3 +63,5 @@ function test_redis() {
   /* Redis->lGet is deprecated, but use it once to verify it works */
   tap_equal('A', @$redis->lGet($key, 0), 'retrieve element 0');
 }
+
+test_redis();
