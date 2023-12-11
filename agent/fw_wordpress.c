@@ -444,6 +444,10 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRINI(wordpress_plugins)) {
+        nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
+                                   NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -533,6 +537,10 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRINI(wordpress_plugins)) {
+        nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
+                                   NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -564,9 +572,10 @@ void nr_wordpress_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                               nr_wordpress_exec_handle_tag TSRMLS_CC);
-
-    nr_php_add_call_user_func_array_pre_callback(
-        nr_wordpress_call_user_func_array TSRMLS_CC);
+    if (0 != NRINI(wordpress_plugins)) {
+      nr_php_add_call_user_func_array_pre_callback(
+          nr_wordpress_call_user_func_array TSRMLS_CC);
+    }
   }
 }
 

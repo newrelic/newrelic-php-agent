@@ -1166,6 +1166,14 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.framework.wordpress.hooks = true
 
+; Setting: newrelic.framework.wordpress.plugins
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Indicates if WordPress plugins are to be instrumented.
+;
+;newrelic.framework.wordpress.plugins = false
+
 ; Setting: newrelic.application_logging.enabled
 ; Type   : boolean
 ; Scope  : per-directory
