@@ -1171,7 +1171,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Scope  : per-directory
 ; Default: 1ms
 ; Info   : Sets the threshold above which the New Relic agent will record a
-;          wordpress hooks.
+;          wordpress hook. Hooks that take longer than this threshold will
+;          be recorded. This setting is used only if WordPress plugins hook 
+;          callbacks are not instrumented (newrelic.framework.wordpress.plugins
+;          is false).
 ;
 ;newrelic.framework.wordpress.hooks_threshold = 1ms
 
