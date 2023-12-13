@@ -2215,7 +2215,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks_threshold",
                      newrelic_globals,
                      0)
 STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.plugins",
-                     "0",
+                     "1",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      wordpress_plugins,
