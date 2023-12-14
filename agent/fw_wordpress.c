@@ -602,7 +602,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
   }
 
   if (true == wrap_hook) {
-    zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
     /* the callback here can be any PHP callable. nr_php_wrap_generic_callable
    * checks that a valid callable is passed */
     nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
