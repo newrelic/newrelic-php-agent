@@ -560,14 +560,14 @@ NR_PHP_WRAPPER_END
  * function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 )
  *
  * @param string   $hook_name     The name of the filter to add the callback to.
-* @param callable $callback      The callback to be run when the filter is applied.
-* @param int      $priority      Optional. Used to specify the order in which the functions
-*                                associated with a particular filter are executed.
-*                                Lower numbers correspond with earlier execution,
-*                                and functions with the same priority are executed
-*                                in the order in which they were added to the filter. Default 10.
-* @param int      $accepted_args Optional. The number of arguments the function accepts. Default 1.
-* @return true Always returns true.
+ * @param callable $callback      The callback to be run when the filter is applied.
+ * @param int      $priority      Optional. Used to specify the order in which the functions
+ *                                associated with a particular filter are executed.
+ *                                Lower numbers correspond with earlier execution,
+ *                                and functions with the same priority are executed
+ *                                in the order in which they were added to the filter. Default 10.
+ * @param int      $accepted_args Optional. The number of arguments the function accepts. Default 1.
+ * @return true Always returns true.
  */
 
 NR_PHP_WRAPPER(nr_wordpress_add_filter) {
