@@ -337,10 +337,12 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #endif
 
   NR_PHP_WRAPPER_CALL;
-
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                             NRPRG(wordpress_tag));
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX, plugin);
+  if (NULL != plugin) {
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
+                               NRPRG(wordpress_tag));
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
+                               plugin);
+  }
 }
 NR_PHP_WRAPPER_END
 
