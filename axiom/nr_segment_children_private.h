@@ -8,6 +8,7 @@
  */
 #ifndef NR_SEGMENT_CHILDREN_PRIVATE_HDR
 #define NR_SEGMENT_CHILDREN_PRIVATE_HDR
+#include "nr_segment_types.h"
 
 /*
  * Purpose : Add an element to the children vector.

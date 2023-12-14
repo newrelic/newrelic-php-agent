@@ -88,14 +88,15 @@ bool nr_segment_children_reparent(nr_segment_children_t* children,
     return true;
   }
 
+  parent_size = nr_segment_children_size(&new_parent->children);
+  req_parent_size = size + parent_size;
   for (i = 0; i < size; i++) {
     nr_segment_t* child = nr_segment_children_get(children, i);
 
     child->parent = new_parent;
+    child->child_ix = parent_size+i;
   }
 
-  parent_size = nr_segment_children_size(&new_parent->children);
-  req_parent_size = size + parent_size;
   if (req_parent_size > NR_SEGMENT_CHILDREN_PACKED_LIMIT) {
     nr_segment_children_migrate_to_vector(&new_parent->children);
   }

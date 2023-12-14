@@ -883,7 +883,9 @@ bool nr_segment_discard(nr_segment_t** segment_ptr) {
   }
 
   /* Unhook the segment from its parent. */
-  nr_segment_children_remove(&segment->parent->children, segment);
+  if (!nr_segment_children_remove(&segment->parent->children, segment)) {
+    return false;
+  }
 
   /* Reparent all children. */
   nr_segment_children_reparent(&segment->children, segment->parent);

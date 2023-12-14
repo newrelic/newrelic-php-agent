@@ -179,6 +179,9 @@ static void test_segment_children_remove(nr_segment_children_t* children,
     tlib_pass_if_bool_equal("adding a child should succeed", true,
                             nr_segment_children_add(children, &segments[i]));
   }
+  tlib_pass_if_size_t_equal("adding elements should increment size",
+                            count,
+                            nr_segment_children_size(children));
 
   tlib_pass_if_bool_equal(
       "removing a non-existent element should fail", false,
