@@ -111,7 +111,7 @@ typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
  * Purpose: Enable monitoring on specific functions for a detected vulnerability
  *          management package.
  */
-typedef void (*nr_vuln_mgmt_enable_fn_t)(TSRMLS_D);
+typedef void (*nr_vuln_mgmt_enable_fn_t)();
 
 /*
  * This code is used for function call debugging.
@@ -951,14 +951,14 @@ static void nr_execute_handle_logging_framework(
 
 #undef STR_AND_LEN
 
-static void nr_execute_handle_package(const char* filename TSRMLS_DC) {
+static void nr_execute_handle_package(const char* filename) {
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i = 0;
 
   for (i = 0; i < num_packages; i++) {
     if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
       if (NULL != vuln_mgmt_packages[i].enable) {
-        vuln_mgmt_packages[i].enable(TSRMLS_C);
+        vuln_mgmt_packages[i].enable();
       }
     }
   }
@@ -988,7 +988,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
-  nr_execute_handle_package(filename TSRMLS_CC);
+  nr_execute_handle_package(filename);
 }
 
 /*

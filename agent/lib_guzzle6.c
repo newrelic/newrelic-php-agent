@@ -342,7 +342,7 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
 
 /* }}} */
 
-static char* nr_guzzle_version(zval* app TSRMLS_DC) {
+static char* nr_guzzle_version(zval* app) {
   char* retval = NULL;
   zval* version = NULL;
   zend_class_entry* ce = NULL;
@@ -392,7 +392,7 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   zval* handler_stack;
   zval* middleware = NULL;
   zval* retval;
-  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
 
   version = nr_guzzle_version(this_var TSRMLS_CC);
   // Add php package to transaction

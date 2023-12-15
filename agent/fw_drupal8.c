@@ -533,11 +533,11 @@ end:
 }
 NR_PHP_WRAPPER_END
 
-void nr_drupal_version(TSRMLS_D) {
+void nr_drupal_version() {
   char* string = "Drupal::VERSION;";
   zval retval;
   int result
-      = zend_eval_string(string, &retval, "Retrieve Drupal Version" TSRMLS_CC);
+      = zend_eval_string(string, &retval, "Retrieve Drupal Version");
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_STRING) {
       char* version = Z_STRVAL(retval);

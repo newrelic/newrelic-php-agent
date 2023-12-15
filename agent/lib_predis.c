@@ -632,7 +632,7 @@ NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
 }
 NR_PHP_WRAPPER_END
 
-static char* nr_predis_version(zval* app TSRMLS_DC) {
+static char* nr_predis_version(zval* app) {
   char* retval = NULL;
   zval* version = NULL;
   zend_class_entry* ce = NULL;
@@ -678,7 +678,7 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   (void)wraprec;
 
   NR_PHP_WRAPPER_CALL;
-  version = nr_predis_version(scope TSRMLS_CC);
+  version = nr_predis_version(scope);
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "predis/predis", version);
 

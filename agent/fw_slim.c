@@ -98,7 +98,7 @@ NR_PHP_WRAPPER(nr_slim3_4_route_run) {
 }
 NR_PHP_WRAPPER_END
 
-static char* nr_slim_version(zval* app TSRMLS_DC) {
+static char* nr_slim_version(zval* app) {
   char* retval = NULL;
   zval* version = NULL;
   zend_class_entry* ce = NULL;
@@ -136,13 +136,13 @@ static char* nr_slim_version(zval* app TSRMLS_DC) {
 }
 
 NR_PHP_WRAPPER(nr_slim_application_construct) {
-  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
   char* version = NULL;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  version = nr_slim_version(this_var TSRMLS_CC);
+  version = nr_slim_version(this_var);
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "slim/slim", version);
 
@@ -166,8 +166,8 @@ void nr_slim_enable(TSRMLS_D) {
   /* Slim 2 does not have the same path as Slim 3/4 which is why
      we need to separate these*/
   nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
-                            nr_slim_application_construct TSRMLS_CC);
+                            nr_slim_application_construct);
 
   nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
-                            nr_slim_application_construct TSRMLS_CC);
+                            nr_slim_application_construct);
 }
