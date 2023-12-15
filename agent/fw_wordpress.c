@@ -642,7 +642,8 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
         // there's a wordpress_plugin_theme set we know it's from this
         // transaction, and we don't have any issues around a possible
         // multi-tenant setup.
-        if (NULL != callback_wraprec) {
+        if (NULL != callback_wraprec
+            && NULL == callback_wraprec->wordpress_plugin_theme) {
           // Unlike Drupal, we don't free the wordpress_plugin_theme, since we
           // know it's transient anyway, and we only set the field if it was
           // previously NULL.
