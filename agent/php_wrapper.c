@@ -47,16 +47,7 @@ static char* Z_TYPE_STR(zval* zv) {
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
-  return nr_php_wrap_user_function_with_transience(name, namelen, callback,
-                                                   NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
-}
-
-nruserfn_t* nr_php_wrap_user_function_with_transience(const char* name,
-                                                 size_t namelen,
-                                                 nrspecialfn_t callback,
-                                                 nr_transience_t transience TSRMLS_DC) {
-  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen,
-                                                       transience TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
   if (wraprec && callback) {
     if ((NULL != wraprec->special_instrumentation)
