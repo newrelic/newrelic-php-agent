@@ -390,6 +390,7 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
 
   version = nr_guzzle_version(this_var TSRMLS_CC);
+  
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle", version);
 

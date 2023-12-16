@@ -679,6 +679,7 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
 
   NR_PHP_WRAPPER_CALL;
   version = nr_predis_version(scope);
+  
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "predis/predis", version);
 

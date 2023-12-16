@@ -538,10 +538,11 @@ void nr_drupal_version() {
   zval retval;
   int result
       = zend_eval_string(string, &retval, "Retrieve Drupal Version");
+  
+  // Add php package to transaction
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_STRING) {
       char* version = Z_STRVAL(retval);
-      // Add php package to transaction
       nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
       zval_dtor(&retval);
     }

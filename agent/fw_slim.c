@@ -143,6 +143,7 @@ NR_PHP_WRAPPER(nr_slim_application_construct) {
   (void)wraprec;
 
   version = nr_slim_version(this_var);
+  
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "slim/slim", version);
 

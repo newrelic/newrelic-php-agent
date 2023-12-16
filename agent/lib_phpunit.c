@@ -672,10 +672,10 @@ void nr_phpunit_version() {
   int result
       = zend_eval_string(string, &retval, "Retrieve PHPUnit Version");
 
+  // Add php package to transaction
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_STRING) {
       char* version = Z_STRVAL(retval);
-      // Add php package to transaction
       nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
       zval_dtor(&retval);
     }
