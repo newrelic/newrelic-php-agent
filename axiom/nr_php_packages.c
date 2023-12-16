@@ -15,6 +15,7 @@
 #include "util_vector.h"
 #include "util_hashmap.h"
 #include "util_hashmap_private.h"
+#include "util_logging.h"
 #include "util_strings.h"
 
 typedef struct {
@@ -43,6 +44,8 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
                            // string with a space according to spec
   }
 
+  nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s'",
+                   p->package_name, p->package_version);
   return p;
 }
 
