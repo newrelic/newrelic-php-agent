@@ -360,12 +360,7 @@ static char* nr_guzzle_version(zval* app) {
     return NULL;
   }
 
-  if (NULL == nr_php_get_class_constant(ce, "VERSION")) {
-    // If full version does not exist, then we will send empty string
-    return " ";
-  } else {
-    version = nr_php_get_class_constant(ce, "VERSION");
-  }
+  version = nr_php_get_class_constant(ce, "VERSION");
 
   if (NULL == version) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
