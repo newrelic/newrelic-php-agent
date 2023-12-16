@@ -583,6 +583,8 @@ void nr_wordpress_enable(TSRMLS_D) {
     nr_php_add_call_user_func_array_pre_callback(
         nr_wordpress_call_user_func_array TSRMLS_CC);
   }
+
+  nr_txn_add_php_package(NRPRG(txn), "wordpress", " ");
 }
 
 void nr_wordpress_minit(void) {

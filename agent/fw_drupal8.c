@@ -601,4 +601,5 @@ void nr_drupal8_enable(TSRMLS_D) {
     nr_php_wrap_user_function(NR_PSTR("Drupal\\views\\ViewExecutable::execute"),
                               nr_drupal8_wrap_view_execute TSRMLS_CC);
   }
+  nr_txn_add_php_package(NRPRG(txn), "drupal/core", " ");
 }
