@@ -309,23 +309,6 @@ static void nr_show_execute_params(NR_EXECUTE_PROTO, char* pbuf TSRMLS_DC) {
   (void)pos;
 }
 
-/* Package handling for Vulnerability Management */
-typedef struct _nr_vuln_mgmt_table_t {
-  const char* package_name;
-  const char* file_to_check;
-  nr_vuln_mgmt_enable_fn_t enable;
-} nr_vuln_mgmt_table_t;
-
-/* Note that all paths should be in lowercase. */
-static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
-    {"PHPUnit", "runner/version.php", nr_phpunit_version},
-    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
-};
-
-static size_t num_packages
-    = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
-
 /*
  * Framework handling, definition and callbacks.
  */
@@ -611,6 +594,24 @@ static nr_library_table_t logging_frameworks[] = {
 
 static size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
+
+/* Package handling for Vulnerability Management */
+typedef struct _nr_vuln_mgmt_table_t {
+  const char* package_name;
+  const char* file_to_check;
+  nr_vuln_mgmt_enable_fn_t enable;
+} nr_vuln_mgmt_table_t;
+
+/* Note that all paths should be in lowercase. */
+static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
+    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+    {"PHPUnit", "runner/version.php", nr_phpunit_version},
+    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+};
+
+static size_t num_packages
+    = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
