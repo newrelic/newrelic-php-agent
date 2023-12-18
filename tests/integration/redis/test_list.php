@@ -82,12 +82,9 @@ ok - rpushx to a list that does not exist
     [{"name":"Datastore/operation/Redis/expire"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/expire",
       "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lget"},                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lget",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lindex"},                     [8, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/lindex"},                     [9, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/lindex",
-      "scope":"OtherTransaction/php__FILE__"},                        [8, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [9, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/linsert"},                    [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/linsert",
       "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
@@ -106,12 +103,9 @@ ok - rpushx to a list that does not exist
     [{"name":"Datastore/operation/Redis/lrange"},                     [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/lrange",
       "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lrem"},                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/Redis/lrem"},                       [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/lrem",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lremove"},                    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/Redis/lremove",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/lset"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Redis/lset",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
@@ -141,9 +135,6 @@ ok - rpushx to a list that does not exist
 ]
 */
 
-
-
-
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/redis.inc');
@@ -169,8 +160,7 @@ function test_redis() {
   tap_equal(2, $redis->rPush($key, 'C'), 'append C');
   tap_equal(3, $redis->lPush($key, 'A'), 'prepend A');
 
-  /* Redis->lGet is deprecated, but use it once to verify it works */
-  tap_equal('A', @$redis->lGet($key, 0), 'retrieve element 0');
+  tap_equal('A', $redis->lIndex($key, 0), 'retrieve element 0');
   tap_equal('B', $redis->lIndex($key, 1), 'retrieve element 1');
   tap_equal('C', $redis->lIndex($key, 2), 'retrieve element 2');
   tap_equal('C', $redis->lIndex($key, -1), 'retrieve last element');
@@ -199,8 +189,7 @@ function test_redis() {
 
   tap_equal(4, $redis->rpush($key, 'A', 'B', 'B', 'C'), 'add new elements');
 
-  /* Redis->lRemove is depreacted, but use it once to verity it works */
-  tap_equal(1, @$redis->lRemove($key, 'B', 1), 'remove first occurence of B');
+  tap_equal(1, @$redis->lRem($key, 'B', 1), 'remove first occurence of B');
   tap_equal(['A', 'B', 'C'], $redis->lrange($key, 0, -1), 'verify list elements');
   tap_equal(0, $redis->lRem($key, 'NOT_IN_LIST', 1), 'remove missing element');
 

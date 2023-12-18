@@ -26,14 +26,8 @@ newrelic.transaction_tracer.detail = 0
 /*EXPECT_RESPONSE_HEADERS
 */
 
-/*EXPECT_SPAN_EVENTS
+/*EXPECT_SPAN_EVENTS_LIKE
 [
-  "?? agent run id",
-  {
-    "reservoir_size": 10000,
-    "events_seen": 4
-  },
-  [
     [
       {
         "traceId": "??",
@@ -51,28 +45,6 @@ newrelic.transaction_tracer.detail = 0
       },
       {},
       {}
-    ],
-    [
-      {
-        "traceId": "??",
-        "duration": "??",
-        "transactionId": "??",
-        "name": "Custom\/GuzzleHttp\\Client::__construct",
-        "guid": "??",
-        "type": "Span",
-        "category": "generic",
-        "priority": "??",
-        "sampled": true,
-        "parentId": "??",
-        "timestamp": "??"
-      },
-      {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "GuzzleHttp\\Client",
-        "code.filepath": "??",
-        "code.function": "__construct"
-      }
     ],
     [
       {
@@ -120,7 +92,6 @@ newrelic.transaction_tracer.detail = 0
         "http.statusCode": 200
       }
     ]
-  ]
 ]
 */
 

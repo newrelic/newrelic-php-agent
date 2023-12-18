@@ -19,28 +19,30 @@ import (
 
 var (
 	Directives = map[string]func(*Test, []byte) error{
-		"ENVIRONMENT":             parseEnv,
-		"HEADERS":                 parseHeaders,
-		"SKIPIF":                  parseRawSkipIf,
-		"INI":                     parseSettings,
-		"CONFIG":                  parseConfig,
-		"DESCRIPTION":             parseDescription,
-		"EXPECT_ANALYTICS_EVENTS": parseAnalyticEvents,
-		"EXPECT_CUSTOM_EVENTS":    parseCustomEvents,
-		"EXPECT_ERROR_EVENTS":     parseErrorEvents,
-		"EXPECT_SPAN_EVENTS":      parseSpanEvents,
-		"EXPECT_SPAN_EVENTS_LIKE": parseSpanEventsLike,
-		"EXPECT_LOG_EVENTS":       parseLogEvents,
-		"EXPECT_METRICS":          parseMetrics,
-		"EXPECT":                  parseExpect,
-		"EXPECT_REGEX":            parseExpectRegex,
-		"EXPECT_SCRUBBED":         parseExpectScrubbed,
-		"EXPECT_HARVEST":          parseExpectHarvest,
-		"EXPECT_SLOW_SQLS":        parseSlowSQLs,
-		"EXPECT_TRACED_ERRORS":    parseTracedErrors,
-		"EXPECT_TXN_TRACES":       parseTxnTraces,
-		"EXPECT_RESPONSE_HEADERS": parseResponseHeaders,
-		"XFAIL":                   parseXFail,
+		"ENVIRONMENT":               parseEnv,
+		"HEADERS":                   parseHeaders,
+		"SKIPIF":                    parseRawSkipIf,
+		"INI":                       parseSettings,
+		"CONFIG":                    parseConfig,
+		"DESCRIPTION":               parseDescription,
+		"EXPECT_ANALYTICS_EVENTS":   parseAnalyticEvents,
+		"EXPECT_CUSTOM_EVENTS":      parseCustomEvents,
+		"EXPECT_ERROR_EVENTS":       parseErrorEvents,
+		"EXPECT_SPAN_EVENTS":        parseSpanEvents,
+		"EXPECT_SPAN_EVENTS_LIKE":   parseSpanEventsLike,
+		"EXPECT_LOG_EVENTS":         parseLogEvents,
+		"EXPECT_METRICS":            parseMetrics,
+		"EXPECT_METRICS_EXIST":      parseMetricsExist,
+		"EXPECT_METRICS_DONT_EXIST": parseMetricsDontExist,
+		"EXPECT":                    parseExpect,
+		"EXPECT_REGEX":              parseExpectRegex,
+		"EXPECT_SCRUBBED":           parseExpectScrubbed,
+		"EXPECT_HARVEST":            parseExpectHarvest,
+		"EXPECT_SLOW_SQLS":          parseSlowSQLs,
+		"EXPECT_TRACED_ERRORS":      parseTracedErrors,
+		"EXPECT_TXN_TRACES":         parseTxnTraces,
+		"EXPECT_RESPONSE_HEADERS":   parseResponseHeaders,
+		"XFAIL":                     parseXFail,
 	}
 )
 
@@ -222,6 +224,14 @@ func parseLogEvents(test *Test, content []byte) error {
 }
 func parseMetrics(test *Test, content []byte) error {
 	test.metrics = content
+	return nil
+}
+func parseMetricsExist(test *Test, content []byte) error {
+	test.metricsExist = content
+	return nil
+}
+func parseMetricsDontExist(test *Test, content []byte) error {
+	test.metricsDontExist = content
 	return nil
 }
 func parseSlowSQLs(test *Test, content []byte) error {

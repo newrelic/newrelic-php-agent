@@ -671,6 +671,11 @@ nr_php_op_array_file_name(const zend_op_array* op_array) {
 #endif
 }
 
+static inline nr_string_len_t NRPURE
+nr_php_op_array_file_name_len(const zend_op_array* op_array) {
+  return op_array->filename ? op_array->filename->len : 0;
+}
+
 static inline const char* NRPURE
 nr_php_op_array_function_name(const zend_op_array* op_array) {
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
@@ -695,6 +700,11 @@ nr_php_op_array_scope_name(const zend_op_array* op_array) {
 #endif
 
   return NULL;
+}
+
+static inline nr_string_len_t NRPURE
+nr_php_function_filename_len(zend_function* func) {
+  return func ? nr_php_op_array_file_name_len(&func->op_array) : 0;
 }
 
 static inline const char* NRPURE
