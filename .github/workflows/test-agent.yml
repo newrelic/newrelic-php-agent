@@ -67,12 +67,12 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
-      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+      IMAGE_VERSION: v2
     strategy:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
           - arch: arm64
             php: '7.0'
@@ -183,7 +183,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
           - arch: arm64
             php: '7.0'
@@ -248,7 +248,7 @@ jobs:
           LIBC: ${{matrix.platform}}
           PLATFORM: linux/${{matrix.arch}}
           AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+          IMAGE_VERSION: v2
         working-directory: ./php-agent
         run: |
           make test-services-start
