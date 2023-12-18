@@ -67,7 +67,7 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-php
-      IMAGE_VERSION: v2
+      IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
     strategy:
       matrix:
         platform: [gnu, musl]
@@ -248,7 +248,7 @@ jobs:
           LIBC: ${{matrix.platform}}
           PLATFORM: linux/${{matrix.arch}}
           AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: v2
+          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
         working-directory: ./php-agent
         run: |
           make test-services-start
