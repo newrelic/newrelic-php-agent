@@ -445,6 +445,7 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   retval = nr_php_call(handler_stack, "push", middleware);
 
   nr_php_zval_free(&retval);
+  nr_free(version);
 
 end:
   nr_php_zval_free(&middleware);

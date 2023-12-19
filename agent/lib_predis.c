@@ -722,6 +722,7 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   nr_php_zval_free(&conn);
   nr_php_arg_release(&params);
   nr_php_scope_release(&scope);
+  nr_free(version);
 }
 NR_PHP_WRAPPER_END
 
