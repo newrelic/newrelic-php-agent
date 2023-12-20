@@ -62,10 +62,7 @@ func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
 // CollectorJSON marshals events to JSON according to the schema expected
 // by the collector.
 func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
-	if nil == packages {
-		return []byte(`["Jars",[]]`), nil
-	}
-	if nil == packages.data || 0 == packages.numSeen {
+	if packages.Empty() {
 		return []byte(`["Jars",[]]`), nil
 	}
 
