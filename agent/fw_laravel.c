@@ -477,52 +477,6 @@ leave:
 }
 
 /*
- * Purpose : Return a copy of Illuminate\Foundation\Application::VERSION.
- *           The caller is responsible for freeing the string.
- *
- * Params  : 1. An instance of Illuminate\Foundation\Application.
- *
- * Returns : The Laravel version number as a string or NULL if the version
- *           cannot be determined.
- */
-static char* nr_laravel_version(zval* app TSRMLS_DC) {
-  char* retval = NULL;
-  zval* version = NULL;
-  zend_class_entry* ce = NULL;
-
-  if (0 == nr_php_is_zval_valid_object(app)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
-                     __func__);
-    return NULL;
-  }
-
-  ce = Z_OBJCE_P(app);
-  if (NULL == ce) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
-                     __func__);
-    return NULL;
-  }
-
-  version = nr_php_get_class_constant(ce, "VERSION");
-  if (NULL == version) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
-                     __func__);
-    return NULL;
-  }
-
-  if (nr_php_is_zval_valid_string(version)) {
-    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
-  } else {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "%s: expected VERSION be a valid string, got type %d",
-                     __func__, Z_TYPE_P(version));
-  }
-
-  nr_php_zval_free(&version);
-  return retval;
-}
-
-/*
  * We hook the application's exception handler to name transactions
  * when unhandled exceptions occur during request processing. Such
  * exceptions are caught by the framework's
@@ -959,7 +913,7 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  version = nr_laravel_version(this_var TSRMLS_CC);
+  version = nr_php_get_object_constant(this_var, "VERSION");
 
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "laravel/framework", version);

@@ -632,43 +632,6 @@ NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
 }
 NR_PHP_WRAPPER_END
 
-static char* nr_predis_version(zval* app) {
-  char* retval = NULL;
-  zval* version = NULL;
-  zend_class_entry* ce = NULL;
-
-  if (0 == nr_php_is_zval_valid_object(app)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
-                     __func__);
-    return NULL;
-  }
-
-  ce = Z_OBJCE_P(app);
-  if (NULL == ce) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
-                     __func__);
-    return NULL;
-  }
-
-  version = nr_php_get_class_constant(ce, "VERSION");
-  if (NULL == version) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
-                     __func__);
-    return NULL;
-  }
-
-  if (nr_php_is_zval_valid_string(version)) {
-    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
-  } else {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "%s: expected VERSION be a valid string, got type %d",
-                     __func__, Z_TYPE_P(version));
-  }
-
-  nr_php_zval_free(&version);
-  return retval;
-}
-
 NR_PHP_WRAPPER(nr_predis_client_construct) {
   char* version;
   zval* conn = NULL;
@@ -678,7 +641,7 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   (void)wraprec;
 
   NR_PHP_WRAPPER_CALL;
-  version = nr_predis_version(scope);
+  version = nr_php_get_object_constant(scope, "VERSION");
   
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "predis/predis", version);
