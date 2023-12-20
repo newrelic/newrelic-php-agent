@@ -544,8 +544,8 @@ void nr_drupal_version() {
     if (Z_TYPE(retval) == IS_STRING) {
       char* version = Z_STRVAL(retval);
       nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-      zval_dtor(&retval);
     }
+    zval_dtor(&retval);
   }
 }
 
