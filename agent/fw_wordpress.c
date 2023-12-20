@@ -217,6 +217,9 @@ static void free_wordpress_metadata(void* metadata) {
 
 static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
                                        const char* hook_name) {
+  if (NULL == segment) {
+    return;
+  }
   // need to capture 'now' because segment has not finished yet and therefore
   // can't use segment->stop_time
   nrtime_t now = nr_txn_now_rel(segment->txn);
