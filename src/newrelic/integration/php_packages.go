@@ -54,7 +54,7 @@ type ComposerJSON struct {
 //
 // Given a JSON harvest payload, extract the PHP packages
 //
-// Params 1 : JSON byte string containing upload_module_updates endpoint data
+// Params 1 : JSON byte string containing update_loaded_modules endpoint data
 //
 // Returns :  []PhpPackage with extracted package info, sorted by package name
 //            nil upon error processing JSON
