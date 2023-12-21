@@ -2076,8 +2076,9 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+    size_t filename_len = nr_php_op_array_file_name_len(NR_OP_ARRAY);
     nr_execute_handle_framework(all_frameworks, num_all_frameworks,
-                                filename TSRMLS_CC);
+                                filename, filename_len TSRMLS_CC);
     return;
   }
   if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
