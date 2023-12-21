@@ -87,7 +87,7 @@ func NewRPMResponseError(err error) RPMResponse {
 }
 
 func removeURLFromError(err error) error {
-	if err == nil {
+	if nil == err {
 		return nil
 	}
 
