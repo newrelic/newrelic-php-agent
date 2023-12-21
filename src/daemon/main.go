@@ -371,7 +371,7 @@ func main() {
 			proxy = false
 		} else {
 			log.Debugf("ARGV[%d]: %s", i, os.Args[i])
-			if (os.Args[i] == "--proxy") {
+			if ("--proxy" == os.Args[i]) {
 				proxy = true
 			}
 		}
