@@ -632,8 +632,7 @@ NR_PHP_WRAPPER_END
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 static void clean_wordpress_tag_stack() {
   if ((bool)nr_stack_pop(&NRPRG(wordpress_tag_states))) {
-    char* cleaned_tag = nr_stack_pop(&NRPRG(wordpress_tags));
-    nr_free(cleaned_tag);
+    nr_stack_pop(&NRPRG(wordpress_tags));
   }
   if (nr_stack_is_empty(&NRPRG(wordpress_tags))) {
     NRPRG(check_cufa) = false;
