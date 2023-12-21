@@ -29,17 +29,18 @@ type Test struct {
 	Desc string
 
 	// Expected Data
-	analyticEvents []byte
-	customEvents   []byte
-	errorEvents    []byte
-	spanEvents     []byte
-	spanEventsLike []byte
-	logEvents      []byte
-	metrics        []byte
-	metricsExist   []byte
-	slowSQLs       []byte
-	tracedErrors   []byte
-	txnTraces      []byte
+	analyticEvents   []byte
+	customEvents     []byte
+	errorEvents      []byte
+	spanEvents       []byte
+	spanEventsLike   []byte
+	logEvents        []byte
+	metrics          []byte
+	metricsExist     []byte
+	metricsDontExist []byte
+	slowSQLs         []byte
+	tracedErrors     []byte
+	txnTraces        []byte
 	// Expected Output
 	expect                []byte
 	expectRegex           []byte
@@ -566,6 +567,15 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 			name = strings.TrimSpace(name)
 			if !harvest.Metrics.Has(name) {
 				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", name, harvest.Metrics.DebugJSON()))
+			}
+		}
+	}
+
+	if nil != t.metricsDontExist {
+		for _, name := range strings.Split(strings.TrimSpace(string(t.metricsDontExist)), "\n") {
+			name = strings.TrimSpace(name)
+			if harvest.Metrics.Has(name) {
+				t.Fail(fmt.Errorf("unexpected metric in harvest: %s\n\nactual metric table: %s", name, harvest.Metrics.DebugJSON()))
 			}
 		}
 	}
