@@ -925,8 +925,9 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
-static void nr_execute_handle_logging_framework(
-  const char* filename TSRMLS_DC) {
+static void nr_execute_handle_logging_framework(const char* filename,
+                                                const size_t filename_len
+                                                    TSRMLS_DC) {
   char* filename_lower = nr_string_to_lowercase(filename);
   bool is_enabled = false;
   size_t i;
