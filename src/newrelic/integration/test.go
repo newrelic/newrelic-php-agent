@@ -38,7 +38,6 @@ type Test struct {
 	metrics          []byte
 	metricsExist     []byte
 	metricsDontExist []byte
-	phpPackages      []byte
 	slowSQLs         []byte
 	tracedErrors     []byte
 	txnTraces        []byte
