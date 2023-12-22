@@ -72,7 +72,8 @@ const (
 	HarvestErrorEvents  HarvestType = (1 << 6)
 	HarvestSpanEvents   HarvestType = (1 << 7)
 	HarvestLogEvents    HarvestType = (1 << 8)
-	HarvestDefaultData  HarvestType = HarvestMetrics | HarvestErrors | HarvestSlowSQLs | HarvestTxnTraces
+	HarvestPhpPackages  HarvestType = (1 << 9)
+	HarvestDefaultData  HarvestType = HarvestMetrics | HarvestErrors | HarvestSlowSQLs | HarvestTxnTraces | HarvestPhpPackages
 	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents
 )
 
@@ -646,6 +647,7 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, duc)
 	considerHarvestPayload(harvest.SpanEvents, args, duc)
 	considerHarvestPayload(harvest.LogEvents, args, duc)
+	considerHarvestPayload(harvest.PhpPackages, args, duc)
 	if args.blocking {
 		harvestDataUsage(args, duc)
 	} else {
@@ -695,11 +697,13 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		errors := harvest.Errors
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
+		phpPackages := harvest.PhpPackages
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
 		harvest.SlowSQLs = NewSlowSQLs(limits.MaxSlowSQLs)
 		harvest.TxnTraces = NewTxnTraces()
+		harvest.PhpPackages = NewPhpPackages()
 		harvest.commandsProcessed = 0
 		harvest.pidSet = make(map[int]struct{})
 
@@ -707,6 +711,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		considerHarvestPayload(errors, args, duc)
 		considerHarvestPayload(slowSQLs, args, duc)
 		considerHarvestPayload(txnTraces, args, duc)
+		considerHarvestPayload(phpPackages, args, duc)
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
@@ -753,6 +758,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		considerHarvestPayload(logEvents, args, duc)
 
 	}
+
 	// Only harvest data usage metrics if metrics are being harvested
 	if ht&HarvestDefaultData == HarvestDefaultData {
 		if !skip_data_usage {
@@ -983,6 +989,7 @@ func (p *Processor) IncomingTxnData(id AgentRunID, sample AggregaterInto) {
 		integrationLog(now, id, h.TxnTraces)
 		integrationLog(now, id, h.TxnEvents)
 		integrationLog(now, id, h.LogEvents)
+		integrationLog(now, id, h.PhpPackages)
 	}
 	p.txnDataChannel <- TxnData{ID: id, Sample: sample}
 }
