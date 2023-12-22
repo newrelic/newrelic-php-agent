@@ -500,6 +500,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   NRPRG(drupal_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
   NRPRG(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
+  NRPRG(check_cufa) = true;
 #endif // OAPI
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
@@ -517,6 +518,9 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   nr_free(NRPRG(drupal_invoke_all_hook));
   NRPRG(drupal_invoke_all_hook) = prev_hook;
   NRPRG(drupal_invoke_all_hook_len) = prev_hook_len;
+  if (NULL == NRPRG(drupal_invoke_all_hook)) {
+    NRPRG(check_cufa) = false;
+  }
 #endif // not OAPI
 
 leave: ;

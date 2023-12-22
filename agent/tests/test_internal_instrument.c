@@ -53,6 +53,7 @@ static void test_cufa_direct(TSRMLS_D) {
   NRPRG(check_cufa) = true;
 #endif
 
+  NRPRG(check_cufa) = true;
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
       "function g() { return call_user_func_array('f', array()); }" TSRMLS_CC);
@@ -82,6 +83,7 @@ static void test_cufa_indirect(TSRMLS_D) {
   NRPRG(check_cufa) = true;
 #endif
 
+  NRPRG(check_cufa) = true;
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
       "function g() { $cufa = 'call_user_func_array'; return $cufa('f', "

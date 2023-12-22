@@ -15,6 +15,7 @@
 #include "nr_txn.h"
 #include "php_extension.h"
 #include "util_hashmap.h"
+#include "util_matcher.h"
 #include "util_vector.h"
 
 #define PHP_NEWRELIC_EXT_NAME "newrelic"
@@ -451,14 +452,17 @@ nr_stack_t wordpress_tag_states; /* stack of bools indicating
                                     whether the current tag
                                     needs to be released */
 #else
-char* wordpress_tag;                   /* The current WordPress tag */
+bool check_cufa; /* Whether we need to check cufa because we are
+                    instrumenting hooks, or whether we can skip cufa */
+char* wordpress_tag;                    /* The current WordPress tag */
 #endif //OAPI
-nr_regex_t* wordpress_hook_regex;      /* Regex to sanitize hook names */
-nr_regex_t* wordpress_plugin_regex;    /* Regex for plugin filenames */
-nr_regex_t* wordpress_theme_regex;     /* Regex for theme filenames */
-nr_regex_t* wordpress_core_regex;      /* Regex for plugin filenames */
-nr_hashmap_t* wordpress_file_metadata; /* Metadata for plugin and theme names
-                                          given a filename */
+
+nr_matcher_t* wordpress_plugin_matcher; /* Matcher for plugin filenames */
+nr_matcher_t* wordpress_theme_matcher;  /* Matcher for theme filenames */
+nr_matcher_t* wordpress_core_matcher;   /* Matcher for plugin filenames */
+nr_hashmap_t* wordpress_file_metadata;  /* Metadata for plugin and theme names
+                                           given a filename */
+nr_hashmap_t* wordpress_clean_tag_cache; /* Cached clean tags */                                           
 
 char* doctrine_dql; /* The current Doctrine DQL. Only non-NULL while a Doctrine
                        object is on the stack. */

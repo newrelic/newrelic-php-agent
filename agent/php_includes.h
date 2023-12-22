@@ -53,6 +53,7 @@
 #define ZEND_8_0_X_API_NO 20200930
 #define ZEND_8_1_X_API_NO 20210902
 #define ZEND_8_2_X_API_NO 20220829
+#define ZEND_8_3_X_API_NO 20230831
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 #include "Zend/zend_observer.h"
