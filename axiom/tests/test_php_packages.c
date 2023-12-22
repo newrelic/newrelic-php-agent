@@ -94,7 +94,7 @@ static void test_php_packages_to_json_buffer(void) {
   nr_php_packages_add_package(collection, package4);
   nr_php_packages_add_package(collection, package5);
 
-  // Total package count should be 2 because two packages were duplicates with
+  // Total package count should be 3 because two packages were duplicates with
   // the same key
   count = nr_php_packages_count(collection);
   tlib_pass_if_int_equal("package count", 3, count);

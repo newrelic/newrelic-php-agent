@@ -64,6 +64,7 @@ var (
 	sampleSpanEvent   = []byte("belated birthday")
 	sampleLogEvent    = []byte("log event test birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
+	samplePhpPackages = []byte(`["package", "1.2.3",{}]`)
 )
 
 type ClientReturn struct {
@@ -187,6 +188,9 @@ var (
 	txnLogEventSample = AggregaterIntoFn(func(h *Harvest) {
 		h.LogEvents.AddEventFromData(sampleLogEvent, SamplingPriority(0.8))
 	})
+	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
+		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
+	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for i := 0; i < times; i++ {
@@ -267,6 +271,59 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 		t.Fatal(string(got))
 	}
 
+	m.QuitTestProcessor()
+}
+
+// split Php Packages out from DefaultData test - trying to
+// combine the txn trace and php packages data did not work
+// as these goto different endpoints - combining them here
+// seemed to combine the data which is incorrect
+func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
+	m := NewMockedProcessor(2)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	m.TxnData(t, idOne, txnPhpPackagesSample)
+
+	m.processorHarvestChan <- ProcessorHarvest{
+		AppHarvest: m.p.harvests[idOne],
+		ID:         idOne,
+		Type:       HarvestDefaultData,
+	}
+
+	// collect php packages
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_pkgs := <-m.clientParams
+	// collect metrics
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_metrics := <-m.clientParams
+	// collect usage metrics
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_usage := <-m.clientParams
+
+	<-m.p.trackProgress // unblock processor after harvest
+
+	// check pkgs and metric data - it appears these can
+	// come in different orders so check both
+	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
+	if toTestPkgs != string(cp_pkgs.data) {
+		if toTestPkgs != string(cp_metrics.data) {
+			t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
+		}
+	}
+
+	time1 := strings.Split(string(cp_usage.data), ",")[1]
+	time2 := strings.Split(string(cp_usage.data), ",")[2]
+	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1285,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,32,0,0,0,0]]]]`
+	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
+		t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
+	}
 	m.QuitTestProcessor()
 }
 
