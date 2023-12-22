@@ -104,6 +104,12 @@ func tapOutput(tests []*integration.Test) {
 			}
 			fmt.Printf("\n")
 		}
+		if 0 < len(test.Notes) {
+			fmt.Println("Note(s) associated with test:")
+			for _, n := range test.Notes {
+				fmt.Println("    ", n)
+			}
+		}
 	}
 	fmt.Println("#", totals.passed, "passed")
 	fmt.Println("#", totals.skipped, "skipped")
