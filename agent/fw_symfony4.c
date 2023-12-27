@@ -250,5 +250,5 @@ void nr_symfony4_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
         NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
      nr_symfony4_console_application_run TSRMLS_CC);
-  nr_txn_add_php_package(NRPRG(txn), "symfony/http-kernel", " ");
+  nr_txn_add_php_package(NRPRG(txn), "symfony/http-kernel", PHP_PACKAGE_VERSION_UNKNOWN);
 }
