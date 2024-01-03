@@ -39,9 +39,9 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
   if (NULL != version) {
     p->package_version = nr_strdup(version);
   } else {
-    p->package_version
-        = nr_strdup(" ");  // if null, version is set to an empty
-                           // string with a space according to spec
+    p->package_version = nr_strdup(
+        PHP_PACKAGE_VERSION_UNKNOWN);  // if null, version is set to an empty
+                                       // string with a space according to spec
   }
 
   nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s'",
