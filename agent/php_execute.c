@@ -2034,7 +2034,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      * A NULL return value means that there was an uncaught exception, and
      * therefore we want to call the 'clean' function type
      */
-    if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
+    if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
       zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS);
     } else {
