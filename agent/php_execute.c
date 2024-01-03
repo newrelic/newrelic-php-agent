@@ -1995,7 +1995,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      * uncaught exception. This code path is here to simplify and
      * explicitly enumerate the possible cases.
      */
-  } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
+  } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
     /*
      * Having no return value (and not being an exception handler) indicates
      * that this segment had an uncaught exception. We want to add that
