@@ -1878,17 +1878,17 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   wraprec = nr_php_get_wraprec(execute_data->func);
 
   /*
-   * Check if it's a custom error handler.  Even with some custom error
-   * handlers, fcall might not get called. But we don't need to wait for
-   * fcall_end to put the error anyway.  It can be done earlier in
-   * fcall_begin. Here, we are doing before the segment call so the error gets
-   * on the correct stacked segment.
+   * Check if it's a custom error handler. We don't need to wait for
+   * fcall_end to record the error to the transaction; it can be done earlier
+   * in fcall_begin. However, we must wait until fcall_end to add the error
+   * to any possible segment(s), as at this point we do not know when it
+   * will be caught.
    */
   if (NULL != wraprec && wraprec->is_exception_handler) {
     /*
      * Before starting the error handler segment, put the error it handled on
-     * the segment that called it. The choice of E_ERROR for the error level
-     * is basically arbitrary, but matches the error level PHP uses if there
+     * the transaction. The choice of E_ERROR for the error level is
+     * basically arbitrary, but matches the error level PHP uses if there
      * isn't an exception handler, so this should give more consistency for
      * the user in terms of what they'll see with and without an exception
      * handler installed.
@@ -1970,7 +1970,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   }
 
   /*
-   * Get the current segment and return if null.  The segment would only have
+   * Get the current segment and return if null. The segment would only have
    * been created if we are recording and if wraprec is set or if tt is greater
    * than 0.
    */
@@ -1990,11 +1990,17 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   if (wraprec && wraprec->is_exception_handler) {
     /*
-     * An exception handler removes the global exception in fcall_begin
-     * and does not have a return value, like fcall_end during an
-     * uncaught exception
+     * An exception handler sets the transaction exception in fcall_begin
+     * and does not have a return value, like an fcall_end during an
+     * uncaught exception. This code path is here to simplify and
+     * explicitly enumerate the possible cases.
      */
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
+    /*
+     * Having no return value (and not being an exception handler) indicates
+     * that this segment had an uncaught exception. We want to add that
+     * exception to the segment.
+     */
     zval exception;
     ZVAL_OBJ(&exception, EG(exception));
     nr_status_t status = nr_php_error_record_exception_segment(

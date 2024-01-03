@@ -196,7 +196,8 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
   int priority = nr_php_error_get_priority(E_ERROR);
 
   st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
-                                     true, NULL /* use default prefix */,
+                                     true /* add to segment */,
+                                     NULL /* use default prefix */,
                                      &NRPRG(exception_filters) TSRMLS_CC);
 
   if (NR_FAILURE == st) {

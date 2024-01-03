@@ -1593,15 +1593,17 @@ void nr_txn_record_error(nrtxn_t* txn,
       return;
     }
 
-    current_segment = nr_txn_get_current_segment(txn, NULL);
+    if (add_to_segment) {
+      current_segment = nr_txn_get_current_segment(txn, NULL);
 
-    if (current_segment && add_to_segment) {
-      nr_segment_set_error(current_segment, errmsg, errclass);
-      nrl_verbosedebug(NRL_TXN,
-                       "recording segment error: msg='%.48s' cls='%.48s'"
-                       "span_id='%.48s'",
-                       NRSAFESTR(errmsg), NRSAFESTR(errclass),
-                       NRSAFESTR(span_id));
+      if (current_segment) {
+        nr_segment_set_error(current_segment, errmsg, errclass);
+        nrl_verbosedebug(NRL_TXN,
+                         "recording segment error: msg='%.48s' cls='%.48s'"
+                         "span_id='%.48s'",
+                         NRSAFESTR(errmsg), NRSAFESTR(errclass),
+                         NRSAFESTR(span_id));
+      }
     }
   }
   error = nr_error_create(priority, errmsg, errclass, stacktrace_json, span_id,

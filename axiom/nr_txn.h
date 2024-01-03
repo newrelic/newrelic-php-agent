@@ -451,9 +451,10 @@ extern nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority);
  * Params  : 1. The transaction pointer.
  *           2. The priority of the error. A higher number indicates a more
  *              serious error.
- *           3. The error message.
- *           4. The error class.
- *           5. Stack trace in JSON format.
+ *           3. Whether to add the error to the current segment.
+ *           4. The error message.
+ *           5. The error class.
+ *           6. Stack trace in JSON format.
  *
  * Returns : Nothing.
  *

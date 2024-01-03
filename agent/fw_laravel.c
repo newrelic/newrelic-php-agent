@@ -619,7 +619,8 @@ NR_PHP_WRAPPER(nr_laravel5_exception_report) {
       nr_status_t st;
 
       st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
-                                         true, NULL /* use default prefix */,
+                                         true /* add to segment */,
+                                         NULL /* use default prefix */,
                                          &NRPRG(exception_filters) TSRMLS_CC);
 
       if (NR_FAILURE == st) {

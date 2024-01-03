@@ -181,7 +181,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "uncaught", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 3 after function call", 0,
+      "PHP stack depth tracking should be 0 after exception unwind", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should be null.", expr);
 
@@ -269,7 +269,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "followup_uncaught", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 2 after function call", 0,
+      "PHP stack depth tracking should be 0 after exception unwind", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should not be null.", expr);
 
@@ -297,7 +297,7 @@ static void test_stack_depth_after_exception() {
   arg = tlib_php_request_eval_expr("0");
   expr = nr_php_call(NULL, "rethrow", arg);
   tlib_pass_if_int_equal(
-      "PHP stack depth tracking should be 2 after function call", 0,
+      "PHP stack depth tracking should be 0 after exception unwind", 0,
       NRPRG(php_cur_stack_depth));
   tlib_pass_if_null("Exception so expr should not be null.", expr);
 
