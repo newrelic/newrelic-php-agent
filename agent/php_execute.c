@@ -2005,7 +2005,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     ZVAL_OBJ(&exception, EG(exception));
     nr_status_t status = nr_php_error_record_exception_segment(
       NRPRG(txn), &exception,
-      &NRPRG(exception_filters) TSRMLS_CC);
+      &NRPRG(exception_filters));
 
     if (NR_FAILURE == status) {
       nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
