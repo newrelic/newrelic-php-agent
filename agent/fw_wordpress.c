@@ -552,7 +552,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 NR_PHP_WRAPPER_END
 
 void nr_wordpress_version() {
-  const char* string = "$GLOBALS['wp_version'];";
+  char* string = "$GLOBALS['wp_version'];";
   zval retval;
   int result = zend_eval_string(string, &retval,
                                 "Retrieve Wordpress Version");
