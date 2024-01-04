@@ -654,10 +654,16 @@ zval* nr_php_get_class_constant(const zend_class_entry* ce, const char* name) {
 #endif
 }
 
-char* nr_php_get_object_constant(zval* app, char* name) {
+char* nr_php_get_object_constant(zval* app, const char* name) {
   char* retval = NULL;
   zval* version = NULL;
   zend_class_entry* ce = NULL;
+
+  if (NULL == name || 0 >= nr_strlen(name)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL object name",
+                     __func__);
+    return NULL;
+  }
 
   if (0 == nr_php_is_zval_valid_object(app)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",

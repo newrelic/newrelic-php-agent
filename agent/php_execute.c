@@ -609,7 +609,7 @@ static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
     {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
 };
 
-static size_t num_packages
+static const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
 
 /*
@@ -953,6 +953,11 @@ static void nr_execute_handle_logging_framework(const char* filename,
 #undef STR_AND_LEN
 
 static void nr_execute_handle_package(const char* filename) {
+  if (NULL == filename || 0 >= nr_strlen(filename)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: The file name is NULL",
+                     __func__);
+    return;
+  }
   char* filename_lower = nr_string_to_lowercase(filename);
   size_t i = 0;
 
