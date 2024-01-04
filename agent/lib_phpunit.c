@@ -667,7 +667,7 @@ static int nr_phpunit_are_statuses_valid(TSRMLS_D) {
 }
 
 void nr_phpunit_version() {
-  char* string = "PHPUnit\\Runner\\Version::id();";
+  const char* string = "PHPUnit\\Runner\\Version::id();";
   zval retval;
   int result
       = zend_eval_string(string, &retval, "Retrieve PHPUnit Version");

@@ -534,7 +534,7 @@ end:
 NR_PHP_WRAPPER_END
 
 void nr_drupal_version() {
-  char* string = "Drupal::VERSION;";
+  const char* string = "Drupal::VERSION;";
   zval retval;
   int result
       = zend_eval_string(string, &retval, "Retrieve Drupal Version");
