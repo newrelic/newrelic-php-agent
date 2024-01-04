@@ -343,12 +343,18 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
 /* }}} */
 
 NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
+  char* version;
   zval* config;
   zend_class_entry* guzzle_client_ce;
   zval* handler_stack;
   zval* middleware = NULL;
   zval* retval;
-  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
+
+  version = nr_php_get_object_constant(this_var, "VERSION");
+  
+  // Add php package to transaction
+  nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle", version);
 
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
@@ -401,6 +407,7 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   retval = nr_php_call(handler_stack, "push", middleware);
 
   nr_php_zval_free(&retval);
+  nr_free(version);
 
 end:
   nr_php_zval_free(&middleware);
