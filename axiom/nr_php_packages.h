@@ -11,6 +11,8 @@
 #include "util_vector.h"
 #include "util_hashmap.h"
 
+#define PHP_PACKAGE_VERSION_UNKNOWN " "
+
 typedef struct _nr_php_package_t {
   char* package_name;
   char* package_version;

@@ -108,6 +108,12 @@ typedef void (*nr_framework_enable_fn_t)(TSRMLS_D);
 typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
 
 /*
+ * Purpose: Enable monitoring on specific functions for a detected vulnerability
+ *          management package.
+ */
+typedef void (*nr_vuln_mgmt_enable_fn_t)();
+
+/*
  * This code is used for function call debugging.
  */
 #define MAX_NR_EXECUTE_DEBUG_STRLEN (80)
@@ -588,6 +594,24 @@ static nr_library_table_t logging_frameworks[] = {
 
 static size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
+
+/* Package handling for Vulnerability Management */
+typedef struct _nr_vuln_mgmt_table_t {
+  const char* package_name;
+  const char* file_to_check;
+  nr_vuln_mgmt_enable_fn_t enable;
+} nr_vuln_mgmt_table_t;
+
+/* Note that all paths should be in lowercase. */
+static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
+    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+    {"PHPUnit", "runner/version.php", nr_phpunit_version},
+    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+};
+
+static const size_t num_packages
+    = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+
 /*
  * This const char[] provides enough white space to indent functions to
  * (sizeof (nr_php_indentation_spaces) / NR_EXECUTE_INDENTATION_WIDTH) deep.
@@ -928,6 +952,26 @@ static void nr_execute_handle_logging_framework(const char* filename,
 
 #undef STR_AND_LEN
 
+static void nr_execute_handle_package(const char* filename) {
+  if (NULL == filename || 0 >= nr_strlen(filename)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: The file name is NULL",
+                     __func__);
+    return;
+  }
+  char* filename_lower = nr_string_to_lowercase(filename);
+  size_t i = 0;
+
+  for (i = 0; i < num_packages; i++) {
+    if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
+      if (NULL != vuln_mgmt_packages[i].enable) {
+        vuln_mgmt_packages[i].enable();
+      }
+    }
+  }
+
+  nr_free(filename_lower);
+}
+
 /*
  * Purpose : Detect library and framework usage from a PHP file.
  *
@@ -950,6 +994,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_package(filename);
 }
 
 /*
