@@ -633,6 +633,7 @@ NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_predis_client_construct) {
+  char* version;
   zval* conn = NULL;
   zval* params = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   zval* scope = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -640,6 +641,10 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   (void)wraprec;
 
   NR_PHP_WRAPPER_CALL;
+  version = nr_php_get_object_constant(scope, "VERSION");
+  
+  // Add php package to transaction
+  nr_txn_add_php_package(NRPRG(txn), "predis/predis", version);
 
   /*
    * Grab the connection object from the client, since we actually instrument
@@ -680,6 +685,7 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   nr_php_zval_free(&conn);
   nr_php_arg_release(&params);
   nr_php_scope_release(&scope);
+  nr_free(version);
 }
 NR_PHP_WRAPPER_END
 

@@ -2,6 +2,7 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_hash.h"
@@ -665,6 +666,22 @@ static int nr_phpunit_are_statuses_valid(TSRMLS_D) {
   return 1;
 }
 
+void nr_phpunit_version() {
+  char* string = "PHPUnit\\Runner\\Version::id();";
+  zval retval;
+  int result
+      = zend_eval_string(string, &retval, "Retrieve PHPUnit Version");
+
+  // Add php package to transaction
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
+      char* version = Z_STRVAL(retval);
+      nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
+    }
+    zval_dtor(&retval);
+  }
+}
+
 void nr_phpunit_enable(TSRMLS_D) {
   if (!NRINI(phpunit_events_enabled)) {
     return;
@@ -692,4 +709,5 @@ void nr_phpunit_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("PHPUnit\\Framework\\TestResult::addError"),
       nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
+  nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", PHP_PACKAGE_VERSION_UNKNOWN);
 }
