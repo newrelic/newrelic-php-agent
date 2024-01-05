@@ -6,4 +6,4 @@ and API descriptions please see the online FAQ at:
 
 For license and copyright, see LICENSE.
 
-For support, contact us at http://support.newrelic.com for assistance.
+For support, contact us at https://support.newrelic.com for assistance.

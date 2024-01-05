@@ -132,7 +132,7 @@ _"This does not contain everything, but what it contains is true"._
    ```
 
 0. Format code with
-   [clang-format 3.8](http://releases.llvm.org/3.8.0/tools/clang/docs/ClangFormat.html) 
+   [clang-format 3.8](https://releases.llvm.org/3.8.0/tools/clang/docs/ClangFormat.html) 
    or later using our [style configuration file](.clang-format).
 
 0. Disregard directives from this list when other approaches are more
