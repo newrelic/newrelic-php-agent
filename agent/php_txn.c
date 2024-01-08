@@ -1072,10 +1072,10 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  for (nr_segment_t* segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
-       segment != NULL && segment != NRTXN(segment_root);
-       segment = nr_txn_get_current_segment(NRPRG(txn), NULL)) {
+  nr_segment_t* segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  while(NULL != segment && segment != NRTXN(segment_root)) {
     nr_segment_end(&segment);
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
   }
 #else
   nr_php_stacked_segment_unwind(TSRMLS_C);
