@@ -7,42 +7,6 @@
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "util_logging.h"
-static char* Z_TYPE_STR(zval* zv) {
-
-  switch (Z_TYPE_P(zv)) {
-    case IS_NULL:
-      return "IS_NULL";
-
-    case IS_STRING:
-      return "IS_STRING";
-
-    case IS_LONG:
-      return "IS_LONG";
-
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-    case IS_TRUE:
-      return "IS_TRUE";
-
-    case IS_FALSE:
-      return "IS_FALSE";
-#else
-    case IS_BOOL:
-      return "IS_BOOL";
-#endif /* PHP7 */
-
-    case IS_DOUBLE:
-      return "IS_DOUBLE";
-
-    case IS_OBJECT:
-      return "IS_OBJECT";
-
-    case IS_ARRAY:
-      return "IS_ARRAY";
-
-    default:
-      return "UNKNOWN";
-  }
-}
 
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
@@ -95,6 +59,8 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
   return wraprec;
 }
 
+#define NR_WRAPPER_DEBUG_STRBUFSZ (1024)
+
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
   zend_function* zf = nr_php_zval_to_function(callable);
@@ -102,7 +68,13 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   if (NULL != zf) {
     return nr_php_wrap_callable(zf, callback);
   }
-  nrl_verbosedebug(NRL_INSTRUMENT, "Failed to cast to callable: Z_TYPE(callable)=%s", Z_TYPE_STR(callable));
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+    char strbuf[NR_WRAPPER_DEBUG_STRBUFSZ];
+    nr_format_zval_for_debug(callable, strbuf, 0, NR_WRAPPER_DEBUG_STRBUFSZ - 1,
+                             0);
+    nrl_verbosedebug(NRL_INSTRUMENT, "Failed to cast to callable zval=%s",
+                     strbuf);
+  }
   return NULL;
 }
 
