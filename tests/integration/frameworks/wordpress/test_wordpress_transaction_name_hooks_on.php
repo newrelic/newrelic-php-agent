@@ -16,6 +16,7 @@ metric should be generated and the hook function should be instrumented.
 /*INI
 newrelic.framework = wordpress
 newrelic.framework.wordpress.hooks = true
+newrelic.framework.wordpress.hooks_threshold = 0
 */
 
 /*ENVIRONMENT
