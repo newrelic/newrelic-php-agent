@@ -227,11 +227,6 @@ static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
   if (duration >= NRINI(wordpress_hooks_threshold)) {
     // only create metrics for hooks above threshold
     nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
-  } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "hook=%s, stop_time=" NR_TIME_FMT
-                     " start_time=" NR_TIME_FMT " duration=" NR_TIME_FMT "us",
-                     hook_name, now, segment->start_time, duration);
   }
 }
 
