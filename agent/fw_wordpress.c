@@ -296,7 +296,9 @@ cache_and_return:
 }
 
 NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   zend_function* func = NULL;
+#endif
   char* plugin = NULL;
 
   NR_UNUSED_SPECIALFN;
@@ -312,8 +314,12 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
   if ((0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
     NR_PHP_WRAPPER_LEAVE;
   }
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   func = nr_php_execute_function(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   plugin = nr_wordpress_plugin_from_function(func TSRMLS_CC);
+#else
+  plugin = wraprec->wordpress_plugin_theme;
+#endif
 
   NR_PHP_WRAPPER_CALL;
 
@@ -602,10 +608,23 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
   }
 
   if (true == wrap_hook) {
+    nruserfn_t* callback_wraprec;
     zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
     /* the callback here can be any PHP callable. nr_php_wrap_generic_callable
    * checks that a valid callable is passed */
-    nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
+    callback_wraprec = nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
+
+    // We can cheat here: wraprecs on callables are always transient, so if
+    // there's a wordpress_plugin_theme set we know it's from this transaction,
+    // and we don't have any issues around a possible multi-tenant setup.
+    if (callback_wraprec && NULL == callback_wraprec->wordpress_plugin_theme) {
+      // Unlike Drupal, we don't free the wordpress_plugin_theme, since we know
+      // it's transient anyway, and we only set the field if it was previously
+      // NULL.
+      zend_function* fn = nr_php_zval_to_function(callback);
+      callback_wraprec->wordpress_plugin_theme
+          = nr_wordpress_plugin_from_function(fn);
+    }
     nr_php_arg_release(&callback);
   }
 }
