@@ -131,7 +131,7 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
 static void reset_wraprec(nruserfn_t* wraprec) {
   nruserfn_t* p = wraprec;
   nr_php_wraprec_hashmap_key_release(&p->key);
-  if (p->transience == NR_WRAPREC_IS_TRANSIENT) {
+  if (p->is_transient) {
     nr_php_user_wraprec_destroy((nruserfn_t**)&wraprec);
   } else {
     p->is_wrapped = 0;
@@ -176,7 +176,7 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * with framework specific instrumentation. Optionally specifies transience.
    5) from function `nr_php_wrap_callable` (in `php_wrapper.c`) used only by
  * Wordpress and predis for custom instrumentation that sets
- * `NR_WRAPREC_IS_TRANSIENT`.
+ * `is_transient`.
  *
  * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
  *
@@ -383,7 +383,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   }
 
   wraprec = nr_php_user_wraprec_create();
-  wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
+  wraprec->is_transient = true;
 
   nrl_verbosedebug(NRL_INSTRUMENT, "adding custom for callable '%s'", name);
   nr_free(name);
@@ -397,8 +397,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 }
 
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
-                                           size_t namestrlen,
-                                           nr_transience_t transience TSRMLS_DC) {
+                                           size_t namestrlen) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
@@ -431,14 +430,11 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  if (transience == NR_WRAPREC_IS_TRANSIENT) {
-    wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
-  } else {
-    /* non-transient wraprecs are added to both the hashmap and linked list.
-     * At request shutdown, the hashmap will free transients, but leave
-     * non-transients to be freed when the linked list is disposed of which is at module shutdown */
-    nr_php_add_custom_tracer_common(wraprec);
-  }
+  /* non-transient wraprecs are added to both the hashmap and linked list.
+   * At request shutdown, the hashmap will free transients, but leave
+   * non-transients to be freed when the linked list is disposed of which is at
+   * module shutdown */
+  nr_php_add_custom_tracer_common(wraprec);
 
   return wraprec; /* return the new wraprec */
 }
@@ -484,7 +480,7 @@ void nr_php_remove_transient_user_instrumentation(void) {
   nruserfn_t* prev = NULL;
 
   while (NULL != p) {
-    if (p->transience == NR_WRAPREC_IS_TRANSIENT) {
+    if (p->is_transient) {
       nruserfn_t* trans = p;
 
       if (prev) {
@@ -519,9 +515,7 @@ void nr_php_add_user_instrumentation(TSRMLS_D) {
 
 void nr_php_add_transaction_naming_function(const char* namestr,
                                             int namestrlen TSRMLS_DC) {
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
@@ -529,9 +523,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
 }
 
 void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
@@ -588,9 +580,7 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
                                                     TSRMLS_DC) {
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       NR_WRAPREC_NOT_TRANSIENT TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (0 != wraprec) {
     wraprec->declared_callback = callback;
