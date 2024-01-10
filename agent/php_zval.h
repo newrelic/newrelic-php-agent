@@ -417,4 +417,14 @@ static inline zval* nr_php_zval_real_value(zval* zv) {
 
 /* }}} */
 
+/* {{{ Debugging functions */
+
+extern int nr_format_zval_for_debug(zval* arg,
+                                    char* pbuf,
+                                    size_t pos,
+                                    size_t avail,
+                                    size_t depth TSRMLS_DC);
+
+/* }}} */
+
 #endif /* PHP_ZVAL_HDR */
