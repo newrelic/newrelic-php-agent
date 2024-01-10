@@ -1166,6 +1166,23 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.framework.wordpress.hooks = true
 
+; Setting: newrelic.framework.wordpress.hooks_threshold
+; Type   : time specification string ("500ms", "1s750ms" etc)
+; Scope  : per-directory
+; Default: 1ms
+; Info   : Sets the threshold above which the New Relic agent will record a
+;          wordpress hooks.
+;
+;newrelic.framework.wordpress.hooks_threshold = 1ms
+
+; Setting: newrelic.framework.wordpress.plugins
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Indicates if WordPress plugins are to be instrumented.
+;
+;newrelic.framework.wordpress.plugins = false
+
 ; Setting: newrelic.application_logging.enabled
 ; Type   : boolean
 ; Scope  : per-directory

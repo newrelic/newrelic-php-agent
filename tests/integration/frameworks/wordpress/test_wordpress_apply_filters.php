@@ -13,6 +13,7 @@ The agent should properly instrument Wordpress apply_filters hooks.
 
 /*INI
 newrelic.framework = wordpress
+newrelic.framework.wordpress.hooks_threshold = 0
 */
 
 /*EXPECT

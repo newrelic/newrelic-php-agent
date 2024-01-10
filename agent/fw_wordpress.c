@@ -215,6 +215,21 @@ static void free_wordpress_metadata(void* metadata) {
   nr_free(metadata);
 }
 
+static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
+                                       const char* hook_name) {
+  if (NULL == segment) {
+    return;
+  }
+  // need to capture 'now' because segment has not finished yet and therefore
+  // can't use segment->stop_time
+  nrtime_t now = nr_txn_now_rel(segment->txn);
+  nrtime_t duration = nr_time_duration(segment->start_time, now);
+  if (duration >= NRINI(wordpress_hooks_threshold)) {
+    // only create metrics for hooks above threshold
+    nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
+  }
+}
+
 static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   const char* filename = NULL;
   size_t filename_len;
@@ -452,6 +467,9 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRINI(wordpress_plugins)) {
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -541,6 +559,9 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRINI(wordpress_plugins)) {
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -644,14 +665,15 @@ void nr_wordpress_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                               nr_wordpress_exec_handle_tag TSRMLS_CC);
-
+    if (0 != NRINI(wordpress_plugins)) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-    nr_php_add_call_user_func_array_pre_callback(
-        nr_wordpress_call_user_func_array TSRMLS_CC);
+      nr_php_add_call_user_func_array_pre_callback(
+          nr_wordpress_call_user_func_array TSRMLS_CC);
 #else
-    nr_php_wrap_user_function(NR_PSTR("add_filter"),
-                                nr_wordpress_add_filter);
+      nr_php_wrap_user_function(NR_PSTR("add_filter"),
+                                  nr_wordpress_add_filter);
 #endif
+    }
   }
 }
 
