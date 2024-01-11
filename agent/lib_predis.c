@@ -768,13 +768,13 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_after) {
     },
   };
 
-  command_obj = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  conn = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  command_obj = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+  conn = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
 
-  operation = nr_predis_get_operation_name_from_object(command_obj TSRMLS_CC);
+  operation = nr_predis_get_operation_name_from_object(command_obj);
   params.operation = operation;
 
-  params.instance = nr_predis_retrieve_datastore_instance(conn TSRMLS_CC);
+  params.instance = nr_predis_retrieve_datastore_instance(conn);
 
   nr_segment_datastore_end(&auto_segment, &params);
 
