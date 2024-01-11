@@ -52,9 +52,9 @@ char* nr_txndata_error_to_json(const nrtxn_t* txn) {
   user_attributes = nr_attributes_user_to_obj(txn->attributes,
                                               NR_ATTRIBUTE_DESTINATION_ERROR);
 
-  json = nr_error_to_daemon_json(txn->error, txn->name, agent_attributes,
-                                 user_attributes, txn->intrinsics,
-                                 txn->request_uri);
+  json = nr_error_to_daemon_json(txn->error, txn->name, nr_txn_get_guid(txn),
+                                 agent_attributes, user_attributes,
+                                 txn->intrinsics, txn->request_uri);
 
   nro_delete(agent_attributes);
   nro_delete(user_attributes);
