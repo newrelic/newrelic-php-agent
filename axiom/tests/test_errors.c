@@ -71,11 +71,11 @@ static void test_error_create_priority_and_destroy(void) {
       "error created has correct priority", priority == actual_priority,
       "priority=%d actual_priority=%d", priority, actual_priority);
 
-  json = nr_error_to_daemon_json(error, "my/txn", 0, 0, 0, 0);
+  json = nr_error_to_daemon_json(error, "my/txn", "guid", 0, 0, 0, 0);
   tlib_pass_if_str_equal(
       "error created", json,
       "[1378167,\"my\\/txn\",\"my\\/message\",\"my\\/class\","
-      "{\"stack_trace\":[\"already\\/escaped\"]}]");
+      "{\"stack_trace\":[\"already\\/escaped\"]},\"guid\"]");
   test_string_is_valid_json("error created", json);
   nr_free(json);
 
@@ -125,6 +125,7 @@ static void test_getters(void) {
 static void test_error_to_daemon_json(void) {
   nr_error_t* error;
   const char* txn_name = "my_txn_name";
+  const char* txn_guid = "guid";
   nrobj_t* agent_attributes = nro_create_from_json("{\"agent_attributes\":1}");
   nrobj_t* user_attributes = nro_create_from_json("{\"user_attributes\":1}");
   nrobj_t* intrinsics = nro_create_from_json("{\"intrinsics\":1}");
@@ -139,7 +140,7 @@ static void test_error_to_daemon_json(void) {
 
   error = nr_error_create(priority, msg, klass, stacktrace_json, span_id, when);
 
-  json = nr_error_to_daemon_json(error, txn_name, agent_attributes,
+  json = nr_error_to_daemon_json(error, txn_name, txn_guid, agent_attributes,
                                  user_attributes, intrinsics, request_uri);
   tlib_pass_if_str_equal("success daemon json", json,
                          "[123000,\"my_txn_name\",\"my_msg\",\"my_klass\","
@@ -149,17 +150,18 @@ static void test_error_to_daemon_json(void) {
                          "\"userAttributes\":{\"user_attributes\":1},"
                          "\"intrinsics\":{\"intrinsics\":1},"
                          "\"request_uri\":\"my_request_uri\""
-                         "}"
+                         "},"
+                         "\"guid\""
                          "]");
   test_string_is_valid_json("success daemon json", json);
   nr_free(json);
 
-  json = nr_error_to_daemon_json(NULL, txn_name, agent_attributes,
+  json = nr_error_to_daemon_json(NULL, txn_name, txn_guid, agent_attributes,
                                  user_attributes, intrinsics, request_uri);
   tlib_pass_if_null("NULL error", json);
   nr_free(json);
 
-  json = nr_error_to_daemon_json(error, NULL, 0, 0, 0, 0);
+  json = nr_error_to_daemon_json(error, NULL, NULL, 0, 0, 0, 0);
   tlib_pass_if_str_equal("no txn fields", json,
                          "[123000,\"\",\"my_msg\",\"my_klass\",{"
                          "\"stack_trace\":[]}]");
