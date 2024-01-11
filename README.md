@@ -63,4 +63,4 @@ If you would like to [contribute](https://github.com/newrelic/newrelic-php-agent
 To all [contributors](https://github.com/newrelic/newrelic-php-agent/graphs/contributors), we thank you! Without your contribution, this project would not be what it is today. We also host a community project page dedicated to the [New Relic PHP agent](https://opensource.newrelic.com/projects/newrelic/newrelic-php-agent).
 
 ## License
-The PHP agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License and also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.
+The PHP agent is licensed under the [Apache 2.0](https://apache.org/licenses/LICENSE-2.0.txt) License and also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.
