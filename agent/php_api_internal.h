@@ -53,6 +53,22 @@ extern PHP_FUNCTION(newrelic_get_slowsqls);
 extern PHP_FUNCTION(newrelic_get_trace_json);
 
 /*
+ * Proto   : string newrelic_get_error_json ()
+ *
+ * Returns : The error trace JSON that would be sent to the daemon if the
+ *           transaction ended at the point the function is called. This string
+ *           is owned by the caller.
+ */
+extern PHP_FUNCTION(newrelic_get_error_json);
+
+/*
+ * Proto   : string newrelic_get_transaction_guid ()
+ *
+ * Returns : The transaction guid.
+ */
+extern PHP_FUNCTION(newrelic_get_transaction_guid);
+
+/*
  * Proto   : bool newrelic_is_localhost (string $host)
  *
  * Params  : 1. The host name to check with
