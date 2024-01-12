@@ -11,10 +11,10 @@ The agent should add transaction GUID to error traces when CAT is enabled.
 /*SKIPIF
 <?php
 if (!function_exists('newrelic_get_error_json')) {
-  die("skip: release builds of the agent do not include newrelic_get_error_json()");
+  die("warn: release builds of the agent do not include newrelic_get_error_json()");
 }
 if (!function_exists('newrelic_get_transaction_guid')) {
-  die("skip: release builds of the agent do not include newrelic_get_transaction_guid()");
+  die("warn: release builds of the agent do not include newrelic_get_transaction_guid()");
 }
 */
 
