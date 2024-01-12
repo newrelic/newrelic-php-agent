@@ -59,7 +59,8 @@ if (!extension_loaded("curl")) {
         "stack_trace": "??",
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

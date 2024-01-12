@@ -47,7 +47,8 @@ newrelic.distributed_tracing_enabled=0
         },
         "intrinsics": "??",
         "request_uri": "__FILE__"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

@@ -31,7 +31,8 @@ newrelic.analytics_events.capture_attributes = false
           " in trigger_error called at __FILE__ (??)"
         ],
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

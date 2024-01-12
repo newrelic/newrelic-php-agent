@@ -26,7 +26,8 @@ handler and restore_exception_handler is called.
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

@@ -39,7 +39,7 @@ newrelic.cross_application_tracer.enabled=true
         "agentAttributes": "??",
         "intrinsics": "??"
       },
-    "?? txn guid"
+      "?? txn guid"
     ]
   ]
 ]

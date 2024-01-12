@@ -28,7 +28,8 @@ if (version_compare(PHP_VERSION, "7.4", "<")) {
         "stack_trace": "??",
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

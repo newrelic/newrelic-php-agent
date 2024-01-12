@@ -23,7 +23,8 @@ The agent should prioritize traced errors based on their severity.
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

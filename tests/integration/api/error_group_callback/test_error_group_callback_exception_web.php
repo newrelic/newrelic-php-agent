@@ -131,7 +131,8 @@ stack => \[" in alpha called at .*test_error_group_callback_exception_web.php \(
           "traceId": "??"
         },
         "request_uri": "__FILE__"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

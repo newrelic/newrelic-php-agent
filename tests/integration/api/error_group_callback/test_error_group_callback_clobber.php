@@ -108,7 +108,8 @@ stack => \[" in alpha called at .*test_error_group_callback_clobber.php \(.*\)"\
           "priority": "??",
           "traceId": "??"
         }
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

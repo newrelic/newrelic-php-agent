@@ -63,7 +63,8 @@ Tests newrelic_set_user_id() API:
           "priority": "??",
           "traceId": "??"
         }
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

@@ -133,7 +133,8 @@ stack => \[" in trigger_error called at .*test_error_group_callback_error_web.ph
           "traceId": "??"
         },
         "request_uri": "__FILE__"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]
