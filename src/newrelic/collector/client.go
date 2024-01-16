@@ -432,9 +432,22 @@ func (c *clientImpl) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 	}
 	cmd.Data = data
 
+	var audit []byte
+	if log.Auditing() {
+		audit, err = cs.Collectible.CollectorJSON(true)
+		if nil != err {
+			log.Errorf("unable to create audit json payload for '%s': %s", cmd.Name, err)
+			audit = cmd.Data
+		}
+		if nil == audit {
+			audit = cmd.Data
+		}
+	}
+
 	url := cmd.url(false)
 	cleanURL := cmd.url(true)
 
+	log.Audit("command='%s' url='%s' payload={%s}", cmd.Name, cleanURL, audit)
 	log.Debugf("command='%s' url='%s' max_payload_size_in_bytes='%d' payload={%s}", cmd.Name, cleanURL, cmd.MaxPayloadSize, cmd.Data)
 
 	resp := c.perform(url, *cmd, cs)
@@ -443,6 +456,7 @@ func (c *clientImpl) Execute(cmd *RpmCmd, cs RpmControls) RPMResponse {
 			cmd.Name, resp.Err.Error(), cleanURL)
 	}
 
+	log.Audit("command='%s' url='%s', status=%d, response={%s}", cmd.Name, cleanURL, resp.StatusCode, string(resp.Body))
 	log.Debugf("command='%s' url='%s', status=%d, response={%s}", cmd.Name, cleanURL, resp.StatusCode, string(resp.Body))
 
 	return resp
