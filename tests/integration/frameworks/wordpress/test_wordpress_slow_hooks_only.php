@@ -21,7 +21,7 @@ No errors should be generated.
 /*INI
 newrelic.framework.wordpress.hooks = true
 newrelic.framework.wordpress.plugins = false
-newrelic.framework.wordpress.hooks_threshold = 2ms
+newrelic.framework.wordpress.hooks_threshold = 500ms
 */
 
 /*ENVIRONMENT
@@ -55,12 +55,12 @@ Framework/WordPress/Hook/hook_with_fast_callbacks
 require_once __DIR__.'/mock-wordpress-app.php';
 
 function wp_core_slow_action_1(...$args) {
-  usleep(2010); // must be greater than newrelic.framework.wordpress.hooks_threshold
+  usleep(1000000); // must be greater than newrelic.framework.wordpress.hooks_threshold
   return;
 }
 
 function wp_core_fast_action_1(...$args) {
-  usleep(1010); // must be less than newrelic.framework.wordpress.hooks_threshold
+  usleep(10000); // must be less than newrelic.framework.wordpress.hooks_threshold
   return;
 }
 
