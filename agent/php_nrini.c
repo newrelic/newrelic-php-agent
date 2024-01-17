@@ -1912,15 +1912,15 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   }
 
   /* Default when value is all_callbacks, empty, or invalid */
-  NRINI(wordpress_plugins) = 1;
-  NRINI(wordpress_core) = 1;
+  NRPRG(wordpress_plugins) = true;
+  NRPRG(wordpress_core) = true;
 
   if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
-    NRINI(wordpress_plugins) = 1;
-    NRINI(wordpress_core) = 0;
+    NRPRG(wordpress_plugins) = true;
+    NRPRG(wordpress_core) = false;
   } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
-    NRINI(wordpress_plugins) = 0;
-    NRINI(wordpress_core) = 0;
+    NRPRG(wordpress_plugins) = false;
+    NRPRG(wordpress_core) = false;
   } else if (NEW_VALUE_LEN > 0
              && 0 != nr_strcmp(NEW_VALUE, DEFAULT_WORDPRESS_HOOKS_OPTIONS)) {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",

@@ -272,10 +272,10 @@ nrinistr_t
     wordpress_hooks_options; /* newrelic.framework.wordpress.hooks.options */
 nrinitime_t wordpress_hooks_threshold; /* newrelic.framework.wordpress.hooks.threshold
                                         */
-nrinibool_t wordpress_plugins;         /* set based on
-                                          newrelic.framework.wordpress.hooks.options */
-nrinibool_t wordpress_core;            /* set based on
-                                          newrelic.framework.wordpress.hooks.options */
+bool wordpress_plugins;                /* set based on
+                                                 newrelic.framework.wordpress.hooks.options */
+bool wordpress_core;                   /* set based on
+                                                 newrelic.framework.wordpress.hooks.options */
 nrinistr_t
     wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
                                     */
