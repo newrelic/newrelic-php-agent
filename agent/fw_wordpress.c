@@ -337,10 +337,12 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #endif
 
   NR_PHP_WRAPPER_CALL;
-
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                             NRPRG(wordpress_tag));
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX, plugin);
+  if (NULL != plugin || NRINI(wordpress_core)) {
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
+                               NRPRG(wordpress_tag));
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
+                               plugin);
+  }
 }
 NR_PHP_WRAPPER_END
 
@@ -631,20 +633,23 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
   if (true == wrap_hook) {
     nruserfn_t* callback_wraprec;
     zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
-    /* the callback here can be any PHP callable. nr_php_wrap_generic_callable
-   * checks that a valid callable is passed */
-    callback_wraprec = nr_php_wrap_generic_callable(callback, nr_wordpress_wrap_hook);
-
-    // We can cheat here: wraprecs on callables are always transient, so if
-    // there's a wordpress_plugin_theme set we know it's from this transaction,
-    // and we don't have any issues around a possible multi-tenant setup.
-    if (callback_wraprec && NULL == callback_wraprec->wordpress_plugin_theme) {
-      // Unlike Drupal, we don't free the wordpress_plugin_theme, since we know
-      // it's transient anyway, and we only set the field if it was previously
-      // NULL.
-      zend_function* fn = nr_php_zval_to_function(callback);
-      callback_wraprec->wordpress_plugin_theme
-          = nr_wordpress_plugin_from_function(fn);
+    zend_function* zf = nr_php_zval_to_function(callback);
+    if (NULL != zf) {
+      char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
+      if (NULL != wordpress_plugin_theme || NRINI(wordpress_core)) {
+        callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
+        // We can cheat here: wraprecs on callables are always transient, so if
+        // there's a wordpress_plugin_theme set we know it's from this
+        // transaction, and we don't have any issues around a possible
+        // multi-tenant setup.
+        if (NULL != callback_wraprec
+            && NULL == callback_wraprec->wordpress_plugin_theme) {
+          // Unlike Drupal, we don't free the wordpress_plugin_theme, since we
+          // know it's transient anyway, and we only set the field if it was
+          // previously NULL.
+          callback_wraprec->wordpress_plugin_theme = wordpress_plugin_theme;
+        }
+      }
     }
     nr_php_arg_release(&callback);
   }
