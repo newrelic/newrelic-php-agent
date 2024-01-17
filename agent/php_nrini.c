@@ -1902,27 +1902,25 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   (void)mh_arg3;
   NR_UNUSED_TSRMLS;
 
-  if (NEW_VALUE_LEN > 0) {
-    p->value = NEW_VALUE;
-    p->where = stage;
-  }
-
-  /* Default when value is all_callbacks, empty, or invalid */
-  NRPRG(wordpress_plugins) = true;
-  NRPRG(wordpress_core) = true;
-
-  if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
+  if (0 == nr_strcmp(NEW_VALUE, "all_callbacks")) {
+    NRPRG(wordpress_plugins) = true;
+    NRPRG(wordpress_core) = true;
+  } else if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
     NRPRG(wordpress_plugins) = true;
     NRPRG(wordpress_core) = false;
   } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
     NRPRG(wordpress_plugins) = false;
     NRPRG(wordpress_core) = false;
-  } else if (NEW_VALUE_LEN > 0
-             && 0 != nr_strcmp(NEW_VALUE, DEFAULT_WORDPRESS_HOOKS_OPTIONS)) {
+  } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
                 ZEND_STRING_VALUE(entry->name), NEW_VALUE,
                 DEFAULT_WORDPRESS_HOOKS_OPTIONS);
+    /* This will cause PHP to call the handler again with default value */
+    return FAILURE;
   }
+
+  p->value = NEW_VALUE;
+  p->where = stage;
 
   return SUCCESS;
 }
