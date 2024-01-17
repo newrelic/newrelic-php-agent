@@ -20,8 +20,8 @@ No errors should be generated.
 
 /*INI
 newrelic.framework.wordpress.hooks = true
-newrelic.framework.wordpress.plugins = false
-newrelic.framework.wordpress.hooks_threshold = 0
+newrelic.framework.wordpress.hooks.options = threshold
+newrelic.framework.wordpress.hooks.threshold = 0
 */
 
 /*ENVIRONMENT

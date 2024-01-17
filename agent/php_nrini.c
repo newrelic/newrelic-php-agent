@@ -1891,6 +1891,46 @@ static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
   return SUCCESS;
 }
 
+#define DEFAULT_WORDPRESS_HOOKS_OPTIONS "plugin_callbacks"
+static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
+  nrinistr_t* p;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nrinistr_t*)(base + (size_t)mh_arg1);
+
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  if (NEW_VALUE_LEN > 0) {
+    p->value = NEW_VALUE;
+    p->where = stage;
+  }
+
+  /* Default when value is plugin_callbacks, empty, or invalid */
+  NRINI(wordpress_plugins) = 1;
+  NRINI(wordpress_core) = 0;
+
+  if (0 == nr_strcmp(NEW_VALUE, "all_callbacks")) {
+    NRINI(wordpress_plugins) = 1;
+    NRINI(wordpress_core) = 1;
+  } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
+    NRINI(wordpress_plugins) = 0;
+    NRINI(wordpress_core) = 0;
+  } else if (NEW_VALUE_LEN > 0
+             && 0 != nr_strcmp(NEW_VALUE, DEFAULT_WORDPRESS_HOOKS_OPTIONS)) {
+    nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
+                ZEND_STRING_VALUE(entry->name), NEW_VALUE,
+                DEFAULT_WORDPRESS_HOOKS_OPTIONS);
+  }
+
+  return SUCCESS;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2206,7 +2246,15 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_on_off_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks_threshold",
+STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks.options",
+                     DEFAULT_WORDPRESS_HOOKS_OPTIONS,
+                     NR_PHP_REQUEST,
+                     nr_wordpress_hooks_options_mh,
+                     wordpress_hooks_options,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks.threshold",
                      "1ms",
                      NR_PHP_REQUEST,
                      nr_time_mh,
@@ -2214,22 +2262,6 @@ STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks_threshold",
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
-STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.plugins",
-                     "1",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     wordpress_plugins,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_on_off_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.core",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     wordpress_core,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_on_off_dh)
 STD_PHP_INI_ENTRY_EX("newrelic.framework.wordpress.hooks_skip_filename",
                      "",
                      NR_PHP_REQUEST,
