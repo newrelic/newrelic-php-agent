@@ -1891,7 +1891,7 @@ static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
   return SUCCESS;
 }
 
-#define DEFAULT_WORDPRESS_HOOKS_OPTIONS "plugin_callbacks"
+#define DEFAULT_WORDPRESS_HOOKS_OPTIONS "all_callbacks"
 static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   nrinistr_t* p;
 
@@ -1911,13 +1911,13 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
     p->where = stage;
   }
 
-  /* Default when value is plugin_callbacks, empty, or invalid */
+  /* Default when value is all_callbacks, empty, or invalid */
   NRINI(wordpress_plugins) = 1;
-  NRINI(wordpress_core) = 0;
+  NRINI(wordpress_core) = 1;
 
-  if (0 == nr_strcmp(NEW_VALUE, "all_callbacks")) {
+  if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
     NRINI(wordpress_plugins) = 1;
-    NRINI(wordpress_core) = 1;
+    NRINI(wordpress_core) = 0;
   } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
     NRINI(wordpress_plugins) = 0;
     NRINI(wordpress_core) = 0;

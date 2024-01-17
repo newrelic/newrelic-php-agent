@@ -1169,17 +1169,17 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.framework.wordpress.hooks.options
 ; Type   : string (all_callbacks, plugin_callbacks, threshold)
 ; Scope  : per-directory
-; Default: plugin_callbacks
+; Default: all_callbacks
 ; Info   : Sets the options how WordPress hooks are instrumented.
 ;
 ;          New Relic agent can provide different levels of insights into WordPress hooks.
-;          By default, hook callback functions from plugins are instrumented ("plugin_callbacks").
-;          At the cost of increased agent's overhead it is possible to extend the instrumentation
-;          include hook callbacks from wordpress core ("all_callbacks"). Third option is to monitor
-;          hooks without instrumenting callbacks ("threshold"). This option does not give insights
+;          By default, all hook callbacks functions are instrumented ("all_callbacks").
+;          To reduce agent's overhead it is possible to limit the instrumentation to only
+;          plugin/theme callbacks ("plugin_callbacks"). Third option is to monitor hooks
+;          without instrumenting callbacks ("threshold"). This option does not give insights
 ;          about plugins/themes.
 ;
-;newrelic.framework.wordpress.hooks.options = plugin_callbacks
+;newrelic.framework.wordpress.hooks.options = all_callbacks
 
 ; Setting: newrelic.framework.wordpress.hooks.threshold
 ; Type   : time specification string ("500ms", "1s750ms" etc)
