@@ -1179,7 +1179,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          without instrumenting callbacks ("threshold"). This option does not give insights
 ;          about plugins/themes.
 ;
-;newrelic.framework.wordpress.hooks.options = all_callbacks
+;newrelic.framework.wordpress.hooks.options = "all_callbacks"
 
 ; Setting: newrelic.framework.wordpress.hooks.threshold
 ; Type   : time specification string ("500ms", "1s750ms" etc)
