@@ -21,7 +21,7 @@ No errors should be generated.
 
 /*INI
 newrelic.framework.wordpress.hooks = true
-newrelic.framework.wordpress.plugins = true
+newrelic.framework.wordpress.hooks.options = plugin_callbacks
 */
 
 /*ENVIRONMENT
