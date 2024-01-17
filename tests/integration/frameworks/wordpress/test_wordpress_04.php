@@ -28,8 +28,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
 
 /*INI
 newrelic.framework.wordpress.hooks = true
-newrelic.framework.wordpress.plugins = true
-newrelic.framework.wordpress.core = true
+newrelic.framework.wordpress.hooks.options = all_callbacks
 */
 
 /*ENVIRONMENT

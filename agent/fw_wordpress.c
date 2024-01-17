@@ -337,7 +337,7 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #endif
 
   NR_PHP_WRAPPER_CALL;
-  if (NULL != plugin || NRINI(wordpress_core)) {
+  if (NULL != plugin || NRPRG(wordpress_core)) {
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
                                NRPRG(wordpress_tag));
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
@@ -469,7 +469,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
       NR_PHP_WRAPPER_CALL;
-      if (0 == NRINI(wordpress_plugins)) {
+      if (0 == NRPRG(wordpress_plugins)) {
         nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
       }
       NRPRG(wordpress_tag) = old_tag;
@@ -561,7 +561,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
-      if (0 == NRINI(wordpress_plugins)) {
+      if (0 == NRPRG(wordpress_plugins)) {
         nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
       }
       NRPRG(wordpress_tag) = old_tag;
@@ -636,7 +636,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     zend_function* zf = nr_php_zval_to_function(callback);
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
-      if (NULL != wordpress_plugin_theme || NRINI(wordpress_core)) {
+      if (NULL != wordpress_plugin_theme || NRPRG(wordpress_core)) {
         callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
         // We can cheat here: wraprecs on callables are always transient, so if
         // there's a wordpress_plugin_theme set we know it's from this
@@ -670,7 +670,7 @@ void nr_wordpress_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                               nr_wordpress_exec_handle_tag TSRMLS_CC);
-    if (0 != NRINI(wordpress_plugins)) {
+    if (0 != NRPRG(wordpress_plugins)) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
       nr_php_add_call_user_func_array_pre_callback(
           nr_wordpress_call_user_func_array TSRMLS_CC);
