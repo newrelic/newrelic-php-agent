@@ -215,6 +215,21 @@ static void free_wordpress_metadata(void* metadata) {
   nr_free(metadata);
 }
 
+static inline void nr_wordpress_hooks_create_metric(nr_segment_t* segment,
+                                       const char* hook_name) {
+  if (NULL == segment) {
+    return;
+  }
+  // need to capture 'now' because segment has not finished yet and therefore
+  // can't use segment->stop_time
+  nrtime_t now = nr_txn_now_rel(segment->txn);
+  nrtime_t duration = nr_time_duration(segment->start_time, now);
+  if (duration >= NRINI(wordpress_hooks_threshold)) {
+    // only create metrics for hooks above threshold
+    nr_wordpress_create_metric(segment, NR_WORDPRESS_HOOK_PREFIX, hook_name);
+  }
+}
+
 static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   const char* filename = NULL;
   size_t filename_len;
@@ -296,7 +311,9 @@ cache_and_return:
 }
 
 NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   zend_function* func = NULL;
+#endif
   char* plugin = NULL;
 
   NR_UNUSED_SPECIALFN;
@@ -312,20 +329,27 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
   if ((0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
     NR_PHP_WRAPPER_LEAVE;
   }
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   func = nr_php_execute_function(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   plugin = nr_wordpress_plugin_from_function(func TSRMLS_CC);
+#else
+  plugin = wraprec->wordpress_plugin_theme;
+#endif
 
   NR_PHP_WRAPPER_CALL;
-
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
-                             NRPRG(wordpress_tag));
-  nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX, plugin);
+  if (NULL != plugin || NRPRG(wordpress_core)) {
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
+                               NRPRG(wordpress_tag));
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
+                               plugin);
+  }
 }
 NR_PHP_WRAPPER_END
 
 /*
- * A call_user_func_array() callback to ensure that we wrap each hook function.
+ * PHP 7.3 and below uses old-style wraprec, and will use old style cufa calls.
  */
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 static void nr_wordpress_call_user_func_array(zend_function* func,
                                               const zend_function* caller
                                                   NRUNUSED TSRMLS_DC) {
@@ -357,6 +381,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
    */
   nr_php_wrap_callable(func, nr_wordpress_wrap_hook TSRMLS_CC);
 }
+#endif /* PHP < 7.4 */
 
 static void free_tag(void* tag) {
   nr_free(tag);
@@ -444,6 +469,9 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
 
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRPRG(wordpress_plugins)) {
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -533,6 +561,9 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
+      if (0 == NRPRG(wordpress_plugins)) {
+        nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
+      }
       NRPRG(wordpress_tag) = old_tag;
       if (NULL == NRPRG(wordpress_tag)) {
         NRPRG(check_cufa) = false;
@@ -551,6 +582,81 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+/*
+ * Wrap the wordpress function add_filter
+ *
+ * function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 )
+ *
+ * @param string   $hook_name     The name of the filter to add the callback to.
+ * @param callable $callback      The callback to be run when the filter is applied.
+ * @param int      $priority      Optional. Used to specify the order in which the functions
+ *                                associated with a particular filter are executed.
+ *                                Lower numbers correspond with earlier execution,
+ *                                and functions with the same priority are executed
+ *                                in the order in which they were added to the filter. Default 10.
+ * @param int      $accepted_args Optional. The number of arguments the function accepts. Default 1.
+ * @return true Always returns true.
+ */
+
+NR_PHP_WRAPPER(nr_wordpress_add_filter) {
+  /* Wordpress's add_action() is just a wrapper around add_filter(),
+   * so we only need to instrument this function */
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+  const char* filename = NULL;
+  bool wrap_hook = true;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+
+  /*
+   * We only want to hook the function being called if this is a WordPress
+   * function, we're instrumenting hooks, and WordPress is currently executing
+   * hooks (denoted by the wordpress_tag being set).
+   */
+  if ((NR_FW_WORDPRESS != NRPRG(current_framework))
+      || (0 == NRINI(wordpress_hooks))) {
+    wrap_hook = false;
+  }
+
+  if (NRINI(wordpress_hooks_skip_filename)
+      && 0 != nr_strlen(NRINI(wordpress_hooks_skip_filename))) {
+    filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+
+    if (nr_strstr(filename, NRINI(wordpress_hooks_skip_filename))) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "skipping hooks for function from %s",
+                       filename);
+      wrap_hook = false;
+    }
+  }
+
+  if (true == wrap_hook) {
+    nruserfn_t* callback_wraprec;
+    zval* callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
+    zend_function* zf = nr_php_zval_to_function(callback);
+    if (NULL != zf) {
+      char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
+      if (NULL != wordpress_plugin_theme || NRPRG(wordpress_core)) {
+        callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
+        // We can cheat here: wraprecs on callables are always transient, so if
+        // there's a wordpress_plugin_theme set we know it's from this
+        // transaction, and we don't have any issues around a possible
+        // multi-tenant setup.
+        if (NULL != callback_wraprec
+            && NULL == callback_wraprec->wordpress_plugin_theme) {
+          // Unlike Drupal, we don't free the wordpress_plugin_theme, since we
+          // know it's transient anyway, and we only set the field if it was
+          // previously NULL.
+          callback_wraprec->wordpress_plugin_theme = wordpress_plugin_theme;
+        }
+      }
+    }
+    nr_php_arg_release(&callback);
+  }
+}
+NR_PHP_WRAPPER_END
+#endif /* PHP 7.4+ */
+
 void nr_wordpress_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters TSRMLS_CC);
@@ -564,9 +670,15 @@ void nr_wordpress_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                               nr_wordpress_exec_handle_tag TSRMLS_CC);
-
-    nr_php_add_call_user_func_array_pre_callback(
-        nr_wordpress_call_user_func_array TSRMLS_CC);
+    if (0 != NRPRG(wordpress_plugins)) {
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+      nr_php_add_call_user_func_array_pre_callback(
+          nr_wordpress_call_user_func_array TSRMLS_CC);
+#else
+      nr_php_wrap_user_function(NR_PSTR("add_filter"),
+                                  nr_wordpress_add_filter);
+#endif
+    }
   }
 }
 

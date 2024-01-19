@@ -14,6 +14,15 @@ import (
 	"testing"
 )
 
+func TestURLErrorRedaction(t *testing.T) {
+	_, err := http.Get("http://notexist.example/sensitive?sensitive=very")
+	rpm := NewRPMResponseError(err)
+
+	if strings.Contains(rpm.Err.Error(), "http://notexist.example/sensitive?sensitive=very") {
+		t.Error("Sensitive URL should have been removed from the error struct, but were not")
+	}
+}
+
 var (
 	actualData = "my_data"
 )

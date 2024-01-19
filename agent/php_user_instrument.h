@@ -27,10 +27,6 @@ typedef struct nrspecialfn_return_t (*nrspecialfn_t)(
 
 typedef void (*nruserfn_declared_t)(TSRMLS_D);
 
-typedef enum {
-  NR_WRAPREC_NOT_TRANSIENT = 0,
-  NR_WRAPREC_IS_TRANSIENT = 1
-} nr_transience_t;
 /*
  * An equivalent data structure for user functions.
  *
@@ -79,7 +75,7 @@ typedef struct _nruserfn_t {
                                */
   int is_names_wt_simple;     /* True if this function "names" its enclosing WT;
                                  the first such function does the naming */
-  nr_transience_t transience; /* Wraprecs that are transient are destroyed
+  bool is_transient;          /* Wraprecs that are transient are destroyed
                                  after each request. Wraprecs that are
                                  non-transient are kept until module shutdown.
                                  Currently, while all wraprecs are stored
@@ -95,6 +91,9 @@ typedef struct _nruserfn_t {
   nr_string_len_t drupal_module_len;
   char* drupal_hook;
   nr_string_len_t drupal_hook_len;
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+  char* wordpress_plugin_theme;
+#endif
 } nruserfn_t;
 
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
@@ -161,8 +160,7 @@ extern void nr_php_add_custom_tracer(const char* namestr,
 extern nruserfn_t* nr_php_add_custom_tracer_callable(
     zend_function* func TSRMLS_DC);
 extern nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
-                                                  size_t namestrlen,
-                                                  nr_transience_t transience TSRMLS_DC);
+                                                  size_t namestrlen);
 extern void nr_php_reset_user_instrumentation(void);
 extern void nr_php_remove_transient_user_instrumentation(void);
 extern void nr_php_add_user_instrumentation(TSRMLS_D);

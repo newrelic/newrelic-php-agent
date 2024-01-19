@@ -269,6 +269,14 @@ nrinistr_t browser_monitoring_loader; /* newrelic.browser_monitoring.loader */
 nrinibool_t drupal_modules;  /* newrelic.framework.drupal.modules */
 nrinibool_t wordpress_hooks; /* newrelic.framework.wordpress.hooks */
 nrinistr_t
+    wordpress_hooks_options; /* newrelic.framework.wordpress.hooks.options */
+nrinitime_t wordpress_hooks_threshold; /* newrelic.framework.wordpress.hooks.threshold
+                                        */
+bool wordpress_plugins;                /* set based on
+                                                 newrelic.framework.wordpress.hooks.options */
+bool wordpress_core;                   /* set based on
+                                                 newrelic.framework.wordpress.hooks.options */
+nrinistr_t
     wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
                                     */
 
