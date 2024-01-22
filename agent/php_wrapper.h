@@ -10,7 +10,7 @@
 #include "util_logging.h"
 
 /*
- * Wrapper writing example:
+ * Wrapper writing example *pre-OAPI*:
  *
  * Using the functions below, you can register a wrapper for either a named
  * user function or directly on a zend_function pointer. This wrapper needs to
@@ -83,7 +83,9 @@
  * 3. Delegation: you can delegate from any wrapper to another wrapper with
  *    NR_PHP_WRAPPER_DELEGATE (foo), provided the original function hasn't
  *    already been called.
- *
+ */
+
+ /*
  *    OAPI updates:
  *    There are now before, after, and clean callbacks.
  *    1) before_callback gets called when OAPI triggers the begin function hook.
