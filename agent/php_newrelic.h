@@ -503,6 +503,13 @@ nriniuint_t
 nrinibool_t
     code_level_metrics_enabled; /* newrelic.code_level_metrics.enabled */
 
+/*
+ * Configuration option to enable or disable package detection for vulnerability management
+ */
+nrinibool_t
+    vulnerability_management_package_detection_enabled; /* newrelic.vulnerability_management.package_detection.enabled
+                                                         */
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
  * pid and user_function_wrappers are used to store user function wrappers.

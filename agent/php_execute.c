@@ -994,7 +994,9 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
-  nr_execute_handle_package(filename);
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_execute_handle_package(filename);
+  }
 }
 
 /*

@@ -585,7 +585,10 @@ void nr_wordpress_enable(TSRMLS_D) {
         nr_wordpress_call_user_func_array TSRMLS_CC);
   }
 
-  nr_txn_add_php_package(NRPRG(txn), "wordpress", PHP_PACKAGE_VERSION_UNKNOWN);
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "wordpress",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }
 
 void nr_wordpress_minit(void) {
