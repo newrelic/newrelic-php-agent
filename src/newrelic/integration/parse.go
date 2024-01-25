@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -284,6 +285,13 @@ func parseConfig(test *Test, content []byte) error {
 }
 
 func parsePhpPackages(test *Test, content []byte) error {
+	// clean up provided string data if it is "null"
+	nullRE := regexp.MustCompile(`^\s*null\s*`)
+	if nullRE.Match(content) {
+		test.phpPackagesConfig = []byte("null")
+		return nil
+	}
+
 	test.phpPackagesConfig = content
 	return nil
 }
