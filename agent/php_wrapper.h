@@ -143,14 +143,6 @@ extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback);
 
-extern nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_options(
-    const char* name,
-    size_t namelen,
-    nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback,
-    const nr_wrap_user_function_options_t* options);
-
 extern nruserfn_t* nr_php_wrap_callable_before_after_clean(
     zend_function* callable,
     nrspecialfn_t before_callback,
