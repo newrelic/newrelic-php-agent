@@ -62,25 +62,8 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback) {
-  nr_wrap_user_function_options_t options = {
-      NR_WRAPREC_NOT_TRANSIENT,
-      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  return nr_php_wrap_user_function_before_after_clean_with_options(
-          name, namelen, before_callback, after_callback,
-          clean_callback, &options);
-}
 
-nruserfn_t* nr_php_wrap_user_function_before_after_clean_with_options(
-    const char* name,
-    size_t namelen,
-    nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback,
-    const nr_wrap_user_function_options_t* options) {
-
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(name, namelen, options);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
   nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
                                                   before_callback,

@@ -295,8 +295,7 @@ static nruserfn_t* nr_php_user_wraprec_create(void) {
 }
 
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
-                                                    int full_name_len,
-                                                    nr_instrumented_function_metric_t ifm) {
+                                                    int full_name_len) {
   int i;
   const char* name;
   const char* klass;
@@ -339,10 +338,8 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->is_method = 1;
   }
 
-  if (NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC == ifm) {
-    wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
-        wraprec->funcname, wraprec->classname);
-  }
+  wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
+      wraprec->funcname, wraprec->classname);
 
   return wraprec;
 }
@@ -443,8 +440,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
-  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen,
-                                             options->instrumented_function_metric);
+  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
   if (0 == wraprec) {
     return 0;
   }
