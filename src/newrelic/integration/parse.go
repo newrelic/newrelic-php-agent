@@ -288,7 +288,7 @@ func parsePhpPackages(test *Test, content []byte) error {
 	// clean up provided string data if it is "null"
 	nullRE := regexp.MustCompile(`^\s*null\s*`)
 	if nullRE.Match(content) {
-		test.phpPackagesConfig = "null"
+		test.phpPackagesConfig = []byte("null")
 		return nil
 	}
 
