@@ -513,16 +513,16 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var test_package_name_only bool = false
 
 	if nil != t.phpPackagesConfig {
-		expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
-		if nil != err {
-			t.Fatal(err)
-			return
-		}
 
 		expect_null_pkgs := "null" == string(t.phpPackagesConfig)
 		if expect_null_pkgs {
 			expectedPackages = nil
 		} else {
+			expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
+			if nil != err {
+				t.Fatal(err)
+				return
+			}
 			test_package_name_only = expectedPkgsCollection.config.package_name_only
 			if test_package_name_only {
 				t.AddNote("Tested package name only")
