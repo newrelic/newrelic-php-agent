@@ -465,7 +465,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          newrelic.error_collector.ignore_errors = 3
 ;
 ;          The list of constants are available at:
-;          http://php.net/manual/en/errorfunc.constants.php
+;          https://php.net/manual/en/errorfunc.constants.php
 ;
 ;          Please note that this setting does not apply to errors recorded
 ;          using the newrelic_notice_error API.
@@ -1165,6 +1165,31 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Indicates if WordPress hooks are to be instrumented.
 ;
 ;newrelic.framework.wordpress.hooks = true
+
+; Setting: newrelic.framework.wordpress.hooks.options
+; Type   : string (all_callbacks, plugin_callbacks, threshold)
+; Scope  : per-directory
+; Default: all_callbacks
+; Info   : Sets the options how WordPress hooks are instrumented.
+;
+;          New Relic agent can provide different levels of insights into WordPress hooks.
+;          By default, all hook callbacks functions are instrumented ("all_callbacks").
+;          To reduce agent's overhead it is possible to limit the instrumentation to only
+;          plugin/theme callbacks ("plugin_callbacks"). Third option is to monitor hooks
+;          without instrumenting callbacks ("threshold"). This option does not give insights
+;          about plugins/themes.
+;
+;newrelic.framework.wordpress.hooks.options = "all_callbacks"
+
+; Setting: newrelic.framework.wordpress.hooks.threshold
+; Type   : time specification string ("500ms", "1s750ms" etc)
+; Scope  : per-directory
+; Default: 1ms
+; Info   : Sets the threshold above which the New Relic agent will record a
+;          wordpress hooks. Used when newrelic.framework.wordpress.hooks.options
+;          is set to "threshold".
+;
+;newrelic.framework.wordpress.hooks.threshold = 1ms
 
 ; Setting: newrelic.application_logging.enabled
 ; Type   : boolean

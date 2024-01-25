@@ -91,10 +91,11 @@ func runWorker(cfg *Config) {
 	clientCfg := &newrelic.ClientConfig{
 		CAFile: cfg.CAFile,
 		CAPath: cfg.CAPath,
-		Proxy:  cfg.Proxy,
+		Proxy:  "**REDACTED**",
 	}
 
 	log.Infof("collector configuration is %+v", clientCfg)
+	clientCfg.Proxy = cfg.Proxy
 
 	client, err := newrelic.NewClient(clientCfg)
 	if nil != err {

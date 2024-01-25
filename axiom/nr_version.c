@@ -43,8 +43,9 @@
  *   poinsettia         03Oct2023 (10.13)
  *   quince             13Nov2023 (10.14)
  *   rose               20Dec2023 (10.15)
+ *   snapdragon         23Jan2024 (10.16)
  */
-#define NR_CODENAME "snapdragon"
+#define NR_CODENAME "tulip"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
