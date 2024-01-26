@@ -709,5 +709,9 @@ void nr_phpunit_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("PHPUnit\\Framework\\TestResult::addError"),
       nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
-  nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", PHP_PACKAGE_VERSION_UNKNOWN);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }
