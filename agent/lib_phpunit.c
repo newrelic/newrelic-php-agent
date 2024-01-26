@@ -711,6 +711,7 @@ void nr_phpunit_enable(TSRMLS_D) {
       nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", PHP_PACKAGE_VERSION_UNKNOWN);
+    nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
   }
 }
