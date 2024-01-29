@@ -757,7 +757,13 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
       if (NULL != wordpress_plugin_theme || NRPRG(wordpress_core)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+        callback_wraprec = nr_php_wrap_callable_before_after_clean(
+            zf, NULL, nr_wordpress_wrap_hook, nr_wordpress_wrap_hook);
+#else
         callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
+#endif
         // We can cheat here: wraprecs on callables are always transient, so if
         // there's a wordpress_plugin_theme set we know it's from this
         // transaction, and we don't have any issues around a possible
@@ -796,9 +802,9 @@ void nr_wordpress_enable(TSRMLS_D) {
     nr_php_wrap_user_function_before_after_clean(
         NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
         nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
-
-    nr_php_wrap_user_function(NR_PSTR("add_filter"),
-                              nr_wordpress_add_filter);
+    if (0 != NRPRG(wordpress_plugins)) {
+      nr_php_wrap_user_function(NR_PSTR("add_filter"), nr_wordpress_add_filter);
+    }
   }
 
 #else
