@@ -661,9 +661,12 @@ NR_PHP_WRAPPER_END
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-static void clean_wordpress_tag_stack() {
+static void clean_wordpress_tag_stack(nr_segment_t* segment) {
   if ((bool)nr_stack_pop(&NRPRG(wordpress_tag_states))) {
-    nr_stack_pop(&NRPRG(wordpress_tags));
+    char* tag = nr_stack_pop(&NRPRG(wordpress_tags));
+    if (0 == NRPRG(wordpress_plugins)) {
+      nr_wordpress_hooks_create_metric(segment, tag);
+    }
   }
   if (nr_stack_is_empty(&NRPRG(wordpress_tags))) {
     NRPRG(check_cufa) = false;
@@ -673,7 +676,7 @@ static void clean_wordpress_tag_stack() {
 NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_after) {
   (void)wraprec;
   if (0 != NRINI(wordpress_hooks)) {
-    clean_wordpress_tag_stack();
+    clean_wordpress_tag_stack(auto_segment);
   }
 }
 NR_PHP_WRAPPER_END
@@ -683,7 +686,7 @@ NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_clean) {
   NR_UNUSED_FUNC_RETURN_VALUE;
   (void)wraprec;
   if (0 != NRINI(wordpress_hooks)) {
-    clean_wordpress_tag_stack();
+    clean_wordpress_tag_stack(auto_segment);
   }
 }
 NR_PHP_WRAPPER_END
