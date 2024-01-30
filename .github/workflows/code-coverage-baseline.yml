@@ -32,13 +32,13 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
@@ -77,13 +77,13 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -124,19 +124,19 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-check
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
       - name: Save axiom gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom/*.gc*
       - name: Save agent gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/.libs/*.gc*
@@ -155,30 +155,30 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/.libs
@@ -187,7 +187,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -250,7 +250,7 @@ jobs:
           echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent

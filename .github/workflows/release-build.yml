@@ -35,12 +35,12 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.ref }}
           path: newrelic-php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -52,7 +52,7 @@ jobs:
           -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION release-daemon
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
           name: release-from-gha
@@ -69,12 +69,12 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.ref }}
           path: newrelic-php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -87,7 +87,7 @@ jobs:
           -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:agent-builder-php${{matrix.php_ver}}-${{matrix.platform}}-$IMAGE_VERSION release-${{matrix.php_ver}}-gha
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
           name: release-from-gha
