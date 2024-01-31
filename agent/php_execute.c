@@ -1961,7 +1961,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   if (wraprec && wraprec->is_exception_handler) {
     /*
-     * Before starting the error handler segment, put the error it handled on
+     * After running the error handler segment, put the error it handled on
      * the transaction. The choice of E_ERROR for the error level is
      * basically arbitrary, but matches the error level PHP uses if there
      * isn't an exception handler, so this should give more consistency for
