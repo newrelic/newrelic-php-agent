@@ -169,7 +169,7 @@ func TestLaspVerifySecurityPolicies(t *testing.T) {
 }
 
 func getSupportedPoliciesHashTestData(t *testing.T) []SupportedPoliciesTest {
-	raw, err := ioutil.ReadFile("../test-data/getSupportedPoliciesHash.json")
+	raw, err := ioutil.ReadFile("../../test-data/getSupportedPoliciesHash.json")
 	if err != nil {
 		t.Fail()
 		t.Log("Could not open getSupportedPoliciesHash.json")
@@ -186,7 +186,7 @@ func getSupportedPoliciesHashTestData(t *testing.T) []SupportedPoliciesTest {
 }
 
 func getAddPoliciesToPayloadTestData(t *testing.T) []IntersectPoliciesTest {
-	raw, err := ioutil.ReadFile("../test-data/agentPoliciesAddPoliciesToPayload.json")
+	raw, err := ioutil.ReadFile("../../test-data/agentPoliciesAddPoliciesToPayload.json")
 	if err != nil {
 		t.Fail()
 		t.Log("Could not open agentPoliciesAddPoliciesToPayload.json")
@@ -203,7 +203,7 @@ func getAddPoliciesToPayloadTestData(t *testing.T) []IntersectPoliciesTest {
 }
 
 func getVerifySecurityPoliciesTestData(t *testing.T) []SupportedPolicyTest {
-	raw, err := ioutil.ReadFile("../test-data/agentPoliciesVerifySecurityPolicies.json")
+	raw, err := ioutil.ReadFile("../../test-data/agentPoliciesVerifySecurityPolicies.json")
 	if err != nil {
 		t.Fail()
 		t.Log("Could not open agentPoliciesVerifySecurityPolicies.json")

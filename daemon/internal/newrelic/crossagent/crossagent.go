@@ -14,7 +14,7 @@ import (
 	"runtime"
 )
 
-var crossAgentDir = mustExist("../../axiom/tests/cross_agent_tests")
+var crossAgentDir = mustExist("../../../axiom/tests/cross_agent_tests")
 
 // ReadFile reads a file from the crossagent tests directory given as with
 // ioutil.ReadFile.
