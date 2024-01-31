@@ -161,12 +161,6 @@ extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
                                              nrspecialfn_t callback TSRMLS_DC);
 
-extern nruserfn_t* nr_php_wrap_user_function_with_options(
-    const char* name,
-    size_t namelen,
-    nrspecialfn_t callback,
-    const nr_wrap_user_function_options_t* TSRMLS_DC);
-
 extern nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
                                                    size_t namelen,
                                                    nrspecialfn_t callback,

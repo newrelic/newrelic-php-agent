@@ -120,21 +120,7 @@ nruserfn_t* nr_php_wrap_callable_before_after_clean(
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
-  nr_wrap_user_function_options_t options = {
-      NR_WRAPREC_NOT_TRANSIENT,
-      NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  return nr_php_wrap_user_function_with_options(
-      name, namelen, callback, &options TSRMLS_CC);
-}
-
-nruserfn_t* nr_php_wrap_user_function_with_options(const char* name,
-                                                   size_t namelen,
-                                                   nrspecialfn_t callback,
-                                                   const nr_wrap_user_function_options_t* options
-                                                   TSRMLS_DC) {
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(name, namelen, options TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
   if (wraprec && callback) {
     if ((NULL != wraprec->special_instrumentation)
@@ -194,93 +180,26 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
  * This creates a transient wraprec that does NOT produce an
  * "InstrumentedFunction" metric.
  */
+#define NR_WRAPPER_DEBUG_STRBUFSZ (1024)
+
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
                                          nrspecialfn_t callback TSRMLS_DC) {
-#if ZEND_MODULE_API_NO < ZEND_7_0_X_API_NO
-  char* name = NULL;
-#else
-  zend_string* name = NULL;
-#endif
-  zend_fcall_info_cache fcc;
-  zend_fcall_info fci;
+  zend_function* zf = nr_php_zval_to_function(callable);
 
-  nr_wrap_user_function_options_t options = {
-    NR_WRAPREC_IS_TRANSIENT,
-    NR_WRAPREC_NO_INSTRUMENTED_FUNCTION_METRIC
-  };
-
-  /* not calling nr_zend_is_callable because we want to additionally populate
-   * name */
-  if (zend_is_callable(callable, 0, &name TSRMLS_CC)) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
-  again:
-#endif
-    /* see php source code's zend_is_callable_at_frame function to see from
-     * where these switch cases are derived */
-    switch (Z_TYPE_P(callable)) {
-      /* wrapping a string name of a callable */
-      case IS_STRING:
+  if (NULL != zf) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-        return nr_php_wrap_user_function_before_after_clean_with_options(
-            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            NULL, NULL, &options);
+    return nr_php_wrap_callable_before_after_clean(zf, callback, NULL, NULL);
 #else
-        return nr_php_wrap_user_function_with_options(
-            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            &options TSRMLS_CC);
+    return nr_php_wrap_callable(zf, callback);
 #endif
-
-      /* wrapping an array where [0] is an object and [1] is the method to
-       * invoke the previous zend_is_callable has created the commbined
-       * object::method name for us to wrap */
-      case IS_ARRAY:
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-        return nr_php_wrap_user_function_before_after_clean_with_options(
-            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            NULL, NULL, &options);
-#else
-        return nr_php_wrap_user_function_with_options(
-            ZEND_STRING_VALUE(name), ZEND_STRING_LEN(name), callback,
-            &options TSRMLS_CC);
-#endif
-
-      /* wrapping a closure. Need to initialize fcall info in order to wrap the
-       * underlying zend_function object */
-      case IS_OBJECT:
-        if (SUCCESS
-            == zend_fcall_info_init(callable, 0, &fci, &fcc, NULL,
-                                    NULL TSRMLS_CC)) {
-          /* nr_php_wrap_callable already sets the transience field for us */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-          return nr_php_wrap_callable_before_after_clean(
-              fcc.function_handler, callback, NULL, NULL);
-#else
-          return nr_php_wrap_callable(fcc.function_handler, callback TSRMLS_CC);
-#endif
-        }
-        nrl_verbosedebug(NRL_INSTRUMENT,
-                         "Failed to initialize fcall info when wrapping");
-        break;
-
-        /* unwrap references */
-        /* PHP 5.x handles references in a different manner that do not need to
-         * be unwrapped */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
-      case IS_REFERENCE:
-        callable = Z_REFVAL_P(callable);
-        goto again;
-#endif
-    }
   }
-  if (NULL != name) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "Failed to wrap callable: %s",
-                     ZEND_STRING_VALUE(name));
-  } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "Failed to wrap callable with unknown name");
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+    char strbuf[NR_WRAPPER_DEBUG_STRBUFSZ];
+    nr_format_zval_for_debug(callable, strbuf, 0, NR_WRAPPER_DEBUG_STRBUFSZ - 1,
+                             0);
+    nrl_verbosedebug(NRL_INSTRUMENT, "Failed to cast to callable zval=%s",
+                     strbuf);
   }
   return NULL;
 }

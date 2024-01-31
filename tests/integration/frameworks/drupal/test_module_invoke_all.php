@@ -1,7 +1,7 @@
 <?php
 
 /*DESCRIPTION
-Test that a simple request through drupal_http_request gets instrumented.
+Tests Drupal 7 hook invoking methods
 */
 
 // force the framework to avoid requiring the drupal detection file
