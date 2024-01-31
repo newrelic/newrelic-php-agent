@@ -4,12 +4,15 @@
  */
 #include "php_agent.h"
 #include "php_call.h"
+#include "php_error.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "nr_rum.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+
+#include <Zend/zend_exceptions.h>
 
 #include "php_variables.h"
 
@@ -84,6 +87,28 @@ zval* nr_php_get_zval_object_property(zval* object,
     }
   }
 
+  return 0;
+}
+
+zval* nr_php_get_zval_base_exception_property(zval* exception,
+                                              const char* cname) {
+  char* name;
+  zend_class_entry* ce;
+
+  if ((0 == exception) || (0 == cname) || (0 == cname[0])) {
+    return 0;
+  }
+
+  name = (char*)nr_alloca(nr_strlen(cname) + 1);
+  nr_strcpy(name, cname);
+
+  if (nr_php_is_zval_valid_object(exception)) {
+    if (nr_php_error_zval_is_exception(exception)) {
+      ce = zend_get_exception_base(Z_OBJ_P(exception));
+      return nr_php_get_zval_object_property_with_class_internal(
+          exception, ce, name TSRMLS_CC);
+    }
+  }
   return 0;
 }
 

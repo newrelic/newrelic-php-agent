@@ -137,8 +137,21 @@ typedef unsigned int nr_php_object_handle_t;
  *
  * Returns : The specified element or NULL if it was not found.
  */
-extern zval* nr_php_get_zval_object_property(zval* object,
+extern zval* nr_php_get_zval_object_property(zval* exception,
                                              const char* cname TSRMLS_DC);
+
+/*
+ * Purpose : Extract the named entity from a PHP exception zval.
+ *           This determines if the passed exception is a PHP error
+ *           or a PHP exception, and extracts accordingly.
+ *
+ * Params  : 1. The exception to extract the property from.
+ *           2. The name of the exception.
+ *
+ * Returns : The specified element or NULL if it was not found.
+ */
+extern zval* nr_php_get_zval_base_exception_property(zval* exception,
+                                                     const char* cname);
 
 /*
  * Purpose : Extract the named property from a PHP object zval in a particular
