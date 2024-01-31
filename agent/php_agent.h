@@ -137,7 +137,7 @@ typedef unsigned int nr_php_object_handle_t;
  *
  * Returns : The specified element or NULL if it was not found.
  */
-extern zval* nr_php_get_zval_object_property(zval* exception,
+extern zval* nr_php_get_zval_object_property(zval* object,
                                              const char* cname TSRMLS_DC);
 
 /*
