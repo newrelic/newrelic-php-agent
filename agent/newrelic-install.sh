@@ -335,10 +335,10 @@ for pmv in "20151012" "20160303" "20170718" "20180731" "20190902"; do
 done
 fi
 # Currently supported versions:
-#    (8.0, 8.1, 8.2)
+#    (8.0, 8.1, 8.2, 8.3)
 # for x64 and aarch64
 if [ ${arch} = x64 ] || [ ${arch} = aarch64 ]; then
-  for pmv in "20200930" "20210902" "20220829"; do
+  for pmv in "20200930" "20210902" "20220829" "20230831"; do
     check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   done
 fi
@@ -355,7 +355,7 @@ The New Relic installation directory is incomplete. The files or
 directories listed above could not be found. This usually means that
 you have a corrupt installation archive. Please re-download your New
 Relic software and try again. If the problem persists, please contact
-${bold}http://support.newrelic.com${rmso} and report the issue. Be sure
+${bold}https://support.newrelic.com${rmso} and report the issue. Be sure
 to include all the above output in your bug report. We apologize for the
 inconvenience.
 
@@ -494,7 +494,7 @@ fatal() {
   echo "FATAL: $@" >&2
   cat >&2 <<EOF
 FATAL: New Relic agent installation failed.
-       Please contact ${bold}http://support.newrelic.com${rmso}
+       Please contact ${bold}https://support.newrelic.com${rmso}
        and report the above error. We have also created a tar file with
        log files and other system info that can help solve the problem.
        If the file $logtar exists please attach it to your bug report.
@@ -543,6 +543,7 @@ add_to_path /usr/local/php-7.4/bin
 add_to_path /usr/local/php-8.0/bin
 add_to_path /usr/local/php-8.1/bin
 add_to_path /usr/local/php-8.2/bin
+add_to_path /usr/local/php-8.3/bin
 
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
@@ -555,6 +556,7 @@ add_to_path /usr/php-7.4/bin
 add_to_path /usr/php-8.0/bin
 add_to_path /usr/php-8.1/bin
 add_to_path /usr/php-8.2/bin
+add_to_path /usr/php-8.3/bin
 
 add_to_path /usr/php/7.0/bin
 add_to_path /usr/php/7.1/bin
@@ -564,6 +566,7 @@ add_to_path /usr/php/7.4/bin
 add_to_path /usr/php/8.0/bin
 add_to_path /usr/php/8.1/bin
 add_to_path /usr/php/8.2/bin
+add_to_path /usr/php/8.3/bin
 
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
@@ -576,6 +579,7 @@ add_to_path /opt/php-7.4/bin
 add_to_path /opt/php-8.0/bin
 add_to_path /opt/php-8.1/bin
 add_to_path /opt/php-8.2/bin
+add_to_path /opt/php-8.3/bin
 
 if [ -n "${NR_INSTALL_PATH}" ]; then
   oIFS="${IFS}"
@@ -738,7 +742,7 @@ accompany each PHP install. Sometimes, these require that you install
 the "dev" package for PHP or the "cli" version. We need one or the
 other.
 
-Please visit ${bold}http://newrelic.com/docs/php${rmso} and review the
+Please visit ${bold}https://newrelic.com/docs/php${rmso} and review the
 installation documentation for ways in which you can customize this
 script to look for PHP in non-standard locations or to do a manual
 install.
@@ -1060,6 +1064,10 @@ for this copy of PHP. We apologize for the inconvenience.
       pi_php8="yes"
       ;;
 
+    8.3.*)
+      pi_php8="yes"
+      ;;      
+
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
     ${pdir}
@@ -1239,6 +1247,7 @@ does not exist. This particular instance of PHP will be skipped.
     8.0.*)  pi_modver="20200930" ;;
     8.1.*)  pi_modver="20210902" ;;
     8.2.*)  pi_modver="20220829" ;;
+    8.3.*)  pi_modver="20230831" ;;
   esac
   log "${pdir}: pi_modver=${pi_modver}"
 
@@ -1823,8 +1832,8 @@ EOF
 
 The New Relic Proxy Daemon is installed, but the agent
 is not. Please point your favorite web browser at
-${bold}http://newrelic.com/docs/php${rmso} for how to install the agent
-by hand.
+${bold}https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-overview/${rmso} 
+for how to install the agent by hand.
 
 EOF
       fi
@@ -1851,7 +1860,7 @@ EOF
 2. Restart your web server. This will fix most reporting issues and
    load the agent's new features and bug fixes.
 
-If you have questions or comments, go to http://support.newrelic.com.
+If you have questions or comments, go to https://support.newrelic.com.
 
 EOF
     fi
@@ -1982,7 +1991,7 @@ distribution. All existing configuration files that were modified
 have been left in place. If you wish to permanently remove ${bold}New
 Relic${rmso}, you may wish to invoke this script with the 'purge'
 option to completely remove ${bold}New Relic${rmso}. If so, please take
-a moment to mail ${bold}http://support.newrelic.com${rmso} telling us
+a moment to mail ${bold}https://support.newrelic.com${rmso} telling us
 why you are leaving us and what we can do to help you or improve your
 experience. Thank you in advance.
 
@@ -2012,7 +2021,7 @@ do_purge() {
 
 We are sorry to see you go! If there is anything we can do
 to improve your experience with the product, please mail
-${bold}http://support.newrelic.com${rmso} and we will do our very best
+${bold}https://support.newrelic.com${rmso} and we will do our very best
 to help you or to improve the product to meet your expectations. Thank
 you in advance. -- The ${bold}New Relic${rmso} ${agent} Team
 

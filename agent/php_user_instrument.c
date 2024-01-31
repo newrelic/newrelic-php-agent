@@ -168,7 +168,7 @@ static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
 static void reset_wraprec(nruserfn_t* wraprec) {
   nruserfn_t* p = wraprec;
   nr_php_wraprec_hashmap_key_release(&p->key);
-  if (p->transience == NR_WRAPREC_IS_TRANSIENT) {
+  if (p->is_transient) {
     nr_php_user_wraprec_destroy((nruserfn_t**)&wraprec);
   } else {
     p->is_wrapped = 0;
@@ -213,7 +213,7 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * with framework specific instrumentation. Optionally specifies transience.
    5) from function `nr_php_wrap_callable` (in `php_wrapper.c`) used only by
  * Wordpress and predis for custom instrumentation that sets
- * `NR_WRAPREC_IS_TRANSIENT`.
+ * `is_transient`.
  *
  * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
  *
@@ -244,22 +244,21 @@ static void nr_php_wrap_zend_function(zend_function* func,
   }
 }
 
-// Returns whether wraprec ownership was transfered to the hashmap
-static bool nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
+static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
   zend_function* orig_func = 0;
 
   if (0 == NR_PHP_PROCESS_GLOBALS(done_instrumentation)) {
-    return false;
+    return;
   }
 
   if (wraprec->is_wrapped) {
-    return false;
+    return;
   }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
-    return false;
+    return;
   }
 #endif
   if (0 == wraprec->classname) {
@@ -273,7 +272,7 @@ static bool nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 
   if (NULL == orig_func) {
     /* It could be in a file not yet loaded, no reason to log anything. */
-    return false;
+    return;
   }
 
   if (ZEND_USER_FUNCTION != orig_func->type) {
@@ -286,10 +285,9 @@ static bool nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
      * logs with this message.
      */
     wraprec->is_disabled = 1;
-    return false;
+    return;
   }
   nr_php_wrap_zend_function(orig_func, wraprec TSRMLS_CC);
-  return true;
 }
 
 static nruserfn_t* nr_php_user_wraprec_create(void) {
@@ -297,8 +295,7 @@ static nruserfn_t* nr_php_user_wraprec_create(void) {
 }
 
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
-                                                    int full_name_len,
-                                                    nr_instrumented_function_metric_t ifm) {
+                                                    int full_name_len) {
   int i;
   const char* name;
   const char* klass;
@@ -341,10 +338,8 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
     wraprec->is_method = 1;
   }
 
-  if (NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC == ifm) {
-    wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
-        wraprec->funcname, wraprec->classname);
-  }
+  wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
+      wraprec->funcname, wraprec->classname);
 
   return wraprec;
 }
@@ -427,7 +422,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   }
 
   wraprec = nr_php_user_wraprec_create();
-  wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
+  wraprec->is_transient = true;
 
   nrl_verbosedebug(NRL_INSTRUMENT, "adding custom for callable '%s'", name);
   nr_free(name);
@@ -441,40 +436,16 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 }
 
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
-                                           size_t namestrlen,
-                                           const nr_wrap_user_function_options_t* options
-                                           TSRMLS_DC) {
+                                           size_t namestrlen) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
 
-  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen,
-                                             options->instrumented_function_metric);
+  wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
   if (0 == wraprec) {
     return 0;
   }
 
-  /* Make sure that we are not duplicating an existing wraprecord.
-   *
-   * For non-transient wrappers (standard instrumentation), the wrapper
-   * is stored in both the hashmap and linked-list. For transient wrappers,
-   * the wrapper is only stored in the hashmap. HOWEVER! non-transient
-   * wrappers MAY only be in the linked-list. This normally happens if it
-   * is wrapping a function that hasn't been loaded by PHP yet. Once the
-   * function is loaded, there are many hooks to ensure the wrapper is also
-   * added to the hashmap.
-   *
-   * The implications of the above are: For non-transient wrappers, we only
-   * need to check the linked-list to ensure that we are not duplicating a
-   * wrapper. If a wrapper is only in the hashmap, it is transient and will
-   * be overwritten by the non-transient wrapper.
-   *
-   * For transient wrappers, however, we must check both the linked
-   * list and the hashmap. This is because it is possible to attempt to
-   * create a transient wrapper around an already non-transiently wrapped
-   * function. This will return the non-transient wrapper and will attempt
-   * to set the transient callbacks if that wrapper has those callbacks free.
-   * This means that it is possible for callbacks intended to be transient
-   * are attached onto a wrapper that isn't. */
+  /* Make sure that we are not duplicating an existing wraprecord */
   p = nr_wrapped_user_functions;
 
   while (0 != p) {
@@ -491,54 +462,18 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
     }
     p = p->next;
   }
-  if (NR_WRAPREC_IS_TRANSIENT == options->transience) {
-    zend_function* orig_func = 0;
-    if (0 == wraprec->classname) {
-      orig_func = nr_php_find_function(wraprec->funcnameLC TSRMLS_CC);
-    } else {
-      zend_class_entry* orig_class = 0;
-
-      orig_class = nr_php_find_class(wraprec->classnameLC TSRMLS_CC);
-      orig_func = nr_php_find_class_method(orig_class, wraprec->funcnameLC);
-    }
-
-    if (NULL != orig_func) {
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-      p = nr_php_op_array_get_wraprec(&orig_func->op_array TSRMLS_CC);
-#else
-      p = nr_php_wraprec_lookup_get(orig_func);
-#endif
-
-      if (p) {
-        nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
-                         namestr);
-        nr_php_user_wraprec_destroy(&wraprec);
-        nr_php_wrap_user_function_internal(p TSRMLS_CC);
-        return p;
-      }
-    }
-  }
 
   nrl_verbosedebug(
       NRL_INSTRUMENT, "adding custom for '" NRP_FMT_UQ "%.5s" NRP_FMT_UQ "'",
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
-  bool added = nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  if (NR_WRAPREC_IS_TRANSIENT == options->transience) {
-    wraprec->transience = NR_WRAPREC_IS_TRANSIENT;
-    /* If the wraprec (for one reason or another) was not added to the hashmap
-     * and will not be added to the linked list, it needs to be destroyed */
-    if (!added) {
-      nr_php_user_wraprec_destroy(&wraprec);
-      return NULL;
-    }
-  } else {
-    /* non-transient wraprecs are added to both the hashmap and linked list.
-     * At request shutdown, the hashmap will free transients, but leave
-     * non-transients to be freed when the linked list is disposed of which is at module shutdown */
-    nr_php_add_custom_tracer_common(wraprec);
-  }
+  nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
+  /* non-transient wraprecs are added to both the hashmap and linked list.
+   * At request shutdown, the hashmap will free transients, but leave
+   * non-transients to be freed when the linked list is disposed of which is at
+   * module shutdown */
+  nr_php_add_custom_tracer_common(wraprec);
 
   return wraprec; /* return the new wraprec */
 }
@@ -584,7 +519,7 @@ void nr_php_remove_transient_user_instrumentation(void) {
   nruserfn_t* prev = NULL;
 
   while (NULL != p) {
-    if (p->transience == NR_WRAPREC_IS_TRANSIENT) {
+    if (p->is_transient) {
       nruserfn_t* trans = p;
 
       if (prev) {
@@ -619,13 +554,7 @@ void nr_php_add_user_instrumentation(TSRMLS_D) {
 
 void nr_php_add_transaction_naming_function(const char* namestr,
                                             int namestrlen TSRMLS_DC) {
-  nr_wrap_user_function_options_t options = {
-    NR_WRAPREC_NOT_TRANSIENT,
-    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       &options TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
@@ -633,13 +562,7 @@ void nr_php_add_transaction_naming_function(const char* namestr,
 }
 
 void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
-  nr_wrap_user_function_options_t options = {
-    NR_WRAPREC_NOT_TRANSIENT,
-    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       &options TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
@@ -696,13 +619,7 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,
                                                 nruserfn_declared_t callback
                                                     TSRMLS_DC) {
-  nr_wrap_user_function_options_t options = {
-    NR_WRAPREC_NOT_TRANSIENT,
-    NR_WRAPREC_CREATE_INSTRUMENTED_FUNCTION_METRIC
-  };
-  nruserfn_t* wraprec
-      = nr_php_add_custom_tracer_named(namestr, namestrlen,
-                                       &options TSRMLS_CC);
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(namestr, namestrlen);
 
   if (0 != wraprec) {
     wraprec->declared_callback = callback;

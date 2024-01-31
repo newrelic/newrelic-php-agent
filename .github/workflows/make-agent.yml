@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         platform: [gnu, musl]
-        php: ['8.0', '8.1', '8.2']
+        php: ['8.0', '8.1', '8.2', '8.3']
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3

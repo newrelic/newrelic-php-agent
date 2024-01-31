@@ -58,7 +58,7 @@ _(most operating systems package these with `-dev` or `-devel` suffixes)_
 
 ### PHP
 
-The PHP agent supports PHP versions `7.0`, `7.1`, `7.2`, `7.3`, `7.4`,`8.0`, `8.1`, and `8.2`.
+The PHP agent supports PHP versions `7.0`, `7.1`, `7.2`, `7.3`, `7.4`,`8.0`, `8.1`, '8.2', and `8.3`.
 
 ## Build the PHP Agent
 

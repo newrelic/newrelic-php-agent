@@ -124,11 +124,11 @@ typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
     avail = avail - 3;                        \
   }
 
-static int nr_format_zval_for_debug(zval* arg,
-                                    char* pbuf,
-                                    size_t pos,
-                                    size_t avail,
-                                    size_t depth TSRMLS_DC) {
+int nr_format_zval_for_debug(zval* arg,
+                             char* pbuf,
+                             size_t pos,
+                             size_t avail,
+                             size_t depth TSRMLS_DC) {
   nr_string_len_t len;
   nr_string_len_t i;
   char* str;
@@ -310,6 +310,7 @@ typedef struct _nr_framework_table_t {
   const char* framework_name;
   const char* config_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_framework_special_fn_t special;
   nr_framework_enable_fn_t enable;
   nrframework_t detected;
@@ -322,15 +323,16 @@ typedef struct _nr_framework_table_t {
  *
  * Note that all paths should be in lowercase.
  */
+// clang-format: off
 static const nr_framework_table_t all_frameworks[] = {
     /*
      * Watch out:
      *   cake1.2 and cake1.3 use a subdirectory named 'cake' (lower case)
      *   cake2.0 and on use a subdirectory named 'Cake' (upper case file name)
      */
-    {"CakePHP", "cakephp", "cake/libs/object.php", nr_cakephp_special_1,
+    {"CakePHP", "cakephp", NR_PSTR("cake/libs/object.php"), nr_cakephp_special_1,
      nr_cakephp_enable_1, NR_FW_CAKEPHP},
-    {"CakePHP", "cakephp", "cake/core/app.php", nr_cakephp_special_2,
+    {"CakePHP", "cakephp", NR_PSTR("cake/core/app.php"), nr_cakephp_special_2,
      nr_cakephp_enable_2, NR_FW_CAKEPHP},
 
     /*
@@ -340,87 +342,88 @@ static const nr_framework_table_t all_frameworks[] = {
      * specifically a problem for Expression Engine (look for expression_engine,
      * below.)
      */
-    {"CodeIgniter", "codeigniter", "codeigniter.php", 0, nr_codeigniter_enable,
+    {"CodeIgniter", "codeigniter", NR_PSTR("codeigniter.php"), 0, nr_codeigniter_enable,
      NR_FW_CODEIGNITER},
 
-    {"Drupal8", "drupal8", "core/includes/bootstrap.inc", 0, nr_drupal8_enable,
+    {"Drupal8", "drupal8", NR_PSTR("core/includes/bootstrap.inc"), 0, nr_drupal8_enable,
      NR_FW_DRUPAL8},
-    {"Drupal", "drupal", "includes/common.inc", 0, nr_drupal_enable,
+    {"Drupal", "drupal", NR_PSTR("includes/common.inc"), 0, nr_drupal_enable,
      NR_FW_DRUPAL},
 
-    {"Joomla", "joomla", "joomla/import.php", 0, nr_joomla_enable,
+    {"Joomla", "joomla", NR_PSTR("joomla/import.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* <= Joomla 1.5 */
-    {"Joomla", "joomla", "libraries/joomla/factory.php", 0, nr_joomla_enable,
+    {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
-    {"Kohana", "kohana", "kohana/core.php", 0, nr_kohana_enable, NR_FW_KOHANA},
+    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
+    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
 
     /* See below: Zend, the legacy project of Laminas, which shares much
        of the instrumentation implementation with Laminas */
-    {"Laminas3", "laminas3", "laminas/mvc/application.php", 0,
+    {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
-    {"Laminas3", "laminas3", "laminas-mvc/src/application.php", 0,
+    {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
 
-    {"Laravel", "laravel", "illuminate/foundation/application.php", 0,
+    {"Laravel", "laravel", NR_PSTR("illuminate/foundation/application.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL},
-    {"Laravel", "laravel", "bootstrap/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR("bootstrap/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 4.x */
-    {"Laravel", "laravel", "storage/framework/compiled.php", 0,
+    {"Laravel", "laravel", NR_PSTR("storage/framework/compiled.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL}, /* 5.0.0-14 */
-    {"Laravel", "laravel", "vendor/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR("vendor/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
-    {"Laravel", "laravel", "bootstrap/cache/compiled.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
-    {"Laravel", "laravel", "bootstrap/app.php", 0, nr_laravel_enable,
+    {"Laravel", "laravel", NR_PSTR("bootstrap/app.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 8+ */
 
-    {"Lumen", "lumen", "lumen-framework/src/helpers.php", 0, nr_lumen_enable,
+    {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
      NR_FW_LUMEN},
 
-    {"Magento", "magento", "app/mage.php", 0, nr_magento1_enable,
+    {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
-    {"Magento2", "magento2", "magento/framework/app/bootstrap.php", 0,
+    {"Magento2", "magento2", NR_PSTR("magento/framework/app/bootstrap.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
-    {"MediaWiki", "mediawiki", "includes/webstart.php", 0, nr_mediawiki_enable,
+    {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,
      NR_FW_MEDIAWIKI},
 
-    {"Silex", "silex", "silex/application.php", 0, nr_silex_enable,
+    {"Silex", "silex", NR_PSTR("silex/application.php"), 0, nr_silex_enable,
      NR_FW_SILEX},
 
-    {"Slim", "slim", "slim/slim/app.php", 0, nr_slim_enable,
+    {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 3.x */
-    {"Slim", "slim", "slim/slim/slim.php", 0, nr_slim_enable,
+    {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
-    {"Symfony", "symfony1", "sfcontext.class.php", 0, nr_symfony1_enable,
+    {"Symfony", "symfony1", NR_PSTR("sfcontext.class.php"), 0, nr_symfony1_enable,
      NR_FW_SYMFONY1},
-    {"Symfony", "symfony1", "sfconfig.class.php", 0, nr_symfony1_enable,
+    {"Symfony", "symfony1", NR_PSTR("sfconfig.class.php"), 0, nr_symfony1_enable,
      NR_FW_SYMFONY1},
-    {"Symfony2", "symfony2", "bootstrap.php.cache", 0, nr_symfony2_enable,
+    {"Symfony2", "symfony2", NR_PSTR("bootstrap.php.cache"), 0, nr_symfony2_enable,
      NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony2", "symfony2",
-     "symfony/bundle/frameworkbundle/frameworkbundle.php", 0,
+     NR_PSTR("symfony/bundle/frameworkbundle/frameworkbundle.php"), 0,
      nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
-    {"Symfony4", "symfony4", "http-kernel/httpkernel.php", 0,
+    {"Symfony4", "symfony4", NR_PSTR("http-kernel/httpkernel.php"), 0,
      nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5 */
 
-    {"WordPress", "wordpress", "wp-config.php", 0, nr_wordpress_enable,
+    {"WordPress", "wordpress", NR_PSTR("wp-config.php"), 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
 
-    {"Yii", "yii", "framework/yii.php", 0, nr_yii_enable, NR_FW_YII},
-    {"Yii", "yii", "framework/yiilite.php", 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii_enable, NR_FW_YII},
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
-    {"Zend", "zend", "zend/loader.php", 0, nr_zend_enable, NR_FW_ZEND},
-    {"Zend2", "zend2", "zend/mvc/application.php", 0, nr_fw_zend2_enable,
+    {"Zend", "zend", NR_PSTR("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
+    {"Zend2", "zend2", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
-    {"Zend2", "zend2", "zend-mvc/src/application.php", 0, nr_fw_zend2_enable,
+    {"Zend2", "zend2", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
 };
+// clang-format: on
 static const int num_all_frameworks
     = sizeof(all_frameworks) / sizeof(nr_framework_table_t);
 
@@ -467,29 +470,31 @@ nrframework_t nr_php_framework_from_config(const char* config_name) {
 typedef struct _nr_library_table_t {
   const char* library_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_library_enable_fn_t enable;
 } nr_library_table_t;
 
 /*
  * Note that all paths should be in lowercase.
  */
+// clang-format: off
 static nr_library_table_t libraries[] = {
-    {"Doctrine 2", "doctrine/orm/query.php", nr_doctrine2_enable},
-    {"Guzzle 3", "guzzle/http/client.php", nr_guzzle3_enable},
-    {"Guzzle 4-5", "hasemitterinterface.php", nr_guzzle4_enable},
-    {"Guzzle 6", "guzzle/src/functions_include.php", nr_guzzle6_enable},
+    {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
+    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
+    {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
+    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
 
-    {"MongoDB", "mongodb/src/client.php", nr_mongodb_enable},
+    {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
      */
-    {"PHPUnit", "phpunit/src/framework/test.php", nr_phpunit_enable},
-    {"PHPUnit", "phpunit/framework/test.php", nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
 
-    {"Predis", "predis/src/client.php", nr_predis_enable},
-    {"Predis", "predis/client.php", nr_predis_enable},
+    {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
+    {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -497,14 +502,14 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all. This is
      * necessary for Magento in particular, which is built on ZF1.
      */
-    {"Zend_Http", "zend/http/client.php", nr_zend_http_enable},
+    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", "laminas-http/src/client.php", nr_laminas_http_enable},
+    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
 
     /*
      * Other frameworks, detected only, but not specifically
@@ -512,70 +517,73 @@ static nr_library_table_t libraries[] = {
      * detection of a supported framework or library later (since a transaction
      * can only have one framework).
      */
-    {"Aura1", "aura/framework/system.php", NULL},
-    {"Aura2", "aura/di/src/containerinterface.php", NULL},
-    {"Aura3", "aura/di/src/containerconfiginterface.php", NULL},
-    {"CakePHP3", "cakephp/src/core/functions.php", NULL},
-    {"Fuel", "fuel/core/classes/fuel.php", NULL},
-    {"Lithium", "lithium/core/libraries.php", NULL},
-    {"Phpbb", "phpbb/request/request.php", NULL},
-    {"Phpixie2", "phpixie/core/classes/phpixie/pixie.php", NULL},
-    {"Phpixie3", "phpixie/framework.php", NULL},
-    {"React", "react/event-loop/src/loopinterface.php", NULL},
-    {"SilverStripe", "injector/silverstripeinjectioncreator.php", NULL},
-    {"SilverStripe4", "silverstripeserviceconfigurationlocator.php", NULL},
-    {"Typo3", "classes/typo3/flow/core/bootstrap.php", NULL},
-    {"Typo3", "typo3/sysext/core/classes/core/bootstrap.php", NULL},
-    {"Yii2", "yii2/baseyii.php", NULL},
+    {"Aura1", NR_PSTR("aura/framework/system.php"), NULL},
+    {"Aura2", NR_PSTR("aura/di/src/containerinterface.php"), NULL},
+    {"Aura3", NR_PSTR("aura/di/src/containerconfiginterface.php"), NULL},
+    {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
+    {"Fuel", NR_PSTR("fuel/core/classes/fuel.php"), NULL},
+    {"Lithium", NR_PSTR("lithium/core/libraries.php"), NULL},
+    {"Phpbb", NR_PSTR("phpbb/request/request.php"), NULL},
+    {"Phpixie2", NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), NULL},
+    {"Phpixie3", NR_PSTR("phpixie/framework.php"), NULL},
+    {"React", NR_PSTR("react/event-loop/src/loopinterface.php"), NULL},
+    {"SilverStripe", NR_PSTR("injector/silverstripeinjectioncreator.php"), NULL},
+    {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
+    {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
+    {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
+    {"Yii2", NR_PSTR("yii2/baseyii.php"), NULL},
 
     /*
      * Other CMS (content management systems), detected only, but
      * not specifically instrumented.
      */
-    {"Moodle", "moodlelib.php", NULL},
+    {"Moodle", NR_PSTR("moodlelib.php"), NULL},
     /*
      * It is likely that this will never be found, since the CodeIgniter.php
      * will get loaded first, and as such mark this transaction as belonging to
      * CodeIgniter, and not Expession Engine.
      */
-    {"ExpressionEngine", "system/expressionengine/config/config.php", NULL},
+    {"ExpressionEngine", NR_PSTR("system/expressionengine/config/config.php"), NULL},
     /*
      * ExpressionEngine 5, however, has a very obvious file we can look for.
      */
-    {"ExpressionEngine5", "expressionengine/boot/boot.php", NULL},
+    {"ExpressionEngine5", NR_PSTR("expressionengine/boot/boot.php"), NULL},
     /*
      * DokuWiki uses doku.php as an entry point, but has other files that are
      * loaded directly that this won't pick up. That's probably OK for
      * supportability metrics, but we'll add the most common name for the
      * configuration file as well just in case.
      */
-    {"DokuWiki", "doku.php", NULL},
-    {"DokuWiki", "conf/dokuwiki.php", NULL},
+    {"DokuWiki", NR_PSTR("doku.php"), NULL},
+    {"DokuWiki", NR_PSTR("conf/dokuwiki.php"), NULL},
 
     /*
      * SugarCRM no longer has a community edition, so this likely only works
      * with older versions.
      */
-    {"SugarCRM", "sugarobjects/sugarconfig.php", NULL},
+    {"SugarCRM", NR_PSTR("sugarobjects/sugarconfig.php"), NULL},
 
-    {"Xoops", "class/xoopsload.php", NULL},
-    {"E107", "e107_handlers/e107_class.php", NULL},
+    {"Xoops", NR_PSTR("class/xoopsload.php"), NULL},
+    {"E107", NR_PSTR("e107_handlers/e107_class.php"), NULL},
 };
+// clang-format: on
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+// clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
-    {"Monolog", "monolog/logger.php", nr_monolog_enable},
+    {"Monolog", NR_PSTR("monolog/logger.php"), nr_monolog_enable},
     /* Consolidation/Log - Logging for PHP */
-    {"Consolidation/Log", "consolidation/log/src/logger.php", NULL},
+    {"Consolidation/Log", NR_PSTR("consolidation/log/src/logger.php"), NULL},
     /* laminas-log - Logging for PHP */
-    {"laminas-log", "laminas-log/src/logger.php", NULL},
+    {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), NULL},
     /* cakephp-log - Logging for PHP */
-    {"cakephp-log", "cakephp/log/log.php", NULL},
+    {"cakephp-log", NR_PSTR("cakephp/log/log.php"), NULL},
     /* Analog - Logging for PHP */
-    {"Analog", "analog/analog.php", NULL},
+    {"Analog", NR_PSTR("analog/analog.php"), NULL},
 };
+// clang-format: on
 
 static size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
@@ -704,7 +712,8 @@ static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC) {
 static nrframework_t nr_try_detect_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
-    const char* filename TSRMLS_DC);
+    const char* filename,
+    const size_t filename_len TSRMLS_DC);
 static nrframework_t nr_try_force_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
@@ -764,7 +773,8 @@ void nr_framework_create_metric(TSRMLS_D) {
  */
 static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
                                         size_t num_frameworks,
-                                        const char* filename TSRMLS_DC) {
+                                        const char* filename,
+                                        const size_t filename_len TSRMLS_DC) {
   if (NR_FW_UNSET != NRPRG(current_framework)) {
     return;
   }
@@ -772,8 +782,8 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
   if (NR_FW_UNSET == NRINI(force_framework)) {
     nrframework_t detected_framework = NR_FW_UNSET;
 
-    detected_framework = nr_try_detect_framework(frameworks, num_frameworks,
-                                                 filename TSRMLS_CC);
+    detected_framework = nr_try_detect_framework(
+        frameworks, num_frameworks, filename, filename_len TSRMLS_CC);
     if (NR_FW_UNSET != detected_framework) {
       NRPRG(current_framework) = detected_framework;
     }
@@ -791,6 +801,8 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
   }
 }
 
+#define STR_AND_LEN(v) v, v##_len
+
 /*
  * Attempt to detect a framework.
  * Call the appropriate enable function if we find the framework.
@@ -799,13 +811,14 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
 static nrframework_t nr_try_detect_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
-    const char* filename TSRMLS_DC) {
+    const char* filename,
+    const size_t filename_len TSRMLS_DC) {
   nrframework_t detected = NR_FW_UNSET;
-  char* filename_lower = nr_string_to_lowercase(filename);
   size_t i;
 
   for (i = 0; i < num_frameworks; i++) {
-    if (nr_stridx(filename_lower, frameworks[i].file_to_check) >= 0) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(frameworks[i].file_to_check))) {
       /*
        * If we have a special check function and it tells us to ignore
        * the file name because some other condition wasn't met, continue
@@ -829,7 +842,6 @@ static nrframework_t nr_try_detect_framework(
   }
 
 end:
-  nr_free(filename_lower);
   return detected;
 }
 
@@ -868,12 +880,13 @@ static nrframework_t nr_try_force_framework(
   return NR_FW_UNSET;
 }
 
-static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
-  char* filename_lower = nr_string_to_lowercase(filename);
+static void nr_execute_handle_library(const char* filename,
+                                      const size_t filename_len TSRMLS_DC) {
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
-    if (nr_stridx(filename_lower, libraries[i].file_to_check) >= 0) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(libraries[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
 
@@ -885,18 +898,17 @@ static void nr_execute_handle_library(const char* filename TSRMLS_DC) {
       }
     }
   }
-
-  nr_free(filename_lower);
 }
 
-static void nr_execute_handle_logging_framework(
-    const char* filename TSRMLS_DC) {
-  char* filename_lower = nr_string_to_lowercase(filename);
+static void nr_execute_handle_logging_framework(const char* filename,
+                                                const size_t filename_len
+                                                    TSRMLS_DC) {
   bool is_enabled = false;
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_stridx(filename_lower, logging_frameworks[i].file_to_check) >= 0) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(logging_frameworks[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
 
@@ -911,9 +923,9 @@ static void nr_execute_handle_logging_framework(
           NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
-
-  nr_free(filename_lower);
 }
+
+#undef STR_AND_LEN
 
 /*
  * Purpose : Detect library and framework usage from a PHP file.
@@ -923,12 +935,20 @@ static void nr_execute_handle_logging_framework(
  *
  * Params  : 1. Full name of a PHP file.
  */
-static void nr_php_user_instrumentation_from_file(
-    const char* filename TSRMLS_DC) {
-  nr_execute_handle_framework(all_frameworks, num_all_frameworks,
-                              filename TSRMLS_CC);
-  nr_execute_handle_library(filename TSRMLS_CC);
-  nr_execute_handle_logging_framework(filename TSRMLS_CC);
+static void nr_php_user_instrumentation_from_file(const char* filename,
+                                                  const size_t filename_len
+                                                      TSRMLS_DC) {
+  /* short circuit if filename_len is 0; a single place short circuit */
+  if (0 == filename_len) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s - received invalid filename_len for file=%s", __func__,
+                     filename);
+    return;
+  }
+  nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
+                              filename_len TSRMLS_CC);
+  nr_execute_handle_library(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
 }
 
 /*
@@ -939,6 +959,7 @@ static void nr_php_user_instrumentation_from_file(
 static void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
+  size_t filename_len = nr_php_op_array_file_name_len(op_array);
 
   NR_UNUSED_FUNC_RETURN_VALUE;
 
@@ -949,7 +970,7 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   /*
    * Check for, and handle, frameworks and libraries.
    */
-  nr_php_user_instrumentation_from_file(filename TSRMLS_CC);
+  nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
 
   nr_txn_match_file(NRPRG(txn), filename);
 
@@ -1680,6 +1701,7 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   nr_php_string_hash_key_t* key_str = NULL;
   zval* val = NULL;
   const char* filename;
+  size_t filename_len;
 
   status = nr_php_call(NULL, "opcache_get_status");
 
@@ -1724,8 +1746,9 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
     (void)val;
 
     filename = ZEND_STRING_VALUE(key_str);
+    filename_len = ZEND_STRING_LEN(key_str);
 
-    nr_php_user_instrumentation_from_file(filename TSRMLS_CC);
+    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
   }
   ZEND_HASH_FOREACH_END();
 
@@ -1858,8 +1881,9 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+    size_t filename_len = nr_php_op_array_file_name_len(NR_OP_ARRAY);
     nr_execute_handle_framework(all_frameworks, num_all_frameworks,
-                                filename TSRMLS_CC);
+                                filename, filename_len TSRMLS_CC);
     return;
   }
   if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {

@@ -22,6 +22,7 @@
 #include "php_vm.h"
 #include "php_wrapper.h"
 #include "fw_laravel.h"
+#include "fw_wordpress.h"
 #include "lib_guzzle4.h"
 #include "lib_guzzle6.h"
 #include "nr_agent.h"
@@ -34,9 +35,6 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 #include "util_threads.h"
-
-#include "fw_laravel.h"
-#include "lib_guzzle4.h"
 
 #include "php_observer.h"
 
@@ -717,6 +715,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_guzzle4_minit(TSRMLS_C);
   nr_guzzle6_minit(TSRMLS_C);
   nr_laravel_minit(TSRMLS_C);
+  nr_wordpress_minit();
   nr_php_set_opcode_handlers();
 
   nrl_debug(NRL_INIT, "MINIT processing done");
