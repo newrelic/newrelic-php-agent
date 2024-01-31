@@ -77,13 +77,6 @@ RUN apt-get update && apt-get install -y \
 # in order to download and run the latest version we support, we have to install
 # go manually
 #
-# RUN if [[ $(arch) == "aarch64" ]]; then \
-#       wget https://go.dev/dl/go1.21.1.linux-arm64.tar.gz -O- | tar -C /usr/local -zxvf -; \
-#     else \
-#       echo "WRONG"; \
-#       # wget https://go.dev/dl/go1.21.1.linux-amd64.tar.gz -O- | tar -C /usr/local -zxvf -; \
-#     fi
-
 RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
     wget https://go.dev/dl/go1.21.1.linux-${arch}.tar.gz -O- | tar -C /usr/local -zxvf -;
 
