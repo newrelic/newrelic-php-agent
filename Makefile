@@ -7,7 +7,6 @@
 # The top level Makefile
 #
 GCOV  ?= gcov
-GO    ?= go
 SHELL = /bin/bash
 GCOVR ?= gcovr
 GIT   ?= git
@@ -19,22 +18,6 @@ include make/php_versions.mk
 
 # Include the secrets file if it exists, but if it doesn't, that's OK too.
 -include make/secrets.mk
-
-# Configure an isolated workspace for the Go daemon.
-export GOPATH=$(CURDIR)
-export GO15VENDOREXPERIMENT=1
-export GO111MODULE=on
-
-# GOBIN affects the behavior of go install, ensure it is unset.
-unexport GOBIN
-
-GOFLAGS := -ldflags '-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/version.Number=$(AGENT_VERSION) 							\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/version.Commit=$(GIT_COMMIT) 								\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) 	\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) 		\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS)	\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicAccountId=$(ACCOUNT_supportability)		\
-					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)	
 
 GCOVRFLAGS += -e "agent/tests/*" -e "axiom/tests/*" -e ".*\.h" -o
 
@@ -175,76 +158,39 @@ agent-valgrind: agent/Makefile
 	$(MAKE) -C agent valgrind
 
 #
-# Build the daemon and related utilities
+# Daemon rules
+# defers to behavior defined in daemon/Makefile once $GOBIN has been set
 #
 
-#
-# Minimum required version of Go is 1.5.
-#
-# This is defined as a rule that other rules that require Go can depend upon.
-# We don't want to require Go for a general build primarily to make the PHP
-# agent easier to use as a component within the C agent.
-#
-.PHONY: go-minimum-version
-go-minimum-version:
-	@if $(GO) version | awk '/go1.[012345678][\. ]/ { exit 1 }'; then \
-		true; \
-	else \
-		echo -n 'Go 1.9 or newer required; found '; $(GO) version; false; \
-	fi
+# Configure the target directory for go install
+export GOBIN=$(CURDIR)/bin
 
-DAEMON_TARGETS := $(addprefix bin/,client daemon integration_runner stressor)
-
-# setup depenencies for daemon
-# THIS IS TEMPORARY NEEDS TO BE REPLACED BY PINNED VENDOR DEPENDENCIES
-# will download vendor dependencies
-.PHONY: go-setup-dependencies
-go-setup-dependencies:
-	@cd daemon; go mod tidy
-	@cd daemon; go mod vendor
-
-# Delete Go binaries before each build to force them to be re-linked. This
-# ensures the version and commit variables are set correctly by the linker.
-#
-# The bin directory is also the target directory for the installer,
-# which we need to be careful to leave in place. Therefore, the names of the
-# Go binaries are made explicit. If we used a conventional `cmd` subdirectory
-# for commands, we could use `go list` to determine the names.
 .PHONY: daemon
-daemon: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
-	@rm -rf $(DAEMON_TARGETS)
-	@cd daemon; $(GO) install $(GOFLAGS) ./...
+daemon:
+	$(MAKE) -C daemon
 
-# The -race flag enables the inegrated Go race detector. Output to stderr
 .PHONY: daemon_race
-daemon_race: go-minimum-version go-setup-dependencies daemon-protobuf Makefile | bin/
-	@rm -rf $(DAEMON_TARGETS)
-	@cd daemon; $(GO) install -race $(GOFLAGS) ./...
+daemon_race:
+	$(MAKE) -C daemon race
 
 .PHONY: daemon_test
-daemon_test: go-minimum-version go-setup-dependencies daemon-protobuf
-	@cd daemon; $(GO) test $(GOFLAGS) ./...
+daemon_test:
+	$(MAKE) -C daemon test
 
 .PHONY: daemon_bench
-daemon_bench: go-minimum-version go-setup-dependencies daemon-protobuf
-	@cd daemon; $(GO) test $(GOFLAGS) -bench=. ./...
+daemon_bench:
+	$(MAKE) -C daemon bench
 
 .PHONY: daemon_integration
-daemon_integration: go-minimum-version go-setup-dependencies daemon-protobuf
-	$(MAKE) INTEGRATION_TAGS=1 go-minimum-version
-	@cd daemon; $(GO) test $(GOFLAGS) ./...
+daemon_integration:
+	$(MAKE) -C daemon integration
 
-DAEMON_COV_FILE = daemon_coverage.out
 .PHONY: daemon_cover
-daemon_cover: go-minimum-version go-setup-dependencies daemon-protobuf
-	@rm -f $(DAEMON_COV_FILE)
-	@cd daemon; $(GO) test -coverprofile=$(DAEMON_COV_FILE) $(GOFLAGS) ./...
-	cd daemon; $(GO) tool cover -html=$(DAEMON_COV_FILE)
-	@rm -f $(DAEMON_COV_FILE)
+daemon_cover:
+	$(MAKE) -C daemon cover
 
 bin/integration_runner:
-	@echo "Building bin/integration_runner"
-	@cd daemon; $(GO) install $(GOFLAGS) integration_runner
+	$(MAKE) -C daemon integration_runner
 
 # Note that this rule does not require the Go binary, and therefore doesn't
 # depend on go-minimum-version.
