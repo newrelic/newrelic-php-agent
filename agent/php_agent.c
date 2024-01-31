@@ -104,7 +104,11 @@ zval* nr_php_get_zval_base_exception_property(zval* exception,
 
   if (nr_php_is_zval_valid_object(exception)) {
     if (nr_php_error_zval_is_exception(exception)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
       ce = zend_get_exception_base(Z_OBJ_P(exception));
+#else
+      ce = zend_get_exception_base(exception);
+#endif
       return nr_php_get_zval_object_property_with_class_internal(
           exception, ce, name TSRMLS_CC);
     }
