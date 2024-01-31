@@ -28,13 +28,13 @@ export GO111MODULE=on
 # GOBIN affects the behavior of go install, ensure it is unset.
 unexport GOBIN
 
-GOFLAGS := -ldflags '-X github.com/newrelic/newrelic-php-agent/daemon/version.Number=$(AGENT_VERSION) 							\
-					-X github.com/newrelic/newrelic-php-agent/daemon/version.Commit=$(GIT_COMMIT) 								\
-					-X github.com/newrelic/newrelic-php-agent/daemon/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) 	\
-					-X github.com/newrelic/newrelic-php-agent/daemon/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) 		\
-					-X github.com/newrelic/newrelic-php-agent/daemon/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS)	\
-					-X github.com/newrelic/newrelic-php-agent/daemon/secrets.NewrelicAccountId=$(ACCOUNT_supportability)		\
-					-X github.com/newrelic/newrelic-php-agent/daemon/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)	
+GOFLAGS := -ldflags '-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/version.Number=$(AGENT_VERSION) 							\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/version.Commit=$(GIT_COMMIT) 								\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) 	\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) 		\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS)	\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicAccountId=$(ACCOUNT_supportability)		\
+					-X github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)	
 
 GCOVRFLAGS += -e "agent/tests/*" -e "axiom/tests/*" -e ".*\.h" -o
 
