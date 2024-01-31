@@ -33,7 +33,7 @@ func TestParseFlagsWithAll(t *testing.T) {
 		LogFile:         "log.log",
 		LogLevel:        3,
 		AuditFile:       "audit.log",
-		ConfigFile:      "../newrelic/sample_config/config1.cfg",
+		ConfigFile:      "../../internal/newrelic/sample_config/config1.cfg",
 		Foreground:      true,
 		Role:            0,
 		Agent:           true,
@@ -45,7 +45,7 @@ func TestParseFlagsWithAll(t *testing.T) {
 	}
 
 	args := []string{
-		"-c", "../newrelic/sample_config/config1.cfg",
+		"-c", "../../internal/newrelic/sample_config/config1.cfg",
 		"-port", "30",
 		"-proxy", "collector.newrelic.com",
 		"-pidfile", "pid.file",
@@ -175,13 +175,13 @@ func TestParseFlagsWithBad(t *testing.T) {
 func TestParseConfigFile(t *testing.T) {
 
 	cfg := &Config{
-		ConfigFile: "../newrelic/sample_config/config1.cfg",
+		ConfigFile: "../../internal/newrelic/sample_config/config1.cfg",
 		LogLevel:   0,
 		LogFile:    "",
 	}
 
 	cfgExpected := &Config{
-		ConfigFile: "../newrelic/sample_config/config1.cfg",
+		ConfigFile: "../../internal/newrelic/sample_config/config1.cfg",
 		LogLevel:   5,
 		LogFile:    "/var/log/newrelic/newrelic-daemon.log",
 	}
@@ -197,12 +197,12 @@ func TestParseConfigFile(t *testing.T) {
 
 func TestParseCommandLineTakesPrecedence(t *testing.T) {
 	cfg := &Config{
-		ConfigFile: "../newrelic/sample_config/config1.cfg",
+		ConfigFile: "../../internal/newrelic/sample_config/config1.cfg",
 	}
 
 	cfgExpected := &Config{
 		BindAddr:    newrelic.DefaultListenSocket(),
-		ConfigFile:  "../newrelic/sample_config/config1.cfg",
+		ConfigFile:  "../../internal/newrelic/sample_config/config1.cfg",
 		LogFile:     "foo.log",
 		LogLevel:    1,
 		WaitForPort: 3 * time.Second,
