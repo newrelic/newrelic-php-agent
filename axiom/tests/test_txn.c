@@ -8013,7 +8013,17 @@ static void test_segment_record_error(void) {
   tlib_pass_if_null("No segment error created", segment->error);
   txn->options.err_enabled = 1;
 
-  /* Normal operation */
+  /* Do not add to current segment */
+  nr_txn_record_error(txn, 0.5, false /* do not add to current segment*/,
+                      "low priority message", "low priority class", "[\"A\",\"B\"]");
+  tlib_pass_if_not_null("Txn error event created", txn->error);
+  tlib_pass_if_null("Segment error NOT created", segment->error);
+  tlib_pass_if_str_equal("Correct txn error.message", "low priority message",
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("Correct txn error.class", "low priority class",
+                         nr_error_get_klass(txn->error));
+
+  /* Normal operation: txn error prioritized over previous */
   nr_txn_record_error(txn, 1, true, "error message", "error class", "[\"A\",\"B\"]");
 
   tlib_pass_if_not_null("Txn error event created", txn->error);

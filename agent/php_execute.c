@@ -1994,9 +1994,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   }
 
   /*
-   * Get the current segment and return if null. The segment would only have
-   * been created if we are recording and if wraprec is set or if tt is greater
-   * than 0.
+   * Get the current segment and return if null.
    */
   segment = NRTXN(force_current_segment);
   if (nrunlikely(NULL == segment)) {

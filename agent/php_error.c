@@ -645,7 +645,7 @@ void nr_php_error_cb(int type,
 nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                           zval* exception,
                                           int priority,
-                                          bool add_to_segment,
+                                          bool add_to_current_segment,
                                           const char* prefix,
                                           zend_llist* filters TSRMLS_DC) {
   zend_class_entry* ce;
@@ -717,7 +717,7 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
   }
 
   nr_txn_record_error(NRPRG(txn), priority,
-                      add_to_segment,
+                      add_to_current_segment,
                       error_message, klass, stack_json);
 
   nr_free(error_message);

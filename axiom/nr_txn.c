@@ -1549,7 +1549,7 @@ nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority) {
 
 void nr_txn_record_error(nrtxn_t* txn,
                          int priority,
-                         bool add_to_segment,
+                         bool add_to_current_segment,
                          const char* errmsg,
                          const char* errclass,
                          const char* stacktrace_json) {
@@ -1593,7 +1593,7 @@ void nr_txn_record_error(nrtxn_t* txn,
       return;
     }
 
-    if (add_to_segment) {
+    if (add_to_current_segment) {
       current_segment = nr_txn_get_current_segment(txn, NULL);
 
       if (current_segment) {
