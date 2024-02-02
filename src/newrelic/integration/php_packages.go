@@ -35,8 +35,8 @@ type PhpPackagesConfiguration struct {
 	path                string
 	command             string
 	supported_list_file string
-	expected_packages   string
-	package_name_only   bool
+	expected_packages   []string
+	package_name_only   []string
 }
 
 // composer package JSON
@@ -135,29 +135,45 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// verify command and supported_list are defined
 	var supported_list_file string
 	var expected_packages string
-	var package_name_only bool
+	var package_name_only string
+	var expected_packages_map []string
+	var package_name_only_map []string
+	var ok, ok2 bool
+	var err error
 
 	command, ok := params["command"]
+	if !ok {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option - got %+v", params)
+	}
 
 	// either expect a "supported_packages" key which specifies a file listing all possible packages agent
 	// can detect and this is used to filter the auto-discovered packages (by integration_runner using "command")
-	if ok {
-		supported_list_file, ok = params["supported_packages"]
-		// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
-		if !ok {
-			expected_packages, ok = params["expected_packages"]
+	supported_list_file, ok = params["supported_packages"]
+
+	// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
+	expected_packages, ok2 = params["expected_packages"]
+	if ok2 {
+		expected_packages_map, err = ParsePackagesList(expected_packages)
+		if nil != err {
+			return nil, fmt.Errorf("Error parsing expected_packages list %s\n", err.Error())
 		}
 	}
-	if ok {
-		options, ok := params["options"]
-		if ok {
-			if "package_name_only" == options {
-				package_name_only = true
-			}
-		}
+
+	if ok && ok2 {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - cannot specify supported_packages and expected packages - got %+v", params)
 	}
-	if !ok {
-		return nil, fmt.Errorf("Improper php applications config - got %+v", params)
+
+	if !ok && !ok2 {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify supported_packages or expected packages - got %+v", params)
+	}
+
+	// optional option to specify which packages will only have a name because agent cannot determine the version
+	package_name_only, ok = params["package_name_only"]
+	if ok {
+		package_name_only_map, err = ParsePackagesList(package_name_only)
+		if nil != err {
+			return nil, fmt.Errorf("Error parsing package_name_only list %s\n", err.Error())
+		}
 	}
 
 	p := &PhpPackagesCollection{
@@ -165,9 +181,11 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 			command:             command,
 			path:                path,
 			supported_list_file: supported_list_file,
-			expected_packages:   expected_packages,
-			package_name_only:   package_name_only},
+			expected_packages:   expected_packages_map,
+			package_name_only:   package_name_only_map},
 	}
+
+	//fmt.Printf("PhpPackagesCollection: %+v\n", p)
 
 	return p, nil
 }
@@ -196,8 +214,11 @@ func LoadSupportedPackagesList(path, supported_list_file string) ([]string, erro
 	return supported, nil
 }
 
-func ParseExpectedPackagesList(expected_packages string) ([]string, error) {
-	return strings.Split(expected_packages, ","), nil
+// expect string containing comma separated list of package names
+// returns an array of strings with all leading/trailing whitespace removed
+func ParsePackagesList(expected_packages string) ([]string, error) {
+	tmp := strings.Replace(expected_packages, " ", "", -1)
+	return strings.Split(tmp, ","), nil
 }
 
 // Detects installed PHP packages
@@ -223,7 +244,8 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 			return nil, err
 		}
 	} else if 0 < len(pkgs.config.expected_packages) {
-		supported, err = ParseExpectedPackagesList(pkgs.config.expected_packages)
+		supported = pkgs.config.expected_packages
+		//fmt.Printf("expected_packages = +%v\n", supported)
 		if nil != err {
 			return nil, err
 		}
