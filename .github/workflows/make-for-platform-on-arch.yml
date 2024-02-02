@@ -78,7 +78,7 @@ jobs:
           -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION ${{inputs.make-target}}
       - name: Save ${{inputs.make-target}} artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{inputs.artifact-name}}-${{matrix.platform}}-${{inputs.arch}}
           path: php-agent/${{ inputs.artifact-pattern }}

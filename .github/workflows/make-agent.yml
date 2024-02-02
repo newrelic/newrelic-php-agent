@@ -62,7 +62,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
