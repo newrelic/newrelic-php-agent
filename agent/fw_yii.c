@@ -5,6 +5,7 @@
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_user_instrument.h"
+#include "php_error.h"
 #include "php_execute.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
@@ -36,7 +37,7 @@ NR_PHP_WRAPPER(nr_yii1_runWithParams_wrapper) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII);
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 1);
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (NULL == this_var) {
@@ -88,6 +89,7 @@ NR_PHP_WRAPPER_END
  * Enable Yii1 instrumentation.
  */
 void nr_yii1_enable(TSRMLS_D) {
+  NRPRG(framework_version) = 1;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
@@ -117,7 +119,7 @@ NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII);
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 2);
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (NULL == this_var) {
@@ -151,9 +153,43 @@ end:
 NR_PHP_WRAPPER_END
 
 /*
+ * Yii2: Report errors and exceptions when built-in ErrorHandler is enabled.
+ */
+NR_PHP_WRAPPER(nr_yii2_error_handler_wrapper) {
+  zval* exception = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 2);
+
+  exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (NULL == exception || !nr_php_is_zval_valid_object(exception)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: exception is NULL or not an object",
+                     __func__);
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  NR_PHP_WRAPPER_CALL;
+
+  if (NR_SUCCESS
+      != nr_php_error_record_exception(
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
+          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
+  }
+
+end:
+  nr_php_arg_release(&exception);
+}
+NR_PHP_WRAPPER_END
+
+/*
  * Enable Yii2 instrumentation.
  */
 void nr_yii2_enable(TSRMLS_D) {
+  NRPRG(framework_version) = 2;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
@@ -168,4 +204,18 @@ void nr_yii2_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("yii\\base\\InlineAction::runWithParams"),
                             nr_yii2_runWithParams_wrapper TSRMLS_CC);
 #endif
+  /*
+   * Wrap Yii2 global error and exception handling methods.
+   * Given that: ErrorHandler::handleException(), ::handleError() and
+   * ::handleFatalError() all call ::logException($exception) at the right time,
+   * we will wrap this one to cover all cases.
+   * @see
+   * https://github.com/yiisoft/yii2/blob/master/framework/base/ErrorHandler.php
+   *
+   * Note: one can also set YII_ENABLE_ERROR_HANDLER constant to FALSE, this way
+   * allowing default PHP error handler to be intercepted by the NewRelic agent
+   * implementation.
+   */
+  nr_php_wrap_user_function(NR_PSTR("yii\\base\\ErrorHandler::logException"),
+                            nr_yii2_error_handler_wrapper TSRMLS_CC);
 }
