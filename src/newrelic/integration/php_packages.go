@@ -187,8 +187,6 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 			package_name_only:   package_name_only_map},
 	}
 
-	//fmt.Printf("PhpPackagesCollection: %+v\n", p)
-
 	return p, nil
 }
 
@@ -247,7 +245,6 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		}
 	} else if 0 < len(pkgs.config.expected_packages) {
 		supported = pkgs.config.expected_packages
-		//fmt.Printf("expected_packages = +%v\n", supported)
 		if nil != err {
 			return nil, err
 		}
