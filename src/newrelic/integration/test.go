@@ -579,7 +579,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				if nil != expectedPkgsCollection.config.package_name_only {
 					test_package_name_only = slices.Contains(expectedPkgsCollection.config.package_name_only, actualPackages[i].Name)
 					if test_package_name_only {
-						t.AddNote("Tested package name only")
+						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.package_name_only))
 					}
 				}
 				fmt.Printf("test_package_name_only: %d\n", test_package_name_only)
