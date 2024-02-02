@@ -97,8 +97,6 @@ PHP_FUNCTION(newrelic_notice_error) {
     priority = nr_php_error_get_priority(E_ERROR);
   }
 
-  nr_php_api_ensure_current_segment();
-
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
     nrl_debug(NRL_API,
               "newrelic_notice_error: a higher severity error has already been "
@@ -162,7 +160,7 @@ PHP_FUNCTION(newrelic_notice_error) {
   if (exc) {
     if (NR_SUCCESS
         == nr_php_error_record_exception(
-            NRPRG(txn), exc, priority, "Noticed exception ", NULL TSRMLS_CC)) {
+            NRPRG(txn), exc, priority, true, "Noticed exception ", NULL TSRMLS_CC)) {
       RETURN_TRUE;
     } else {
       nrl_debug(NRL_API, "newrelic_notice_error: invalid exception argument");
@@ -174,7 +172,7 @@ PHP_FUNCTION(newrelic_notice_error) {
     char* buf = nr_strndup(errormsgstr, errormsglen);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
 
-    nr_txn_record_error(NRPRG(txn), priority, buf, errclass, stack_json);
+    nr_txn_record_error(NRPRG(txn), priority, true, buf, errclass, stack_json);
 
     nr_free(buf);
     nr_free(stack_json);
@@ -305,8 +303,6 @@ PHP_FUNCTION(newrelic_end_transaction) {
       RETURN_FALSE;
     }
   }
-
-  nr_php_api_ensure_current_segment();
 
   ret = nr_php_txn_end((0 != ignore), 0 TSRMLS_CC);
   if (NR_SUCCESS == ret) {
@@ -744,7 +740,6 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
   obj = nr_php_api_zval_to_attribute_obj(zzvalue TSRMLS_CC);
 
   if (obj) {
-    nr_php_api_ensure_current_segment();
     rv = nr_txn_add_user_custom_parameter(NRPRG(txn), key, obj);
   }
 
@@ -1238,7 +1233,6 @@ PHP_FUNCTION(newrelic_set_user_attributes) {
     RETURN_FALSE;
   }
 
-  nr_php_api_ensure_current_segment();
   rv = nr_php_api_add_custom_parameter_string(NRPRG(txn), "user", userstr,
                                               userlen);
   if (NR_FAILURE == rv) {
@@ -1266,7 +1260,6 @@ static nr_status_t nr_php_api_add_custom_span_attribute(const char* keystr,
   char* key = NULL;
   nr_segment_t* current;
 
-  nr_php_api_ensure_current_segment();
   current = nr_txn_get_current_segment(NRPRG(txn), NULL);
   if (!current) {
     return NR_FAILURE;
@@ -1530,7 +1523,6 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
   }
 
   if (nrlikely(NRPRG(txn))) {
-    nr_php_api_ensure_current_segment();
     trace_id = nr_txn_get_current_trace_id(NRPRG(txn));
     span_id = nr_txn_get_current_span_id(NRPRG(txn));
 
@@ -1573,7 +1565,6 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
   }
 
   if (nrlikely(NRPRG(txn))) {
-    nr_php_api_ensure_current_segment();
     trace_id = nr_txn_get_current_trace_id(NRPRG(txn));
     if (trace_id) {
       nr_php_add_assoc_string(return_value, "trace_id", trace_id);

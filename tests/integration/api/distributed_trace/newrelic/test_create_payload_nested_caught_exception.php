@@ -106,7 +106,7 @@ null
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/fraction",
+        "name": "Custom\/c",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",

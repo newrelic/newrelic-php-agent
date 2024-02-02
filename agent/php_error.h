@@ -124,9 +124,10 @@ extern void nr_php_error_install_exception_handler(TSRMLS_D);
  * Params  : 1. The transaction to record the error in.
  *           2. The exception to record an error for.
  *           3. The error priority to use.
- *           4. A prefix to prepend to the error message before the class name.
+ *           4. Whether we want to add the error to the current segment.
+ *           5. A prefix to prepend to the error message before the class name.
  *              If NULL, then the default "Exception " will be used.
- *           5. The exception filters to apply.
+ *           6. The exception filters to apply.
  *              Typically, &NRPRG (exception_filters) or NULL to disable
  *              exception filtering.
  *
@@ -137,6 +138,7 @@ extern void nr_php_error_install_exception_handler(TSRMLS_D);
 extern nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                                  zval* exception,
                                                  int priority,
+                                                 bool add_to_current_segment,
                                                  const char* prefix,
                                                  zend_llist* filters TSRMLS_DC);
 

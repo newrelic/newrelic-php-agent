@@ -21,7 +21,6 @@ error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
 newrelic.transaction_tracer.detail = 1
 newrelic.transaction_tracer.threshold = 0
-newrelic.transaction_tracer.max_segments_cli = 3
 newrelic.special.expensive_node_min = 0
 */
 
@@ -60,7 +59,7 @@ newrelic.special.expensive_node_min = 0
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 3
+    "events_seen": 6
   },
   [
     [
@@ -99,6 +98,73 @@ newrelic.special.expensive_node_min = 0
         "parentId": "??"
       },
       {},      
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/b",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/c",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
+      {
+        "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
+    ],
+    [
+      {
+        "type": "Span",
+        "traceId": "??",
+        "transactionId": "??",
+        "sampled": true,
+        "priority": "??",
+        "name": "Custom\/fraction",
+        "guid": "??",
+        "timestamp": "??",
+        "duration": "??",
+        "category": "generic",
+        "parentId": "??"
+      },
+      {},
       {
         "code.lineno": "??",
         "code.filepath": "__FILE__",

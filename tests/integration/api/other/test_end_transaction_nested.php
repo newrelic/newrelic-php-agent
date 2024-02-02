@@ -7,13 +7,6 @@
 Test that newrelic_end_transaction() ends all unended segments in the stack.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0.0 not supported\n");
-}
-*/
-
 /*INI
 newrelic.transaction_tracer.threshold = 0
 */

@@ -777,42 +777,6 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 #endif /* PHP8+ */
 
 /*
- * Purpose : Ensure all dangling segments caused by an OAPI exception are closed
- * before having an API act on the calling segment.
- *
- * Params  :
- *
- * Returns :
- */
-static inline void nr_php_api_ensure_current_segment() {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  /*
-   * Before we call an API that depends on current segment, we need to ensure
-   * there isn't an outstanding uncaught exception that needs to be applied to
-   * dangling segments. If so, we need to apply the exception and close the
-   * stacked segments until we get to the segment that called the API.  To do
-   * this, we detect the execute_data that called the API which is guaranteed to
-   * be what the current segment should be (otherwise, fcall_end would have
-   * closed normal segments and we would have taken care of any dangling
-   * segments already) and any segments stacked above it need to be closed due
-   * to an exception.
-   */
-
-  /*
-   * Get the function that called the API.  prev_execute_data
-   * should never be null, but doublecheck for it anyway.
-   */
-  if (NULL != EG(current_execute_data)->prev_execute_data) {
-    zval* prev_this = &EG(current_execute_data)->prev_execute_data->This;
-
-    nr_php_observer_handle_uncaught_exception(prev_this);
-  }
-
-#endif
-}
-
-/*
  * Purpose : Wrap the native PHP json_decode function for those times when we
  *           need a more robust JSON decoder than nro_create_from_json.
  *

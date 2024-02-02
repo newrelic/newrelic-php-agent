@@ -192,10 +192,6 @@ typedef struct _nr_segment_t {
    */
   void* wraprec; /* wraprec, if one is associated with this segment, to reduce
                     wraprec lookups */
-
-  void* metadata; /* Persist data for OAPI for when exceptions prevent fcall_end
-                     from being called */
-
 #endif
 
 } nr_segment_t;

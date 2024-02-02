@@ -331,7 +331,7 @@ static void record_mysql_error(TSRMLS_D) {
 
     errdup = nr_strndup(errormsgstr, errormsglen);
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
-    nr_txn_record_error(NRPRG(txn), errprio, errdup, "MysqlError", stack_json);
+    nr_txn_record_error(NRPRG(txn), errprio, true, errdup, "MysqlError", stack_json);
     nr_free(errdup);
     nr_free(stack_json);
 

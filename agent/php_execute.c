@@ -96,11 +96,6 @@
 static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC);
 static int nr_php_show_exec_indentation(TSRMLS_D);
 static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-static void nr_php_show_oapi_metadata(nr_php_execute_metadata_t* metadata,
-                                      bool wraprec_exists);
-#endif
 
 /*
  * Purpose: Enable monitoring on specific functions in the framework.
@@ -696,27 +691,6 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-/*
- * Show the metadata values associated with a dangling segment.
- * This is called only with OAPI/PHP8+ when an exception leaves a stacked
- * segment dangling due to nr_php_observer_fcall_end not getting called when an
- * unhandled exception occurs.
- */
-static void nr_php_show_oapi_metadata(nr_php_execute_metadata_t* metadata,
-                                      bool wraprec_exists) {
-  char* function_name = metadata->function ? ZSTR_VAL(metadata->function) : "?";
-  char* class_name = metadata->scope ? ZSTR_VAL(metadata->scope) : "?";
-  char* file_name = metadata->filepath ? ZSTR_VAL(metadata->filepath) : "?";
-  char* wraprec_indicator = wraprec_exists ? "exists" : "";
-  nrl_verbosedebug(NRL_AGENT,
-                   "oapi metadata: scope={%s} function={%s} filename={%s} "
-                   "lineno={%d} wraprec={%s}",
-                   class_name, function_name, file_name,
-                   metadata->function_lineno, wraprec_indicator);
-}
-#endif
 /*
  * Show the return value, assuming that there is one.
  * The return value is an attribute[sic] of the caller site,
@@ -1229,13 +1203,8 @@ static void nr_php_execute_metadata_metric(
  *
  * Params  : 1. A pointer to the metadata.
  */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-void nr_php_execute_metadata_release(nr_php_execute_metadata_t* metadata) {
-#else
 static inline void nr_php_execute_metadata_release(
     nr_php_execute_metadata_t* metadata) {
-#endif
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 
   if (NULL != metadata->scope) {
@@ -1302,32 +1271,6 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
-    /*
-     * Non-OAPI segments are able to utilize metadata that is declared in the
-     * call stack. OAPI doesn't have this luxury since we have to handle begin
-     * and end func calls separately.  Because of this, metadata now resides as
-     * a pointer in the stacked segment. We must extract data from it BEFORE we
-     * move the stacked segment to the heap; otherwise, it gets deallocated
-     * before we can use it.
-     */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-
-    nr_php_execute_segment_add_metric(stacked, metadata, create_metric);
-
-    /*
-     * Check if code level metrics are enabled in the ini.
-     * If they aren't, exit and don't create any metrics.
-     * We need to get the CLM from metadata before we move it to the heap
-     * because once it is moved to the heap, the metadata on the segment is
-     * freed.
-     */
-    if (NRINI(code_level_metrics_enabled)) {
-      nr_php_execute_segment_add_code_level_metrics(stacked, metadata);
-    }
-    nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
-
-#else
 
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
@@ -1340,8 +1283,6 @@ static inline void nr_php_execute_segment_end(
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
-#endif
-
 #endif
 
     nr_segment_end(&s);
@@ -1418,7 +1359,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
        * they'll see with and without an exception handler installed.
        */
       nr_php_error_record_exception(
-          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
           "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
     }
 
@@ -1802,169 +1743,6 @@ end:
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
 
-static inline void nr_php_observer_exception_segments_end(
-    zval* exception,
-    zval* execute_data_this) {
-  nr_segment_t* segment = NULL;
-
-  if (NULL == exception || NULL == execute_data_this) {
-    return;
-  }
-
-  if (NULL == NRPRG(txn)) {
-    return;
-  }
-
-  segment = NRTXN(force_current_segment);
-  while ((NULL != segment)
-         && (NRTXN(segment_root) != NRTXN(force_current_segment))) {
-    nr_php_execute_metadata_t* metadata = segment->metadata;
-    if (metadata->execute_data_this == execute_data_this) {
-      break;
-    }
-    nr_php_observer_segment_end(NRPRG(uncaught_exception));
-    segment = NRTXN(force_current_segment);
-  }
-}
-
-void nr_php_observer_segment_end(zval* exception) {
-  nr_segment_t* segment = NULL;
-  nruserfn_t* wraprec = NULL;
-  nrtime_t txn_start_time = 0;
-
-  /*
-   * If we have a stacked segment that missed an OAPI func_end call, add an
-   * exception (if not null) and close then get the current segment and return
-   * if null.  The segment would only have been created if we are recording and
-   * if wraprec is set or if tt is greater than 0.
-   */
-
-  if (NULL == NRPRG(txn)) {
-    return;
-  }
-  txn_start_time = nr_txn_start_time(NRPRG(txn));
-  if (NULL != exception) {
-    nr_status_t status;
-
-    status = nr_php_error_record_exception_segment(
-        NRPRG(txn), exception, &NRPRG(exception_filters) TSRMLS_CC);
-
-    if (NR_FAILURE == status) {
-      nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
-                       __func__);
-    }
-  }
-  segment = NRTXN(force_current_segment);
-  if (NULL != segment) {
-    bool create_metric = false;
-    wraprec = (nruserfn_t*)(segment->wraprec);
-    if (NULL != wraprec) {
-      create_metric = wraprec->create_metric;
-      int zcaught
-          = nr_zend_call_oapi_special_clean(wraprec, segment, NULL, NULL);
-      if (nrunlikely(zcaught)) {
-        zend_bailout();
-      }
-    }
-
-    /*
-     * During nr_zend_call_oapi_special_clean, the transaction may have been
-     * ended and/or a new transaction may have started.  To detect this, we
-     * compare the currently active transaction's start time with the
-     * transaction start time we saved before.
-     *
-     * Just comparing the transaction pointer is not enough, as a newly
-     * started transaction might actually obtain the same address as a
-     * transaction freed before.
-     */
-    if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
-      nrl_verbosedebug(
-          NRL_AGENT, "%s txn ended and/or started while in a wrapped function",
-          __func__);
-      return;
-    }
-
-    /*
-     * We are only here because there is a dangling segment which means
-     * nr_php_observer_fcall_end didn't get called due to unhandled
-     * exception(s). Decrement the php_cur_stack_depth counter properly.
-     */
-    if (nrunlikely(
-            NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns)) {
-      nrl_verbosedebug(NRL_AGENT,
-                       "Stack depth: %d before OAPI function exiting via %s",
-                       NRPRG(php_cur_stack_depth), __func__);
-      nr_php_show_oapi_metadata(segment->metadata, (NULL != wraprec));
-    }
-    NRPRG(php_cur_stack_depth) -= 1;
-    nr_php_execute_segment_end(segment, segment->metadata, create_metric);
-  }
-  return;
-}
-
-void nr_php_observer_handle_uncaught_exception(zval* current_this) {
-  if (NULL == NRPRG(uncaught_exeption_execute_data_this)) {
-    return;
-  }
-  /*
-   * A pending uncaught exception for this txn exists, so we need to close
-   * stacked segments to get to the correct stacked segment to add the noticed
-   * error to.
-   */
-  if (current_this != NRPRG(uncaught_exeption_execute_data_this)) {
-    nr_php_observer_exception_segments_end(NRPRG(uncaught_exception),
-                                           current_this);
-
-    php_observer_clear_uncaught_exception_globals();
-  }
-}
-
-void php_observer_handle_exception_hook(zval* exception, zval* exception_this) {
-  /*
-   * The issue is, with OAPI, only the most recent exception is exposed in the
-   * error handler. If function `a` calls function `b` calls function `c` calls
-   * function `d` which throws an exception that `c` catches and that `c' then
-   * throws an exception that `b` catches but then b throws an exception that is
-   * uncaught, only the latest exception thrown by `b` gets passed to the error
-   * handler. Additonally, the fcall_end handler does not get called for
-   * functions which have uncaught exceptions.
-   *
-   * To solve this, this function gets called with every exception regardless of
-   * whether it is caught or not. We save the most recent exception and the
-   * unique `this` pointer of the execute_data it is associated with so we can
-   * use it if we need to end stacked segments. If another exception is
-   * triggered while our saved exception is not null, we check if we need to end
-   * stacked segments and then save the new exception.
-   */
-
-  if (nrunlikely(NULL == exception || NULL == exception_this)) {
-    return;
-  }
-
-  if (NULL != NRPRG(uncaught_exeption_execute_data_this)) {
-    /*
-     * A pending uncaught exception for this txn exists, see if we need to close
-     * segments. We determine this by comparing the `execute_data_this` pointer
-     * in the `metadata` of the top stacked segment with the `This` pointer of
-     * the currently executing segment.  If the pointers match, then the
-     * execute_data is still executing and could theoretically still catch it.
-     * If the pointers don't match, then the previous exception caused the
-     * fcall_end to be skipped, so we need to close those stacked segments
-     * manually until we arrive at the correct stacked segment that corresponds
-     * to exception we just recieved.  This will close all necessary stacked
-     * segments. If the previous exception had been caught anywhere along the
-     * calling chain (by an fcall_end happening for a function) the segments
-     * would have been closed and the exception cleared.
-     */
-    if (exception_this != NRPRG(uncaught_exeption_execute_data_this)) {
-      nr_php_observer_exception_segments_end(NRPRG(uncaught_exception),
-                                             exception_this);
-    }
-    php_observer_clear_uncaught_exception_globals();
-  }
-  php_observer_set_uncaught_exception_globals(exception, exception_this);
-}
-
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data->prev_execute_data) {
@@ -2062,7 +1840,6 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   nruserfn_t* wraprec = NULL;
   nrtime_t txn_start_time = 0;
   int zcaught = 0;
-  nr_php_execute_metadata_t* metadata = NULL;
   NR_UNUSED_FUNC_RETURN_VALUE;
 
   if (NULL == NRPRG(txn)) {
@@ -2095,87 +1872,28 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
+
   /*
-   * If there is custom instrumentation or tt detail is more than 0, start the
-   * segment.
-   */
-  if ((NULL == wraprec) && !(NRINI(tt_detail) && NR_OP_ARRAY->function_name)) {
-    return;
-  }
-  /*
-   * Check if it's a custom error handler.  Even with some custom error
-   * handlers, fcall might not get called. But we don't need to wait for
-   * fcall_end to put the error anyway.  It can be done earlier in
-   * fcall_begin. Here, we are doing before the segment call so the error gets
-   * on the correct stacked segment.
+   * Check if it's a custom error handler. We don't need to wait for
+   * fcall_end to record the error to the transaction; it can be done earlier
+   * in fcall_begin. However, we must wait until fcall_end to add the error
+   * to any possible segment(s), as at this point we do not know when it
+   * will be caught.
    */
   if (NULL != wraprec && wraprec->is_exception_handler) {
     /*
      * Before starting the error handler segment, put the error it handled on
-     * the segment that called it. The choice of E_ERROR for the error level
-     * is basically arbitrary, but matches the error level PHP uses if there
+     * the transaction. The choice of E_ERROR for the error level is
+     * basically arbitrary, but matches the error level PHP uses if there
      * isn't an exception handler, so this should give more consistency for
      * the user in terms of what they'll see with and without an exception
      * handler installed.
      */
-    nr_status_t status;
-    if (NULL != NRPRG(uncaught_exception)) {
-      status = nr_php_error_record_exception_segment(
-          NRPRG(txn), NRPRG(uncaught_exception),
-          &NRPRG(exception_filters) TSRMLS_CC);
-
-      if (NR_FAILURE == status) {
-        nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
-                         __func__);
-      }
-      zval* exception
-          = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-      nr_php_error_record_exception(
-          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
-          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
-      php_observer_clear_uncaught_exception_globals();
-    }
-  } else if (NULL != NRPRG(txn)) {
-    /*
-     * Check if NRPRG(uncaught_exception) exists because if it's not handled,
-     * we'll parent the new segment on the wrong stacked segment. Close off
-     * all dangling segments caused by an exception before starting a new
-     * segment.
-     */
-
-    if (nrunlikely(NULL != NRPRG(uncaught_exception))) {
-      /*
-       * First check if it's the root because obviously, prev_execute won't
-       * exist.
-       */
-      if (NRTXN(segment_root) != NRTXN(force_current_segment)) {
-        /*
-         * Get the current segment if it exists.
-         */
-        nr_segment_t* exception_segment = NRTXN(force_current_segment);
-        if (NULL != exception_segment) {
-          /*
-           * If the metadata info doesn't match the previous callers This,
-           * then we know the uncaught exception occurred which caused the
-           * fcall_end function to not be called.  Clean up dangling stacked
-           * segments.
-           */
-          nr_php_execute_metadata_t* md = exception_segment->metadata;
-          if ((NULL != md)
-              && (md->execute_data_this
-                  != &execute_data->prev_execute_data->This)) {
-            /*
-             * Close all previous segments, attaching the uncaught exception
-             * as necessary.
-             */
-            nr_php_observer_exception_segments_end(
-                NRPRG(uncaught_exception),
-                &execute_data->prev_execute_data->This);
-          }
-        }
-        php_observer_clear_uncaught_exception_globals();
-      }
-    }
+    zval* exception
+        = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nr_php_error_record_exception(
+        NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
+        "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   }
 
   segment = nr_php_stacked_segment_init(segment);
@@ -2183,13 +1901,6 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
     return;
   }
-
-  nr_php_execute_metadata_init(segment->metadata, NR_OP_ARRAY);
-  metadata = segment->metadata;
-  metadata->execute_data_this = &execute_data->This;
-  /*
-   * Metadata deinit is handled when the segment is destroyed.
-   */
 
   if (NULL == wraprec) {
     return;
@@ -2238,7 +1949,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
   bool create_metric = false;
-  nr_php_execute_metadata_t* metadata = NULL;
+  nr_php_execute_metadata_t metadata = {0};
   nrtime_t txn_start_time = 0;
 
   if (NULL == NRPRG(txn)) {
@@ -2251,14 +1962,11 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    */
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    php_observer_clear_uncaught_exception_globals();
     return;
   }
 
   /*
-   * Get the current segment and return if null.  The segment would only have
-   * been created if we are recording and if wraprec is set or if tt is greater
-   * than 0.
+   * Get the current segment and return if null.
    */
   segment = NRTXN(force_current_segment);
   if (nrunlikely(NULL == segment)) {
@@ -2268,39 +1976,34 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      */
     return;
   }
-  if (nrunlikely(NULL == segment->metadata)) {
-    /*
-     * If this value isn't set, it is either the root segment not a stacked
-     * segment set or not set by the instrument_begin_func, but in all we we
-     * should only ignore it.
-     */
+  if (nrunlikely(NRPRG(txn)->segment_root == segment)) {
     return;
   }
-  /*
-   * If the metadata info doesn't match, an uncaught exception occurred which
-   * doesn't call fcall_end.
-   */
-  metadata = segment->metadata;
-  if ((metadata->execute_data_this != &execute_data->This)) {
+
+  wraprec = segment->wraprec;
+
+  if (wraprec && wraprec->is_exception_handler) {
     /*
-     * Close all previous segments, attaching the uncaught exception as
-     * necessary.
+     * An exception handler sets the transaction exception in fcall_begin
+     * and does not have a return value, like an fcall_end during an
+     * uncaught exception. This code path is here to simplify and
+     * explicitly enumerate the possible cases.
      */
-    nr_php_observer_exception_segments_end(NRPRG(uncaught_exception),
-                                           &execute_data->This);
-    php_observer_clear_uncaught_exception_globals();
-    segment = NRTXN(force_current_segment);
-    if (NULL == segment) {
-      return;
-    }
-    metadata = segment->metadata;
-    if (nrunlikely(metadata->execute_data_this != &execute_data->This)) {
-      /*
-       * Sanity check.
-       * If the pointers still aren't equal, let's exit.
-       *
-       */
-      return;
+  } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+    /*
+     * Having no return value (and not being an exception handler) indicates
+     * that this segment had an uncaught exception. We want to add that
+     * exception to the segment.
+     */
+    zval exception;
+    ZVAL_OBJ(&exception, EG(exception));
+    nr_status_t status = nr_php_error_record_exception_segment(
+      NRPRG(txn), &exception,
+      &NRPRG(exception_filters));
+
+    if (NR_FAILURE == status) {
+      nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
+                       __func__);
     }
   }
 
@@ -2314,7 +2017,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * Check if we have special instrumentation for this function or if the user
    * has specifically requested it.
    */
-  wraprec = segment->wraprec;
 
   if (NULL != wraprec) {
     /*
@@ -2322,11 +2024,27 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      */
     create_metric = wraprec->create_metric;
 
-    zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
+    /*
+     * A NULL return value ptr means that there was an uncaught exception
+     * and therefore we want to call the 'clean' function type
+     */
+    if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+      zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS);
+    } else {
+      zcaught = nr_zend_call_oapi_special_clean(wraprec, segment,
+                                                NR_EXECUTE_ORIG_ARGS);
+    }
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
+  } else if (!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name)) {
+    /*
+     * If there is no custom instrumentation and tt detail is not more than 0,
+     * do not record the segment
+     */
+    nr_php_stacked_segment_deinit(segment);
+    return;
   }
   /*
    * During nr_zend_call_orig_execute_special, the transaction may have been
@@ -2346,13 +2064,9 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
 
-  nr_php_execute_segment_end(segment, segment->metadata, create_metric);
-  /*
-   * Clear the uncaught exception globals.  This will also take care of the case
-   * of an exception that was thrown for this segment but then was caught as
-   * evidenced by the fact that we got to fcall_end.
-   */
-  php_observer_clear_uncaught_exception_globals();
+  nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+  nr_php_execute_segment_end(segment, &metadata, create_metric);
+  nr_php_execute_metadata_release(&metadata);
   return;
 }
 
@@ -2402,8 +2116,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
    * nr_php_execute
    * nr_php_execute_show
    */
-  if (nrunlikely((NULL == execute_data))
-      || nrunlikely((NULL == func_return_value))) {
+  if (nrunlikely(NULL == execute_data)) {
     return;
   }
 

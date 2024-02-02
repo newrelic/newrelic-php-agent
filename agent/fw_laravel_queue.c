@@ -642,7 +642,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
 
     nr_php_error_record_exception(
         NRPRG(txn), exception_zval, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
-        "Unhandled exception within Laravel Queue job: ",
+        true, "Unhandled exception within Laravel Queue job: ",
         &NRPRG(exception_filters) TSRMLS_CC);
   }
 

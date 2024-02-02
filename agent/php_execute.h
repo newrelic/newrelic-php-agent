@@ -74,7 +74,6 @@ typedef struct {
   zend_string* function;
   zend_string* filepath;
   uint32_t function_lineno;
-  zval* execute_data_this;
 #else
   zend_op_array* op_array;
 #endif /* PHP7 */
@@ -108,43 +107,5 @@ extern void nr_framework_create_metric(TSRMLS_D);
  */
 
 extern void nr_php_user_instrumentation_from_opcache(TSRMLS_D);
-
-extern void nr_php_observer_handle_uncaught_exception(zval* exception_this);
-
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
-static inline void php_observer_clear_uncaught_exception_globals() {
-  /*
-   * Clear the uncaught exception global variables.
-   */
-  if (NULL != NRPRG(uncaught_exception)) {
-    nr_php_zval_free(&NRPRG(uncaught_exception));
-  }
-  NRPRG(uncaught_exeption_execute_data_this) = NULL;
-}
-
-static inline void php_observer_set_uncaught_exception_globals(
-    zval* exception,
-    zval* exception_this) {
-  /*
-   * Set the uncaught exception global variables
-   */
-  if (nrunlikely(NULL != NRPRG(uncaught_exception))) {
-    return;
-  }
-  NRPRG(uncaught_exception) = nr_php_zval_alloc();
-  ZVAL_DUP(NRPRG(uncaught_exception), exception);
-  NRPRG(uncaught_exeption_execute_data_this) = exception_this;
-}
-
-/*
- * Purpose : Release any cached metadata.
- *
- * Params  : 1. A pointer to the metadata.
- */
-extern void nr_php_execute_metadata_release(
-    nr_php_execute_metadata_t* metadata);
-
-#endif
 
 #endif /* PHP_EXECUTE_HDR */
