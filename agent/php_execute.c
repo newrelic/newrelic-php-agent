@@ -1271,32 +1271,6 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
-    /*
-     * Non-OAPI segments are able to utilize metadata that is declared in the
-     * call stack. OAPI doesn't have this luxury since we have to handle begin
-     * and end func calls separately.  Because of this, metadata now resides as
-     * a pointer in the stacked segment. We must extract data from it BEFORE we
-     * move the stacked segment to the heap; otherwise, it gets deallocated
-     * before we can use it.
-     */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-
-    nr_php_execute_segment_add_metric(stacked, metadata, create_metric);
-
-    /*
-     * Check if code level metrics are enabled in the ini.
-     * If they aren't, exit and don't create any metrics.
-     * We need to get the CLM from metadata before we move it to the heap
-     * because once it is moved to the heap, the metadata on the segment is
-     * freed.
-     */
-    if (NRINI(code_level_metrics_enabled)) {
-      nr_php_execute_segment_add_code_level_metrics(stacked, metadata);
-    }
-    nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
-
-#else
 
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
@@ -1309,8 +1283,6 @@ static inline void nr_php_execute_segment_end(
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
-#endif
-
 #endif
 
     nr_segment_end(&s);
@@ -2092,6 +2064,11 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
 
+    /*
+     * Non-OAPI segments are able to utilize metadata that is declared in the
+     * call stack. OAPI doesn't have this luxury since we have to handle begin
+     * and end func calls separately.
+     */
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);
