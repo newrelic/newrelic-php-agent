@@ -14,10 +14,9 @@
 #include "util_strings.h"
 
 /*
- * Set the web transaction name from the action.
+ * Yii1: Set the web transaction name from the controllerId + actionId combo.
  */
-
-NR_PHP_WRAPPER(nr_yii_runWithParams_wrapper) {
+NR_PHP_WRAPPER(nr_yii1_runWithParams_wrapper) {
   zval* classz = NULL;
   zval* idz = NULL;
   zval* this_var = NULL;
@@ -79,11 +78,68 @@ end:
 NR_PHP_WRAPPER_END
 
 /*
- * Enable Yii instrumentation.
+ * Enable Yii1 instrumentation.
  */
-void nr_yii_enable(TSRMLS_D) {
+void nr_yii1_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("CAction::runWithParams"),
-                            nr_yii_runWithParams_wrapper TSRMLS_CC);
+                            nr_yii1_runWithParams_wrapper TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("CInlineAction::runWithParams"),
-                            nr_yii_runWithParams_wrapper TSRMLS_CC);
+                            nr_yii1_runWithParams_wrapper TSRMLS_CC);
+}
+
+/*
+ * Yii2: Set the web transaction name from the unique action ID.
+ */
+NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
+  zval* this_var = NULL;
+  zval* unique_idz = NULL;
+  const char* unique_id = NULL;
+  nr_string_len_t unique_id_length;
+  char* transaction_name = NULL;
+
+  (void)wraprec;
+  NR_UNUSED_SPECIALFN;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII);
+
+  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (NULL == this_var) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "Yii2: improper this");
+    goto end;
+  }
+
+  unique_idz = nr_php_call(this_var, "getUniqueId");
+  if (nr_php_is_zval_valid_string(unique_idz)) {
+    unique_id = Z_STRVAL_P(unique_idz);
+    unique_id_length = Z_STRLEN_P(unique_idz);
+
+    if (unique_id_length > 256) {
+      nrl_warning(
+          NRL_FRAMEWORK,
+          "Yii2 unique ID is too long (> %d); Yii2 naming not used",
+          256);
+    } else {
+      transaction_name = (char*)nr_alloca(unique_id_length + 1);
+      nr_strxcpy(transaction_name, unique_id, unique_id_length);
+
+      nr_txn_set_path("Yii2", NRPRG(txn), transaction_name, NR_PATH_TYPE_ACTION,
+                      NR_NOT_OK_TO_OVERWRITE);
+    }
+  }
+
+end:
+  NR_PHP_WRAPPER_CALL;
+
+  nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Enable Yii2 instrumentation.
+ */
+void nr_yii2_enable(TSRMLS_D) {
+  nr_php_wrap_user_function(NR_PSTR("yii\\base\\Action::runWithParams"),
+                            nr_yii2_runWithParams_wrapper TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("yii\\base\\InlineAction::runWithParams"),
+                            nr_yii2_runWithParams_wrapper TSRMLS_CC);
 }

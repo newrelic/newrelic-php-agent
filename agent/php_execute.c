@@ -412,8 +412,9 @@ static const nr_framework_table_t all_frameworks[] = {
     {"WordPress", "wordpress", NR_PSTR("wp-config.php"), 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
 
-    {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii_enable, NR_FW_YII},
-    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii1_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable, NR_FW_YII},
+    {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable, NR_FW_YII},
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
@@ -532,7 +533,6 @@ static nr_library_table_t libraries[] = {
     {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
     {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
     {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
-    {"Yii2", NR_PSTR("yii2/baseyii.php"), NULL},
 
     /*
      * Other CMS (content management systems), detected only, but
