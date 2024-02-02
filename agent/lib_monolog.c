@@ -515,4 +515,5 @@ void nr_monolog_enable(TSRMLS_D) {
   nr_txn_add_php_package(NRPRG(txn), "laravel/framework", "8.83.27");
   nr_txn_add_php_package(NRPRG(txn), "drupal/core", "9.0.0");
   nr_txn_add_php_package(NRPRG(txn), "predis/predis", "7.0.0");
+  nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle", " ");
 }
