@@ -2064,11 +2064,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
 
-  /*
-   * Non-OAPI segments are able to utilize metadata that is declared in the
-   * call stack. OAPI doesn't have this luxury since we have to handle begin
-   * and end func calls separately.
-   */
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);
