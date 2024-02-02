@@ -138,33 +138,35 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	var package_name_only string
 	var expected_packages_map []string
 	var package_name_only_map []string
-	var ok, ok2 bool
+	var command_ok, supported_ok, expected_ok bool
+	var ok bool
 	var err error
 
-	command, ok := params["command"]
-	if !ok {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option - got %+v", params)
-	}
+	command, command_ok := params["command"]
 
 	// either expect a "supported_packages" key which specifies a file listing all possible packages agent
 	// can detect and this is used to filter the auto-discovered packages (by integration_runner using "command")
-	supported_list_file, ok = params["supported_packages"]
+	supported_list_file, supported_ok = params["supported_packages"]
 
 	// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
-	expected_packages, ok2 = params["expected_packages"]
-	if ok2 {
+	expected_packages, expected_ok = params["expected_packages"]
+	if expected_ok {
 		expected_packages_map, err = ParsePackagesList(expected_packages)
 		if nil != err {
 			return nil, fmt.Errorf("Error parsing expected_packages list %s\n", err.Error())
 		}
 	}
 
-	if ok && ok2 {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - cannot specify supported_packages and expected packages - got %+v", params)
+	if supported_ok && expected_ok {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - cannot specify 'supported_packages' and 'expected packages' - got %+v", params)
 	}
 
-	if !ok && !ok2 {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify supported_packages or expected packages - got %+v", params)
+	if !supported_ok && !expected_ok {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'supported_packages' or 'expected packages' - got %+v", params)
+	}
+
+	if supported_ok && !command_ok {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option with `supported_packages` - got %+v", params)
 	}
 
 	// optional option to specify which packages will only have a name because agent cannot determine the version
