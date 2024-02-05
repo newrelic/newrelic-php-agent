@@ -1961,12 +1961,12 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   if (wraprec && wraprec->is_exception_handler) {
     /*
-     * After running the error handler segment, put the error it handled on
-     * the transaction. The choice of E_ERROR for the error level is
-     * basically arbitrary, but matches the error level PHP uses if there
-     * isn't an exception handler, so this should give more consistency for
-     * the user in terms of what they'll see with and without an exception
-     * handler installed.
+     * After running the exception handler segment, create an error from
+     * the exception it handled, and save the error in the transaction.
+     * The choice of E_ERROR for the error level is basically arbitrary,
+     * but matches the error level PHP uses if there isn't an exception
+     * handler, so this should give more consistency for the user in terms
+     * of what they'll see with and without an exception handler installed.
      */
     zval* exception
         = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
