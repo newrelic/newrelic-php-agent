@@ -73,9 +73,7 @@ RUN apt-get update && apt-get install -y \
   zip && apt-get clean
 
 #
-# The Debian package repository is woefully behind the latest version of go
-# in order to download and run the latest version we support, we have to install
-# go manually
+# Download and install Go
 #
 RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
     wget https://go.dev/dl/go1.21.1.linux-${arch}.tar.gz -O- | tar -C /usr/local -zxvf -;
