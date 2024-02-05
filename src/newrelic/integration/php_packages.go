@@ -217,7 +217,7 @@ func LoadSupportedPackagesList(path, supportedListFile string) ([]string, error)
 // expect string containing comma separated list of package names
 // returns an array of strings with all leading/trailing whitespace removed
 func ParsePackagesList(expectedPackages string) ([]string, error) {
-	tmp := strings.Replace(expectedPackages, " ", "", -1)
+	tmp := strings.ReplaceAll(expectedPackages, " ", "")
 	return strings.Split(tmp, ","), nil
 }
 
