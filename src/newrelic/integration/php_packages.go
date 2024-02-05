@@ -238,6 +238,22 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 
 	var supported []string
 
+	// get list of packages we expected the agent to detect
+	// this can be one of 2 scenarios:
+	//  1) test case used the "supported_packages" option which gives a JSON file which
+	//     lists all the packages the agent can detect
+	//  2) test case used the "expected_packages" options which provides a comma separated
+	//     list of packages we expect the agent to detect
+	//
+	//  Option #1 is preferable as it provides the most comprehensive view of what the agent can do.
+	//
+	//  Option #2 is needed because some test cases do not exercise all the packages which are 
+	//  installed and so the agent will not detect everything for that test case run which it could
+	//  theorectically detect if the test case used all the available packages installed.
+	//
+	//  Once the list of packages the agent is expected to detect is created it is used to filter
+	//  down the package list returned by running the "command" (usually composer) option for the
+	//  test case provided.
 	if 0 < len(pkgs.config.supported_list_file) {
 		supported, err = LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supported_list_file)
 		if nil != err {
@@ -245,9 +261,6 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		}
 	} else if 0 < len(pkgs.config.expected_packages) {
 		supported = pkgs.config.expected_packages
-		if nil != err {
-			return nil, err
-		}
 	} else {
 		return nil, fmt.Errorf("Error determining expected packages - supported_list_file and expected_packages are both empty")
 	}
