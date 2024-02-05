@@ -149,6 +149,9 @@ extern zval* nr_php_get_zval_object_property(zval* object,
  *           2. The name of the exception property.
  *
  * Returns : The specified element or NULL if it was not found.
+ *           This returns the zval owned by the Zend engine, so
+ *           a refernce incremenet should take place if the return
+ *           value is to be kept around beyond the caller's scope.
  */
 extern zval* nr_php_get_zval_base_exception_property(zval* exception,
                                                      const char* cname);
