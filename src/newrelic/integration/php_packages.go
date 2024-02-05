@@ -136,8 +136,8 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	var supported_list_file string
 	var expected_packages string
 	var package_name_only string
-	var expected_packages_map []string
-	var package_name_only_map []string
+	var expected_packages_arr []string
+	var package_name_only_arr []string
 	var command_ok, supported_ok, expected_ok bool
 	var ok bool
 	var err error
@@ -151,7 +151,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
 	expected_packages, expected_ok = params["expected_packages"]
 	if expected_ok {
-		expected_packages_map, err = ParsePackagesList(expected_packages)
+		expected_packages_arr, err = ParsePackagesList(expected_packages)
 		if nil != err {
 			return nil, fmt.Errorf("Error parsing expected_packages list %s\n", err.Error())
 		}
@@ -172,7 +172,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// optional option to specify which packages will only have a name because agent cannot determine the version
 	package_name_only, ok = params["package_name_only"]
 	if ok {
-		package_name_only_map, err = ParsePackagesList(package_name_only)
+		package_name_only_arr, err = ParsePackagesList(package_name_only)
 		if nil != err {
 			return nil, fmt.Errorf("Error parsing package_name_only list %s\n", err.Error())
 		}
@@ -183,8 +183,8 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 			command:             command,
 			path:                path,
 			supported_list_file: supported_list_file,
-			expected_packages:   expected_packages_map,
-			package_name_only:   package_name_only_map},
+			expected_packages:   expected_packages_arr,
+			package_name_only:   package_name_only_arr},
 	}
 
 	return p, nil
