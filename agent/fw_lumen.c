@@ -208,5 +208,9 @@ void nr_lumen_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
       nr_lumen_exception TSRMLS_CC);
-  nr_txn_add_php_package(NRPRG(txn), "laravel/lumen-framework", PHP_PACKAGE_VERSION_UNKNOWN);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "laravel/lumen-framework",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

@@ -127,11 +127,13 @@ void nr_slim_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Slim\\Routing\\Route::run"),
                             nr_slim3_4_route_run TSRMLS_CC);
 
-  /* Slim 2 does not have the same path as Slim 3/4 which is why
-     we need to separate these*/
-  nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
-                            nr_slim_application_construct);
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    /* Slim 2 does not have the same path as Slim 3/4 which is why
+      we need to separate these*/
+    nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
+                              nr_slim_application_construct);
 
-  nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
-                            nr_slim_application_construct);
+    nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
+                              nr_slim_application_construct);
+  }
 }
