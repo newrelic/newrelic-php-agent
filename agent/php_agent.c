@@ -68,7 +68,7 @@ zval* nr_php_get_zval_object_property(zval* object,
                                       const char* cname TSRMLS_DC) {
   char* name;
 
-  if ((0 == object) || (0 == cname) || (0 == cname[0])) {
+  if ((NULL == object) || (NULL == cname) || (0 == cname[0])) {
     return 0;
   }
 
@@ -95,7 +95,7 @@ zval* nr_php_get_zval_base_exception_property(zval* exception,
   char* name;
   zend_class_entry* ce;
 
-  if ((0 == exception) || (0 == cname) || (0 == cname[0])) {
+  if ((NULL == exception) || (NULL == cname) || (0 == cname[0])) {
     return 0;
   }
 
@@ -104,6 +104,11 @@ zval* nr_php_get_zval_base_exception_property(zval* exception,
 
   if (nr_php_is_zval_valid_object(exception)) {
     if (nr_php_error_zval_is_exception(exception)) {
+    /* 
+     * This is inline with what the php source code does to extract properties from
+     * errors and exceptions. Without getting the base class entry, certain values
+     * are incorrect for either errors/exceptions.
+     */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
       ce = zend_get_exception_base(Z_OBJ_P(exception));
 #else

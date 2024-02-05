@@ -133,7 +133,7 @@ typedef unsigned int nr_php_object_handle_t;
  * Purpose : Extract the named entity from a PHP object zval.
  *
  * Params  : 1. The object to extract the property from.
- *           2. The name of the object.
+ *           2. The name of the object property.
  *
  * Returns : The specified element or NULL if it was not found.
  */
@@ -146,7 +146,7 @@ extern zval* nr_php_get_zval_object_property(zval* object,
  *           or a PHP exception, and extracts accordingly.
  *
  * Params  : 1. The exception to extract the property from.
- *           2. The name of the exception.
+ *           2. The name of the exception property.
  *
  * Returns : The specified element or NULL if it was not found.
  */

@@ -381,18 +381,17 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
  *              checked in any way, and is assumed to be a valid Exception
  *              object.
  *
- * Returns : A zval for the stack trace, which the caller will need to destroy,
- *           or NULL if no trace is available.
+ * Returns : A zval for the stack trace, which the caller will need to
+ *           delete reference to, or NULL if no trace is available.
  */
 static zval* nr_php_error_exception_stack_trace(zval* exception TSRMLS_DC) {
   zval* trace;
 
   trace = nr_php_get_zval_base_exception_property(exception, "trace");
-  Z_ADDREF_P(trace);
   if (NULL == trace || nr_php_is_zval_null(trace)) {
-    Z_DELREF_P(trace);
     return NULL;
   }
+  Z_ADDREF_P(trace);
 
   if (!nr_php_is_zval_valid_array(trace)) {
     Z_DELREF_P(trace);
