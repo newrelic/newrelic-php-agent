@@ -66,41 +66,32 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
 
 zval* nr_php_get_zval_object_property(zval* object,
                                       const char* cname TSRMLS_DC) {
-  char* name;
-
   if ((NULL == object) || (NULL == cname) || (0 == cname[0])) {
-    return 0;
+    return NULL;
   }
-
-  name = (char*)nr_alloca(nr_strlen(cname) + 1);
-  nr_strcpy(name, cname);
 
   if (nr_php_is_zval_valid_object(object)) {
     return nr_php_get_zval_object_property_with_class_internal(
-        object, Z_OBJCE_P(object), name TSRMLS_CC);
+        object, Z_OBJCE_P(object), cname TSRMLS_CC);
   } else if (IS_ARRAY == Z_TYPE_P(object)) {
     zval* data;
 
-    data = nr_php_zend_hash_find(Z_ARRVAL_P(object), name);
+    data = nr_php_zend_hash_find(Z_ARRVAL_P(object), cname);
     if (data) {
       return data;
     }
   }
 
-  return 0;
+  return NULL;
 }
 
 zval* nr_php_get_zval_base_exception_property(zval* exception,
                                               const char* cname) {
-  char* name;
   zend_class_entry* ce;
 
   if ((NULL == exception) || (NULL == cname) || (0 == cname[0])) {
-    return 0;
+    return NULL;
   }
-
-  name = (char*)nr_alloca(nr_strlen(cname) + 1);
-  nr_strcpy(name, cname);
 
   if (nr_php_is_zval_valid_object(exception)) {
     if (nr_php_error_zval_is_exception(exception)) {
@@ -115,10 +106,10 @@ zval* nr_php_get_zval_base_exception_property(zval* exception,
       ce = zend_get_exception_base(exception);
 #endif
       return nr_php_get_zval_object_property_with_class_internal(
-          exception, ce, name TSRMLS_CC);
+          exception, ce, cname TSRMLS_CC);
     }
   }
-  return 0;
+  return NULL;
 }
 
 zval* nr_php_get_zval_object_property_with_class(zval* object,
