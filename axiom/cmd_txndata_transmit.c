@@ -573,8 +573,6 @@ static uint32_t nr_txndata_prepend_php_packages(nr_flatbuffer_t* fb,
     return 0;
   }
 
-  nrl_verbosedebug(NRL_DEBUG, "php packages json = |%s|", json);
-
   data = nr_flatbuffers_prepend_string(fb, json);
   nr_free(json);
 
