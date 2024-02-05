@@ -264,5 +264,9 @@ void nr_mongodb_enable(TSRMLS_D) {
   nr_php_wrap_user_function_extra(
       NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
       nr_mongodb_operation, "databaseCommand" TSRMLS_CC);
-  nr_txn_add_php_package(NRPRG(txn), "mongodb/mongodb", PHP_PACKAGE_VERSION_UNKNOWN);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "mongodb/mongodb",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

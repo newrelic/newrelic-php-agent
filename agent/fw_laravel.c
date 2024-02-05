@@ -913,10 +913,16 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
+  /*
+   * Retrieving the version is not included in the INI check below because it is
+   * needed for Laravel's instrumentation.
+   */
   version = nr_php_get_object_constant(this_var, "VERSION");
 
-  // Add php package to transaction
-  nr_txn_add_php_package(NRPRG(txn), "laravel/framework", version);
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    // Add php package to transaction
+    nr_txn_add_php_package(NRPRG(txn), "laravel/framework", version);
+  }
 
   if (version) {
     nrl_debug(NRL_FRAMEWORK, "Laravel version is " NRP_FMT, NRP_PHP(version));
