@@ -32,11 +32,11 @@ type PhpPackagesCollection struct {
 // PHP packages config describes how to collect the JSON for the packages installed
 // for the current test case
 type PhpPackagesConfiguration struct {
-	path                string
-	command             string
-	supported_list_file string
-	expected_packages   []string
-	package_name_only   []string
+	path              string
+	command           string
+	supportedListFile string
+	expectedPackages  []string
+	packageNameOnly   []string
 }
 
 // composer package JSON
@@ -133,46 +133,46 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	}
 
 	// verify command and supported_list are defined
-	var supported_list_file string
-	var expected_packages string
-	var package_name_only string
-	var expected_packages_arr []string
-	var package_name_only_arr []string
-	var command_ok, supported_ok, expected_ok bool
+	var supportedListFile string
+	var expectedPackages string
+	var packageNameOnly string
+	var expectedPackagesArr []string
+	var packageNameOnlyArr []string
+	var commandOK, supportedOK, expectedOK bool
 	var ok bool
 	var err error
 
-	command, command_ok := params["command"]
+	command, commandOK := params["command"]
 
 	// either expect a "supported_packages" key which specifies a file listing all possible packages agent
 	// can detect and this is used to filter the auto-discovered packages (by integration_runner using "command")
-	supported_list_file, supported_ok = params["supported_packages"]
+	supportedListFile, supportedOK = params["supported_packages"]
 
 	// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
-	expected_packages, expected_ok = params["expected_packages"]
-	if expected_ok {
-		expected_packages_arr, err = ParsePackagesList(expected_packages)
+	expectedPackages, expectedOK = params["expected_packages"]
+	if expectedOK {
+		expectedPackagesArr, err = ParsePackagesList(expectedPackages)
 		if nil != err {
 			return nil, fmt.Errorf("Error parsing expected_packages list %s\n", err.Error())
 		}
 	}
 
-	if supported_ok && expected_ok {
+	if supportedOK && expectedOK {
 		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - cannot specify 'supported_packages' and 'expected packages' - got %+v", params)
 	}
 
-	if !supported_ok && !expected_ok {
+	if !supportedOK && !expectedOK {
 		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'supported_packages' or 'expected packages' - got %+v", params)
 	}
 
-	if supported_ok && !command_ok {
+	if supportedOK && !commandOK {
 		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option with `supported_packages` - got %+v", params)
 	}
 
 	// optional option to specify which packages will only have a name because agent cannot determine the version
-	package_name_only, ok = params["package_name_only"]
+	packageNameOnly, ok = params["package_name_only"]
 	if ok {
-		package_name_only_arr, err = ParsePackagesList(package_name_only)
+		packageNameOnlyArr, err = ParsePackagesList(packageNameOnly)
 		if nil != err {
 			return nil, fmt.Errorf("Error parsing package_name_only list %s\n", err.Error())
 		}
@@ -180,19 +180,19 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 
 	p := &PhpPackagesCollection{
 		config: PhpPackagesConfiguration{
-			command:             command,
-			path:                path,
-			supported_list_file: supported_list_file,
-			expected_packages:   expected_packages_arr,
-			package_name_only:   package_name_only_arr},
+			command:           command,
+			path:              path,
+			supportedListFile: supportedListFile,
+			expectedPackages:  expectedPackagesArr,
+			packageNameOnly:   packageNameOnlyArr},
 	}
 
 	return p, nil
 }
 
-func LoadSupportedPackagesList(path, supported_list_file string) ([]string, error) {
+func LoadSupportedPackagesList(path, supportedListFile string) ([]string, error) {
 
-	jsonFile, err := os.Open(filepath.Dir(path) + "/" + supported_list_file)
+	jsonFile, err := os.Open(filepath.Dir(path) + "/" + supportedListFile)
 	if err != nil {
 		return nil, fmt.Errorf("error opening supported list %s!", err.Error())
 	} else {
@@ -216,8 +216,8 @@ func LoadSupportedPackagesList(path, supported_list_file string) ([]string, erro
 
 // expect string containing comma separated list of package names
 // returns an array of strings with all leading/trailing whitespace removed
-func ParsePackagesList(expected_packages string) ([]string, error) {
-	tmp := strings.Replace(expected_packages, " ", "", -1)
+func ParsePackagesList(expectedPackages string) ([]string, error) {
+	tmp := strings.Replace(expectedPackages, " ", "", -1)
 	return strings.Split(tmp, ","), nil
 }
 
@@ -247,22 +247,22 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 	//
 	//  Option #1 is preferable as it provides the most comprehensive view of what the agent can do.
 	//
-	//  Option #2 is needed because some test cases do not exercise all the packages which are 
+	//  Option #2 is needed because some test cases do not exercise all the packages which are
 	//  installed and so the agent will not detect everything for that test case run which it could
 	//  theorectically detect if the test case used all the available packages installed.
 	//
 	//  Once the list of packages the agent is expected to detect is created it is used to filter
 	//  down the package list returned by running the "command" (usually composer) option for the
 	//  test case provided.
-	if 0 < len(pkgs.config.supported_list_file) {
-		supported, err = LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supported_list_file)
+	if 0 < len(pkgs.config.supportedListFile) {
+		supported, err = LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supportedListFile)
 		if nil != err {
 			return nil, err
 		}
-	} else if 0 < len(pkgs.config.expected_packages) {
-		supported = pkgs.config.expected_packages
+	} else if 0 < len(pkgs.config.expectedPackages) {
+		supported = pkgs.config.expectedPackages
 	} else {
-		return nil, fmt.Errorf("Error determining expected packages - supported_list_file and expected_packages are both empty")
+		return nil, fmt.Errorf("Error determining expected packages - supported_packages and expected_packages are both empty")
 	}
 
 	splitCmd := strings.Split(pkgs.config.command, " ")

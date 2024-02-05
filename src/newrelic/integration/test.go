@@ -570,14 +570,14 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		}
 		for i, _ := range expectedPackages {
 			if expectedPackages[i].Name == actualPackages[i].Name {
-				test_package_name_only := false
-				if nil != expectedPkgsCollection.config.package_name_only {
-					test_package_name_only = slices.Contains(expectedPkgsCollection.config.package_name_only, actualPackages[i].Name)
-					if test_package_name_only {
-						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.package_name_only))
+				testPackageNameOnly := false
+				if nil != expectedPkgsCollection.config.packageNameOnly {
+					testPackageNameOnly = slices.Contains(expectedPkgsCollection.config.packageNameOnly, actualPackages[i].Name)
+					if testPackageNameOnly {
+						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.packageNameOnly))
 					}
 				}
-				if test_package_name_only || expectedPackages[i].Version == actualPackages[i].Version {
+				if testPackageNameOnly || expectedPackages[i].Version == actualPackages[i].Version {
 					continue
 				}
 			}
