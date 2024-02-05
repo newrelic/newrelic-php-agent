@@ -1873,29 +1873,6 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
 
-  /*
-   * Check if it's a custom error handler. We don't need to wait for
-   * fcall_end to record the error to the transaction; it can be done earlier
-   * in fcall_begin. However, we must wait until fcall_end to add the error
-   * to any possible segment(s), as at this point we do not know when it
-   * will be caught.
-   */
-  if (NULL != wraprec && wraprec->is_exception_handler) {
-    /*
-     * Before starting the error handler segment, put the error it handled on
-     * the transaction. The choice of E_ERROR for the error level is
-     * basically arbitrary, but matches the error level PHP uses if there
-     * isn't an exception handler, so this should give more consistency for
-     * the user in terms of what they'll see with and without an exception
-     * handler installed.
-     */
-    zval* exception
-        = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    nr_php_error_record_exception(
-        NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
-        "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
-  }
-
   segment = nr_php_stacked_segment_init(segment);
   if (nrunlikely(NULL == segment)) {
     nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
@@ -1984,11 +1961,18 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   if (wraprec && wraprec->is_exception_handler) {
     /*
-     * An exception handler sets the transaction exception in fcall_begin
-     * and does not have a return value, like an fcall_end during an
-     * uncaught exception. This code path is here to simplify and
-     * explicitly enumerate the possible cases.
+     * After running the exception handler segment, create an error from
+     * the exception it handled, and save the error in the transaction.
+     * The choice of E_ERROR for the error level is basically arbitrary,
+     * but matches the error level PHP uses if there isn't an exception
+     * handler, so this should give more consistency for the user in terms
+     * of what they'll see with and without an exception handler installed.
      */
+    zval* exception
+        = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nr_php_error_record_exception(
+        NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
+        "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
     /*
      * Having no return value (and not being an exception handler) indicates

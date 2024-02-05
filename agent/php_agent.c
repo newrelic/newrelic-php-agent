@@ -4,12 +4,15 @@
  */
 #include "php_agent.h"
 #include "php_call.h"
+#include "php_error.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "nr_rum.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+
+#include <Zend/zend_exceptions.h>
 
 #include "php_variables.h"
 
@@ -63,28 +66,50 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
 
 zval* nr_php_get_zval_object_property(zval* object,
                                       const char* cname TSRMLS_DC) {
-  char* name;
-
-  if ((0 == object) || (0 == cname) || (0 == cname[0])) {
-    return 0;
+  if ((NULL == object) || (NULL == cname) || (0 == cname[0])) {
+    return NULL;
   }
-
-  name = (char*)nr_alloca(nr_strlen(cname) + 1);
-  nr_strcpy(name, cname);
 
   if (nr_php_is_zval_valid_object(object)) {
     return nr_php_get_zval_object_property_with_class_internal(
-        object, Z_OBJCE_P(object), name TSRMLS_CC);
+        object, Z_OBJCE_P(object), cname TSRMLS_CC);
   } else if (IS_ARRAY == Z_TYPE_P(object)) {
     zval* data;
 
-    data = nr_php_zend_hash_find(Z_ARRVAL_P(object), name);
+    data = nr_php_zend_hash_find(Z_ARRVAL_P(object), cname);
     if (data) {
       return data;
     }
   }
 
-  return 0;
+  return NULL;
+}
+
+zval* nr_php_get_zval_base_exception_property(zval* exception,
+                                              const char* cname) {
+  zend_class_entry* ce;
+
+  if ((NULL == exception) || (NULL == cname) || (0 == cname[0])) {
+    return NULL;
+  }
+
+  if (nr_php_is_zval_valid_object(exception)) {
+    if (nr_php_error_zval_is_exception(exception)) {
+    /* 
+     * This is inline with what the php source code does to extract properties from
+     * errors and exceptions. Without getting the base class entry, certain values
+     * are incorrect for either errors/exceptions.
+     */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+      ce = zend_get_exception_base(Z_OBJ_P(exception));
+#else
+      ce = zend_get_exception_base(exception);
+#endif
+      return nr_php_get_zval_object_property_with_class_internal(
+          exception, ce, cname TSRMLS_CC);
+    }
+  }
+  return NULL;
 }
 
 zval* nr_php_get_zval_object_property_with_class(zval* object,
