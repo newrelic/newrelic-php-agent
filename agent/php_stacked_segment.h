@@ -165,97 +165,15 @@
  * Stacked segments cannot be used to model async segments.
  */
 
-// clang-format off
 /*
- * Observer API paradigm.
- *
- *
- * The workflow of using stacked segments in connection with regular
- * segments is complicated. It's best illustrated by a short ASCII
- * cartoon.
- *
- *  root <                      root                      root
- *                               |                         |
- *                               *A <                      *A
- *                                                         |
- *                                                         *B
- *
- * We start out with a root segment, OAPI calls nr_php_observer_fcall_begin for
- * A, and it starts stacked segment *A and then nr_php_observer_fcall_begin(B)
- * starts stacked segment *B as a child of *A.
- *
- *  root                        root                       root
- *   |                           |                          |
- *   *A <                        *A                         *A <
- *                               |
- *                               *C <
- *
- * *nr_php_observer_fcall_end(B) decides to discard *B, and *A is the current
- * segment again. nr_php_observer_fcall_begin(C) starts *C gets started as child
- * of *A and when nr_php_observer_fcall_end(C) is called, *C gets discarded too.
- * Note that up to this point, no segment except the root segment ever was
- * allocated via the slab; however, stacked segments are being calloced in
- * stacked_segment_init.
- *
- *   root                        root                       root
- *    |                           |                          |
- *    *A <                        *A                         *A
- *                                |                          |
- *                                *D <                       *D
- *                                                           |
- *                                                           *E <
- *
- * In a next exciting step, nr_php_observer_fcall_begin(D) starts stacked
- * segment *D as child of *A and nr_php_observer_fcall_begin(E) *E is started as
- * child of *D.
- *
- *   root                        root
- *    |                           |
- *    *A                          *A <
- *    |                           |
- *    *D <                        e
- *    |
- *    e
- *
- * Now something new happens. nr_php_observer_fcall_end(E) decides to keep the
- * stacked segment *E. We copy the contents of the stacked segment *E into a
- * segment e we obtained from the slab allocator, and we make e a child of the
- * stacked segment *D. nr_php_observer_fcall_end(D) discards stacked segment *D
- * and its child e is made a child of *D's parent *A.
- *
- *   root                        root                       root
- *    |                           |                          |
- *    *A                          *A <                       *A
- *   / \                          |                         / \
- *  e   *F <                      e                        e   *G <
- *
- * More of the same. nr_php_observer_fcall_begin(F) creates a stacked segment *F
- * as child of A and nr_php_observer_fcall_end(F) eventually discards it.
- * nr_php_observer_fcall_begin(G) then creates a stacked segment *G.
- *
- *   root                        root <                     root
- *    |                           |                         / \
- *    *A <                        a                        a   *H
- *   / \                         / \                      / \
- *  e   g                       e   g                    e   g
- *
- * Finally nr_php_observer_fcall_end(G) also decides to keep *G. Again, it is
- * turned into a regular segment g and made a child of *A. Then we decide to
- * keep *A, turning it into regular segment a and making it a child of the root
- * segment. Afterward a nr_php_observer_fcall_begin(H) starts stacked segment *H
- * as child of the root segment.
- *
- * Note that with this workflow, we went through the
- * nr_segment_start/nr_segment_discard cycle for only 3 times,
- * although we used 8 different segments. For the remaining 5 segments, we
- * went through the stacked segment cycle.
- *
- * Also note that this only works with segments on the default parent stack.
- * Stacked segments cannot be used to model async segments.
+ * Observer API paradigm: OAPI cannot make use of stacked segments and
+ * therefore uses the txn segment stack API.
  */
 // clang-format on
 
 #include "php_agent.h"
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 /*
  * Purpose : Initialize a stacked segment.
@@ -315,4 +233,5 @@ extern void nr_php_stacked_segment_unwind(TSRMLS_D);
 extern nr_segment_t* nr_php_stacked_segment_move_to_heap(
     nr_segment_t* stacked TSRMLS_DC);
 
+#endif /* not OAPI */
 #endif /* PHP_STACKED_SEGMENT_HDR */

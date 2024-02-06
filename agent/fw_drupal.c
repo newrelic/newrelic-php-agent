@@ -253,8 +253,19 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
    * checking a counter.
    */
   if (1 == NRPRG(drupal_http_request_depth)) {
+    /*
+     * Parent this segment to the txn root so as to not interfere with
+     * the OAPI default segment stack, which is used to dispatch to the
+     * after function properly
+     */
     NRPRG(drupal_http_request_segment)
         = nr_segment_start(NRPRG(txn), NULL, NULL);
+    /*
+     * The new segment needs to have the wraprec data attached, so that
+     * fcall_end is able to properly dispatch to the after wrapper, as
+     * this new segment is now at the top of the segment stack.
+     */
+    NRPRG(drupal_http_request_segment)->wraprec = auto_segment->wraprec;
   }
 }
 NR_PHP_WRAPPER_END
