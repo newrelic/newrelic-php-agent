@@ -513,26 +513,32 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var test_package_name_only bool = false
 
 	if nil != t.phpPackagesConfig {
-		expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
-		if nil != err {
-			t.Fatal(err)
-			return
+
+		expectNullPkgs := "null" == string(t.phpPackagesConfig)
+		if expectNullPkgs {
+			expectedPackages = nil
+		} else {
+			expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
+			if nil != err {
+				t.Fatal(err)
+				return
+			}
+			test_package_name_only = expectedPkgsCollection.config.package_name_only
+			if test_package_name_only {
+				t.AddNote("Tested package name only")
+			}
+			expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
+			if nil != err {
+				t.Fatal(err)
+				return
+			}
 		}
-		test_package_name_only = expectedPkgsCollection.config.package_name_only
-		if test_package_name_only {
-			t.AddNote("Tested package name only")
-		}
-		expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
-		if nil != err {
-			t.Fatal(err)
-			return
-		}
-		if nil == expectedPackages || 0 == len(expectedPackages) {
+		if !expectNullPkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
 			t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packaged detected in environment!"))
 		}
 	} else {
-               // no configuration given for package (no EXPECT_PHP_PACKAGES in test case) so don't run test
-               return
+		// no configuration given for package (no EXPECT_PHP_PACKAGES in test case) so don't run test
+		return
 	}
 
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
