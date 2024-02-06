@@ -9,6 +9,7 @@
 #include "nr_txn.h"
 #include "nr_distributed_trace_private.h"
 #include "util_memory.h"
+#include "locale.h"
 
 static void test_distributed_trace_create_destroy(void) {
   // create a few instances to make sure state stays separate
@@ -1350,6 +1351,19 @@ static void test_create_trace_state_header(void) {
   tlib_pass_if_not_null("priority is rounded to 6 decimal places",
                         nr_strstr(result, expected));
   nr_free(result);
+
+  /*
+   * Test: locale is set to use `,` instead of `.` for decimal values
+   */
+  setlocale(LC_NUMERIC, "pl_PL");
+  dt->priority = 0.123456;
+  expected = "777@nr=0-0-1234-9876-123456789-meatball!-0-0.123456-";
+  result
+      = nr_distributed_trace_create_w3c_tracestate_header(dt, span_id, txn_id);
+  tlib_pass_if_not_null("agent should handle different locale correctly", 
+                        nr_strstr(result, expected));
+  nr_free(result);
+  setlocale(LC_NUMERIC, "en_US");
 
   nr_distributed_trace_destroy(&dt);
 }
