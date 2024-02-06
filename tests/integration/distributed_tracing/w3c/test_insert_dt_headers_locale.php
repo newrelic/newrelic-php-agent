@@ -27,7 +27,7 @@ ok - locale handled correctly for w3c dt priority
 require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 
 $headers = array('Accept-Language' => 'en-US,en;q=0.5');
-setlocale(LC_NUMERIC, "fr_FR");
+setlocale(LC_NUMERIC, 'fr_FR');
 tap_assert(newrelic_insert_distributed_trace_headers($headers), 'insert function succeeded');
 tap_assert(array_key_exists('Accept-Language', $headers), 'preexisting header is present');
 tap_assert(array_key_exists('newrelic', $headers), 'newrelic header is present');
