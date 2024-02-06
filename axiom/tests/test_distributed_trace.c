@@ -1360,7 +1360,7 @@ static void test_create_trace_state_header(void) {
   expected = "777@nr=0-0-1234-9876-123456789-meatball!-0-0.123456-";
   result
       = nr_distributed_trace_create_w3c_tracestate_header(dt, span_id, txn_id);
-  tlib_pass_if_not_null("agent should handle different locale correctly", 
+  tlib_pass_if_not_null("locale should not affect priority formatting", 
                         nr_strstr(result, expected));
   nr_free(result);
   setlocale(LC_NUMERIC, "en_US");
