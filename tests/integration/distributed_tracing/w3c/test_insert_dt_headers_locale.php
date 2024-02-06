@@ -33,5 +33,5 @@ tap_assert(array_key_exists('Accept-Language', $headers), 'preexisting header is
 tap_assert(array_key_exists('newrelic', $headers), 'newrelic header is present');
 tap_assert(array_key_exists('tracestate', $headers), 'tracestate header is present');
 tap_assert(array_key_exists('traceparent', $headers), 'traceparent header is present');
-tap_refute(str_contains($headers['tracestate'], ','), 'locale handled correctly for w3c dt priority');
+tap_refute(strpos($headers['tracestate'], ','), 'locale handled correctly for w3c dt priority');
 
