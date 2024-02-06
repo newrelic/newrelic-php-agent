@@ -1892,7 +1892,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (nrunlikely(NULL == segment)) {
-    nrl_verbosedebug(NRL_AGENT, "Error initializing stacked segment.");
+    nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
     return;
   }
 
