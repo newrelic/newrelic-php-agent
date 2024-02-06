@@ -148,7 +148,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// can detect and this is used to filter the auto-discovered packages (by integration_runner using "command")
 	supportedListFile, supportedOK = params["supported_packages"]
 
-	// or "expected_packages" which is specifies a fixed list of packages we expect to show up in this test
+	// or "expected_packages" which specifies a fixed list of packages we expect to show up in this test
 	expectedPackages, expectedOK = params["expected_packages"]
 	if expectedOK {
 		expectedPackagesArr, err = ParsePackagesList(expectedPackages)
