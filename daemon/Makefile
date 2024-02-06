@@ -46,15 +46,6 @@ clean:
 clean-bin:
 	$(GO) clean $(GOFLAGS) -i ./...
 
-
-.PHONY: go-minimum-version
-go-minimum-version:
-	@if $(GO) version | awk '/go1.(1[1-9]|[2-9][0-9])[\. ]/ { exit 0 } { exit 1 }'; then \
-		true; \
-	else \
-		echo -n 'Go 1.11 or newer required; found '; $(GO) version; false; \
-	fi
-
 # setup depenencies for daemon
 # THIS IS TEMPORARY NEEDS TO BE REPLACED BY PINNED VENDOR DEPENDENCIES
 # will download vendor dependencies
@@ -65,11 +56,11 @@ go-setup-dependencies:
 
 # Build the binaries
 .PHONY: $(BINARIES)
-$(BINARIES): clean-bin go-setup-dependencies go-minimum-version
+$(BINARIES): clean-bin go-setup-dependencies
 	$(GO) install $(GOFLAGS) $(GO_MODULE)/cmd/$@
 
 # the -race flag enabled the integrated Go race detector. Output to stderr.
-race: clean-bin go-minimum-version go-setup-dependencies
+race: clean-bin go-setup-dependencies
 	$(GO) install -race $(GOFLAGS) $(GO_MODULE)/$@
 
 # Test targets
@@ -85,10 +76,10 @@ cover:
 	rm -f $(DAEMON_COV_FILE)
 
 .PHONY: integration
-integration: go-minimum-version go-setup-dependencies
+integration: go-setup-dependencies
 	$(GO) test $(GOFLAGS) -tags integration ./...
 
 .PHONY: test
-test: go-minimum-version go-setup-dependencies
+test: go-setup-dependencies
 	$(GO) test $(GOFLAGS) ./...
 
