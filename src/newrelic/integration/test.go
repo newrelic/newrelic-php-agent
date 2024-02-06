@@ -514,8 +514,8 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 
 	if nil != t.phpPackagesConfig {
 
-		expect_null_pkgs := "null" == string(t.phpPackagesConfig)
-		if expect_null_pkgs {
+		expectNullPkgs := "null" == string(t.phpPackagesConfig)
+		if expectNullPkgs {
 			expectedPackages = nil
 		} else {
 			expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
@@ -533,7 +533,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				return
 			}
 		}
-		if !expect_null_pkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
+		if !expectNullPkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
 			t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packaged detected in environment!"))
 		}
 	} else {
