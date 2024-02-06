@@ -9,7 +9,7 @@
 #include "nr_txn.h"
 #include "nr_distributed_trace_private.h"
 #include "util_memory.h"
-#include "locale.h"
+#include <locale.h>
 
 static void test_distributed_trace_create_destroy(void) {
   // create a few instances to make sure state stays separate
