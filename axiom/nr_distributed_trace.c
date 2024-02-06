@@ -1211,6 +1211,10 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
 
   nr_free(priority_buf);
 
+  nrl_verbosedebug(NRL_CAT,
+                   "Outbound W3C TraceState Context Header generated: %s",
+                   trace_context_header);
+
   return trace_context_header;
 }
 
