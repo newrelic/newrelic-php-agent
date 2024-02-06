@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -510,35 +511,35 @@ func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreat
 
 func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var expectedPackages []PhpPackage
-	var test_package_name_only bool = false
+	var expectedPkgsCollection *PhpPackagesCollection
+	var expectNullPkgs bool
 
 	if nil != t.phpPackagesConfig {
+		var err error
 
-		expectNullPkgs := "null" == string(t.phpPackagesConfig)
+		expectNullPkgs = "null" == string(t.phpPackagesConfig)
 		if expectNullPkgs {
 			expectedPackages = nil
 		} else {
-			expectedPkgsCollection, err := NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
+			expectedPkgsCollection, err = NewPhpPackagesCollection(t.Path, t.phpPackagesConfig)
 			if nil != err {
 				t.Fatal(err)
 				return
 			}
-			test_package_name_only = expectedPkgsCollection.config.package_name_only
-			if test_package_name_only {
-				t.AddNote("Tested package name only")
-			}
+
 			expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
 			if nil != err {
 				t.Fatal(err)
 				return
 			}
 		}
-		if !expectNullPkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
-			t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packaged detected in environment!"))
-		}
 	} else {
 		// no configuration given for package (no EXPECT_PHP_PACKAGES in test case) so don't run test
 		return
+	}
+
+	if !expectNullPkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
+		t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packages detected in environment!"))
 	}
 
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
@@ -569,7 +570,14 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		}
 		for i, _ := range expectedPackages {
 			if expectedPackages[i].Name == actualPackages[i].Name {
-				if test_package_name_only || expectedPackages[i].Version == actualPackages[i].Version {
+				testPackageNameOnly := false
+				if nil != expectedPkgsCollection.config.packageNameOnly {
+					testPackageNameOnly = slices.Contains(expectedPkgsCollection.config.packageNameOnly, actualPackages[i].Name)
+					if testPackageNameOnly {
+						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.packageNameOnly))
+					}
+				}
+				if testPackageNameOnly || expectedPackages[i].Version == actualPackages[i].Version {
 					continue
 				}
 			}
