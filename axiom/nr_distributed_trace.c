@@ -18,6 +18,7 @@
 #include "util_time.h"
 #include "util_strings.h"
 #include "util_logging.h"
+#include "util_number_converter.h"
 
 /*
  * Purpose : Helper function to assign a string value to a field.  This function
@@ -1164,6 +1165,8 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
   const char* app_id;
   char* trace_context_header = NULL;
   char* sampled = "0";
+  double priority;
+  char* priority_buf = NULL;
 
   if (nrunlikely(NULL == dt)) {
     return NULL;
@@ -1197,11 +1200,16 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
     sampled = "1";
   }
 
-  trace_context_header = nr_formatf(
-      "%s@nr=0-0-%s-%s-%s-%s-%s-%.6f-%" PRId64, trusted_account_key, account_id,
-      app_id, NRBLANKSTR(span_id), NRBLANKSTR(txn_id), sampled,
-      nr_distributed_trace_get_priority(dt),
-      (nr_get_time() / NR_TIME_DIVISOR_MS));
+  priority = nr_distributed_trace_get_priority(dt);
+
+  priority_buf = nr_priority_double_to_str(priority);
+
+  trace_context_header
+      = nr_formatf("%s@nr=0-0-%s-%s-%s-%s-%s-%s-%" PRId64, trusted_account_key,
+                   account_id, app_id, NRBLANKSTR(span_id), NRBLANKSTR(txn_id),
+                   sampled, priority_buf, (nr_get_time() / NR_TIME_DIVISOR_MS));
+
+  nr_free(priority_buf);
 
   return trace_context_header;
 }
