@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 )
@@ -282,7 +281,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		json.Unmarshal([]byte(out), &detected)
 		for _, v := range detected.Installed {
 			//fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
-			if slices.Contains(supported, v.Name) {
+			if StringSliceContains(supported, v.Name) {
 				var version string
 
 				// remove any 'v' from front of version string
