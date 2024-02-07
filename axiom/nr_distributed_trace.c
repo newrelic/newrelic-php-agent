@@ -1165,7 +1165,7 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
   const char* app_id;
   char* trace_context_header = NULL;
   char* sampled = "0";
-  double priority;
+  nr_sampling_priority_t priority;
   char* priority_buf = NULL;
 
   if (nrunlikely(NULL == dt)) {
