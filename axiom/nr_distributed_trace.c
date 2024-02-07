@@ -1204,16 +1204,12 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
 
   priority_buf = nr_priority_double_to_str(priority);
 
-  trace_context_header
-      = nr_formatf("%s@nr=0-0-%s-%s-%s-%s-%s-%s-%" PRId64, trusted_account_key,
-                   account_id, app_id, NRBLANKSTR(span_id), NRBLANKSTR(txn_id),
-                   sampled, priority_buf, (nr_get_time() / NR_TIME_DIVISOR_MS));
+  trace_context_header = nr_formatf(
+      "%s@nr=0-0-%s-%s-%s-%s-%s-%s-%" PRId64, trusted_account_key, account_id,
+      app_id, NRBLANKSTR(span_id), NRBLANKSTR(txn_id), sampled,
+      NRBLANKSTR(priority_buf), (nr_get_time() / NR_TIME_DIVISOR_MS));
 
   nr_free(priority_buf);
-
-  nrl_verbosedebug(NRL_CAT,
-                   "Outbound W3C TraceState Context Header generated: %s",
-                   NRSAFESTR(trace_context_header));
 
   return trace_context_header;
 }

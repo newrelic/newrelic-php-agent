@@ -2782,6 +2782,12 @@ char* nr_txn_create_w3c_tracestate_header(const nrtxn_t* txn,
   header = nr_distributed_trace_create_w3c_tracestate_header(
       txn->distributed_trace, span_id, txn_id);
 
+  if (txn->special_flags.debug_cat) {
+    nrl_verbosedebug(NRL_CAT,
+                     "Outbound W3C TraceState Context Header generated: %s",
+                     NRSAFESTR(header));
+  }
+
   nr_free(txn_id);
   return header;
 }
@@ -3426,7 +3432,8 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     event_dropped = true;
   } else {
     /* event passed log level filter so add it */
-    e = log_event_create(log_level_name, log_message, timestamp, context_attributes, txn, app);
+    e = log_event_create(log_level_name, log_message, timestamp,
+                         context_attributes, txn, app);
     if (NULL == e) {
       nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
       event_dropped = true;
