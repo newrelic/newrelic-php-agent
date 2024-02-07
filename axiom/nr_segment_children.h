@@ -19,8 +19,36 @@
 #include "util_memory.h"
 #include "util_vector.h"
 
+/*
+ * Forward declaration of nr_segment_t, and some getters/setters,
+ * since we have a circular dependency with nr_segment.h.
+ */
+typedef struct _nr_segment_t nr_segment_t;
+extern size_t nr_segment_get_child_ix(const nr_segment_t*);
+extern void nr_segment_set_child_ix(nr_segment_t*, size_t);
+
+/*
+ * The data structure for packed children, holding an array of children and the
+ * number of elements in the array.
+ */
+typedef struct {
+  size_t count;
+  nr_segment_t* elements[NR_SEGMENT_CHILDREN_PACKED_LIMIT];
+} nr_segment_packed_children_t;
+
+/*
+ * The children structure. If `is_packed` is true the union is used as packed,
+ * otherwise it is used as vector.
+ */
+typedef struct {
+  bool is_packed;
+  union {
+    nr_vector_t vector;
+    nr_segment_packed_children_t packed;
+  };
+} nr_segment_children_t;
+
 #include "nr_segment_children_private.h"
-#include "nr_segment_types.h"
 
 /*
  * Purpose : Initialize a segment's children.
@@ -111,15 +139,15 @@ static inline bool nr_segment_children_add(nr_segment_children_t* children,
     if (new_count > NR_SEGMENT_CHILDREN_PACKED_LIMIT) {
       // We're about to overflow the packed array; migrate to a vector.
       nr_segment_children_migrate_to_vector(children);
-      child->child_ix = nr_vector_size(&children->vector);
+      nr_segment_set_child_ix(child, nr_vector_size(&children->vector));
       nr_segment_children_add_vector(children, child);
     } else {
       children->packed.elements[children->packed.count] = child;
       children->packed.count = new_count;
-      child->child_ix = new_count - 1;
+      nr_segment_set_child_ix(child, new_count - 1);
     }
   } else {
-    child->child_ix = nr_vector_size(&children->vector);
+    nr_segment_set_child_ix(child, nr_vector_size(&children->vector));
     nr_segment_children_add_vector(children, child);
   }
 
@@ -142,7 +170,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
   }
 
   if (children->is_packed) {
-    size_t ix = child->child_ix;
+    size_t ix = nr_segment_get_child_ix(child);
     const size_t end = children->packed.count - 1;
     nr_segment_t* temp;
 
@@ -152,12 +180,12 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
 
     // Swap'n'Pop
     temp = children->packed.elements[end];
-    temp->child_ix = ix;
+    nr_segment_set_child_ix(temp, ix);
     children->packed.elements[ix] = temp;
     children->packed.count -= 1;
 
   } else {
-    size_t index = child->child_ix;
+    size_t index = nr_segment_get_child_ix(child);
     nr_segment_t* temp;
     if (index >= nr_vector_size(&children->vector)) {
         return false;
@@ -166,7 +194,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
     if (!nr_vector_get_element(&children->vector, nr_vector_size(&children->vector)-1, (void**)&temp)) {
       return false;
     }
-    temp->child_ix=index;
+    nr_segment_set_child_ix(temp, index);
 
     if (!nr_vector_replace(&children->vector, index, temp)) {
       return false;

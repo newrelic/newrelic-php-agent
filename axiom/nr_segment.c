@@ -1239,3 +1239,16 @@ bool nr_segment_attributes_user_txn_event_add(nr_segment_t* segment,
 
   return (NR_SUCCESS == status);
 }
+
+size_t nr_segment_get_child_ix(const nr_segment_t* segment) {
+  if (NULL == segment) {
+    return 0;
+  }
+  return segment->child_ix;
+}
+
+void nr_segment_set_child_ix(nr_segment_t* segment, size_t ix) {
+  if (NULL != segment) {
+    segment->child_ix = ix;
+  }
+}
