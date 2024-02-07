@@ -90,7 +90,7 @@ endif
 export AR CC CFLAGS CPPFLAGS LDFLAGS
 
 .PHONY: all
-all: agent daemon
+all: agent
 
 #
 # Print some of the build specific variables so they can be computed
