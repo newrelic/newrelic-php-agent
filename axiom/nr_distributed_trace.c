@@ -41,7 +41,7 @@ static inline void set_dt_field(char** field, const char* value) {
 }
 
 /*
- * Purpose      Format double priority numbers to string.
+ * Purpose      Format trace's priority for tracestate in W3C header.
  *
  * @param       value   double
  * @return      char*   priority string buffer
