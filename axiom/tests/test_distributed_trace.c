@@ -1355,9 +1355,9 @@ static void test_create_trace_state_header(void) {
   /*
    * Test: first verify we are able to set locale
    */
-  result = setlocale(LC_NUMERIC, "pl_PL");
-  tlib_pass_if_not_null("call to setlocale should succeed", result);
-  nr_free(result);
+  tlib_pass_if_not_null("call to setlocale should succeed",
+                        setlocale(LC_NUMERIC, "pl_PL"));
+
   /*
    * Test: locale is set to use `,` instead of `.` for decimal values
    */
