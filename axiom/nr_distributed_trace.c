@@ -50,7 +50,7 @@ static inline void set_dt_field(char** field, const char* value) {
 static char* nr_priority_double_to_str(nr_sampling_priority_t value) {
   char* buf = NULL;
 
-  buf = nr_formatf(NR_PRIORITY_DT_FMT, value);
+  buf = nr_formatf("%.6f", value);
 
   for (int i = 0; i < nr_strlen(buf); i++) {
     if (',' == buf[i]) {
@@ -1224,6 +1224,9 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
   priority = nr_distributed_trace_get_priority(dt);
 
   priority_buf = nr_priority_double_to_str(priority);
+  if (NULL == priority_buf) {
+    nrl_warning(NRL_CAT, "Failed to allocate priority buffer");
+  }
 
   trace_context_header = nr_formatf(
       "%s@nr=0-0-%s-%s-%s-%s-%s-%s-%" PRId64, trusted_account_key, account_id,

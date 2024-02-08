@@ -12,8 +12,6 @@
 #include "util_time.h"
 #include "util_object.h"
 
-#define NR_PRIORITY_DT_FMT "%.6f"
-
 static const char NR_DISTRIBUTED_TRACE_ACCEPT_SUCCESS[]
     = "Supportability/DistributedTrace/AcceptPayload/Success";
 static const char NR_DISTRIBUTED_TRACE_ACCEPT_EXCEPTION[]
