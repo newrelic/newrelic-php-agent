@@ -1353,9 +1353,14 @@ static void test_create_trace_state_header(void) {
   nr_free(result);
 
   /*
+   * Test: first verify we are able to set locale
+   */
+  result = setlocale(LC_NUMERIC, "pl_PL");
+  tlib_pass_if_not_null("call to setlocale should succeed", result);
+  nr_free(result);
+  /*
    * Test: locale is set to use `,` instead of `.` for decimal values
    */
-  setlocale(LC_NUMERIC, "pl_PL");
   dt->priority = 0.123456;
   expected = "777@nr=0-0-1234-9876-123456789-meatball!-0-0.123456-";
   result
