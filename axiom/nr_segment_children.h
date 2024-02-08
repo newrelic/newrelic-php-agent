@@ -171,7 +171,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
   }
 
   if (children->is_packed) {
-    size_t ix = (size_t)nr_segment_get_child_ix(child);
+    size_t ix = (size_t)nr_segment_get_child_ix(child); // safe to cast, child != NULL asserted earlier
     const size_t end = children->packed.count - 1;
     nr_segment_t* temp;
 
