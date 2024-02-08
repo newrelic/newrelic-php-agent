@@ -1224,7 +1224,7 @@ char* nr_distributed_trace_create_w3c_tracestate_header(
 
   priority_buf = nr_priority_double_to_str(priority);
   if (NULL == priority_buf) {
-    nrl_warning(NRL_CAT, "Failed to allocate priority buffer");
+    nrl_verbosedebug(NRL_CAT, "Failed to allocate priority buffer");
   }
 
   trace_context_header = nr_formatf(
