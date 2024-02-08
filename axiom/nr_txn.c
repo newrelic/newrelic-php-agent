@@ -2782,7 +2782,7 @@ char* nr_txn_create_w3c_tracestate_header(const nrtxn_t* txn,
   header = nr_distributed_trace_create_w3c_tracestate_header(
       txn->distributed_trace, span_id, txn_id);
 
-  if (txn->special_flags.debug_cat) {
+  if (txn->special_flags.debug_dt) {
     nrl_verbosedebug(NRL_CAT,
                      "Outbound W3C TraceState Context Header generated: %s",
                      NRSAFESTR(header));
