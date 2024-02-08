@@ -1355,6 +1355,7 @@ static void test_create_trace_state_header(void) {
   /*
    * Test: locale is set to use `,` instead of `.` for decimal values
    */
+  setlocale(LC_NUMERIC, "pl_PL");
   dt->priority = 0.123456;
   expected = "777@nr=0-0-1234-9876-123456789-meatball!-0-0.123456-";
   result
