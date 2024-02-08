@@ -41,6 +41,27 @@ static inline void set_dt_field(char** field, const char* value) {
   }
 }
 
+/*
+ * Purpose      Format double priority numbers to string.
+ *
+ * @param       value   double
+ * @return      char*   priority string buffer
+ */
+static char* nr_priority_double_to_str(nr_sampling_priority_t value) {
+  char* buf = NULL;
+
+  buf = nr_formatf(NR_PRIORITY_DT_FMT, value);
+
+  for (int i = 0; i < nr_strlen(buf); i++) {
+    if (',' == buf[i]) {
+      buf[i] = '.';
+      break;
+    }
+  }
+
+  return buf;
+}
+
 nr_distributed_trace_t* nr_distributed_trace_create(void) {
   nr_distributed_trace_t* dt;
   dt = (nr_distributed_trace_t*)nr_zalloc(sizeof(nr_distributed_trace_t));

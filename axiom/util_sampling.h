@@ -24,8 +24,6 @@
 #define NR_PRIORITY_ERROR (-1.0)
 #define NR_PRIORITY_LOWEST 0.0
 #define NR_PRIORITY_HIGHEST 1.0
-#define NR_PRIORITY_MAXLEN 6
-#define NR_PRIORITY_DT_FMT "%.6f"
 
 typedef double nr_sampling_priority_t;
 
@@ -40,27 +38,6 @@ typedef double nr_sampling_priority_t;
 static inline nr_sampling_priority_t nr_generate_initial_priority(
     nr_random_t* rnd) {
   return nr_random_real(rnd);
-}
-
-/*
- * Purpose      Format double priority numbers to string.
- *
- * @param       value   double
- * @return      char*   priority string buffer
- */
-static char* nr_priority_double_to_str(nr_sampling_priority_t value) {
-  char* buf = NULL;
-
-  buf = nr_formatf(NR_PRIORITY_DT_FMT, value);
-
-  for (int i = 0; i < nr_strlen(buf); i++) {
-    if (',' == buf[i]) {
-      buf[i] = '.';
-      break;
-    }
-  }
-
-  return buf;
 }
 
 /*
