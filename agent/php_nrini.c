@@ -950,6 +950,10 @@ static void foreach_special_control_flag(const char* str,
     NR_PHP_PROCESS_GLOBALS(special_flags).debug_cat = 1;
     return;
   }
+  if (0 == nr_strcmp(str, "debug_dt")) {
+    NR_PHP_PROCESS_GLOBALS(special_flags).debug_dt = 1;
+    return;
+  }
   if (0 == nr_strcmp(str, "disable_laravel_queue")) {
     NR_PHP_PROCESS_GLOBALS(special_flags).disable_laravel_queue = 1;
     return;
@@ -977,6 +981,7 @@ static PHP_INI_MH(nr_special_mh) {
   NR_PHP_PROCESS_GLOBALS(special_flags).debug_autorum = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).debug_cat = 0;
+  NR_PHP_PROCESS_GLOBALS(special_flags).debug_dt = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).disable_laravel_queue = 0;
 
   if (0 != NEW_VALUE_LEN) {

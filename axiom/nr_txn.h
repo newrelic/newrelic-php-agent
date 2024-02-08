@@ -315,6 +315,7 @@ typedef struct _nrtxn_t {
     uint8_t no_sql_parsing;   /* don't do SQL parsing */
     uint8_t show_sql_parsing; /* show various steps in SQL feature parsing */
     uint8_t debug_cat;        /* extra logging for CAT */
+    uint8_t debug_dt;         /* extra logging for DT */
   } special_flags;
 
   /*

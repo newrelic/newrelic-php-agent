@@ -871,6 +871,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = NR_PHP_PROCESS_GLOBALS(special_flags).show_sql_parsing;
   NRTXN(special_flags.debug_cat)
       = NR_PHP_PROCESS_GLOBALS(special_flags).debug_cat;
+  NRTXN(special_flags.debug_dt)
+      = NR_PHP_PROCESS_GLOBALS(special_flags).debug_dt;
 
   NRTXNGLOBAL(prepared_statements)
       = nr_hashmap_create(nr_php_txn_prepared_statement_destroy);
