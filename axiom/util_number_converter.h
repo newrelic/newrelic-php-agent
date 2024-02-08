@@ -26,14 +26,6 @@
 extern void nr_itoa(char* buf, size_t len, int x);
 
 /*
- * Purpose      Format double priority numbers to string.
- *
- * @param       value   double
- * @return      char*   priority string buffer
- */
-extern char* nr_priority_double_to_str(double value);
-
-/*
  * Purpose : Format double precision numbers.
  *
  * Params  : 1. The buffer to write into

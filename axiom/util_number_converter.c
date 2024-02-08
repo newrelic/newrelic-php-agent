@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "util_memory.h"
 #include "util_number_converter.h"
 #include "util_strings.h"
 
@@ -45,22 +44,6 @@ void nr_itoa(char* buf, size_t len, int x) {
   }
 
   nr_strlcpy(buf, p, len);
-}
-
-#define PRIORITY_MAXLEN 6
-char* nr_priority_double_to_str(double value) {
-  char* buf = NULL;
-
-  buf = nr_formatf("%.6f", value);
-
-  for (int i = 0; i < PRIORITY_MAXLEN; i++) {
-    if (',' == buf[i]) {
-      buf[i] = '.';
-      break;
-    }
-  }
-
-  return buf;
 }
 
 int nr_double_to_str(char* buf, int buf_len, double input) {
