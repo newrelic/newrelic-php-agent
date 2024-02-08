@@ -18,7 +18,6 @@
 #include "util_time.h"
 #include "util_strings.h"
 #include "util_logging.h"
-#include "util_number_converter.h"
 
 /*
  * Purpose : Helper function to assign a string value to a field.  This function
