@@ -141,7 +141,7 @@ typedef struct _nr_segment_t {
   /* Tree related stuff. */
   nr_segment_t* parent;
   nr_segment_children_t children;
-  size_t child_ix; /* index of this segment in its parent->children vector */
+  size_t child_ix;
   nr_segment_color_t color;
 
   /* Generic segment fields. */
@@ -652,10 +652,9 @@ extern void nr_segment_record_exception(nr_segment_t* segment,
  *
  * Paramas : 1. The pointer to the segment
  *
- * Returns : the child_ix, or 0 if passed NULL
- *           (Note: 0 is a valid ix)
+ * Returns : the child_ix, or -1 if passed NULL
  */
-extern size_t nr_segment_get_child_ix(const nr_segment_t*);
+extern ssize_t nr_segment_get_child_ix(const nr_segment_t*);
 
 /*
  * Purpose : Sets the child_ix of a segment.

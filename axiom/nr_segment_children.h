@@ -13,6 +13,7 @@
 #define NR_SEGMENT_CHILDREN_HDR
 
 #include <stdbool.h>
+#include <sys/types.h>
 
 #define NR_SEGMENT_CHILDREN_PACKED_LIMIT 8
 
@@ -24,7 +25,7 @@
  * since we have a circular dependency with nr_segment.h.
  */
 typedef struct _nr_segment_t nr_segment_t;
-extern size_t nr_segment_get_child_ix(const nr_segment_t*);
+extern ssize_t nr_segment_get_child_ix(const nr_segment_t*);
 extern void nr_segment_set_child_ix(nr_segment_t*, size_t);
 
 /*
@@ -170,7 +171,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
   }
 
   if (children->is_packed) {
-    size_t ix = nr_segment_get_child_ix(child);
+    size_t ix = (size_t)nr_segment_get_child_ix(child);
     const size_t end = children->packed.count - 1;
     nr_segment_t* temp;
 
@@ -185,7 +186,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
     children->packed.count -= 1;
 
   } else {
-    size_t index = nr_segment_get_child_ix(child);
+    size_t index = (size_t)nr_segment_get_child_ix(child);
     nr_segment_t* temp;
     if (index >= nr_vector_size(&children->vector)) {
         return false;
