@@ -141,7 +141,7 @@ typedef struct _nr_segment_t {
   /* Tree related stuff. */
   nr_segment_t* parent;
   nr_segment_children_t children;
-  size_t child_ix;
+  size_t child_ix; /* index of this segment in its parent->children vector */
   nr_segment_color_t color;
 
   /* Generic segment fields. */
