@@ -143,13 +143,9 @@ static void test_remove(void) {
       "Removing an existing segment from an array of children must "
       "reduce the number of used locations",
       nr_segment_children_size(&children), total_children - 1);
-  tlib_pass_if_false(
-      "Removing a non-existent segment from an array of children must not be "
-      "successful",
-      nr_segment_children_remove(&children, &first_born), "Expected false");
-  tlib_pass_if_null(
-      "Removing the first born means the second born must not have a prev",
-      nr_segment_children_get_prev(&children, &second_born));
+  tlib_pass_if_ptr_equal(
+      "Removing the first born means the second born must have a new prev",
+      nr_segment_children_get_prev(&children, &second_born), &fifth_born);
   tlib_pass_if_ptr_equal(
       "Removing the first born means the second born must still have a next",
       nr_segment_children_get_next(&children, &second_born), &third_born);
@@ -176,8 +172,9 @@ static void test_remove(void) {
       "Removing an existing segment from an array of children must "
       "reduce the number of used locations",
       nr_segment_children_size(&children), total_children - 3);
-  tlib_pass_if_null("Removing the fifth born means the fourth has no next",
-                    nr_segment_children_get_next(&children, &fourth_born));
+  tlib_pass_if_ptr_equal(
+      "Removing the fifth born means the previous last element has a new next",
+      nr_segment_children_get_next(&children, &fourth_born), &second_born);
 
   /* Clean up the mocked array of children */
   nr_segment_children_deinit(&children);

@@ -179,6 +179,17 @@ static void test_segment_children_remove(nr_segment_children_t* children,
     tlib_pass_if_bool_equal("adding a child should succeed", true,
                             nr_segment_children_add(children, &segments[i]));
   }
+  /*
+   * initialize the child_ix value of this segment so that the attempted
+   * removal does not check an uninitialized value. In the real operation
+   * of the agent, external constructs should prevent the attempted
+   * removal of uninitialized segments.
+   */
+  segments[count].child_ix=count;
+
+  tlib_pass_if_size_t_equal("adding elements should increment size",
+                            count,
+                            nr_segment_children_size(children));
 
   tlib_pass_if_bool_equal(
       "removing a non-existent element should fail", false,
