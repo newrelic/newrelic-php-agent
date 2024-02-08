@@ -186,7 +186,7 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
     children->packed.count -= 1;
 
   } else {
-    size_t index = (size_t)nr_segment_get_child_ix(child);
+    size_t index = (size_t)nr_segment_get_child_ix(child); // safe to cast, child != NULL asserted earlier
     nr_segment_t* temp;
     if (index >= nr_vector_size(&children->vector)) {
         return false;
