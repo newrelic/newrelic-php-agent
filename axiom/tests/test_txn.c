@@ -8537,6 +8537,43 @@ static void test_txn_log_configuration(void) {
   // clang-format on
 }
 
+static void test_nr_txn_add_php_package(void) {
+  char* json;
+  char* package_name1 = "Laravel";
+  char* package_version1 = "8.83.27";
+  char* package_name2 = "Slim";
+  char* package_version2 = "4.12.0";
+  char* package_name3 = "Drupal";
+  char* package_version3 = NULL;
+  char* package_name4 = "Wordpress";
+  char* package_version4 = PHP_PACKAGE_VERSION_UNKNOWN;
+  nrtxn_t* txn = new_txn(0);
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_add_php_package(NULL, NULL, NULL);
+  nr_txn_add_php_package(NULL, package_name1, package_version1);
+  nr_txn_add_php_package(txn, NULL, package_version1);
+  nr_txn_add_php_package(txn, package_name1, NULL);
+
+  // Test: add php packages to transaction
+  nr_txn_add_php_package(txn, package_name1, package_version1);
+  nr_txn_add_php_package(txn, package_name2, package_version2);
+  nr_txn_add_php_package(txn, package_name3, package_version3);
+  nr_txn_add_php_package(txn, package_name4, package_version4);
+  json = nr_php_packages_to_json(txn->php_packages);
+
+  tlib_pass_if_str_equal("correct json",
+                         "[[\"Laravel\",\"8.83.27\",{}],"
+                         "[\"Drupal\",\" \",{}],[\"Wordpress\",\" \",{}],"
+                         "[\"Slim\",\"4.12.0\",{}]]",
+                         json);
+
+  nr_free(json);
+  nr_txn_destroy(&txn);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 2, .state_size = sizeof(test_txn_state_t)};
 
@@ -8638,4 +8675,5 @@ void test_main(void* p NRUNUSED) {
   test_log_level_verify();
   test_record_log_event();
   test_txn_log_configuration();
+  test_nr_txn_add_php_package();
 }

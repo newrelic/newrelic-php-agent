@@ -124,6 +124,7 @@ OBJS := \
 	nr_synthetics.o \
 	nr_txn.o \
 	nr_version.o \
+	nr_php_packages.o \
 	util_apdex.o \
 	util_base64.o \
 	util_buffer.o \

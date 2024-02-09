@@ -19,6 +19,7 @@
 #include "nr_limits.h"
 #include "nr_log_events.h"
 #include "nr_log_level.h"
+#include "nr_php_packages.h"
 #include "nr_segment.h"
 #include "nr_segment_private.h"
 #include "nr_segment_traces.h"
@@ -59,8 +60,10 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS) \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
+#define NR_TXN_ATTR(X, NAME, DESTS)                     \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
+    (NAME), (DESTS)                                     \
+  }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",
@@ -538,6 +541,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
   nt->log_events = nr_log_events_create(app->limits.log_events);
+  nt->php_packages = nr_php_packages_create();
 
   /*
    * reset flag for creation of one-time logging metrics
@@ -1240,6 +1244,7 @@ void nr_txn_destroy_fields(nrtxn_t* txn) {
   nr_distributed_trace_destroy(&txn->distributed_trace);
   nr_segment_destroy_tree(txn->segment_root);
   nr_hashmap_destroy(&txn->parent_stacks);
+  nr_php_packages_destroy(&txn->php_packages);
   nr_stack_destroy_fields(&txn->default_parent_stack);
   nr_slab_destroy(&txn->segment_slab);
   nr_minmax_heap_set_destructor(txn->segment_heap, NULL, NULL);
@@ -2782,6 +2787,12 @@ char* nr_txn_create_w3c_tracestate_header(const nrtxn_t* txn,
   header = nr_distributed_trace_create_w3c_tracestate_header(
       txn->distributed_trace, span_id, txn_id);
 
+  if (txn->special_flags.debug_dt) {
+    nrl_verbosedebug(NRL_CAT,
+                     "Outbound W3C TraceState Context Header generated: %s",
+                     NRSAFESTR(header));
+  }
+
   nr_free(txn_id);
   return header;
 }
@@ -3426,7 +3437,8 @@ static void nr_txn_add_log_event(nrtxn_t* txn,
     event_dropped = true;
   } else {
     /* event passed log level filter so add it */
-    e = log_event_create(log_level_name, log_message, timestamp, context_attributes, txn, app);
+    e = log_event_create(log_level_name, log_message, timestamp,
+                         context_attributes, txn, app);
     if (NULL == e) {
       nrl_debug(NRL_TXN, "%s: failed to create log event", __func__);
       event_dropped = true;
@@ -3473,4 +3485,21 @@ void nr_txn_record_log_event(nrtxn_t* txn,
                        context_attributes, app);
 
   nr_txn_add_logging_metrics(txn, log_level_name);
+}
+
+void nr_txn_add_php_package(nrtxn_t* txn,
+                            char* package_name,
+                            char* package_version) {
+  nr_php_package_t* p = NULL;
+
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
+  if (nr_strempty(package_name)) {
+    return;
+  }
+
+  p = nr_php_package_create(package_name, package_version);
+  nr_php_packages_add_package(txn->php_packages, p);
 }

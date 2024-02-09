@@ -49,6 +49,7 @@
 ;            debug_autorum
 ;            show_loaded_files
 ;            debug_cat
+;            debug_dt
 ;            disable_laravel_queue
 ;
 ;newrelic.special = show_executes, show_execute_params, show_execute_stack, show_execute_returns, show_executes_untrimmed
