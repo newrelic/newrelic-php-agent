@@ -658,18 +658,41 @@ NR_PHP_WRAPPER_END
 #endif /* PHP 7.4+ */
 
 void nr_wordpress_version() {
-  char* string = "$GLOBALS['wp_version'];";
+  char* func_string
+      = "if (!function_exists('newrelic_wordpress_get_version')) {"
+        "  function newrelic_wordpress_get_version() {"
+        "    try {"
+        "      if (isset($GLOBALS['wp_version'])) {"
+        "        return $GLOBALS['wp_version'];"
+        "      }"
+        "      else {"
+        "        return ' ';"
+        "      }"
+        "    } catch (Exception $e) {"
+        "    }"
+        "  }"
+        "}";
+
   zval retval;
-  int result = zend_eval_string(string, &retval,
-                                "Retrieve Wordpress Version");
-  
-  // Add php package to transaction
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_STRING) {
-      char* version = Z_STRVAL(retval);
-      nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+  int result = zend_eval_string(func_string, NULL,
+                                "Define Wordpress Get Version Function");
+  if (SUCCESS != result) {
+    return;
+  }
+
+  zend_function* func = nr_php_find_function("newrelic_wordpress_get_version");
+
+  if (func) {
+    result = zend_eval_string("newrelic_wordpress_get_version();", &retval,
+                              "Get Wordpress Version");
+    // Add php package to transaction
+    if (SUCCESS == result) {
+      if (IS_STRING == Z_TYPE(retval)) {
+        char* version = Z_STRVAL(retval);
+        nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+      }
+      zval_dtor(&retval);
     }
-    zval_dtor(&retval);
   }
 }
 

@@ -667,18 +667,45 @@ static int nr_phpunit_are_statuses_valid(TSRMLS_D) {
 }
 
 void nr_phpunit_version() {
-  char* string = "PHPUnit\\Runner\\Version::id();";
-  zval retval;
-  int result
-      = zend_eval_string(string, &retval, "Retrieve PHPUnit Version");
+  char* func_string
+      = ""
+        "if (!function_exists('newrelic_phpunit_get_version')) {"
+        "  function newrelic_phpunit_get_version() {"
+        "    try {"
+        "      if (class_exists('PHPUnit\\Runner\\Version')) {"
+        "         return PHPUnit\\Runner\\Versions::id();"
+        "      }"
+        "      else if (class_exists('PHPUnit_Runner_Version')) {"
+        "        return PHPUnit_Runner_Versions::id();"
+        "      }"
+        "      else {"
+        "        return ' ';"
+        "      }"
+        "    } catch (Exception $e) {"
+        "    }"
+        "  }"
+        "}";
 
-  // Add php package to transaction
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_STRING) {
-      char* version = Z_STRVAL(retval);
-      nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
+  zval retval;
+  int result = zend_eval_string(func_string, NULL,
+                                "Define PHPUnit Get Version Function");
+  if (SUCCESS != result) {
+    return;
+  }
+
+  zend_function* func = nr_php_find_function("newrelic_phpunit_get_version");
+
+  if (func) {
+    result = zend_eval_string("newrelic_phpunit_get_version();", &retval,
+                              "Get PHPUnit Version");
+    // Add php package to transaction
+    if (SUCCESS == result) {
+      if (IS_STRING == Z_TYPE(retval)) {
+        char* version = Z_STRVAL(retval);
+        nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
+      }
+      zval_dtor(&retval);
     }
-    zval_dtor(&retval);
   }
 }
 
