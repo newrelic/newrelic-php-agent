@@ -669,43 +669,44 @@ static int nr_phpunit_are_statuses_valid(TSRMLS_D) {
 void nr_phpunit_version() {
   char* func_string
       = ""
-        "if (!function_exists('newrelic_phpunit_get_version')) {"
-        "  function newrelic_phpunit_get_version() {"
+        "(function() {"
+        "  try {"
         "    try {"
-        "      if (class_exists('PHPUnit\\Runner\\Version')) {"
-        "         return PHPUnit\\Runner\\Version::id();"
-        "      }"
-        "      else if (class_exists('PHPUnit_Runner_Version')) {"
-        "        return PHPUnit_Runner_Version::id();"
-        "      }"
-        "      else {"
-        "        return ' ';"
-        "      }"
-        "    } catch (Exception $e) {"
+        "      $method = new ReflectionMethod('PHPUnit\\Runner\\Version', "
+        "'id');"
+        "    } catch (ReflectionException $e) {"
+        "      $method = null;"
         "    }"
+        "    if (null != $method) {"
+        "      return PHPUnit\\Runner\\Version::id();"
+        "    }"
+        "    try {"
+        "      $method = new ReflectionMethod('PHPUnit_Runner_Version', 'id');"
+        "    } catch (ReflectionException $e) {"
+        "      $method = null;"
+        "    }"
+        "    if (null != $method) {"
+        "      return PHPUnit_Runner_Version::id();"
+        "    }"
+        "    else {"
+        "      return ' ';"
+        "    }"
+        "  } catch (Exception $e) {"
+        "      return ' ';"
         "  }"
-        "}";
-
+        "})();";
   zval retval;
-  int result = zend_eval_string(func_string, NULL,
-                                "Define PHPUnit Get Version Function");
-  if (SUCCESS != result) {
-    return;
-  }
 
-  zend_function* func = nr_php_find_function("newrelic_phpunit_get_version");
+  int result
+      = zend_eval_string(func_string, &retval, "Get PHPUnit Version");
 
-  if (func) {
-    result = zend_eval_string("newrelic_phpunit_get_version();", &retval,
-                              "Get PHPUnit Version");
-    // Add php package to transaction
-    if (SUCCESS == result) {
-      if (IS_STRING == Z_TYPE(retval)) {
-        char* version = Z_STRVAL(retval);
-        nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
-      }
-      zval_dtor(&retval);
+  // Add php package to transaction
+  if (SUCCESS == result) {
+    if (IS_STRING == Z_TYPE(retval)) {
+      char* version = Z_STRVAL(retval);
+      nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
     }
+    zval_dtor(&retval);
   }
 }
 
