@@ -535,40 +535,33 @@ NR_PHP_WRAPPER_END
 
 void nr_drupal_version() {
   char* func_string
-      = "if (!function_exists('newrelic_drupal_get_version')) {"
-        "  function newrelic_drupal_get_version() {"
-        "    try {"
-        "      if (class_exists('Drupal')) {"
-        "        return Drupal::VERSION;"
-        "      }"
-        "      else {"
-        "        return ' ';"
-        "      }"
-        "    } catch (Exception $e) {"
+      = ""
+        "(function() {"
+        "  try {"
+        "    $drupal_class = new ReflectionClass('Drupal');"
+        "    $drupal_version = $drupal_class->getConstant('VERSION');"
+        "    if ($drupal_version !== false) {"
+        "      return $drupal_version;"
+        "    } else {"
+        "      return ' ';"
         "    }"
+        "  } catch (Exception $e) {"
+        "      return ' ';"
         "  }"
-        "}";
+        "})();";
 
   zval retval;
-  int result = zend_eval_string(func_string, NULL,
-                                "Define Drupal Get Version Function");
-  if (SUCCESS != result) {
-    return;
-  }
 
-  zend_function* func = nr_php_find_function("newrelic_drupal_get_version");
+  int result
+      = zend_eval_string(func_string, &retval, "Get Drupal Version");
 
-  if (func) {
-    result = zend_eval_string("newrelic_drupal_get_version();", &retval,
-                              "Get Drupal Version");
-    // Add php package to transaction
-    if (SUCCESS == result) {
-      if (IS_STRING == Z_TYPE(retval)) {
-        char* version = Z_STRVAL(retval);
-        nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-      }
-      zval_dtor(&retval);
+  // Add php package to transaction
+  if (SUCCESS == result) {
+    if (IS_STRING == Z_TYPE(retval)) {
+      char* version = Z_STRVAL(retval);
+      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
     }
+    zval_dtor(&retval);
   }
 }
 
