@@ -535,20 +535,7 @@ NR_PHP_WRAPPER_END
 
 void nr_drupal_version() {
   char* func_string
-      = ""
-        "(function() {"
-        "  try {"
-        "    $drupal_class = new ReflectionClass('Drupal');"
-        "    $drupal_version = $drupal_class->getConstant('VERSION');"
-        "    if ($drupal_version !== false) {"
-        "      return $drupal_version;"
-        "    } else {"
-        "      return ' ';"
-        "    }"
-        "  } catch (Exception $e) {"
-        "      return ' ';"
-        "  }"
-        "})();";
+      = "defined('Drupal::VERSION') ? Drupal::VERSION : ' '";
 
   zval retval;
 
