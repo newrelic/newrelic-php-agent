@@ -678,7 +678,7 @@ void nr_wordpress_version() {
       = zend_eval_string(func_string, &retval, "Get Wordpress Version");
   // Add php package to transaction
   if (SUCCESS == result) {
-    if (IS_STRING == Z_TYPE(retval)) {
+    if (nr_php_is_zval_valid_string(&retval)) {
       char* version = Z_STRVAL(retval);
       nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
     }
