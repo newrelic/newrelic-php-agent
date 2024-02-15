@@ -554,13 +554,8 @@ void nr_drupal_version() {
   if (IS_STRING == Z_TYPE_P(zval_version)) {
     char* version = Z_STRVAL_P(zval_version);
     nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-  } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: VERSION was not string - Z_TYPE_P = %d", __func__,
-                     Z_TYPE_P(zval_version));
-    return;
   }
-
+  
   nr_php_zval_free(&zval_version);
 }
 
