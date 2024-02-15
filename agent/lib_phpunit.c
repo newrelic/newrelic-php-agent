@@ -667,42 +667,14 @@ static int nr_phpunit_are_statuses_valid(TSRMLS_D) {
 }
 
 void nr_phpunit_version() {
-  char* func_string
-      = ""
-        "(function() {"
-        "  try {"
-        "    try {"
-        "      $method = new ReflectionMethod('PHPUnit\\Runner\\Version', "
-        "'id');"
-        "    } catch (ReflectionException $e) {"
-        "      $method = null;"
-        "    }"
-        "    if (null != $method) {"
-        "      return PHPUnit\\Runner\\Version::id();"
-        "    }"
-        "    try {"
-        "      $method = new ReflectionMethod('PHPUnit_Runner_Version', 'id');"
-        "    } catch (ReflectionException $e) {"
-        "      $method = null;"
-        "    }"
-        "    if (null != $method) {"
-        "      return PHPUnit_Runner_Version::id();"
-        "    }"
-        "    else {"
-        "      return ' ';"
-        "    }"
-        "  } catch (Exception $e) {"
-        "      return ' ';"
-        "  }"
-        "})();";
+  char* string = "PHPUnit\\Runner\\Version::id();";
   zval retval;
-
   int result
-      = zend_eval_string(func_string, &retval, "Get PHPUnit Version");
+      = zend_eval_string(string, &retval, "Retrieve PHPUnit Version");
 
   // Add php package to transaction
-  if (SUCCESS == result) {
-    if (IS_STRING == Z_TYPE(retval)) {
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_STRING) {
       char* version = Z_STRVAL(retval);
       nr_txn_add_php_package(NRPRG(txn), "phpunit/phpunit", version);
     }
