@@ -58,6 +58,5 @@ extern void nr_monolog_enable(TSRMLS_D);
 /* Vulnerability Management Packages */
 extern void nr_drupal_version(void);
 extern void nr_wordpress_version(void);
-extern void nr_phpunit_version(void);
 
 #endif /* FW_HOOKS_HDR */
