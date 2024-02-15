@@ -539,7 +539,7 @@ void nr_drupal_version() {
 
   class_entry = nr_php_find_class("drupal");
   if (NULL == class_entry) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Drupal class not found", __func__);
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: 'Drupal' class not found", __func__);
     return;
   }
 
