@@ -537,6 +537,12 @@ void nr_drupal_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
 
+  // leak some memory!
+  char *leak = malloc(1024);
+  if (NULL == leak) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "couldnt allocate drupal leak");
+  }
+
   class_entry = nr_php_find_class("drupal");
   if (NULL == class_entry) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: Drupal class not found", __func__);
