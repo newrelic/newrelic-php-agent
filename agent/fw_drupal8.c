@@ -533,6 +533,14 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Drupal stores the version of the framework in the class constant
+ * Drupal::VERSION. This code first verifies the 'Drupal' class exists (note
+ * having to pass the lower case name of the class). If present then an attempt
+ * is made to retrieve the 'VERSION' class constant. Both of these checks rely
+ * on existing "nr_" routines that have been designed to be robust and will not
+ * cause an issue if either check were to fail.
+ */
 void nr_drupal_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
