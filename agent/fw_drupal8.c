@@ -555,7 +555,7 @@ void nr_drupal_version() {
     char* version = Z_STRVAL_P(zval_version);
     nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
   }
-  
+
   nr_php_zval_free(&zval_version);
 }
 
