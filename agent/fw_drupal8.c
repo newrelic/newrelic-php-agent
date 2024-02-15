@@ -534,35 +534,31 @@ end:
 NR_PHP_WRAPPER_END
 
 void nr_drupal_version() {
-  char* func_string
-      = ""
-        "(function() {"
-        "  try {"
-        "    $drupal_class = new ReflectionClass('Drupal');"
-        "    $drupal_version = $drupal_class->getConstant('VERSION');"
-        "    if ($drupal_version !== false) {"
-        "      return $drupal_version;"
-        "    } else {"
-        "      return ' ';"
-        "    }"
-        "  } catch (Exception $e) {"
-        "      return ' ';"
-        "  }"
-        "})();";
+  zval* zval_version = NULL;
+  zend_class_entry* class_entry = NULL;
 
-  zval retval;
+  class_entry = nr_php_find_class("drupal");
+  if (NULL == class_entry) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Drupal class not found", __func__);
+    return;
+  }
 
-  int result
-      = zend_eval_string(func_string, &retval, "Get Drupal Version");
+  zval_version = nr_php_get_class_constant(class_entry, "VERSION");
+  if (NULL == zval_version) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Drupal does not have VERSION", __func__);
+    return;
+  }
 
   // Add php package to transaction
-  if (SUCCESS == result) {
-    if (IS_STRING == Z_TYPE(retval)) {
-      char* version = Z_STRVAL(retval);
-      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-    }
-    zval_dtor(&retval);
+  if (IS_STRING == Z_TYPE_P(zval_version)) {
+    char* version = Z_STRVAL_P(zval_version);
+    nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+  } else {
+        nrl_verbosedebug(NRL_INSTRUMENT, "%s: VERSION was not string - Z_TYPE_P = %d", __func__, Z_TYPE_P(zval_version));
+    return;
   }
+
+  nr_php_zval_free(&zval_version);
 }
 
 void nr_drupal8_enable(TSRMLS_D) {
