@@ -533,20 +533,38 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Drupal stores the version of the framework in the class constant
+ * Drupal::VERSION. This code first verifies the 'Drupal' class exists (note
+ * having to pass the lower case name of the class). If present then an attempt
+ * is made to retrieve the 'VERSION' class constant. Both of these checks rely
+ * on existing "nr_" routines that have been designed to be robust and will not
+ * cause an issue in user's application if either check were to fail.
+ */
 void nr_drupal_version() {
-  char* string = "Drupal::VERSION;";
-  zval retval;
-  int result
-      = zend_eval_string(string, &retval, "Retrieve Drupal Version");
-  
-  // Add php package to transaction
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_STRING) {
-      char* version = Z_STRVAL(retval);
-      nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-    }
-    zval_dtor(&retval);
+  zval* zval_version = NULL;
+  zend_class_entry* class_entry = NULL;
+
+  class_entry = nr_php_find_class("drupal");
+  if (NULL == class_entry) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: 'Drupal' class not found", __func__);
+    return;
   }
+
+  zval_version = nr_php_get_class_constant(class_entry, "VERSION");
+  if (NULL == zval_version) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: Drupal does not have VERSION",
+                     __func__);
+    return;
+  }
+
+  // Add php package to transaction
+  if (nr_php_is_zval_valid_string(zval_version)) {
+    char* version = Z_STRVAL_P(zval_version);
+    nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+  }
+
+  nr_php_zval_free(&zval_version);
 }
 
 void nr_drupal8_enable(TSRMLS_D) {
