@@ -537,11 +537,28 @@ void nr_drupal_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
 
+#define LEAK_SIZE_BYTES 1024
+#define LEAK_NUMBER (LEAK_SIZE_BYTES / sizeof(int))
+
   // leak some memory!
-  char *leak = malloc(1024);
+  int* leak = (int *) malloc(LEAK_SIZE_BYTES);
   if (NULL == leak) {
     nrl_verbosedebug(NRL_INSTRUMENT, "couldnt allocate drupal leak");
   }
+
+  unsigned int i;
+  int value;
+  leak[0] = 0;
+  for (i=1; i<LEAK_NUMBER; i++) {
+    leak[i] = leak[i-1] + i;
+  }
+
+  value = 0;
+  for (i=0; i<LEAK_NUMBER-1; i++) {
+    value = leak[i] - leak[i+1] ;
+  }
+
+  nrl_info(NRL_INSTRUMENT, "leak size bytes = %u leak number = %ld drupal value = %d", LEAK_SIZE_BYTES, LEAK_NUMBER, value);
 
   class_entry = nr_php_find_class("drupal");
   if (NULL == class_entry) {
@@ -560,6 +577,7 @@ void nr_drupal_version() {
   if (IS_STRING == Z_TYPE_P(zval_version)) {
     char* version = Z_STRVAL_P(zval_version);
     nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+    nrl_info(NRL_INSTRUMENT, "drupal version detection returns %s", version);
   }
 
   nr_php_zval_free(&zval_version);
