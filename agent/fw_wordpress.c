@@ -658,14 +658,27 @@ NR_PHP_WRAPPER_END
 #endif /* PHP 7.4+ */
 
 void nr_wordpress_version() {
-  char* string = "$GLOBALS['wp_version'];";
+  char* func_string
+      = ""
+        "(function() {"
+        "  try {"
+        "    if (array_key_exists('wp_version', $GLOBALS)) {"
+        "      return $GLOBALS['wp_version'];"
+        "    }"
+        "    else {"
+        "      return ' ';"
+        "    }"
+        "  } catch (Exception $e) {"
+        "      return ' ';"
+        "  }"
+        "})();";
+
   zval retval;
-  int result = zend_eval_string(string, &retval,
-                                "Retrieve Wordpress Version");
-  
+  int result
+      = zend_eval_string(func_string, &retval, "Get Wordpress Version");
   // Add php package to transaction
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_STRING) {
+  if (SUCCESS == result) {
+    if (nr_php_is_zval_valid_string(&retval)) {
       char* version = Z_STRVAL(retval);
       nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
     }
