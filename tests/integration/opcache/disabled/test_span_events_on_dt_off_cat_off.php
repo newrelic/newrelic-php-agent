@@ -36,6 +36,7 @@ null
 /*EXPECT
 Hello
 */
+require('opcache_test.inc');
 
 newrelic_add_custom_tracer('main');
 function main()

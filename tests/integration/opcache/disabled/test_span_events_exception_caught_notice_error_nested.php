@@ -204,6 +204,7 @@ Hello
 0.2
 Caught exception: Division by zero
 */
+require('opcache_test.inc');
 
 function c()
 {

@@ -108,6 +108,7 @@ null
   ]
 ]
 */
+require('opcache_test.inc');
 
 function a()
 {

@@ -123,6 +123,7 @@ opcache.jit=tracing
 /*EXPECT
 HelloHelloHello
 */
+require('opcache_test.inc');
 
 newrelic_add_custom_tracer('main'); 
 

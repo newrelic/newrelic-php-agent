@@ -58,6 +58,7 @@ opcache.jit=function
 /*EXPECT
 Hello
 */
+require('opcache_test.inc');
 
 newrelic_add_custom_tracer('computation');
 

@@ -60,6 +60,7 @@ opcache.jit=function
 /*EXPECT
 5000
 */
+require('opcache_test.inc');
 
 
 function even(int $a): bool {

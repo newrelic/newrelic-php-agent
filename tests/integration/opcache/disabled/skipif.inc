@@ -8,8 +8,3 @@
 if (version_compare(PHP_VERSION, "7.1", "<")) {
   die("skip: PHP < 7.1 not supported\n");
 }
-
-/* Test should not run with opache */
-if (extension_loaded('Zend OPcache')) {
-  die("warn: Zend OPcache extension required to be not loaded\n");
-}

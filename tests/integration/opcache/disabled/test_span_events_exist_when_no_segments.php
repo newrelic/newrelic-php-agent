@@ -57,5 +57,6 @@ opcache.jit=function
   ]
 ]
 */
+require('opcache_test.inc');
 
 phpinfo();

@@ -135,6 +135,7 @@ opcache.jit=function
 /*EXPECT
 Hello
 */
+require('opcache_test.inc');
 
 
 function b()

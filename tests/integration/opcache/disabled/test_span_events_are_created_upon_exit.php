@@ -102,6 +102,7 @@ opcache.jit=function
   ]
 ]
 */
+require('opcache_test.inc');
 
 function a()
 {

@@ -140,6 +140,7 @@ null
 
 /*EXPECT
 */
+require('opcache_test.inc');
 
 set_exception_handler(
     function (Throwable $exception) {

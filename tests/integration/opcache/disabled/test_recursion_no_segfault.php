@@ -36,6 +36,7 @@ null
 /*EXPECT
 89
 */
+require('opcache_test.inc');
 
 newrelic_add_custom_tracer('fibonacci'); 
 

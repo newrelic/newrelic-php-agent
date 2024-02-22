@@ -239,6 +239,7 @@ zend_extension=opcache.so
 /*EXPECT
 HelloHelloHellofunctionNamefunctionNamefunctionNamefunctionNamefunctionNameOK
 */
+require('opcache_test.inc');
 
 newrelic_add_custom_tracer('main');
 newrelic_add_custom_tracer('Classname::functionName');

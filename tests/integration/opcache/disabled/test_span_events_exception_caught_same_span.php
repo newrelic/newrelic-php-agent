@@ -108,6 +108,7 @@ null
 Hello
 Caught exception: Division by zero
 */
+require('opcache_test.inc');
 
 
 function fraction()

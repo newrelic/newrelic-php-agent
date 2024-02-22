@@ -189,6 +189,7 @@ opcache.jit=function
 /*EXPECT_REGEX
 ^\s*(PHP )?Fatal error: Uncaught.*RuntimeException.*oops.*
 */
+require('opcache_test.inc');
 
 function a()
 {

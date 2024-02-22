@@ -110,6 +110,7 @@ opcache.jit=function
 /*EXPECT_REGEX
 ^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
 */
+require('opcache_test.inc');
 
 function a()
 {

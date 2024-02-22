@@ -101,6 +101,7 @@ opcache.jit=function
   ]
 ]
 */
+require('opcache_test.inc');
 
 function a() {
   time_nanosleep(0, 100000000);

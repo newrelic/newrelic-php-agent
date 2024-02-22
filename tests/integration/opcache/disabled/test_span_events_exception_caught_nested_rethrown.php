@@ -164,6 +164,7 @@ opcache.jit=function
 /*EXPECT_REGEX
 ^\s*(PHP )?Fatal error:.*Uncaught.*Exception.*Rethrown caught exception: Division by zero.*
 */
+require('opcache_test.inc');
 
 function c()
 {
