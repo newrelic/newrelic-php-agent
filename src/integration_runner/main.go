@@ -50,6 +50,7 @@ var (
 	flagTime            = flag.Bool("time", false, "time each test")
 	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
 	flagWarnIsFail      = flag.Bool("warnisfail", false, "warn result is treated as a fail")
+	flagOpcacheOff      = flag.Bool("opcacheoff", false, "run without opcache. Some tests are intended to fail when run this way")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -346,6 +347,7 @@ func main() {
 		ctx.Settings["newrelic.loglevel"] = *flagLoglevel
 	}
 
+    if false == *flagOpcacheOff {
         // PHP Modules common to all tests
         ctx.Settings["zend_extension"] = "opcache.so"
 
@@ -353,6 +355,7 @@ func main() {
         // These settings can be overwritten by adding new values to the INI block
         ctx.Settings["opcache.enable"] = "1"
         ctx.Settings["opcache.enable_cli"] = "1"
+	}
 
 	// If the user provided a custom agent extension, use it.
 	if len(*flagAgent) > 0 {
