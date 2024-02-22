@@ -7,6 +7,6 @@
 /* Test should not run with opache */
 if (extension_loaded('Zend OPcache')) {
   if (false != opcache_get_status()) {
-    die("fail: Zend OPcache extension required to be not loaded\n");
+    die("fail: OPcache enabled but needs to be disabled\n");
   }
 }
