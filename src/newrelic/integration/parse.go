@@ -43,6 +43,7 @@ var (
 		"EXPECT_TRACED_ERRORS":      parseTracedErrors,
 		"EXPECT_TXN_TRACES":         parseTxnTraces,
 		"EXPECT_RESPONSE_HEADERS":   parseResponseHeaders,
+		"EXPECT_PHP_PACKAGES":       parsePhpPackages,
 		"XFAIL":                     parseXFail,
 	}
 )
@@ -309,6 +310,17 @@ func parseExpectHarvest(test *Test, content []byte) error {
 
 func parseConfig(test *Test, content []byte) error {
 	test.Config = string(bytes.TrimSpace(content))
+	return nil
+}
+
+func parsePhpPackages(test *Test, content []byte) error {
+	// clean up provided string data if it is "null"
+	if "null" == strings.TrimSpace(string(content)) {
+		test.phpPackagesConfig = []byte("null")
+		return nil
+	}
+
+	test.phpPackagesConfig = content
 	return nil
 }
 

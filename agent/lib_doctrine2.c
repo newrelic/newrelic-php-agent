@@ -104,4 +104,9 @@ void nr_doctrine2_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Doctrine\\ORM\\Query::_doExecute"),
                             nr_doctrine2_cache_dql TSRMLS_CC);
 #endif /* OAPI */
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "doctrine/orm",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

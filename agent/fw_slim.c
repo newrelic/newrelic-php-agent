@@ -2,6 +2,7 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_user_instrument.h"
@@ -109,6 +110,23 @@ NR_PHP_WRAPPER(nr_slim3_4_route_run) {
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_slim_application_construct) {
+  zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
+  char* version = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  version = nr_php_get_object_constant(this_var, "VERSION");
+  
+  // Add php package to transaction
+  nr_txn_add_php_package(NRPRG(txn), "slim/slim", version);
+
+  nr_free(version);
+  nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
 void nr_slim_enable(TSRMLS_D) {
   NR_UNUSED_TSRMLS;
 
@@ -120,4 +138,14 @@ void nr_slim_enable(TSRMLS_D) {
   /* Slim 4 */
   nr_php_wrap_user_function(NR_PSTR("Slim\\Routing\\Route::run"),
                             nr_slim3_4_route_run TSRMLS_CC);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    /* Slim 2 does not have the same path as Slim 3/4 which is why
+      we need to separate these*/
+    nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
+                              nr_slim_application_construct);
+
+    nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
+                              nr_slim_application_construct);
+  }
 }

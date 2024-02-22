@@ -23,6 +23,7 @@
 #include "nr_commands_private.h"
 #include "nr_distributed_trace.h"
 #include "nr_limits.h"
+#include "nr_php_packages.h"
 #include "nr_slowsqls.h"
 #include "nr_span_event.h"
 #include "nr_synthetics.h"
@@ -556,6 +557,30 @@ static uint32_t nr_txndata_prepend_request_uri(nr_flatbuffer_t* fb,
   return nr_flatbuffers_prepend_string(fb, "<unknown>");
 }
 
+static uint32_t nr_txndata_prepend_php_packages(nr_flatbuffer_t* fb,
+                                                const nrtxn_t* txn) {
+  uint32_t data;
+  char* json;
+  int packages_count;
+
+  packages_count = nr_php_packages_count(txn->php_packages);
+  if (0 == packages_count) {
+    return 0;
+  }
+
+  json = nr_php_packages_to_json(txn->php_packages);
+  if (NULL == json) {
+    return 0;
+  }
+
+  data = nr_flatbuffers_prepend_string(fb, json);
+  nr_free(json);
+
+  nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
+  nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
+  return nr_flatbuffers_object_end(fb);
+}
+
 static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
                                                const nrtxn_t* txn,
                                                int32_t pid) {
@@ -571,6 +596,7 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   uint32_t txn_trace;
   uint32_t span_events;
   uint32_t log_events;
+  uint32_t php_packages;
 
   txn_trace = nr_txndata_prepend_trace_to_flatbuffer(fb, txn);
   span_events = nr_txndata_prepend_span_events(fb, txn->final_data.span_events,
@@ -582,6 +608,7 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   slowsqls = nr_txndata_prepend_slowsqls(fb, txn);
   errors = nr_txndata_prepend_errors(fb, txn);
   metrics = nr_txndata_prepend_metrics(fb, txn);
+  php_packages = nr_txndata_prepend_php_packages(fb, txn);
   txn_event = nr_txndata_prepend_txn_event(fb, txn);
   resource_id = nr_txndata_prepend_synthetics_resource_id(fb, txn);
   request_uri = nr_txndata_prepend_request_uri(fb, txn);
@@ -616,6 +643,8 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
                                         span_events, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_LOG_EVENTS,
                                         log_events, 0);
+  nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_PHP_PACKAGES,
+                                        php_packages, 0);
   return nr_flatbuffers_object_end(fb);
 }
 

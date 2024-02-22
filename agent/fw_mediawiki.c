@@ -263,4 +263,9 @@ void nr_mediawiki_enable(TSRMLS_D) {
                             nr_mediawiki_getaction TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("ApiMain::setupExecuteAction"),
                             nr_mediawiki_apimain_setupexecuteaction TSRMLS_CC);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "mediawiki",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

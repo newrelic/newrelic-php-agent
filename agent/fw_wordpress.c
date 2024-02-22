@@ -786,6 +786,35 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
 NR_PHP_WRAPPER_END
 #endif /* PHP 7.4+ */
 
+void nr_wordpress_version() {
+  char* func_string
+      = ""
+        "(function() {"
+        "  try {"
+        "    if (array_key_exists('wp_version', $GLOBALS)) {"
+        "      return $GLOBALS['wp_version'];"
+        "    }"
+        "    else {"
+        "      return ' ';"
+        "    }"
+        "  } catch (Exception $e) {"
+        "      return ' ';"
+        "  }"
+        "})();";
+
+  zval retval;
+  int result
+      = zend_eval_string(func_string, &retval, "Get Wordpress Version");
+  // Add php package to transaction
+  if (SUCCESS == result) {
+    if (nr_php_is_zval_valid_string(&retval)) {
+      char* version = Z_STRVAL(retval);
+      nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+    }
+    zval_dtor(&retval);
+  }
+}
+
 void nr_wordpress_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
@@ -834,6 +863,11 @@ void nr_wordpress_enable(TSRMLS_D) {
     }
   }
 #endif /* OAPI */
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "wordpress",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }
 
 void nr_wordpress_minit(void) {

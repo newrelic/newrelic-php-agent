@@ -24,6 +24,7 @@ const (
 	CommandPreconnect          = "preconnect"
 	CommandSpanEvents          = "span_event_data"
 	CommandLogEvents           = "log_event_data"
+	CommandPhpPackages         = "update_loaded_modules"
 )
 
 const (

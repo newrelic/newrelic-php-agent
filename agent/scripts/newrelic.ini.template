@@ -1324,3 +1324,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.code_level_metrics.enabled = true
 
+; Setting: newrelic.vulnerability_management.package_detection.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : Toggles whether the agent provides package detection information
+;          for vulnerability management.
+;
+;newrelic.vulnerability_management.package_detection.enabled = true

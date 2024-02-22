@@ -54,6 +54,8 @@ RUN apt-get update && apt-get install -y \
   libc6-dev \
   libgtest-dev \
   libtool \
+  locales \
+  locales-all \
   make \
   perl \
   strace \

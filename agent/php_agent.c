@@ -694,6 +694,49 @@ zval* nr_php_get_class_constant(const zend_class_entry* ce, const char* name) {
 #endif
 }
 
+char* nr_php_get_object_constant(zval* app, const char* name) {
+  char* retval = NULL;
+  zval* version = NULL;
+  zend_class_entry* ce = NULL;
+
+  if (NULL == name || 0 >= nr_strlen(name)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL object name",
+                     __func__);
+    return NULL;
+  }
+
+  if (0 == nr_php_is_zval_valid_object(app)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
+                     __func__);
+    return NULL;
+  }
+
+  ce = Z_OBJCE_P(app);
+  if (NULL == ce) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
+                     __func__);
+    return NULL;
+  }
+
+  version = nr_php_get_class_constant(ce, name);
+  if (NULL == version) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have %s",
+                     __func__, name);
+    return NULL;
+  }
+
+  if (nr_php_is_zval_valid_string(version)) {
+    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "%s: expected VERSION be a valid string, got type %d",
+                     __func__, Z_TYPE_P(version));
+  }
+
+  nr_php_zval_free(&version);
+  return retval;
+}
+
 int nr_php_is_zval_named_constant(const zval* zv, const char* name TSRMLS_DC) {
   int is_equal = 0;
   zval* constant;
