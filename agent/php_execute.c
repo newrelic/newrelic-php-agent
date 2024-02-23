@@ -603,7 +603,7 @@ typedef struct _nr_vuln_mgmt_table_t {
 
 /* Note that all paths should be in lowercase. */
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+    {"Drupal", "drupal/component/dependencyinjection/container.php", nr_drupal_version},
     {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
 };
 
