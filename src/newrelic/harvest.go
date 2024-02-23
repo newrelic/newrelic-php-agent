@@ -28,6 +28,7 @@ type Harvest struct {
 	ErrorEvents       *ErrorEvents
 	SpanEvents        *SpanEvents
 	LogEvents         *LogEvents
+	PhpPackages       *PhpPackages
 	commandsProcessed int
 	pidSet            map[int]struct{}
 	httpErrorSet      map[int]float64
@@ -44,6 +45,7 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		ErrorEvents:       NewErrorEvents(hl.ErrorEventConfig.Limit),
 		SpanEvents:        NewSpanEvents(hl.SpanEventConfig.Limit),
 		LogEvents:         NewLogEvents(hl.LogEventConfig.Limit),
+		PhpPackages:       NewPhpPackages(),
 		commandsProcessed: 0,
 		pidSet:            make(map[int]struct{}),
 		httpErrorSet:      make(map[int]float64),
@@ -62,7 +64,8 @@ func (h *Harvest) empty() bool {
 		h.SlowSQLs.Empty() &&
 		h.TxnEvents.Empty() &&
 		h.TxnTraces.Empty() &&
-		h.LogEvents.Empty()
+		h.LogEvents.Empty() &&
+		h.PhpPackages.Empty()
 }
 
 func createTraceObserverMetrics(to *infinite_tracing.TraceObserver, metrics *MetricTable) {
@@ -209,6 +212,7 @@ func (x *ErrorHeap) Cmd() string    { return collector.CommandErrors }
 func (x *SlowSQLs) Cmd() string     { return collector.CommandSlowSQLs }
 func (x *TxnTraces) Cmd() string    { return collector.CommandTraces }
 func (x *TxnEvents) Cmd() string    { return collector.CommandTxnEvents }
+func (x *PhpPackages) Cmd() string  { return collector.CommandPhpPackages }
 
 func IntegrationData(p PayloadCreator, id AgentRunID, harvestStart time.Time) ([]byte, error) {
 	audit, err := p.Audit(id, harvestStart)

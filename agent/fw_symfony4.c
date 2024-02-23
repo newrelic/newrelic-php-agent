@@ -275,4 +275,9 @@ void nr_symfony4_enable(TSRMLS_D) {
       NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
       nr_symfony4_console_application_run TSRMLS_CC);
 #endif
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "symfony/http-kernel",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

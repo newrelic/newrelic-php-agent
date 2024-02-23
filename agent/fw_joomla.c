@@ -167,4 +167,9 @@ void nr_joomla_enable(TSRMLS_D) {
    */
   nr_php_wrap_user_function(NR_PSTR("JControllerLegacy::execute"),
                             nr_joomla3_name_the_wt TSRMLS_CC);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), "joomla",
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }

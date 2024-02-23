@@ -526,6 +526,17 @@ extern zval* nr_php_get_class_constant(const zend_class_entry* ce,
                                        const char* name);
 
 /*
+ * Purpose : Retrieve value for object constant
+ *
+ * Params  : 1. An instance of the application's class
+ *           2. The name of the object constant
+ *
+ * Returns : A string that contains the value of the object constant. The caller
+ *           is responsible for freeing the string after use.
+ */
+extern char* nr_php_get_object_constant(zval* app, const char* name);
+
+/*
  * Purpose : Determine if the given zval has the same value as the PHP constant
  *           of the given name.
  *

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "nr_php_packages.h"
+#include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_user_instrument.h"
@@ -472,52 +474,6 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
 
 leave:
   nr_php_zval_free(&route);
-}
-
-/*
- * Purpose : Return a copy of Illuminate\Foundation\Application::VERSION.
- *           The caller is responsible for freeing the string.
- *
- * Params  : 1. An instance of Illuminate\Foundation\Application.
- *
- * Returns : The Laravel version number as a string or NULL if the version
- *           cannot be determined.
- */
-static char* nr_laravel_version(zval* app TSRMLS_DC) {
-  char* retval = NULL;
-  zval* version = NULL;
-  zend_class_entry* ce = NULL;
-
-  if (0 == nr_php_is_zval_valid_object(app)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
-                     __func__);
-    return NULL;
-  }
-
-  ce = Z_OBJCE_P(app);
-  if (NULL == ce) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application has NULL class entry",
-                     __func__);
-    return NULL;
-  }
-
-  version = nr_php_get_class_constant(ce, "VERSION");
-  if (NULL == version) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application does not have VERSION",
-                     __func__);
-    return NULL;
-  }
-
-  if (nr_php_is_zval_valid_string(version)) {
-    retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
-  } else {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "%s: expected VERSION be a valid string, got type %d",
-                     __func__, Z_TYPE_P(version));
-  }
-
-  nr_php_zval_free(&version);
-  return retval;
 }
 
 /*
@@ -995,7 +951,16 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  version = nr_laravel_version(this_var TSRMLS_CC);
+  /*
+   * Retrieving the version is not included in the INI check below because it is
+   * needed for Laravel's instrumentation.
+   */
+  version = nr_php_get_object_constant(this_var, "VERSION");
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    // Add php package to transaction
+    nr_txn_add_php_package(NRPRG(txn), "laravel/framework", version);
+  }
 
   if (version) {
     nrl_debug(NRL_FRAMEWORK, "Laravel version is " NRP_FMT, NRP_PHP(version));

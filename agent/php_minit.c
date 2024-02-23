@@ -710,6 +710,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   NR_INFO_SPECIAL_FLAGS(debug_autorum);
   NR_INFO_SPECIAL_FLAGS(show_loaded_files);
   NR_INFO_SPECIAL_FLAGS(debug_cat);
+  NR_INFO_SPECIAL_FLAGS(debug_dt);
 #undef NR_INFO_SPECIAL_FLAGS
 
   nr_guzzle4_minit(TSRMLS_C);

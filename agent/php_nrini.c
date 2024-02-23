@@ -950,6 +950,10 @@ static void foreach_special_control_flag(const char* str,
     NR_PHP_PROCESS_GLOBALS(special_flags).debug_cat = 1;
     return;
   }
+  if (0 == nr_strcmp(str, "debug_dt")) {
+    NR_PHP_PROCESS_GLOBALS(special_flags).debug_dt = 1;
+    return;
+  }
   if (0 == nr_strcmp(str, "disable_laravel_queue")) {
     NR_PHP_PROCESS_GLOBALS(special_flags).disable_laravel_queue = 1;
     return;
@@ -977,6 +981,7 @@ static PHP_INI_MH(nr_special_mh) {
   NR_PHP_PROCESS_GLOBALS(special_flags).debug_autorum = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).debug_cat = 0;
+  NR_PHP_PROCESS_GLOBALS(special_flags).debug_dt = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).disable_laravel_queue = 0;
 
   if (0 != NEW_VALUE_LEN) {
@@ -3058,6 +3063,18 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclu
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
+
+/*
+ * Vulnerability Management
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     vulnerability_management_package_detection_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
 
 PHP_INI_END() /* } */
 
