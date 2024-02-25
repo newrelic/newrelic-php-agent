@@ -687,6 +687,12 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	// check for any "expected spans like"
 	t.compareSpanEventsLike(harvest)
 
+	// if expected error events and traced errors are undefined - default to "null"
+	if nil == t.errorEvents && nil == t.tracedErrors {
+		t.errorEvents = []byte("null")
+		t.tracedErrors = []byte("null")
+	}
+
 	// check remaining payloads
 	t.comparePayload(t.analyticEvents, harvest.TxnEvents, false)
 	t.comparePayload(t.customEvents, harvest.CustomEvents, false)
