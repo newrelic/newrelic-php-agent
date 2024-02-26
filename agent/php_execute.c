@@ -855,6 +855,9 @@ static nrframework_t nr_try_detect_framework(
       }
 
       nr_framework_log("detected framework", frameworks[i].framework_name);
+      nrl_verbosedebug(
+          NRL_FRAMEWORK, "framework '%s' detected with %s, which ends with %s",
+          frameworks[i].framework_name, filename, frameworks[i].file_to_check);
 
       frameworks[i].enable(TSRMLS_C);
       detected = frameworks[i].detected;
