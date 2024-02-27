@@ -381,8 +381,6 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
     {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
-    {"Laravel", "laravel", NR_PSTR("bootstrap/app.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 8+ */
 
     {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
      NR_FW_LUMEN},
@@ -857,6 +855,9 @@ static nrframework_t nr_try_detect_framework(
       }
 
       nr_framework_log("detected framework", frameworks[i].framework_name);
+      nrl_verbosedebug(
+          NRL_FRAMEWORK, "framework '%s' detected with %s, which ends with %s",
+          frameworks[i].framework_name, filename, frameworks[i].file_to_check);
 
       frameworks[i].enable(TSRMLS_C);
       detected = frameworks[i].detected;
