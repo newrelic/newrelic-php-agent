@@ -103,6 +103,14 @@ static void nr_magento2_name_transaction_from_service(const char* module,
   nr_free(name);
 }
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This entails that the last wrapped call gets to name the
+ * txn but it is overwritable if another better name comes along.
+ */
 NR_PHP_WRAPPER(nr_magento2_action_dispatch) {
   zval* this_var = NULL;
 
@@ -120,6 +128,14 @@ NR_PHP_WRAPPER(nr_magento2_action_dispatch) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_magento2_pagecache_kernel_load) {
   const char* name = "page_cache";
   zval** response = NULL;
@@ -129,7 +145,7 @@ NR_PHP_WRAPPER(nr_magento2_pagecache_kernel_load) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  response = nr_php_get_return_value_ptr(TSRMLS_C);
+  response = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 
@@ -145,6 +161,14 @@ NR_PHP_WRAPPER(nr_magento2_pagecache_kernel_load) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_magento2_objectmanager_get) {
   const char* fci_class = "Magento\\Framework\\App\\FrontControllerInterface";
   zval** retval_ptr = NULL;
@@ -167,7 +191,7 @@ NR_PHP_WRAPPER(nr_magento2_objectmanager_get) {
      */
     goto leave;
   }
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if ((NULL == retval_ptr) || !nr_php_is_zval_valid_object(*retval_ptr)) {
@@ -201,6 +225,14 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ *  * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This combination entails that the last wrapped function
+ * call gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_magento2_inputparamsresolver_resolve) {
   const char* this_klass
       = "Magento\\Webapi\\Controller\\Rest\\InputParamsResolver";
@@ -244,6 +276,14 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure as it will use the default func_end
+ * after callback. OAPI compatibility. This entails that the first wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_magento2_soap_iswsdlrequest) {
   zval** retval_ptr = NULL;
 
@@ -251,7 +291,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdlrequest) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if (retval_ptr && nr_php_is_zval_true(*retval_ptr)) {
@@ -261,6 +301,14 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdlrequest) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure as it will use the default func_end
+ * after callback. OAPI compatibility. This entails that the first wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_magento2_soap_iswsdllistrequest) {
   zval** retval_ptr = NULL;
 
@@ -268,7 +316,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_iswsdllistrequest) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MAGENTO2);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   if (retval_ptr && nr_php_is_zval_true(*retval_ptr)) {
@@ -283,6 +331,14 @@ NR_PHP_WRAPPER_END
  * string $serviceClass
  * string $serviceMethod
  * array $arguments
+ *
+ *
+ *  txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This combination entails that the last wrapped function
+ * call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_magento2_soap_handler_preparerequestdata) {
   zval* svc_class = NULL;
@@ -311,6 +367,13 @@ NR_PHP_WRAPPER_END
  * string $serviceClass
  * array $methodMetadata
  * array $arguments
+ *
+ * *  txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This combination entails that the last wrapped function
+ * call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_magento2_soap_handler_prepareoperationinput) {
   zval* svc_class = NULL;
@@ -322,7 +385,7 @@ NR_PHP_WRAPPER(nr_magento2_soap_handler_prepareoperationinput) {
 
   svc_class = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   method_metadata = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  /* 
+  /*
    * We expect method_metadata to be an array.  At index 'method', if we see
    * a method name, we'll pass it to the transaction naming.
    * See:
@@ -375,9 +438,16 @@ void nr_magento2_enable(TSRMLS_D) {
    * dispatch() is overridden and the original method is never invoked, this
    * hook will not fire.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Magento\\Framework\\App\\Action\\Action::dispatch"),
+      nr_magento2_action_dispatch, NULL, NULL);
+#else
   nr_php_wrap_user_function(
       NR_PSTR("Magento\\Framework\\App\\Action\\Action::dispatch"),
       nr_magento2_action_dispatch TSRMLS_CC);
+#endif
 
   /*
    * Kernel is Magento's built-in cache processor.
@@ -400,11 +470,18 @@ void nr_magento2_enable(TSRMLS_D) {
    * entirely separate routing. We'll access the current route as the input
    * params are resolved.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR(
+          "Magento\\Webapi\\Controller\\Rest\\InputParamsResolver::resolve"),
+      nr_magento2_inputparamsresolver_resolve, NULL, NULL);
+#else
   nr_php_wrap_user_function(
       NR_PSTR(
           "Magento\\Webapi\\Controller\\Rest\\InputParamsResolver::resolve"),
       nr_magento2_inputparamsresolver_resolve TSRMLS_CC);
-
+#endif
   /*
    * The SOAP controller also implements its own routing logic. There are
    * effectively three cases in Magento\Webapi\Controller\Soap::dispatch():
@@ -418,7 +495,18 @@ void nr_magento2_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Magento\\Webapi\\Controller\\Soap::_isWsdlListRequest"),
       nr_magento2_soap_iswsdllistrequest TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::_"
+              "prepareRequestData"),
+      nr_magento2_soap_handler_preparerequestdata, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::"
+              "prepareOperationInput"),
+      nr_magento2_soap_handler_prepareoperationinput, NULL, NULL);
 
+#else
   nr_php_wrap_user_function(
       NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::_"
               "prepareRequestData"),
@@ -433,6 +521,7 @@ void nr_magento2_enable(TSRMLS_D) {
       NR_PSTR("Magento\\Webapi\\Controller\\Soap\\Request\\Handler::"
               "prepareOperationInput"),
       nr_magento2_soap_handler_prepareoperationinput TSRMLS_CC);
+#endif
 
   /*
    * The Magento_Ui render controllers will, if sent a json Accepts

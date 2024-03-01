@@ -37,7 +37,7 @@ jobs:
         php: ['8.0', '8.1', '8.2', '8.3']
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
@@ -58,12 +58,12 @@ jobs:
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Enable arm64 emulation
         if: ${{ inputs.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: arm64
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

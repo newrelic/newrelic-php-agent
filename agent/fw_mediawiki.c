@@ -24,6 +24,14 @@
  * done by trapping ApiMain::__construct. This takes as its first argument a
  * WebRequest object. That object has an array called 'data'. That array will
  * contain a member named 'action'.
+ *
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE`. This entails that the first wrapped call gets to
+ * name the txn. Corresponds to mediawiki version less than 1.18 and is not
+ * applicable to OAPI/PHP8+ since they recommend if using PHP8 to use
+ * MediaWiki 1.38.4+ or 1.39.0+.
  */
 NR_PHP_WRAPPER(nr_mediawiki_name_the_wt_non_api) {
   char* name = NULL;
@@ -70,6 +78,14 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE`. This entails that the first wrapped call gets to
+ * name the txn. Corresponds to mediawiki version less than 1.18 and is not
+ * applicable to OAPI/PHP8+ since they recommend if using PHP8 to use
+ * MediaWiki 1.38.4+ or 1.39.0+.
+ */
 NR_PHP_WRAPPER(nr_mediawiki_name_the_wt_api) {
   zval* data = NULL;
   zval* arg1 = NULL;
@@ -132,6 +148,14 @@ NR_PHP_WRAPPER_END
  * custom actions are supported by either adding a listener to the
  * UnknownAction hook (in 1.18 and older) or by adding to the $wgActions
  * global.
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped call
+ * gets to name the txn.
+ *
  */
 NR_PHP_WRAPPER(nr_mediawiki_getaction) {
   char* name = NULL;
@@ -142,7 +166,7 @@ NR_PHP_WRAPPER(nr_mediawiki_getaction) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MEDIAWIKI);
 
-  return_value = nr_php_get_return_value_ptr(TSRMLS_C);
+  return_value = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 
@@ -175,6 +199,13 @@ NR_PHP_WRAPPER_END
  * ApiMain object. The action name is kept in the mAction property on that
  * object, but that property isn't set until ApiMain::setupExecuteAction() is
  * called, so we'll wait until after that's done.
+ *
+ *  * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_end no change is needed to ensure OAPI compatibility as it
+ * will use the default func_end after callback. This entails that the last
+ * wrapped call gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_mediawiki_apimain_setupexecuteaction) {
   zval* action = NULL;

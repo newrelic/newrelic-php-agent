@@ -146,6 +146,8 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
 
   if (instrument) {
     segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     /*
      * We have to manually force this segment as the current segment on
      * the transaction, otherwise the previously forced stacked segment
@@ -153,6 +155,7 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
      * parented to this segment.
      */
     NRTXN(force_current_segment) = segment;
+#endif
   }
   retval = nr_php_call_fcall_info(fci, fcc);
   ZVAL_ZVAL(return_value, retval, 0, 1);
@@ -198,14 +201,17 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
    *
    * Therefore we delete all children of the segment. Afterwards we set
    * the forced current of the transaction back to the segments parent,
-   * thus restoring the stacked segment stack.
+   * thus restoring the stacked segment stack (for non-OAPI).
    */
   if (segment) {
     for (size_t i = 0; i < nr_segment_children_size(&segment->children); i++) {
       nr_segment_t* child = nr_segment_children_get(&segment->children, i);
       nr_segment_discard(&child);
     }
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     NRTXN(force_current_segment) = segment->parent;
+#endif
   }
 
   nr_segment_datastore_end(&segment, &node_params);

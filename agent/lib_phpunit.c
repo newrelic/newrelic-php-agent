@@ -473,8 +473,8 @@ NR_PHP_WRAPPER(nr_phpunit_instrument_testresult_endtest) {
   }
 
   /*
-   * PHPUnit 6+ started passing "tests skipped due to dependency failures"
-   * to the endTest method -- however, we already catch these tests in
+   * PHPUnit passes "tests skipped due to dependency failures"
+   * to the endTest method. For PHPUnit 5.x, we already catch these tests in
    * our nr_phpunit_instrument_testresult_adderror wrapper.  This check
    * ensures these skipped tests aren't double counted by bailing if
    * a test's status isn't set.
@@ -491,8 +491,13 @@ NR_PHP_WRAPPER(nr_phpunit_instrument_testresult_endtest) {
   duration = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (!nr_php_is_zval_valid_double(duration)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: invalid test duration", __func__);
-    NR_PHP_WRAPPER_CALL;
-    goto end;
+  /*
+   * When PHPUnit 6.x+ passes "tests skipped due to dependency failures"
+   * to the endTest method the second argument - $time - has the value of 0.
+   * However Zend Engine does not correctly set the type for this argument
+   * in this case and therefore we need to fix the type of duration here:
+  */
+    ZVAL_DOUBLE(duration, 0.0);
   }
 
   NR_PHP_WRAPPER_CALL;
@@ -689,9 +694,6 @@ void nr_phpunit_enable(TSRMLS_D) {
 
   nr_php_wrap_user_function(
       NR_PSTR("PHPUnit_Framework_TestResult::addError"),
-      nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
-  nr_php_wrap_user_function(
-      NR_PSTR("PHPUnit\\Framework\\TestResult::addError"),
       nr_phpunit_instrument_testresult_adderror TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {

@@ -39,7 +39,37 @@ extern zend_module_entry newrelic_module_entry;
  * majority of those changes so the rest of the code can simply use the macros
  * and not have to take the different APIs into account.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+
+/* OVERWRITE_ZEND_EXECUTE_DATA allows testing of components with the previous
+ * method of overwriting until the handler functions are complete.
+ * Additionally, gives us flexibility of toggling back to previous method of
+ * instrumentation. When checking in, leave this toggled on to have the CI work
+ * as long as possible until the handler functionality is implemented.*/
+
+//#define OVERWRITE_ZEND_EXECUTE_DATA true
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+#define NR_SPECIALFNPTR_PROTO                              \
+  struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
+      zend_execute_data *execute_data, zval *func_return_value
+#define NR_SPECIALFNPTR_ORIG_ARGS \
+  wraprec, auto_segment, execute_data, func_return_value
+#define NR_SPECIALFN_PROTO                                \
+  nruserfn_t *wraprec, zend_execute_data *execute_data, , \
+      zval *func_return_value
+#define NR_OP_ARRAY (&execute_data->func->op_array)
+#define NR_EXECUTE_PROTO \
+  zend_execute_data *execute_data, zval *func_return_value
+#define NR_EXECUTE_PROTO_OVERWRITE zend_execute_data* execute_data
+#define NR_EXECUTE_ORIG_ARGS_OVERWRITE execute_data
+#define NR_EXECUTE_ORIG_ARGS execute_data, func_return_value
+#define NR_UNUSED_SPECIALFN (void)execute_data
+#define NR_UNUSED_FUNC_RETURN_VALUE (void)func_return_value
+/* NR_ZEND_EXECUTE_HOOK to be removed in future ticket */
+#define NR_ZEND_EXECUTE_HOOK zend_execute_ex
+
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ and overwrite hook*/
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
       zend_execute_data *execute_data
@@ -47,9 +77,13 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_SPECIALFN_PROTO nruserfn_t *wraprec, zend_execute_data *execute_data
 #define NR_OP_ARRAY (&execute_data->func->op_array)
 #define NR_EXECUTE_PROTO zend_execute_data* execute_data
+#define NR_EXECUTE_PROTO_OVERWRITE zend_execute_data* execute_data
+#define NR_EXECUTE_ORIG_ARGS_OVERWRITE execute_data
 #define NR_EXECUTE_ORIG_ARGS execute_data
 #define NR_UNUSED_SPECIALFN (void)execute_data
+#define NR_UNUSED_FUNC_RETURN_VALUE
 #define NR_ZEND_EXECUTE_HOOK zend_execute_ex
+
 #elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
@@ -58,9 +92,13 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_SPECIALFN_PROTO nruserfn_t *wraprec, zend_execute_data *execute_data
 #define NR_OP_ARRAY (execute_data->op_array)
 #define NR_EXECUTE_PROTO zend_execute_data* execute_data
+#define NR_EXECUTE_PROTO_OVERWRITE zend_execute_data* execute_data
+#define NR_EXECUTE_ORIG_ARGS_OVERWRITE execute_data
 #define NR_EXECUTE_ORIG_ARGS execute_data
 #define NR_UNUSED_SPECIALFN (void)execute_data
+#define NR_UNUSED_FUNC_RETURN_VALUE
 #define NR_ZEND_EXECUTE_HOOK zend_execute_ex
+
 #else /* PHP < 5.5 */
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
@@ -69,9 +107,19 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_SPECIALFN_PROTO nruserfn_t *wraprec, zend_op_array *op_array_arg
 #define NR_OP_ARRAY (op_array_arg)
 #define NR_EXECUTE_PROTO zend_op_array* op_array_arg
+#define NR_EXECUTE_PROTO_OVERWRITE zend_op_array* op_array_arg
+#define NR_EXECUTE_ORIG_ARGS_OVERWRITE op_array_arg
 #define NR_EXECUTE_ORIG_ARGS op_array_arg
 #define NR_UNUSED_SPECIALFN (void)op_array_arg
+#define NR_UNUSED_FUNC_RETURN_VALUE
 #define NR_ZEND_EXECUTE_HOOK zend_execute
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+#define NR_GET_RETURN_VALUE_PTR &func_return_value
+#else
+#define NR_GET_RETURN_VALUE_PTR nr_php_get_return_value_ptr(TSRMLS_C)
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
@@ -209,7 +257,7 @@ typedef zend_op_array* (*nrphpcfile_t)(zend_file_handle* file_handle,
                                        int type TSRMLS_DC);
 typedef zend_op_array* (*nrphpcstr_t)(zval* source_string,
                                       char* filename TSRMLS_DC);
-typedef void (*nrphpexecfn_t)(NR_EXECUTE_PROTO TSRMLS_DC);
+typedef void (*nrphpexecfn_t)(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC);
 typedef void (*nrphpcufafn_t)(zend_function* func,
                               const zend_function* caller TSRMLS_DC);
 typedef int (*nrphphdrfn_t)(sapi_header_struct* sapi_header,
@@ -376,21 +424,47 @@ nrframework_t
     current_framework; /* Current request framework (forced or detected) */
 int framework_version; /* Current framework version */
 
-char* drupal_module_invoke_all_hook;      /* The current Drupal hook */
-size_t drupal_module_invoke_all_hook_len; /* The length of the current Drupal
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/* Without OAPI, we are able to utilize the call stack to keep track
+ * of the previous hooks. With OAPI, we can no longer do this so
+ * we track the stack manually */
+nr_stack_t drupal_invoke_all_hooks; /* stack of Drupal hooks */
+nr_stack_t drupal_invoke_all_states; /* stack of bools indicating
+                                               whether the current hook
+                                               needs to be released */
+#else
+char* drupal_invoke_all_hook;      /* The current Drupal hook */
+size_t drupal_invoke_all_hook_len; /* The length of the current Drupal
                                              hook */
+#endif //OAPI
 size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
                                      calls */
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+nr_segment_t* drupal_http_request_segment;
+#endif
 int symfony1_in_dispatch; /* Whether we are currently within a
                              sfFrontWebController::dispatch() frame */
 int symfony1_in_error404; /* Whether we are currently within a
                              sfError404Exception::printStackTrace() frame */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+bool check_cufa;
+/* Without OAPI, we are able to utilize the call stack to keep track
+ * of the previous tags. With OAPI, we can no longer do this so
+ * we track the stack manually */
+nr_stack_t wordpress_tags;
+nr_stack_t wordpress_tag_states; /* stack of bools indicating
+                                    whether the current tag
+                                    needs to be released */
+#else
 bool check_cufa; /* Whether we need to check cufa because we are
                     instrumenting hooks, or whether we can skip cufa */
-
 char* wordpress_tag;                    /* The current WordPress tag */
+#endif //OAPI
+
 nr_matcher_t* wordpress_plugin_matcher; /* Matcher for plugin filenames */
 nr_matcher_t* wordpress_theme_matcher;  /* Matcher for theme filenames */
 nr_matcher_t* wordpress_core_matcher;   /* Matcher for plugin filenames */
@@ -406,7 +480,6 @@ int php_cur_stack_depth; /* Total current depth of PHP stack, measured in PHP
 
 nrphpcufafn_t
     cufa_callback; /* The current call_user_func_array callback, if any */
-
 /*
  * We instrument database connection constructors and store the instance
  * information in a hash keyed by a string containing the connection resource
@@ -533,7 +606,14 @@ nrapp_t* app; /* The application used in the last attempt to initialize a
 
 nrtxn_t* txn; /* The all-important transaction pointer */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+nr_stack_t predis_ctxs; /* Without OAPI, we are able to utilize the call
+                           stack to keep track of the current predis_ctx.
+                           WIth OAPI, we must track this manually */
+#else
 char* predis_ctx; /* The current Predis pipeline context name, if any */
+#endif
 nr_hashmap_t* predis_commands;
 
 nrcallbackfn_t error_group_user_callback; /* The user defined callback for

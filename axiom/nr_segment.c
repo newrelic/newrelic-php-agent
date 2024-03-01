@@ -883,7 +883,9 @@ bool nr_segment_discard(nr_segment_t** segment_ptr) {
   }
 
   /* Unhook the segment from its parent. */
-  nr_segment_children_remove(&segment->parent->children, segment);
+  if (!nr_segment_children_remove(&segment->parent->children, segment)) {
+    return false;
+  }
 
   /* Reparent all children. */
   nr_segment_children_reparent(&segment->children, segment->parent);
@@ -1236,4 +1238,17 @@ bool nr_segment_attributes_user_txn_event_add(nr_segment_t* segment,
   nr_segment_set_priority_flag(segment, NR_SEGMENT_PRIORITY_ATTR);
 
   return (NR_SUCCESS == status);
+}
+
+ssize_t nr_segment_get_child_ix(const nr_segment_t* segment) {
+  if (NULL == segment) {
+    return -1;
+  }
+  return segment->child_ix;
+}
+
+void nr_segment_set_child_ix(nr_segment_t* segment, size_t ix) {
+  if (NULL != segment) {
+    segment->child_ix = ix;
+  }
 }

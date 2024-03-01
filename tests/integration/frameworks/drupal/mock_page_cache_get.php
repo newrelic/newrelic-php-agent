@@ -13,4 +13,5 @@ namespace Drupal\page_cache\StackMiddleware {
             $hook();
         }
     }
+    echo "";
 }

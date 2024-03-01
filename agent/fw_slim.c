@@ -42,6 +42,12 @@ static char* nr_slim_path_from_route(zval* route TSRMLS_DC) {
  * Wrap the \Slim\Route::dispatch method, which is the happy path for Slim 2.x
  * routing. i.e. The router has succesfully matched the URL and dispatched the
  * request to a route.
+ *
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_slim2_route_dispatch) {
   zval* this_var = NULL;
@@ -55,7 +61,7 @@ NR_PHP_WRAPPER(nr_slim2_route_dispatch) {
   txn_name = nr_slim_path_from_route(this_var TSRMLS_CC);
   nr_php_scope_release(&this_var);
 
-  retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
+  retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
   NR_PHP_WRAPPER_CALL;
 
@@ -76,6 +82,12 @@ NR_PHP_WRAPPER_END
  * Wrap the \Slim\Route::run method, which is the happy path for Slim routing.
  * i.e. The router has succesfully matched the URL and dispatched the request
  * to a route.
+ *
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_slim3_4_route_run) {
   zval* this_var = NULL;

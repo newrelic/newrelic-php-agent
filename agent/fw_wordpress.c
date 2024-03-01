@@ -245,7 +245,13 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Wordpress: cannot determine plugin name:"
                      " missing filename, tag=" NRP_FMT,
-                     NRP_PHP(NRPRG(wordpress_tag)));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+                     NRP_PHP((char*)nr_stack_get_top(&NRPRG(wordpress_tags)))
+#else
+                     NRP_PHP(NRPRG(wordpress_tag))
+#endif /* OAPI */
+    );
     return NULL;
   }
   filename_len = nr_php_function_filename_len(func);
@@ -290,13 +296,25 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
                      "Wordpress: detected Wordpress Core filename, functions "
                      "will be anonymized:"
                      "tag=" NRP_FMT " filename=" NRP_FMT,
-                     NRP_PHP(NRPRG(wordpress_tag)), NRP_FILENAME(filename));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+                     NRP_PHP((char*)nr_stack_get_top(&NRPRG(wordpress_tags))),
+#else
+                     NRP_PHP(NRPRG(wordpress_tag)),
+#endif /* OAPI */
+                     NRP_FILENAME(filename));
     /* We can discard the plugin value, since these functions are anonymous. */
   } else {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Wordpress: cannot determine plugin name:"
                      " unexpected format, tag=" NRP_FMT " filename=" NRP_FMT,
-                     NRP_PHP(NRPRG(wordpress_tag)), NRP_FILENAME(filename));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+                     NRP_PHP((char*)nr_stack_get_top(&NRPRG(wordpress_tags))),
+#else
+                     NRP_PHP(NRPRG(wordpress_tag)),
+#endif /* OAPI */
+                     NRP_FILENAME(filename));
   }
   nr_free(plugin);
 
@@ -326,7 +344,13 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
    */
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  char* tag = nr_stack_get_top(&NRPRG(wordpress_tags));
+  if ((0 == NRINI(wordpress_hooks)) || (NULL == tag)) {
+#else
   if ((0 == NRINI(wordpress_hooks)) || (NULL == NRPRG(wordpress_tag))) {
+#endif /* OAPI */
     NR_PHP_WRAPPER_LEAVE;
   }
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
@@ -338,14 +362,21 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 
   NR_PHP_WRAPPER_CALL;
   if (NULL != plugin || NRPRG(wordpress_core)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
+#else
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX,
                                NRPRG(wordpress_tag));
+#endif
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
                                plugin);
   }
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 /*
  * PHP 7.3 and below uses old-style wraprec, and will use old style cufa calls.
  */
@@ -382,6 +413,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
   nr_php_wrap_callable(func, nr_wordpress_wrap_hook TSRMLS_CC);
 }
 #endif /* PHP < 7.4 */
+#endif /* not OAPI */
 
 static void free_tag(void* tag) {
   nr_free(tag);
@@ -452,22 +484,38 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
+  /* We will ignore the global wordpress_tag stack if wodpress_hooks is
+   * off */
   if (nrlikely(0 != NRINI(wordpress_hooks))) {
     NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
 
     tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
+    
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    if (1 == nr_php_is_zval_non_empty_string(tag)) {
+      /*
+       * Our general approach here is to set the wordpress_tag global, then let
+       * the call_user_func_array instrumentation take care of actually timing
+       * the hooks by checking if it's set.
+       */
+      NRPRG(check_cufa) = true;
+      nr_stack_push(&NRPRG(wordpress_tags),
+                    nr_wordpress_clean_tag(tag TSRMLS_CC));
+      nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
+    } else {
+      nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
+    }
+#else
     if (1 == nr_php_is_zval_non_empty_string(tag)) {
       /*
       * Our general approach here is to set the wordpress_tag global, then let
       * the call_user_func_array instrumentation take care of actually timing
       * the hooks by checking if it's set.
       */
-      char* old_tag = NRPRG(wordpress_tag);
-
       NRPRG(check_cufa) = true;
-
-      NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag);
+      char* old_tag = NRPRG(wordpress_tag);
+      NRPRG(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
       NR_PHP_WRAPPER_CALL;
       if (0 == NRPRG(wordpress_plugins)) {
         nr_wordpress_hooks_create_metric(auto_segment, NRPRG(wordpress_tag));
@@ -480,6 +528,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
       NRPRG(check_cufa) = false;
       NR_PHP_WRAPPER_CALL;
     }
+#endif /* OAPI */
 
     nr_php_arg_release(&tag);
   }
@@ -535,10 +584,15 @@ static void nr_wordpress_name_the_wt(const zval* tag,
 /*
  * apply_filters() is special, since we're interested in it both for
  * WordPress hook/plugin metrics and for transaction naming.
+ *
+ * * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE`.  There is an explicit after function
+ * `nr_wordpress_apply_filters_after`. This entails that the last wrapped call
+ * gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
   zval* tag = NULL;
-  zval** retval_ptr = nr_php_get_return_value_ptr(TSRMLS_C);
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -547,6 +601,28 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
 
   tag = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /* We will ignore the global wordpress_tag_states stack if wodpress_hooks is
+   * off */
+  if (0 != NRINI(wordpress_hooks)) {
+    if (1 == nr_php_is_zval_non_empty_string(tag)) {
+      /*
+       * Our general approach here is to set the wordpress_tag global, then let
+       * the call_user_func_array instrumentation take care of actually timing
+       * the hooks by checking if it's set.
+       */
+      NRPRG(check_cufa) = true;
+      nr_stack_push(&NRPRG(wordpress_tags),
+                    nr_wordpress_clean_tag(tag TSRMLS_CC));
+      nr_stack_push(&NRPRG(wordpress_tag_states), (void*)!NULL);
+    } else {
+      // Keep track of whether we pushed to NRPRG(wordpress_tags)
+      nr_stack_push(&NRPRG(wordpress_tag_states), NULL);
+    }
+  }
+#else
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   if (1 == nr_php_is_zval_non_empty_string(tag)) {
     if (0 != NRINI(wordpress_hooks)) {
       /*
@@ -577,10 +653,57 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
   } else {
     NR_PHP_WRAPPER_CALL;
   }
+#endif /* OAPI */
 
   nr_php_arg_release(&tag);
 }
 NR_PHP_WRAPPER_END
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+static void clean_wordpress_tag_stack(nr_segment_t* segment) {
+  if ((bool)nr_stack_pop(&NRPRG(wordpress_tag_states))) {
+    char* tag = nr_stack_pop(&NRPRG(wordpress_tags));
+    if (0 == NRPRG(wordpress_plugins)) {
+      nr_wordpress_hooks_create_metric(segment, tag);
+    }
+  }
+  if (nr_stack_is_empty(&NRPRG(wordpress_tags))) {
+    NRPRG(check_cufa) = false;
+  }
+}
+
+NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_after) {
+  (void)wraprec;
+  if (0 != NRINI(wordpress_hooks)) {
+    clean_wordpress_tag_stack(auto_segment);
+  }
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_wordpress_handle_tag_stack_clean) {
+  NR_UNUSED_SPECIALFN;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  (void)wraprec;
+  if (0 != NRINI(wordpress_hooks)) {
+    clean_wordpress_tag_stack(auto_segment);
+  }
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
+  /* using nr_php_get_user_func_arg() so that we don't perform another copy
+   * when all we want to do is check the string length */
+  zval* tag = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (1 == nr_php_is_zval_non_empty_string(tag)) {
+    zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+    nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
+  }
+
+  nr_wordpress_handle_tag_stack_after(NR_SPECIALFNPTR_ORIG_ARGS);
+}
+NR_PHP_WRAPPER_END
+#endif /* OAPI */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 /*
@@ -637,7 +760,13 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
       if (NULL != wordpress_plugin_theme || NRPRG(wordpress_core)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+        callback_wraprec = nr_php_wrap_callable_before_after_clean(
+            zf, NULL, nr_wordpress_wrap_hook, nr_wordpress_wrap_hook);
+#else
         callback_wraprec = nr_php_wrap_callable(zf, nr_wordpress_wrap_hook);
+#endif
         // We can cheat here: wraprecs on callables are always transient, so if
         // there's a wordpress_plugin_theme set we know it's from this
         // transaction, and we don't have any issues around a possible
@@ -687,6 +816,30 @@ void nr_wordpress_version() {
 }
 
 void nr_wordpress_enable(TSRMLS_D) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("apply_filters"), nr_wordpress_apply_filters,
+      nr_wordpress_apply_filters_after, nr_wordpress_handle_tag_stack_clean);
+
+  if (0 != NRINI(wordpress_hooks)) {
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("apply_filters_ref_array"), nr_wordpress_exec_handle_tag,
+        nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
+
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("do_action"), nr_wordpress_exec_handle_tag,
+        nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
+
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
+        nr_wordpress_handle_tag_stack_after, nr_wordpress_handle_tag_stack_clean);
+    if (0 != NRPRG(wordpress_plugins)) {
+      nr_php_wrap_user_function(NR_PSTR("add_filter"), nr_wordpress_add_filter);
+    }
+  }
+
+#else
   nr_php_wrap_user_function(NR_PSTR("apply_filters"),
                             nr_wordpress_apply_filters TSRMLS_CC);
 
@@ -709,6 +862,7 @@ void nr_wordpress_enable(TSRMLS_D) {
 #endif
     }
   }
+#endif /* OAPI */
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), "wordpress",

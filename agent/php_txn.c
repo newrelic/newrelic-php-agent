@@ -844,11 +844,14 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   nr_php_txn_send_metrics_once(NRPRG(txn) TSRMLS_CC);
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
   /*
    * Disable automated parenting for the default parent context. See
    * php_stacked_segment.h for further details.
    */
   nr_txn_force_current_segment(NRPRG(txn), NRTXN(segment_root));
+#endif
 
   nr_php_collect_x_request_start(TSRMLS_C);
   nr_php_set_initial_path(NRPRG(txn) TSRMLS_CC);
@@ -947,11 +950,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
    * returns 0 and INI_STR returns NULL.
    */
   if (NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection)) {
-    bool opcache_enabled = is_cli
-                               ? INI_BOOL("opcache.enable_cli")
-                               : INI_BOOL("opcache.enable");
-    if ((opcache_enabled)
-        && (nr_php_ini_setting_is_set_by_user("opcache.preload"))) {
+    bool opcache_enabled
+        = is_cli ? INI_BOOL("opcache.enable_cli") : INI_BOOL("opcache.enable");
+    if ((nr_php_ini_setting_is_set_by_user("opcache.preload"))
+        && (opcache_enabled)) {
       nr_php_user_instrumentation_from_opcache(TSRMLS_C);
     }
   }
@@ -1065,15 +1067,27 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     return NR_SUCCESS;
   }
 
-  /* Stop all recording although we shouldn't be getting anything */
-  NRTXN(status.recording) = 0;
-
   /*
    * If a transaction is ended while stacked segments are active (e. g.
    * by calling newrelic_end_transaction inside nested function scopes)
    * the stack of stacked segments has to be cleaned up.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_segment_t* segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  while(NULL != segment && segment != NRTXN(segment_root)) {
+    nr_segment_end(&segment);
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  }
+#else
   nr_php_stacked_segment_unwind(TSRMLS_C);
+#endif
+
+  nrl_verbosedebug(NRL_TXN, "%s: Ending the transaction and stack depth = %d",
+                   __func__, NRPRG(php_cur_stack_depth));
+
+  /* Stop all recording although we shouldn't be getting anything */
+  NRTXN(status.recording) = 0;
 
   ignoretxn = nr_php_txn_should_ignore(ignoretxn TSRMLS_CC);
 

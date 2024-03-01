@@ -10,10 +10,13 @@
 #include "php_stacked_segment.h"
 #include "php_globals.h"
 #include "php_wrapper.h"
+#include "util_sleep.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 static void test_start_end_discard(TSRMLS_D) {
   nr_segment_t stacked = {0};
   nr_segment_t* segment;
@@ -96,6 +99,11 @@ static void test_unwind(TSRMLS_D) {
   nr_segment_end(&segment);
 
   /*
+   * Sleep; otherwise, unwind will dump the short segments and fail.
+   */
+  nr_msleep(500);
+
+  /*
    * Unwind the stacked segment stack.
    */
   nr_php_stacked_segment_unwind(TSRMLS_C);
@@ -108,7 +116,6 @@ static void test_unwind(TSRMLS_D) {
 
   tlib_php_request_end();
 }
-
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -118,3 +125,7 @@ void test_main(void* p NRUNUSED) {
   test_unwind(TSRMLS_C);
   tlib_php_engine_destroy(TSRMLS_C);
 }
+#else
+void test_main(void* p NRUNUSED) {
+}
+#endif /* not OAPI */

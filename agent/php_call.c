@@ -53,11 +53,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
   fname = nr_php_zval_alloc();
   nr_php_zval_str(fname, function_name);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO /* PHP 8.2+ */
-  /*
-   * With PHP 8.2, functions that do not exist will cause a fatal error to
-   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
-   * silently fail if it does not exist
-   */
   if (NULL != object_ptr) {
     object = Z_OBJ_P(object_ptr);
   } else {
@@ -70,17 +65,25 @@ zval* nr_php_call_user_func(zval* object_ptr,
     return NULL;
   }
 
-  zend_result = zend_call_method_if_exists(object, method_name, retval,
-                                           param_count, param_values);
-
+  /*
+   * With PHP 8.2, functions that do not exist will cause a fatal error to
+   * be thrown. `zend_call_method_if_exists` will attempt to call a function and
+   * silently fail if it does not exist
+   */
+  zend_result =  zend_call_method_if_exists(object, method_name, retval, param_count, param_values);
+  
 #elif ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO \
     && ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /*
+    /*
    * With PHP8, `call_user_function_ex` was removed and `call_user_function`
    * became the recommended function.
+   * According to zend internals documentation:
+   * As of PHP 7.1.0, the function_table argument is not used and should
+   * always be NULL. See for more details:
+   * https://www.phpinternalsbook.com/php7/internal_types/functions/callables.html
    */
   zend_result = call_user_function(EG(function_table), object_ptr, fname,
-                                   retval, param_count, param_values);
+                                     retval, param_count, param_values);
 
 #else
   zend_result = call_user_function_ex(EG(function_table), object_ptr, fname,
@@ -90,11 +93,9 @@ zval* nr_php_call_user_func(zval* object_ptr,
   nr_php_zval_free(&fname);
 
   nr_free(param_values);
-
   if (SUCCESS == zend_result) {
     return retval;
   }
-
   nr_php_zval_free(&retval);
   return NULL;
 #else /* PHP < 7 */
@@ -284,7 +285,10 @@ void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
     caller = prev_execute_data->function_state.function;
 #endif /* PHP7 */
   } else {
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    caller = nr_php_get_caller(EG(current_execute_data), NULL, 1 TSRMLS_CC);
+#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
     caller = nr_php_get_caller(EG(current_execute_data), 1 TSRMLS_CC);
 #else
     caller = nr_php_get_caller(NULL, 1 TSRMLS_CC);

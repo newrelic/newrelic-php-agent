@@ -93,6 +93,13 @@ int nr_php_post_deactivate(void) {
   EG(trampoline).op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = NULL;
 #endif /* PHP7 */
 #endif
+  /*
+   * End the txn before we clean up all the globals it might need.
+   */
+  if (nrlikely(0 != NRPRG(txn))) {
+    (void)nr_php_txn_end(0, 1 TSRMLS_CC);
+  }
+
   nr_php_remove_transient_user_instrumentation();
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
@@ -106,8 +113,24 @@ int nr_php_post_deactivate(void) {
   nr_free(NRPRG(mysql_last_conn));
   nr_free(NRPRG(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG(datastore_connections));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  /*
+   * Pre-OAPI, this variables were kept on the call stack and
+   * therefore had no need to be in an nr_stack
+   */
+  nr_stack_destroy_fields(&NRPRG(wordpress_tags));
+  nr_stack_destroy_fields(&NRPRG(wordpress_tag_states));
+  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_hooks));
+  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_states));
+#endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_stack_destroy_fields(&NRPRG(predis_ctxs));
+#else
   nr_free(NRPRG(predis_ctx));
+#endif /* OAPI */
   nr_hashmap_destroy(&NRPRG(predis_commands));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
@@ -118,12 +141,12 @@ int nr_php_post_deactivate(void) {
 
   NRPRG(cufa_callback) = NULL;
 
-  if (nrlikely(0 != NRPRG(txn))) {
-    (void)nr_php_txn_end(0, 1 TSRMLS_CC);
-  }
-
   NRPRG(current_framework) = NR_FW_UNSET;
   NRPRG(framework_version) = 0;
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(drupal_http_request_segment) = NULL;
+#endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");
   return SUCCESS;

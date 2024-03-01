@@ -5,8 +5,15 @@
  */
 
 /*DESCRIPTION
-Test that span events are correctly created from any eligible segment, even
-when an exception is handled by the exception handler.
+Test that no span events error attributes are captured when error_collector is disabled.
+No error events should be generated either.
+*/
+
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+
 */
 
 /*INI
@@ -14,9 +21,20 @@ newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
-newrelic.code_level_metrics.enabled=false
+newrelic.error_collector.enabled = false
+display_errors=1
+log_errors=0
+error_reporting = E_ALL
+opcache.enable=1
+opcache.enable_cli=1
+opcache.file_update_protection=0
+opcache.jit_buffer_size=32M
+opcache.jit=tracing
 */
 
+/*PHPMODULES
+zend_extension=opcache.so
+*/
 /*EXPECT_ERROR_EVENTS
 null
 */
@@ -26,7 +44,7 @@ null
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 4
+    "events_seen": 3
   },
   [
     [
@@ -86,45 +104,19 @@ null
       },
       {},
       {
-        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException"
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
-    ],
-    [
-      {
-        "type": "Span",
-        "traceId": "??",
-        "transactionId": "??",
-        "sampled": true,
-        "priority": "??",
-        "name": "Custom\/{closure}",
-        "guid": "??",
-        "timestamp": "??",
-        "duration": "??",
-        "category": "generic",
-        "parentId": "??"
-      },
-      {},
-      {}
     ]
   ]
 ]
 */
 
-/*EXPECT
-*/
-
-set_exception_handler(
-    function () {
-        time_nanosleep(0, 100000000);
-        exit(0); 
-    }
-);
-
 function a()
 {
     time_nanosleep(0, 100000000);
-    throw new RuntimeException('oops');
+    trigger_error('foo', E_USER_ERROR);
 }
 
 newrelic_record_datastore_segment(

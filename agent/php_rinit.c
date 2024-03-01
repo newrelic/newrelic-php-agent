@@ -24,6 +24,21 @@ static void nr_php_datastore_instance_destroy(
   nr_datastore_instance_destroy(&instance);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+/* OAPI global stacks (as opposed to call stack used previously) 
+ * need to have a dtor set so that when we free it
+ * during rshutdown, all elements are properly freed */
+static void str_stack_dtor(void* e, NRUNUSED void* d) {
+  char* str = (char*)e;
+  nr_free(str);
+}
+static void zval_stack_dtor(void* e, NRUNUSED void* d) {
+  zval* zv = (zval*)e;
+  nr_php_zval_free(&zv);
+}
+#endif
+
 #ifdef TAGS
 void zm_activate_newrelic(void); /* ctags landing pad only */
 #endif
@@ -39,6 +54,11 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(drupal_http_request_segment) = NULL;
+  NRPRG(drupal_http_request_depth) = 0;
+#endif
 #else
   NRPRG(pid) = getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
@@ -90,6 +110,22 @@ PHP_RINIT_FUNCTION(newrelic) {
   }
 
   NRPRG(check_cufa) = false;
+
+  /*
+   * Pre-OAPI, this variables were kept on the call stack and
+   * therefore had no need to be in an nr_stack
+   */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(check_cufa) = false;
+  nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(drupal_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG(drupal_invoke_all_states), NR_STACK_DEFAULT_CAPACITY);
+  NRPRG(predis_ctxs).dtor = str_stack_dtor;
+  NRPRG(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
+#endif
 
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;

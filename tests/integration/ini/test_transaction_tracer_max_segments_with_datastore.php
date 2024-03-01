@@ -43,9 +43,9 @@ newrelic.distributed_tracing_enabled=0
                   [
                     "?? start time", "?? end time", "`1", 
                     {
-                      "code.lineno": 125,
+                      "code.lineno": 139,
                       "code.filepath": "__FILE__",
-                      "code.function": "my_function"
+                      "code.function": "my_function_3"
                     }, []
                   ],
                   [
@@ -73,7 +73,7 @@ newrelic.distributed_tracing_enabled=0
         ],
         [
           "OtherTransaction\/php__FILE__",
-          "Custom\/my_function",
+          "Custom\/my_function_3",
           "Datastore\/statement\/MySQL\/table\/select"
         ]
     ],
@@ -94,7 +94,9 @@ newrelic.distributed_tracing_enabled=0
   "?? timeframe start",
   "?? timeframe stop",
   [
-    [{"name":"Custom/my_function"},                                 [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_1"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_2"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_3"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/all"},                                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/MySQL/allOther"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/all"},                                      [1, "??", "??", "??", "??", "??"]],
@@ -106,10 +108,14 @@ newrelic.distributed_tracing_enabled=0
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/api/add_custom_tracer"},               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/api/add_custom_tracer"},               [3, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/record_datastore_segment"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Custom/my_function",
-      "scope":"OtherTransaction/php__FILE__"},                      [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_1",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_2",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Custom/my_function_3",
+      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/MySQL/table/select",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
@@ -119,21 +125,31 @@ newrelic.distributed_tracing_enabled=0
 ]
 */
 
-
-
-
-function my_function(){
-    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped; duration needs to be shorter than datastore segment
+/*
+ * We add multiple functions of differing durations to ensure deterministic dropping of certain segments.
+ * Because multiple segments of the same parent are dropped by a swap-n-pop removal from their parent's
+ * children list, we need to be able to determistically know which of these 3 functions is shortest
+ */
+function my_function_1(){
+    usleep(10); // force non-zero duration for the segment not to be dropped; duration needs to be shorter than datastore segment
+}
+function my_function_2(){
+    usleep(2000); // force non-zero duration for the segment not to be dropped; duration needs to be shorter than datastore segment
+}
+function my_function_3(){
+    usleep(4000); // force non-zero duration for the segment not to be dropped; duration needs to be shorter than datastore segment
 }
 
-newrelic_add_custom_tracer("my_function");
+newrelic_add_custom_tracer("my_function_1");
+newrelic_add_custom_tracer("my_function_2");
+newrelic_add_custom_tracer("my_function_3");
 
-my_function();
-my_function();
-my_function();
+my_function_3();
+my_function_2();
+my_function_1();
 
 newrelic_record_datastore_segment(function () {
-    time_nanosleep(0, 70000); return 42; // force non-zero duration for the segment not to be dropped; duration needs to be longer than user func segment
+    usleep(6000); return 42; // force non-zero duration for the segment not to be dropped; duration needs to be longer than user func segment
 }, array(
     'product'       => 'mysql',
     'collection'    => 'table',

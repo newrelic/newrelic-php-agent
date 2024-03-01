@@ -70,7 +70,7 @@ void* nr_stack_get_top(nr_stack_t* s);
 void nr_stack_push(nr_stack_t* s, void* new_element);
 
 /*
- * Purpose : Peek at the top of the stack without removing the top element.
+ * Purpose : Remove and return the top of the stack
  *
  * Params  : 1. A pointer to a stack, s.
  *

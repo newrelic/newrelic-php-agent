@@ -485,6 +485,7 @@ leave:
  * render() method.
  *
  * See: http://laravel.com/docs/5.0/errors#handling-errors
+ *
  */
 NR_PHP_WRAPPER(nr_laravel5_exception_render) {
 #if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
@@ -574,6 +575,7 @@ NR_PHP_WRAPPER(nr_laravel5_exception_report) {
       nr_status_t st;
 
       st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
+                                         true /* add to segment */,
                                          NULL /* use default prefix */,
                                          &NRPRG(exception_filters) TSRMLS_CC);
 
@@ -598,6 +600,9 @@ NR_PHP_WRAPPER(nr_laravel5_exception_report) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Not applicable to OAPI.
+ */
 static void nr_laravel_register_after_filter(zval* app TSRMLS_DC) {
   zval* filter = NULL;
   zval* retval = NULL;
@@ -624,6 +629,7 @@ static void nr_laravel_register_after_filter(zval* app TSRMLS_DC) {
   /*
    * Only install our filter if this version of Laravel supports them.
    * Filters were deprecated in Laravel 5.0 and removed in version 5.2.
+   * As such, not applicable to OAPI.
    */
   if (0 == nr_php_object_has_concrete_method(router, "after" TSRMLS_CC)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: Router does not support filters",
@@ -654,7 +660,9 @@ end:
   nr_php_zval_free(&filter);
   nr_php_zval_free(&retval);
 }
-
+/*
+ * Not applicable to OAPI.
+ */
 NR_PHP_WRAPPER(nr_laravel4_application_run) {
   zval* this_var = NULL;
 
@@ -684,6 +692,13 @@ NR_PHP_WRAPPER_END
  *           the transaction name. This ensures the transaction is named if
  *           the middleware short-circuits request processing by returning
  *           a response instead of invoking its successor.
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This entails that the last wrapped call gets to name the
+ * txn (as detailed in the purpose above).
  */
 NR_PHP_WRAPPER(nr_laravel5_middleware_handle) {
   NR_UNUSED_SPECIALFN;
@@ -753,8 +768,14 @@ static void nr_laravel5_wrap_middleware(zval* app TSRMLS_DC) {
 
       name = nr_formatf("%.*s::handle", (int)Z_STRLEN_P(classname),
                         Z_STRVAL_P(classname));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+      nr_php_wrap_user_function_before_after_clean(
+          name, nr_strlen(name), nr_laravel5_middleware_handle, NULL, NULL);
+#else
       nr_php_wrap_user_function(name, nr_strlen(name),
                                 nr_laravel5_middleware_handle TSRMLS_CC);
+#endif
       nr_free(name);
     }
   }
@@ -775,6 +796,11 @@ leave:
  *           2. The method name.
  *           3. The length of the method name.
  *           4. The post callback.
+ *
+ * Note: In this case, all functions utilized this execute before calling
+ * `NR_PHP_WRAPPER_CALL` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility.
  */
 static void nr_laravel_add_callback_method(const zend_class_entry* ce,
                                            const char* method,
@@ -803,9 +829,14 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
   char* class_method = nr_formatf("%.*s::%.*s", NRSAFELEN(class_name_len),
                                   class_name, NRSAFELEN(method_len), method);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      class_method, nr_strlen(class_method), callback, NULL, NULL);
+#else
   nr_php_wrap_user_function(class_method, nr_strlen(class_method),
                             callback TSRMLS_CC);
-
+#endif
   nr_free(class_method);
 }
 
@@ -861,6 +892,13 @@ NR_PHP_WRAPPER_END
 /*
  * This is a generic callback for any post hook on an Illuminate\Routing\Router
  * method where the method receives a request object as its first parameter.
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to the OAPI default of calling
+ * the wrapped function callback in func_end, there are no changes required to
+ * ensure OAPI compatibility. This entails that the first call to this function
+ * gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_laravel_router_method_with_request) {
   zval* request = NULL;
@@ -977,6 +1015,14 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility.
+ * This entails that the last wrapped call gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_laravel_console_application_dorun) {
   zval* command = NULL;
   zval* input = NULL;
@@ -1024,6 +1070,14 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds the OAPI default of calling the
+ * wrapped function callback in func_end, there are no changes required to
+ * ensure OAPI compatibility. This entails that the first call to this function
+ * gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
   zval* arg_request = NULL;
   zval* http_method = NULL;
@@ -1038,7 +1092,7 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
    * Start by calling the original method, and if it doesn't return a
    * route then we don't need to do any extra work.
    */
-  route = nr_php_get_return_value_ptr(TSRMLS_C);
+  route = NR_GET_RETURN_VALUE_PTR;
   NR_PHP_WRAPPER_CALL;
 
   /* If the method did not return a route, then end gracefully. */
@@ -1170,9 +1224,15 @@ void nr_laravel_enable(TSRMLS_D) {
   /*
    * Listen for Artisan commands so we can name those appropriately.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Console\\Application::doRun"),
+      nr_laravel_console_application_dorun, NULL, NULL);
+#else
   nr_php_wrap_user_function(NR_PSTR("Illuminate\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
-
+#endif
   /*
    * Start Laravel queue instrumentation, provided it's not disabled.
    */

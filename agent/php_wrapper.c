@@ -8,6 +8,98 @@
 #include "php_wrapper.h"
 #include "util_logging.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void nr_php_wraprec_add_before_after_clean_callbacks(
+    const char* name, size_t namelen,
+    nruserfn_t* wraprec,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
+  if (NULL == wraprec) {
+    return;
+  }
+
+  /* If any of the callbacks we are attempting to set are already set to
+   * something else, we want to exit without setting new callbacks */
+  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation,
+                                           after_callback)) {
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "%s: attempting to set special_instrumentation for %.*s, but "
+        "it is already set",
+        __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    return;
+  }
+
+  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_before,
+                                           before_callback)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: attempting to set special_instrumentation_before "
+                     "for %.*s, but "
+                     "it is already set",
+                     __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    return;
+  }
+
+  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_clean,
+                                           clean_callback)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: attempting to set special_instrumentation_clean "
+                     "for %.*s, but "
+                     "it is already set",
+                     __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
+    return;
+  }
+
+  wraprec->special_instrumentation = after_callback;
+  wraprec->special_instrumentation_before = before_callback;
+  wraprec->special_instrumentation_clean = clean_callback;
+}
+
+nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
+
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
+
+  nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
+                                                  before_callback,
+                                                  after_callback,
+                                                  clean_callback);
+
+  return wraprec;
+}
+
+nruserfn_t* nr_php_wrap_callable_before_after_clean(
+    zend_function* callable,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
+  char* name = NULL;
+
+  /* creates a transient wraprec */
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
+
+  /*
+   * For logging purposes, let's create a name if we're logging at verbosedebug.
+   */
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+    name = nr_php_function_debug_name(callable);
+  }
+  nr_php_wraprec_add_before_after_clean_callbacks(name, nr_strlen(name), wraprec,
+                                                  before_callback,
+                                                  after_callback,
+                                                  clean_callback);
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
+    nr_free(name);
+  }
+
+  return wraprec;
+}
+#endif
 nruserfn_t* nr_php_wrap_user_function(const char* name,
                                       size_t namelen,
                                       nrspecialfn_t callback TSRMLS_DC) {
@@ -42,6 +134,7 @@ nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
 
 nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                  nrspecialfn_t callback TSRMLS_DC) {
+  /* creates a transient wraprec */
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
 
   if (wraprec && callback) {
@@ -59,6 +152,17 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
   return wraprec;
 }
 
+/*
+ * When wrapping a generic callable, it is currently only desired that a
+ * wraprec's internals be evaluated BEFORE for the callable's. As such,
+ * for OAPI, this creates "before" wrappers, where normally the default
+ * is to create "after" wrappers (see nr_php_wrap_user_function). Should
+ * "after"/"clean" wrappers ever be desired, it is suggested to create a
+ * separate nr_php_wrap_generic_callable_before_after_clean() function.
+ *
+ * This creates a transient wraprec that does NOT produce an
+ * "InstrumentedFunction" metric.
+ */
 #define NR_WRAPPER_DEBUG_STRBUFSZ (1024)
 
 nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
@@ -66,7 +170,12 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   zend_function* zf = nr_php_zval_to_function(callable);
 
   if (NULL != zf) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    return nr_php_wrap_callable_before_after_clean(zf, callback, NULL, NULL);
+#else
     return nr_php_wrap_callable(zf, callback);
+#endif
   }
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
     char strbuf[NR_WRAPPER_DEBUG_STRBUFSZ];
@@ -96,7 +205,7 @@ inline static void release_zval(zval** ppzv) {
 
 zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* arg;
-
+  NR_UNUSED_FUNC_RETURN_VALUE;
 #ifdef PHP7
   {
     zval* orig;
@@ -222,6 +331,7 @@ void nr_php_arg_release(zval** ppzv) {
 zval* nr_php_scope_get(NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* this_obj;
   zval* this_copy;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
   this_obj = NR_PHP_USER_FN_THIS();
   if (NULL == this_obj) {

@@ -64,7 +64,21 @@ typedef struct _nruserfn_t {
    * As an alternative to the current implementation, this could be
    * converted to a linked list so that we can nest wrappers.
    */
+  /*
+   * This is the callback that legacy instrumentation uses and that the majority
+   * of OAPI special instrumentation will use and it will be called at the END
+   * of a function.
+   */
   nrspecialfn_t special_instrumentation;
+  /*
+   * Only used by OAPI, PHP 8+.  Used to do any special instrumentation actions
+   * before a function is executed.  special_instrumentation_clean will clean up
+   * any variables that were set in the before calledback but didn't get cleaned
+   * up when an exception circumvents the end callback. All callbacks can be
+   * set.  Use the `nr_php_wrap_user_function_after_before_clean` to set.
+   */
+  nrspecialfn_t special_instrumentation_before;
+  nrspecialfn_t special_instrumentation_clean;
 
   nruserfn_declared_t declared_callback;
 
@@ -99,6 +113,7 @@ typedef struct _nruserfn_t {
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+
 /*
  * Purpose : Init user instrumentation. This must only be called on request
  * init! This creates wraprec lookup hashmap and registers wraprec destructor
@@ -194,7 +209,14 @@ extern int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC);
 extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                              nr_segment_t* segment,
                                              NR_EXECUTE_PROTO TSRMLS_DC);
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
+                                            nr_segment_t* segment,
+                                            NR_EXECUTE_PROTO);
+extern int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
+                                           nr_segment_t* segment,
+                                           NR_EXECUTE_PROTO);
+#endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing
  *           associated memory.

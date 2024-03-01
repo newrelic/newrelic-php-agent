@@ -32,13 +32,13 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -77,13 +77,13 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -155,7 +155,7 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
@@ -187,7 +187,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -250,7 +250,7 @@ jobs:
           echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
