@@ -141,6 +141,7 @@ typedef struct _nr_segment_t {
   /* Tree related stuff. */
   nr_segment_t* parent;
   nr_segment_children_t children;
+  size_t child_ix; /* index of this segment in its parent->children vector */
   nr_segment_color_t color;
 
   /* Generic segment fields. */
@@ -169,7 +170,6 @@ typedef struct _nr_segment_t {
                           */
   nr_vector_t* metrics; /* Metrics to be created by this segment. */
   nr_exclusive_time_t* exclusive_time; /* Exclusive time.
-
                                        This is only calculated after the
                                        transaction has ended; before then, this
                                        will be NULL. */
@@ -182,6 +182,18 @@ typedef struct _nr_segment_t {
                                                       external or datastore
                                                       segments. */
   nr_segment_error_t* error; /* segment error attributes */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+
+  /*
+   * Because of the access to the segment is now split between functions, we
+   * need to pass a certain amount of data between the functions that use the
+   * segment.
+   */
+  void* wraprec; /* wraprec, if one is associated with this segment, to reduce
+                    wraprec lookups */
+#endif
+
 } nr_segment_t;
 
 /*
@@ -634,5 +646,22 @@ extern void nr_segment_set_error(nr_segment_t* segment,
 extern void nr_segment_record_exception(nr_segment_t* segment,
                                         const char* error_message,
                                         const char* error_class);
+
+/*
+ * Purpose : Gets the child_ix of a segment.
+ *
+ * Paramas : 1. The pointer to the segment
+ *
+ * Returns : the child_ix, or -1 if passed NULL
+ */
+extern ssize_t nr_segment_get_child_ix(const nr_segment_t*);
+
+/*
+ * Purpose : Sets the child_ix of a segment.
+ *
+ * Paramas : 1. The pointer to the segment
+ *           2. the child_ix to set
+ */
+extern void nr_segment_set_child_ix(nr_segment_t*, size_t);
 
 #endif /* NR_SEGMENT_HDR */

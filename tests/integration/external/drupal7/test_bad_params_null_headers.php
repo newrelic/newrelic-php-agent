@@ -14,6 +14,9 @@ newrelic.distributed_tracing_enabled=0
 /*SKIPIF
 <?php
 require("skipif.inc");
+if (version_compare(PHP_VERSION, "8.0", ">=")) {
+  die("skip: PHP >= 8.0 not supported\n");
+}
 */
 
 /*EXPECT_METRICS

@@ -16,7 +16,7 @@
  *           See http://www.php.net/manual/en/migration55.internals.php
  *           for a discussion of what/how to override.
  */
-extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
+extern void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC);
 
 /*
  * Purpose : Our own error callback function, used to capture the PHP stack
@@ -38,13 +38,9 @@ extern void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC);
  * are strongly encouraged to use the new error notification API instead.
  * Error notification callbacks are guaranteed to be called regardless of the
  * users error_reporting setting or userland error handler return values.
- * Register notification callbacks during MINIT of an extension:
-void my_error_notify_cb(int type,
-                const char *error_filename,
-                        uint32_t error_lineno,
-                        zend_string *message) {
-                }
-                zend_register_error_notify_callback(my_error_notify_cb);
+ *
+ * The register notification callbacks during MINIT of an extension are done in
+ * `php_observer.c/h`.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 extern void nr_php_error_cb(int type,

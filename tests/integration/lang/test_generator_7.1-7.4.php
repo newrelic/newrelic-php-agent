@@ -11,7 +11,7 @@ The agent should correctly instrument generators.
 /*SKIPIF
 <?php
 
-if (version_compare(PHP_VERSION, '7.1', '<')) {
+if (version_compare(PHP_VERSION, '7.1', '<') || version_compare(PHP_VERSION, '7.4', '>')) {
   die("skip: generators either not available or with different behaviour");
 }
 */

@@ -13,6 +13,7 @@
 #define NR_SEGMENT_CHILDREN_HDR
 
 #include <stdbool.h>
+#include <sys/types.h>
 
 #define NR_SEGMENT_CHILDREN_PACKED_LIMIT 8
 
@@ -20,10 +21,12 @@
 #include "util_vector.h"
 
 /*
- * Forward declaration of nr_segment_t, since we have a circular dependency with
- *  nr_segment.h.
+ * Forward declaration of nr_segment_t, and some getters/setters,
+ * since we have a circular dependency with nr_segment.h.
  */
 typedef struct _nr_segment_t nr_segment_t;
+extern ssize_t nr_segment_get_child_ix(const nr_segment_t*);
+extern void nr_segment_set_child_ix(nr_segment_t*, size_t);
 
 /*
  * The data structure for packed children, holding an array of children and the
@@ -137,12 +140,15 @@ static inline bool nr_segment_children_add(nr_segment_children_t* children,
     if (new_count > NR_SEGMENT_CHILDREN_PACKED_LIMIT) {
       // We're about to overflow the packed array; migrate to a vector.
       nr_segment_children_migrate_to_vector(children);
+      nr_segment_set_child_ix(child, nr_vector_size(&children->vector));
       nr_segment_children_add_vector(children, child);
     } else {
       children->packed.elements[children->packed.count] = child;
       children->packed.count = new_count;
+      nr_segment_set_child_ix(child, new_count - 1);
     }
   } else {
+    nr_segment_set_child_ix(child, nr_vector_size(&children->vector));
     nr_segment_children_add_vector(children, child);
   }
 
@@ -165,36 +171,41 @@ static inline bool nr_segment_children_remove(nr_segment_children_t* children,
   }
 
   if (children->is_packed) {
-    size_t i;
+    size_t ix = (size_t)nr_segment_get_child_ix(child); // safe to cast, child != NULL asserted earlier
     const size_t end = children->packed.count - 1;
+    nr_segment_t* temp;
 
-    if (child == children->packed.elements[end]) {
-      // The simple case: the child is the last element, so we can just
-      // decrement the count and we're done.
-      children->packed.count -= 1;
-      return true;
+    if (ix > end) {
+      return false;
     }
 
-    for (i = 0; i < end; i++) {
-      if (child == children->packed.elements[i]) {
-        nr_memmove(&children->packed.elements[i],
-                   &children->packed.elements[i + 1],
-                   sizeof(nr_segment_t*) * (children->packed.count - i - 1));
-        children->packed.count -= 1;
-        return true;
-      }
-    }
+    // Swap'n'Pop
+    temp = children->packed.elements[end];
+    nr_segment_set_child_ix(temp, ix);
+    children->packed.elements[ix] = temp;
+    children->packed.count -= 1;
+
   } else {
-    size_t index;
+    size_t index = (size_t)nr_segment_get_child_ix(child); // safe to cast, child != NULL asserted earlier
+    nr_segment_t* temp;
+    if (index >= nr_vector_size(&children->vector)) {
+        return false;
+    }
 
-    if (nr_vector_find_first(&children->vector, child, NULL, NULL, &index)) {
-      void* element;
+    if (!nr_vector_get_element(&children->vector, nr_vector_size(&children->vector)-1, (void**)&temp)) {
+      return false;
+    }
+    nr_segment_set_child_ix(temp, index);
 
-      return nr_vector_remove(&children->vector, index, &element);
+    if (!nr_vector_replace(&children->vector, index, temp)) {
+      return false;
+    }
+    if (!nr_vector_pop_back(&children->vector, (void**)&temp)) {
+      return false;
     }
   }
 
-  return false;
+  return true;
 }
 
 /*

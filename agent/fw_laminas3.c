@@ -67,6 +67,14 @@
  * presumably that was some optimization due to the return value not being used.
  */
 
+/*
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the first wrapped
+ * function call of this type gets to name the txn.
+ */
 NR_PHP_WRAPPER(nr_laminas3_name_the_wt) {
   zval* path = NULL;
   zval* this_var = NULL;

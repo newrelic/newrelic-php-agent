@@ -48,8 +48,10 @@
  *     - nr_slab_release
  *       - zero-out segment
  *
- * As a comparision, here's what happens when using stacked segments.
- * Also for the best case.
+ * As a comparision, here's the basic outline of what happens when using stacked
+ * segments. Stacked segment alloc/dealloc for overwite execute paradigm handled
+ * by c stack behind the scenes Stacked segment alloc/dealloc for OAPI paradigm
+ * handled manually. Also for the best case.
  *
  *   - nr_php_stacked_segment_init        - nr_php_stacked_segment_discard
  *     - 3 value changes                    - reparent children (3 if checks)
@@ -60,6 +62,14 @@
  * applications we are dealing with lots of short running segments that
  * are immediately discarded. Speeding up the segment init/discard cycle
  * is crucial for improving the performance of the agent.
+ *
+ * Additionally the ordered nature of the stack segment provides additional
+ * benefits when dealing with the increased likelihood of dangling segments in
+ * OAPI.
+ *
+ * There are some additional functionalities/checks added for OAPI however those
+ * would need to be done regardless of where the segment is located so are not
+ * added for comparison.
  *
  * What enables us to eliminate much of the work done in the
  * nr_segment_start/nr_segment_discard cycle:
@@ -155,7 +165,15 @@
  * Stacked segments cannot be used to model async segments.
  */
 
+/*
+ * Observer API paradigm: OAPI cannot make use of stacked segments and
+ * therefore uses the txn segment stack API.
+ */
+// clang-format on
+
 #include "php_agent.h"
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 /*
  * Purpose : Initialize a stacked segment.
@@ -215,4 +233,5 @@ extern void nr_php_stacked_segment_unwind(TSRMLS_D);
 extern nr_segment_t* nr_php_stacked_segment_move_to_heap(
     nr_segment_t* stacked TSRMLS_DC);
 
+#endif /* not OAPI */
 #endif /* PHP_STACKED_SEGMENT_HDR */

@@ -29,9 +29,9 @@
 #include "util_url.h"
 #include "util_metrics.h"
 #include "util_number_converter.h"
-#include "php_execute.h"
 #include "fw_support.h"
 #include "fw_hooks.h"
+#include "php_observer.h"
 
 /*
  * This wall of text is important. Read it. Understand it. Really.
@@ -381,8 +381,6 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
     {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
-    {"Laravel", "laravel", NR_PSTR("bootstrap/app.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 8+ */
 
     {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
      NR_FW_LUMEN},
@@ -494,11 +492,10 @@ static nr_library_table_t libraries[] = {
 
     /*
      * The first path is for Composer installs, the second is for
-     * /usr/local/bin. While BaseTestRunner isn't the very first file to load,
-     * it contains the test status constants and loads before tests can run.
+     * /usr/local/bin.
      */
-    {"PHPUnit", NR_PSTR("phpunit/src/runner/basetestrunner.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/runner/basetestrunner.php"), nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
 
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
@@ -604,7 +601,7 @@ typedef struct _nr_vuln_mgmt_table_t {
 
 /* Note that all paths should be in lowercase. */
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", "core/lib/drupal.php", nr_drupal_version},
+    {"Drupal", "drupal/component/dependencyinjection/container.php", nr_drupal_version},
     {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
 };
 
@@ -858,6 +855,9 @@ static nrframework_t nr_try_detect_framework(
       }
 
       nr_framework_log("detected framework", frameworks[i].framework_name);
+      nrl_verbosedebug(
+          NRL_FRAMEWORK, "framework '%s' detected with %s, which ends with %s",
+          frameworks[i].framework_name, filename, frameworks[i].file_to_check);
 
       frameworks[i].enable(TSRMLS_C);
       detected = frameworks[i].detected;
@@ -1008,6 +1008,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   const char* filename = nr_php_op_array_file_name(op_array);
   size_t filename_len = nr_php_op_array_file_name_len(op_array);
 
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
     nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
   }
@@ -1019,7 +1021,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_txn_match_file(NRPRG(txn), filename);
 
-  NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  NR_PHP_PROCESS_GLOBALS(orig_execute)
+  (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
 
   if (0 == nr_php_recording(TSRMLS_C)) {
     return;
@@ -1027,44 +1030,6 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_php_add_user_instrumentation(TSRMLS_C);
 }
-
-/*
- * Version specific metadata that we have to gather before we call the original
- * execute_ex handler, as different versions of PHP behave differently in terms
- * of what you can do with the op array after making that call. This structure
- * and the functions immediately below are helpers for
- * nr_php_execute_enabled(), which is the user function execution function.
- *
- * In PHP 7, it is possible that the op array will be destroyed if the function
- * being called is a __call() magic method (in which case a trampoline is
- * created and destroyed). We increment the reference counts on the scope and
- * function strings and keep pointers to them in this structure, then release
- * them once we've named the trace node and/or metric (if required).
- *
- * In PHP 5, execute_data->op_array may be set to NULL if we make a subsequent
- * user function call in an exec callback (which occurs before we decide
- * whether to create a metric and/or trace node), so we keep a copy of the
- * pointer here. The op array itself won't be destroyed from under us, as it's
- * owned by the request and not the specific function call (unlike the
- * trampoline case above).
- *
- * Note that, while op arrays are theoretically reference counted themselves,
- * we cannot take the simple approach of incrementing that reference count due
- * to not all Zend Engine functions using init_op_array() and
- * destroy_op_array(): one example is that PHP 7 trampoline op arrays are
- * simply emalloc() and efree()'d without even setting the reference count.
- * Therefore we have to be more selective in our approach.
- */
-typedef struct {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-  zend_string* scope;
-  zend_string* function;
-  zend_string* filepath;
-  uint32_t function_lineno;
-#else
-  zend_op_array* op_array;
-#endif /* PHP7 */
-} nr_php_execute_metadata_t;
 
 /*
  * Purpose : Initialise a metadata structure from an op array.
@@ -1085,7 +1050,6 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   } else {
     metadata->scope = NULL;
   }
-
   if (op_array->function_name && op_array->function_name->len) {
     metadata->function = op_array->function_name;
     zend_string_addref(metadata->function);
@@ -1282,7 +1246,7 @@ static void nr_php_execute_metadata_metric(
 }
 
 /*
- * Purpose : Release any cached op array metadata.
+ * Purpose : Release any cached metadata.
  *
  * Params  : 1. A pointer to the metadata.
  */
@@ -1330,6 +1294,8 @@ static inline void nr_php_execute_segment_add_metric(
  *           custom metric?
  *
  * Params  : 1. The stacked segment to end.
+ *              OAPI does not use stacked segments, and should pass
+ *              a heap allocated segment instead
  *           2. The function naming metadata.
  *           3. Whether to create a metric.
  */
@@ -1343,28 +1309,46 @@ static inline void nr_php_execute_segment_end(
     return;
   }
 
-  stacked->stop_time = nr_txn_now_rel(NRPRG(txn));
+  if (0 == stacked->stop_time) {
+    /*
+     * Only set if it wasn't set already.
+     */
+    stacked->stop_time = nr_txn_now_rel(NRPRG(txn));
+  }
 
   duration = nr_time_duration(stacked->start_time, stacked->stop_time);
-
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    // There are no stacked segments for OAPI.
+    nr_segment_t* s = stacked;
+#else
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
+#endif // OAPI
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
 
     /*
      * Check if code level metrics are enabled in the ini.
-     * If they aren't, exit and don't create any metrics.
+     * If they aren't, exit and don't create any CLM.
      */
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
 #endif
+
     nr_segment_end(&s);
   } else {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    // There are no stacked segments for OAPI.
+    nr_segment_discard(&stacked);
+#else
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
+#endif // OAPI
   }
 }
 
@@ -1375,6 +1359,8 @@ static inline void nr_php_execute_segment_end(
  * If the flag is NULL, then we've only added a couple of CPU instructions to
  * the call path and thus the overhead is (hopefully) very low.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
   int zcaught = 0;
   nrtime_t txn_start_time;
@@ -1436,7 +1422,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
        * they'll see with and without an exception handler installed.
        */
       nr_php_error_record_exception(
-          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR),
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
           "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
     }
 
@@ -1532,7 +1518,8 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
     /*
      * This is the case for New Relic is enabled, but we're not recording.
      */
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
 }
 
@@ -1547,6 +1534,7 @@ static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 }
+#endif // not OAPI
 
 static void nr_php_max_nesting_level_reached(TSRMLS_D) {
   /*
@@ -1585,7 +1573,9 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
  * the presence of longjmp as from zend_bailout when processing zend internal
  * errors, as for example when calling php_error.
  */
-void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
+void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
   /*
    * We do not use zend_try { ... } mechanisms here because zend_try
    * involves a setjmp, and so may be too expensive along this oft-used
@@ -1611,7 +1601,8 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 
   if (nrunlikely(0 == nr_php_recording(TSRMLS_C))) {
-    NR_PHP_PROCESS_GLOBALS(orig_execute)(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    NR_PHP_PROCESS_GLOBALS(orig_execute)
+    (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   } else {
     int show_executes
         = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes
@@ -1627,13 +1618,19 @@ void nr_php_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
 
   return;
 }
+#endif // not OAPI
 
-static void nr_php_show_exec_internal(NR_EXECUTE_PROTO,
+static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
   char argstr[NR_EXECUTE_DEBUG_STRBUFSZ] = {'\0'};
   const char* name = nr_php_function_debug_name(func);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
+  zval* func_return_value = NULL;
+#endif
 
   nr_show_execute_params(NR_EXECUTE_ORIG_ARGS, argstr TSRMLS_CC);
+
   nrl_verbosedebug(
       NRL_AGENT,
       "execute: %.*s function={" NRP_FMT_UQ "} params={" NRP_FMT_UQ "}",
@@ -1701,7 +1698,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
    */
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS, func TSRMLS_CC);
+    nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
 #else
     /*
      * We're passing the same pointer twice. This is inefficient. However, no
@@ -1713,7 +1710,6 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
     nr_php_show_exec_internal((zend_op_array*)func, func TSRMLS_CC);
 #endif /* PHP >= 5.5 */
   }
-
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   CALL_ORIGINAL;
 
@@ -1796,3 +1792,409 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
 end:
   nr_php_zval_free(&status);
 }
+
+/*
+ * nr_php_observer_fcall_begin and nr_php_observer_fcall_end
+ * are Observer API function handlers that are the entry point to instrumenting
+ * userland code and should replicate the functionality of
+ * nr_php_execute_enabled, nr_php_execute, and nr_php_execute_show that are used
+ * when hooking in via zend_execute_ex.
+ *
+ * Observer API functionality was added with PHP 8.0.
+ * See nr_php_observer.h/c for more information.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ and OAPI */
+
+static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
+  NR_UNUSED_FUNC_RETURN_VALUE;
+  if (NULL == execute_data->prev_execute_data) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous execute data",
+                     __func__);
+    return;
+  }
+
+  /*
+   * COPIED Comment from php_vm.c:
+   * To actually determine whether this is a call_user_func_array() call we
+   * have to look at one of the previous opcodes. ZEND_DO_FCALL will never be
+   * the first opcode in an op array -- minimally, there is always at least a
+   * ZEND_INIT_FCALL before it -- so this is safe.
+   *
+   * When PHP 7+ flattens a call_user_func_array() call into direct opcodes, it
+   * uses ZEND_SEND_ARRAY to send the arguments in a single opline, and that
+   * opcode is the opcode before the ZEND_DO_FCALL. Therefore, if we see
+   * ZEND_SEND_ARRAY, we know it's call_user_func_array(). The relevant code
+   * can be found at:
+   * https://github.com/php/php-src/blob/php-7.0.19/Zend/zend_compile.c#L3082-L3098
+   * https://github.com/php/php-src/blob/php-7.1.5/Zend/zend_compile.c#L3564-L3580
+   *
+   * In PHP 8, sometimes a ZEND_CHECK_UNDEF_ARGS opcode is added after the call
+   * to ZEND_SEND_ARRAY and before ZEND_DO_FCALL so we need to sometimes look
+   * back two opcodes instead of just one.
+   *
+   * Note that this heuristic will fail if the Zend Engine ever starts
+   * compiling inlined call_user_func_array() calls differently. PHP 7.2 made
+   * a change, but it only optimized array_slice() calls, which as an internal
+   * function won't get this far anyway.) We can disable this behaviour by
+   * setting the ZEND_COMPILE_NO_BUILTINS compiler flag, but since that will
+   * cause additional performance overhead, this should be considered a last
+   * resort.
+   */
+
+  /*
+   * When Observer API is used, this code executes in the context of
+   * zend_execute and not in the context of VM (as was the case pre-OAPI),
+   * therefore we need to ensure we're dealing with a user function. We cannot
+   * safely access the opline of internal functions, and we only want to
+   * instrument cufa calls from user functions anyway.
+   */
+  if (UNEXPECTED(NULL == execute_data->prev_execute_data->func)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function", __func__);
+    return;
+  }
+  if (!ZEND_USER_CODE(execute_data->prev_execute_data->func->type)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: caller is php internal function",
+                     __func__);
+    return;
+  }
+
+  if (UNEXPECTED(NULL == execute_data->prev_execute_data->opline)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous opline", __func__);
+    return;
+  }
+
+  const zend_op* prev_opline = execute_data->prev_execute_data->opline;
+
+  /*
+   * Extra safety check. Previously, we instrumented by overwritting
+   * ZEND_DO_FCALL. Within OAPI, for consistency's sake, we will ensure the same
+   */
+  if (ZEND_DO_FCALL != prev_opline->opcode) {
+    nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name",
+                     __func__);
+    return;
+  }
+  prev_opline -= 1;  // Checks previous opcode
+  if (ZEND_CHECK_UNDEF_ARGS == prev_opline->opcode) {
+    prev_opline -= 1;  // Checks previous opcode
+  }
+  if (ZEND_SEND_ARRAY == prev_opline->opcode) {
+    if (UNEXPECTED((NULL == execute_data->func))) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get current function", __func__);
+      return;
+    }
+    if (UNEXPECTED(
+            NULL
+            == execute_data->prev_execute_data->func->common.function_name)) {
+      nrl_verbosedebug(NRL_AGENT, "%s: cannot get previous function name",
+                       __func__);
+      return;
+    }
+
+    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
+                                        execute_data->func,
+                                        execute_data->prev_execute_data);
+  }
+}
+
+static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
+  nrtime_t txn_start_time = 0;
+  int zcaught = 0;
+  NR_UNUSED_FUNC_RETURN_VALUE;
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+
+  NRTXNGLOBAL(execute_count) += 1;
+  txn_start_time = nr_txn_start_time(NRPRG(txn));
+  /*
+   * Handle here, but be aware the classes might not be loaded yet.
+   */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+    size_t filename_len = nr_php_op_array_file_name_len(NR_OP_ARRAY);
+    nr_execute_handle_framework(all_frameworks, num_all_frameworks,
+                                filename, filename_len TSRMLS_CC);
+    return;
+  }
+  if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
+    /*
+     * For PHP 7+, call_user_func_array() is flattened into an inline by
+     * default. Because of this, we must check the opcodes set to see whether we
+     * are calling it flattened. If we have a cufa callback, we want to call
+     * that here. This will create the wraprec for the user function we want to
+     * instrument and thus must be called before we search the wraprecs
+     *
+     * For non-OAPI, this is handled in php_vm.c by overwriting the
+     * ZEND_DO_FCALL opcode.
+     */
+    nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
+  }
+  wraprec = nr_php_get_wraprec(execute_data->func);
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
+  if (nrunlikely(NULL == segment)) {
+    nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
+    return;
+  }
+
+  if (NULL == wraprec) {
+    return;
+  }
+  /*
+   * If a function needs to have arguments modified, do so in
+   * nr_zend_call_oapi_special_before.
+   */
+  segment->wraprec = wraprec;
+  zcaught = nr_zend_call_oapi_special_before(wraprec, segment,
+                                             NR_EXECUTE_ORIG_ARGS);
+  if (nrunlikely(zcaught)) {
+    zend_bailout();
+  }
+
+  /*
+   * During nr_zend_call_oapi_special_before, the transaction may have been
+   * ended and/or a new transaction may have started.  To detect this, we
+   * compare the currently active transaction's start time with the transaction
+   * start time we saved before.
+   *
+   * Just comparing the transaction pointer is not enough, as a newly
+   * started transaction might actually obtain the same address as a
+   * transaction freed before.
+   */
+  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s txn ended and/or started while in a wrapped function",
+                     __func__);
+
+    return;
+  }
+
+  nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
+  /*
+   * Check for, and handle, frameworks.
+   */
+  if (wraprec->is_names_wt_simple) {
+    nr_txn_name_from_function(NRPRG(txn), wraprec->funcname,
+                              wraprec->classname);
+  }
+}
+
+static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
+  int zcaught = 0;
+  nr_segment_t* segment = NULL;
+  nruserfn_t* wraprec = NULL;
+  bool create_metric = false;
+  nr_php_execute_metadata_t metadata = {0};
+  nrtime_t txn_start_time = 0;
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+  txn_start_time = nr_txn_start_time(NRPRG(txn));
+
+  /*
+   * Let's get the framework info.
+   */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    return;
+  }
+
+  /*
+   * Get the current segment and return if null.
+   */
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  if (nrunlikely(NULL == segment)) {
+    /*
+     * Most likely caused by txn ending prematurely and closing all segments. We
+     * can only exit since the segments were already closed.
+     */
+    return;
+  }
+  if (nrunlikely(NRPRG(txn)->segment_root == segment)) {
+    /*
+     * There should be no fcall_end associated with the segment root, If we are
+     * here, it is most likely due to an API call to newrelic_end_transaction
+     */
+    return;
+  }
+
+  wraprec = segment->wraprec;
+
+  if (wraprec && wraprec->is_exception_handler) {
+    /*
+     * After running the exception handler segment, create an error from
+     * the exception it handled, and save the error in the transaction.
+     * The choice of E_ERROR for the error level is basically arbitrary,
+     * but matches the error level PHP uses if there isn't an exception
+     * handler, so this should give more consistency for the user in terms
+     * of what they'll see with and without an exception handler installed.
+     */
+    zval* exception
+        = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nr_php_error_record_exception(
+        NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
+        "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+  } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+    /*
+     * Having no return value (and not being an exception handler) indicates
+     * that this segment had an uncaught exception. We want to add that
+     * exception to the segment.
+     */
+    zval exception;
+    ZVAL_OBJ(&exception, EG(exception));
+    nr_status_t status = nr_php_error_record_exception_segment(
+      NRPRG(txn), &exception,
+      &NRPRG(exception_filters));
+
+    if (NR_FAILURE == status) {
+      nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
+                       __func__);
+    }
+  }
+
+  /*
+   * Stop the segment time now so we don't add our additional processing on to
+   * the segment's time.
+   */
+  segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+
+  /*
+   * Check if we have special instrumentation for this function or if the user
+   * has specifically requested it.
+   */
+
+  if (NULL != wraprec) {
+    /*
+     * This is the case for specifically requested custom instrumentation.
+     */
+    create_metric = wraprec->create_metric;
+
+    /*
+     * A NULL return value ptr means that there was an uncaught exception
+     * and therefore we want to call the 'clean' function type
+     */
+    if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+      zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
+                                                NR_EXECUTE_ORIG_ARGS);
+    } else {
+      zcaught = nr_zend_call_oapi_special_clean(wraprec, segment,
+                                                NR_EXECUTE_ORIG_ARGS);
+    }
+    if (nrunlikely(zcaught)) {
+      zend_bailout();
+    }
+  } else if (!NRINI(tt_detail) || !(NR_OP_ARRAY->function_name)) {
+    /*
+     * If there is no custom instrumentation and tt detail is not more than 0,
+     * do not record the segment
+     */
+    nr_segment_discard(&segment);
+    return;
+  }
+  /*
+   * During nr_zend_call_orig_execute_special, the transaction may have been
+   * ended and/or a new transaction may have started.  To detect this, we
+   * compare the currently active transaction's start time with the transaction
+   * start time we saved before.
+   *
+   * Just comparing the transaction pointer is not enough, as a newly
+   * started transaction might actually obtain the same address as a
+   * transaction freed before.
+   */
+  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s txn ended and/or started while in a wrapped function",
+                     __func__);
+
+    return;
+  }
+
+  /*
+   * Reassign segment to the current segment, as some before/after wraprecs
+   * start and then stop a segment. If that happened, we want to ensure we
+   * get the now-current segment
+   */
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+  nr_php_execute_segment_end(segment, &metadata, create_metric);
+  nr_php_execute_metadata_release(&metadata);
+  return;
+}
+
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  zval* func_return_value = NULL;
+  if (nrunlikely(NULL == execute_data)) {
+    return;
+  }
+
+  NRPRG(php_cur_stack_depth) += 1;
+
+  if ((0 < ((int)NRINI(max_nesting_level)))
+      && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+    nr_php_max_nesting_level_reached();
+  }
+
+  if (nrunlikely(0 == nr_php_recording())) {
+    return;
+  }
+
+  int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
+
+  if (nrunlikely(show_executes)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "Stack depth: %d after OAPI function beginning via %s",
+                     NRPRG(php_cur_stack_depth), __func__);
+    nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
+  }
+  nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
+
+  return;
+}
+
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                               zval* func_return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  if (nrunlikely(NULL == execute_data)) {
+    return;
+  }
+
+  if (nrlikely(1 == nr_php_recording())) {
+    int show_executes_return
+        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
+
+    if (nrunlikely(show_executes_return)) {
+      nrl_verbosedebug(NRL_AGENT,
+                       "Stack depth: %d before OAPI function exiting via %s",
+                       NRPRG(php_cur_stack_depth), __func__);
+      nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
+  }
+
+  NRPRG(php_cur_stack_depth) -= 1;
+
+  return;
+}
+
+#endif

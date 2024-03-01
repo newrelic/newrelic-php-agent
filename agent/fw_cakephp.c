@@ -39,6 +39,11 @@ nr_framework_classification_t nr_cakephp_special_2(
  * Component::initialize(). This function takes a controller as a parameter
  * and we look into the params array of that controller object, and pick up
  * the controller and action out of that array.
+ *
+ * CakePHP 1.x is end-of-life and no longer supported by the agent.
+ * Cake PHP 1.x does not support PHP 8+ and this wrapper is not updated for OAPI
+ * compatibility.
+ *
  */
 NR_PHP_WRAPPER(nr_cakephp_name_the_wt_pre20) {
   zval* arg1 = 0;
@@ -130,6 +135,17 @@ NR_PHP_WRAPPER_END
  * and we get the action from the params array in that object. The
  * controller object ($this) has a name, and that name is used (along
  * with the word "Controller" appended which is what the CakePHP code does).
+ *
+ * CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
+ * As such, functionality added in PHP 7.1+ is not well supported.
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE`
+ * This entails that the last wrapped call gets to name the txn.
+ * No changes required to ensure OAPI compatibility this corresponds to the
+ * default way of calling the wrapped function in func_end.
+ *
  */
 NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
   zval* arg1 = 0;
@@ -243,6 +259,11 @@ NR_PHP_WRAPPER_END
  *
  * Dispatch::cakeError will be called if there is a problem during dispatch
  * (action or controller not found).
+ *
+ * CakePHP 1.x is end-of-life and no longer supported by the agent.
+ * Cake PHP 1.x does not support PHP 8+ and this wrapper is not updated for OAPI
+ * compatibility.
+ *
  */
 NR_PHP_WRAPPER(nr_cakephp_problem_1) {
   const char* name = "Dispatcher::cakeError";
@@ -266,6 +287,16 @@ NR_PHP_WRAPPER_END
  * appropriate Exception will be created and thrown. We wrap the CakeException
  * constructor instead of the Exception handler, since CakePHP allows for the
  * handler to be completely replaced.
+ *
+ *  CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
+ * As such, functionality added in PHP 7.1+ is not well supported.
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
+ * function in func_begin it needs to be explicitly set as a before_callback to
+ * ensure OAPI compatibility. This entails that the first wrapped call gets to
+ * name the txn.
  */
 NR_PHP_WRAPPER(nr_cakephp_problem_2) {
   const char* name = "Exception";
@@ -298,6 +329,12 @@ void nr_cakephp_enable_1(TSRMLS_D) {
 void nr_cakephp_enable_2(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Controller::invokeAction"),
                             nr_cakephp_name_the_wt_2 TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("CakeException::__construct"), nr_cakephp_problem_2, NULL, NULL);
+#else
   nr_php_wrap_user_function(NR_PSTR("CakeException::__construct"),
                             nr_cakephp_problem_2 TSRMLS_CC);
+#endif
 }

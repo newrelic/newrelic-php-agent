@@ -39,8 +39,10 @@
 #include "php_compat.h"
 #include "php_newrelic.h"
 #include "php_zval.h"
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "php_execute.h"
 
 /*
  * The default connection mechanism to the daemon is:
@@ -131,12 +133,28 @@ typedef unsigned int nr_php_object_handle_t;
  * Purpose : Extract the named entity from a PHP object zval.
  *
  * Params  : 1. The object to extract the property from.
- *           2. The name of the object.
+ *           2. The name of the object property.
  *
  * Returns : The specified element or NULL if it was not found.
  */
 extern zval* nr_php_get_zval_object_property(zval* object,
                                              const char* cname TSRMLS_DC);
+
+/*
+ * Purpose : Extract the named entity from a PHP exception zval.
+ *           This determines if the passed exception is a PHP error
+ *           or a PHP exception, and extracts accordingly.
+ *
+ * Params  : 1. The exception to extract the property from.
+ *           2. The name of the exception property.
+ *
+ * Returns : The specified element or NULL if it was not found.
+ *           This returns the zval owned by the Zend engine, so
+ *           a refernce incremenet should take place if the return
+ *           value is to be kept around beyond the caller's scope.
+ */
+extern zval* nr_php_get_zval_base_exception_property(zval* exception,
+                                                     const char* cname);
 
 /*
  * Purpose : Extract the named property from a PHP object zval in a particular
@@ -331,7 +349,22 @@ extern zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC);
  *           won't help you!
  */
 static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if (ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+     && !defined OVERWRITE_ZEND_EXECUTE_DATA) /* PHP 8.0+ and OAPI */
+  /*
+   * If the agent is still overwriting zend_execute_data extract oldfashioned
+   * way; otherwise, pass the observer given return value.
+   */
+  if (nrunlikely(NULL == execute_data)) {
+    /*
+     * Shouldn't theoretically ever have a NULL execute_data with valid
+     * return_value.
+     */
+    return NULL;
+  }
+  return func_return_value;
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+  NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data) {
     /*
      * This function shouldn't be called from outside a function context, so
@@ -379,6 +412,7 @@ extern size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC);
 static inline zend_function* nr_php_execute_function(
     NR_EXECUTE_PROTO TSRMLS_DC) {
   NR_UNUSED_TSRMLS;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
 #if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   if (NULL == execute_data) {
@@ -405,7 +439,23 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+  while (execute_data) {
+    if ((Z_TYPE(execute_data->This) == IS_OBJECT)
+        || (Z_CE(execute_data->This))) {
+      return &execute_data->This;
+    } else if (execute_data->func) {
+      if (ZEND_USER_CODE(execute_data->func->type)
+          || execute_data->func->common.scope) {
+        return NULL;
+      }
+    }
+    execute_data = execute_data->prev_execute_data;
+  }
+  return NULL;
+
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
+    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
   return &execute_data->This;
 #else
   return execute_data->object;
@@ -737,7 +787,10 @@ nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
 
 #define NR_PHP_INTERNAL_FN_THIS() getThis()
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
+#define NR_PHP_USER_FN_THIS() nr_php_execute_scope(execute_data)
+#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
+    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
 #define NR_PHP_USER_FN_THIS() getThis()
 #else
 #define NR_PHP_USER_FN_THIS() EG(This)
@@ -814,6 +867,9 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
+
+#define NR_NOT_ZEND_USER_FUNC(x) \
+  (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
 
 /*
  * Purpose : Return a uint32_t (zend_uint) line number value of zend_function.

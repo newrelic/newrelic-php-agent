@@ -331,7 +331,7 @@ static void record_mysql_error(TSRMLS_D) {
 
     errdup = nr_strndup(errormsgstr, errormsglen);
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
-    nr_txn_record_error(NRPRG(txn), errprio, errdup, "MysqlError", stack_json);
+    nr_txn_record_error(NRPRG(txn), errprio, true, errdup, "MysqlError", stack_json);
     nr_free(errdup);
     nr_free(stack_json);
 
@@ -1225,7 +1225,11 @@ NR_INNER_WRAPPER(mysqli_stmt_bind_param) {
   argc = (size_t)ZEND_NUM_ARGS();
   argv = (zval**)nr_calloc(argc, sizeof(zval*));
   for (i = 0; i < argc; i++) {
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    argv[i] = nr_php_get_user_func_arg(i + 1, EG(current_execute_data),
+                                       NULL TSRMLS_CC);
+#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
     argv[i]
         = nr_php_get_user_func_arg(i + 1, EG(current_execute_data) TSRMLS_CC);
 #else /* PHP < 5.5 */
@@ -1621,9 +1625,8 @@ static char* nr_php_prepared_statement_make_pgsql_key(
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
   if (nr_php_is_zval_valid_object(conn)) {
-    key = nr_formatf("type=pgsql id=%ld name=%.*s",
-                     nr_php_zval_object_id(conn), NRSAFELEN(stmtname_len),
-                     stmtname);
+    key = nr_formatf("type=pgsql id=%ld name=%.*s", nr_php_zval_object_id(conn),
+                     NRSAFELEN(stmtname_len), stmtname);
   }
 #else
   if (nr_php_is_zval_valid_resource(conn)) {

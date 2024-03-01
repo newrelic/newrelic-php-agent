@@ -66,6 +66,13 @@ static int nr_lumen_name_the_wt_from_zval(const zval* name TSRMLS_DC,
 /*
  * Core transaction naming logic. Wraps the function that correlates
  * requests to routes
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_end no change is needed to ensure OAPI compatibility as it will use
+ * the default func_end after callback. This entails that the last wrapped
+ * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
   zval* route_info = NULL;
@@ -105,7 +112,8 @@ NR_PHP_WRAPPER(nr_lumen_handle_found_route) {
 
   if (NULL != route_name) {
     if (NR_SUCCESS
-        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen", false)) {
+        != nr_lumen_name_the_wt_from_zval(route_name TSRMLS_CC, "Lumen",
+                                          false)) {
       nrl_verbosedebug(NRL_TXN, "Lumen: located route name is a non-string");
     }
   } else {
@@ -139,6 +147,13 @@ NR_PHP_WRAPPER_END
 /*
  * Exception handling logic. Wraps the function that routes
  * exceptions to their respective handlers
+ *
+ * txn naming scheme:
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped function
+ * in func_begin it needs to be explicitly set as a before_callback to ensure
+ * OAPI compatibility. This entails that the last wrapped call gets to name the
+ * txn which in this case is the one that generated the exception.
  */
 NR_PHP_WRAPPER(nr_lumen_exception) {
   zval* exception = NULL;
@@ -181,6 +196,7 @@ NR_PHP_WRAPPER(nr_lumen_exception) {
   int priority = nr_php_error_get_priority(E_ERROR);
 
   st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
+                                     true /* add to segment */,
                                      NULL /* use default prefix */,
                                      &NRPRG(exception_filters) TSRMLS_CC);
 
@@ -204,10 +220,16 @@ void nr_lumen_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::handleFoundRoute"),
       nr_lumen_handle_found_route TSRMLS_CC);
-
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
+      nr_lumen_exception, NULL, NULL);
+#else
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
       nr_lumen_exception TSRMLS_CC);
+#endif
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), "laravel/lumen-framework",

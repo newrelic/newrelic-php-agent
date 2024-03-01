@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "tlib_php.h"
+#include "tlib_main.h"
 
 #include "php_agent.h"
 #include "php_call.h"
@@ -609,6 +610,7 @@ void test_main(void* p NRUNUSED) {
    * Tests that require state and will handle their own request startup and
    * shutdown.
    */
+
 #if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   test_nr_php_zend_function_lineno();
 #endif /* PHP 7+ */

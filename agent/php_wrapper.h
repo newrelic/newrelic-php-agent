@@ -10,7 +10,7 @@
 #include "util_logging.h"
 
 /*
- * Wrapper writing example:
+ * Wrapper writing example *pre-OAPI*:
  *
  * Using the functions below, you can register a wrapper for either a named
  * user function or directly on a zend_function pointer. This wrapper needs to
@@ -85,6 +85,72 @@
  *    already been called.
  */
 
+ /*
+ *    OAPI updates:
+ *    There are now before, after, and clean callbacks.
+ *    1) before_callback gets called when OAPI triggers the begin function hook.
+ *    2) after_callback gets called when OAPI triggers the end function hook.
+ *    3) clean_callback gets called in the case of an exception, because the
+ * return value will be null, so the after_callback might not function
+ * correctly. Use clean_callback to reset any variables or states.
+ *    4) unless explicitly setting any of the above callbacks, the default
+ * callback is set to after_callback.
+ *
+ * TXN Naming schemes and understanding how it is affected by function order,
+ * NR_PHP_WRAPPER_CALL, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE
+ *
+ * txn naming has been configured to take into account order in which functions
+ * are processed, NR_NOT_OK_TO_OVERWRITE/NR_OK_TO_OVERWRITE, and whether it is
+ * called either before or after NR_PHP_WRAPPER_CALL (for pre PHP 8+) or whether
+ * it is called in func_begin or func_end (for PHP 8+ / OAPI). Txn naming scheme
+ * is customized per framework according to its requirements and pecularities.
+ * To determine the txn naming winner in the case of nested functions wrapped
+ * functions:
+ *
+ * 1) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
+ * func_begin AND NR_NOT_OK_TO_OVERWRITE is set for all THEN the FIRST wrapped
+ * function encountered determines the txn name.
+ *
+ * 2) IF wrapper function is called before NR_PHP_WRAPPER_CALL or called in
+ * func_begin then the LAST wrapped function with NR_OK_TO_OVERWRITE determines
+ * the txn name.
+ *
+ * 3) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
+ * func_end AND NR_NOT_OK_TO_OVERWRITE is set for all THEN the LAST wrapped
+ * function encountered determines the txn name.
+ *
+ * 4) IF wrapper function is called after NR_PHP_WRAPPER_CALL or called in
+ * func_end then the FIRST wrapped function with NR_OK_TO_OVERWRITE determines
+ * the txn name.
+ *
+ * 5) If there are nested functions that have wrapped functions called before
+ * NR_PHP_WRAPPER_CALL or called in func_begin AND that also have called after
+ * NR_PHP_WRAPPER_CALL or called in func_end if the after call uses
+ * NR_NOT_OK_TO_OVERWRITE, then rule 1 or 2 applies depending on whether a
+ * before_func used NR_NOT_OK_TO_OVERWRITE or NR_NOT_TO_OVERWRITE.
+ *
+ * 6) If there are nested functions that have wrapped functions called before
+ * NR_PHP_WRAPPER_CALL or called in func_begin AND that also have called after
+ * NR_PHP_WRAPPER_CALL or called in func_end if the after call uses
+ * NR_OK_TO_OVERWRITE, then rule 4 applies.
+ *
+ * See agent/tests/test_php_wrapper.c `function test_framework_txn_naming` to
+ * see how it works with frameworks.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback);
+
+extern nruserfn_t* nr_php_wrap_callable_before_after_clean(
+    zend_function* callable,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback);
+#endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
                                              nrspecialfn_t callback TSRMLS_DC);
@@ -98,7 +164,8 @@ extern nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                         nrspecialfn_t callback TSRMLS_DC);
 
 extern nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
-                                                nrspecialfn_t callback TSRMLS_DC);
+                                                nrspecialfn_t callback
+                                                    TSRMLS_DC);
 
 /*
  * Purpose : Retrieve an argument from the current execute data.
@@ -260,5 +327,15 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     zcaught = ((name)(NR_SPECIALFNPTR_ORIG_ARGS TSRMLS_CC)).zcaught; \
     was_executed = 1;                                                \
   }
+
+static inline bool is_instrumentation_set_and_not_equal(
+    nrspecialfn_t instrumentation,
+    nrspecialfn_t callback) {
+  if ((NULL != instrumentation) && (callback != instrumentation)) {
+    return true;
+  }
+
+  return false;
+}
 
 #endif /* PHP_WRAPPER_HDR */

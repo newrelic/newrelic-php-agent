@@ -4,6 +4,11 @@
  */
 
 #include "php_stacked_segment.h"
+#include "util_logging.h"
+#include "php_execute.h"
+#include "php_error.h"
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
 
 /*
  * Purpose : Add a stacked segment to the stacked segment stack. The top
@@ -36,10 +41,9 @@ nr_segment_t* nr_php_stacked_segment_init(nr_segment_t* stacked TSRMLS_DC) {
 }
 
 void nr_php_stacked_segment_deinit(nr_segment_t* stacked TSRMLS_DC) {
-  if (NULL == NRPRG(txn)) {
+  if (NULL == NRPRG(txn) || (NULL == stacked)) {
     return;
   }
-
   nr_segment_children_reparent(&stacked->children, stacked->parent);
 
   nr_free(stacked->id);
@@ -48,17 +52,15 @@ void nr_php_stacked_segment_deinit(nr_segment_t* stacked TSRMLS_DC) {
 }
 
 void nr_php_stacked_segment_unwind(TSRMLS_D) {
-  nr_segment_t* stacked;
-  nr_segment_t* segment;
-
   if (NULL == NRPRG(txn)) {
     return;
   }
 
   while (NRTXN(force_current_segment)
          && (NRTXN(segment_root) != NRTXN(force_current_segment))) {
-    stacked = NRTXN(force_current_segment);
-    segment = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
+    nr_segment_t* stacked = NRTXN(force_current_segment);
+    nr_segment_t* segment
+        = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
     nr_segment_end(&segment);
   }
 }
@@ -90,3 +92,4 @@ nr_segment_t* nr_php_stacked_segment_move_to_heap(
 
   return s;
 }
+#endif /* not OAPI */
