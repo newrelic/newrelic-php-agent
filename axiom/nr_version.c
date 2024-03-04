@@ -46,7 +46,7 @@
  *   tulip              21Feb2024 (10.17)
  *   ulmux              04Mar2024 (10.18)
  */
-#define NR_CODENAME "Viburnum"
+#define NR_CODENAME "viburnum"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
