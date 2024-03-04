@@ -66,6 +66,7 @@ static void test_encode_errors(void) {
 
   nr_memset(&txn, 0, sizeof(txn));
   txn.name = nr_strdup("txnname");
+  nr_txn_set_guid(&txn, "abcdef");
   txn.error = nr_error_create(123, "msg", "cls", "[\"stacktrace json\"]",
                               "spanId", 887788 * NR_TIME_DIVISOR_MS);
 
@@ -133,7 +134,7 @@ static void test_encode_errors(void) {
           "[887788,\"txnname\",\"msg\",\"cls\",{\"stack_trace\":["
           "\"stacktrace "
           "json\"],\"agentAttributes\":{\"agent_long\":2},\"userAttributes\":{"
-          "\"user_long\":1},\"intrinsics\":{\"a\":\"b\"}}]"),
+          "\"user_long\":1},\"intrinsics\":{\"a\":\"b\",\"guid\":\"abcdef\"}},\"abcdef\"]"),
       nr_flatbuffers_table_read_bytes(&tbl, ERROR_FIELD_DATA),
       nr_flatbuffers_table_read_vector_len(&tbl, ERROR_FIELD_DATA), __FILE__,
       __LINE__);
@@ -669,7 +670,8 @@ static void test_encode_error_events(void) {
               "\"error.message\":\"msg\","
               "\"transactionName\":\"my_txn_name\","
               "\"duration\":0.54300,"
-              "\"nr.transactionGuid\":\"abcd\""
+              "\"nr.transactionGuid\":\"abcd\","
+              "\"guid\":\"abcd\""
               "},"
               "{},"
               "{}"
