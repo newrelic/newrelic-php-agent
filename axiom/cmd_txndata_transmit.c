@@ -56,7 +56,7 @@ char* nr_txndata_error_to_json(const nrtxn_t* txn) {
   // add guid to aid error linking ui
   // make copy of txn->intrisics to not cause it to be modified for other 
   // potential uses during conversion to flatbuffer
-  intrinsics_attributes = nr_copy(txn->intrinsics);
+  intrinsics_attributes = nro_copy(txn->intrinsics);
   nro_set_hash_string(intrinsics_attributes, "guid", nr_txn_get_guid(txn));
 
   json = nr_error_to_daemon_json(txn->error, txn->name, nr_txn_get_guid(txn),
