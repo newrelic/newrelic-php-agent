@@ -41,6 +41,7 @@
 char* nr_txndata_error_to_json(const nrtxn_t* txn) {
   nrobj_t* agent_attributes;
   nrobj_t* user_attributes;
+  nrobj_t* intrinsics_attributes;
   char* json;
 
   if (0 == txn->error) {
@@ -52,12 +53,19 @@ char* nr_txndata_error_to_json(const nrtxn_t* txn) {
   user_attributes = nr_attributes_user_to_obj(txn->attributes,
                                               NR_ATTRIBUTE_DESTINATION_ERROR);
 
+  // add guid to aid error linking ui
+  // make copy of txn->intrisics to not cause it to be modified for other 
+  // potential uses during conversion to flatbuffer
+  intrinsics_attributes = nr_copy(txn->intrinsics);
+  nro_set_hash_string(intrinsics_attributes, "guid", nr_txn_get_guid(txn));
+
   json = nr_error_to_daemon_json(txn->error, txn->name, nr_txn_get_guid(txn),
                                  agent_attributes, user_attributes,
-                                 txn->intrinsics, txn->request_uri);
+                                 intrinsics_attributes, txn->request_uri);
 
   nro_delete(agent_attributes);
   nro_delete(user_attributes);
+  nro_delete(intrinsics_attributes);
 
   return json;
 }
