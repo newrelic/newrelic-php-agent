@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   yam                23Aug2021 (9.18)
  *   zomp               02Mar2022 (9.19)
  *   allium             14Mar2022 (9.20)
  *   buttercup          26Apr2022 (9.21)
@@ -45,8 +44,9 @@
  *   rose               20Dec2023 (10.15)
  *   snapdragon         23Jan2024 (10.16)
  *   tulip              21Feb2024 (10.17)
+ *   ulmux              04Mar2024 (10.18)
  */
-#define NR_CODENAME "ulmus"
+#define NR_CODENAME "Viburnum"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
