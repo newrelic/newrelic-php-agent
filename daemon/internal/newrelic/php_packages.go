@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"newrelic/log"
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 // phpPackages represents all detected packages reported by an agent.
