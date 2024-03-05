@@ -45,6 +45,15 @@ newrelic.cross_application_tracer.enabled=false
 ]
 */
 
+
+/*EXPECT
+ok - Error trace payload length
+ok - Error trace CatsGUID is txn guid
+ok - Error trace contains intrinsics
+ok - Error trace intrinsics contains guid
+ok - Error trace intrisics guid is txn guid
+*/
+
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 
 function throw_it() {
@@ -56,5 +65,17 @@ throw_it();
 /* capture error trace json and verify transaction GUID */
 $json = newrelic_get_error_json();
 $payload = json_decode($json, true);
+
 $guid = newrelic_get_transaction_guid();
-tap_equal($guid, $payload[5], "Error trace includes txn guid");
+
+tap_equal(6, count($payload), "Error trace payload length");
+
+$catsguid = $payload[5];
+tap_equal($guid, $catsguid, "Error trace CatsGUID is txn guid");
+
+tap_assert(array_key_exists("intrinsics", $payload[4]), "Error trace contains intrinsics");
+
+$intrinsics = $payload[4]["intrinsics"];
+
+tap_assert(array_key_exists("guid", $intrinsics), "Error trace intrinsics contains guid");
+tap_equal($guid, $intrinsics["guid"], "Error trace intrisics guid is txn guid");
