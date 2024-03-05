@@ -45,7 +45,13 @@ newrelic.distributed_tracing_enabled=0
           "request.method": "GET",
           "response.headers.contentType": "application/json"
         },
-        "intrinsics": "??",
+        "intrinsics": {
+          "totalTime": "??",
+          "cpu_time": "??",
+          "cpu_user_time": "??",
+          "cpu_sys_time": "??",
+          "guid": "??"
+        },
         "request_uri": "__FILE__"
       },
       "?? transaction ID"
@@ -70,7 +76,8 @@ newrelic.distributed_tracing_enabled=0
         "error.message": "I'M COVERED IN BEES!",
         "transactionName": "WebTransaction/Uri__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??"
       },
       {},
       {
