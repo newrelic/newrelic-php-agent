@@ -33,9 +33,11 @@ newrelic.cross_application_tracer.enabled = false
           "totalTime": "??",
           "cpu_time": "??",
           "cpu_user_time": "??",
-          "cpu_sys_time": "??"
+          "cpu_sys_time": "??",
+          "guid": "??"
         }
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]
@@ -57,7 +59,8 @@ newrelic.cross_application_tracer.enabled = false
         "error.message": "??",
         "transactionName": "??",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid" : "??"
       },
       {},
       {}

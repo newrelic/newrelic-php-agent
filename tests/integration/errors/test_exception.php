@@ -26,7 +26,8 @@ trace that omits argument values.
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

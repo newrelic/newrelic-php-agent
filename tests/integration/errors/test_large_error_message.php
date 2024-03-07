@@ -23,7 +23,8 @@ The agent should capture and report unhandled exceptions with large error messag
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

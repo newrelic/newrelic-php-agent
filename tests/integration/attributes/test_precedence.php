@@ -41,7 +41,8 @@ newrelic.analytics_events.capture_attributes = false
         },
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

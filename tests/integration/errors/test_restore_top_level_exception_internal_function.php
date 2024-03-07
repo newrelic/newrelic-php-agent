@@ -25,8 +25,19 @@ handler and restore_exception_handler is called.
           " in gamma called at __FILE__ (??)"
         ],
         "agentAttributes": "??",
-        "intrinsics": "??"
-      }
+        "intrinsics":
+        {
+          "totalTime": "??",
+          "cpu_time": "??",
+          "cpu_user_time": "??",
+          "cpu_sys_time": "??",
+          "guid": "??",
+          "sampled": "??",
+          "priority": "??",
+          "traceId": "??"
+        }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

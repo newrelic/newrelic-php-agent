@@ -2497,6 +2497,9 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
 
   nro_set_hash_string(params, "nr.transactionGuid", nr_txn_get_guid(txn));
 
+  // add guid to aid error linking ui
+  nro_set_hash_string(params, "guid", nr_txn_get_guid(txn));
+
   if (txn->cat.inbound_guid) {
     nro_set_hash_string(params, "nr.referringTransactionGuid",
                         txn->cat.inbound_guid);
