@@ -664,7 +664,13 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 			name = strings.TrimSpace(name)
 			actual := strings.Replace(name, "__FILE__", t.Path, -1)
 			if !harvest.Metrics.Has(actual) {
-				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+				var prettyJSON bytes.Buffer
+				err := json.Indent(&prettyJSON, []byte(harvest.Metrics.DebugJSON()), "", "  ")
+				if nil != err {
+					t.Fail(fmt.Errorf("metric does not exist: '%s'\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+				} else {
+					t.Fail(fmt.Errorf("metric does not exist: '%s'\n\nactual metric table: %s", name, prettyJSON.String()))
+				}
 			}
 		}
 	}
