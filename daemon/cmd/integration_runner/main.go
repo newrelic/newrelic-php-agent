@@ -28,6 +28,7 @@ import (
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/secrets"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/utilization"
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/version"
 )
 
 var (
@@ -51,6 +52,7 @@ var (
 	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
 	flagWarnIsFail      = flag.Bool("warnisfail", false, "warn result is treated as a fail")
 	flagOpcacheOff      = flag.Bool("opcacheoff", false, "run without opcache. Some tests are intended to fail when run this way")
+	flagPrintVersion    = flag.Bool("version", false, "print runner version and exit")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -259,6 +261,13 @@ func main() {
 	}
 
 	flag.Parse()
+
+	if *flagPrintVersion {
+		fmt.Printf("New Relic integration_runner version %s\n", version.Full())
+		fmt.Println("(C) Copyright 2009-2019 New Relic Inc. All rights reserved.")
+		fmt.Println()
+		return
+	}
 
 	// The license key and collector can be set via make variables in make/secrets.mk
 	TestApp.RedirectCollector = secrets.NewrelicCollectorHost
