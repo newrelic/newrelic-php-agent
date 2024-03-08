@@ -146,16 +146,14 @@ RUN pecl install memcached && docker-php-ext-enable memcached
 
 # uopz
 # Pre-8.0 requires 6.1.2
+# uopz incompatible with JIT on PHP 8.0+
 RUN \
-  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.0.0', '>');"); \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.0.0', '<');"); \
   if [ "$php_cmp" = 1 ]; then \
-    pecl install uopz && docker-php-ext-enable uopz; \
-  else \
     pecl install uopz-6.1.2 && docker-php-ext-enable uopz; \
+    # configure uopz to honor exit() and die() otherwise it just ignores these
+    echo "uopz.exit=1" > /usr/local/etc/php/conf.d/uopz-enable-exit.ini; \
   fi
-
-# configure uopz to honor exit() and die() otherwise it just ignores these
-RUN echo "uopz.exit=1" > /usr/local/etc/php/conf.d/uopz-enable-exit.ini
 
 # install predis
 # installation will be in /usr/src/vendor/predis/predis
