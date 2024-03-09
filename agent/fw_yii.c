@@ -37,7 +37,7 @@ NR_PHP_WRAPPER(nr_yii1_runWithParams_wrapper) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 1);
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII1);
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (NULL == this_var) {
@@ -89,7 +89,6 @@ NR_PHP_WRAPPER_END
  * Enable Yii1 instrumentation.
  */
 void nr_yii1_enable(TSRMLS_D) {
-  NRPRG(framework_version) = 1;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
@@ -119,7 +118,7 @@ NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 2);
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII2);
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (NULL == this_var) {
@@ -161,7 +160,7 @@ NR_PHP_WRAPPER(nr_yii2_error_handler_wrapper) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_YII, 2);
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII2);
 
   exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (NULL == exception || !nr_php_is_zval_valid_object(exception)) {
@@ -189,7 +188,6 @@ NR_PHP_WRAPPER_END
  * Enable Yii2 instrumentation.
  */
 void nr_yii2_enable(TSRMLS_D) {
-  NRPRG(framework_version) = 2;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
