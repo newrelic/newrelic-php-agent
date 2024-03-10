@@ -66,7 +66,8 @@ The agent should record an error when a query fails.
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

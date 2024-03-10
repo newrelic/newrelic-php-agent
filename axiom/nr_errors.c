@@ -11,6 +11,7 @@
 #include "nr_errors_private.h"
 #include "util_memory.h"
 #include "util_object.h"
+#include "util_strings.h"
 #include "util_time.h"
 
 nr_error_t* nr_error_create(int priority,
@@ -134,6 +135,7 @@ static nrobj_t* nr_error_params_to_object(const char* stacktrace_json,
 
 char* nr_error_to_daemon_json(const nr_error_t* error,
                               const char* txn_name,
+                              const char* txn_guid,
                               const nrobj_t* agent_attributes,
                               const nrobj_t* user_attributes,
                               const nrobj_t* intrinsics,
@@ -161,6 +163,12 @@ char* nr_error_to_daemon_json(const nr_error_t* error,
   nro_set_array_string(outer, 3, error->message);
   nro_set_array_string(outer, 4, error->klass);
   nro_set_array(outer, 5, params);
+
+  /* only include transaction guid if it is defined */
+  if (!nr_strempty(txn_guid)) {
+    nro_set_array_string(outer, 6, txn_guid);
+  }
+
   nro_delete(params);
 
   json = nro_to_json(outer);

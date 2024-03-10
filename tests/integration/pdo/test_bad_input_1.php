@@ -66,7 +66,8 @@ newrelic.distributed_tracing_enabled=0
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

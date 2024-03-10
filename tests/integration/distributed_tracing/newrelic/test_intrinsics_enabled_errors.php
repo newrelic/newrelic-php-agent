@@ -39,7 +39,8 @@ newrelic.cross_application_tracer.enabled = false
           "sampled": "??",
           "priority": "??"
         }
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

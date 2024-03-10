@@ -31,7 +31,8 @@ newrelic.error_collector.attributes.enabled = false
           " in trigger_error called at __FILE__ (??)"
         ],
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

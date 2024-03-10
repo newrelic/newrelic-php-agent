@@ -7,6 +7,7 @@
 #include "php_api_internal.h"
 #include "php_call.h"
 #include "php_hash.h"
+#include "nr_commands_private.h"
 #include "nr_datastore_instance.h"
 #include "nr_header.h"
 #include "nr_limits.h"
@@ -379,6 +380,57 @@ PHP_FUNCTION(newrelic_get_trace_json) {
                      (nr_segment_iter_t)reset_active_segments,
                      fas_metadata.active_segments);
   nr_set_destroy(&fas_metadata.active_segments);
+}
+
+PHP_FUNCTION(newrelic_get_error_json) {
+  nrtxn_t* txn = NRPRG(txn);
+  char* json;
+
+  NR_UNUSED_HT;
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+  NR_UNUSED_THIS_PTR;
+
+  if (!nr_php_recording(TSRMLS_C)) {
+    RETURN_FALSE;
+  }
+
+  if (FAILURE == zend_parse_parameters_none()) {
+    RETURN_FALSE;
+  }
+
+  json = nr_txndata_error_to_json(txn);
+  if (NULL == json) {
+    RETURN_FALSE;
+  }
+
+  nr_php_zval_str(return_value, json);
+  nr_free(json);
+}
+
+PHP_FUNCTION(newrelic_get_transaction_guid) {
+  nrtxn_t* txn = NRPRG(txn);
+  const char* guid;
+
+  NR_UNUSED_HT;
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+  NR_UNUSED_THIS_PTR;
+
+  if (!nr_php_recording(TSRMLS_C)) {
+    RETURN_FALSE;
+  }
+
+  if (FAILURE == zend_parse_parameters_none()) {
+    RETURN_FALSE;
+  }
+
+  guid = nr_txn_get_guid(txn);
+  if (NULL == guid) {
+    RETURN_FALSE;
+  }
+
+  nr_php_zval_str(return_value, guid);
 }
 
 PHP_FUNCTION(newrelic_is_localhost) {

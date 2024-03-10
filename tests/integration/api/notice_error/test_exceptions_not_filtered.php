@@ -29,7 +29,8 @@ newrelic.error_collector.ignore_exceptions = 'Exception'
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

@@ -29,7 +29,8 @@ newrelic.error_collector.prioritize_api_errors = true
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]
