@@ -15,7 +15,7 @@ OtherTransaction/Action/test-integration-web-action
 
 /*EXPECT_ERROR_EVENTS null */
 
-/* WordPress mock app */
+/* Yii2 mock */
 require_once __DIR__.'/yii2/baseyii.php';
 
 $a = new yii\base\Action('test-integration-web-action');
