@@ -31,11 +31,12 @@ type PhpPackagesCollection struct {
 // PHP packages config describes how to collect the JSON for the packages installed
 // for the current test case
 type PhpPackagesConfiguration struct {
-	path              string
-	command           string
-	supportedListFile string
-	expectedPackages  []string
-	packageNameOnly   []string
+	path                 string
+	command              string
+	supportedListFile    string
+	overrideVersionsFile string
+	expectedPackages     []string
+	packageNameOnly      []string
 }
 
 // composer package JSON
@@ -135,6 +136,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	var supportedListFile string
 	var expectedPackages string
 	var packageNameOnly string
+	var overrideVersionsFile string
 	var expectedPackagesArr []string
 	var packageNameOnlyArr []string
 	var commandOK, supportedOK, expectedOK bool
@@ -177,13 +179,17 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 		}
 	}
 
+	// option file containing overrides for expected package versions
+	overrideVersionsFile, ok = params["override_versions_file"]
+
 	p := &PhpPackagesCollection{
 		config: PhpPackagesConfiguration{
-			command:           command,
-			path:              path,
-			supportedListFile: supportedListFile,
-			expectedPackages:  expectedPackagesArr,
-			packageNameOnly:   packageNameOnlyArr},
+			command:              command,
+			path:                 path,
+			supportedListFile:    supportedListFile,
+			overrideVersionsFile: overrideVersionsFile,
+			expectedPackages:     expectedPackagesArr,
+			packageNameOnly:      packageNameOnlyArr},
 	}
 
 	return p, nil
@@ -218,6 +224,38 @@ func LoadSupportedPackagesList(path, supportedListFile string) ([]string, error)
 func ParsePackagesList(expectedPackages string) ([]string, error) {
 	tmp := strings.ReplaceAll(expectedPackages, " ", "")
 	return strings.Split(tmp, ","), nil
+}
+
+func ParseOverrideVersionsFile(path, overrideVersionFile string) (map[string]interface{}, error) {
+	jsonFile, err := os.Open(filepath.Dir(path) + "/" + overrideVersionFile)
+	if err != nil {
+		return nil, fmt.Errorf("error opening versions override list %s!", err.Error())
+	} else {
+		defer jsonFile.Close()
+	}
+
+	versions_json, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading versions override list %s!", err.Error())
+	}
+
+	var versions_override map[string]interface{}
+
+	err = json.Unmarshal([]byte(versions_json), &versions_override)
+	if nil != err {
+		return nil, fmt.Errorf("Error unmarshalling versions override list %s\n", err.Error())
+	}
+
+	return versions_override, nil
+}
+
+// Returns name of versions override file (if exists)
+func (pkgs *PhpPackagesCollection) OverrideVersionsFile() string {
+	if nil == pkgs {
+		return ""
+	}
+
+	return pkgs.config.overrideVersionsFile
 }
 
 // Detects installed PHP packages
