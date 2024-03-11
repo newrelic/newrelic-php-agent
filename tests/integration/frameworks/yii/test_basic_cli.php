@@ -15,7 +15,7 @@ OtherTransaction/Action/test-integration-cli-action
 
 /*EXPECT_ERROR_EVENTS null */
 
-/* WordPress mock app */
+/* Yii2 mock */
 require_once __DIR__.'/yii2/baseyii.php';
 
 $a = new yii\base\InlineAction('test-integration-cli-action');
