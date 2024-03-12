@@ -287,6 +287,9 @@ PHP_FUNCTION(newrelic_exception_handler) {
 #endif /* PHP7 */
 }
 
+/* PHP Fatal errors: E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR |
+ * E_COMPILE_ERROR | E_RECOVERABLE_ERROR */
+
 int nr_php_error_get_priority(int type) {
   switch (type) {
     case E_PARSE:
@@ -299,6 +302,8 @@ int nr_php_error_get_priority(int type) {
       return 50;
     case E_ERROR:
       return 50;
+    case E_RECOVERABLE_ERROR:
+      return 50;
     case E_COMPILE_WARNING:
       return 40;
     case E_CORE_WARNING:
@@ -307,6 +312,12 @@ int nr_php_error_get_priority(int type) {
       return 40;
     case E_WARNING:
       return 40;
+    case E_DEPRECATED:
+      return 20;
+    case E_USER_DEPRECATED:
+      return 20;
+    case E_STRICT: /* Included for backward compatibility */
+      return 10;      
     case E_USER_NOTICE:
       return 0;
     case E_NOTICE:
@@ -467,29 +478,50 @@ static char* nr_php_error_exception_message(zval* exception TSRMLS_DC) {
 }
 
 static const char* get_error_type_string(int type) {
+  /* NOTE: PHP 7 makes E_STRICT irrelevant, reclassifying most of the errors as
+   * proper warnings, notices or E_DEPRECATED:
+   * https://wiki.php.net/rfc/reclassify_e_strict The E_STRICT constant will be
+   * retained for better compatibility, it will simply no longer have meaning in
+   * PHP 7. While PHP 7 was backward compatible, PHP 8 does not use E_STRICT.
+   */
+
+  /* Note:
+   * With PHP7.4+ we should never actually be getting E_ERROR, or
+   * E_RECOVERABLE_ERROR here. Both are fatal errors and are handled by the
+   * agent's uncaught exceptions logic (unless E_RECOVERABLE_ERROR in which case
+   * there is no error to see)
+   */
   switch (type) {
-    case E_ERROR:
+    case E_ERROR: /* 1 */
       return "E_ERROR";
-    case E_WARNING:
+    case E_WARNING: /* 2 */
       return "E_WARNING";
-    case E_PARSE:
+    case E_PARSE: /* 4 */
       return "E_PARSE";
-    case E_NOTICE:
+    case E_NOTICE: /* 8 */
       return "E_NOTICE";
-    case E_CORE_ERROR:
+    case E_CORE_ERROR: /* 16 */
       return "E_CORE_ERROR";
-    case E_CORE_WARNING:
+    case E_CORE_WARNING: /* 32 */
       return "E_CORE_WARNING";
-    case E_COMPILE_ERROR:
+    case E_COMPILE_ERROR: /* 64 */
       return "E_COMPILE_ERROR";
-    case E_COMPILE_WARNING:
+    case E_COMPILE_WARNING: /* 128 */
       return "E_COMPILE_WARNING";
-    case E_USER_ERROR:
+    case E_USER_ERROR: /* 256 */
       return "E_USER_ERROR";
-    case E_USER_WARNING:
+    case E_USER_WARNING: /* 512 */
       return "E_USER_WARNING";
-    case E_USER_NOTICE:
+    case E_USER_NOTICE: /* 1024 */
       return "E_USER_NOTICE";
+    case E_STRICT: /* 2048 */
+      return "E_STRICT";
+    case E_RECOVERABLE_ERROR: /* 4096 */
+      return "E_RECOVERABLE_ERROR";
+    case E_DEPRECATED: /* 8192 */
+      return "E_DEPRECATED";
+    case E_USER_DEPRECATED: /* 16348 */
+      return "E_USER_DEPRECATED";
     default:
       return "Error";
   }
