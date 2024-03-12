@@ -36,7 +36,7 @@ log_errors=0
       "?? when",
       "OtherTransaction/php__FILE__",
       "Required parameter $b follows optional parameter $a",
-      "Error",
+      "E_DEPRECATED",
       {
         "stack_trace": "??",
         "agentAttributes": "??",
@@ -60,7 +60,7 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_DEPRECATED",
         "error.message": "Required parameter $b follows optional parameter $a",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
