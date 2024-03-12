@@ -76,8 +76,9 @@ NR_PHP_WRAPPER(nr_yii1_runWithParams_wrapper) {
                         NR_NOT_OK_TO_OVERWRITE);
       }
     }
+    nr_php_zval_free(&idz);
   }
-
+  nr_php_zval_free(&classz);
 end:
   NR_PHP_WRAPPER_CALL;
 
@@ -143,7 +144,7 @@ NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
                       NR_NOT_OK_TO_OVERWRITE);
     }
   }
-
+  nr_php_zval_free(&unique_idz);
 end:
   NR_PHP_WRAPPER_CALL;
 
