@@ -16,8 +16,8 @@ The E_STRICT constant will be retained for better compatibility, it will simply 
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: PHP 5 not supported\n");
 }
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP 8+ not supported\n");
+if (version_compare(PHP_VERSION, "7.4", ">=")) {
+  die("skip: PHP 7.4+ not supported\n");
 }
 
 */
