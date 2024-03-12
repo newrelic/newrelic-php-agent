@@ -113,6 +113,15 @@ extern PHP_FUNCTION(newrelic_exception_handler);
 extern int nr_php_error_get_priority(int type);
 
 /*
+ * Purpose : Converts a PHP error type into a readable string.
+ *
+ * Params  : 1. The error type.
+ *
+ * Returns : The PHP error string.
+ */
+extern const char* nr_get_error_type_string(int type);
+
+/*
  * Purpose : Install newrelic_exception_handler as the user exception handler
  *           in PHP.
  */

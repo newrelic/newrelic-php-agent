@@ -313,9 +313,9 @@ int nr_php_error_get_priority(int type) {
     case E_WARNING:
       return 40;
     case E_DEPRECATED:
-      return 20;
+      return 30;
     case E_USER_DEPRECATED:
-      return 20;
+      return 30;
     case E_STRICT: /* Included for backward compatibility */
       return 10;      
     case E_USER_NOTICE:
@@ -477,7 +477,7 @@ static char* nr_php_error_exception_message(zval* exception TSRMLS_DC) {
   return message;
 }
 
-static const char* get_error_type_string(int type) {
+const char* nr_get_error_type_string(int type) {
   /* NOTE: PHP 7 makes E_STRICT irrelevant, reclassifying most of the errors as
    * proper warnings, notices or E_DEPRECATED:
    * https://wiki.php.net/rfc/reclassify_e_strict The E_STRICT constant will be
@@ -629,7 +629,7 @@ void nr_php_error_cb(int type,
 #endif /* PHP < 8.0 */
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
-    errclass = get_error_type_string(type);
+    errclass = nr_get_error_type_string(type);
 
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
                         msg, errclass, stack_json);
