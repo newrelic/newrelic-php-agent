@@ -8,6 +8,15 @@
 The agent should capture and report E_USER_ERROR events.
 */
 
+/*INI
+display_errors=1
+log_errors=0
+*/
+
+/*EXPECT_REGEX
+^\s*(PHP )?Fatal error:\s*Incorrect parameters, correct ones expected .*? on line [0-9]+\s*$
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",

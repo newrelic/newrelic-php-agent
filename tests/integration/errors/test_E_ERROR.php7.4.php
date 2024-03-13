@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 The agent should capture and report fatal errors.
-An E_ERROR is an exception and is handled by the agent's exception logic.
+An E_ERROR is an uncaught exception and the expected error.class is Exception.
 */
 
 /*SKIPIF
