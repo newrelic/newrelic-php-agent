@@ -180,7 +180,27 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	}
 
 	// option file containing overrides for expected package versions
-	overrideVersionsFile, ok = params["override_versions_file"]
+	// this is useful when a package is detected as the wrong version
+	// because the internal mechanism the agent uses to get pacakge
+	// versions was not updated by the upstream maintainers properly
+	// on a release.
+	//
+	// this is a JSON file of the format
+	//  { 
+	//     "<expected>": "<override",
+	//     ...
+	//  }
+	//
+	// such as:
+	//  {
+	//     "4.13.0": "4.12.0",
+	//     "3.4.5": "3.4.4"
+	//  }
+	//
+	//  which creates overrides to version "4.13.0" to change its expecation to "4.12.0"
+	//  and "3.4.5" to be changed to an expectation of "3.4.4"
+	}
+		overrideVersionsFile, ok = params["override_versions_file"]
 
 	p := &PhpPackagesCollection{
 		config: PhpPackagesConfiguration{
