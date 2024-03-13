@@ -516,6 +516,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var expectedPackages []PhpPackage
 	var expectedPkgsCollection *PhpPackagesCollection
 	var expectNullPkgs bool
+	var version_overrides map[string]interface{}
 
 	if nil != t.phpPackagesConfig {
 		var err error
@@ -543,6 +544,15 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 
 	if !expectNullPkgs && (nil == expectedPackages || 0 == len(expectedPackages)) {
 		t.Fatal(fmt.Errorf("EXPECTED_PHP_PACKAGES used but no packages detected in environment!"))
+	}
+
+	// load any expected versions overrides
+	if 0 < len(expectedPkgsCollection.OverrideVersionsFile()) {
+		var err error
+		version_overrides, err = ParseOverrideVersionsFile(t.Path, expectedPkgsCollection.OverrideVersionsFile())
+		if nil != err {
+			t.Fatal(err)
+		}
 	}
 
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
@@ -580,7 +590,16 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.packageNameOnly))
 					}
 				}
-				if testPackageNameOnly || expectedPackages[i].Version == actualPackages[i].Version {
+
+				// see if a version override exists for the expectation
+				expected_version := expectedPackages[i].Version
+				override_version, ok := version_overrides[expected_version]
+				if ok {
+					t.AddNote(fmt.Sprintf("Overrode detected version %s with %s", expected_version, override_version))
+					expected_version = override_version.(string)
+				}
+
+				if testPackageNameOnly || expected_version == actualPackages[i].Version {
 					continue
 				}
 			}
