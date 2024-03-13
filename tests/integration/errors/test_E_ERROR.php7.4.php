@@ -6,7 +6,11 @@
 
 /*DESCRIPTION
 The agent should capture and report fatal errors.
-An E_ERROR is an uncaught exception and the expected error.class is Exception.
+An E_ERROR is an uncaught exception and the expected error.class 
+is recorded as Exception since it is recorded in the agent's uncaught 
+exception logic and not via the normal error handling logic.
+This is different from pre 7.4 which would report E_ERROR as the
+error.class.
 */
 
 /*SKIPIF
