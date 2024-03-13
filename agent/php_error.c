@@ -595,11 +595,6 @@ void nr_php_error_cb(int type,
                      const char* format,
                      va_list args) {
 #endif /* PHP >= 8.1 */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
-  (void)error_filename;
-  (void)error_lineno;
-#endif
   TSRMLS_FETCH();
   char* stack_json = NULL;
   const char* errclass = NULL;
@@ -655,19 +650,17 @@ void nr_php_error_cb(int type,
     nr_free(stack_json);
   }
   /*
-   * Call through to the actual error handler for PHP 7.4 and below.
-   * For PHP 8+ we have registered our error handler with the Observer
-   * API so there is no need to callback to the original.
-   */
-  /*
    * Call through to the actual error handler.
    */
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   if (0 != NR_PHP_PROCESS_GLOBALS(orig_error_cb)) {
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
     (type, error_filename, error_lineno, format, args);
-  }
+#else
+    NR_PHP_PROCESS_GLOBALS(orig_error_cb)
+    (type, error_filename, error_lineno, message);
 #endif /* PHP < 8.0 */
+  }
 }
 
 nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
