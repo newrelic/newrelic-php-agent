@@ -22,7 +22,7 @@ RUN apt-get install -y build-essential
 #
 RUN apt-get update \
  && apt-get -y install gcc git netcat-openbsd \
- libpcre3 libpcre3-dev golang psmisc automake libtool \
+ libpcre3 libpcre3-dev psmisc automake libtool \
  insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
  zlib1g-dev libmcrypt-dev
 
@@ -73,18 +73,12 @@ RUN apt-get update && apt-get install -y \
   zip && apt-get clean
 
 #
-# If the debian version is jessie or stretch, we need to install go manually;
-# otherwise, we just install the golang package from the repository.
-# go 1.11.6 matches the version that buster uses.
+# Download and install Go
 #
-RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
-      wget --quiet https://golang.org/dl/go1.11.6.linux-amd64.tar.gz -O- | tar -C /usr/local -zxvf -; \
-      export GOROOT=/usr/local/go; \
-      export GOPATH="${HOME}/go"; \
-      export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; \
-    else \
-      apt-get install -y golang; \
-    fi
+RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
+    wget https://go.dev/dl/go1.21.1.linux-${arch}.tar.gz -O- | tar -C /usr/local -zxvf -;
+
+RUN ln -s /usr/local/go/bin/go /usr/bin/go
 
 #
 # If the debian version is jessie, don't install argon2

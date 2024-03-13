@@ -1,3 +1,0 @@
-vendor:
-    folder: go
-    tag: https://github.com/google/flatbuffers/tree/v1.9.0/go
