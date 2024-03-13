@@ -186,7 +186,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	// on a release.
 	//
 	// this is a JSON file of the format
-	//  { 
+	//  {
 	//     "<expected>": "<override",
 	//     ...
 	//  }
@@ -199,8 +199,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 	//
 	//  which creates overrides to version "4.13.0" to change its expecation to "4.12.0"
 	//  and "3.4.5" to be changed to an expectation of "3.4.4"
-	}
-		overrideVersionsFile, ok = params["override_versions_file"]
+	overrideVersionsFile, ok = params["override_versions_file"]
 
 	p := &PhpPackagesCollection{
 		config: PhpPackagesConfiguration{
