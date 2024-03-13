@@ -7,7 +7,6 @@
 # The top level Makefile
 #
 GCOV  ?= gcov
-GO    ?= go
 SHELL = /bin/bash
 GCOVR ?= gcovr
 GIT   ?= git
@@ -19,17 +18,6 @@ include make/php_versions.mk
 
 # Include the secrets file if it exists, but if it doesn't, that's OK too.
 -include make/secrets.mk
-
-# Configure an isolated workspace for the Go daemon.
-export GOPATH=$(CURDIR)
-export GO15VENDOREXPERIMENT=1
-# Needed for Go > 1.11 to avoid building with modules by default
-export GO111MODULE=auto
-
-# GOBIN affects the behavior of go install, ensure it is unset.
-unexport GOBIN
-
-GOFLAGS := -ldflags '-X newrelic/version.Number=$(AGENT_VERSION) -X newrelic/version.Commit=$(GIT_COMMIT) -X newrelic/secrets.NewrelicCollectorHost=$(NEWRELIC_COLLECTOR_HOST) -X newrelic/secrets.NewrelicLicenseKey=$(NEWRELIC_LICENSE_KEY) -X newrelic/secrets.NewrelicCollectorKeys=$(NEWRELIC_COLLECTOR_KEYS) -X newrelic/secrets.NewrelicAccountId=$(ACCOUNT_supportability) -X newrelic/secrets.NewrelicAppId=$(APP_supportability)' $(GO_TAGS)
 
 GCOVRFLAGS += -e "agent/tests/*" -e "axiom/tests/*" -e ".*\.h" -o
 
@@ -170,68 +158,39 @@ agent-valgrind: agent/Makefile
 	$(MAKE) -C agent valgrind
 
 #
-# Build the daemon and related utilities
+# Daemon rules
+# defers to behavior defined in daemon/Makefile once $GOBIN has been set
 #
 
-#
-# Minimum required version of Go is 1.5.
-#
-# This is defined as a rule that other rules that require Go can depend upon.
-# We don't want to require Go for a general build primarily to make the PHP
-# agent easier to use as a component within the C agent.
-#
-.PHONY: go-minimum-version
-go-minimum-version:
-	@if $(GO) version | awk '/go1.[012345678][\. ]/ { exit 1 }'; then \
-		true; \
-	else \
-		echo -n 'Go 1.9 or newer required; found '; $(GO) version; false; \
-	fi
+# Configure the target directory for go install
+export GOBIN=$(CURDIR)/bin
 
-DAEMON_TARGETS := $(addprefix bin/,client daemon integration_runner stressor)
-
-# Delete Go binaries before each build to force them to be re-linked. This
-# ensures the version and commit variables are set correctly by the linker.
-#
-# The bin directory is also the target directory for the installer,
-# which we need to be careful to leave in place. Therefore, the names of the
-# Go binaries are made explicit. If we used a conventional `cmd` subdirectory
-# for commands, we could use `go list` to determine the names.
 .PHONY: daemon
-daemon: go-minimum-version daemon-protobuf Makefile | bin/
-	@rm -rf $(DAEMON_TARGETS)
-	@$(GO) install $(GOFLAGS) ./...
+daemon:
+	$(MAKE) -C daemon
 
-# The -race flag enables the inegrated Go race detector. Output to stderr
 .PHONY: daemon_race
-daemon_race: go-minimum-version daemon-protobuf Makefile | bin/
-	@rm -rf $(DAEMON_TARGETS)
-	@$(GO) install -race $(GOFLAGS) ./...
+daemon_race:
+	$(MAKE) -C daemon race
 
 .PHONY: daemon_test
-daemon_test: go-minimum-version daemon-protobuf
-	@$(GO) test $(GOFLAGS) ./...
+daemon_test:
+	$(MAKE) -C daemon test
 
 .PHONY: daemon_bench
-daemon_bench: go-minimum-version daemon-protobuf
-	@$(GO) test $(GOFLAGS) -bench=. ./...
+daemon_bench:
+	$(MAKE) -C daemon bench
 
 .PHONY: daemon_integration
-daemon_integration: go-minimum-version daemon-protobuf
-	$(MAKE) INTEGRATION_TAGS=1 go-minimum-version
-	@$(GO) test $(GOFLAGS) ./...
+daemon_integration:
+	$(MAKE) -C daemon integration
 
-DAEMON_COV_FILE = daemon_coverage.out
 .PHONY: daemon_cover
-daemon_cover: go-minimum-version daemon-protobuf
-	@rm -f $(DAEMON_COV_FILE)
-	@$(GO) test -coverprofile=$(DAEMON_COV_FILE) $(GOFLAGS) ./...
-	$(GO) tool cover -html=$(DAEMON_COV_FILE)
-	@rm -f $(DAEMON_COV_FILE)
+daemon_cover:
+	$(MAKE) -C daemon cover
 
 bin/integration_runner:
-	@echo "Building bin/integration_runner"
-	@$(GO) install $(GOFLAGS) integration_runner
+	$(MAKE) -C daemon integration_runner
 
 # Note that this rule does not require the Go binary, and therefore doesn't
 # depend on go-minimum-version.
@@ -317,14 +276,14 @@ axiom-clean:
 # Before running this script, make sure the location of protoc-gen-go is in
 # your $PATH.
 .PHONY: daemon-protobuf
-daemon-protobuf: src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go
+daemon-protobuf: daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go
 
-src/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_tracing/v1.proto
+daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_tracing/v1.proto
 	$(MAKE) vendor # Only build vendor stuff if v1.proto has changed. Otherwise
 	               # this rule will be triggered every time the daemon is built.
 	$(VENDOR_PREFIX)/bin/protoc \
 	    -I=./protocol/infinite_tracing \
-	    --go_out="paths=source_relative,plugins=grpc:src/newrelic/infinite_tracing/com_newrelic_trace_v1" \
+	    --go_out="paths=source_relative,plugins=grpc:daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1" \
 	    protocol/infinite_tracing/v1.proto
 
 #
