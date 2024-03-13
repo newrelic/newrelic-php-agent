@@ -119,7 +119,7 @@ extern int nr_php_error_get_priority(int type);
  *
  * Returns : The PHP error string.
  */
-extern const char* nr_get_error_type_string(int type);
+extern const char* nr_php_error_get_type_string(int type);
 
 /*
  * Purpose : Install newrelic_exception_handler as the user exception handler

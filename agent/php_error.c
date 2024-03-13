@@ -477,7 +477,7 @@ static char* nr_php_error_exception_message(zval* exception TSRMLS_DC) {
   return message;
 }
 
-const char* nr_get_error_type_string(int type) {
+const char* nr_php_error_get_type_string(int type) {
   /* NOTE: PHP 7 makes E_STRICT irrelevant, reclassifying most of the errors as
    * proper warnings, notices or E_DEPRECATED:
    * https://wiki.php.net/rfc/reclassify_e_strict The E_STRICT constant will be
@@ -629,7 +629,7 @@ void nr_php_error_cb(int type,
 #endif /* PHP < 8.0 */
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
-    errclass = nr_get_error_type_string(type);
+    errclass = nr_php_error_get_type_string(type);
 
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
                         msg, errclass, stack_json);
