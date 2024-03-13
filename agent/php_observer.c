@@ -94,7 +94,6 @@ void nr_php_observer_minit() {
    * Register the Observer API handlers.
    */
   zend_observer_fcall_register(nr_php_fcall_register_handlers);
-  zend_observer_error_register(nr_php_error_cb);
 
   /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
