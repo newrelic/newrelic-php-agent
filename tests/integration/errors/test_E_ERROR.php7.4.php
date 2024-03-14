@@ -6,6 +6,9 @@
 
 /*DESCRIPTION
 The agent should capture and report fatal errors.
+With PHP 7.4+, E_ERROR are fatal errors triggered by exceptions and are no longer handled 
+using nr_php_error_cb with uses the error type as the error.class.  Instead, they are handled 
+by newrelic_exception_handler which uses the exception name as the error.class.
 */
 
 /*SKIPIF

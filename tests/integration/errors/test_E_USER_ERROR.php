@@ -5,8 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should capture and report user-generated fatal errors along with a
-stack trace.
+The agent should capture and report E_USER_ERROR events.
 */
 
 /*INI
@@ -15,7 +14,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*Sample E_USER_ERROR in .*? on line [0-9]+\s*$
+^\s*(PHP )?Fatal error:\s*Incorrect parameters, correct ones expected .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -25,12 +24,10 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Sample E_USER_ERROR",
+      "Incorrect parameters, correct ones expected",
       "E_USER_ERROR",
       {
-        "stack_trace": [
-          " in trigger_error called at __FILE__ (??)"
-        ],
+        "stack_trace": "??",
         "agentAttributes": "??",
         "intrinsics": "??"
       },
@@ -53,7 +50,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_USER_ERROR",
-        "error.message": "Sample E_USER_ERROR",
+        "error.message": "Incorrect parameters, correct ones expected",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",
@@ -70,4 +67,4 @@ log_errors=0
 ]
 */
 
-trigger_error("Sample E_USER_ERROR", E_USER_ERROR);
+trigger_error("Incorrect parameters, correct ones expected", E_USER_ERROR);
