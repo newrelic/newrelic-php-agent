@@ -6,11 +6,9 @@
 
 /*DESCRIPTION
 The agent should capture and report fatal errors.
-An E_ERROR is an uncaught exception and the expected error.class 
-is recorded as Exception since it is recorded in the agent's uncaught 
-exception logic and not via the normal error handling logic.
-This is different from pre 7.4 which would report E_ERROR as the
-error.class.
+With PHP 7.4+, E_ERROR are fatal errors triggered by exceptions and are no longer handled 
+using nr_php_error_cb with uses the error type as the error.class.  Instead, they are handled 
+by newrelic_exception_handler which uses the exception name as the error.class.
 */
 
 /*SKIPIF
