@@ -117,7 +117,7 @@ extern int nr_php_error_get_priority(int type);
  *
  * Params  : 1. The error type.
  *
- * Returns : The PHP error string.
+ * Returns : The PHP error type as constant, static string (must not be freed).
  */
 extern const char* nr_php_error_get_type_string(int type);
 
