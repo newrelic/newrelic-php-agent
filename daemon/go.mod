@@ -7,7 +7,7 @@ require (
 	github.com/google/flatbuffers v23.5.26+incompatible
 	golang.org/x/net v0.20.0
 	google.golang.org/grpc v1.61.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
