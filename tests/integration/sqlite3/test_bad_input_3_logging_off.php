@@ -67,7 +67,8 @@ newrelic.application_logging.metrics.enabled = false
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

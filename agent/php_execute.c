@@ -387,7 +387,7 @@ static const nr_framework_table_t all_frameworks[] = {
 
     {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
-    {"Magento2", "magento2", NR_PSTR("magento/framework/app/bootstrap.php"), 0,
+    {"Magento2", "magento2", NR_PSTR("magento/framework/registration.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
     {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,

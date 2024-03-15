@@ -110,7 +110,8 @@ stack => \[" in alpha called at .*test_error_group_callback_max_string_len.php \
           "priority": "??",
           "traceId": "??"
         }
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

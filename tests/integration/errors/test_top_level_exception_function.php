@@ -31,8 +31,16 @@ In exception handler
           " in throw_it called at __FILE__ (??)"
         ],
         "agentAttributes": "??",
-        "intrinsics": "??"
-      }
+        "intrinsics":
+        {
+          "totalTime": "??",
+          "cpu_time": "??",
+          "cpu_user_time": "??",
+          "cpu_sys_time": "??",
+          "guid": "??"
+        }
+      },
+      "?? transaction ID"
     ]
   ]
 ]
@@ -54,7 +62,8 @@ In exception handler
         "error.message": "Uncaught exception 'RuntimeException' with message 'Hi!' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
-        "nr.transactionGuid": "??"
+        "nr.transactionGuid": "??",
+        "guid": "??"
       },
       {},
       {}

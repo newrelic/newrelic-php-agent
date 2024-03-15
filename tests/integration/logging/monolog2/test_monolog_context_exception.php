@@ -27,8 +27,8 @@ newrelic.application_logging.forwarding.context_data.include = ""
 newrelic.application_logging.forwarding.context_data.exclude = ""
 */
 
-/*EXPECT
-monolog2.ALERT: context is nested array {"exception":"[object] (RuntimeException(code: 0): Foo at /usr/local/src/newrelic-php-agent/tests/integration/logging/monolog2/test_monolog_context_exception.php:100)"}
+/*EXPECT_REGEX
+monolog2.ALERT: context is nested array \{"exception":"\[object\] \(RuntimeException\(code: 0\): Foo at .*test_monolog_context_exception.php:.*\)"\}
 */
 
 /*EXPECT_METRICS

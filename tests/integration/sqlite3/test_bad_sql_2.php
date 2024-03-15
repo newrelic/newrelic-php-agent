@@ -66,7 +66,8 @@ The agent should record an error when a SQLite3::querysingle() fails.
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

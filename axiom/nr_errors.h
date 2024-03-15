@@ -86,6 +86,7 @@ extern void nr_error_destroy(nr_error_t** error_ptr);
  */
 extern char* nr_error_to_daemon_json(const nr_error_t* error,
                                      const char* txn_name,
+                                     const char* txn_guid,
                                      const nrobj_t* agent_attributes,
                                      const nrobj_t* user_attributes,
                                      const nrobj_t* intrinsics,

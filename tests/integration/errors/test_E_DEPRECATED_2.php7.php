@@ -36,14 +36,15 @@ log_errors=0
       "?? when",
       "OtherTransaction/php__FILE__",
       "mktime(): You should be using the time() function instead",
-      "Error",
+      "E_DEPRECATED",
       {
         "stack_trace": [
           " in mktime called at __FILE__ (??)"
         ],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]
@@ -61,7 +62,7 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_DEPRECATED",
         "error.message": "mktime(): You should be using the time() function instead",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",

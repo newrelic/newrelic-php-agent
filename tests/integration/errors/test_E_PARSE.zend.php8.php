@@ -37,7 +37,8 @@ log_errors=0
         "stack_trace": [],
         "agentAttributes": "??",
         "intrinsics": "??"
-      }
+      },
+      "?? transaction ID"
     ]
   ]
 ]

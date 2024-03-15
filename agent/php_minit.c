@@ -769,8 +769,6 @@ void nr_php_late_initialization(void) {
    * our own error callback handler. Otherwise, we do.
    */
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-    || defined OVERWRITE_ZEND_EXECUTE_DATA /* < PHP8 */
   if (0 == zend_get_extension("Xdebug")) {
     NR_PHP_PROCESS_GLOBALS(orig_error_cb) = zend_error_cb;
     zend_error_cb = nr_php_error_cb;
@@ -779,7 +777,6 @@ void nr_php_late_initialization(void) {
                 "the Xdebug extension prevents the New Relic agent from "
                 "gathering errors. No errors will be recorded.");
   }
-#endif /* end of < PHP8 or not using OAPI*/
 
   /*
    * Install our signal handler, unless the user has set a special flag
