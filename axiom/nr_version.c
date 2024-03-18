@@ -43,7 +43,7 @@
  *   rose               20Dec2023 (10.15)
  *   snapdragon         23Jan2024 (10.16)
  *   tulip              21Feb2024 (10.17)
- *   ulmux              04Mar2024 (10.18)
+ *   ulmus              04Mar2024 (10.18)
  *   viburnum           18Mar2024 (10.19)
  */
 #define NR_CODENAME "wallflower"
