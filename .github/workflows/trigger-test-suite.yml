@@ -1,0 +1,23 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: trigger-test-suite
+
+on:
+    push:
+        branches:
+          - main
+          - 'dev'
+    pull_request:
+
+jobs:
+    trigger-multiverse-tests:
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
+        steps:
+           - name: Trigger Multiverse Test Suite
+             run: |
+                gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.MULTIVERSE_WORKFLOW }} 
+                -f agent_git_ref=${{ github.ref_name }}
