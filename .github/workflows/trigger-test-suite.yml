@@ -19,5 +19,4 @@ jobs:
         steps:
            - name: Trigger Multiverse Test Suite
              run: |
-                gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.MULTIVERSE_WORKFLOW }} 
-                -f agent_git_ref=${{ github.ref_name }}
+                gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.MULTIVERSE_WORKFLOW }} -f agent_git_ref=${{ github.ref_name }}
