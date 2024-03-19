@@ -26,7 +26,7 @@ log_errors=0
       "?? when",
       "OtherTransaction/php__FILE__",
       "Sample E_USER_DEPRECATED",
-      "Error",
+      "E_USER_DEPRECATED",
       {
         "stack_trace": [
           " in trigger_error called at __FILE__ (??)"
@@ -52,7 +52,7 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_USER_DEPRECATED",
         "error.message": "Sample E_USER_DEPRECATED",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",

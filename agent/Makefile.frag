@@ -97,6 +97,7 @@ TEST_BINARIES = \
 	tests/test_pdo_mysql \
 	tests/test_pdo_pgsql \
 	tests/test_pgsql \
+        tests/test_php_error \
 	tests/test_php_execute \
 	tests/test_php_minit \
 	tests/test_php_stack \

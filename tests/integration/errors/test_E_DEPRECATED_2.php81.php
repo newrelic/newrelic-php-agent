@@ -33,7 +33,7 @@ log_errors=0
       "?? when",
       "OtherTransaction/php__FILE__",
       "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
-      "Error",
+      "E_DEPRECATED",
       {
         "stack_trace": "??",
         "agentAttributes": "??",
@@ -57,7 +57,7 @@ log_errors=0
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_DEPRECATED",
         "error.message": "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",

@@ -6,6 +6,9 @@
 
 /*DESCRIPTION
 The agent should capture and report strict standards warnings.
+PHP 7 makes E_STRICT irrelevant, reclassifying most of the errors as proper warnings, 
+notices or E_DEPRECATED: https://wiki.php.net/rfc/reclassify_e_strict
+The E_STRICT constant will be retained for better compatibility, it will simply no longer have meaning in PHP 7.
 */
 
 /*SKIPIF
@@ -14,8 +17,9 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: PHP 5 not supported\n");
 }
 if (version_compare(PHP_VERSION, "7.4", ">=")) {
-  die("skip: PHP >= 7.4.0 not supported\n");
+  die("skip: PHP 7.4+ not supported\n");
 }
+
 */
 
 /*INI
@@ -34,7 +38,7 @@ error_reporting = E_ALL | E_STRICT
       "?? when",
       "OtherTransaction/php__FILE__",
       "htmlentities(): Only basic entities substitution is supported for multi-byte encodings other than UTF-8; functionality is equivalent to htmlspecialchars",
-      "Error",
+      "E_STRICT",
       {
         "stack_trace": [
           " in htmlentities called at __FILE__ (??)"
@@ -60,7 +64,7 @@ error_reporting = E_ALL | E_STRICT
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "Error",
+        "error.class": "E_STRICT",
         "error.message": "htmlentities(): Only basic entities substitution is supported for multi-byte encodings other than UTF-8; functionality is equivalent to htmlspecialchars",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
