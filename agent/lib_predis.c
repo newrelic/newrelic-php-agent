@@ -748,12 +748,6 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline_after) {
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline_clean) {
-  (void)wraprec;
-  predis_executePipeline_handle_stack();
-}
-NR_PHP_WRAPPER_END
-
 NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_before) {
   (void)wraprec;
 
@@ -839,34 +833,29 @@ void nr_predis_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Predis\\Pipeline\\Pipeline::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_predis_pipeline_executePipeline_after);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Predis\\Pipeline\\Atomic::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_predis_pipeline_executePipeline_after);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Predis\\Pipeline\\ConnectionErrorProof::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_predis_pipeline_executePipeline_after);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Predis\\Pipeline\\FireAndForget::executePipeline"),
       nr_predis_pipeline_executePipeline,
-      nr_predis_pipeline_executePipeline_after,
-      nr_predis_pipeline_executePipeline_clean);
+      nr_predis_pipeline_executePipeline_after);
   /*
    * Instrument Webdis connections, since they don't use the same
    * writeRequest()/readResponse() pair as the other connection types.
    */
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Predis\\Connection\\WebdisConnection::executeCommand"),
       nr_predis_webdisconnection_executeCommand_before,
-      nr_predis_webdisconnection_executeCommand_after,
       nr_predis_webdisconnection_executeCommand_after);
 #else
   nr_php_wrap_user_function(

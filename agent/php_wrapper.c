@@ -9,12 +9,11 @@
 #include "util_logging.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-static void nr_php_wraprec_add_before_after_clean_callbacks(
+static void nr_php_wraprec_add_before_after_callbacks(
     const char* name, size_t namelen,
     nruserfn_t* wraprec,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback) {
+    nrspecialfn_t after_callback) {
   if (NULL == wraprec) {
     return;
   }
@@ -41,43 +40,29 @@ static void nr_php_wraprec_add_before_after_clean_callbacks(
     return;
   }
 
-  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_clean,
-                                           clean_callback)) {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: attempting to set special_instrumentation_clean "
-                     "for %.*s, but "
-                     "it is already set",
-                     __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    return;
-  }
-
   wraprec->special_instrumentation = after_callback;
   wraprec->special_instrumentation_before = before_callback;
-  wraprec->special_instrumentation_clean = clean_callback;
 }
 
-nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+nruserfn_t* nr_php_wrap_user_function_before_after(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback) {
+    nrspecialfn_t after_callback) {
 
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
-  nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
+  nr_php_wraprec_add_before_after_callbacks(name, namelen, wraprec,
                                                   before_callback,
-                                                  after_callback,
-                                                  clean_callback);
+                                                  after_callback);
 
   return wraprec;
 }
 
-nruserfn_t* nr_php_wrap_callable_before_after_clean(
+nruserfn_t* nr_php_wrap_callable_before_after(
     zend_function* callable,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback) {
+    nrspecialfn_t after_callback) {
   char* name = NULL;
 
   /* creates a transient wraprec */
@@ -89,10 +74,9 @@ nruserfn_t* nr_php_wrap_callable_before_after_clean(
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
     name = nr_php_function_debug_name(callable);
   }
-  nr_php_wraprec_add_before_after_clean_callbacks(name, nr_strlen(name), wraprec,
+  nr_php_wraprec_add_before_after_callbacks(name, nr_strlen(name), wraprec,
                                                   before_callback,
-                                                  after_callback,
-                                                  clean_callback);
+                                                  after_callback);
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
     nr_free(name);
   }
@@ -157,8 +141,8 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
  * wraprec's internals be evaluated BEFORE for the callable's. As such,
  * for OAPI, this creates "before" wrappers, where normally the default
  * is to create "after" wrappers (see nr_php_wrap_user_function). Should
- * "after"/"clean" wrappers ever be desired, it is suggested to create a
- * separate nr_php_wrap_generic_callable_before_after_clean() function.
+ * "after" wrappers ever be desired, it is suggested to create a
+ * separate nr_php_wrap_generic_callable_before_after() function.
  *
  * This creates a transient wraprec that does NOT produce an
  * "InstrumentedFunction" metric.
@@ -172,7 +156,7 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
   if (NULL != zf) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    return nr_php_wrap_callable_before_after_clean(zf, callback, NULL, NULL);
+    return nr_php_wrap_callable_before_after(zf, callback, NULL);
 #else
     return nr_php_wrap_callable(zf, callback);
 #endif
@@ -362,7 +346,11 @@ zval** nr_php_get_return_value_ptr(TSRMLS_D) {
     return NULL;
   }
 
-  return &EG(current_execute_data)->return_value;
+  if (NULL != EG(current_execute_data)->return_value) {
+    return &EG(current_execute_data)->return_value;
+  } else {
+    return NULL;
+  }
 #else
   return EG(return_value_ptr_ptr);
 #endif /* PHP7 */

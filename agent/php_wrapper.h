@@ -87,12 +87,11 @@
 
  /*
  *    OAPI updates:
- *    There are now before, after, and clean callbacks.
+ *    There are now before and after callbacks.
  *    1) before_callback gets called when OAPI triggers the begin function hook.
  *    2) after_callback gets called when OAPI triggers the end function hook.
- *    3) clean_callback gets called in the case of an exception, because the
- * return value will be null, so the after_callback might not function
- * correctly. Use clean_callback to reset any variables or states.
+ * if an exception occurs, return value will be null, so the after_callback
+ * must check for NULL correctly.
  *    4) unless explicitly setting any of the above callbacks, the default
  * callback is set to after_callback.
  *
@@ -138,18 +137,16 @@
  * see how it works with frameworks.
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-extern nruserfn_t* nr_php_wrap_user_function_before_after_clean(
+extern nruserfn_t* nr_php_wrap_user_function_before_after(
     const char* name,
     size_t namelen,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback);
+    nrspecialfn_t after_callback);
 
-extern nruserfn_t* nr_php_wrap_callable_before_after_clean(
+extern nruserfn_t* nr_php_wrap_callable_before_after(
     zend_function* callable,
     nrspecialfn_t before_callback,
-    nrspecialfn_t after_callback,
-    nrspecialfn_t clean_callback);
+    nrspecialfn_t after_callback);
 #endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,

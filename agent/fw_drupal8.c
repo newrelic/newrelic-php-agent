@@ -74,13 +74,12 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-static void nr_drupal8_add_method_callback_before_after_clean(
+static void nr_drupal8_add_method_callback_before_after(
                                            const zend_class_entry* ce,
                                            const char* method,
                                            size_t method_len,
                                            nrspecialfn_t before_callback,
-                                           nrspecialfn_t after_callback,
-                                           nrspecialfn_t clean_callback) {
+                                           nrspecialfn_t after_callback) {
   zend_function* function = NULL;
 
   if (NULL == ce) {
@@ -104,9 +103,9 @@ static void nr_drupal8_add_method_callback_before_after_clean(
         "%.*s::%.*s", NRSAFELEN(nr_php_class_entry_name_length(ce)),
         nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
 
-    nr_php_wrap_user_function_before_after_clean(
+    nr_php_wrap_user_function_before_after(
                               class_method, nr_strlen(class_method),
-                              before_callback, after_callback, clean_callback);
+                              before_callback, after_callback);
 
     nr_free(class_method);
   }
@@ -540,12 +539,6 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_after) {
   nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
-
-NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
-  (void)wraprec;
-  nr_drupal_invoke_all_hook_stacks_pop();
-}
-NR_PHP_WRAPPER_END
 #endif // OAPI
 
 /*
@@ -582,11 +575,10 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
   /* Drupal 9.4 introduced a replacement method for getImplentations */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_drupal8_add_method_callback_before_after_clean(
+  nr_drupal8_add_method_callback_before_after(
                                  ce, NR_PSTR("invokeallwith"),
                                  nr_drupal94_invoke_all_with,
-                                 nr_drupal94_invoke_all_with_after,
-                                 nr_drupal94_invoke_all_with_clean);
+                                 nr_drupal94_invoke_all_with_after);
 #else
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
                                  nr_drupal94_invoke_all_with TSRMLS_CC);
@@ -705,10 +697,10 @@ void nr_drupal8_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
               "ner\\RouterListener::onKernelRequest"),
-      nr_drupal8_name_the_wt_via_symfony, NULL, NULL);
+      nr_drupal8_name_the_wt_via_symfony, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
                                     "ner\\RouterListener::onKernelRequest"),

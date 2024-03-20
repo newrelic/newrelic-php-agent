@@ -2076,17 +2076,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      */
     create_metric = wraprec->create_metric;
 
-    /*
-     * A NULL return value ptr means that there was an uncaught exception
-     * and therefore we want to call the 'clean' function type
-     */
-    if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
-      zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
-                                                NR_EXECUTE_ORIG_ARGS);
-    } else {
-      zcaught = nr_zend_call_oapi_special_clean(wraprec, segment,
-                                                NR_EXECUTE_ORIG_ARGS);
-    }
+    zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
+                                              NR_EXECUTE_ORIG_ARGS);
     if (nrunlikely(zcaught)) {
       zend_bailout();
     }
