@@ -864,18 +864,18 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * took.
    */
 
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"), NULL,
-      nr_laravel_queue_worker_raiseBeforeJobEvent_after, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_laravel_queue_worker_raiseBeforeJobEvent_after);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Illuminate\\Queue\\Worker::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
-      nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before, NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
+      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL);
 
 #else
 

@@ -110,12 +110,12 @@ static void execute_nested_framework_calls(nrspecialfn_t one_before,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("one"), one_before, one_after, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("two"), two_before, two_after, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("three"), three_before, three_after, NULL);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("one"), one_before, one_after);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("two"), two_before, two_after);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("three"), three_before, three_after);
 #else
   /*
    * This will pick up whichever one isn't null.
@@ -574,31 +574,31 @@ static void test_add_arg(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
   tlib_php_request_eval("function arg0_def0() { return 4; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("arg0_def0"), test_add_array, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("arg0_def0"), test_add_array, NULL TSRMLS_CC);
 
   tlib_php_request_eval("function arg1_def0($a) { return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("arg1_def0"), test_add_array, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("arg1_def0"), test_add_array, NULL TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg0_def1($a = null) { return $a; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("arg0_def1"), test_add_array, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("arg0_def1"), test_add_array, NULL TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg1_def1($a, $b = null) { return $b; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("arg1_def1"), test_add_array, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("arg1_def1"), test_add_array, NULL TSRMLS_CC);
 
   tlib_php_request_eval(
       "function arg1_def1_2($a, $b = null) { return $b; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("arg1_def1_2"), test_add_2_arrays, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("arg1_def1_2"), test_add_2_arrays, NULL TSRMLS_CC);
 
   tlib_php_request_eval("function splat(...$a) { return $a[0]; }" TSRMLS_CC);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("splat"), test_add_array, NULL, NULL TSRMLS_CC);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("splat"), test_add_array, NULL TSRMLS_CC);
 #else
   tlib_php_request_eval("function arg0_def0() { return 4; }" TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("arg0_def0"), test_add_array TSRMLS_CC);
