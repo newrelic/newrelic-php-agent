@@ -72,13 +72,10 @@ typedef struct _nruserfn_t {
   nrspecialfn_t special_instrumentation;
   /*
    * Only used by OAPI, PHP 8+.  Used to do any special instrumentation actions
-   * before a function is executed.  special_instrumentation_clean will clean up
-   * any variables that were set in the before calledback but didn't get cleaned
-   * up when an exception circumvents the end callback. All callbacks can be
-   * set.  Use the `nr_php_wrap_user_function_after_before_clean` to set.
+   * before a function is executed. All callbacks can be set using
+   * `nr_php_wrap_user_function_before_after`.
    */
   nrspecialfn_t special_instrumentation_before;
-  nrspecialfn_t special_instrumentation_clean;
 
   nruserfn_declared_t declared_callback;
 
@@ -213,9 +210,6 @@ extern int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 extern int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
                                             nr_segment_t* segment,
                                             NR_EXECUTE_PROTO);
-extern int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
-                                           nr_segment_t* segment,
-                                           NR_EXECUTE_PROTO);
 #endif
 /*
  * Purpose : Destroy all user instrumentation records, freeing

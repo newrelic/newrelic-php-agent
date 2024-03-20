@@ -78,22 +78,6 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
 
   return zcaught;
 }
-
-int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
-                                    nr_segment_t* segment,
-                                    NR_EXECUTE_PROTO) {
-  volatile int zcaught = 0;
-
-  if (wraprec && wraprec->special_instrumentation_clean) {
-    zend_try {
-      wraprec->special_instrumentation_clean(wraprec, segment,
-                                             NR_EXECUTE_ORIG_ARGS);
-    }
-    zend_catch { zcaught = 1; }
-    zend_end_try();
-  }
-  return zcaught;
-}
 #endif
 int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
                                       nr_segment_t* segment,
