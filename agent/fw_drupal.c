@@ -301,10 +301,10 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
         = nr_drupal_http_request_get_method(NR_EXECUTE_ORIG_ARGS);
 
     external_params.encoded_response_header
-        = nr_drupal_http_request_get_response_header(&func_return_value);
+        = nr_drupal_http_request_get_response_header(NR_GET_RETURN_VALUE_PTR);
 
     external_params.status
-        = nr_drupal_http_request_get_response_code(&func_return_value);
+        = nr_drupal_http_request_get_response_code(NR_GET_RETURN_VALUE_PTR);
     if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
       nrl_verbosedebug(
           NRL_CAT, "CAT: outbound response: transport='Drupal 6-7' %s=" NRP_FMT,
@@ -327,16 +327,6 @@ end:
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_drupal_http_request_clean) {
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
-
-  NRPRG(drupal_http_request_depth) -= 1;
-}
-NR_PHP_WRAPPER_END
 #else
 
 /*
@@ -774,14 +764,6 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_after) {
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all_clean) {
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_FUNC_RETURN_VALUE;
-  (void)wraprec;
-  nr_drupal_invoke_all_hook_stacks_pop();
-}
-NR_PHP_WRAPPER_END
-
 #else
 NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all) {
   zval* hook = NULL;
@@ -830,14 +812,14 @@ void nr_drupal_enable(TSRMLS_D) {
                             nr_drupal_cron_run TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("QFormBase::Run"), nr_drupal_qdrupal_name_the_wt, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("QFormBase::Run"), nr_drupal_qdrupal_name_the_wt, NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("drupal_page_cache_header"), nr_drupal_name_wt_as_cached_page,
-      NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("drupal_http_request"), nr_drupal_http_request_before,
-      nr_drupal_http_request_after, nr_drupal_http_request_clean);
+      nr_drupal_http_request_after);
 #else
   nr_php_wrap_user_function(NR_PSTR("QFormBase::Run"),
                             nr_drupal_qdrupal_name_the_wt TSRMLS_CC);
@@ -856,10 +838,9 @@ void nr_drupal_enable(TSRMLS_D) {
                               nr_drupal_wrap_module_invoke TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    nr_php_wrap_user_function_before_after_clean(
+    nr_php_wrap_user_function_before_after(
         NR_PSTR("module_invoke_all"), nr_drupal_wrap_module_invoke_all_before,
-        nr_drupal_wrap_module_invoke_all_after,
-        nr_drupal_wrap_module_invoke_all_clean);
+        nr_drupal_wrap_module_invoke_all_after);
 #else
     nr_php_wrap_user_function(NR_PSTR("module_invoke_all"),
                               nr_drupal_wrap_module_invoke_all TSRMLS_CC);

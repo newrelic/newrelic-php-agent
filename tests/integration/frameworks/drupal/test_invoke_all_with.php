@@ -108,7 +108,10 @@ class Invoker {
 
 // Create module handler
 $drupal = new Drupal();
-$handler = $drupal->moduleHandler();
+// Throw an exception during creation to test agent recovery
+$handler = $drupal->moduleHandler(true);
+// Create the actual handler
+$handler = $drupal->moduleHandler(false);
 
 // Test lambda calback
 $handler->invokeAllWith("hook_1", function (callable $hook, string $module) {
