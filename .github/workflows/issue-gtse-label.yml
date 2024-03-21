@@ -1,0 +1,27 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-gtse-label
+
+on:
+    issues:
+        types:
+            - labeled
+
+jobs:
+    gtse-response:
+        if: github.event.label.name == 'gtse' && github.event.issue.state == 'open'
+        uses: ./.github/workflows/issue-bot.yml
+        with:
+            issue-number: ${{ github.event.issue.number }}
+            message: >
+                This issue has been identified as requiring additional information to debug.
+                Due to the potentially sensitive nature of the information we may have to collect,
+                such as PHPInfo and Debug Logs, please follow [these steps](https://docs.newrelic.com/docs/new-relic-solutions/solve-common-issues/find-help-use-support-portal/#file-ticket)
+                to create a support case, where a member of our New Relic Support Team will work 
+                with you to gather the necessary information securely and help debug your issue.
+                
+                If your subscription level does not include technical support support plan, the 
+                other option available to customers is to use New Relic’s community support channel: [Explorers Hub](https://forum.newrelic.com/s/). 
+                For all available options on how to get support, please see [these resources](https://docs.newrelic.com/docs/new-relic-solutions/solve-common-issues/find-help-use-support-portal/).

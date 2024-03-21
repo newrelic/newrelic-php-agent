@@ -1,0 +1,35 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-first-response
+
+on:
+    issues:
+        types:
+            - opened
+
+jobs:
+    first-response:
+        uses: ./.github/workflows/issue-bot.yml
+        with:
+            issue-number: ${{ github.event.issue.number }}
+            message: >
+                Thank you for your issue report. A member of the New Relic PHP Agent Team
+                will review your report and endeavor to respond in a timely manner.
+                
+                Need troubleshooting help? Please review some of our common [troubleshooting](troubleshooting-link-here)
+                documentation, as well as our [Explorer's Hub](https://forum.newrelic.com/s/) where other members of
+                the community may have solved an issue similar to yours with the help of our Support team members.
+
+                Have a question regarding support for an Operating System, PHP Version, Framework, or Library? 
+                Please take a look at our [Compatibility Docs](https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/).
+
+                Binary support for arm-based CPU architecture is now available via the [tarball installation](https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-arm64/#tarball-installation) method for PHP Versions 8.0+!
+
+                General installation instructions can be found on our [Installation Overview](https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-overview/) page.
+
+                Need more information about an Agent INI setting? Our [Configuration](https://docs.newrelic.com/docs/apm/agents/php-agent/configuration/php-agent-configuration/) 
+                page contains an explanation for each INI setting and how to modify the defaults.
+
+                Looking for something else? All New Relic PHP Agent Documentation can be found under our [Introduction](https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/introduction-new-relic-php/) page.
