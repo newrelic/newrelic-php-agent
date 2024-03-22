@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: issue-gtse-label
+name: issue-support-label
 
 on:
     issues:
@@ -11,7 +11,7 @@ on:
 
 jobs:
     gtse-response:
-        if: github.event.label.name == 'gtse' && github.event.issue.state == 'open'
+        if: github.event.label.name == 'support' && github.event.issue.state == 'open'
         uses: ./.github/workflows/issue-bot.yml
         with:
             issue-number: ${{ github.event.issue.number }}
