@@ -25,7 +25,7 @@ jobs:
                 Have a question regarding support for an Operating System, PHP Version, Framework, or Library? 
                 Please take a look at our [Compatibility Docs](https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/).
 
-                Binary support for arm-based CPU architecture is now available via the [tarball installation](https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-arm64/#tarball-installation) method for PHP Versions 8.0+!
+                Binary support for ARM-based CPU architecture is now available via the [tarball installation](https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-arm64/#tarball-installation) method for PHP Versions 8.0+!
 
                 General installation instructions can be found on our [Installation Overview](https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-overview/) page.
 
