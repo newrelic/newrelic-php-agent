@@ -52,3 +52,17 @@ void nr_fw_support_add_logging_supportability_metric(nrtxn_t* txn,
   nrm_force_add(txn->unscoped_metrics, metname, 0);
   nr_free(metname);
 }
+
+void nr_fw_support_add_package_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* package_version) {
+  if (NULL == txn || NULL == package_name || NULL == package_version) {
+    return;
+  }
+
+  char* metname = nr_formatf("Supportability/PHP/package/%s/%c/detected",
+                             package_name, package_version[0]);
+  nrm_force_add(txn->unscoped_metrics, metname, 0);
+  nr_free(metname);
+}
