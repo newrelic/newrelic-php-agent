@@ -122,6 +122,9 @@ NR_PHP_WRAPPER(nr_slim_application_construct) {
   // Add php package to transaction
   nr_txn_add_php_package(NRPRG(txn), "slim/slim", version);
 
+  nr_fw_support_add_package_supportability_metric(NRPRG(txn), "slim/slim",
+                                                  version);
+
   nr_free(version);
   nr_php_scope_release(&this_var);
 }

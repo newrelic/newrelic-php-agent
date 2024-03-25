@@ -354,6 +354,8 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
     char* version = nr_php_get_object_constant(this_var, "VERSION");
     // Add php package to transaction
     nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle", version);
+    nr_fw_support_add_package_supportability_metric(
+        NRPRG(txn), "guzzlehttp/guzzle", version);
     nr_free(version);
   }
 

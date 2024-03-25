@@ -810,6 +810,8 @@ void nr_wordpress_version() {
     if (nr_php_is_zval_valid_string(&retval)) {
       char* version = Z_STRVAL(retval);
       nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+      nr_fw_support_add_package_supportability_metric(NRPRG(txn), "wordpress",
+                                                      version);
     }
     zval_dtor(&retval);
   }

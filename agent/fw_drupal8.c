@@ -685,6 +685,8 @@ void nr_drupal_version() {
   if (nr_php_is_zval_valid_string(zval_version)) {
     char* version = Z_STRVAL_P(zval_version);
     nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
+    nr_fw_support_add_package_supportability_metric(NRPRG(txn), "drupal/core",
+                                                    version);
   }
 
   nr_php_zval_free(&zval_version);
