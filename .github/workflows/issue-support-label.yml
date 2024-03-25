@@ -10,7 +10,7 @@ on:
             - labeled
 
 jobs:
-    gtse-response:
+    support-response:
         if: github.event.label.name == 'support' && github.event.issue.state == 'open'
         uses: ./.github/workflows/issue-bot.yml
         with:
