@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: issue-bot
+name: issue-comment
 
 on:
   workflow_call:

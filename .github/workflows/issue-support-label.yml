@@ -12,7 +12,7 @@ on:
 jobs:
   support-response:
     if: github.event.label.name == 'support' && github.event.issue.state == 'open'
-    uses: ./.github/workflows/issue-bot.yml
+    uses: ./.github/workflows/issue-comment.yml
     with:
       issue-number: ${{ github.event.issue.number }}
       message: >
