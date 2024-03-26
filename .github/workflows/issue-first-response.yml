@@ -7,10 +7,11 @@ name: issue-first-response
 on:
     issues:
         types:
-            - opened
+            - labeled
 
 jobs:
     first-response:
+        if: github.event.label.name == 'bug' && github.event.issue.state == 'open'
         uses: ./.github/workflows/issue-bot.yml
         with:
             issue-number: ${{ github.event.issue.number }}
