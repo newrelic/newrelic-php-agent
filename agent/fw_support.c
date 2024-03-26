@@ -61,8 +61,25 @@ void nr_fw_support_add_package_supportability_metric(
     return;
   }
 
-  char* metname = nr_formatf("Supportability/PHP/package/%s/%c/detected",
-                             package_name, package_version[0]);
+  char* metname = NULL;
+  char major_version[3];
+
+  /* If the second character is not a '.', this means the version is more than
+   * one digit and we need to extract the first two characters to get the major
+   * version.
+   */
+  if ('.' != package_version[1]) {
+    strncpy(major_version, package_version, 2);
+    major_version[2] = '\0';
+  }
+
+  if (NR_FW_UNSET == NRINI(force_framework)) {
+    metname = nr_formatf("Supportability/PHP/package/%s/%s/detected",
+                         package_name, major_version);
+  } else {
+    metname = nr_formatf("Supportability/PHP/package/%s/%s/forced",
+                         package_name, major_version);
+  }
   nrm_force_add(txn->unscoped_metrics, metname, 0);
   nr_free(metname);
 }
