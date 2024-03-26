@@ -10,7 +10,7 @@ on:
       - labeled
 
 jobs:
-  first-response:
+  bug-report-response:
     if: github.event.label.name == 'bug' && github.event.issue.state == 'open'
     uses: ./.github/workflows/issue-comment.yml
     with:
