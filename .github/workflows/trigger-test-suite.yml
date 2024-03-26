@@ -5,14 +5,14 @@
 name: trigger-test-suite
 
 on:
-    pull_request:
+  pull_request:
 
 jobs:
-    trigger-multiverse-tests:
-        runs-on: ubuntu-latest
-        env:
-            GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
-        steps:
-           - name: Trigger Multiverse Test Suite
-             run: |
-                gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.TEST_SUITE_WORKFLOW }} -f agent_git_ref=${{ github.head_ref || github.ref_name }} -f pr-number=${{ github.event.number }}
+  trigger-multiverse-tests:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
+    steps:
+      - name: Trigger Multiverse Test Suite
+        run: |
+          gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.TEST_SUITE_WORKFLOW }} -f agent_git_ref=${{ github.head_ref || github.ref_name }} -f pr-number=${{ github.event.number }}
