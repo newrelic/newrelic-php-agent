@@ -62,18 +62,17 @@ void nr_fw_support_add_package_supportability_metric(
   }
 
   char* metname = NULL;
-  char major_version[3];
+  char major_version[4];
 
-  /* If the second character is not a '.', this means the version is more than
-   * one digit and we need to extract the first two characters to get the major
-   * version.
+  /* The below for loop checks if the major version of the package is more than
+   * one digit and keeps looping until a '.' is encountered or one of the conditions is met.
    */
-  if ('.' != package_version[1]) {
-    strncpy(major_version, package_version, 2);
-    major_version[2] = '\0';
-  } else {
-    strncpy(major_version, package_version, 1);
-    major_version[1] = '\0';
+  for (int i = 0; package_version[i] && i < 4; i++) {
+    if ('.' == package_version[i]) {
+      strncpy(major_version, package_version, i);
+      major_version[i] = '\0';
+      break;
+    }
   }
 
   if (NR_FW_UNSET == NRINI(force_framework)) {
