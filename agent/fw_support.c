@@ -62,10 +62,11 @@ void nr_fw_support_add_package_supportability_metric(
   }
 
   char* metname = NULL;
-  char major_version[4];
+  char major_version[4] = {0};
 
   /* The below for loop checks if the major version of the package is more than
-   * one digit and keeps looping until a '.' is encountered or one of the conditions is met.
+   * one digit and keeps looping until a '.' is encountered or one of the
+   * conditions is met.
    */
   for (int i = 0; package_version[i] && i < 4; i++) {
     if ('.' == package_version[i]) {
@@ -73,6 +74,10 @@ void nr_fw_support_add_package_supportability_metric(
       major_version[i] = '\0';
       break;
     }
+  }
+
+  if ('\0' == major_version[0]) {
+    return;
   }
 
   if (NR_FW_UNSET == NRINI(force_framework)) {
