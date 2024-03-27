@@ -152,7 +152,7 @@ RUN \
 # install predis
 # installation will be in /usr/src/vendor/predis/predis
 # which is value which should be used for PREDIS_HOME
-RUN php composer.phar require "predis/predis"
+RUN php composer.phar require "predis/predis:2.2.2"
 RUN php composer.phar update
 
 #
