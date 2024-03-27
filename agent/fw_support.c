@@ -71,6 +71,9 @@ void nr_fw_support_add_package_supportability_metric(
   if ('.' != package_version[1]) {
     strncpy(major_version, package_version, 2);
     major_version[2] = '\0';
+  } else {
+    strncpy(major_version, package_version, 1);
+    major_version[1] = '\0';
   }
 
   if (NR_FW_UNSET == NRINI(force_framework)) {
