@@ -1,0 +1,25 @@
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-comment
+
+on:
+  workflow_call:
+    inputs:
+      issue-number:
+        type: number
+        required: true
+      message:
+        type: string
+        required: true
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ISSUE_BOT_TOKEN }}
+    steps:
+      - name: respond to issue
+        run: |
+          gh issue comment ${{ inputs.issue-number }} --body ${{ inputs.message }}
