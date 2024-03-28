@@ -52,3 +52,41 @@ void nr_fw_support_add_logging_supportability_metric(nrtxn_t* txn,
   nrm_force_add(txn->unscoped_metrics, metname, 0);
   nr_free(metname);
 }
+
+void nr_fw_support_add_package_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* package_version) {
+  if (NULL == txn || NULL == package_name || NULL == package_version) {
+    return;
+  }
+
+  char* metname = NULL;
+  char major_version[4] = {0};
+
+  /* The below for loop checks if the major version of the package is more than
+   * one digit and keeps looping until a '.' is encountered or one of the
+   * conditions is met.
+   */
+  for (int i = 0; package_version[i] && i < 4; i++) {
+    if ('.' == package_version[i]) {
+      strncpy(major_version, package_version, i);
+      major_version[i] = '\0';
+      break;
+    }
+  }
+
+  if ('\0' == major_version[0]) {
+    return;
+  }
+
+  if (NR_FW_UNSET == NRINI(force_framework)) {
+    metname = nr_formatf("Supportability/PHP/package/%s/%s/detected",
+                         package_name, major_version);
+  } else {
+    metname = nr_formatf("Supportability/PHP/package/%s/%s/forced",
+                         package_name, major_version);
+  }
+  nrm_force_add(txn->unscoped_metrics, metname, 0);
+  nr_free(metname);
+}

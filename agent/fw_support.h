@@ -38,4 +38,17 @@ extern void nr_fw_support_add_logging_supportability_metric(
     const char* library_name,
     const bool is_enabled);
 
+/*
+ * Purpose: Add 'Supportability/PHP/package/{package}/{version}/detected' metric
+ *
+ * Params  : 1. Transaction object
+ *           2. Package name
+ *           3. Package version
+ *
+ */
+extern void nr_fw_support_add_package_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* package_version);
+
 #endif /* FW_SUPPORT_HDR */

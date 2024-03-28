@@ -650,6 +650,8 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
     char* version = nr_php_get_object_constant(scope, "VERSION");
     // Add php package to transaction
     nr_txn_add_php_package(NRPRG(txn), "predis/predis", version);
+    nr_fw_support_add_package_supportability_metric(
+        NRPRG(txn), "predis/predis", version);
     nr_free(version);
   }
 
