@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+if (version_compare(PHP_VERSION, '7.2', '<')) {
+  die("skip: PHP 7.2+ required\n");
+}
+
 $PREDIS_HOME = getenv("PREDIS_HOME");
 
 if (empty($PREDIS_HOME)) {
