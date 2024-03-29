@@ -18,6 +18,8 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#define PHP_PACKAGE_NAME "drupal/core"
+
 /*
  * Purpose : Convenience function to handle adding a callback to a method,
  *           given a class entry and a method name. This will check the
@@ -684,8 +686,8 @@ void nr_drupal_version() {
   // Add php package to transaction
   if (nr_php_is_zval_valid_string(zval_version)) {
     char* version = Z_STRVAL_P(zval_version);
-    nr_txn_add_php_package(NRPRG(txn), "drupal/core", version);
-    nr_fw_support_add_package_supportability_metric(NRPRG(txn), "drupal/core",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                     version);
   }
 
@@ -755,7 +757,7 @@ void nr_drupal8_enable(TSRMLS_D) {
   }
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "drupal/core",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 }

@@ -12,6 +12,8 @@
 #include "fw_support.h"
 #include "util_logging.h"
 
+#define PHP_PACKAGE_NAME "slim/slim"
+
 static char* nr_slim_path_from_route(zval* route TSRMLS_DC) {
   zval* name = NULL;
   zval* pattern = NULL;
@@ -120,9 +122,9 @@ NR_PHP_WRAPPER(nr_slim_application_construct) {
   version = nr_php_get_object_constant(this_var, "VERSION");
   
   // Add php package to transaction
-  nr_txn_add_php_package(NRPRG(txn), "slim/slim", version);
+  nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
 
-  nr_fw_support_add_package_supportability_metric(NRPRG(txn), "slim/slim",
+  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                   version);
 
   nr_free(version);

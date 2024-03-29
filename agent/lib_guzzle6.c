@@ -58,6 +58,8 @@
 
 #include "ext/standard/php_var.h"
 
+#define PHP_PACKAGE_NAME "guzzlehttp/guzzle"
+
 /*
  * Since Guzzle 6 requires PHP 5.5.0 or later, we just won't build the Guzzle 6
  * support on older versions and will instead provide simple stubs for the two
@@ -356,9 +358,9 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
       version = nr_php_get_object_constant(this_var, "MAJOR_VERSION");
     }
     // Add php package to transaction
-    nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle", version);
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
     nr_fw_support_add_package_supportability_metric(
-        NRPRG(txn), "guzzlehttp/guzzle", version);
+        NRPRG(txn), PHP_PACKAGE_NAME, version);
     nr_free(version);
   }
 

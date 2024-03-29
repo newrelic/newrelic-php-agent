@@ -30,6 +30,8 @@
 #define LOG_DECORATE_PROC_FUNC_NAME \
   "newrelic_phpagent_monolog_decorating_processor"
 
+#define PHP_PACKAGE_NAME "monolog/monolog"
+
 /*
  * Purpose : Convert Monolog\Logger::API to integer
  *
@@ -376,7 +378,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     char version[5];
     snprintf(version, sizeof(version), "%d", api);
     nr_fw_support_add_package_supportability_metric(NRPRG(txn),
-                                                    "monolog/monolog", version);
+                                                    PHP_PACKAGE_NAME, version);
   }
 
   /* Record the log event */
@@ -517,7 +519,7 @@ void nr_monolog_enable(TSRMLS_D) {
                             nr_monolog_logger_addrecord TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "monolog/monolog",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 }
