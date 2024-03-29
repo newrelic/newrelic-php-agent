@@ -91,6 +91,6 @@ $old_error_handler = set_error_handler("errorHandlerOne");
 
 trigger_error("Let this serve as a deprecation", E_USER_DEPRECATED);  
 
-echo("Let this serve as a warning");         
+echo("Hello from happy path!");         
 
 

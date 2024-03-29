@@ -22,7 +22,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-Let this serve as a warning
+Hello from happy path!
 */
 
 /*EXPECT_TRACED_ERRORS null */
@@ -43,6 +43,6 @@ $old_error_handler = set_error_handler("errorHandlerOne");
 
 trigger_error("Let this serve as a deprecation", E_USER_DEPRECATED);   
 
-echo("Let this serve as a warning");   
+echo("Hello from happy path!");   
 
 
