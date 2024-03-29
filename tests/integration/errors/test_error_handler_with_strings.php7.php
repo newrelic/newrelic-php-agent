@@ -11,8 +11,8 @@ handler exists that suppresses specific strings.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0.0 not supported\n");
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: PHP < 7.0.0 not supported\n");
 }
 */
 
@@ -23,8 +23,6 @@ log_errors=0
 
 /*EXPECT_REGEX
 Nothing to see here, suppressing undefined property
-Nothing to see here, suppressing attempt to read property
-Nothing to see here, suppressing undefined array key
 */
 
 /*EXPECT_TRACED_ERRORS null */
@@ -38,21 +36,7 @@ class Classy
 }
 
 function errorHandlerOne($errno, $errstr, $errfile, $errline)
-{
-
-    if (preg_match('/^Attempt to read property ".+?" on/', $errstr)) {
-            echo ("Nothing to see here, suppressing attempt to read property\n");
-        return true; // suppresses this error
-    }
-    
-    if (preg_match(
-        '/^(Undefined index|Undefined array key|Trying to access array offset on)/',
-        $errstr
-    )) {
-        echo ("Nothing to see here, suppressing undefined array key\n");
-        return true; // suppresses this error
-    }
-    
+{    
     if (preg_match('/^(Undefined property)/', $errstr)) {
         echo ("Nothing to see here, suppressing undefined property\n");
         return true; // suppresses this error
@@ -68,14 +52,6 @@ $foo = new Classy();
 
 //generate "Undefined property" error
 echo ($foo->propName);
-
-// generate "Attempt to read property" error
-$bar = false;
-echo ($bar->var);
-
-// generate "Undefined array key" error
-$missingOneArray = array(2=>'two', 4=>'four');
-echo $missingOneArray[1];
      
 
 
