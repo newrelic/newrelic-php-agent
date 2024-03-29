@@ -55,7 +55,7 @@ type Data struct {
 }
 
 type docker struct {
-	ID string `json:"id",omitempty`
+	ID string `json:"id,omitempty"`
 }
 
 type vendors struct {
