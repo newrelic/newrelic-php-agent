@@ -373,6 +373,10 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    char version[5];
+    snprintf(version, sizeof(version), "%d", api);
+    nr_fw_support_add_package_supportability_metric(NRPRG(txn),
+                                                    "monolog/monolog", version);
   }
 
   /* Record the log event */
