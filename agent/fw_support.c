@@ -76,9 +76,7 @@ void nr_fw_support_add_package_supportability_metric(
     }
   }
 
-  if ('\0' == major_version[0] && '\0' == package_version[0]) {
-    return;
-  } else {
+  if ('\0' == major_version[0] && '\0' != package_version[0]) {
     strncpy(major_version, package_version, 1);
     major_version[1] = '\0';
   }
