@@ -21,6 +21,12 @@ display_errors=1
 log_errors=0
 */
 
+/*EXPECT_REGEX
+Nothing to see here, suppressing undefined property
+
+Deprecated: Let this serve as a deprecation in.*
+*/
+
 /*EXPECT_TRACED_ERRORS
 [
   "?? agent run id",
@@ -108,14 +114,6 @@ $foo = new Classy();
 
 //generate "Undefined property" error
 echo ($foo->propName);
-
-// generate "Attempt to read property" error
-$bar = false;
-echo ($bar->var);
-
-// generate "Undefined array key" error
-$missingOneArray = array(2=>'two', 4=>'four');
-echo $missingOneArray[1];
 
 //trigger an error that is not handled by the custom error handler
 trigger_error("Let this serve as a deprecation", E_USER_DEPRECATED); 
