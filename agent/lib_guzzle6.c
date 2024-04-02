@@ -120,6 +120,7 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
   }
 
   if (!nr_php_psr7_is_response(response TSRMLS_CC)) {
+    nr_segment_external_end(&segment, &external_params);
     return;
   }
 
@@ -304,14 +305,20 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_onrejected) {
    * we still turn those into external nodes, so we shall also do so here.
    */
   if (!nr_php_object_instanceof_class(
-          exc, "GuzzleHttp\\Exception\\BadResponseException" TSRMLS_CC)) {
+          exc, "GuzzleHttp\\Exception\\BadResponseException" TSRMLS_CC)
+      && !nr_php_object_instanceof_class(
+          exc, "GuzzleHttp\\Exception\\ConnectException" TSRMLS_CC)) {
     return;
   }
 
-  response = nr_php_call(exc, "getResponse");
-  if (NULL == response) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: error calling getResponse", __func__);
-    return;
+  if (nr_php_object_instanceof_class(
+          exc, "GuzzleHttp\\Exception\\BadResponseException" TSRMLS_CC)) {
+    response = nr_php_call(exc, "getResponse");
+    if (NULL == response) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: error calling getResponse",
+                       __func__);
+      return;
+    }
   }
 
   this_obj = NR_PHP_USER_FN_THIS();
@@ -447,6 +454,7 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "namespace newrelic\\Guzzle6;"
 
       "use Psr\\Http\\Message\\RequestInterface;"
+      "use GuzzleHttp\\Promise\\RejectedPromise;"
 
       "if (!function_exists('newrelic\\Guzzle6\\middleware')) {"
       "  function middleware(callable $handler) {"
@@ -468,7 +476,12 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "      $rh = new RequestHandler($request);"
       "      $promise = $handler($request, $options);"
       "      $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
-
+      "      try {"
+      "        $response = $promise->wait();"
+      "      } catch (\\Exception $e) {"
+      "        $rh->onRejected($e);"
+      "        return new RejectedPromise($e);"
+      "      }"
       "      return $promise;"
       "    };"
       "  }"
