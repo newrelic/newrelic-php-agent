@@ -13,6 +13,11 @@ import (
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
+type PhpPackagesKey struct {
+	Name 	string
+	Version string
+}
+
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
 	numSeen int

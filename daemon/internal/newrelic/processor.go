@@ -699,6 +699,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		txnTraces := harvest.TxnTraces
 		phpPackages := harvest.PhpPackages
 
+		phpPackages.data = ah.App.filterPhpPackages(phpPackages.data)
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
 		harvest.SlowSQLs = NewSlowSQLs(limits.MaxSlowSQLs)

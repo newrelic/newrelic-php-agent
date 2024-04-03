@@ -613,3 +613,41 @@ func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 		t.Errorf("parseConnectReply(something), got [%v], expected [%v]", c.MaxPayloadSizeInBytes, expectedMaxPayloadSizeInBytes)
 	}
 }
+
+func TestFilterPhpPackages(t *testing.T) {
+	app := &App{
+		PhpPackages: make(map[PhpPackagesKey]struct{}),
+	}
+	var nilData []byte = nil
+	emptyData := []byte(`[[{}]]`)
+	validData := []byte(`[["drupal","6.0",{}]]`)
+	moreValidData := []byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)
+	duplicateData := []byte(`[["drupal","6.0",{}]]`)
+
+	filteredData := app.filterPhpPackages(nilData)
+	if filteredData != nil {
+		t.Errorf("expected 'nil' result on 'nil' input, got [%v]", filteredData)
+	}
+
+	filteredData = app.filterPhpPackages(emptyData)
+	if filteredData != nil {
+		t.Errorf("expected 'nil' result on empty data input, got [%v]", filteredData)
+	}
+
+	expect := []byte(`[["drupal","6.0",{}]]`)
+	filteredData = app.filterPhpPackages(validData)
+	if string(filteredData) != string(expect) {
+		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
+	}
+
+	expect = []byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)
+	filteredData = app.filterPhpPackages(moreValidData)
+	if string(filteredData) != string(expect) {
+		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
+	}
+
+	filteredData = app.filterPhpPackages(duplicateData)
+	if filteredData != nil {
+		t.Errorf("expected 'nil', got [%v]", filteredData)
+	}
+}

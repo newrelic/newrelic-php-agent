@@ -146,6 +146,7 @@ type App struct {
 	HarvestTrigger      HarvestTriggerFunc
 	LastActivity        time.Time
 	Rules               MetricRules
+	PhpPackages			map[PhpPackagesKey]struct{}
 }
 
 func (app *App) String() string {
@@ -180,6 +181,7 @@ func NewApp(info *AppInfo) *App {
 		info:               info,
 		HarvestTrigger:     nil,
 		LastActivity:       now,
+		PhpPackages: 		make(map[PhpPackagesKey]struct{}),
 	}
 }
 
@@ -337,4 +339,76 @@ func (app *App) Inactive(threshold time.Duration) bool {
 		panic(fmt.Errorf("invalid inactivity threshold: %v", threshold))
 	}
 	return time.Since(app.LastActivity) > threshold
+}
+
+// filter seen php packages data to avoid sending duplicates
+//
+// the `App` structure contains a map of PHP Packages the reporting
+// application has encountered.
+//
+// the map of packages should persist for the duration of the
+// current connection
+//
+// takes the `PhpPackages.data` byte array as input and unmarshals
+// into an anonymous interface array
+//
+// the JSON format received from the agent is:
+// 		[["package_name","version",{}],...]
+//
+// for each entry, assign the package name and version to the `PhpPackagesKey`
+// struct and use the key to verify data does not exist in the map. If the
+// key does not exist, add it to the map and the array of 'new' packages.
+//
+// convert the array of 'new' packages into a byte array representing
+// the expected data that should match input, minus the duplicates.
+func (app *App) filterPhpPackages(data []byte) []byte {
+	if data == nil {
+		return nil
+	}
+
+	var pkgKey PhpPackagesKey
+	var newPkgs []PhpPackagesKey
+	var x []interface{}
+
+	err := json.Unmarshal(data, &x)
+	if nil != err {
+		log.Errorf("failed to unmarshal php package json: %s", err)
+		return nil
+	}
+
+	for _, pkgJson := range x {
+		pkg, _ := pkgJson.([]interface{})
+		if len(pkg) != 3 {
+			log.Errorf("invalid php package json structure: %+v", pkg)
+			return nil
+		}
+		pkgKey = PhpPackagesKey{pkg[0].(string), pkg[1].(string)}
+		_, ok := app.PhpPackages[pkgKey]
+		if !ok {
+			app.PhpPackages[pkgKey] = struct{}{}
+			newPkgs = append(newPkgs, pkgKey)
+		}
+	}
+
+	if newPkgs == nil {
+		return nil
+	}
+
+	buf := &bytes.Buffer{}
+	buf.WriteString(`[`)
+	for _, pkg := range newPkgs {
+		buf.WriteString(`["`)
+		buf.WriteString(pkg.Name)
+		buf.WriteString(`","`)
+		buf.WriteString(pkg.Version)
+		buf.WriteString(`",{}],`)
+	}
+
+	resJson := buf.Bytes()
+
+	// swap last ',' character with ']'
+	resJson = resJson[:len(resJson) - 1]
+	resJson = append(resJson, ']')
+
+	return resJson
 }
