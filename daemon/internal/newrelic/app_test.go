@@ -615,7 +615,7 @@ func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 }
 
 func TestFilterPhpPackages(t *testing.T) {
-	app := &App{
+	app := App{
 		PhpPackages: make(map[PhpPackagesKey]struct{}),
 	}
 	var nilData []byte = nil
