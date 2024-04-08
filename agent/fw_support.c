@@ -70,15 +70,9 @@ void nr_fw_support_add_package_supportability_metric(
    */
   for (int i = 0; package_version[i] && i < 4; i++) {
     if ('.' == package_version[i]) {
-      strncpy(major_version, package_version, i);
-      major_version[i] = '\0';
       break;
     }
-  }
-
-  if ('\0' == major_version[0] && '\0' != package_version[0]) {
-    strncpy(major_version, package_version, 1);
-    major_version[1] = '\0';
+    major_version[i] = package_version[i];
   }
 
   if (NR_FW_UNSET == NRINI(force_framework)) {
