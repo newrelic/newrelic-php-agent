@@ -14,7 +14,7 @@ import (
 )
 
 type PhpPackagesKey struct {
-	Name 	string
+	Name    string
 	Version string
 }
 
