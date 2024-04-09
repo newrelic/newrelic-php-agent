@@ -16,9 +16,6 @@ static void test_fw_supportability_metrics(void) {
 #define LIBRARY_MAJOR_VERSION "7"
 #define LIBRARY_MAJOR_VERSION_2 "10"
 #define LIBRARY_MAJOR_VERSION_3 "100"
-#define LIBRARY_MAJOR_VERSION_4 "1.23"
-#define LIBRARY_MAJOR_VERSION_5 "12.34"
-#define LIBRARY_MAJOR_VERSION_6 "123.45"
 #define LIBRARY_METRIC "Supportability/library/" LIBRARY_NAME "/detected"
 #define LOGGING_LIBRARY_METRIC "Supportability/Logging/PHP/" LIBRARY_NAME
 #define PACKAGE_METRIC "Supportability/PHP/package/" LIBRARY_NAME
@@ -87,6 +84,10 @@ static void test_fw_supportability_metrics(void) {
   tlib_pass_if_not_null("happy path test 3: package metric created",
                         nrm_find(txn->unscoped_metrics, PACKAGE_METRIC
                                  "/" LIBRARY_MAJOR_VERSION_3 "/detected"));
+
+  #define LIBRARY_MAJOR_VERSION_4 "1.23"
+  #define LIBRARY_MAJOR_VERSION_5 "12.34"
+  #define LIBRARY_MAJOR_VERSION_6 "123.45"
 
   nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
                                                   LIBRARY_MAJOR_VERSION_4);
