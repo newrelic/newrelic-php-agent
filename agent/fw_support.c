@@ -62,7 +62,7 @@ void nr_fw_support_add_package_supportability_metric(
   }
 
   char* metname = NULL;
-  char major_version[4] = {0};
+  char major_version[5] = {0};
 
   /* The below for loop checks if the major version of the package is more than
    * one digit and keeps looping until a '.' is encountered or one of the
