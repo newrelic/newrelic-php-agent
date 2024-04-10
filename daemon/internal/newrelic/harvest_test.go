@@ -234,4 +234,12 @@ func TestHarvestEmpty(t *testing.T) {
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}
+
+	// verify that php packages does not send harvest when data is nil
+	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
+	h.PhpPackages.AddPhpPackagesFromData(nil)
+	if !h.empty() {
+		t.Errorf("Harvest.empty = false, want true")
+	}
+
 }
