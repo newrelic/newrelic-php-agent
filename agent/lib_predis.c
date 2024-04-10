@@ -648,14 +648,15 @@ NR_PHP_WRAPPER(nr_predis_client_construct) {
   (void)wraprec;
 
   NR_PHP_WRAPPER_CALL;
+
+  char* version = nr_php_get_object_constant(scope, "VERSION");
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    char* version = nr_php_get_object_constant(scope, "VERSION");
     // Add php package to transaction
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
-    nr_fw_support_add_package_supportability_metric(NRPRG(txn),
-                                                    PHP_PACKAGE_NAME, version);
-    nr_free(version);
   }
+  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                  version);
+  nr_free(version);
 
   /*
    * Grab the connection object from the client, since we actually instrument

@@ -121,8 +121,10 @@ NR_PHP_WRAPPER(nr_slim_application_construct) {
 
   version = nr_php_get_object_constant(this_var, "VERSION");
   
-  // Add php package to transaction
-  nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    // Add php package to transaction
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+  }
 
   nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                   version);
@@ -144,13 +146,11 @@ void nr_slim_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Slim\\Routing\\Route::run"),
                             nr_slim3_4_route_run TSRMLS_CC);
 
-  if (NRINI(vulnerability_management_package_detection_enabled)) {
-    /* Slim 2 does not have the same path as Slim 3/4 which is why
-      we need to separate these*/
-    nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
-                              nr_slim_application_construct);
+  /* Slim 2 does not have the same path as Slim 3/4 which is why
+    we need to separate these*/
+  nr_php_wrap_user_function(NR_PSTR("Slim\\Slim::__construct"),
+                            nr_slim_application_construct);
 
-    nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
-                              nr_slim_application_construct);
-  }
+  nr_php_wrap_user_function(NR_PSTR("Slim\\App::__construct"),
+                            nr_slim_application_construct);
 }
