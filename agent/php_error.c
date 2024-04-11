@@ -561,12 +561,29 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
     return 0;
   }
 
+  /*
+   * For a the following error codes:
+   * E_WARNING || E_CORE_WARNING || E_COMPILE_WARNING || E_USER_WARNING
+   * PHP triggers an exception if EH_THROW is toggled on and then immediately
+   * returns after throwing the exception. See for more info:
+   * https://github.com/php/php-src/blob/master/main/main.c In that case, we
+   * should not handle it, but we should exist and let the exception handler
+   * deal with it; otherwise, we could record an error even if an exception is
+   * caught.
+   */
+  if (EG(error_handling) == EH_THROW) {
+    if ((E_WARNING == type) || (E_CORE_WARNING == type)
+        || (E_COMPILE_WARNING == type) || (E_USER_WARNING == type)) {
+      return 0;
+    }
+  }
+
   errprio = nr_php_error_get_priority(type);
 
   if (0 == errprio) {
     return 0;
   }
-
+  
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), errprio)) {
     return 0;
   }
@@ -625,7 +642,6 @@ void nr_php_error_cb(int type,
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = nr_php_error_get_type_string(type);
-
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
                         msg, errclass, stack_json);
 
