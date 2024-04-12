@@ -152,6 +152,8 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 /*
  * Yii2: Report errors and exceptions when built-in ErrorHandler is enabled.
  */
@@ -184,6 +186,7 @@ end:
   nr_php_arg_release(&exception);
 }
 NR_PHP_WRAPPER_END
+#endif
 
 /*
  * Enable Yii2 instrumentation.
@@ -202,7 +205,6 @@ void nr_yii2_enable(TSRMLS_D) {
                             nr_yii2_runWithParams_wrapper TSRMLS_CC);
   nr_php_wrap_user_function(NR_PSTR("yii\\base\\InlineAction::runWithParams"),
                             nr_yii2_runWithParams_wrapper TSRMLS_CC);
-#endif
   /*
    * Wrap Yii2 global error and exception handling methods.
    * Given that: ErrorHandler::handleException(), ::handleError() and
@@ -217,4 +219,5 @@ void nr_yii2_enable(TSRMLS_D) {
    */
   nr_php_wrap_user_function(NR_PSTR("yii\\base\\ErrorHandler::logException"),
                             nr_yii2_error_handler_wrapper TSRMLS_CC);
+#endif
 }
