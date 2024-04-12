@@ -1946,6 +1946,14 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   if (NULL == wraprec) {
     return;
   }
+
+  /* Store information that the segment is exception handler segment directly in
+   * the segment, because exception handler can call restore_exception_handler,
+   * and that will reset is_exception_handler flag in the wraprec */
+  if (wraprec->is_exception_handler) {
+    segment->is_exception_handler = 1;
+  }
+
   /*
    * If a function needs to have arguments modified, do so in
    * nr_zend_call_oapi_special_before.
@@ -2027,7 +2035,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   wraprec = segment->wraprec;
 
-  if (wraprec && wraprec->is_exception_handler) {
+  if (wraprec && segment->is_exception_handler) {
     /*
      * After running the exception handler segment, create an error from
      * the exception it handled, and save the error in the transaction.
