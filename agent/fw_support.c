@@ -11,6 +11,8 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#define MAJOR_VERSION_LENGTH 8
+
 void nr_php_framework_add_supportability_metric(const char* framework_name,
                                                 const char* name TSRMLS_DC) {
   char buf[512];
@@ -62,13 +64,13 @@ void nr_fw_support_add_package_supportability_metric(
   }
 
   char* metname = NULL;
-  char major_version[5] = {0};
+  char major_version[MAJOR_VERSION_LENGTH] = {0};
 
   /* The below for loop checks if the major version of the package is more than
    * one digit and keeps looping until a '.' is encountered or one of the
    * conditions is met.
    */
-  for (int i = 0; package_version[i] && i < 4; i++) {
+  for (int i = 0; package_version[i] && i < MAJOR_VERSION_LENGTH - 1; i++) {
     if ('.' == package_version[i]) {
       break;
     }

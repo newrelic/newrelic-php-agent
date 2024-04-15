@@ -31,6 +31,7 @@
   "newrelic_phpagent_monolog_decorating_processor"
 
 #define PHP_PACKAGE_NAME "monolog/monolog"
+#define MAJOR_VERSION_LENGTH 8
 
 /*
  * Purpose : Convert Monolog\Logger::API to integer
@@ -375,7 +376,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    char version[5];
+    char version[MAJOR_VERSION_LENGTH];
     snprintf(version, sizeof(version), "%d", api);
     nr_fw_support_add_package_supportability_metric(NRPRG(txn),
                                                     PHP_PACKAGE_NAME, version);
