@@ -73,6 +73,26 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean(
   return wraprec;
 }
 
+nruserfn_t* nr_php_wrap_user_function_before_after_clean_extra(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback,
+    const char *extra) {
+
+  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
+
+  wraprec->extra = extra;
+
+  nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
+                                                  before_callback,
+                                                  after_callback,
+                                                  clean_callback);
+
+  return wraprec;
+}
+
 nruserfn_t* nr_php_wrap_callable_before_after_clean(
     zend_function* callable,
     nrspecialfn_t before_callback,
