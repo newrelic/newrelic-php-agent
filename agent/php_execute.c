@@ -2035,7 +2035,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   wraprec = segment->wraprec;
 
-  if (wraprec && segment->is_exception_handler) {
+  if (segment->is_exception_handler) {
     /*
      * After running the exception handler segment, create an error from
      * the exception it handled, and save the error in the transaction.
