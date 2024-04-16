@@ -256,7 +256,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Aggregate::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "aggregate"
     );
 
@@ -264,7 +264,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\BulkWrite::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "bulkWrite"
     );
 
@@ -272,7 +272,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Count::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "count"
     );
 
@@ -280,7 +280,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\CreateIndexes::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "createIndexes"
     );
 
@@ -288,7 +288,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Delete::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "delete"
     );
 
@@ -296,7 +296,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Distinct::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "distinct"
     );
 
@@ -304,7 +304,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\DropCollection::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "dropCollection"
     );
 
@@ -312,7 +312,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\DropIndexes::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "dropIndexes"
     );
 
@@ -320,7 +320,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Find::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "find"
     );
 
@@ -328,7 +328,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\FindAndModify::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "findAndModify"
     );
 
@@ -336,7 +336,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\InsertMany::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "insertMany"
     );
 
@@ -344,7 +344,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\InsertOne::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "insertOne"
     );
 
@@ -352,7 +352,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\ListIndexes::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "listIndexes"
     );
 
@@ -360,7 +360,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\Update::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "update"
     );
 
@@ -368,7 +368,7 @@ void nr_mongodb_enable() {
         NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
         nr_mongodb_operation_before,
         nr_mongodb_operation_after,
-        NULL,
+        nr_mongodb_operation_after,
         "databaseCommand"
     );
 
