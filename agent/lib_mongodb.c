@@ -179,7 +179,9 @@ NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_mongodb_operation_before) {
     (void)wraprec;
-    nr_segment_start(NRPRG(txn), NULL, NULL);
+    nr_segment_t* segment;
+    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+    segment->wraprec = auto_segment->wraprec;
 }
 NR_PHP_WRAPPER_END
 
@@ -189,7 +191,6 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   zval* database = NULL;
   zval* server = NULL;
   zval* this_var = NULL;
-  nr_segment_t* segment = NULL;
   nr_datastore_instance_t instance = {
       .host = NULL,
       .port_path_or_id = NULL,
@@ -234,8 +235,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id);
 
-  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
-  nr_segment_datastore_end(&segment, &params);
+  nr_segment_datastore_end(&auto_segment, &params);
 
 leave:
   nr_php_arg_release(&server);
