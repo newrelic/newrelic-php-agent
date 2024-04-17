@@ -277,6 +277,10 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
+  nr_segment_external_params_t external_params
+      = {.library = "Drupal",
+         .uri = NULL};
+
   /*
    * Grab the URL for the external metric, which is the first parameter in all
    * versions of Drupal.
@@ -286,6 +290,12 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
     goto end;
   }
 
+  if (NULL == NR_GET_RETURN_VALUE_PTR) {
+    goto end;
+  }
+
+  external_params.uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1));
+
   /*
    * We only want to create a metric here if this isn't a recursive call to
    * drupal_http_request() caused by the original call returning a redirect.
@@ -293,10 +303,6 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
    * checking a counter.
    */
   if (1 == NRPRG(drupal_http_request_depth)) {
-    nr_segment_external_params_t external_params
-        = {.library = "Drupal",
-           .uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1))};
-
     external_params.procedure
         = nr_drupal_http_request_get_method(NR_EXECUTE_ORIG_ARGS);
 
@@ -311,17 +317,22 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
           X_NEWRELIC_APP_DATA,
           NRP_CAT(external_params.encoded_response_header));
     }
+  }
 
-    nr_segment_external_end(&NRPRG(drupal_http_request_segment),
-                            &external_params);
+end:
+  if (1 == NRPRG(drupal_http_request_depth)) {
+    if (external_params.uri == NULL) {
+      nr_segment_discard(&NRPRG(drupal_http_request_segment));
+    } else {
+      nr_segment_external_end(&NRPRG(drupal_http_request_segment),
+                              &external_params);
+    }
     NRPRG(drupal_http_request_segment) = NULL;
 
     nr_free(external_params.encoded_response_header);
     nr_free(external_params.procedure);
     nr_free(external_params.uri);
   }
-
-end:
   nr_php_arg_release(&arg1);
   NRPRG(drupal_http_request_depth) -= 1;
 }
