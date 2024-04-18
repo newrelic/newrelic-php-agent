@@ -624,6 +624,7 @@ func TestFilterPhpPackages(t *testing.T) {
 	moreValidData := []byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)
 	duplicateData := []byte(`[["drupal","6.0",{}]]`)
 	versionData := []byte(`[["drupal","9.0",{}]]`)
+	invalidData := []byte(`[[["1","2","3"],["4","5"]{}]]`)
 
 	filteredData := app.filterPhpPackages(nilData)
 	if filteredData != nil {
@@ -656,5 +657,10 @@ func TestFilterPhpPackages(t *testing.T) {
 	filteredData = app.filterPhpPackages(versionData)
 	if string(filteredData) != string(expect) {
 		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
+	}
+
+	filteredData = app.filterPhpPackages(invalidData)
+	if filteredData != nil {
+		t.Errorf("expected 'nil', go [%v]", filteredData)
 	}
 }
