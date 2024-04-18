@@ -64,7 +64,7 @@ var (
 	sampleSpanEvent   = []byte("belated birthday")
 	sampleLogEvent    = []byte("log event test birthday")
 	sampleErrorEvent  = []byte("forgotten birthday")
-	samplePhpPackages = []byte(`["package", "1.2.3",{}]`)
+	samplePhpPackages = []byte(`[["package","1.2.3",{}]]`)
 )
 
 type ClientReturn struct {
@@ -297,9 +297,11 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 	// collect php packages
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_pkgs := <-m.clientParams
+
 	// collect metrics
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_metrics := <-m.clientParams
+
 	// collect usage metrics
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_usage := <-m.clientParams
@@ -308,7 +310,7 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 
 	// check pkgs and metric data - it appears these can
 	// come in different orders so check both
-	toTestPkgs := `["Jars",["package", "1.2.3",{}]]`
+	toTestPkgs := `["Jars",[["package","1.2.3",{}]]]`
 	if toTestPkgs != string(cp_pkgs.data) {
 		if toTestPkgs != string(cp_metrics.data) {
 			t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
@@ -318,9 +320,9 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 	time1 := strings.Split(string(cp_usage.data), ",")[1]
 	time2 := strings.Split(string(cp_usage.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1285,0,0,0,0]],` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1286,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,32,0,0,0,0]]]]`
+		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,33,0,0,0,0]]]]`
 	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
 		t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
 	}
