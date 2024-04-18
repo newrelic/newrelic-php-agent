@@ -576,6 +576,15 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
         || (E_COMPILE_WARNING == type) || (E_USER_WARNING == type)) {
       return 0;
     }
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+/*
+ * Cover one more error condition that was falling through to default
+ * https://github.com/php/php-src/blob/PHP-7.4.17/main/main.c#L1248
+ */
+    if (E_RECOVERABLE_ERROR == type) {
+      return 0;
+    }
+#endif
   }
 
   errprio = nr_php_error_get_priority(type);
