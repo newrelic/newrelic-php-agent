@@ -146,7 +146,7 @@ type App struct {
 	HarvestTrigger      HarvestTriggerFunc
 	LastActivity        time.Time
 	Rules               MetricRules
-	PhpPackages			map[PhpPackagesKey]struct{}
+	PhpPackages         map[PhpPackagesKey]struct{}
 }
 
 func (app *App) String() string {
@@ -181,7 +181,7 @@ func NewApp(info *AppInfo) *App {
 		info:               info,
 		HarvestTrigger:     nil,
 		LastActivity:       now,
-		PhpPackages: 		make(map[PhpPackagesKey]struct{}),
+		PhpPackages:        make(map[PhpPackagesKey]struct{}),
 	}
 }
 
@@ -305,10 +305,10 @@ func (app *App) NeedsConnectAttempt(now time.Time, backoff time.Duration) bool {
 	return false
 }
 
-//Since span events are not included in Faster Event Harvest due to concerns
-//about downsampling within a distributed trace, the report period and harvest
-//limit are reported separately in span_event_harvest_config instead of
-//event_harvest_config.  Combine them both into EventHarvestConfig here.
+// Since span events are not included in Faster Event Harvest due to concerns
+// about downsampling within a distributed trace, the report period and harvest
+// limit are reported separately in span_event_harvest_config instead of
+// event_harvest_config.  Combine them both into EventHarvestConfig here.
 func combineEventConfig(ehc collector.EventHarvestConfig, sehc collector.SpanEventHarvestConfig) collector.EventHarvestConfig {
 	ehc.EventConfigs.SpanEventConfig.Limit = sehc.SpanEventConfig.Limit
 	ehc.EventConfigs.SpanEventConfig.ReportPeriod = sehc.SpanEventConfig.ReportPeriod
@@ -353,7 +353,8 @@ func (app *App) Inactive(threshold time.Duration) bool {
 // into an anonymous interface array
 //
 // the JSON format received from the agent is:
-// 		[["package_name","version",{}],...]
+//
+//	[["package_name","version",{}],...]
 //
 // for each entry, assign the package name and version to the `PhpPackagesKey`
 // struct and use the key to verify data does not exist in the map. If the
@@ -407,7 +408,7 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 	resJson := buf.Bytes()
 
 	// swap last ',' character with ']'
-	resJson = resJson[:len(resJson) - 1]
+	resJson = resJson[:len(resJson)-1]
 	resJson = append(resJson, ']')
 
 	return resJson
