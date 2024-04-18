@@ -5,6 +5,8 @@
  */
 
 /*DESCRIPTION
+This test runs on PHPs 8.3.0-8.3.4 only because of changes in PHP in the area of exception handling:
+fix for https://github.com/php/php-src/issues/13446, released in 8.3.5, causes infinite recursion in this test.
 When a user exception handler unregisters itself as an exception handler when it handles uncaught exception,
 the agent should record the error and add error attributes on all spans leading to uncaught exception as
 well as the one throwing the exception. Error attributtes are not expected on the root span (because

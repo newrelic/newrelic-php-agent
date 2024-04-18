@@ -5,6 +5,7 @@
  */
 
 /*DESCRIPTION
+This test runs on PHPs 8.3.x only because of changes in PHP in the area of exception handling.
 When a user exception handler unregisters itself as an exception handler when it handles uncaught exception,
 the agent should record the error and add error attributes on all spans leading to uncaught exception as
 well as the one throwing the exception. Error attributtes are not expected on the root span (because
