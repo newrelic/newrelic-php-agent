@@ -10,13 +10,6 @@ Verify we record the error if the exception is thrown and NOT caught.
 There should be  traced errors, error events, and an error attached to span events.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: PHP < 7.0 not supported\n");
-}
-*/
-
 /*INI
 display_errors=1
 log_errors=0
