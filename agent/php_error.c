@@ -562,12 +562,14 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
   }
 
   /*
-   * For a the following error codes:
+   * For a the following error types:
    * E_WARNING || E_CORE_WARNING || E_COMPILE_WARNING || E_USER_WARNING
    * PHP triggers an exception if EH_THROW is toggled on and then immediately
-   * returns after throwing the exception. See for more info:
+   * returns after throwing the exception. PHP 7 additionally triggers an exception 
+   * for E_RECOVERABLE_ERROR.
+   * See for more info:
    * https://github.com/php/php-src/blob/master/main/main.c In that case, we
-   * should not handle it, but we should exist and let the exception handler
+   * should not handle it, but we should exit and let the exception handler
    * deal with it; otherwise, we could record an error even if an exception is
    * caught.
    */

@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-For a certain number of error codes, PHP triggers an exception if EH_THROW is toggled on.
-Verify we don't record the error if the exception is thrown and NOT caught.
+For a certain number of error types, PHP triggers an exception if EH_THROW is toggled on.
+Verify we record the error if the exception is thrown and NOT caught.
 There should be  traced errors, error events, and an error attached to span events.
 */
 
