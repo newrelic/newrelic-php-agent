@@ -109,7 +109,7 @@ void nr_mongodb_get_host_and_port_path_or_id(zval* server,
 }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
-  || defined OVERWRITE_ZEND_EXECUTE_DATA
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_mongodb_operation) {
   const char* this_klass = "MongoDB\\Operation\\Executable";
   zval* collection = NULL;
@@ -178,10 +178,10 @@ NR_PHP_WRAPPER_END
 #else
 
 NR_PHP_WRAPPER(nr_mongodb_operation_before) {
-    (void)wraprec;
-    nr_segment_t* segment;
-    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-    segment->wraprec = auto_segment->wraprec;
+  (void)wraprec;
+  nr_segment_t* segment;
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment->wraprec = auto_segment->wraprec;
 }
 NR_PHP_WRAPPER_END
 
@@ -221,14 +221,12 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
     goto leave;
   }
 
-  collection
-      = nr_php_get_zval_object_property(this_var, "collectionName");
+  collection = nr_php_get_zval_object_property(this_var, "collectionName");
   if (nr_php_is_zval_valid_string(collection)) {
     params.collection = Z_STRVAL_P(collection);
   }
 
-  database
-      = nr_php_get_zval_object_property(this_var, "databaseName");
+  database = nr_php_get_zval_object_property(this_var, "databaseName");
   if (nr_php_is_zval_valid_string(database)) {
     instance.database_name = Z_STRVAL_P(database);
   }
@@ -257,127 +255,81 @@ void nr_mongodb_enable() {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Aggregate::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "aggregate"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Aggregate::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "aggregate");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\BulkWrite::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "bulkWrite"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\BulkWrite::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "bulkWrite");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Count::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "count"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Count::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "count");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\CreateIndexes::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "createIndexes"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\CreateIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "createIndexes");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Delete::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "delete"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Delete::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "delete");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Distinct::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "distinct"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Distinct::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "distinct");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\DropCollection::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "dropCollection"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DropCollection::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "dropCollection");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\DropIndexes::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "dropIndexes"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DropIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "dropIndexes");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Find::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "find"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Find::execute"), nr_mongodb_operation_before,
+      nr_mongodb_operation_after, nr_mongodb_operation_after, "find");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\FindAndModify::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "findAndModify"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\FindAndModify::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "findAndModify");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\InsertMany::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "insertMany"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\InsertMany::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "insertMany");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\InsertOne::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "insertOne"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\InsertOne::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "insertOne");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\ListIndexes::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "listIndexes"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\ListIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "listIndexes");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\Update::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "update"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Update::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "update");
 
-    nr_php_wrap_user_function_before_after_clean_extra(
-        NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
-        nr_mongodb_operation_before,
-        nr_mongodb_operation_after,
-        nr_mongodb_operation_after,
-        "databaseCommand"
-    );
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "databaseCommand");
 
-#else /* Non-OAPI */
+#else  /* Non-OAPI */
 
   /*
    * We instrument interesting methods on the MongoDB\Collection class via their
