@@ -191,6 +191,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   zval* database = NULL;
   zval* server = NULL;
   zval* this_var = NULL;
+  bool discard_segment = false;
   nr_datastore_instance_t instance = {
       .host = NULL,
       .port_path_or_id = NULL,
@@ -216,6 +217,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   if (!nr_php_object_instanceof_class(this_var, this_klass)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: operation is not %s", __func__,
                      this_klass);
+    discard_segment = true;
     goto leave;
   }
 
@@ -235,9 +237,12 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id);
 
-  nr_segment_datastore_end(&auto_segment, &params);
-
 leave:
+  if (discard_segment) {
+    nr_segment_discard(&auto_segment);
+  } else {
+    nr_segment_datastore_end(&auto_segment, &params);
+  }
   nr_php_arg_release(&server);
   nr_php_scope_release(&this_var);
   nr_free(instance.host);
