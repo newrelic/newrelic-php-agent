@@ -383,8 +383,10 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 			log.Errorf("invalid php package json structure: %+v", pkg)
 			return nil
 		}
-		pkgKey = PhpPackagesKey{pkg[0].(string), pkg[1].(string)}
-		_, ok := app.PhpPackages[pkgKey]
+		name, ok := pkg[0].(string)
+		version, ok := pkg[1].(string)
+		pkgKey = PhpPackagesKey{name, version}
+		_, ok = app.PhpPackages[pkgKey]
 		if !ok {
 			app.PhpPackages[pkgKey] = struct{}{}
 			newPkgs = append(newPkgs, pkgKey)
