@@ -155,7 +155,6 @@ Fatal error: Uncaught RuntimeException: Not able to handle, throwing another exc
 */
 
 function user_exception_handler_01(Throwable $ex) {
-  //restore_exception_handler();
   echo "01 Handled uncaught exception";
 }
 
@@ -175,6 +174,5 @@ function call_throw_it() {
 
 set_exception_handler('user_exception_handler_01');
 set_exception_handler('user_exception_handler_02');
-//restore_exception_handler();
 
 call_throw_it();
