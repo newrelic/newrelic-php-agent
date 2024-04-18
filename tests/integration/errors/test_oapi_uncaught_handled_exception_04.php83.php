@@ -23,15 +23,13 @@ log_errors=0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.4", "<")) {
-  die("skip: PHP < 8.0.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.3", "<")) {
+  die("skip: PHP < 8.3.0 not supported\n");
 }
-// Fix for https://github.com/php/php-src/issues/10695, released in 8.3.0,
-// makes restore_exception_handler used in exception handler work, i.e.
-// it causes previous exception handler to handle exceptions thrown by
-// current exception handler.
-if (version_compare(PHP_VERSION, "8.3", ">=")) {
-  die("skip: PHP >= 8.3.0 not supported\n");
+// Fix for https://github.com/php/php-src/issues/13446, released in 8.3.5,
+// causes infinite recursion in this test.
+if (version_compare(PHP_VERSION, "8.3.5", ">=")) {
+  die("skip: PHP >= 8.3.5 not supported\n");
 }
 */
 
@@ -157,7 +155,7 @@ if (version_compare(PHP_VERSION, "8.3", ">=")) {
 
 
 /*EXPECT_REGEX
-Fatal error: Uncaught RuntimeException: Not able to handle, throwing another exception from handler
+01 Handled uncaught exception
 */
 
 function user_exception_handler_01(Throwable $ex) {
