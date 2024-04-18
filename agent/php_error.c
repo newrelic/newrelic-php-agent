@@ -573,20 +573,17 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
    * deal with it; otherwise, we could record an error even if an exception is
    * caught.
    */
-  if (EG(error_handling) == EH_THROW) {
-    if ((E_WARNING == type) || (E_CORE_WARNING == type)
-        || (E_COMPILE_WARNING == type) || (E_USER_WARNING == type)) {
-      return 0;
-    }
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-/*
- * Cover one more error condition that was falling through to default
- * https://github.com/php/php-src/blob/PHP-7.4.17/main/main.c#L1248
- */
-    if (E_RECOVERABLE_ERROR == type) {
-      return 0;
-    }
+#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING | E_RECOVERABLE_ERROR)
+#else
+#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING)
 #endif
+
+#define E_THROWS_EXCEPTION(e) ((E_ERRORS_THROWING_EXCEPTIONS & e) == e)
+
+  if (EG(error_handling) == EH_THROW && E_THROWS_EXCEPTION(type)) {
+    // let the exception handler deal with this error
+    return 0;
   }
 
   errprio = nr_php_error_get_priority(type);
