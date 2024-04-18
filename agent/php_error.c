@@ -592,7 +592,6 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
   if (0 == errprio) {
     return 0;
   }
-  
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), errprio)) {
     return 0;
   }
