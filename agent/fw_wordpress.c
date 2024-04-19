@@ -21,6 +21,7 @@
 
 #define NR_WORDPRESS_HOOK_PREFIX "Framework/WordPress/Hook/"
 #define NR_WORDPRESS_PLUGIN_PREFIX "Framework/WordPress/Plugin/"
+#define PHP_PACKAGE_NAME "wordpress"
 
 static nr_regex_t* wordpress_hook_regex;
 
@@ -809,7 +810,11 @@ void nr_wordpress_version() {
   if (SUCCESS == result) {
     if (nr_php_is_zval_valid_string(&retval)) {
       char* version = Z_STRVAL(retval);
-      nr_txn_add_php_package(NRPRG(txn), "wordpress", version);
+      if (NRINI(vulnerability_management_package_detection_enabled)) {
+        nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+      }
+      nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                      version);
     }
     zval_dtor(&retval);
   }
@@ -865,7 +870,7 @@ void nr_wordpress_enable(TSRMLS_D) {
 #endif /* OAPI */
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "wordpress",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 }

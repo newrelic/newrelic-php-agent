@@ -13,8 +13,16 @@ tlib_parallel_info_t parallel_info
 
 static void test_fw_supportability_metrics(void) {
 #define LIBRARY_NAME "php-package"
+#define LIBRARY_MAJOR_VERSION "7"
+#define LIBRARY_MAJOR_VERSION_2 "10"
+#define LIBRARY_MAJOR_VERSION_3 "100"
+#define LIBRARY_MAJOR_VERSION_4 "1.23"
+#define LIBRARY_MAJOR_VERSION_5 "12.34"
+#define LIBRARY_MAJOR_VERSION_6 "123.45"
+#define LIBRARY_MAJOR_VERSION_7 "0.4.5"
 #define LIBRARY_METRIC "Supportability/library/" LIBRARY_NAME "/detected"
 #define LOGGING_LIBRARY_METRIC "Supportability/Logging/PHP/" LIBRARY_NAME
+#define PACKAGE_METRIC "Supportability/PHP/package/" LIBRARY_NAME
   nrtxn_t t;
   nrtxn_t* txn = &t;
   txn->unscoped_metrics = nrm_table_create(10);
@@ -36,6 +44,18 @@ static void test_fw_supportability_metrics(void) {
   tlib_pass_if_int_equal("NULL logging library metric not created", 0,
                          nrm_table_size(txn->unscoped_metrics));
 
+  nr_fw_support_add_package_supportability_metric(NULL, LIBRARY_NAME, LIBRARY_MAJOR_VERSION);
+  tlib_pass_if_int_equal("package metric not created in NULL metrics",
+                         0, nrm_table_size(txn->unscoped_metrics));
+
+  nr_fw_support_add_package_supportability_metric(txn, NULL, LIBRARY_MAJOR_VERSION);
+  tlib_pass_if_int_equal("NULL package name, metric not created", 0,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME, NULL);
+  tlib_pass_if_int_equal("NULL major version, metric not created", 0,
+                         nrm_table_size(txn->unscoped_metrics));
+
   /* Happy path */
   nr_fw_support_add_library_supportability_metric(txn, LIBRARY_NAME);
   tlib_pass_if_not_null("happy path: library metric created",
@@ -50,6 +70,55 @@ static void test_fw_supportability_metrics(void) {
   tlib_pass_if_not_null(
       "happy path: logging library metric created",
       nrm_find(txn->unscoped_metrics, LOGGING_LIBRARY_METRIC "/disabled"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION);
+  tlib_pass_if_not_null("happy path test 1: package metric created",
+                        nrm_find(txn->unscoped_metrics, PACKAGE_METRIC
+                                 "/" LIBRARY_MAJOR_VERSION "/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_2);
+  tlib_pass_if_not_null("happy path test 2: package metric created",
+                        nrm_find(txn->unscoped_metrics, PACKAGE_METRIC
+                                 "/" LIBRARY_MAJOR_VERSION_2 "/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_3);
+  tlib_pass_if_not_null("happy path test 3: package metric created",
+                        nrm_find(txn->unscoped_metrics, PACKAGE_METRIC
+                                 "/" LIBRARY_MAJOR_VERSION_3 "/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_4);
+  tlib_pass_if_not_null(
+      "happy path test 4: package metric created",
+      nrm_find(txn->unscoped_metrics, PACKAGE_METRIC "/1/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_5);
+  tlib_pass_if_not_null(
+      "happy path test 5: package metric created",
+      nrm_find(txn->unscoped_metrics, PACKAGE_METRIC "/12/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_6);
+  tlib_pass_if_not_null(
+      "happy path test 6: package metric created",
+      nrm_find(txn->unscoped_metrics, PACKAGE_METRIC "/123/detected"));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION_7);
+  tlib_pass_if_not_null(
+      "happy path test 7: package metric created",
+      nrm_find(txn->unscoped_metrics, PACKAGE_METRIC "/0/detected"));
+
+  NRINI(force_framework) = true;
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  LIBRARY_MAJOR_VERSION);
+  tlib_pass_if_not_null(
+      "happy path test 8: package metric created",
+      nrm_find(txn->unscoped_metrics, PACKAGE_METRIC "/7/forced"));
 
   nrm_table_destroy(&txn->unscoped_metrics);
 }

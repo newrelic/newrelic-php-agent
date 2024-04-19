@@ -1161,7 +1161,8 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
 }
 
 /*
- * Purpose : Add php packages to transaction
+ * Purpose : Add php packages to transaction. This function should only be
+ *           called when Vulnerability Management is enabled.
  *
  * Params  : 1. The transaction
  *           2. Package name

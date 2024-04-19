@@ -727,10 +727,15 @@ char* nr_php_get_object_constant(zval* app, const char* name) {
 
   if (nr_php_is_zval_valid_string(version)) {
     retval = nr_strndup(Z_STRVAL_P(version), Z_STRLEN_P(version));
+  } else if (nr_php_is_zval_valid_integer(version)) {
+    zend_string* zstr = zend_long_to_str(Z_LVAL_P(version));
+    retval = nr_strndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+    zend_string_release(zstr);
   } else {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "%s: expected VERSION be a valid string, got type %d",
-                     __func__, Z_TYPE_P(version));
+    nrl_verbosedebug(
+        NRL_FRAMEWORK,
+        "%s: expected VERSION to be a valid string or int, got type %d",
+        __func__, Z_TYPE_P(version));
   }
 
   nr_php_zval_free(&version);
