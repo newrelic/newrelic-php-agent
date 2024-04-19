@@ -128,7 +128,7 @@ NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
   }
 
   unique_idz = nr_php_call(this_var, "getUniqueId");
-  if (nr_php_is_zval_valid_string(unique_idz)) {
+  if (nr_php_is_zval_non_empty_string(unique_idz)) {
     unique_id = Z_STRVAL_P(unique_idz);
     unique_id_length = Z_STRLEN_P(unique_idz);
 
@@ -143,6 +143,10 @@ NR_PHP_WRAPPER(nr_yii2_runWithParams_wrapper) {
       nr_txn_set_path("Yii2", NRPRG(txn), transaction_name, NR_PATH_TYPE_ACTION,
                       NR_NOT_OK_TO_OVERWRITE);
     }
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "getUniqueId does not return a non empty string (%d)",
+                     Z_TYPE_P(unique_idz));
   }
   nr_php_zval_free(&unique_idz);
 end:
