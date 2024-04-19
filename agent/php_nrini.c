@@ -1896,7 +1896,7 @@ static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
   return SUCCESS;
 }
 
-#define DEFAULT_WORDPRESS_HOOKS_OPTIONS "all_callbacks"
+#define DEFAULT_WORDPRESS_HOOKS_OPTIONS "plugin_callbacks"
 static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   nrinistr_t* p;
 
