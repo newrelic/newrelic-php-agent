@@ -170,14 +170,11 @@ NR_PHP_WRAPPER(nr_yii2_error_handler_wrapper) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_YII2);
 
   exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (NULL == exception || !nr_php_is_zval_valid_object(exception)) {
+  if (!nr_php_is_zval_valid_object(exception)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: exception is NULL or not an object",
                      __func__);
-    NR_PHP_WRAPPER_CALL;
     goto end;
   }
-
-  NR_PHP_WRAPPER_CALL;
 
   if (NR_SUCCESS
       != nr_php_error_record_exception(
