@@ -1175,7 +1175,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          New Relic agent can provide different levels of insights into WordPress hooks.
 ;          By default, only plugin/theme callbacks are instrumented ("plugin_callbacks").
 ;          At the cost of increased agent's overhead it is possible to extend the
-;          instrumentation to all hook callbacks functions ("all_callbacks")nly. Third option
+;          instrumentation to all hook callbacks functions ("all_callbacks"). Third option
 ;          is to monitor hooks without instrumenting callbacks ("threshold"). This option
 ;          does not give insights about plugins/themes.
 ;
