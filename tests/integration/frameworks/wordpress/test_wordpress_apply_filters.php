@@ -8,8 +8,8 @@
 The agent should properly instrument Wordpress apply_filters hooks. Since the
 mocked hooks are detected by the agent as WordPress core (plugin_from_function 
 returns NULL), and WordPress core callbacks are not instrumented by default,
-therefore newrelic.framework.wordpress.core needs to be set to true for the
-agent to generate the hooks metrics.
+therefore newrelic.framework.wordpress.hooks.options needs to be set to 
+"all_callbacks" for the agent to generate the hooks metrics.
 */
 
 /*SKIPIF
@@ -18,7 +18,7 @@ agent to generate the hooks metrics.
 /*INI
 newrelic.framework = wordpress
 newrelic.framework.wordpress.hooks_threshold = 0
-newrelic.framework.wordpress.core = true
+newrelic.framework.wordpress.hooks.options = all_callbacks
 */
 
 /*EXPECT

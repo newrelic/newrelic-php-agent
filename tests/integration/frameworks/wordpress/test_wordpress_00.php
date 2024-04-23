@@ -9,8 +9,8 @@ Test WordPress default instrumentation. The agent should:
  - detect WordPress framework
  - name the web transaction as an 'Action' named after the template used to generate the page
  - detect custom plugins and themes
- - generate hooks metrics for all callback functions executions; the execution time of callback
-   functions from wordpress core, custom plugins and themes is captured.
+ - generate hooks metrics only for plugins and themes callback functions executions; 
+   only the execution time of callback functions from custom plugins and themes is captured.
 No errors should be generated.
 */
 
@@ -40,11 +40,11 @@ Framework/WordPress/Plugin/mock-plugin1
 Framework/WordPress/Plugin/mock-plugin2
 Framework/WordPress/Plugin/mock-theme1
 Framework/WordPress/Plugin/mock-theme2
-Framework/WordPress/Hook/wp_init
-Framework/WordPress/Hook/the_content
 */
 
 /*EXPECT_METRICS_DONT_EXIST
+Framework/WordPress/Hook/wp_init
+Framework/WordPress/Hook/the_content
 */
 
 /*EXPECT_ERROR_EVENTS null */
