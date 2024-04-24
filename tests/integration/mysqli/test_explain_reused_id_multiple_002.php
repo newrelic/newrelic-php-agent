@@ -160,9 +160,9 @@ $dbConn = new mysqli($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_
    but not executed.  Then run a prepared, unexplainable slow sql
    query which should not be explained.  This will lead to the
    first stmt object being reused for the second slow sql query.
-   Then run an explaiaable, slow SQL query and confirm it is
+   Then run an explainable, slow SQL query and confirm it is
    explained.
-   
+
    Tests for reqgression of a bug where the query string
    from a previous, explainable SQL query with the same object ID
    ("handle") would be used in error.
