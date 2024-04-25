@@ -25,8 +25,7 @@ newrelic.transaction_tracer.explain_threshold = 500
 newrelic.transaction_tracer.record_sql = obfuscated
 */
 
-/*
-
+/*EXPECT_SLOW_SQLS
 [
   [
     [
