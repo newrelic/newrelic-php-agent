@@ -353,6 +353,31 @@ nr_status_t nr_php_mysqli_query_set_query(nr_php_object_handle_t handle,
   return NR_SUCCESS;
 }
 
+nr_status_t nr_php_mysqli_query_clear_query(nr_php_object_handle_t handle) {
+  zval* metadata = NULL;
+
+  /* If a metadata entry exists then clear the "query" tag from it.
+   *  If an entry does not exist then nothing needs to be done.
+   */
+  metadata = nr_php_mysqli_query_find(handle);
+  if (NULL == metadata) {
+    return NR_FAILURE;
+  }
+
+  /* Clear the "query" element */
+  nr_php_zend_hash_del(Z_ARRVAL_P(metadata), "query");
+
+  /*
+   * Since the query is cleared so must the bind parameters, so let's get rid of
+   * whatever's here. We'll ignore the return values, since if the keys don't
+   * already exist no harm is done.
+   */
+  nr_php_zend_hash_del(Z_ARRVAL_P(metadata), "bind_args");
+  nr_php_zend_hash_del(Z_ARRVAL_P(metadata), "bind_format");
+
+  return NR_SUCCESS;
+}
+
 int nr_php_mysqli_zval_is_link(const zval* zv TSRMLS_DC) {
   if (NULL == zv) {
     return 0;
