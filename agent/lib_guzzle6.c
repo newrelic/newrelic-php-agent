@@ -447,6 +447,7 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "namespace newrelic\\Guzzle6;"
 
       "use Psr\\Http\\Message\\RequestInterface;"
+      "use GuzzleHttp\\Promise\\PromiseInterface;"
 
       "if (!function_exists('newrelic\\Guzzle6\\middleware')) {"
       "  function middleware(callable $handler) {"
@@ -467,8 +468,16 @@ void nr_guzzle6_enable(TSRMLS_D) {
        */
       "      $rh = new RequestHandler($request);"
       "      $promise = $handler($request, $options);"
-      "      $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
-
+      "      if (PromiseInterface::REJECTED == $promise->getState()) {"
+      /*
+                Special case for sync request. When sync requests is rejected,
+                onRejected callback is not called via `PromiseInterface::then`
+                and needs to be called manually.
+       */
+      "        $rh->onRejected($promise);"
+      "      } else {"
+      "        $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
+      "      }"
       "      return $promise;"
       "    };"
       "  }"
