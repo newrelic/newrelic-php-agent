@@ -673,6 +673,8 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// In such cases, harvest all types and return.
 	if ht&HarvestAll == HarvestAll {
 		ah.Harvest = NewHarvest(time.Now(), ah.App.connectReply.EventHarvestConfig.EventConfigs)
+		// filter already seen php packages
+		harvest.PhpPackages.data = ah.App.filterPhpPackages(harvest.PhpPackages.data)
 		if args.blocking {
 			// Invoked primarily by CleanExit
 			harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, du_chan)
@@ -698,6 +700,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
 		phpPackages := harvest.PhpPackages
+		phpPackages.data = ah.App.filterPhpPackages(phpPackages.data)
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)

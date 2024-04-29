@@ -1358,15 +1358,24 @@ static void nr_php_prepared_prepare_general(INTERNAL_FUNCTION_PARAMETERS,
   nr_php_prepared_statement_save(return_value, extension, sqlstr,
                                  sqlstrlen TSRMLS_CC);
 
-  if ((0 == NRTXNGLOBAL(generating_explain_plan))
-      && nr_php_mysqli_zval_is_stmt(return_value TSRMLS_CC)
-      && nr_php_mysqli_zval_is_link(conn_obj TSRMLS_CC)
-      && nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
-    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value),
-                                 conn_obj TSRMLS_CC);
+  /* Record the current query link and SQL string if the right conditions exist
+   * Note if the SQL string is not explainable then the previous recorded query
+   * string (from the query previously using the same handle) needs to be
+   * cleared so that the previous string is not errantly retrieved and "EXPLAIN"
+   * run with it
+   */
 
-    nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
-                                  sqlstrlen TSRMLS_CC);
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_stmt(return_value)
+      && nr_php_mysqli_zval_is_link(conn_obj)) {
+    nr_php_mysqli_query_set_link(Z_OBJ_HANDLE_P(return_value), conn_obj);
+
+    if (nr_php_explain_mysql_query_is_explainable(sqlstr, sqlstrlen)) {
+      nr_php_mysqli_query_set_query(Z_OBJ_HANDLE_P(return_value), sqlstr,
+                                    sqlstrlen);
+    } else {
+      nr_php_mysqli_query_clear_query(Z_OBJ_HANDLE_P(return_value));
+    }
   }
 }
 

@@ -416,8 +416,9 @@ static const nr_framework_table_t all_frameworks[] = {
     {"WordPress", "wordpress", NR_PSTR("wp-config.php"), 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
 
-    {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii_enable, NR_FW_YII},
-    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii_enable, NR_FW_YII},
+    {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii1_enable, NR_FW_YII1},
+    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable, NR_FW_YII1},
+    {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable, NR_FW_YII2},
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
@@ -535,7 +536,6 @@ static nr_library_table_t libraries[] = {
     {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
     {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
     {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
-    {"Yii2", NR_PSTR("yii2/baseyii.php"), NULL},
 
     /*
      * Other CMS (content management systems), detected only, but
@@ -1946,6 +1946,14 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   if (NULL == wraprec) {
     return;
   }
+
+  /* Store information that the segment is exception handler segment directly in
+   * the segment, because exception handler can call restore_exception_handler,
+   * and that will reset is_exception_handler flag in the wraprec */
+  if (wraprec->is_exception_handler) {
+    segment->is_exception_handler = 1;
+  }
+
   /*
    * If a function needs to have arguments modified, do so in
    * nr_zend_call_oapi_special_before.
@@ -2027,7 +2035,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 
   wraprec = segment->wraprec;
 
-  if (wraprec && wraprec->is_exception_handler) {
+  if (segment->is_exception_handler) {
     /*
      * After running the exception handler segment, create an error from
      * the exception it handled, and save the error in the transaction.

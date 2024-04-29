@@ -561,12 +561,36 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
     return 0;
   }
 
+  /*
+   * For a the following error types:
+   * E_WARNING || E_CORE_WARNING || E_COMPILE_WARNING || E_USER_WARNING
+   * PHP triggers an exception if EH_THROW is toggled on and then immediately
+   * returns after throwing the exception. PHP 7 additionally triggers an exception 
+   * for E_RECOVERABLE_ERROR.
+   * See for more info:
+   * https://github.com/php/php-src/blob/master/main/main.c In that case, we
+   * should not handle it, but we should exit and let the exception handler
+   * deal with it; otherwise, we could record an error even if an exception is
+   * caught.
+   */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING | E_RECOVERABLE_ERROR)
+#else
+#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING)
+#endif
+
+#define E_THROWS_EXCEPTION(e) ((E_ERRORS_THROWING_EXCEPTIONS & e) == e)
+
+  if (EG(error_handling) == EH_THROW && E_THROWS_EXCEPTION(type)) {
+    // let the exception handler deal with this error
+    return 0;
+  }
+
   errprio = nr_php_error_get_priority(type);
 
   if (0 == errprio) {
     return 0;
   }
-
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), errprio)) {
     return 0;
   }
@@ -625,7 +649,6 @@ void nr_php_error_cb(int type,
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = nr_php_error_get_type_string(type);
-
     nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
                         msg, errclass, stack_json);
 

@@ -192,6 +192,8 @@ typedef struct _nr_segment_t {
    */
   void* wraprec; /* wraprec, if one is associated with this segment, to reduce
                     wraprec lookups */
+  int is_exception_handler; /* 1 if segment is associated with exception
+                               handler, 0 otherwise */
 #endif
 
 } nr_segment_t;

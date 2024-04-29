@@ -88,6 +88,15 @@ extern nr_status_t nr_php_mysqli_query_set_link(
     zval* link TSRMLS_DC);
 
 /*
+ * Purpose : Clear the SQL used to prepare a MySQLi statement.
+ *
+ * Params  : 1. The object handle of the statement.
+ *
+ * Returns : NR_SUCCESS or NR_FAILURE.
+ */
+extern nr_status_t nr_php_mysqli_query_clear_query(nr_php_object_handle_t handle);
+
+/*
  * Purpose : Save the SQL used to prepare a MySQLi statement.
  *
  * Params  : 1. The object handle of the statement.
