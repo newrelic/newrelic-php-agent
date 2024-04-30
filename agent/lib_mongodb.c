@@ -184,7 +184,11 @@ NR_PHP_WRAPPER(nr_mongodb_operation_before) {
   nr_segment_t* segment = NULL;
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   if (NULL != segment) {
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
     segment->wraprec = auto_segment->wraprec;
+#else
+    segment->execute_data = auto_segment->execute_data;
+#endif
   }
 }
 NR_PHP_WRAPPER_END
