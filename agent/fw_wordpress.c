@@ -329,6 +329,60 @@ cache_and_return:
   return plugin;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+NR_PHP_WRAPPER(nr_wordpress_wrap_hook_core) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  /*
+   * We only want to hook the function being called if this is a WordPress
+   * function, we're instrumenting hooks, and WordPress is currently executing
+   * hooks (denoted by the wordpress_tag being set).
+   */
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+
+  char* tag = nr_stack_get_top(&NRPRG(wordpress_tags));
+  if ((0 == NRINI(wordpress_hooks)) || (NULL == tag)) {
+    NR_PHP_WRAPPER_LEAVE;
+  }
+
+  NR_PHP_WRAPPER_CALL;
+  if (NRPRG(wordpress_core)) {
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
+  }
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_wordpress_wrap_hook_plugin) {
+  char* plugin = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  /*
+   * We only want to hook the function being called if this is a WordPress
+   * function, we're instrumenting hooks, and WordPress is currently executing
+   * hooks (denoted by the wordpress_tag being set).
+   */
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_WORDPRESS);
+
+  char* tag = nr_stack_get_top(&NRPRG(wordpress_tags));
+  if ((0 == NRINI(wordpress_hooks)) || (NULL == tag)) {
+    NR_PHP_WRAPPER_LEAVE;
+  }
+  plugin = nr_wordpress_plugin_from_function(execute_data->func);
+
+  NR_PHP_WRAPPER_CALL;
+  if (NULL != plugin) {
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
+    nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
+                               plugin);
+  }
+}
+NR_PHP_WRAPPER_END
+#endif
+
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   zend_function* func = NULL;
@@ -375,6 +429,7 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
   }
 }
 NR_PHP_WRAPPER_END
+#endif // <PHP 8.2
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
@@ -685,13 +740,14 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
   /* using nr_php_get_user_func_arg() so that we don't perform another copy
    * when all we want to do is check the string length */
+  (void)wraprec;
   zval* tag = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (1 == nr_php_is_zval_non_empty_string(tag)) {
     zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
     nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
   }
 
-  nr_wordpress_handle_tag_stack_after(NR_SPECIALFNPTR_ORIG_ARGS);
+  nr_wordpress_handle_tag_stack_after(execute_data);
 }
 NR_PHP_WRAPPER_END
 #endif /* OAPI */
@@ -751,7 +807,15 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
       if (NULL != wordpress_plugin_theme || NRPRG(wordpress_core)) {
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+        if (NULL != wordpress_plugin_theme) {
+          callback_wraprec = nr_php_wrap_callable_before_after(
+              zf, NULL, nr_wordpress_wrap_hook_plugin);
+        } else {
+          callback_wraprec = nr_php_wrap_callable_before_after(
+              zf, NULL, nr_wordpress_wrap_hook_core);
+        }
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
         callback_wraprec = nr_php_wrap_callable_before_after(
             zf, NULL, nr_wordpress_wrap_hook);

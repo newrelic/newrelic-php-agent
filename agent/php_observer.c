@@ -72,6 +72,7 @@
 /*
  * Register the begin and end function handlers with the Observer API.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO /* PHP8+ */
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
@@ -86,6 +87,44 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   handlers.end = nr_php_observer_fcall_end;
   return handlers;
 }
+#else
+static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
+    zend_execute_data* execute_data) {
+  zend_observer_fcall_handlers handlers = {NULL, NULL};
+  nruserfn_t* wraprec = NULL;
+  if (NULL == execute_data) {
+      return handlers;
+  }
+  if ((NULL == execute_data->func)
+      || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
+    return handlers;
+  }
+  //if (execute_data->func && execute_data->func->common.function_name) {
+  //  printf("REGISTER %s\n", ZSTR_VAL(execute_data->func->common.function_name));
+  //}
+  wraprec = nr_php_get_wraprec(execute_data->func);
+  if (wraprec == NULL) {
+      if (0 == NRINI(tt_detail)) {
+          handlers.begin = nr_php_observer_empty_fcall_begin;
+          handlers.end = nr_php_observer_empty_fcall_end;
+          return handlers;
+      } else {
+          handlers.begin = nr_php_observer_fcall_begin;
+          handlers.end = nr_php_observer_fcall_end;
+          return handlers;
+      }
+  }
+  handlers.begin = wraprec->special_instrumentation_before ?
+                   (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before :
+                   nr_php_observer_fcall_begin_instrumented;
+  handlers.end = wraprec->special_instrumentation ?
+                 (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
+                 wraprec->create_metric ? nr_php_observer_fcall_end_create_metric:
+                 nr_php_observer_fcall_end;
+  return handlers;
+}
+#endif
+
 
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 

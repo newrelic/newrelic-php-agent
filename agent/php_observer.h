@@ -76,6 +76,20 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value);
 
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+// These empty functions (rather than NULL) are used to know if instrumentation
+// has been added  This is needed because the process for adding instrumentation
+// with a transient wrapper differs depending on if the function has been
+// previously called. These will only be used when tt_detail is 0.
+void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
+void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
+
+void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
+                                     zval* func_return_value);
+void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time);
+void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
+                               zval* func_return_value);
+#endif /* PHP 8.2+ */
 #endif /* PHP8+ */
 
 #endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H
