@@ -41,7 +41,7 @@ newrelic.code_level_metrics.enabled = 0
     },
     {},
     {
-      "http.url": "??",
+      "http.url": "http://ENV[EXTERNAL_HOST]/delay",
       "http.method": "GET",
       "http.statusCode": 0
     }
