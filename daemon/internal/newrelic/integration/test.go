@@ -345,7 +345,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 		return
 	}
 
-	if err := json.Unmarshal(t.spanEventsLike, &x2); nil != err {
+	if err := json.Unmarshal(SubEnvVars(t.spanEventsLike), &x2); nil != err {
 		t.Fatal(fmt.Errorf("unable to parse expected spans like json for fuzzy matching: %v", err))
 		return
 	}
