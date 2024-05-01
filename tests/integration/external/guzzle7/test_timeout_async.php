@@ -20,6 +20,9 @@ newrelic.transaction_tracer.detail = 1
 newrelic.code_level_metrics.enabled = 0
 */
 
+/*EXPECT_METRICS_EXIST
+External/127.0.0.1/all
+*/
 
 /*EXPECT_SPAN_EVENTS_LIKE
 [
