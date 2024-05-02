@@ -51,7 +51,7 @@ jobs:
       - name: Get newrelic.so
         uses: actions/download-artifact@v4
         with:
-          name: newrelic.so-*
+          pattern: newrelic.so-*
           merge-multiple: true
           path: php-agent/agent/modules
       - name: Prep artifacts for use
