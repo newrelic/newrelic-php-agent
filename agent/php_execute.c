@@ -1984,7 +1984,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   if (wraprec->is_names_wt_simple) {
 
     nr_txn_name_from_function(NRPRG(txn),
-                              nr_php_op_array_function_name(NR_OP_ARRAY);
+                              nr_php_op_array_function_name(NR_OP_ARRAY),
                               nr_php_class_entry_name(NR_OP_ARRAY->scope));
   }
 #endif
@@ -2217,6 +2217,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   return;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
   /*
    * Instrument the function.
@@ -2257,6 +2258,7 @@ void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
 
   return;
 }
+#endif
 
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value) {
@@ -2285,7 +2287,11 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
       nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false);
+#else
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
+#endif
   }
 
   NRPRG(php_cur_stack_depth) -= 1;

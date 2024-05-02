@@ -450,8 +450,8 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
-  zend_function* orig_func;
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_function* orig_func;
   zend_observer_fcall_begin_handler *begin_handler;
 #endif
 
@@ -483,7 +483,11 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   orig_func = nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
+#else
+  nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
+#endif
   /* non-transient wraprecs are added to both the hashmap and linked list.
    * At request shutdown, the hashmap will free transients, but leave
    * non-transients to be freed when the linked list is disposed of which is at
