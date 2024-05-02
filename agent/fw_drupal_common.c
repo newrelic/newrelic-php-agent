@@ -60,7 +60,9 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_hook) {
    * function such as a_b_c is ambiguous (is the module a or a_b?). Instead,
    * we'll see if they're defined in the wraprec.
    */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   wraprec = nr_php_get_wraprec(execute_data->func);
+#endif
   if ((NULL != wraprec->drupal_hook) && (NULL != wraprec->drupal_module)) {
     nr_drupal_create_metric(auto_segment, NR_PSTR(NR_DRUPAL_MODULE_PREFIX),
                             wraprec->drupal_module, wraprec->drupal_module_len);

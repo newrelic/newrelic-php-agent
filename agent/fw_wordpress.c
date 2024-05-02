@@ -357,7 +357,6 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook_plugin) {
   char* plugin = NULL;
 
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
 
   /*
    * We only want to hook the function being called if this is a WordPress
@@ -370,7 +369,10 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook_plugin) {
   if ((0 == NRINI(wordpress_hooks)) || (NULL == tag)) {
     NR_PHP_WRAPPER_LEAVE;
   }
-  plugin = nr_wordpress_plugin_from_function(execute_data->func);
+  // Use optimized wraprec hashmap over plugin hashmap
+  wraprec = nr_php_get_wraprec(execute_data->func);
+  plugin = wraprec->wordpress_plugin_theme;
+  //plugin = nr_wordpress_plugin_from_function(execute_data->func);
 
   NR_PHP_WRAPPER_CALL;
   if (NULL != plugin) {
