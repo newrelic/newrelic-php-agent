@@ -43,14 +43,16 @@ jobs:
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: integration_runner-${{matrix.platform}}-${{inputs.arch}}
+          pattern: integration_runner-*
+          merge-multiple: true
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
+          name: newrelic.so-*
+          merge-multiple: true
           path: php-agent/agent/modules
       - name: Prep artifacts for use
         run: |

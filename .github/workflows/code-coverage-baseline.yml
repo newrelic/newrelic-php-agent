@@ -55,9 +55,9 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
+          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}-${{ github.run_id }}
           path: php-agent/bin/integration_runner
   agent-unit-test:
     runs-on: ubuntu-latest
@@ -124,21 +124,21 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-check
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}-${{ github.run_id }}
           path: php-agent/agent/modules/newrelic.so
       - name: Save axiom gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}-${{ github.run_id }}
           path: php-agent/axiom/*.gc*
       - name: Save agent gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}-${{ github.run_id }}
           path: php-agent/agent/.libs/*.gc*
   integration-tests:
     needs: [daemon-unit-tests, agent-unit-test]
@@ -161,26 +161,30 @@ jobs:
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
+          pattern: integration_runner-*
+          merge-multiple: true
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          pattern: newrelic.so-*
+          merge-multiple: true
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          pattern: axiom.gcov-*
+          merge-multiple: true
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          pattern: agent.gcov-*
+          merge-multiple: true
           path: php-agent/agent/.libs
       - name: Prep artifacts for use
         run: |
