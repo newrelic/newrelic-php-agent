@@ -102,7 +102,7 @@ type Test struct {
 }
 
 func NewTest(name string) *Test {
-	test := &Test{Name: name}
+	test := &Test{Name: name, Env: make(map[string]string)}
 	test.SetExpectHarvest(true)
 	return test
 }
@@ -200,7 +200,9 @@ func merge(a, b map[string]string) map[string]string {
 }
 
 func (t *Test) MakeRun(ctx *Context) (Tx, error) {
-	env := merge(ctx.Env, t.Env)
+	for k, v := range ctx.Env {
+		t.Env[k] = v
+	}
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = t.Name
 
@@ -215,12 +217,12 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	settings = merge(settings, t.PhpModules)
 
 	if t.IsC() {
-		return CTx(ScriptFile(t.Path), env, settings, headers, ctx)
+		return CTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
 	if t.IsWeb() {
-		return CgiTx(ScriptFile(t.Path), env, settings, headers, ctx)
+		return CgiTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
-	return PhpTx(ScriptFile(t.Path), env, settings, ctx)
+	return PhpTx(ScriptFile(t.Path), t.Env, settings, ctx)
 }
 
 func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
@@ -228,7 +230,9 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		return nil, nil
 	}
 
-	env := merge(ctx.Env, t.Env)
+	for k, v := range ctx.Env {
+		t.Env[k] = v
+	}
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = "skipif"
 
@@ -239,7 +243,7 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		data: t.rawSkipIf,
 	}
 
-	return PhpTx(src, env, settings, ctx)
+	return PhpTx(src, t.Env, settings, ctx)
 }
 
 type Scrub struct {
