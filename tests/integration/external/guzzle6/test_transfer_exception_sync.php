@@ -62,7 +62,7 @@ all's well that ends well
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
-require_guzzle(7);
+require_guzzle(6);
 
 $request = new \GuzzleHttp\Psr7\Request('GET', "http://example.com/resource");
 
