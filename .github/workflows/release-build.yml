@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
-          name: release-from-gha-${{ github.job }}-${{ github.run_id }}
+          name: release-from-gha-${{ github.job }}-${{ github.run_id }}-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
   agent_release:
     env:
@@ -90,5 +90,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
-          name: release-from-gha-${{ github.job }}-${{ github.run_id }}
+          name: release-from-gha-${{ github.job }}-${{ github.run_id }}-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
