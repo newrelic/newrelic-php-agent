@@ -747,7 +747,11 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters_after) {
     nr_wordpress_name_the_wt(tag, retval_ptr TSRMLS_CC);
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   nr_wordpress_handle_tag_stack_after(execute_data);
+#else
+  nr_wordpress_handle_tag_stack_after(NR_SPECIALFNPTR_ORIG_ARGS);
+#endif
 }
 NR_PHP_WRAPPER_END
 #endif /* OAPI */
