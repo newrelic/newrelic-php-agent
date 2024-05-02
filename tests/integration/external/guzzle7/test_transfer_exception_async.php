@@ -21,8 +21,12 @@ newrelic.transaction_tracer.detail = 1
 newrelic.code_level_metrics.enabled = 0
 */
 
+/*ENVIRONMENT
+TEST_EXTERNAL_HOST=example.com
+*/
+
 /*EXPECT_METRICS_EXIST
-External/example.com/all
+External/ENV[TEST_EXTERNAL_HOST]/all
 */
 
 /*EXPECT_SPAN_EVENTS_LIKE
@@ -32,7 +36,7 @@ External/example.com/all
       "traceId": "??",
       "duration": "??",
       "transactionId": "??",
-      "name": "External\/example.com\/all",
+      "name": "External/ENV[TEST_EXTERNAL_HOST]/all",
       "guid": "??",
       "type": "Span",
       "category": "http",
@@ -45,7 +49,7 @@ External/example.com/all
     },
     {},
     {
-      "http.url": "http://example.com/resource",
+      "http.url": "http://ENV[TEST_EXTERNAL_HOST]/resource",
       "http.method": "GET",
       "http.statusCode": 0
     }
@@ -63,7 +67,9 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 require_guzzle(7);
 
-$request = new \GuzzleHttp\Psr7\Request('GET', "http://example.com/resource");
+$TEST_EXTERNAL_HOST=getenv('TEST_EXTERNAL_HOST');
+
+$request = new \GuzzleHttp\Psr7\Request('GET', "http://$TEST_EXTERNAL_HOST/resource");
 
 $stack = GuzzleHttp\HandlerStack::create(
   new GuzzleHttp\Handler\MockHandler([
