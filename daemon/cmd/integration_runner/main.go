@@ -375,7 +375,6 @@ func main() {
 
 	// Env vars common to all tests.
 	ctx.Env["EXTERNAL_HOST"] = externalHost
-	os.Setenv("EXTERNAL_HOST", externalHost)
 
 	handler, err := startDaemon("unix", *flagPort, flagSecurityToken.String(), flagSecuityPolicies.String())
 	if err != nil {

@@ -207,7 +207,7 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	headers := make(http.Header)
 	for key, vals := range t.headers {
 		for _, v := range vals {
-			expanded := SubEnvVars([]byte(v))
+			expanded := t.subEnvVars([]byte(v))
 			headers.Set(key, string(expanded))
 		}
 	}
@@ -285,10 +285,15 @@ func ScrubHost(in []byte) []byte {
 	return re.ReplaceAll(in, []byte("__HOST__"))
 }
 
-func SubEnvVars(in []byte) []byte {
+func (t *Test) subEnvVars(in []byte) []byte {
 	re := regexp.MustCompile("ENV\\[.*?\\]")
 	return re.ReplaceAllFunc(in, func(match []byte) []byte {
-		return []byte(os.Getenv(string(match[4 : len(match)-1])))
+		k := string(match[4 : len(match)-1])
+		v, present := os.LookupEnv(k)
+		if !present {
+			v = t.Env[k]
+		}
+		return []byte(v)
 	})
 }
 
@@ -345,7 +350,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 		return
 	}
 
-	if err := json.Unmarshal(SubEnvVars(t.spanEventsLike), &x2); nil != err {
+	if err := json.Unmarshal(t.subEnvVars(t.spanEventsLike), &x2); nil != err {
 		t.Fatal(fmt.Errorf("unable to parse expected spans like json for fuzzy matching: %v", err))
 		return
 	}
@@ -497,7 +502,7 @@ func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreat
 		}
 	}
 
-	expected = SubEnvVars(expected)
+	expected = t.subEnvVars(expected)
 
 	err = IsFuzzyMatch(expected, actual)
 	if nil != err {
