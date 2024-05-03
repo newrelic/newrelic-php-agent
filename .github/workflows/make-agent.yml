@@ -64,5 +64,5 @@ jobs:
       - name: Save newrelic.so for integration tests
         uses: actions/upload-artifact@v4
         with:
-          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}-${{ github.job }}-${{ github.run_id }}
+          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so

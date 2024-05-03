@@ -45,14 +45,12 @@ jobs:
       - name: Get integration_runner
         uses: actions/download-artifact@v4
         with:
-          pattern: integration_runner-*
-          merge-multiple: true
+          name: integration_runner-${{matrix.platform}}-${{inputs.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
         uses: actions/download-artifact@v4
         with:
-          pattern: newrelic.so-*
-          merge-multiple: true
+          name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
       - name: Prep artifacts for use
         run: |
