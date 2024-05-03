@@ -199,10 +199,17 @@ func merge(a, b map[string]string) map[string]string {
 	return merged
 }
 
-func (t *Test) MakeRun(ctx *Context) (Tx, error) {
-	for k, v := range ctx.Env {
-		t.Env[k] = v
+// merge e into Test.Env but don't overwrite existing keys
+func (t *Test) mergeEnv(e map[string]string) {
+	for k, v := range e {
+		if _, present := t.Env[k]; !present {
+			t.Env[k] = v
+		}
 	}
+}
+
+func (t *Test) MakeRun(ctx *Context) (Tx, error) {
+	t.mergeEnv(ctx.Env)
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = t.Name
 
@@ -230,9 +237,7 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		return nil, nil
 	}
 
-	for k, v := range ctx.Env {
-		t.Env[k] = v
-	}
+	t.mergeEnv(ctx.Env)
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = "skipif"
 
