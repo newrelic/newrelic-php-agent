@@ -209,27 +209,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: integration_runner-*
-          merge-multiple: true
           path: php-agent/bin
       - name: Get newrelic.so
         uses: actions/download-artifact@v4
         with:
           pattern: newrelic.so-*
-          merge-multiple: true
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
         uses: actions/download-artifact@v4
         with:
           pattern: axiom.gcov-*
-          merge-multiple: true
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
         uses: actions/download-artifact@v4
         with:
           pattern: agent.gcov-*
-          merge-multiple: true
           path: php-agent/agent/.libs
       - name: Prep artifacts for use
         run: |
