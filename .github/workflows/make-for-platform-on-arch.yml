@@ -80,5 +80,5 @@ jobs:
       - name: Save ${{inputs.make-target}} artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{inputs.artifact-name}}-${{matrix.platform}}-${{inputs.arch}}-${{ github.job }}-${{ github.run_id }}
+          name: ${{inputs.artifact-name}}-${{matrix.platform}}-${{inputs.arch}}
           path: php-agent/${{ inputs.artifact-pattern }}
