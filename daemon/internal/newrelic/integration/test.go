@@ -289,9 +289,9 @@ func (t *Test) subEnvVars(in []byte) []byte {
 	re := regexp.MustCompile("ENV\\[.*?\\]")
 	return re.ReplaceAllFunc(in, func(match []byte) []byte {
 		k := string(match[4 : len(match)-1])
-		v, present := os.LookupEnv(k)
+		v, present := t.Env[k]
 		if !present {
-			v = t.Env[k]
+			v = os.Getenv(k)
 		}
 		return []byte(v)
 	})
