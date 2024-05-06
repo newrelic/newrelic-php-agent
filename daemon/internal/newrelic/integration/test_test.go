@@ -95,35 +95,35 @@ func makeTestWithEnv(name string, e map[string]string) *Test {
 	return t
 }
 
-func TestMergeEnv(t *testing.T) {
-	os_k := "OS_KEY"
-	os_v := "os_value"
-	test_k := "TEST_KEY"
-	test_v := "test_value"
-	os_env := map[string]string{
-		os_k: os_v,
+func TestMerge(t *testing.T) {
+	m1_k := "OS_KEY"
+	m1_v := "os_value"
+	m2_k := "TEST_KEY"
+	m2_v := "test_value"
+	m1 := map[string]string{
+		m1_k: m1_v,
 	}
-	test_same_env := map[string]string{
-		os_k: test_v,
+	m2 := map[string]string{
+		m2_k: m2_v,
 	}
-	test_diff_env := map[string]string{
-		test_k: test_v,
+	same_key_diff_val := map[string]string{
+		m1_k: m2_v,
 	}
 	tests := []struct {
 		name string
-		env  map[string]string
+		m    map[string]string
+		k    string
 		want string
 	}{
-		{name: "TestNoEnv", env: nil, want: os_v},
-		{name: "TestWithSameEnv", env: test_same_env, want: test_v},
-		{name: "TestWithDiffEnv", env: test_diff_env, want: os_v},
+		{name: "MergeEmptyMap", m: nil, k: m1_k, want: m1_v},
+		{name: "MergeDiffMaps", m: m2, k: m1_k, want: m1_v},
+		{name: "MergeMapWithSameKeys", m: same_key_diff_val, k: m1_k, want: m2_v},
 	}
 	for i, tt := range tests {
-		test := makeTestWithEnv(tt.name, tt.env)
-		test.mergeEnv(os_env)
-		got := test.Env[os_k]
+		mm := merge(m1, tt.m)
+		got := mm[tt.k]
 		if got != tt.want {
-			t.Errorf("%d. %s - got: %s; want %s", i, test.Name, got, tt.want)
+			t.Errorf("%d. %s - got: %s; want %s", i, tt.name, got, tt.want)
 		}
 	}
 }
