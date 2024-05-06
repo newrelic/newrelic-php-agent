@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   allium             14Mar2022 (9.20)
  *   buttercup          26Apr2022 (9.21)
  *   cosmos             29Jun2022 (10.0)
  *   dahlia             19Sep2022 (10.1)
@@ -45,8 +44,9 @@
  *   tulip              21Feb2024 (10.17)
  *   ulmus              04Mar2024 (10.18)
  *   viburnum           18Mar2024 (10.19)
+ *   wallflower         06May2024 (10.20)
  */
-#define NR_CODENAME "wallflower"
+#define NR_CODENAME "xerophyllum"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
