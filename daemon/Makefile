@@ -46,21 +46,13 @@ clean:
 clean-bin:
 	$(GO) clean $(GOFLAGS) -i ./...
 
-# setup depenencies for daemon
-# THIS IS TEMPORARY NEEDS TO BE REPLACED BY PINNED VENDOR DEPENDENCIES
-# will download vendor dependencies
-.PHONY: go-setup-dependencies
-go-setup-dependencies:
-	$(GO) mod tidy
-	$(GO) mod vendor
-
 # Build the binaries
 .PHONY: $(BINARIES)
-$(BINARIES): clean-bin go-setup-dependencies
+$(BINARIES): clean-bin
 	$(GO) install $(GOFLAGS) $(GO_MODULE)/cmd/$@
 
 # the -race flag enabled the integrated Go race detector. Output to stderr.
-race: clean-bin go-setup-dependencies
+race: clean-bin
 	$(GO) install -race $(GOFLAGS) $(GO_MODULE)/$@
 
 # Test targets
@@ -76,10 +68,10 @@ cover:
 	rm -f $(DAEMON_COV_FILE)
 
 .PHONY: integration
-integration: go-setup-dependencies
+integration:
 	$(GO) test $(GOFLAGS) -tags integration ./...
 
 .PHONY: test
-test: go-setup-dependencies
+test:
 	$(GO) test $(GOFLAGS) ./...
 
