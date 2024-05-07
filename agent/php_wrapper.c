@@ -84,6 +84,9 @@ nruserfn_t* nr_php_wrap_callable_before_after(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback) {
   char* name = NULL;
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_observer_fcall_begin_handler *begin_handler;
+#endif
 
   /* creates a transient wraprec */
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
@@ -100,6 +103,32 @@ nruserfn_t* nr_php_wrap_callable_before_after(
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
     nr_free(name);
   }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+      if (callable) {
+        // Before messing with our handlers, we must ensure that the observer fields of the function are initialized
+        begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(callable)->common), zend_observer_fcall_op_array_extension);
+        // begin_handler will be NULL if the observer hasn't been installed yet.
+        // *begin_Handler will be NULL if the function has not yet been called.
+        if (begin_handler && *begin_handler) {
+          // It is okay to attempt to remove a handler that doesn't exist
+          // TODO this could remove nr_php_observer_fcall_begin/end and then re-add it :)
+          if (zend_observer_remove_begin_handler(callable, NRINI(tt_detail) ?
+                                                        nr_php_observer_fcall_begin :
+                                                        nr_php_observer_empty_fcall_begin)) {
+            zend_observer_add_begin_handler(callable, wraprec->special_instrumentation_before ?
+                                                       (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before :
+                                                       nr_php_observer_fcall_begin);
+          }
+          if (zend_observer_remove_end_handler(callable, NRINI(tt_detail) ?
+                                                      nr_php_observer_fcall_end :
+                                                      nr_php_observer_empty_fcall_end)) {
+            zend_observer_add_end_handler(callable, wraprec->special_instrumentation ?
+                                                     (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
+                                                     nr_php_observer_fcall_end);
+          }
+        }
+      }
+#endif
 
   return wraprec;
 }
