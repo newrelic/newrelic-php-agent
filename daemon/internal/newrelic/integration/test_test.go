@@ -78,6 +78,10 @@ func TestSubsEnvVar(t *testing.T) {
 			in:   []byte("External/ENV[" + k + "]/all"),
 			want: []byte("External/" + v + "/all"),
 		},
+		{
+			in:   []byte("External/ENV[NON_EXISTING_KEY]/all"),
+			want: []byte("External//all"),
+		},
 	}
 
 	for i, tt := range tests {
