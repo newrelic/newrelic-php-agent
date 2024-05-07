@@ -22,4 +22,4 @@ jobs:
     steps:
       - name: respond to issue
         run: |
-          gh issue comment ${{ inputs.issue-number }} --body ${{ inputs.message }}
+          gh issue comment ${{ inputs.issue-number }} --body "${{ inputs.message }}"
