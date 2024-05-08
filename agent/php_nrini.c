@@ -8,6 +8,7 @@
 #include "php_hash.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_nrini.h"
 
 #include "nr_commands.h"
 #include "nr_configstrings.h"
@@ -221,6 +222,53 @@
 #define NR_PHP_INI_DEFAULT_LOG_LEVEL "info"
 
 ZEND_DECLARE_MODULE_GLOBALS(newrelic)
+
+#define NR_INI_PREFIX_LEN 9
+
+char* nr_ini_to_env(const char* ini_name) {
+  char* env_name = NULL;
+  char* buf = NULL;
+  char* ini_upper = NULL;
+  const char* NR_PREFIX_STR = "NEW_RELIC";
+  int ini_len = nr_strlen(ini_name);
+
+  // 'newrelic.' is 9 characters - anything less should be rejected.
+  if (NULL == ini_name || nr_strlen(ini_name) <= NR_INI_PREFIX_LEN) {
+    return NULL;
+  }
+
+  // ini value should start with the 'newrelic.' prefix
+  if (0 != nr_stridx(ini_name, "newrelic.")) {
+    return NULL;
+  }
+
+  // algorithm:
+  // 1. uppercase string
+  // 2. copy the entire string after 'newrelic.'
+  // 3. iterate through new string and swap each '.' with '_'
+  // 4. snprintf append the string to 'NEW_RELIC_'
+  // 5. return result
+
+  ini_upper = nr_string_to_uppercase(ini_name);
+
+  buf = (char*)nr_malloc(ini_len - NR_INI_PREFIX_LEN + 1);
+  nr_strcpy(buf, ini_upper + NR_INI_PREFIX_LEN);
+
+  for (int i = 0; i < nr_strlen(buf); i++) {
+    if (buf[i] == '.') {
+      buf[i] = '_';
+    }
+  }
+
+  env_name = (char*)nr_malloc(ini_len + 2);
+
+  snprintf(env_name, ini_len + 2, "%s_%s", NR_PREFIX_STR, buf);
+
+  nr_free(buf);
+  nr_free(ini_upper);
+
+  return env_name;
+}
 
 typedef void (*foreach_fn_t)(const char* name, int namelen TSRMLS_DC);
 

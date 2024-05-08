@@ -33,6 +33,17 @@
 extern char* nr_string_to_lowercase(const char* str);
 
 /*
+ * Purpose : Convert a string to upper case, following USASCII rules, returning
+ * a newly allocated string.
+ *
+ * Params  : 1. The string to uppercase.
+ *
+ * Returns : The newly created string.  The caller must arrange to free the
+ * string.
+ */
+extern char* nr_string_to_uppercase(const char* str);
+
+/*
  * Purpose : Wrap asprintf to increase convenience and safety: asprintf behavior
  *           is not in POSIX, and the return string may not be defined in the
  *           case of an error.
