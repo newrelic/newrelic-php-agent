@@ -283,16 +283,21 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     zval** func_return_value_ptr = NULL;                    \
     const nrtxn_t* txn = NRPRG(txn);                        \
     const nrtime_t txn_start_time = nr_txn_start_time(txn); \
+    if (NRPRG(in_wrapper)) {      \
+      printf("AAHHHHHHHHHHH\n");  \
+    }                             \
+    NRPRG(in_wrapper) = true;                               \
                                                             \
     nr_segment_t* auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
-    if (!auto_segment || auto_segment->execute_data != execute_data) {       \
+    if (!auto_segment || auto_segment->execute_data != execute_data || \
+            auto_segment == NRPRG(txn)->segment_root) {       \
       nr_php_observer_fcall_begin(execute_data);            \
       auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
       is_begin = true;                                      \
     } else { \
       func_return_value_ptr = nr_php_get_return_value_ptr(); \
       func_return_value = func_return_value_ptr ? *func_return_value_ptr : NULL;\
-      nr_php_observer_fcall_end(execute_data,        \
+      nr_php_observer_fcall_end_keep_segment(execute_data,        \
               func_return_value_ptr ? *func_return_value_ptr : NULL); \
     }
 #endif
@@ -324,7 +329,10 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   }                                                  \
   if (is_begin) {                                   \
     nr_php_observer_fcall_begin_late(execute_data, txn_start_time);\
-  }                                                  \
+  } else {                                                \
+    nr_php_observer_fcall_end_late(execute_data, false, txn_start_time); \
+  } \
+  NRPRG(in_wrapper) = false;                               \
   if (zcaught) {                                     \
     zend_bailout();                                  \
   }                                                  \

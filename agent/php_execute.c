@@ -2031,16 +2031,40 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
 }
 #endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+void nr_php_observer_fcall_end_late(zend_execute_data* execute_data, bool create_metric, nrtime_t txn_start_time) {
+  nr_segment_t* segment;
+  nr_php_execute_metadata_t metadata = {0};
+  if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
+    nrl_verbosedebug(NRL_AGENT,
+                     "%s txn ended and/or started while in a wrapped function",
+                     __func__);
+
+    return;
+  }
+
+  /*
+   * Reassign segment to the current segment, as some before/after wraprecs
+   * start and then stop a segment. If that happened, we want to ensure we
+   * get the now-current segment
+   */
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
+  nr_php_execute_segment_end(segment, &metadata, create_metric);
+  nr_php_execute_metadata_release(&metadata);
+}
+#endif
+
 #if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   int zcaught = 0;
   nruserfn_t* wraprec = NULL;
   bool create_metric = false;
+  nr_php_execute_metadata_t metadata = {0};
 #else
-static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric) {
+static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, bool end_segment) {
 #endif
   nr_segment_t* segment = NULL;
-  nr_php_execute_metadata_t metadata = {0};
   nrtime_t txn_start_time = 0;
 
   if (NULL == NRPRG(txn)) {
@@ -2143,7 +2167,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric) {
     nr_segment_discard(&segment);
     return;
   }
-#endif
   /*
    * During nr_zend_call_orig_execute_special, the transaction may have been
    * ended and/or a new transaction may have started.  To detect this, we
@@ -2171,6 +2194,11 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric) {
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);
+#else
+  if (end_segment) {
+    nr_php_observer_fcall_end_late(execute_data, create_metric, txn_start_time);
+  }
+#endif
   return;
 }
 
@@ -2288,7 +2316,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false);
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false, true);
 #else
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
 #endif
@@ -2304,6 +2332,41 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 // has been added  This is needed because the process for adding instrumentation
 // with a transient wrapper differs depending on if the function has been
 // previously called. These will only be used when tt_detail is 0.
+void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
+                               zval* func_return_value) {
+  /*
+   * Instrument the function.
+   * This and any other needed helper functions will replace:
+   * nr_php_execute_enabled
+   * nr_php_execute
+   * nr_php_execute_show
+   */
+  if (nrunlikely(NULL == execute_data)) {
+    return;
+  }
+  //if (execute_data->func && execute_data->func->common.function_name) {
+  //  printf("END %s\n", ZSTR_VAL(execute_data->func->common.function_name));
+  //}
+
+  if (nrlikely(1 == nr_php_recording())) {
+    int show_executes_return
+        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
+
+    if (nrunlikely(show_executes_return)) {
+      nrl_verbosedebug(NRL_AGENT,
+                       "Stack depth: %d before OAPI function exiting via %s",
+                       NRPRG(php_cur_stack_depth), __func__);
+      nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
+
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false, false);
+  }
+
+  NRPRG(php_cur_stack_depth) -= 1;
+
+  return;
+}
+
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data) {
   (void)execute_data;
 }
@@ -2338,7 +2401,7 @@ void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
       nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
 
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, true);
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, true, true);
   }
 
   NRPRG(php_cur_stack_depth) -= 1;
