@@ -126,6 +126,10 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(predis_ctxs).dtor = str_stack_dtor;
   NRPRG(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRPRG(in_wrapper) = false;
+#endif
 
   NRPRG(mysql_last_conn) = NULL;
   NRPRG(pgsql_last_conn) = NULL;
