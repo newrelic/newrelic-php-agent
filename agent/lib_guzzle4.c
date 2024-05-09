@@ -436,22 +436,33 @@ const zend_function_entry nr_guzzle4_subscriber_functions[]
  * Purpose : Registers an event subscriber for a newly instantiated
  *           GuzzleHttp\Client object.
  */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+void nr_guzzle4_client_construct(NR_EXECUTE_PROTO) {
+#else
 NR_PHP_WRAPPER_START(nr_guzzle4_client_construct) {
+#endif
   zval* emitter = NULL;
   zval* retval = NULL;
   zval* subscriber = NULL;
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   (void)wraprec;
+#endif
   NR_UNUSED_SPECIALFN;
 
   /* This is how we distinguish Guzzle 4/5 from other versions. */
   if (0 == nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC)) {
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
     NR_PHP_WRAPPER_CALL;
+#endif
     goto end;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   NR_PHP_WRAPPER_CALL;
+#endif
 
   /*
    * We can't have newrelic\Guzzle4\Subscriber implement
@@ -503,7 +514,9 @@ end:
   nr_php_zval_free(&emitter);
   nr_php_zval_free(&subscriber);
 }
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 NR_PHP_WRAPPER_END
+#endif
 
 void nr_guzzle4_enable(TSRMLS_D) {
   if (0 == NRINI(guzzle_enabled)) {

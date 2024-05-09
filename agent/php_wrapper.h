@@ -284,7 +284,7 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     const nrtxn_t* txn = NRPRG(txn);                        \
     const nrtime_t txn_start_time = nr_txn_start_time(txn); \
     if (NRPRG(in_wrapper)) {      \
-      printf("AAHHHHHHHHHHH\n");  \
+      printf("AAHHHHHHHHHHH %s\n", #name);  \
     }                             \
     NRPRG(in_wrapper) = true;                               \
                                                             \
@@ -391,10 +391,7 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   }
 #else
 #define NR_PHP_WRAPPER_DELEGATE(name)                                \
-  if (!was_executed) {                                               \
-    ((name)(execute_data)); \
-    was_executed = 1;                                                \
-  }
+  ((name)(execute_data, func_return_value));
 #endif
 
 static inline bool is_instrumentation_set_and_not_equal(
