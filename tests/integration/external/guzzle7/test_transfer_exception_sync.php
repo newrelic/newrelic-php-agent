@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 Test that the span for a sync external request that ends up throwing exception other than BadResponseException
-is marked as http and uri is captured.
+is marked as http and uri is captured. Status code is marked as 0.
 */
 
 /*SKIPIF

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that the span for an sync external reqest that times out is marked as http and uri is captured.
+Test that the span for an sync external request that times out is marked as http and uri is captured. Status code is marked as 0.
 */
 
 /*SKIPIF
