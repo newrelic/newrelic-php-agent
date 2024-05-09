@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that the span for an async external reqest that ends up throwing BadResponseException exception
+Test that the span for an async external request that ends up throwing BadResponseException exception
 is marked as http, uri and status code are captured.
 */
 

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that the span for a sync external reqest that ends up throwing BadResponseException exception
+Test that the span for a sync external request that ends up throwing BadResponseException exception
 is marked as http, uri and status code are captured.
 */
 
