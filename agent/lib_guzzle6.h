@@ -20,6 +20,10 @@ extern void nr_guzzle6_minit(TSRMLS_D);
 /*
  * Purpose : Client::__construct() wrapper for Guzzle 6.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 extern NR_PHP_WRAPPER_PROTOTYPE(nr_guzzle6_client_construct);
+#else
+extern void nr_guzzle6_client_construct(NR_EXECUTE_PROTO);
+#endif
 
 #endif /* LIB_GUZZLE4_HDR */
