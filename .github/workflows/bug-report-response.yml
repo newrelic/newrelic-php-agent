@@ -13,6 +13,8 @@ jobs:
   bug-report-response:
     if: github.event.label.name == 'bug' && github.event.issue.state == 'open'
     uses: ./.github/workflows/issue-comment.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
     with:
       issue-number: ${{ github.event.issue.number }}
       message: >

@@ -13,12 +13,15 @@ on:
       message:
         type: string
         required: true
+    secrets:
+      token:
+        required: true
 
 jobs:
   post-comment:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.ISSUE_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.token }}
     steps:
       - name: respond to issue
         run: |
