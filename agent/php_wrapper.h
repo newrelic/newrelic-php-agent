@@ -280,7 +280,6 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     bool is_begin = false;                                  \
     nruserfn_t* wraprec = NULL;                             \
     zval* func_return_value = NULL;                         \
-    zval** func_return_value_ptr = NULL;                    \
     const nrtxn_t* txn = NRPRG(txn);                        \
     const nrtime_t txn_start_time = nr_txn_start_time(txn); \
     if (NRPRG(in_wrapper)) {      \
@@ -295,10 +294,11 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
       auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
       is_begin = true;                                      \
     } else { \
-      func_return_value_ptr = nr_php_get_return_value_ptr(); \
-      func_return_value = func_return_value_ptr ? *func_return_value_ptr : NULL;\
+      va_list ptr; \
+      va_start(ptr, execute_data); \
+      func_return_value = va_arg(ptr, zval*); \
       nr_php_observer_fcall_end_keep_segment(execute_data,        \
-              func_return_value_ptr ? *func_return_value_ptr : NULL); \
+              func_return_value); \
     }
 #endif
 

@@ -346,7 +346,6 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook_core) {
     NR_PHP_WRAPPER_LEAVE;
   }
 
-  NR_PHP_WRAPPER_CALL;
   if (NRPRG(wordpress_core)) {
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
   }
@@ -374,7 +373,6 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook_plugin) {
   plugin = wraprec->wordpress_plugin_theme;
   //plugin = nr_wordpress_plugin_from_function(execute_data->func);
 
-  NR_PHP_WRAPPER_CALL;
   if (NULL != plugin) {
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_PLUGIN_PREFIX,
