@@ -2118,7 +2118,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
         "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
 #else
-  if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+  if (NULL == func_return_value) {
 #endif
     /*
      * Having no return value (and not being an exception handler) indicates
@@ -2130,6 +2130,9 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
     nr_status_t status = nr_php_error_record_exception_segment(
       NRPRG(txn), &exception,
       &NRPRG(exception_filters));
+    if (execute_data->func && execute_data->func->common.function_name) {
+      nrl_verbosedebug(NRL_AGENT, "END %s", ZSTR_VAL(execute_data->func->common.function_name));
+    }
 
     if (NR_FAILURE == status) {
       nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
@@ -2214,6 +2217,9 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   //if (execute_data->func && execute_data->func->common.function_name) {
   //  printf("BEGIN %s\n", ZSTR_VAL(execute_data->func->common.function_name));
   //}
+  if (execute_data->func && execute_data->func->common.function_name) {
+    nrl_verbosedebug(NRL_AGENT, "BEGIN %s", ZSTR_VAL(execute_data->func->common.function_name));
+  }
   if (nrunlikely(NULL == execute_data)) {
     return;
   }
@@ -2256,7 +2262,7 @@ void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
    */
   zval* func_return_value = NULL;
   //if (execute_data->func && execute_data->func->common.function_name) {
-  //  printf("BEGIN %s\n", ZSTR_VAL(execute_data->func->common.function_name));
+  //  nrl_verbosedebug(NRL_AGENT, "BEGIN %s", ZSTR_VAL(execute_data->func->common.function_name));
   //}
   if (nrunlikely(NULL == execute_data)) {
     return;
