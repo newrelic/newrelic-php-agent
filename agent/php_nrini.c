@@ -918,8 +918,8 @@ static void foreach_special_control_flag(const char* str,
     NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_params = 1;
     return;
   }
-  if (0 == nr_strcmp(str, "show_execute_stack")) {
-    NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack = 1;
+  if (0 == nr_strcmp(str, "show_execute_stack_depth")) {
+    NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack_depth = 1;
     return;
   }
   if (0 == nr_strcmp(str, "show_execute_returns")) {
@@ -973,7 +973,7 @@ static PHP_INI_MH(nr_special_mh) {
   NR_PHP_PROCESS_GLOBALS(special_flags).no_background_jobs = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_executes = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_params = 0;
-  NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack = 0;
+  NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack_depth = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).show_executes_untrimmed = 0;
   NR_PHP_PROCESS_GLOBALS(special_flags).no_exception_handler = 0;

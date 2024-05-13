@@ -703,7 +703,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   NR_INFO_SPECIAL_FLAGS(no_background_jobs);
   NR_INFO_SPECIAL_FLAGS(show_executes);
   NR_INFO_SPECIAL_FLAGS(show_execute_params);
-  NR_INFO_SPECIAL_FLAGS(show_execute_stack);
+  NR_INFO_SPECIAL_FLAGS(show_execute_stack_depth);
   NR_INFO_SPECIAL_FLAGS(show_execute_returns);
   NR_INFO_SPECIAL_FLAGS(show_executes_untrimmed);
   NR_INFO_SPECIAL_FLAGS(no_signal_handler);
