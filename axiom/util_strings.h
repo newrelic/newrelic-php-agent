@@ -21,6 +21,8 @@
 
 #include "util_object.h"
 
+extern char* nr_string_to_uppercase(const char* str);
+
 /*
  * Purpose : Convert a string to lower case, following USASCII rules, returning
  * a newly allocated string.

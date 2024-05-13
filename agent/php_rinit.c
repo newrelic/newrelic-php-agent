@@ -11,6 +11,7 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
+#include "php_nrini.h"
 #include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "nr_txn.h"
@@ -75,6 +76,9 @@ PHP_RINIT_FUNCTION(newrelic) {
   nr_php_global_once(nr_php_late_initialization);
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing started");
+
+  /* inject environment variables */
+  nr_php_handle_envvar_config();
 
   nr_php_exception_filters_init(&NRPRG(exception_filters));
   nr_php_exception_filters_add(&NRPRG(exception_filters),

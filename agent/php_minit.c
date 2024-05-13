@@ -17,6 +17,7 @@
 #include "php_header.h"
 #include "php_hooks.h"
 #include "php_internal_instrument.h"
+#include "php_nrini.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
 #include "php_vm.h"
@@ -117,6 +118,8 @@ void zm_globals_dtor_newrelic(
 #endif
 PHP_GSHUTDOWN_FUNCTION(newrelic) {
   NR_UNUSED_TSRMLS;
+
+   nrl_verbosedebug(NRL_INIT, "%s: Entering", __func__);
 
   /*
    * Note that this is allocated the first time RINIT is called, rather than
@@ -492,6 +495,9 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_generate_internal_wrap_records();
 
   nr_php_register_ini_entries(module_number TSRMLS_CC);
+
+  /* handle environment variable configuration */
+ // nr_php_handle_envvar_config();
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
   disbad:

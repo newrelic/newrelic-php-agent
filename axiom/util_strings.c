@@ -17,6 +17,26 @@
 #include "util_object.h"
 #include "util_strings.h"
 
+
+char* nr_string_to_uppercase(const char* str) {
+  int i;
+  char* upper;
+
+  if (NULL == str) {
+    return NULL;
+  }
+
+  upper = nr_strdup(str);
+  if (NULL == upper) {
+    return NULL;
+  }
+
+  for (i = 0; upper[i]; i++) {
+    upper[i] = nr_toupper(upper[i]);
+  }
+  return upper;
+}
+
 char* nr_string_to_lowercase(const char* str) {
   int i;
   char* low;
