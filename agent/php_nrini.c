@@ -7,6 +7,7 @@
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
+#include "php_nrini.h"
 #include "php_user_instrument.h"
 
 #include "nr_commands.h"
@@ -221,6 +222,55 @@
 #define NR_PHP_INI_DEFAULT_LOG_LEVEL "info"
 
 ZEND_DECLARE_MODULE_GLOBALS(newrelic)
+
+// DONT COMMIT THIS CODE IT IS FROM ANOTHER PR ONLY FOR TESTING
+#define NR_INI_PREFIX_LEN 9
+
+char* nr_ini_to_env(const char* ini_name) {
+  char* env_name = NULL;
+  char* buf = NULL;
+  char* ini_upper = NULL;
+  const char* NR_PREFIX_STR = "NEW_RELIC";
+  int ini_len = nr_strlen(ini_name);
+
+  // 'newrelic.' is 9 characters - anything less should be rejected.
+  if (NULL == ini_name || nr_strlen(ini_name) <= NR_INI_PREFIX_LEN) {
+    return NULL;
+  }
+
+  // ini value should start with the 'newrelic.' prefix
+  if (0 != nr_stridx(ini_name, "newrelic.")) {
+    return NULL;
+  }
+
+  // algorithm:
+  // 1. uppercase string
+  // 2. copy the entire string after 'newrelic.'
+  // 3. iterate through new string and swap each '.' with '_'
+  // 4. snprintf append the string to 'NEW_RELIC_'
+  // 5. return result
+
+  ini_upper = nr_string_to_uppercase(ini_name);
+
+  buf = (char*)nr_malloc(ini_len - NR_INI_PREFIX_LEN + 1);
+  nr_strcpy(buf, ini_upper + NR_INI_PREFIX_LEN);
+
+  for (int i = 0; i < nr_strlen(buf); i++) {
+    if (buf[i] == '.') {
+      buf[i] = '_';
+    }
+  }
+
+  env_name = (char*)nr_malloc(ini_len + 2);
+
+  snprintf(env_name, ini_len + 2, "%s_%s", NR_PREFIX_STR, buf);
+
+  nr_free(buf);
+  nr_free(ini_upper);
+
+  return env_name;
+}
+// DONT COMMIT ABOVE CODE IT IS FROM ANOTHER PR ONLY FOR TESTING
 
 typedef void (*foreach_fn_t)(const char* name, int namelen TSRMLS_DC);
 
@@ -1602,6 +1652,9 @@ static PHP_INI_MH(nr_framework_mh) {
   nrinifw_t* p;
   nrframework_t val = NR_FW_UNSET;
 
+ nrl_verbosedebug(NRL_INIT, "%s: Entering", __func__);
+
+
 #ifndef ZTS
   char* base = (char*)mh_arg2;
 #else
@@ -1616,17 +1669,25 @@ static PHP_INI_MH(nr_framework_mh) {
 
   if (0 == NEW_VALUE_LEN) {
     val = NR_FW_UNSET;
+    nrl_verbosedebug(NRL_INIT, "%s: SUCCESS setting NR_FW_UNSET (%d)", __func__, val);
+
     p->value = val;
     p->where = stage;
     return SUCCESS;
   } else {
     val = nr_php_framework_from_config(NEW_VALUE);
+    nrl_verbosedebug(NRL_INIT, "%s: converted %s to val = %d", __func__, NEW_VALUE, val);
+
     if (NR_FW_UNSET != val) {
+      nrl_verbosedebug(NRL_INIT, "%s: SUCCESS setting framework to val = %d", __func__, val);
+
       p->value = val;
       p->where = stage;
       return SUCCESS;
     }
   }
+
+  nrl_verbosedebug(NRL_INIT, "%s: sFAILURE etting framework to val = %d", __func__, val);
 
   p->value = val;
   p->where = 0;
@@ -3092,6 +3153,147 @@ void nr_php_unregister_ini_entries(int module_number TSRMLS_DC) {
   UNREGISTER_INI_ENTRIES();
 }
 
+/*
+ * Support agent INI configuration via environment variables
+ *
+ * Here is how environment variables are integrated into the configuration of
+ * the agent:
+ *
+ * - as previously, the agent calls REGISTER_INI_ENTRY() which has PHP
+ * initialize the agent INI values as well as call the modify handlers (MH) the
+ * agent has registered with any INI values given in an INI file or on the PHP
+ * command line via "-d"
+ *
+ * - if NEW_RELIC_DISABLE_ENVVAR_CONFIG is unset or does not contain a True
+ * equivalent (see nr_php_envvar_config_enabled()) then the agent will iterate
+ * over all INI entries in EG(ini_directives).  This hash contains all the INI
+ * values defined for the current PHP environment, from ALL extensions.  So the
+ * agent checks for each INI entry to verify it was registered by the agent
+ * before proceeding.  Then the agent converts the INI name to the equivalent
+ * environment variable (ENVVAR) name and looks to see if it is defined in the
+ * process environment.  If it is then zend_alter_ini_entry_chars() is called to
+ * notify PHP to change the value of the INI entry.
+ *
+ * It is important to note that all INI parsing/handling by PHP is complete
+ * before the ENVVAR values are injected.  Also note that using
+ * zend_alter_ini_entry_chars() guarantees that the PHP and agent values for the
+ * INI directive are sync'd.  So ini_get() and phpinfo() will display the
+ * proper values, even if injected from an ENVVAR.
+ * 
+ * However, if a MH modifies the value we pass to zend_alter_ini_entry_chars() then
+ * PHP will again have a different value for the setting than the agent.  PHP
+ * will think the value is the one we passed (which came from the ENVVAR), while
+ * the agent will use the adjusted value provided by the modify handler.  This
+ * happens, for example, when a numerical value is too high and the modify handler
+ * stores the MAX value instead of the provided.
+ */
+
+static int nr_php_envvar_config_enabled(void) {
+  const char* env_value = NULL;
+  int val;
+
+  env_value = getenv("NEW_RELIC_DISABLE_ENVVAR_CONFIG");
+
+  val = nr_bool_from_str(env_value);
+
+  // only disabled if a "true" equivalent was detected
+  if (1 == val) {
+    return 0;
+  }
+
+  return 1;
+}
+
+#define INJECT_ENVVAR
+
+uint64_t num_injected;
+
+#ifdef INJECT_ENVVAR
+static int nr_php_handle_envvar_config_per_entry(zend_ini_entry* ini_entry,
+                                                  void* unused_ptr,
+                                                  zend_hash_key* key NRUNUSED) {
+  (void)unused_ptr;
+
+  char* env_val = NULL;
+  char* env_name = NULL;
+  char* ini_name = NULL;
+
+  if (ini_entry->module_number != NR_PHP_PROCESS_GLOBALS(our_module_number)) {
+//    nrl_verbosedebug(NRL_INIT, "%s: wrong module! %d != %d", __func__,ini_entry->module_number,NR_PHP_PROCESS_GLOBALS(our_module_number));
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  ini_name = PHP_INI_ENTRY_NAME(ini_entry);
+  if (NULL == ini_name) {
+    nrl_verbosedebug(NRL_INIT, "%s: ini name is NULL!", __func__);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  env_name = nr_ini_to_env(ini_name);
+  if (NULL == env_name) {
+    nrl_verbosedebug(NRL_INIT, "%s: could not convert ini name %s", __func__,
+                     NRSAFESTR(ini_name));
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+ // nrl_info(NRL_INIT, "%s: newrelic ini : # ini name = %s  env name = %s", __func__, NRSAFESTR(ini_name), NRSAFESTR(env_name));
+
+ // nrl_info(NRL_INIT, "Reading %s", env_name);
+  env_val = getenv(env_name);
+
+  if (NULL != env_val) {
+    zend_result result;
+    zend_string* name
+        = zend_string_init(ini_name, strlen(ini_name), 0);
+  //  nrl_info(NRL_INIT, "setting %s from env var to value %s", ini_name, env_val);
+//    (void)result;
+#if 1
+    result = zend_alter_ini_entry_chars(name, env_val, strlen(env_val), ZEND_INI_SYSTEM,
+                                        ZEND_INI_STAGE_STARTUP);
+    if (FAILURE == result) {
+      nrl_warning(
+          NRL_INIT,
+          "Unable to set newrelic.loglevel using zend_alter_ini_entry_chars!");
+    }
+#endif
+    zend_string_release(name);
+    num_injected++;
+  }
+
+  nr_free(env_name);
+  return ZEND_HASH_APPLY_KEEP;
+}
+#endif 
+
+void nr_php_handle_envvar_config(void) {
+  nrl_info(NRL_INIT, "enabled = %d", nr_php_envvar_config_enabled());
+
+  if (!nr_php_envvar_config_enabled()) {
+    nrl_info(NRL_INIT,
+             "Configuration via env var disabled via "
+             "NEW_RELIC_DISABLE_ENVVAR_CONFIG");
+    return;
+  }
+
+  nrl_info(NRL_INIT, "Injecting ENVVAR");
+  num_injected = 0;
+  nrtime_t start = nr_get_time();
+
+  if (0 != EG(ini_directives)) {
+    nrl_info(NRL_INIT, "Iterating over all env vars for config");
+
+#ifdef INJECT_ENVVAR
+    nr_php_zend_hash_ptr_apply(
+        EG(ini_directives),
+        (nr_php_ptr_apply_t)nr_php_handle_envvar_config_per_entry, NULL);
+#endif
+
+  nrtime_t end = nr_get_time();
+  nrl_info(NRL_INIT, "Injecting %ld ENVVAR took %ld microseconds", num_injected, nr_time_duration(start, end));
+
+  }
+}
+
 static void nr_ini_displayer_cb(zend_ini_entry* ini_entry, int type TSRMLS_DC) {
   const char* display_string = NULL;
   nr_string_len_t display_string_length = 0;
@@ -3432,4 +3634,66 @@ int nr_php_ini_setting_is_set_by_user(const char* name) {
     return 0;
   }
 #endif /* PHP7 */
+}
+
+static int newrelic_collect_ini_names(zend_ini_entry* ini_entry,
+                                      zval* name_array,
+                                      zend_hash_key* key NRUNUSED) {
+  char* ini_name = NULL;
+  char* env_name = NULL;
+
+  nrl_verbosedebug(NRL_INIT, "%s: Entering", __func__);
+
+  if (ini_entry->module_number != NR_PHP_PROCESS_GLOBALS(our_module_number)) {
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  if (NULL == name_array || IS_ARRAY != Z_TYPE_P(name_array)) {
+    nrl_warning(NRL_INIT, "%s: name_array issue", __func__);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  ini_name = PHP_INI_ENTRY_NAME(ini_entry);
+  if (NULL == ini_name) {
+    nrl_verbosedebug(NRL_INIT, "%s: ini name is NULL!", __func__);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  env_name = nr_ini_to_env(ini_name);
+  if (NULL == env_name) {
+    nrl_verbosedebug(NRL_INIT,
+                     "%s: Unable to convert ini name %s to env var name!",
+                     __func__, ini_name);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  nr_php_add_assoc_string(name_array, PHP_INI_ENTRY_NAME(ini_entry), env_name);
+
+  // nrl_info(NRL_INIT, "%s: adding newrelic ini entry : name = %s  env = %s",
+  //          __func__, PHP_INI_ENTRY_NAME(ini_entry), env_name);
+
+  nr_free(env_name);
+
+  return ZEND_HASH_APPLY_KEEP;
+}
+
+/* returns a PHP array keyed by ini value name and value is the equivalent env
+ * var name */
+zval* nr_php_get_all_ini_envvar_names() {
+  zval* name_array = NULL;
+
+  nrl_verbosedebug(NRL_INIT, "%s: Entering", __func__);
+
+  name_array = nr_php_zval_alloc();
+  array_init(name_array);
+
+  if (0 != EG(ini_directives)) {
+    nr_php_zend_hash_ptr_apply(EG(ini_directives),
+                               (nr_php_ptr_apply_t)newrelic_collect_ini_names,
+                               name_array);
+  }
+
+  nrl_verbosedebug(NRL_INIT, "%s: name_array = %p", __func__, name_array);
+
+  return name_array;
 }
