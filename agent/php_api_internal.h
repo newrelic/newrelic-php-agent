@@ -85,6 +85,13 @@ extern PHP_FUNCTION(newrelic_is_localhost);
  */
 extern PHP_FUNCTION(newrelic_is_recording);
 
+/*
+ * Proto   : zval* newrelic_get_all_ini_envvar_names ()
+ *
+ * Returns : Array of all ini and env var config names.
+ */
+extern PHP_FUNCTION(newrelic_get_all_ini_envvar_names);
+
 #endif /* ENABLE_TESTING_API */
 
 #endif /* PHP_API_INTERNAL_HDR */

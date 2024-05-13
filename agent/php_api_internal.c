@@ -7,6 +7,7 @@
 #include "php_api_internal.h"
 #include "php_call.h"
 #include "php_hash.h"
+#include "php_nrini.h"
 #include "nr_commands_private.h"
 #include "nr_datastore_instance.h"
 #include "nr_header.h"
@@ -471,6 +472,21 @@ PHP_FUNCTION(newrelic_is_recording) {
     RETURN_TRUE;
   }
   RETURN_FALSE;
+}
+
+PHP_FUNCTION(newrelic_get_all_ini_envvar_names) {
+  zval* name_array = NULL;
+
+  NR_UNUSED_RETURN_VALUE;
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+  NR_UNUSED_THIS_PTR;
+
+  nrl_verbosedebug(NRL_INIT, "%s: Entering", __func__);
+
+   name_array = nr_php_get_all_ini_envvar_names();
+
+  RETVAL_COPY(name_array);
 }
 
 #endif /* ENABLE_TESTING_API */
