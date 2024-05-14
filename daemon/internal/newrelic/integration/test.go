@@ -686,9 +686,11 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	if nil != t.metricsExist {
 		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
 			name = strings.TrimSpace(name)
-			actual := strings.Replace(name, "__FILE__", t.Path, -1)
-			if !harvest.Metrics.Has(actual) {
-				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+			expected := strings.Replace(name, "__FILE__", t.Path, -1)
+			if !harvest.Metrics.Has(expected) {
+				actualPretty := bytes.Buffer{}
+				json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
+				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", expected, actualPretty.String()))
 			}
 		}
 	}
@@ -696,9 +698,11 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	if nil != t.metricsDontExist {
 		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsDontExist))), "\n") {
 			name = strings.TrimSpace(name)
-			actual := strings.Replace(name, "__FILE__", t.Path, -1)
-			if harvest.Metrics.Has(actual) {
-				t.Fail(fmt.Errorf("unexpected metric in harvest: %s\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+			expected := strings.Replace(name, "__FILE__", t.Path, -1)
+			if harvest.Metrics.Has(expected) {
+				actualPretty := bytes.Buffer{}
+				json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
+				t.Fail(fmt.Errorf("unexpected metric in harvest: %s\n\nactual metric table: %s", expected, actualPretty.String()))
 			}
 		}
 	}
