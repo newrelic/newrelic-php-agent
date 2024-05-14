@@ -110,6 +110,9 @@ nruserfn_t* nr_php_wrap_callable_before_after(
         // begin_handler will be NULL if the observer hasn't been installed yet.
         // *begin_Handler will be NULL if the function has not yet been called.
         if (begin_handler && *begin_handler) {
+    name = nr_php_function_debug_name(callable);
+          php_printf("AHHHHHHH %s\n", name);
+    nr_free(name);
           // It is okay to attempt to remove a handler that doesn't exist
           // TODO this could remove nr_php_observer_fcall_begin/end and then re-add it :)
           if (zend_observer_remove_begin_handler(callable, NRINI(tt_detail) ?

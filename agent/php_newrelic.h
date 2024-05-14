@@ -450,11 +450,6 @@ int symfony1_in_dispatch; /* Whether we are currently within a
 int symfony1_in_error404; /* Whether we are currently within a
                              sfError404Exception::printStackTrace() frame */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-bool in_wrapper;
-#endif
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
 bool check_cufa;
