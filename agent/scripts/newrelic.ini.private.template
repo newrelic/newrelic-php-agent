@@ -41,7 +41,7 @@
 ;            no_background_jobs
 ;            show_executes
 ;            show_execute_params
-;            show_execute_stack_depth
+;            show_execute_stack
 ;            show_execute_returns
 ;            show_executes_untrimmed
 ;            no_exception_handler
@@ -52,7 +52,7 @@
 ;            debug_dt
 ;            disable_laravel_queue
 ;
-;newrelic.special = show_executes, show_execute_params, show_execute_stack_depth, show_execute_returns, show_executes_untrimmed
+;newrelic.special = show_executes, show_execute_params, show_execute_stack, show_execute_returns, show_executes_untrimmed
 
 ; Setting: newrelic.special.appinfo_timeout
 ; Type   : integer (time in msec)

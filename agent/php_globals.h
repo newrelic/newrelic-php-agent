@@ -92,7 +92,7 @@ typedef struct _nrphpglobals_t {
     uint8_t no_background_jobs;
     uint8_t show_executes;
     uint8_t show_execute_params;
-    uint8_t show_execute_stack_depth;
+    uint8_t show_execute_stack;
     uint8_t show_execute_returns;
     uint8_t show_executes_untrimmed;
     uint8_t no_exception_handler;

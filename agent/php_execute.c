@@ -2163,13 +2163,6 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
 
   if (nrunlikely(show_executes)) {
-    int show_stack_depth
-        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack_depth;
-    if (nrunlikely(show_stack_depth)) {
-      nrl_verbosedebug(NRL_AGENT,
-                       "Stack depth: %d after OAPI function beginning via %s",
-                       NRPRG(php_cur_stack_depth), __func__);
-    }
     nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
@@ -2195,13 +2188,6 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
         = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
 
     if (nrunlikely(show_executes_return)) {
-      int show_stack_depth
-          = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_stack_depth;
-      if (nrunlikely(show_stack_depth)) {
-        nrl_verbosedebug(NRL_AGENT,
-                         "Stack depth: %d before OAPI function exiting via %s",
-                         NRPRG(php_cur_stack_depth), __func__);
-      }
       nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
 
