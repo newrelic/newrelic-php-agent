@@ -276,27 +276,22 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
 #define NR_PHP_WRAPPER_START(name)                          \
   NR_PHP_WRAPPER_PROTOTYPE(name) {                          \
     int was_executed = 0;                                   \
+    bool in_begin = true;\
     int zcaught = 0;                                        \
-    bool is_begin = false;                                  \
     nruserfn_t* wraprec = NULL;                             \
     zval* func_return_value = NULL;                         \
     const nrtxn_t* txn = NRPRG(txn);                        \
     const nrtime_t txn_start_time = nr_txn_start_time(txn); \
-    if (NRPRG(in_wrapper)) {      \
-      printf("AAHHHHHHHHHHH %s\n", #name);  \
-    }                             \
-    NRPRG(in_wrapper) = true;                               \
                                                             \
     nr_segment_t* auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
-    if (!auto_segment || auto_segment->execute_data != execute_data || \
-            auto_segment == NRPRG(txn)->segment_root) {       \
+    if (!auto_segment || auto_segment->execute_data != execute_data) { \
       nr_php_observer_fcall_begin(execute_data);            \
-      auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
-      is_begin = true;                                      \
     } else { \
-      va_list ptr; \
-      va_start(ptr, execute_data); \
-      func_return_value = va_arg(ptr, zval*); \
+      va_list args; \
+      va_start(args, execute_data); \
+      func_return_value = va_arg(args, zval*); \
+      va_end(args); \
+      in_begin = false;                                      \
       nr_php_observer_fcall_end_keep_segment(execute_data,        \
               func_return_value); \
     }
@@ -327,12 +322,11 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   if (!was_executed) {                               \
     NR_PHP_WRAPPER_CALL                              \
   }                                                  \
-  if (is_begin) {                                   \
+  if (in_begin) {                                   \
     nr_php_observer_fcall_begin_late(execute_data, txn_start_time);\
   } else {                                                \
     nr_php_observer_fcall_end_late(execute_data, false, txn_start_time); \
   } \
-  NRPRG(in_wrapper) = false;                               \
   if (zcaught) {                                     \
     zend_bailout();                                  \
   }                                                  \
