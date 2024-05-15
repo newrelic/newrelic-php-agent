@@ -84,7 +84,7 @@ nruserfn_t* nr_php_wrap_callable_before_after(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback) {
   char* name = NULL;
-#if ZEND_MODULE_API_NO >= ZEND_8_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_observer_fcall_begin_handler *begin_handler;
 #endif
 
@@ -103,7 +103,7 @@ nruserfn_t* nr_php_wrap_callable_before_after(
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
     nr_free(name);
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
       if (callable) {
         // Before messing with our handlers, we must ensure that the observer fields of the function are initialized
         begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(callable)->common), zend_observer_fcall_op_array_extension);
@@ -172,7 +172,7 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                  nrspecialfn_t callback TSRMLS_DC) {
   /* creates a transient wraprec */
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
-#if ZEND_MODULE_API_NO >= ZEND_8_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_observer_fcall_begin_handler *begin_handler;
 #endif
 
@@ -185,7 +185,7 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                        __func__);
     } else {
       wraprec->special_instrumentation = callback;
-#if ZEND_MODULE_API_NO >= ZEND_8_3_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
       if (callable) {
         // Before messing with our handlers, we must ensure that the observer fields of the function are initialized
         begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(callable)->common), zend_observer_fcall_op_array_extension);
