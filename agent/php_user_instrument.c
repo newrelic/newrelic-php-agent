@@ -493,7 +493,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
    * non-transients to be freed when the linked list is disposed of which is at
    * module shutdown */
   nr_php_add_custom_tracer_common(wraprec);
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_3_X_API_NO
   if (orig_func) {
     // Before messing with our handlers, we must ensure that the observer fields of the function are initialized
     begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(orig_func)->common), zend_observer_fcall_op_array_extension);
