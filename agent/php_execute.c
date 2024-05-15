@@ -2033,6 +2033,7 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
     return;
   }
 
+  if (false) {
   if (NR_OP_ARRAY->scope) {
       nr_txn_force_single_count(NRPRG(txn), nr_txn_create_fn_supportability_metric(
                                   nr_php_op_array_function_name(NR_OP_ARRAY),
@@ -2041,6 +2042,7 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
       nr_txn_force_single_count(NRPRG(txn), nr_txn_create_fn_supportability_metric(
                                   nr_php_op_array_function_name(NR_OP_ARRAY),
                                   NULL));
+  }
   }
   /*
    * Check for, and handle, frameworks.
