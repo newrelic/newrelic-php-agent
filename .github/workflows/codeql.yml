@@ -52,15 +52,9 @@ jobs:
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
 
-    - name: Build agent
-      if: ${{ matrix.language == 'c-cpp' }}
+    - name: Build
       run: |
-        make agent
-
-    - name: Build daemon
-      if: ${{ matrix.language == 'go' }}
-      run: |
-        make daemon
+        make ${{ matrix.language == 'go' && 'daemon' || 'agent' }} 
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
