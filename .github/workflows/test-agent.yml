@@ -24,7 +24,7 @@ jobs:
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
       IMAGE_TAG: make-go
-      IMAGE_VERSION: v3
+      IMAGE_VERSION: ${{vars.MAKE_GO_VERSION}}
     strategy:
       matrix:
         platform: [gnu, musl]
