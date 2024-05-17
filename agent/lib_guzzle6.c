@@ -112,14 +112,10 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
   nr_segment_external_params_t external_params = {.library = "Guzzle 6"};
   zval* request;
   zval* method;
-  zval* status;
+  zval* status = NULL;
 
   if (NR_FAILURE
       == nr_guzzle_obj_find_and_remove(handler, &segment TSRMLS_CC)) {
-    return;
-  }
-
-  if (!nr_php_psr7_is_response(response TSRMLS_CC)) {
     return;
   }
 
@@ -133,30 +129,32 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
     return;
   }
 
-  /*
-   * Get the X-NewRelic-App-Data response header. If there isn't one, NULL is
-   * returned, and everything still works just fine.
-   */
-  external_params.encoded_response_header
-      = nr_php_psr7_message_get_header(response, X_NEWRELIC_APP_DATA TSRMLS_CC);
-
-  if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
-    nrl_verbosedebug(
-        NRL_CAT, "CAT: outbound response: transport='Guzzle 6' %s=" NRP_FMT,
-        X_NEWRELIC_APP_DATA, NRP_CAT(external_params.encoded_response_header));
-  }
-
-  status = nr_php_call(response, "getStatusCode");
-
-  if (nr_php_is_zval_valid_integer(status)) {
-    external_params.status = Z_LVAL_P(status);
-  }
-
   method = nr_php_call(request, "getMethod");
 
   if (nr_php_is_zval_valid_string(method)) {
     external_params.procedure
         = nr_strndup(Z_STRVAL_P(method), Z_STRLEN_P(method));
+  }
+
+  if (NULL != response && nr_php_psr7_is_response(response TSRMLS_CC)) {
+    /*
+    * Get the X-NewRelic-App-Data response header. If there isn't one, NULL is
+    * returned, and everything still works just fine.
+    */
+    external_params.encoded_response_header
+        = nr_php_psr7_message_get_header(response, X_NEWRELIC_APP_DATA TSRMLS_CC);
+
+    if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
+      nrl_verbosedebug(
+          NRL_CAT, "CAT: outbound response: transport='Guzzle 6' %s=" NRP_FMT,
+          X_NEWRELIC_APP_DATA, NRP_CAT(external_params.encoded_response_header));
+    }
+
+    status = nr_php_call(response, "getStatusCode");
+
+    if (nr_php_is_zval_valid_integer(status)) {
+      external_params.status = Z_LVAL_P(status);
+    }
   }
 
   nr_segment_external_end(&segment, &external_params);
@@ -291,6 +289,12 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_onrejected) {
     return;
   }
 
+  this_obj = NR_PHP_USER_FN_THIS();
+  if (NULL == this_obj) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot obtain 'this'", __func__);
+    return;
+  }
+
   /*
    * See if this is an exception that we can get a response from. We're going
    * to look for BadResponseException because, although it inherits from
@@ -305,18 +309,13 @@ static PHP_NAMED_FUNCTION(nr_guzzle6_requesthandler_onrejected) {
    */
   if (!nr_php_object_instanceof_class(
           exc, "GuzzleHttp\\Exception\\BadResponseException" TSRMLS_CC)) {
+    nr_guzzle6_requesthandler_handle_response(this_obj, NULL);
     return;
   }
 
   response = nr_php_call(exc, "getResponse");
   if (NULL == response) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: error calling getResponse", __func__);
-    return;
-  }
-
-  this_obj = NR_PHP_USER_FN_THIS();
-  if (NULL == this_obj) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot obtain 'this'", __func__);
     return;
   }
 
@@ -448,6 +447,7 @@ void nr_guzzle6_enable(TSRMLS_D) {
       "namespace newrelic\\Guzzle6;"
 
       "use Psr\\Http\\Message\\RequestInterface;"
+      "use GuzzleHttp\\Promise\\PromiseInterface;"
 
       "if (!function_exists('newrelic\\Guzzle6\\middleware')) {"
       "  function middleware(callable $handler) {"
@@ -468,8 +468,16 @@ void nr_guzzle6_enable(TSRMLS_D) {
        */
       "      $rh = new RequestHandler($request);"
       "      $promise = $handler($request, $options);"
-      "      $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
-
+      "      if (PromiseInterface::REJECTED == $promise->getState()) {"
+      /*
+                Special case for sync request. When sync requests is rejected,
+                onRejected callback is not called via `PromiseInterface::then`
+                and needs to be called manually.
+       */
+      "        $rh->onRejected($promise);"
+      "      } else {"
+      "        $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
+      "      }"
       "      return $promise;"
       "    };"
       "  }"

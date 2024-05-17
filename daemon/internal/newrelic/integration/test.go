@@ -102,7 +102,7 @@ type Test struct {
 }
 
 func NewTest(name string) *Test {
-	test := &Test{Name: name}
+	test := &Test{Name: name, Env: make(map[string]string)}
 	test.SetExpectHarvest(true)
 	return test
 }
@@ -200,14 +200,14 @@ func merge(a, b map[string]string) map[string]string {
 }
 
 func (t *Test) MakeRun(ctx *Context) (Tx, error) {
-	env := merge(ctx.Env, t.Env)
+	t.Env = merge(ctx.Env, t.Env)
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = t.Name
 
 	headers := make(http.Header)
 	for key, vals := range t.headers {
 		for _, v := range vals {
-			expanded := SubEnvVars([]byte(v))
+			expanded := t.subEnvVars([]byte(v))
 			headers.Set(key, string(expanded))
 		}
 	}
@@ -215,12 +215,12 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	settings = merge(settings, t.PhpModules)
 
 	if t.IsC() {
-		return CTx(ScriptFile(t.Path), env, settings, headers, ctx)
+		return CTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
 	if t.IsWeb() {
-		return CgiTx(ScriptFile(t.Path), env, settings, headers, ctx)
+		return CgiTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
-	return PhpTx(ScriptFile(t.Path), env, settings, ctx)
+	return PhpTx(ScriptFile(t.Path), t.Env, settings, ctx)
 }
 
 func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
@@ -228,7 +228,7 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		return nil, nil
 	}
 
-	env := merge(ctx.Env, t.Env)
+	t.Env = merge(ctx.Env, t.Env)
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = "skipif"
 
@@ -239,7 +239,7 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		data: t.rawSkipIf,
 	}
 
-	return PhpTx(src, env, settings, ctx)
+	return PhpTx(src, t.Env, settings, ctx)
 }
 
 type Scrub struct {
@@ -285,10 +285,15 @@ func ScrubHost(in []byte) []byte {
 	return re.ReplaceAll(in, []byte("__HOST__"))
 }
 
-func SubEnvVars(in []byte) []byte {
+func (t *Test) subEnvVars(in []byte) []byte {
 	re := regexp.MustCompile("ENV\\[.*?\\]")
 	return re.ReplaceAllFunc(in, func(match []byte) []byte {
-		return []byte(os.Getenv(string(match[4 : len(match)-1])))
+		k := string(match[4 : len(match)-1])
+		v, present := t.Env[k]
+		if !present {
+			v = os.Getenv(k)
+		}
+		return []byte(v)
 	})
 }
 
@@ -345,7 +350,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 		return
 	}
 
-	if err := json.Unmarshal(t.spanEventsLike, &x2); nil != err {
+	if err := json.Unmarshal(t.subEnvVars(t.spanEventsLike), &x2); nil != err {
 		t.Fatal(fmt.Errorf("unable to parse expected spans like json for fuzzy matching: %v", err))
 		return
 	}
@@ -497,7 +502,7 @@ func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreat
 		}
 	}
 
-	expected = SubEnvVars(expected)
+	expected = t.subEnvVars(expected)
 
 	err = IsFuzzyMatch(expected, actual)
 	if nil != err {
@@ -679,21 +684,25 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	}
 
 	if nil != t.metricsExist {
-		for _, name := range strings.Split(strings.TrimSpace(string(t.metricsExist)), "\n") {
+		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
 			name = strings.TrimSpace(name)
-			actual := strings.Replace(name, "__FILE__", t.Path, -1)
-			if !harvest.Metrics.Has(actual) {
-				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+			expected := strings.Replace(name, "__FILE__", t.Path, -1)
+			if !harvest.Metrics.Has(expected) {
+				actualPretty := bytes.Buffer{}
+				json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
+				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", expected, actualPretty.String()))
 			}
 		}
 	}
 
 	if nil != t.metricsDontExist {
-		for _, name := range strings.Split(strings.TrimSpace(string(t.metricsDontExist)), "\n") {
+		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsDontExist))), "\n") {
 			name = strings.TrimSpace(name)
-			actual := strings.Replace(name, "__FILE__", t.Path, -1)
-			if harvest.Metrics.Has(actual) {
-				t.Fail(fmt.Errorf("unexpected metric in harvest: %s\n\nactual metric table: %s", actual, harvest.Metrics.DebugJSON()))
+			expected := strings.Replace(name, "__FILE__", t.Path, -1)
+			if harvest.Metrics.Has(expected) {
+				actualPretty := bytes.Buffer{}
+				json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
+				t.Fail(fmt.Errorf("unexpected metric in harvest: %s\n\nactual metric table: %s", expected, actualPretty.String()))
 			}
 		}
 	}
