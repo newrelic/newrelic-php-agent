@@ -30,7 +30,7 @@ For help with framework troubleshooting, this [guide](https://discuss.newrelic.c
 
 New Relic offers NRDiag, a [client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. If you have a New Relic Support Plan, NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
 
-If the issue is confirmed as a bug or is a feature request, please file a GitHub issue.
+If the issue is confirmed as a bug or is a feature request, please file a GitHub issue. :)
 
 **Support Channels**
 
