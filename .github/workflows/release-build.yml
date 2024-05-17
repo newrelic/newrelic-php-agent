@@ -52,10 +52,10 @@ jobs:
           -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION release-daemon
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
-          name: release-from-gha
+          name: release-from-gha-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
   agent_release:
     env:
@@ -87,8 +87,8 @@ jobs:
           -e BUILD_NUMBER=${{inputs.build-number}}
           $IMAGE_NAME:agent-builder-php${{matrix.php_ver}}-${{matrix.platform}}-$IMAGE_VERSION release-${{matrix.php_ver}}-gha
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: newrelic-php-agent/releases
-          name: release-from-gha
+          name: release-from-gha-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error

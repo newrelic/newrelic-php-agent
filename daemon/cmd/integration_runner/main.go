@@ -245,6 +245,16 @@ func catRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+func delayRequest(w http.ResponseWriter, r *http.Request) {
+	duration := r.URL.Query().Get("duration")
+	io.WriteString(w, "waiting...")
+	d, err := time.ParseDuration(duration)
+	if nil != err {
+		d = 0
+	}
+	time.Sleep(d)
+}
+
 func init() {
 	//setup typed flags
 	flag.Var(&flagLicense, "license", "use a license key other than the hard coded default. Supports @filename syntax for loading from files.")
@@ -303,6 +313,7 @@ func main() {
 		io.WriteString(w, "Hello world!")
 	})
 	mux.HandleFunc("/cat", catRequest)
+	mux.HandleFunc("/delay", delayRequest)
 	addr := "127.0.0.1:" + strconv.Itoa(*flagExternalPort)
 	srv := &http.Server{Addr: addr, Handler: mux}
 	ln, err := net.Listen("tcp", addr)
