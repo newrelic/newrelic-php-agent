@@ -76,6 +76,14 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
  * and send data to the daemon.
  */
 int nr_php_post_deactivate(void) {
+  NRPROF_START;
+  nrtime_t start = nr_get_time();
+  nrtime_t abs_start_time = 0;
+  nrtime_t abs_stop_time = 0;
+  nrtime_t abs_duration = 0;
+  nrtime_t txn_duration = 0;
+  nrtime_t duration = 0;
+
   TSRMLS_FETCH();
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing started");
@@ -97,7 +105,9 @@ int nr_php_post_deactivate(void) {
    * End the txn before we clean up all the globals it might need.
    */
   if (nrlikely(0 != NRPRG(txn))) {
+     abs_start_time = NRPRG(txn)->abs_start_time;
     (void)nr_php_txn_end(0, 1 TSRMLS_CC);
+     txn_duration = nr_time_duration(abs_start_time, nr_get_time());
   }
 
   nr_php_remove_transient_user_instrumentation();
@@ -148,6 +158,11 @@ int nr_php_post_deactivate(void) {
   NRPRG(drupal_http_request_segment) = NULL;
 #endif
 
-  nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");
+  abs_stop_time = nr_get_time();
+  abs_duration = nr_time_duration(abs_start_time, abs_stop_time);
+  NRPROF_STOP(POST_DEACTIVATE);
+  NRPROF_DUMP(abs_duration, txn_duration);
+  duration = nr_time_duration(start, abs_stop_time);
+  nrl_verbosedebug(NRL_INIT, "post-deactivate processing done " NR_TIME_FMT "us", duration);
   return SUCCESS;
 }

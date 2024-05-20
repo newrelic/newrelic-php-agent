@@ -671,6 +671,7 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
+  NRPROF_START;
   nrtxnopt_t opts;
   const char* lic_to_use;
   int pfd;
@@ -960,6 +961,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
+  NRPROF_STOP(PHP_TXN_BEGIN);
   return NR_SUCCESS;
 }
 
@@ -1063,6 +1065,7 @@ static void nr_php_txn_set_response_header_attributes(nrtxn_t* txn TSRMLS_DC) {
 }
 
 nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
+  NRPROF_START;
   nr_status_t ret;
 
   if (NULL == NRPRG(txn)) {
@@ -1156,5 +1159,6 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
   nr_mysqli_metadata_destroy(&NRTXNGLOBAL(mysqli_links));
 
+  NRPROF_STOP(PHP_TXN_END);
   return NR_SUCCESS;
 }
