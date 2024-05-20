@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   buttercup          26Apr2022 (9.21)
  *   cosmos             29Jun2022 (10.0)
  *   dahlia             19Sep2022 (10.1)
  *   echinacea          03Oct2022 (10.2)
@@ -45,8 +44,9 @@
  *   ulmus              04Mar2024 (10.18)
  *   viburnum           18Mar2024 (10.19)
  *   wallflower         06May2024 (10.20)
+ *   xerophyllum        20May2024 (10.21)
  */
-#define NR_CODENAME "xerophyllum"
+#define NR_CODENAME "yarrow"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
