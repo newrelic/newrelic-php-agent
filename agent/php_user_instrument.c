@@ -129,12 +129,18 @@ static nr_php_wraprec_hashmap_t* user_function_wrappers;
 
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
+  NRPROF_START;
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
+
+  NRPROF_STOP(WRAPREC_SET);
 }
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
+  NRPROF_START;
   nruserfn_t* wraprec = NULL;
 
   nr_php_wraprec_hashmap_get_into(user_function_wrappers, zf, &wraprec);
+
+  NRPROF_STOP(WRAPREC_GET);
 
   return wraprec;
 }

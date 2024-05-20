@@ -642,6 +642,22 @@ struct {
   nr_hashmap_t* prepared_statements; /* Prepared statement storage */
 } txn_globals;
 
+enum {
+  FCALL_BEGIN=0,
+  FCALL_END,
+  PHP_TXN_BEGIN,
+  PHP_TXN_END,
+  POST_DEACTIVATE,
+  WRAPREC_GET,
+  WRAPREC_SET,
+  MAX_PROFILED_FUNCS
+} profiled_funcs;
+
+struct {
+  uint32_t count[MAX_PROFILED_FUNCS];
+  nrtime_t duration[MAX_PROFILED_FUNCS];
+} profing;
+
 ZEND_END_MODULE_GLOBALS(newrelic)
 
 /*
@@ -674,6 +690,18 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 
 #define NRTXN(Y) (NRPRG(txn)->Y)
 #define NRTXNGLOBAL(Y) (NRPRG(txn_globals).Y)
+#define NRPROF_START nrtime_t __nrprof_func_start = nr_get_time()
+#define NRPROF_STOP(f) do {  NRPRG(profing).count[f] += 1; NRPRG(profing).duration[f] += nr_time_duration(__nrprof_func_start, nr_get_time()); } while(0)
+#define NRPROF_DUMP(abs_duration, txn_duration) do { \
+    nrl_debug(NRL_AGENT, "abs_duration: " NR_TIME_FMT "us, txn_duration: "  NR_TIME_FMT "us", abs_duration, txn_duration); \
+    nrl_debug(NRL_AGENT, "FCALL_BEGIN: " NR_TIME_FMT "us", NRPRG(profing).duration[FCALL_BEGIN]); \
+    nrl_debug(NRL_AGENT, "FCALL_END: " NR_TIME_FMT "us", NRPRG(profing).duration[FCALL_END]); \
+    nrl_debug(NRL_AGENT, "WRAPREC_SET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_SET], NRPRG(profing).duration[WRAPREC_SET]); \
+    nrl_debug(NRL_AGENT, "WRAPREC_GET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_GET], NRPRG(profing).duration[WRAPREC_GET]); \
+    nrl_debug(NRL_AGENT, "PHP_TXN_BEGIN: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_BEGIN]); \
+    nrl_debug(NRL_AGENT, "PHP_TXN_END: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_END]); \
+    nrl_debug(NRL_AGENT, "POST_DEACTIVATE: " NR_TIME_FMT "us", NRPRG(profing).duration[POST_DEACTIVATE]); \
+} while(0)
 
 static inline int nr_php_recording(TSRMLS_D) {
   if (nrlikely((0 != NRPRG(txn)) && (0 != NRPRG(txn)->status.recording))) {

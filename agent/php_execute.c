@@ -2144,6 +2144,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
 }
 
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  NRPROF_START;
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2174,11 +2175,14 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
 
+  NRPROF_STOP(FCALL_BEGIN);
+
   return;
 }
 
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value) {
+  NRPROF_START;
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2199,6 +2203,8 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     }
 
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
+
+    NRPROF_STOP(FCALL_END);
   }
 
   NRPRG(php_cur_stack_depth) -= 1;
