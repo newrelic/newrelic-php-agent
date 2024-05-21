@@ -185,6 +185,9 @@ ifeq (1,$(ENABLE_COVERAGE))
   LDFLAGS += --coverage
 endif
 
+ifeq (1, $(ENABLE_NRPROF))
+  CPPFLAGS += -DNRPROF
+endif
 #
 # Conditionally compile Go files to use the system certs.
 #
