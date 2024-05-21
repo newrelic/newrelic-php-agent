@@ -2025,6 +2025,7 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
    * started transaction might actually obtain the same address as a
    * transaction freed before.
    */
+  (void)execute_data;
   if (nrunlikely(nr_txn_start_time(NRPRG(txn)) != txn_start_time)) {
     nrl_verbosedebug(NRL_AGENT,
                      "%s txn ended and/or started while in a wrapped function",
@@ -2033,17 +2034,6 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
     return;
   }
 
-  if (false) {
-  if (NR_OP_ARRAY->scope) {
-      nr_txn_force_single_count(NRPRG(txn), nr_txn_create_fn_supportability_metric(
-                                  nr_php_op_array_function_name(NR_OP_ARRAY),
-                                  nr_php_class_entry_name(NR_OP_ARRAY->scope)));
-  } else {
-      nr_txn_force_single_count(NRPRG(txn), nr_txn_create_fn_supportability_metric(
-                                  nr_php_op_array_function_name(NR_OP_ARRAY),
-                                  NULL));
-  }
-  }
   /*
    * Check for, and handle, frameworks.
    */
@@ -2227,7 +2217,11 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
   return;
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+static void nr_php_observer_fcall_begin_common(zend_execute_data* execute_data, bool call_late) {
+#else
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+#endif
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2266,55 +2260,24 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
     return;
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  if (call_late) {
+    nr_php_observer_fcall_begin_late(execute_data, nr_txn_start_time(NRPRG(txn)));
+  }
+#endif
 
   return;
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
-  /*
-   * Instrument the function.
-   * This and any other needed helper functions will replace:
-   * nr_php_execute_enabled
-   * nr_php_execute
-   * nr_php_execute_show
-   */
-  zval* func_return_value = NULL;
-  //if (execute_data->func && execute_data->func->common.function_name) {
-  //  printf("BEGIN %s", ZSTR_VAL(execute_data->func->common.function_name));
-  //}
-  if (nrunlikely(NULL == execute_data)) {
-    return;
-  }
-
-  NRPRG(php_cur_stack_depth) += 1;
-
-  if ((0 < ((int)NRINI(max_nesting_level)))
-      && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
-    nr_php_max_nesting_level_reached();
-  }
-
-  if (nrunlikely(0 == nr_php_recording())) {
-    return;
-  }
-
-  int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
-
-  if (nrunlikely(show_executes)) {
-    nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
-  }
-  if (NULL == NRPRG(txn)) {
-    return;
-  }
-  nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
-  nr_php_observer_fcall_begin_late(execute_data, nr_txn_start_time(NRPRG(txn)));
-
-  return;
-}
-#endif
-
+static void nr_php_observer_fcall_end_common(zend_execute_data* execute_data,
+                                             zval* func_return_value,
+                                             bool create_metric,
+                                             bool end_segment) {
+#else
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value) {
+#endif
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2341,7 +2304,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false, true);
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, create_metric, end_segment);
 #else
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
 #endif
@@ -2353,45 +2316,29 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  nr_php_observer_fcall_begin_common(execute_data, false);
+}
+void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
+  nr_php_observer_fcall_begin_common(execute_data, true);
+}
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                                            zval* func_return_value) {
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true);
+}
+void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
+                                             zval* func_return_value) {
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, true, true);
+}
+void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
+                                            zval* func_return_value) {
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, false);
+}
+
 // These empty functions (rather than NULL) are used to know if instrumentation
 // has been added  This is needed because the process for adding instrumentation
 // with a transient wrapper differs depending on if the function has been
 // previously called. These will only be used when tt_detail is 0.
-void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
-                               zval* func_return_value) {
-  /*
-   * Instrument the function.
-   * This and any other needed helper functions will replace:
-   * nr_php_execute_enabled
-   * nr_php_execute
-   * nr_php_execute_show
-   */
-  if (nrunlikely(NULL == execute_data)) {
-    return;
-  }
-  //if (execute_data->func && execute_data->func->common.function_name) {
-  //  printf("END %s\n", ZSTR_VAL(execute_data->func->common.function_name));
-  //}
-
-  if (nrlikely(1 == nr_php_recording())) {
-    int show_executes_return
-        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
-
-    if (nrunlikely(show_executes_return)) {
-      nrl_verbosedebug(NRL_AGENT,
-                       "Stack depth: %d before OAPI function exiting via %s",
-                       NRPRG(php_cur_stack_depth), __func__);
-      nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    }
-
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, false, false);
-  }
-
-  NRPRG(php_cur_stack_depth) -= 1;
-
-  return;
-}
-
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data) {
   (void)execute_data;
 }
@@ -2402,37 +2349,6 @@ void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
   (void)func_return_value;
 }
 
-void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
-                                             zval* func_return_value) {
-  /*
-   * Instrument the function.
-   * This and any other needed helper functions will replace:
-   * nr_php_execute_enabled
-   * nr_php_execute
-   * nr_php_execute_show
-   */
-  if (nrunlikely(NULL == execute_data)) {
-    return;
-  }
-  //if (execute_data->func && execute_data->func->common.function_name) {
-  //  printf("END %s\n", ZSTR_VAL(execute_data->func->common.function_name));
-  //}
-
-  if (nrlikely(1 == nr_php_recording())) {
-    int show_executes_return
-        = NR_PHP_PROCESS_GLOBALS(special_flags).show_execute_returns;
-
-    if (nrunlikely(show_executes_return)) {
-      nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    }
-
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, true, true);
-  }
-
-  NRPRG(php_cur_stack_depth) -= 1;
-
-  return;
-}
 #endif
 
 #endif
