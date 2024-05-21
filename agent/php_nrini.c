@@ -8,6 +8,7 @@
 #include "php_hash.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_nrini.h"
 
 #include "nr_commands.h"
 #include "nr_configstrings.h"
@@ -221,6 +222,62 @@
 #define NR_PHP_INI_DEFAULT_LOG_LEVEL "info"
 
 ZEND_DECLARE_MODULE_GLOBALS(newrelic)
+
+char* nr_ini_to_env(const char* ini_name) {
+  const int NR_INI_PREFIX_LEN = nr_strlen("newrelic.");
+  char* env_name = NULL;
+  char* buf = NULL;
+  char* ini_upper = NULL;
+  int ini_len = nr_strlen(ini_name);
+
+  // 'newrelic.' is 9 characters - anything less should be rejected.
+  if (NULL == ini_name || nr_strlen(ini_name) <= NR_INI_PREFIX_LEN) {
+    return NULL;
+  }
+
+  // ini value should start with the 'newrelic.' prefix
+  if (0 != nr_stridx(ini_name, "newrelic.")) {
+    return NULL;
+  }
+
+  // algorithm:
+  // 1. uppercase ini string
+  // 2. iterate through uppercase ini string and copy each character to the new
+  //    buffer, swapping each '.' with '_'.
+  // 3. snprintf append the string to 'NEW_RELIC'
+  // 4. return result
+
+  ini_upper = nr_string_to_uppercase(ini_name);
+
+  buf = (char*)nr_zalloc(ini_len - NR_INI_PREFIX_LEN + 1);
+
+  for (int i = NR_INI_PREFIX_LEN, j = 0; i < nr_strlen(ini_upper); i++) {
+    if (NR_INI_PREFIX_LEN == i
+        && ('.' == ini_upper[i] || '_' == ini_upper[i])) {
+      // skip if the first character is '.' or '_' to avoid double underscores
+      continue;
+    } else if ('_' == ini_upper[i] && '_' == ini_upper[i - 1]) {
+      // skip double '_' characters
+      continue;
+    } else if ('.' == ini_upper[i] && '_' != ini_upper[i - 1]) {
+      // replace a '.' with '_', provided the previous character is not also '_'
+      buf[j] = '_';
+    } else {
+      // copy the character
+      buf[j] = ini_upper[i];
+    }
+    j++;
+  }
+
+  env_name = (char*)nr_zalloc(ini_len + 2);
+
+  snprintf(env_name, ini_len + 2, "%s_%s", "NEW_RELIC", buf);
+
+  nr_free(buf);
+  nr_free(ini_upper);
+
+  return env_name;
+}
 
 typedef void (*foreach_fn_t)(const char* name, int namelen TSRMLS_DC);
 
@@ -3039,42 +3096,46 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.enabled",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     log_context_data_attributes.enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.include",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.include,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclude",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.exclude,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.enabled",
+    "0",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    log_context_data_attributes.enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.include",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.include,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.exclude",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.exclude,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
 
 /*
  * Vulnerability Management
  */
-STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enabled",
-                     "1",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     vulnerability_management_package_detection_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.vulnerability_management.package_detection.enabled",
+    "1",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    vulnerability_management_package_detection_enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
 
 PHP_INI_END() /* } */
 
