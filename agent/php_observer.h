@@ -77,10 +77,6 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-// These empty functions (rather than NULL) are used to know if instrumentation
-// has been added  This is needed because the process for adding instrumentation
-// with a transient wrapper differs depending on if the function has been
-// previously called. These will only be used when tt_detail is 0.
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
 
