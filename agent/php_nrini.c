@@ -241,24 +241,35 @@ char* nr_ini_to_env(const char* ini_name) {
   }
 
   // algorithm:
-  // 1. uppercase string
-  // 2. copy the entire string after 'newrelic.'
-  // 3. iterate through new string and swap each '.' with '_'
-  // 4. snprintf append the string to 'NEW_RELIC_'
-  // 5. return result
+  // 1. uppercase ini string
+  // 2. iterate through uppercase ini string and copy each character to the new
+  //    buffer, swapping each '.' with '_'.
+  // 3. snprintf append the string to 'NEW_RELIC'
+  // 4. return result
 
   ini_upper = nr_string_to_uppercase(ini_name);
 
-  buf = (char*)nr_malloc(ini_len - NR_INI_PREFIX_LEN + 1);
-  nr_strcpy(buf, ini_upper + NR_INI_PREFIX_LEN);
+  buf = (char*)nr_zalloc(ini_len - NR_INI_PREFIX_LEN + 1);
 
-  for (int i = 0; i < nr_strlen(buf); i++) {
-    if (buf[i] == '.') {
-      buf[i] = '_';
+  for (int i = NR_INI_PREFIX_LEN, j = 0; i < nr_strlen(ini_upper); i++) {
+    if (NR_INI_PREFIX_LEN == i
+        && ('.' == ini_upper[i] || '_' == ini_upper[i])) {
+      // skip if the first character is '.' or '_' to avoid double underscores
+      continue;
+    } else if ('_' == ini_upper[i] && '_' == ini_upper[i - 1]) {
+      // skip double '_' characters
+      continue;
+    } else if ('.' == ini_upper[i] && '_' != ini_upper[i - 1]) {
+      // replace a '.' with '_', provided the previous character is not also '_'
+      buf[j] = '_';
+    } else {
+      // copy the character
+      buf[j] = ini_upper[i];
     }
+    j++;
   }
 
-  env_name = (char*)nr_malloc(ini_len + 2);
+  env_name = (char*)nr_zalloc(ini_len + 2);
 
   snprintf(env_name, ini_len + 2, "%s_%s", "NEW_RELIC", buf);
 

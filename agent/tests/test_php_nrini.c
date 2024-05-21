@@ -51,6 +51,20 @@ static void test_nr_ini_to_env(void) {
   tlib_pass_if_null("reject null values", res);
 
   nr_free(res);
+
+  res = nr_ini_to_env("newrelic.ini__value");
+
+  tlib_pass_if_str_equal("double underscores handled correctly",
+                         "NEW_RELIC_INI_VALUE", res);
+
+  nr_free(res);
+
+  res = nr_ini_to_env("newrelic._option_");
+
+  tlib_pass_if_str_equal("dot and underscores handled correctly",
+                         "NEW_RELIC_OPTION_", res);
+
+  nr_free(res);
 }
 
 tlib_parallel_info_t parallel_info
