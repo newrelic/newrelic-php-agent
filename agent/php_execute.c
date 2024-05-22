@@ -2077,7 +2077,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   bool create_metric = false;
   nr_php_execute_metadata_t metadata = {0};
 #else
-static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, bool end_segment) {
+static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, bool end_segment, bool is_exception_handler) {
 #endif
   nr_segment_t* segment = NULL;
   nrtime_t txn_start_time = 0;
@@ -2116,8 +2116,10 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
 
 #if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   wraprec = segment->wraprec;
-
   if (segment->is_exception_handler) {
+#else
+  if (is_exception_handler) {
+#endif
     /*
      * After running the exception handler segment, create an error from
      * the exception it handled, and save the error in the transaction.
@@ -2131,9 +2133,10 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
     nr_php_error_record_exception(
         NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
         "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
 #else
-  if (NULL == func_return_value) {
+  } else if (NULL == func_return_value) {
 #endif
     /*
      * Having no return value (and not being an exception handler) indicates
@@ -2273,7 +2276,8 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 static void nr_php_observer_fcall_end_common(zend_execute_data* execute_data,
                                              zval* func_return_value,
                                              bool create_metric,
-                                             bool end_segment) {
+                                             bool end_segment,
+                                             bool is_exception_handler) {
 #else
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value) {
@@ -2304,7 +2308,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, create_metric, end_segment);
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS, create_metric, end_segment, is_exception_handler);
 #else
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
 #endif
@@ -2324,15 +2328,19 @@ void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
 }
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                             zval* func_return_value) {
-    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true);
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true, false);
 }
 void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
                                              zval* func_return_value) {
-    nr_php_observer_fcall_end_common(execute_data, func_return_value, true, true);
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, true, true, false);
 }
 void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
                                             zval* func_return_value) {
-    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, false);
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, false, false);
+}
+void nr_php_observer_fcall_end_exception_handler(zend_execute_data* execute_data,
+                                                 zval* func_return_value) {
+    nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true, true);
 }
 
 // These empty functions (rather than NULL) are used to know if instrumentation

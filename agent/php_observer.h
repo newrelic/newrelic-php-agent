@@ -88,10 +88,12 @@ void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
                                      zval* func_return_value);
 void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time);
 void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
-                                     zval* func_return_value);
+                                            zval* func_return_value);
 void nr_php_observer_fcall_end_late(zend_execute_data* execute_data, bool create_metric, nrtime_t txn_start_time);
 void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
-                               zval* func_return_value);
+                                             zval* func_return_value);
+void nr_php_observer_fcall_end_exception_handler(zend_execute_data* execute_data,
+                                                 zval* func_return_value);
 #endif /* PHP 8.2+ */
 #endif /* PHP8+ */
 

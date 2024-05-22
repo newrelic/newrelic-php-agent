@@ -121,9 +121,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
                        nr_php_observer_fcall_begin_instrumented;
   handlers.end = wraprec->special_instrumentation ?
                    (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
-                   wraprec->create_metric ?
-                     nr_php_observer_fcall_end_create_metric :
-                     nr_php_observer_fcall_end;
+                   wraprec->is_exception_handler ?
+                     nr_php_observer_fcall_end_exception_handler :
+                     wraprec->create_metric ?
+                       nr_php_observer_fcall_end_create_metric :
+                       nr_php_observer_fcall_end;
   return handlers;
 }
 
@@ -152,7 +154,9 @@ void nr_php_observer_overwrite_handlers(zend_function* func, nruserfn_t* wraprec
                                                 nr_php_observer_empty_fcall_end)) {
       zend_observer_add_end_handler(func, wraprec->special_instrumentation ?
                                                (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
-                                               nr_php_observer_fcall_end);
+                                               wraprec->is_exception_handler ?
+                                                   nr_php_observer_fcall_end_exception_handler :
+                                                   nr_php_observer_fcall_end);
     }
   }
 }
