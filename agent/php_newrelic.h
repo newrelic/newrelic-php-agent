@@ -693,6 +693,7 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 #define NRTXN(Y) (NRPRG(txn)->Y)
 #define NRTXNGLOBAL(Y) (NRPRG(txn_globals).Y)
 #ifdef NRPROF
+#define NRPROF_INIT do {nr_memset(&NRPRG(profing), 0, sizeof(NRPRG(profing)));} while(0);
 #define NRPROF_START nrtime_t __nrprof_func_start = nr_get_time()
 #define NRPROF_STOP(f) do {  NRPRG(profing).count[f] += 1; NRPRG(profing).duration[f] += nr_time_duration(__nrprof_func_start, nr_get_time()); } while(0)
 #define NRPROF_DUMP(abs_duration, txn_duration) do { \
@@ -706,6 +707,7 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
     nrl_debug(NRL_AGENT, "POST_DEACTIVATE: " NR_TIME_FMT "us", NRPRG(profing).duration[POST_DEACTIVATE]); \
 } while(0)
 #else
+#define NRPROF_INIT
 #define NRPROF_START
 #define NRPROF_STOP(f)
 #define NRPROF_DUMP(abs_duration, txn_duration) {(void)abs_duration; (void)txn_duration;}
