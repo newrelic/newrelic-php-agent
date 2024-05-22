@@ -205,10 +205,18 @@ daemon-clean:
 # missing from the $PATH.
 #
 
-installer: bin/newrelic-install bin/newrelic-iutil | bin/
+installer: bin/newrelic-install bin/newrelic-install-inject-envvars.php bin/newrelic-php-cfg-mappings.php bin/newrelic-iutil | bin/
 
 bin/newrelic-install: agent/newrelic-install.sh Makefile VERSION | bin/
 	sed -e "/nrversion:=/s,UNSET,$(AGENT_VERSION)," $< > $@
+	chmod 755 $@
+
+bin/newrelic-install-inject-envvars.php: agent/newrelic-install-inject-envvars.php Makefile | bin/
+	cp $< $@
+	chmod 755 $@
+
+bin/newrelic-php-cfg-mappings.php: agent/newrelic-php-cfg-mappings.php Makefile | bin/
+	cp $< $@
 	chmod 755 $@
 
 bin/newrelic-iutil: agent/install-util.c Makefile VERSION | bin/
@@ -361,6 +369,16 @@ integration-events-limits: bin/integration_runner
 	        tests/event_limits/custom/test_custom_events_max_samples_stored_not_specified.php || exit 1; \
 	    echo "# PHP=$${PHP}"; \
 	done;
+
+#
+# Verify env var injection script mapping has all INI values
+# Requires test APIs to be enabled in agent
+#
+.PHONY: verify-inject-script
+verify-inject-script: agent
+	php -d extension=agent/.libs/newrelic.so \
+		tests/newrelic-installer/verify_inject_envvars_script.php \
+		agent/newrelic-php-cfg-mappings.php
 
 #
 # Code profiling
