@@ -115,17 +115,18 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
       }
   }
   handlers.begin = wraprec->special_instrumentation_before ?
-                     (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before :
+                     (zend_observer_fcall_begin_handler) wraprec->special_instrumentation_before :
                      wraprec->is_transient ? 
                        nr_php_observer_fcall_begin :
                        nr_php_observer_fcall_begin_instrumented;
   handlers.end = wraprec->special_instrumentation ?
-                   (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
+                   (zend_observer_fcall_end_handler) wraprec->special_instrumentation :
                    wraprec->is_exception_handler ?
                      nr_php_observer_fcall_end_exception_handler :
                      wraprec->create_metric ?
                        nr_php_observer_fcall_end_create_metric :
                        nr_php_observer_fcall_end;
+  nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
   return handlers;
 }
 
