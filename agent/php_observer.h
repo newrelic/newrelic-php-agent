@@ -17,6 +17,7 @@
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 
 #include "Zend/zend_observer.h"
+#include "php_user_instrument.h"
 
 /*
  * Purpose: There are a few various places, aside from the php_execute_* family
@@ -77,6 +78,9 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+bool nr_php_observer_is_registered(zend_function* func);
+void nr_php_observer_overwrite_handlers(zend_function* func, nruserfn_t* wraprec);
+
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
 

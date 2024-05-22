@@ -452,7 +452,6 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
   nruserfn_t* p;
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_function* orig_func;
-  zend_observer_fcall_begin_handler *begin_handler;
 #endif
 
   wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
@@ -494,28 +493,7 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
    * module shutdown */
   nr_php_add_custom_tracer_common(wraprec);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  if (orig_func) {
-    // Before messing with our handlers, we must ensure that the observer fields of the function are initialized
-    begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(orig_func)->common), zend_observer_fcall_op_array_extension);
-    // begin_handler will be NULL if the observer hasn't been installed yet.
-    // *begin_Handler will be NULL if the function has not yet been called.
-    if (begin_handler && *begin_handler) {
-      if (zend_observer_remove_begin_handler(orig_func, NRINI(tt_detail) ?
-                                                  nr_php_observer_fcall_begin :
-                                                  nr_php_observer_empty_fcall_begin)) {
-        zend_observer_add_begin_handler(orig_func, wraprec->special_instrumentation_before ?
-                                                 (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before :
-                                                 nr_php_observer_fcall_begin_instrumented);
-      }
-      if (zend_observer_remove_end_handler(orig_func, NRINI(tt_detail) ?
-                                                nr_php_observer_fcall_end :
-                                                nr_php_observer_empty_fcall_end)) {
-        zend_observer_add_end_handler(orig_func, wraprec->special_instrumentation ?
-                                               (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
-                                               nr_php_observer_fcall_end);
-      }
-    }
-  }
+  nr_php_observer_overwrite_handlers(orig_func, wraprec);
 #endif
 
   return wraprec; /* return the new wraprec */
