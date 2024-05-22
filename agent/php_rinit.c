@@ -46,6 +46,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
 
+  NRPROF_INIT;
   NRPRG(current_framework) = NR_FW_UNSET;
   NRPRG(framework_version) = 0;
   NRPRG(php_cur_stack_depth) = 0;
