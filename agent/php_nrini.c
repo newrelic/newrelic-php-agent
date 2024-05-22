@@ -7,6 +7,7 @@
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
+#include "php_nrini.h"
 #include "php_user_instrument.h"
 #include "php_nrini.h"
 
@@ -3493,4 +3494,57 @@ int nr_php_ini_setting_is_set_by_user(const char* name) {
     return 0;
   }
 #endif /* PHP7 */
+}
+
+static int newrelic_collect_ini_names(zend_ini_entry* ini_entry,
+                                      zval* name_array,
+                                      zend_hash_key* key NRUNUSED) {
+  char* ini_name = NULL;
+  char* env_name = NULL;
+
+  if (ini_entry->module_number != NR_PHP_PROCESS_GLOBALS(our_module_number)) {
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  if (NULL == name_array || IS_ARRAY != Z_TYPE_P(name_array)) {
+    nrl_warning(NRL_INIT, "%s: name_array issue", __func__);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  ini_name = PHP_INI_ENTRY_NAME(ini_entry);
+  if (NULL == ini_name) {
+    nrl_verbosedebug(NRL_INIT, "%s: ini name is NULL!", __func__);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  env_name = nr_ini_to_env(ini_name);
+  if (NULL == env_name) {
+    nrl_verbosedebug(NRL_INIT,
+                     "%s: Unable to convert ini name %s to env var name!",
+                     __func__, ini_name);
+    return ZEND_HASH_APPLY_KEEP;
+  }
+
+  nr_php_add_assoc_string(name_array, PHP_INI_ENTRY_NAME(ini_entry), env_name);
+
+  nr_free(env_name);
+
+  return ZEND_HASH_APPLY_KEEP;
+}
+
+/* returns a PHP array keyed by ini value name and value is the equivalent env
+ * var name */
+zval* nr_php_get_all_ini_envvar_names() {
+  zval* name_array = NULL;
+
+  name_array = nr_php_zval_alloc();
+  array_init(name_array);
+
+  if (0 != EG(ini_directives)) {
+    nr_php_zend_hash_ptr_apply(EG(ini_directives),
+                               (nr_php_ptr_apply_t)newrelic_collect_ini_names,
+                               name_array);
+  }
+
+  return name_array;
 }

@@ -362,6 +362,7 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_get_error_json, newrelic_arginfo_void)
     PHP_FE(newrelic_get_transaction_guid, newrelic_arginfo_void)
     PHP_FE(newrelic_is_recording, newrelic_arginfo_void)
+    PHP_FE(newrelic_get_all_ini_envvar_names, newrelic_arginfo_void)
 #else
     PHP_FE(newrelic_get_hostname, 0)
     PHP_FE(newrelic_get_slowsqls, 0)
@@ -369,6 +370,7 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_get_error_json, 0)
     PHP_FE(newrelic_get_transaction_guid, 0)
     PHP_FE(newrelic_is_recording, 0)
+    PHP_FE(newrelic_get_all_ini_envvar_names, 0)
 #endif /* PHP 8 */
 
 #endif /* ENABLE_TESTING_API */

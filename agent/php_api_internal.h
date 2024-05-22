@@ -16,6 +16,13 @@
  */
 extern PHP_FUNCTION(newrelic_get_request_metadata);
 
+/*
+ * Proto   : zval* newrelic_get_all_ini_envvar_names ()
+ *
+ * Returns : Array of all ini and env var config names.
+ */
+extern PHP_FUNCTION(newrelic_get_all_ini_envvar_names);
+
 #ifdef ENABLE_TESTING_API
 
 /*
