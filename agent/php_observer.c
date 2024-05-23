@@ -118,7 +118,9 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
                      (zend_observer_fcall_begin_handler) wraprec->special_instrumentation_before :
                      wraprec->is_transient ? 
                        nr_php_observer_fcall_begin :
-                       nr_php_observer_fcall_begin_instrumented;
+                       wraprec->is_names_wt_simple ?
+                         nr_php_observer_fcall_begin_name_transaction :
+                         nr_php_observer_fcall_begin_instrumented;
   handlers.end = wraprec->special_instrumentation ?
                    (zend_observer_fcall_end_handler) wraprec->special_instrumentation :
                    wraprec->is_exception_handler ?
