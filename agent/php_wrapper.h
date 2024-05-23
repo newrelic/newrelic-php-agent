@@ -323,7 +323,7 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     NR_PHP_WRAPPER_CALL                              \
   }                                                  \
   if (in_begin) {                                   \
-    nr_php_observer_fcall_begin_late(execute_data, txn_start_time);\
+    nr_php_observer_fcall_begin_late(execute_data, txn_start_time, false);\
   } else {                                                \
     nr_php_observer_fcall_end_late(execute_data, false, txn_start_time); \
   } \

@@ -1991,7 +1991,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time) {
+void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time, bool name_transaction) {
   /*
    * During nr_zend_call_oapi_special_before, the transaction may have been
    * ended and/or a new transaction may have started.  To detect this, we
@@ -2014,12 +2014,14 @@ void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t 
   /*
    * Check for, and handle, frameworks.
    */
-  //if (wraprec->is_names_wt_simple) {
+  if (name_transaction) {
 
-  //  nr_txn_name_from_function(NRPRG(txn),
-  //                            nr_php_op_array_function_name(NR_OP_ARRAY),
-  //                            nr_php_class_entry_name(NR_OP_ARRAY->scope));
-  //}
+    nr_txn_name_from_function(NRPRG(txn),
+                              nr_php_op_array_function_name(NR_OP_ARRAY),
+                              NR_OP_ARRAY->scope ?
+                                nr_php_class_entry_name(NR_OP_ARRAY->scope) :
+                                NULL);
+  }
 }
 #endif
 
@@ -2198,7 +2200,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO, bool create_metric, boo
 }
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-static void nr_php_observer_fcall_begin_common(zend_execute_data* execute_data, bool call_late) {
+static void nr_php_observer_fcall_begin_common(zend_execute_data* execute_data, bool call_late, bool name_transaction) {
 #else
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
 #endif
@@ -2242,7 +2244,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   if (call_late) {
-    nr_php_observer_fcall_begin_late(execute_data, nr_txn_start_time(NRPRG(txn)));
+    nr_php_observer_fcall_begin_late(execute_data, nr_txn_start_time(NRPRG(txn)), name_transaction);
   }
 #endif
 
@@ -2298,10 +2300,13 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
-  nr_php_observer_fcall_begin_common(execute_data, false);
+  nr_php_observer_fcall_begin_common(execute_data, false, false);
 }
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
-  nr_php_observer_fcall_begin_common(execute_data, true);
+  nr_php_observer_fcall_begin_common(execute_data, true, false);
+}
+void nr_php_observer_fcall_begin_name_transaction(zend_execute_data* execute_data) {
+  nr_php_observer_fcall_begin_common(execute_data, true, true);
 }
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                             zval* func_return_value) {
@@ -2332,6 +2337,11 @@ void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
                                      zval* func_return_value) {
   (void)execute_data;
   (void)func_return_value;
+
+  /* need a way to register framework info while tt_detail is 0 */
+  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
+    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS);
+  }
 }
 
 #endif

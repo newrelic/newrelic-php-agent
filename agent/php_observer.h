@@ -83,10 +83,11 @@ void nr_php_observer_overwrite_handlers(zend_function* func, nruserfn_t* wraprec
 
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
+void nr_php_observer_fcall_begin_name_transaction(zend_execute_data* execute_data);
 
 void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
                                      zval* func_return_value);
-void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time);
+void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time, bool name_transaction);
 void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
                                             zval* func_return_value);
 void nr_php_observer_fcall_end_late(zend_execute_data* execute_data, bool create_metric, nrtime_t txn_start_time);
