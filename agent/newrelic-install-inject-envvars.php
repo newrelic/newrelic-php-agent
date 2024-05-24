@@ -92,8 +92,6 @@ if (0 < count($pattern)) {
             }
         }
     }
-    echo $missing;
-
     $data .= $missing;
 
     echo "opening $out_ini_filename\n";
