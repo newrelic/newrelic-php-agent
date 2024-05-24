@@ -1081,7 +1081,7 @@ for this copy of PHP. We apologize for the inconvenience.
 
     8.3.*)
       pi_php8="yes"
-      ;;      
+      ;;
 
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
@@ -1495,7 +1495,7 @@ install_agent_here() {
         fi
         if [ -z "${istat}" -a -z "${NR_INSTALL_SILENT}" ]; then
           echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created and environment variable configuration used"
-        fi 
+        fi
       elif sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_cli}/newrelic.ini"; then
         logcmd chmod 644 "${pi_inidir_cli}/newrelic.ini"
         if [ -z "${NR_INSTALL_SILENT}" ]; then
@@ -1519,7 +1519,7 @@ install_agent_here() {
         fi
         if [ -z "${istat}" -a -z "${NR_INSTALL_SILENT}" ]; then
           echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created and environment variable configuration used"
-        fi 
+        fi
       elif sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_dso}/newrelic.ini"; then
         logcmd chmod 644 "${pi_inidir_dso}/newrelic.ini"
         if [ -z "${NR_INSTALL_SILENT}" ]; then
@@ -1627,7 +1627,7 @@ do_install() {
   #
   # otherwise use NR_INSTALL_EKY
   if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
-    if [ -z "${NEW_RELIC_LICENSE}" ]; then 
+    if [ -z "${NEW_RELIC_LICENSE}" ]; then
       nrkey="${NEW_RELIC_LICENSE}";
     else
       nrkey="${NR_INSTALL_KEY}"
@@ -1884,7 +1884,7 @@ EOF
 
 The New Relic Proxy Daemon is installed, but the agent
 is not. Please point your favorite web browser at
-${bold}https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-overview/${rmso} 
+${bold}https://docs.newrelic.com/docs/apm/agents/php-agent/installation/php-agent-installation-overview/${rmso}
 for how to install the agent by hand.
 
 EOF

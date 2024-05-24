@@ -6,11 +6,11 @@
 
 /* Purpose: Read a fresh newrelic.ini file and inject any values
  * from environment variables.
- * 
+ *
  * Not designed to work on a modified newrelic.ini and script
  * is not able to detect this scenario.
- * 
- * The mapping from INI directive name to corresponding 
+ *
+ * The mapping from INI directive name to corresponding
  * environment variable name must be injected before using
  * in place of the comment below containing INI_ENVVAR_MAP
  *
