@@ -45,7 +45,7 @@ foreach ($names as $k => $v) {
     fwrite($script_fp, "export $v=$v\n");
 }
 
-fwrite($script_fp, "php ../../agent/newrelic-install-inject-envvars.php $out_ini_file\n");
+fwrite($script_fp, "php ../../agent/newrelic-install-inject-envvars.php $template $out_ini_file\n");
 fclose($script_fp);
 
 $output = shell_exec("sh " . $test_script);
