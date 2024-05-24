@@ -18,14 +18,12 @@ if (0 == count($names)) {
 }
 
 /* Verify input INI file exists */
-if (2 != $argc) {
-    failure("Must supply existing mapping file as first argument!");
-}
+// if (2 != $argc) {
+//     failure("Must supply existing mapping file as first argument!");
+// }
 
-$mapping_filename = $argv[1];
-
+$mapping_filename = "../../agent/newrelic-php-cfg-mappings.php";
 include $mapping_filename;
-
 $keys1 = array_keys(INI_ENVVAR_MAP);
 $keys2 = array_keys($names);
 
@@ -49,9 +47,10 @@ if (0 != count($diff2)) {
 }
 
 if ($matches) {
-    echo "Agent and mapping match!\n";
+    echo "Agent and mapping check PASS!\n";
     exit(0);
 } else {
+    echo "Agent and mapping check FAIL!\n";
     exit(1);
 }
 

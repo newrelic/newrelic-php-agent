@@ -323,6 +323,8 @@ if [ -z "${ispkg}" ]; then
   check_file "${ilibdir}/scripts/newrelic-daemon.logrotate"
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
+check_file "${ilibdir}/newrelic-install-inject-envvars.php"
+check_file "${ilibdir}/newrelic-php-cfg-mapping.php"
 # Check that exxtension artifacts exist for all supported PHP versions
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
@@ -420,6 +422,9 @@ fi
 #   If this is set, it must be set to a valid New Relic license key, and this
 #   key will be set in the daemon config file.
 #
+#   NOTE: If NR_CONFIG_WITH_ENVIRON is defined and NEW_RELIC_LICENSE is defined
+#         then the value of NEW_RELIC_LICENSE will be used.s
+#
 # NR_INSTALL_INITSCRIPT
 #   If set this must be the name under which the init script will be installed.
 #   This is usually something like /etc/init.d/newrelic-daemon. If no value is
@@ -433,7 +438,17 @@ fi
 # NR_INSTALL_USE_CP_NOT_LN
 #   If set to any non-empty value, copy the agent and don't create a symlink.
 #
-
+# NR_CONFIG_WITH_ENVIRON
+#   If set to any non-empty value, the installer will run a script which will
+#   use environment variables to configure the fresh newrelic.ini created
+#   on installs ONLY.  This option will have no effect if a newrelic.ini
+#   already exists.
+#
+#   The environment variable name for a given INI value is created by changing
+#   all "." to "_" and removing consecutive "_".
+#
+#   If this option is selected and NEW_RELIC_LICENSE is defined then it will
+#   override the value from NR_INSTALL_KEY
 #
 # This script will put the log file and the sysinfo file into a tar file so
 # it is ready to send to New Relic support if anything goes amiss.
@@ -1471,13 +1486,25 @@ install_agent_here() {
 # file exists in the target directory.
 #
     if [ -n "${pi_inidir_cli}" -a ! -f "${pi_inidir_cli}/newrelic.ini" ]; then
-      if sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_cli}/newrelic.ini"; then
+      # check if doing old style injection of just "newrelic.license" or if injecting values from env vars
+      if [-n "${NR_CONFIG_WITH_ENVIRON}" ];
+        if cp "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_cli}/newrelic.ini"
+        sh ./newrelic-install-inject-envvars.php
+        if [ "0" != "$?" ]; then
+          istat="failed"
+        fi
+        if [ -z "${istat}" -a -z "${NR_INSTALL_SILENT}" ]; then
+          echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created and environment variable configuration used"
+        fi 
+      elif sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_cli}/newrelic.ini"; then
         logcmd chmod 644 "${pi_inidir_cli}/newrelic.ini"
         if [ -z "${NR_INSTALL_SILENT}" ]; then
           echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created"
         fi
       else
         istat="failed"
+      fi
+      if [ -n "${istat}"]; then
         log "${pdir}: copy ini template to ${pi_inidir_cli}/newrelic.ini failed"
       fi
     fi
@@ -1582,8 +1609,21 @@ do_install() {
     nrkey=`head -1 /etc/newrelic/upgrade_please.key 2>/dev/null`
   fi
 
-  if [ -n "${NR_INSTALL_KEY}" ]; then
-    nrkey="${NR_INSTALL_KEY}"
+  # attempt to determine license key from environment variables
+  # if configuration from environment variables is enabled then
+  # look at NEW_RELIC_LICENSE first, then NR_INSTALL_KEY
+  #
+  # otherwise use NR_INSTALL_EKY
+  if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
+    if [ -z "${NEW_RELIC_LICENSE}" ]; then 
+      nrkey="${NEW_RELIC_LICENSE}";
+    else
+      nrkey="${NR_INSTALL_KEY}"
+    fi
+  else
+    if [ -n "${NR_INSTALL_KEY}" ]; then
+      nrkey="${NR_INSTALL_KEY}"
+    fi
   fi
 
   if [ -z "${NR_INSTALL_SILENT}" -a -z "${nrkey}" ]; then

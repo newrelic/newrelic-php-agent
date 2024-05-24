@@ -376,9 +376,12 @@ integration-events-limits: bin/integration_runner
 #
 .PHONY: verify-inject-script
 verify-inject-script: agent
-	php -d extension=agent/.libs/newrelic.so \
-		tests/newrelic-installer/verify_inject_envvars_script.php \
-		agent/newrelic-php-cfg-mappings.php
+	(cd tests/newrelic-installer; \
+		php -d extension=../../agent/.libs/newrelic.so \
+		verify_inject_envvars_script_mapping.php)
+	(cd tests/newrelic-installer; \
+		php -d extension=../../agent/.libs/newrelic.so \
+		verify_inject_envvars_script_injection.php)
 
 #
 # Code profiling

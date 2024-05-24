@@ -41,13 +41,20 @@ if (!defined('INI_ENVVAR_MAP')) {
 }
 
 /* Verify input INI file exists */
-if (2 != $argc) {
-    failure("Must supply INI file name as first argument!");
+if (3 != $argc) {
+    failure("Usage: newrelic-install-inject-envvars.php <input INI> <output INI>\n"
+            "    <input INI>   Existing INI file\n"
+            "    <output INI>  Output INI file with injected env var values\n\n");
 }
 
 $ini_filename = $argv[1];
 if (!file_exists($ini_filename)) {
-    failure("INI file \"$ini_filename\" does not exist!");
+    failure("Input INI file \"$ini_filename\" does not exist!");
+}
+
+$out_ini_filename = $argv[2];
+if (file_exists($out_ini_filename)) {
+    failure("Output INI file \"$out_ini_filename\" exists - will not overwrite!");
 }
 
 $data = file_get_contents(($ini_filename));
@@ -57,19 +64,48 @@ if (!$data) {
 
 $pattern = array();
 $replace = array();
+$modified = array();
 
 /* Go through all INI keys and see if the environment variable is defined */
 foreach (INI_ENVVAR_MAP as $ini_name => $env_name) {
-    array_push($pattern, generate_regex($ini_name));
-    array_push($replace, "$ini_name=$env_name");
+    $env_value = getenv($env_name);
+    if (false != $env_value) {
+        array_push($pattern, generate_regex($ini_name));
+        array_push($replace, "$ini_name=$env_value");
+        array_push($modified, $env_name);
+    }
 }
 
-$data = preg_replace($pattern, $replace, $data);
+if (0 < count($pattern)) {
+    /* replace all values which exist in existing INI file */
+    $data = preg_replace($pattern, $replace, $data);
 
-$fh = fopen($ini_filename, "w");
-if (!$fh) {
-    failure("Unable to write out modified INI file $ini_filename");
+    /* append values which will did not already exist in file */
+    $missing = "";
+    foreach(INI_ENVVAR_MAP as $ini_name => $env_name) {
+        $env_value = getenv($env_name);
+        if (false != $env_value) {
+            if (!preg_match(generate_regex($ini_name), $data)) {
+                $missing .= "/* Value injected from env var $env_name*/\n";
+                $missing .= "$ini_name=$env_value\n";
+            }
+        }
+    }
+    echo $missing;
+
+    $data .= $missing;
+
+    $fh = fopen($out_ini_filename, "w");
+    if (!$fh) {
+        failure("Unable to write out modified INI file $out_ini_filename");
+    }
+    fwrite($fh, $data);
+    fclose($fh);
+
+    echo "$out_ini_filename created with values from the following environment variables:\n";
+    foreach ($modified as $value) {
+        echo "   $value\n";
+    }
+} else {
+    echo "$out_ini_filename contains no modified values as no relevant environment variables detected";
 }
-fwrite($fh, $data);
-fclose($fh);
-
