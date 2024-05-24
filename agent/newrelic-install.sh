@@ -1,5 +1,5 @@
 #! /bin/sh
-
+set -x
 #
 # Copyright 2020 New Relic Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
@@ -324,7 +324,7 @@ if [ -z "${ispkg}" ]; then
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 check_file "${ilibdir}/newrelic-install-inject-envvars.php"
-check_file "${ilibdir}/newrelic-php-cfg-mapping.php"
+check_file "${ilibdir}/newrelic-php-cfg-mappings.php"
 # Check that exxtension artifacts exist for all supported PHP versions
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
@@ -1487,11 +1487,11 @@ install_agent_here() {
 #
     if [ -n "${pi_inidir_cli}" -a ! -f "${pi_inidir_cli}/newrelic.ini" ]; then
       # check if doing old style injection of just "newrelic.license" or if injecting values from env vars
-      if [-n "${NR_CONFIG_WITH_ENVIRON}" ];
-        if cp "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_cli}/newrelic.ini"
-        sh ./newrelic-install-inject-envvars.php
-        if [ "0" != "$?" ]; then
-          istat="failed"
+      if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
+        if php ./newrelic-install-inject-envvars.php "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_cli}/newrelic.ini"; then
+          if [ "0" != "$?" ]; then
+            istat="failed"
+          fi
         fi
         if [ -z "${istat}" -a -z "${NR_INSTALL_SILENT}" ]; then
           echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created and environment variable configuration used"
@@ -1504,19 +1504,31 @@ install_agent_here() {
       else
         istat="failed"
       fi
-      if [ -n "${istat}"]; then
+      istat="failed"
+      if [ -n "${istat}" ]; then
         log "${pdir}: copy ini template to ${pi_inidir_cli}/newrelic.ini failed"
       fi
     fi
 
     if [ -z "${istat}" -a -n "${pi_inidir_dso}" -a ! -f "${pi_inidir_dso}/newrelic.ini" ]; then
-      if sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_dso}/newrelic.ini"; then
+      if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
+        if php ./newrelic-install-inject-envvars.php "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_dso}/newrelic.ini"; then
+          if [ "0" != "$?" ]; then
+            istat="failed"
+          fi
+        fi
+        if [ -z "${istat}" -a -z "${NR_INSTALL_SILENT}" ]; then
+          echo "      Install Status : ${pi_inidir_cli}/newrelic.ini created and environment variable configuration used"
+        fi 
+      elif sed -e "s/REPLACE_WITH_REAL_KEY/${nrkey}/" "${ilibdir}/scripts/newrelic.ini.template" > "${pi_inidir_dso}/newrelic.ini"; then
         logcmd chmod 644 "${pi_inidir_dso}/newrelic.ini"
         if [ -z "${NR_INSTALL_SILENT}" ]; then
           echo "      Install Status : ${pi_inidir_dso}/newrelic.ini created"
         fi
       else
         istat="failed"
+      fi
+      if [ -n "${istat}" ]; then
         log "${pdir}: copy ini template to ${pi_inidir_dso}/newrelic.ini failed"
       fi
     fi
