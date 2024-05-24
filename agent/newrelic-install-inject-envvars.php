@@ -42,8 +42,9 @@ if (!defined('INI_ENVVAR_MAP')) {
 
 /* Verify input INI file exists */
 if (3 != $argc) {
-    failure("Usage: newrelic-install-inject-envvars.php <input INI> <output INI>\n"
-            "    <input INI>   Existing INI file\n"
+    failure(" missing required arguments\n" .
+            "Usage: newrelic-install-inject-envvars.php <input INI> <output INI>\n" .
+            "    <input INI>   Existing INI file\n" .
             "    <output INI>  Output INI file with injected env var values\n\n");
 }
 
@@ -95,6 +96,7 @@ if (0 < count($pattern)) {
 
     $data .= $missing;
 
+    echo "opening $out_ini_filename\n";
     $fh = fopen($out_ini_filename, "w");
     if (!$fh) {
         failure("Unable to write out modified INI file $out_ini_filename");
