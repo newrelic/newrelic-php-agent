@@ -483,7 +483,7 @@ PHP_FUNCTION(newrelic_get_all_ini_envvar_names) {
 
   name_array = nr_php_get_all_ini_envvar_names();
 
-  RETVAL_COPY(name_array);
+  RETURN_ZVAL(name_array, 1, 0);
 }
 
 #endif /* ENABLE_TESTING_API */
