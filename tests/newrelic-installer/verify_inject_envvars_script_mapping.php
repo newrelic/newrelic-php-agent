@@ -17,11 +17,6 @@ if (0 == count($names)) {
     exit(1);
 }
 
-/* Verify input INI file exists */
-// if (2 != $argc) {
-//     failure("Must supply existing mapping file as first argument!");
-// }
-
 $mapping_filename = "../../agent/newrelic-php-cfg-mappings.php";
 include $mapping_filename;
 $keys1 = array_keys(INI_ENVVAR_MAP);
