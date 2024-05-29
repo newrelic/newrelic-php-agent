@@ -284,7 +284,9 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
     /* It could be in a file not yet loaded, no reason to log anything. */
     return;
   }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   wraprec->func = orig_func;
+#endif
 
   if (ZEND_USER_FUNCTION != orig_func->type) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
