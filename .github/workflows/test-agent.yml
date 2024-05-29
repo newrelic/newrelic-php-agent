@@ -113,9 +113,7 @@ jobs:
             echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
           elif [[ ${{ matrix.platform }} = 'gnu' ]]; then
             echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          elif [[ ${{matrix.php}} = '7.0' || ${{matrix.php}} = '7.1' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          else 
+          else
             echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
           fi
       - name: Build axiom
