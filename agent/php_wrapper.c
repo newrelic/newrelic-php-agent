@@ -9,13 +9,13 @@
 #include "util_logging.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-static void nr_php_wraprec_add_before_after_callbacks(
+static bool nr_php_wraprec_can_add_before_after_callbacks(
     const char* name, size_t namelen,
     nruserfn_t* wraprec,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback) {
   if (NULL == wraprec) {
-    return;
+    return false;
   }
 
   /* If any of the callbacks we are attempting to set are already set to
@@ -27,7 +27,7 @@ static void nr_php_wraprec_add_before_after_callbacks(
         "%s: attempting to set special_instrumentation for %.*s, but "
         "it is already set",
         __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    return;
+    return false;
   }
 
   if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_before,
@@ -37,8 +37,19 @@ static void nr_php_wraprec_add_before_after_callbacks(
                      "for %.*s, but "
                      "it is already set",
                      __func__, NRSAFELEN(namelen), NRBLANKSTR(name));
-    return;
+    return false;
   }
+  if (wraprec->special_instrumentation_before == before_callback &&
+      wraprec->special_instrumentation == after_callback) {
+    return false;
+  }
+  return true;
+}
+
+static void nr_php_wraprec_add_before_after_callbacks(
+    nruserfn_t* wraprec,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback) {
 
   wraprec->special_instrumentation = after_callback;
   wraprec->special_instrumentation_before = before_callback;
@@ -51,10 +62,17 @@ nruserfn_t* nr_php_wrap_user_function_before_after(
     nrspecialfn_t after_callback) {
 
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
-
-  nr_php_wraprec_add_before_after_callbacks(name, namelen, wraprec,
-                                                  before_callback,
-                                                  after_callback);
+  if (nr_php_wraprec_can_add_before_after_callbacks(name, namelen, wraprec,
+                                                    before_callback,
+                                                    after_callback)) {
+    nr_php_wraprec_add_before_after_callbacks(wraprec,
+                                              before_callback,
+                                              after_callback);
+  }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  nr_php_observer_add_begin_handler(wraprec->func, wraprec);
+  nr_php_observer_add_end_handler(wraprec->func, wraprec);
+#endif
 
   return wraprec;
 }
@@ -83,7 +101,7 @@ nruserfn_t* nr_php_wrap_callable_before_after(
     zend_function* callable,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback) {
-    char* name = NULL;
+  char* name = NULL;
 
   /* creates a transient wraprec */
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
@@ -94,15 +112,20 @@ nruserfn_t* nr_php_wrap_callable_before_after(
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
     name = nr_php_function_debug_name(callable);
   }
-  nr_php_wraprec_add_before_after_callbacks(name, nr_strlen(name), wraprec,
-                                                  before_callback,
-                                                  after_callback);
+  if (nr_php_wraprec_can_add_before_after_callbacks(name, nr_strlen(name), wraprec,
+                                                    before_callback,
+                                                    after_callback)) {
+    nr_php_wraprec_add_before_after_callbacks(wraprec,
+                                              before_callback,
+                                              after_callback);
+  }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  nr_php_observer_add_begin_handler(callable, wraprec);
+  nr_php_observer_add_end_handler(callable, wraprec);
+#endif
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
     nr_free(name);
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  nr_php_observer_overwrite_handlers(callable, wraprec);
-#endif
 
   return wraprec;
 }
@@ -123,6 +146,10 @@ nruserfn_t* nr_php_wrap_user_function(const char* name,
     } else {
       wraprec->special_instrumentation = callback;
     }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_add_begin_handler(wraprec->func, wraprec);
+    nr_php_observer_add_end_handler(wraprec->func, wraprec);
+#endif
   }
 
   return wraprec;
@@ -154,7 +181,8 @@ nruserfn_t* nr_php_wrap_callable(zend_function* callable,
     } else {
       wraprec->special_instrumentation = callback;
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-      nr_php_observer_overwrite_handlers(callable, wraprec);
+      nr_php_observer_add_begin_handler(callable, wraprec);
+      nr_php_observer_add_end_handler(callable, wraprec);
 #endif
     }
   }

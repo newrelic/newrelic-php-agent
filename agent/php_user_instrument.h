@@ -110,6 +110,9 @@ typedef struct _nruserfn_t {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   char* wordpress_plugin_theme;
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_function* func;        /* the underlying function that this wraprec wraps */
+#endif
 } nruserfn_t;
 
 extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */

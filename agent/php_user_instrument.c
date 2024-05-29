@@ -254,21 +254,21 @@ static void nr_php_wrap_zend_function(zend_function* func,
   }
 }
 
-static zend_function* nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
+static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
   zend_function* orig_func = 0;
 
   if (0 == NR_PHP_PROCESS_GLOBALS(done_instrumentation)) {
-    return NULL;
+    return;
   }
 
   if (wraprec->is_wrapped) {
-    return NULL;
+    return;
   }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     && defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ */
   if (nrunlikely(-1 == NR_PHP_PROCESS_GLOBALS(zend_offset))) {
-    return NULL;
+    return;
   }
 #endif
   if (0 == wraprec->classname) {
@@ -282,8 +282,9 @@ static zend_function* nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSR
 
   if (NULL == orig_func) {
     /* It could be in a file not yet loaded, no reason to log anything. */
-    return NULL;
+    return;
   }
+  wraprec->func = orig_func;
 
   if (ZEND_USER_FUNCTION != orig_func->type) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s%s%s is not a user function",
@@ -295,10 +296,9 @@ static zend_function* nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSR
      * logs with this message.
      */
     wraprec->is_disabled = 1;
-    return NULL;
+    return;
   }
   nr_php_wrap_zend_function(orig_func, wraprec TSRMLS_CC);
-  return orig_func;
 }
 
 static nruserfn_t* nr_php_user_wraprec_create(void) {
@@ -429,6 +429,10 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
     nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for callable '%s'",
                      name);
     nr_free(name);
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_remove_begin_handler(func, wraprec);
+    nr_php_observer_remove_end_handler(func, wraprec);
+#endif
     return wraprec;
   }
 
@@ -442,6 +446,10 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nr_php_add_custom_tracer_common(wraprec);
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  nr_php_observer_remove_begin_handler(func, NULL);
+  nr_php_observer_remove_end_handler(func, NULL);
+#endif
 
   return wraprec;
 }
@@ -450,9 +458,6 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen) {
   nruserfn_t* wraprec;
   nruserfn_t* p;
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  zend_function* orig_func;
-#endif
 
   wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
   if (0 == wraprec) {
@@ -472,6 +477,10 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
 
       nr_php_user_wraprec_destroy(&wraprec);
       nr_php_wrap_user_function_internal(p TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+      nr_php_observer_remove_begin_handler(p->func, wraprec);
+      nr_php_observer_remove_end_handler(p->func, wraprec);
+#endif
       return p; /* return the wraprec we are duplicating */
     }
     p = p->next;
@@ -482,18 +491,15 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
-#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  orig_func = nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-#else
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-#endif
   /* non-transient wraprecs are added to both the hashmap and linked list.
    * At request shutdown, the hashmap will free transients, but leave
    * non-transients to be freed when the linked list is disposed of which is at
    * module shutdown */
   nr_php_add_custom_tracer_common(wraprec);
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
-  nr_php_observer_overwrite_handlers(orig_func, wraprec);
+  nr_php_observer_remove_begin_handler(wraprec->func, NULL);
+  nr_php_observer_remove_end_handler(wraprec->func, NULL);
 #endif
 
   return wraprec; /* return the new wraprec */
@@ -579,6 +585,10 @@ void nr_php_add_transaction_naming_function(const char* namestr,
 
   if (NULL != wraprec) {
     wraprec->is_names_wt_simple = 1;
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_add_begin_handler(wraprec->func, wraprec);
+    nr_php_observer_add_end_handler(wraprec->func, wraprec);
+#endif
   }
 }
 
@@ -588,6 +598,10 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
   if (NULL != wraprec) {
     wraprec->create_metric = 1;
     wraprec->is_user_added = 1;
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_add_begin_handler(wraprec->func, wraprec);
+    nr_php_observer_add_end_handler(wraprec->func, wraprec);
+#endif
   }
 }
 
@@ -596,6 +610,10 @@ void nr_php_add_exception_function(zend_function* func TSRMLS_DC) {
 
   if (wraprec) {
     wraprec->is_exception_handler = 1;
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_add_begin_handler(func, wraprec);
+    nr_php_observer_add_end_handler(func, wraprec);
+#endif
   }
 }
 
@@ -651,6 +669,10 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
     if (wraprec->is_wrapped && callback) {
       (callback)(TSRMLS_C);
     }
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+    nr_php_observer_add_begin_handler(wraprec->func, wraprec);
+    nr_php_observer_add_end_handler(wraprec->func, wraprec);
+#endif
   }
 }
 
