@@ -76,6 +76,9 @@ newrelic.cross_application_tracer.enabled = false
 Hello
 */
 
+if (version_compare(PHP_VERSION, "7.0", "<")) {
+  die("skip: CLM for PHP 5 not supported\n");
+}
 newrelic_add_custom_tracer('main');
 function main()
 {

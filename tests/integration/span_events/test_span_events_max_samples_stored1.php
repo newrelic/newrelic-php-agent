@@ -29,7 +29,7 @@ newrelic.span_events.max_samples_stored = 101
 newrelic_add_custom_tracer('main');
 function main()
 {
-  usleep(10);
+  usleep(1);
 }
 
 $sample_size = 10000;

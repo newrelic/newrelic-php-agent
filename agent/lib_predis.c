@@ -758,7 +758,11 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_before) {
 
   nr_segment_t* segment = NULL;
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  segment->execute_data = auto_segment->execute_data;
+#else
   segment->wraprec = auto_segment->wraprec;
+#endif
 }
 NR_PHP_WRAPPER_END
 

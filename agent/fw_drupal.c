@@ -265,7 +265,11 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
      * fcall_end is able to properly dispatch to the after wrapper, as
      * this new segment is now at the top of the segment stack.
      */
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
     NRPRG(drupal_http_request_segment)->wraprec = auto_segment->wraprec;
+#else
+    NRPRG(drupal_http_request_segment)->execute_data = auto_segment->execute_data;
+#endif
   }
 }
 NR_PHP_WRAPPER_END

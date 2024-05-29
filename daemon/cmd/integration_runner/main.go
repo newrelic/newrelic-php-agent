@@ -524,7 +524,7 @@ func runTest(t *integration.Test) {
 
 		if err != nil {
 			t.Output = body
-			t.Fatal(fmt.Errorf("error executing skipif: %v", err))
+			t.Fatal(fmt.Errorf("error executing skipif: %v %v", err, skipIf))
 			return
 		}
 

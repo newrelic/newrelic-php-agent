@@ -343,7 +343,11 @@ const zend_function_entry nr_guzzle6_requesthandler_functions[]
 
 /* }}} */
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+void nr_guzzle6_client_construct(NR_EXECUTE_PROTO) {
+#else
 NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
+#endif
   zval* config;
   zend_class_entry* guzzle_client_ce;
   zval* handler_stack;
@@ -364,16 +368,22 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
                                                   version);
   nr_free(version);
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   (void)wraprec;
+#endif
   NR_UNUSED_SPECIALFN;
 
   /* This is how we distinguish Guzzle 4/5. */
   if (nr_guzzle_does_zval_implement_has_emitter(this_var TSRMLS_CC)) {
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
     NR_PHP_WRAPPER_CALL;
+#endif
     goto end;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
   NR_PHP_WRAPPER_CALL;
+#endif
 
   /*
    * Get our middleware callable (which is just a string), and make sure it's
@@ -420,7 +430,9 @@ end:
   nr_php_zval_free(&middleware);
   nr_php_scope_release(&this_var);
 }
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 NR_PHP_WRAPPER_END
+#endif
 
 void nr_guzzle6_enable(TSRMLS_D) {
   int retval;
