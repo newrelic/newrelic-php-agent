@@ -87,7 +87,55 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   handlers.end = nr_php_observer_fcall_end;
   return handlers;
 }
+
 #else
+
+static zend_observer_fcall_begin_handler nr_php_observer_determine_begin_handler(nruserfn_t* wraprec) {
+  zend_observer_fcall_begin_handler begin = NULL;
+
+  if (NULL == wraprec) {
+    if (NRINI(tt_detail)) {
+      begin = nr_php_observer_fcall_begin;
+    } else {
+      begin = nr_php_observer_empty_fcall_begin;
+    }
+  } else {
+    if (wraprec->special_instrumentation_before) {
+      begin = (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before;
+    } else if (wraprec->is_names_wt_simple) {
+      begin = nr_php_observer_fcall_begin_name_transaction;
+    } else if (wraprec->is_transient) {
+      begin = nr_php_observer_fcall_begin;
+    } else {
+      begin = nr_php_observer_fcall_begin_instrumented;
+    }
+  }
+  return begin;
+}
+
+static zend_observer_fcall_end_handler nr_php_observer_determine_end_handler(nruserfn_t* wraprec) {
+  zend_observer_fcall_end_handler end = NULL;
+
+  if (NULL == wraprec) {
+    if (NRINI(tt_detail)) {
+      end = nr_php_observer_fcall_end;
+    } else {
+      end = nr_php_observer_empty_fcall_end;
+    }
+  } else {
+    if (wraprec->special_instrumentation) {
+      end = (zend_observer_fcall_end_handler)wraprec->special_instrumentation;
+    } else if (wraprec->is_exception_handler) {
+      end = nr_php_observer_fcall_end_exception_handler;
+    } else if (wraprec->create_metric) {
+      end = nr_php_observer_fcall_end_create_metric;
+    } else {
+      end = nr_php_observer_fcall_end;
+    }
+  }
+  return end;
+}
+
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
@@ -103,32 +151,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   //  printf("REGISTER %s\n", ZSTR_VAL(execute_data->func->common.function_name));
   //}
   wraprec = nr_php_get_wraprec(execute_data->func);
-  if (wraprec == NULL) {
-      if (0 == NRINI(tt_detail)) {
-          handlers.begin = nr_php_observer_empty_fcall_begin;
-          handlers.end = nr_php_observer_empty_fcall_end;
-          return handlers;
-      } else {
-          handlers.begin = nr_php_observer_fcall_begin;
-          handlers.end = nr_php_observer_fcall_end;
-          return handlers;
-      }
+  handlers.begin = nr_php_observer_determine_begin_handler(wraprec);
+  handlers.end = nr_php_observer_determine_end_handler(wraprec);
+  if (wraprec) {
+    nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
   }
-  handlers.begin = wraprec->special_instrumentation_before ?
-                     (zend_observer_fcall_begin_handler) wraprec->special_instrumentation_before :
-                     wraprec->is_transient ? 
-                       nr_php_observer_fcall_begin :
-                       wraprec->is_names_wt_simple ?
-                         nr_php_observer_fcall_begin_name_transaction :
-                         nr_php_observer_fcall_begin_instrumented;
-  handlers.end = wraprec->special_instrumentation ?
-                   (zend_observer_fcall_end_handler) wraprec->special_instrumentation :
-                   wraprec->is_exception_handler ?
-                     nr_php_observer_fcall_end_exception_handler :
-                     wraprec->create_metric ?
-                       nr_php_observer_fcall_end_create_metric :
-                       nr_php_observer_fcall_end;
-  nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
   return handlers;
 }
 
@@ -143,25 +170,36 @@ bool nr_php_observer_is_registered(zend_function* func) {
   return (begin_handler && *begin_handler);
 }
 
-void nr_php_observer_overwrite_handlers(zend_function* func, nruserfn_t* wraprec) {
-  if (nr_php_observer_is_registered(func)) {
-    if (zend_observer_remove_begin_handler(func, NRINI(tt_detail) ?
-                                                  nr_php_observer_fcall_begin :
-                                                  nr_php_observer_empty_fcall_begin)) {
-      zend_observer_add_begin_handler(func, wraprec->special_instrumentation_before ?
-                                                 (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before :
-                                                 nr_php_observer_fcall_begin);
-    }
-    if (zend_observer_remove_end_handler(func, NRINI(tt_detail) ?
-                                                nr_php_observer_fcall_end :
-                                                nr_php_observer_empty_fcall_end)) {
-      zend_observer_add_end_handler(func, wraprec->special_instrumentation ?
-                                               (zend_observer_fcall_end_handler)wraprec->special_instrumentation :
-                                               wraprec->is_exception_handler ?
-                                                   nr_php_observer_fcall_end_exception_handler :
-                                                   nr_php_observer_fcall_end);
-    }
+bool nr_php_observer_remove_begin_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return false;
   }
+  zend_observer_fcall_begin_handler begin = nr_php_observer_determine_begin_handler(wraprec);;
+  return zend_observer_remove_begin_handler(func, begin);
+}
+
+bool nr_php_observer_remove_end_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return false;
+  }
+  zend_observer_fcall_end_handler end = nr_php_observer_determine_end_handler(wraprec);
+  return zend_observer_remove_end_handler(func, end);
+}
+
+void nr_php_observer_add_begin_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return;
+  }
+  zend_observer_fcall_begin_handler begin = nr_php_observer_determine_begin_handler(wraprec);;
+  zend_observer_add_begin_handler(func, begin);
+}
+
+void nr_php_observer_add_end_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return;
+  }
+  zend_observer_fcall_end_handler end = nr_php_observer_determine_end_handler(wraprec);
+  zend_observer_add_end_handler(func, end);
 }
 #endif
 

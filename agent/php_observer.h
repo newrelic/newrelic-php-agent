@@ -79,8 +79,15 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
 bool nr_php_observer_is_registered(zend_function* func);
-void nr_php_observer_overwrite_handlers(zend_function* func, nruserfn_t* wraprec);
+bool nr_php_observer_remove_begin_handler(zend_function* func, nruserfn_t* wraprec);
+bool nr_php_observer_remove_end_handler(zend_function* func, nruserfn_t* wraprec);
+void nr_php_observer_add_begin_handler(zend_function* func, nruserfn_t* wraprec);
+void nr_php_observer_add_end_handler(zend_function* func, nruserfn_t* wraprec);
 
+/* 
+ * These different forms of fcall_begin and fcall_end are needed to properly utilize
+ * the fields in a wraprec without looking it up every call.
+*/
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
 void nr_php_observer_fcall_begin_name_transaction(zend_execute_data* execute_data);
