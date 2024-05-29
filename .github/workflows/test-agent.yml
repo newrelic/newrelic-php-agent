@@ -72,12 +72,8 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
           - arch: arm64
             php: '7.2'
           - arch: arm64
@@ -183,12 +179,8 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
           - arch: arm64
             php: '7.2'
           - arch: arm64
