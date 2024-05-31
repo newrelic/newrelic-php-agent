@@ -852,8 +852,8 @@ disp_get_php_list() {
 
 set_osdifile() {
   osdifile=
-  if [ -n "${NR_INSTALL_INITFILE}" ]; then
-    osdifile="${NR_INSTALL_INITFILE}"
+  if [ -n "${NR_INSTALL_INITSCRIPT}" ]; then
+    osdifile="${NR_INSTALL_INITSCRIPT}"
   fi
   if [ "${ostype}" = "darwin" ]; then
     : ${osdifile:=/usr/bin/newrelic-daemon-service}
