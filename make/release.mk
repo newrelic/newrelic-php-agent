@@ -67,7 +67,7 @@ release-daemon: Makefile daemon | releases/$(RELEASE_OS)/daemon/
 .PHONY: release-installer
 release-installer: Makefile release-installer-script release-installer-iutil
 
-release-installer-script: bin/newrelic-install bin/newrelic-php-cfg-mappings.php | releases/$(RELEASE_OS)/
+release-installer-script: bin/newrelic-install bin/newrelic-php-cfg-mappings.php bin/newrelic-install-inject-envvars.php | releases/$(RELEASE_OS)/
 	cp bin/newrelic-install releases/$(RELEASE_OS)
 	cp bin/newrelic-install-inject-envvars.php releases/$(RELEASE_OS)
 	cp bin/newrelic-php-cfg-mappings.php releases/$(RELEASE_OS)
