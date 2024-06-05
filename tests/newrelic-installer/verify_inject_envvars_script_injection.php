@@ -38,6 +38,7 @@ $script_fp = fopen($test_script, "w");
 if (!$script_fp) {
     unlink($out_ini_file);
     failure("Could not create test script $test_script!");
+    exit(1);
 }
 
 fwrite($script_fp, "#!/bin/sh\n");
@@ -52,6 +53,7 @@ $output = shell_exec("sh " . $test_script);
 unlink($test_script);
 if (!$output) {
     failure("Error running test script $test_script:\n" . $output);
+    exit(1);
 }
 
 /* if any ini directives ever need to be ignored use this array */
@@ -69,10 +71,12 @@ foreach ($names as $k => $v) {
     /* each ini value should be the env var name */
     if (!in_array($k, array_keys($ini_values))) {
         failure("Missing expected injected value for $k");
+        exit(1);
     }
 
     if ($ini_values[$k] != $names[$k]) {
         failure("Injected value for $k wrong:  expected \"$names[$k]\", actual \"$ini_values[$k]\"");
+        exit(1);
     }
 }
 

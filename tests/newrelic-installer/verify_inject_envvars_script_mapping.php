@@ -13,14 +13,23 @@ function failure(string $msg) {
 
 $names = newrelic_get_all_ini_envvar_names();
 if (0 == count($names)) {
-    trigger_error("Mapping of INI -> ENVVAR names could not be captured!");
+    failure("Mapping of INI -> ENVVAR names could not be captured!");
     exit(1);
 }
 
 $mapping_filename = "../../agent/newrelic-install-php-cfg-mappings.php";
 include $mapping_filename;
+if (!defined("INI_ENVVAR_MAP")) {
+    failure(("Mapping file $mapping_filename could not be opened!"));
+    exit(1);
+}
 $keys1 = array_keys(INI_ENVVAR_MAP);
 $keys2 = array_keys($names);
+
+if (null == $keys1 || null == $keys2 || 0 == count($keys1) || 0 == count($keys2)) {
+    failure("Not all keys could be captured!");
+    exit(1);
+}
 
 $diff1 = array_diff($keys1, $keys2);
 $diff2 = array_diff($keys2, $keys1);

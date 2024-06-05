@@ -27,6 +27,7 @@ function generate_regex(string $ini_name) {
 /* requires PHP 7+ */
  if (version_compare(PHP_VERSION, '7.0', '<')) {
     failure("requires PHP >= 7.0\n");
+    exit(1);
 }
 
 /* Mapping from INI name to environment variable name
@@ -38,6 +39,7 @@ require "newrelic-install-php-cfg-mappings.php";
 /* Verify that ini/envvar mapping was injected and is defined */
 if (!defined('INI_ENVVAR_MAP')) {
     failure("INI/ENVVAR mapping was not detected - cannot proceed!");
+    exit(1);
 }
 
 /* Verify input INI file exists */
@@ -46,21 +48,25 @@ if (3 != $argc) {
             "Usage: newrelic-install-inject-envvars.php <input INI> <output INI>\n" .
             "    <input INI>   Existing INI file\n" .
             "    <output INI>  Output INI file with injected env var values\n\n");
+    exit(1);
 }
 
 $ini_filename = $argv[1];
 if (!file_exists($ini_filename)) {
     failure("Input INI file \"$ini_filename\" does not exist!");
+    exit(1);
 }
 
 $out_ini_filename = $argv[2];
 if (file_exists($out_ini_filename)) {
     failure("Output INI file \"$out_ini_filename\" exists - will not overwrite!");
+    exit(1);
 }
 
 $data = file_get_contents(($ini_filename));
 if (!$data) {
     failure("Could not read INI file \"$ini_filename\"!");
+    exit(1);
 }
 
 $pattern = array();
@@ -98,6 +104,7 @@ if (0 < count($pattern)) {
     $fh = fopen($out_ini_filename, "w");
     if (!$fh) {
         failure("Unable to write out modified INI file $out_ini_filename");
+        exit(1);
     }
     fwrite($fh, $data);
     fclose($fh);
