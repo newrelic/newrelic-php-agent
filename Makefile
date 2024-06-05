@@ -205,7 +205,7 @@ daemon-clean:
 # missing from the $PATH.
 #
 
-installer: bin/newrelic-install bin/newrelic-install-inject-envvars.php bin/newrelic-php-cfg-mappings.php bin/newrelic-iutil | bin/
+installer: bin/newrelic-install bin/newrelic-install-inject-envvars.php bin/newrelic-install-php-cfg-mappings.php bin/newrelic-iutil | bin/
 
 bin/newrelic-install: agent/newrelic-install.sh Makefile VERSION | bin/
 	sed -e "/nrversion:=/s,UNSET,$(AGENT_VERSION)," $< > $@
@@ -215,7 +215,7 @@ bin/newrelic-install-inject-envvars.php: agent/newrelic-install-inject-envvars.p
 	cp $< $@
 	chmod 755 $@
 
-bin/newrelic-php-cfg-mappings.php: agent/newrelic-php-cfg-mappings.php Makefile | bin/
+bin/newrelic-install-php-cfg-mappings.php: agent/newrelic-install-php-cfg-mappings.php Makefile | bin/
 	cp $< $@
 	chmod 755 $@
 

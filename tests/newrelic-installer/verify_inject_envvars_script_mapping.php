@@ -17,7 +17,7 @@ if (0 == count($names)) {
     exit(1);
 }
 
-$mapping_filename = "../../agent/newrelic-php-cfg-mappings.php";
+$mapping_filename = "../../agent/newrelic-install-php-cfg-mappings.php";
 include $mapping_filename;
 $keys1 = array_keys(INI_ENVVAR_MAP);
 $keys2 = array_keys($names);

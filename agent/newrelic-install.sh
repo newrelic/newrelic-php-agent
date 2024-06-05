@@ -324,7 +324,7 @@ if [ -z "${ispkg}" ]; then
 fi
 check_file "${ilibdir}/scripts/newrelic.ini.template"
 check_file "${ilibdir}/newrelic-install-inject-envvars.php"
-check_file "${ilibdir}/newrelic-php-cfg-mappings.php"
+check_file "${ilibdir}/newrelic-install-php-cfg-mappings.php"
 # Check that exxtension artifacts exist for all supported PHP versions
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION

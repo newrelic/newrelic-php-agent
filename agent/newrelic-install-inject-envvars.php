@@ -33,7 +33,7 @@ function generate_regex(string $ini_name) {
  * Expected form:
  *    define('INI_ENVVAR_MAP', array(....));
  */
-require "newrelic-php-cfg-mappings.php";
+require "newrelic-install-php-cfg-mappings.php";
 
 /* Verify that ini/envvar mapping was injected and is defined */
 if (!defined('INI_ENVVAR_MAP')) {
