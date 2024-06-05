@@ -1488,7 +1488,7 @@ install_agent_here() {
     if [ -n "${pi_inidir_cli}" -a ! -f "${pi_inidir_cli}/newrelic.ini" ]; then
       # check if doing old style injection of just "newrelic.license" or if injecting values from env vars
       if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
-        if php ./newrelic-install-inject-envvars.php "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_cli}/newrelic.ini"; then
+        if php "${ilibdir}/newrelic-install-inject-envvars.php" "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_cli}/newrelic.ini"; then
           if [ "0" != "$?" ]; then
             istat="failed"
           fi
@@ -1512,7 +1512,7 @@ install_agent_here() {
 
     if [ -z "${istat}" -a -n "${pi_inidir_dso}" -a ! -f "${pi_inidir_dso}/newrelic.ini" ]; then
       if [ -n "${NR_CONFIG_WITH_ENVIRON}" ]; then
-        if php ./newrelic-install-inject-envvars.php "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_dso}/newrelic.ini"; then
+        if php "${ilibdir}/newrelic-install-inject-envvars.php" "${ilibdir}/scripts/newrelic.ini.template" "${pi_inidir_dso}/newrelic.ini"; then
           if [ "0" != "$?" ]; then
             istat="failed"
           fi
