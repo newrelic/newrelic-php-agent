@@ -857,8 +857,8 @@ set_osdifile() {
   fi
   if [ "${ostype}" = "darwin" ]; then
     : ${osdifile:=/usr/bin/newrelic-daemon-service}
-  elif [ -f /etc/arch-release -o ! -d /etc/init.d ]; then
-    # Systems that use systemd instead of init scripts
+  elif [ -f /etc/arch-release -o -d /etc/rc.d ]; then
+    # Systems that use systemd instread of init scripts
     : ${osdifile:=/etc/rc.d/newrelic-daemon}
   else
     : ${osdifile:=/etc/init.d/newrelic-daemon}
