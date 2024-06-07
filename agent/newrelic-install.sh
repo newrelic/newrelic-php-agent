@@ -1780,6 +1780,10 @@ EOF
   set_osdifile
 
   if [ -z "${ispkg}" ]; then
+    # ensure target directory exists
+    if [ ! -d "$(dirname ${osdifile})" ]; then
+      logcmd mkdir -p -m 0755 "$(dirname ${osdifile})"
+    fi
     if logcmd cp -f "${ilibdir}/scripts/init.${ostype}" "${osdifile}"; then
       logcmd chmod 755 "${osdifile}" || {
         fatal "failed to set permissions on ${osdifile}"
@@ -1798,6 +1802,10 @@ EOF
     fi
 
     if [ -n "${sysconf}" -a ! -f "${sysconf}" ]; then
+      # ensure target directory exists
+      if [ ! -d "$(dirname ${sysconf})" ]; then
+        logcmd mkdir -p -m 0755 "$(dirname ${sysconf})"
+      fi
       if logcmd cp -f "${ilibdir}/scripts/newrelic.sysconfig" "${sysconf}"; then
         logcmd chmod 755 "${sysconf}" || {
           fatal "failed to set permissions on ${sysconf}"
