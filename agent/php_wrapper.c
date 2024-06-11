@@ -79,16 +79,17 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean_extra(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback,
-    const char *extra) {
+    const char* extra) {
+  nruserfn_t* wraprec = nr_php_wrap_user_function_before_after_clean(
+      name, namelen, before_callback, after_callback, clean_callback);
 
-  nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
+  if (nrunlikely(NULL == wraprec)) {
+    nrl_warning(NRL_INSTRUMENT, "%s: unable to wrap '%s'", __func__,
+                NRSAFESTR(name));
+    return wraprec;
+  }
 
   wraprec->extra = extra;
-
-  nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
-                                                  before_callback,
-                                                  after_callback,
-                                                  clean_callback);
 
   return wraprec;
 }
