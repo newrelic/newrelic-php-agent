@@ -1,0 +1,12 @@
+#include "php_agent.h"
+#include "util_hashmap.h"
+
+#define KEY_ENTITY_NAME "entity.name"
+#define KEY_ENTITY_TYPE "entity.type"
+#define KEY_ENTITY_GUID "entity.guid"
+#define KEY_HOSTNAME "hostname"
+#define KEY_AGENT_RUN_ID "agent.run.id"
+#define KEY_ACCOUNT_ID "account.id"
+#define KEY_LICENSE "license"
+#define KEY_PLICENSE "plicense"
+#define KEY_HIGH_SECURITY "high_security"
