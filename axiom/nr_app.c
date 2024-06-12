@@ -121,6 +121,7 @@ void nr_app_destroy(nrapp_t** app_ptr) {
   nr_free(app->host_name);
   nr_free(app->entity_guid);
   nr_free(app->entity_name);
+  nr_free(app->account_id);
   nr_rules_destroy(&app->url_rules);
   nr_rules_destroy(&app->txn_rules);
   nr_segment_terms_destroy(&app->segment_terms);

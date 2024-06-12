@@ -1332,3 +1332,86 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          for vulnerability management.
 ;
 ;newrelic.vulnerability_management.package_detection.enabled = true
+
+; Setting: newrelic.security.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if attack detection security module is to be enabled
+;
+newrelic.security.enabled = true
+
+; Setting: newrelic.security.mode
+; Type   : string
+; Scope  : system
+; Default: "IAST"
+; Info   : Security module provides two modes "IAST" or "RASP"
+;          See documentation for more details
+;
+;newrelic.security.mode = "IAST"
+
+; Setting: newrelic.security.validator_service_endpoint_url
+; Type   : string
+; Scope  : system
+; Default: "wss://csec.nr-data.net"
+; Info   : New Relic<E2><80><99>s security module SaaS connection URLs
+;
+;newrelic.security.validator_service_url = "wss://csec.nr-data.net"
+
+; Setting: newrelic.security.agent.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Used to enable security module, default false is equivalent to
+;           security module not even loaded. If this setting is set to true,
+;           then only security module is loaded and to enable it, a restart
+;           of application is required. This is different than
+;           newrelic.security.enabled, in terms that security.enabled decides
+;           runtime behavior of security module but security.agent.enabled
+;           would not even load the security module when set to false
+;
+;newrelic.security.agent.enabled = false
+
+; Setting: newrelic.security.detection.rci.enabled
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : Indicates if detection of remote code injection attack category is to be enabled
+;
+;newrelic.security.detection.rci.enabled = true
+
+; Setting: newrelic.security.detection.rxss.enabled
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : Indicates if detection of reflected xss attack category is to be enabled
+;
+;newrelic.security.detection.rxss.enabled = true
+
+; Setting: newrelic.security.detection.deserialization.enabled
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : Indicates if detection of deserialization attack category is to be enabled
+;
+;newrelic.security.detection.deserialization.enabled = true
+
+; Setting: newrelic.security.request.body_limit
+; Type   : unsigned integer
+; Scope  : system
+; Default: 300
+; Info   : Sets the maximum limit of the request body to be read in kb.
+;
+;newrelic.security.request.body_limit = 300
+
+; Setting: newrelic.security.validator.client_ssl_cert_filepath
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Sets the full path of the client certificate in PEM
+;          format. When set, this certificate will be used to
+;          authenticate the New Relic IAST Security Engine's url. If
+;          not set, the default certificate will be used. Make
+;          sure the file permissions are correct.
+;
+;newrelic.security.validator.client_ssl_cert_filepath = ""
