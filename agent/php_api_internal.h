@@ -16,6 +16,8 @@
  */
 extern PHP_FUNCTION(newrelic_get_request_metadata);
 
+extern PHP_FUNCTION(newrelic_get_security_metadata);
+
 #ifdef ENABLE_TESTING_API
 
 /*
