@@ -83,15 +83,15 @@ NR_PHP_WRAPPER_END
 /*
  * Wrap the Slim 3\Slim\Route::run method
  * and
- * Slim 4 Slim\\Routing\\Route::run 
-  * which are the happy paths for Slim 3/4 routing.
+ * Slim 4 Slim\\Routing\\Route::run
+ * which are the happy paths for Slim 3/4 routing.
  * i.e. The router has succesfully matched the URL and dispatched the request
  * to a route.
  *
- * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
- * `NR_OK_TO_OVERWRITE` before wrapper_call and as this corresponds to calling
- * the last wrapped function call of this type gets to name the txn therefore
- * needs a before call for OAPI.
+ * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the last wrapped 
+ * function call of this type gets to name the txn; therefore needs a before 
+ * call for OAPI.
  */
 NR_PHP_WRAPPER(nr_slim3_4_route_run) {
   zval* this_var = NULL;
