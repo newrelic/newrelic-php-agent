@@ -1038,9 +1038,19 @@ for this copy of PHP. We apologize for the inconvenience.
 
   case "${pi_ver}" in
      7.0.*)
+      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
+         echo $warning_message
+      fi
+      log $warning_message
       ;;
 
     7.1.*)
+      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
+         echo $warning_message
+      fi
+      log $warning_message
       ;;
 
     7.2.*)
