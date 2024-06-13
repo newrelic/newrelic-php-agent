@@ -117,7 +117,7 @@ NR_PHP_WRAPPER_END
 
 /*
  * public function dispatch(string $method, string $uri): RoutingResults
- * This is fallback naming mechanism for Slim 4 routing when the Slime 4
+ * This is fallback naming mechanism for Slim 4 routing when the Slim 4
  * Slim\\Routing\\Route::run due to errors or middlware intervening.
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
  * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the first wrapped
