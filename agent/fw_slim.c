@@ -89,8 +89,8 @@ NR_PHP_WRAPPER_END
  * to a route.
  *
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
- * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the last wrapped 
- * function call of this type gets to name the txn; therefore needs a before 
+ * `NR_OK_TO_OVERWRITE` and as this corresponds to calling the last wrapped
+ * function call of this type gets to name the txn; therefore needs a before
  * call for OAPI.
  */
 NR_PHP_WRAPPER(nr_slim3_4_route_run) {
@@ -118,7 +118,8 @@ NR_PHP_WRAPPER_END
 /*
  * public function dispatch(string $method, string $uri): RoutingResults
  * This is fallback naming mechanism for Slim 4 routing when the Slim 4
- * Slim\\Routing\\Route::run due to errors or middlware intervening.
+ * Slim\\Routing\\Route::run does not run due middlware intervening on
+ * certain errors.
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
  * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the first wrapped
  * function in func_begin.
