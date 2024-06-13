@@ -133,7 +133,7 @@ NR_PHP_WRAPPER(nr_slim4_route_dispatch) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_SLIM);
 
   /* Get the route name. The first arg is the method, 2nd arg is routename. */
-  route_name = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  route_name = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
 
   if (nr_php_is_zval_valid_string(route_name)) {
     txn_name = nr_strndup(Z_STRVAL_P(route_name), Z_STRLEN_P(route_name));
