@@ -329,7 +329,7 @@ void nr_mongodb_enable() {
       nr_mongodb_operation_before, nr_mongodb_operation_after,
       nr_mongodb_operation_after, "databaseCommand");
 
-#else  /* Non-OAPI */
+#else /* Non-OAPI */
 
   /*
    * We instrument interesting methods on the MongoDB\Collection class via their
@@ -422,9 +422,10 @@ void nr_mongodb_enable() {
       NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
       nr_mongodb_operation, "databaseCommand" TSRMLS_CC);
 
+#endif /* OAPI */
+
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), "mongodb/mongodb",
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
-#endif /* OAPI */
 }
