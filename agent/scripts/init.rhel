@@ -250,7 +250,7 @@ EOF
         failure
         echo
       else
-        echo " [ FAILED ]"
+        echo " [FAILED]"
       fi
     fi
     return 1
