@@ -240,7 +240,7 @@ EOF
         success
         echo
       else
-        echo " [ OK ]"
+        echo " [  OK  ]"
       fi
     fi
     return 0
