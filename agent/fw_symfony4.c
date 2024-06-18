@@ -267,9 +267,9 @@ void nr_symfony4_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
-      nr_symfony4_console_application_run, NULL, NULL);
+      nr_symfony4_console_application_run, NULL);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Symfony\\Component\\Console\\Command\\Command::run"),
