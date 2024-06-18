@@ -197,17 +197,22 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
       .port_path_or_id = NULL,
       .database_name = NULL,
   };
+
+  // tell the compiler to ignore the cast from const char * to char *
+  // to save having to do a strdup operation
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
   nr_segment_datastore_params_t params = {
     .datastore = {
       .type = NR_DATASTORE_MONGODB,
     },
-    .operation = nr_strdup (wraprec->extra),
+    .operation = (char *)wraprec->extra,
     .instance = &instance,
     .callbacks = {
       .backtrace = nr_php_backtrace_callback,
     },
   };
-
+#pragma GCC diagnostic pop
   /*
    * We check for the interface all Collection operations extend, rather than
    * their specific class. Not all operations have the properties we need but
@@ -245,7 +250,6 @@ leave:
   nr_php_scope_release(&this_var);
   nr_free(instance.host);
   nr_free(instance.port_path_or_id);
-  nr_free(params.operation);
 }
 NR_PHP_WRAPPER_END
 
