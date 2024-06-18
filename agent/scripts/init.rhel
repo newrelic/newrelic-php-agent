@@ -239,6 +239,8 @@ EOF
       if [ $has_initd_functions -eq 1 ]; then
         success
         echo
+      else
+        echo " [ OK ]"
       fi
     fi
     return 0
@@ -247,6 +249,8 @@ EOF
       if [ $has_initd_functions -eq 1 ]; then
         failure
         echo
+      else
+        echo " [ FAILED ]"
       fi
     fi
     return 1
@@ -294,6 +298,8 @@ stop() {
         if [ $has_initd_functions -eq 1 ]; then
           failure
           echo
+        else
+          echo " [ FAILED ]"
         fi
       fi
       return 1
@@ -302,6 +308,8 @@ stop() {
         if [ $has_initd_functions -eq 1 ]; then
           success
           echo
+        else
+          echo " [ OK ]"
         fi
       fi
       return 0
