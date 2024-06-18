@@ -299,7 +299,7 @@ stop() {
           failure
           echo
         else
-          echo " [ FAILED ]"
+          echo " [FAILED]"
         fi
       fi
       return 1
@@ -309,7 +309,7 @@ stop() {
           success
           echo
         else
-          echo " [ OK ]"
+          echo " [  OK  ]"
         fi
       fi
       return 0
