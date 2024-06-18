@@ -1,9 +1,8 @@
+#!/sbin/openrc-run
 #
 # Copyright 2020 New Relic Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
-#!/sbin/openrc-run
 
 description="New Relic Daemon"
 command="${nrdaemon:-/usr/bin/newrelic-daemon}"
