@@ -472,9 +472,15 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 		if len(fields) == 2 {
 			countStr := strings.TrimSpace(fields[1])
 			if len(countStr) > 0 {
-				count, err = strconv.ParseInt(countStr, 10, 64)
-				if nil != err {
-					t.Fail(fmt.Errorf("EXPECT_METRICS_EXIST has unparsable count: %s", spec))
+				// is it "??" - with or without quotes
+				match, _ := regexp.MatchString("^\"*\\?\\?\"*$", countStr)
+				if match {
+					count = -1
+				} else {
+					count, err = strconv.ParseInt(countStr, 10, 64)
+					if nil != err {
+						t.Fail(fmt.Errorf("EXPECT_METRICS_EXIST has unparsable count: %s", spec))
+					}
 				}
 			} else {
 				count = -1
