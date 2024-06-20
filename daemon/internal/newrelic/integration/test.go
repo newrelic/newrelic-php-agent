@@ -463,8 +463,6 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 		var err error
 		var count int64
 
-		//fmt.Printf("metricsExist = %s\n", t.metricsExist)
-
 		fields := strings.Split(spec, ",")
 		name := fields[0]
 		name = strings.TrimSpace(name)
@@ -483,19 +481,12 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 			}
 		}
 		expected := strings.Replace(name, "__FILE__", t.Path, -1)
-		//fmt.Printf("name = %s count = %d\n", expected, count)
-
-		// if harvest.Metrics.Has(expected) {
-		// 	actCount := harvest.Metrics.metrics[expected]
-		// 	fmt.Printf("actual count = %d\n", actCount)
-		// }
 
 		id := newrelic.AgentRunID("?? agent run id")
 		actualJSON, _ := newrelic.IntegrationData(harvest.Metrics, id, time.Now())
 
 		actualPretty := bytes.Buffer{}
 		json.Indent(&actualPretty, actualJSON, "", "  ")
-		//fmt.Printf("harvest.Metrics = %s", actualPretty.String())
 
 		// scrub actual spans
 		scrubjson := ScrubLineNumbers(actualJSON)
@@ -531,7 +522,6 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 
 		// expect array of len 4
 		v2, _ := x1.([]interface{})
-		//fmt.Printf("len(v2) = %d\n", len(v2))
 		if len(v2) != 4 {
 			t.Fatal(errors.New("metric event data json doesnt match expected format - expected 4 elements"))
 			return
@@ -539,36 +529,28 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 
 		// get array of actual metric from 4rd element
 		actual := v2[3].([]interface{})
-
-		//fmt.Printf("actual = %v\n\n", actual)
-
 		found := false
 		for i := 0; i < len(actual); i++ {
-			//fmt.Printf("\nactual[i] = %v\n", actual[i])
-
 			actualName := actual[i].([]interface{})[0].(map[string]interface{})
 			act1 := actualName["name"]
 			act2 := actualName["scope"]
-			//fmt.Printf("expected = %s act1 = %s act2 = %s\n", expected, act1, act2)
 
 			// only support an empty scope for now
 			if act1 == expected && act2 == nil {
 				// compare count
 				actualData := actual[i].([]interface{})[1]
 				actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
-				//fmt.Printf("actualCount = %v\n", actualCount)
-				//fmt.Printf("found a match!\n")
 
 				metricPasses := true
-				if (count == -1) {
+				if count == -1 {
 					if actualCount == 0 {
 						metricPasses = false
 					}
-				} else if (actualCount != count) {
+				} else if actualCount != count {
 					metricPasses = false
 				}
 
-				if (!metricPasses) {
+				if !metricPasses {
 					t.Fail(fmt.Errorf("metric count does not match for %s: expected = %d actual = %d\n"+
 						"actual metric table: %s", expected, count, actualCount, actualPretty.String()))
 					return
@@ -825,121 +807,6 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 
 	if nil != t.metricsExist {
 		t.compareMetricsExist(harvest)
-		if false {
-			for _, spec := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
-				var err error
-				var count int64
-
-				//fmt.Printf("metricsExist = %s\n", t.metricsExist)
-
-				fields := strings.Split(spec, " ")
-				name := fields[0]
-				name = strings.TrimSpace(name)
-				count = 1
-				if 2 == len(fields) {
-					count, err = strconv.ParseInt(fields[1], 10, 64)
-					if nil != err {
-						t.Fail(fmt.Errorf("EXPECT_METRICS_EXIST has unparsable count: %s", spec))
-					}
-				}
-				expected := strings.Replace(name, "__FILE__", t.Path, -1)
-				//fmt.Printf("name = %s count = %d\n", expected, count)
-
-				// if harvest.Metrics.Has(expected) {
-				// 	actCount := harvest.Metrics.metrics[expected]
-				// 	fmt.Printf("actual count = %d\n", actCount)
-				// }
-
-				id := newrelic.AgentRunID("?? agent run id")
-				actualJSON, err := newrelic.IntegrationData(harvest.Metrics, id, time.Now())
-
-				actualPretty := bytes.Buffer{}
-				json.Indent(&actualPretty, actualJSON, "", "  ")
-				//fmt.Printf("harvest.Metrics = %s", actualPretty.String())
-
-				// scrub actual spans
-				scrubjson := ScrubLineNumbers(actualJSON)
-				scrubjson = ScrubFilename(scrubjson, t.Path)
-				scrubjson = ScrubHost(scrubjson)
-
-				// parse to internal format
-				var x1 interface{}
-				if err := json.Unmarshal(scrubjson, &x1); nil != err {
-					t.Fatal(fmt.Errorf("unable to parse actual metric like json for fuzzy matching: %v", err))
-					return
-				}
-
-				// expect x1 to be of type "[]interface {}" which wraps the entire metric event data
-				// within this generic array there will be:
-				// - a string of the form "?? agent run id"
-				// - a timestamp
-				// - another timestamp
-				// - an array of all metrics
-				//   - an array for a single metric
-				//   - map containing key for the metric name - can include scope
-				//   - array of length 6 containing metric data values
-
-				// test initial type is as expected
-				switch x1.(type) {
-				case []interface{}:
-				default:
-					t.Fatal(errors.New("metric event data json doesnt match expected format"))
-					return
-				}
-
-				// expect array of len 4
-				v2, _ := x1.([]interface{})
-				//fmt.Printf("len(v2) = %d\n", len(v2))
-				if 4 != len(v2) {
-					t.Fatal(errors.New("metric event data json doesnt match expected format - expected 4 elements"))
-					return
-				}
-
-				// get array of actual metric from 4rd element
-				actual := v2[3].([]interface{})
-
-				//fmt.Printf("actual = %v\n\n", actual)
-
-				found := false
-				for i := 0; i < len(actual); i++ {
-					//fmt.Printf("\nactual[i] = %v\n", actual[i])
-
-					actualName := actual[i].([]interface{})[0].(map[string]interface{})
-					act1 := actualName["name"]
-					act2 := actualName["scope"]
-					//fmt.Printf("expected = %s act1 = %s act2 = %s\n", expected, act1, act2)
-
-					// only support an empty scope for now
-					if act1 == expected && act2 == nil {
-						// compare count
-						actualData := actual[i].([]interface{})[1]
-						actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
-						//fmt.Printf("actualCount = %v\n", actualCount)
-						//fmt.Printf("found a match!\n")
-
-						if actualCount != count {
-							t.Fail(fmt.Errorf("metric count does not match for %s: expected = %d actual = %d", expected, count, actualCount))
-							return
-						}
-
-						found = true
-						break
-					}
-
-				}
-
-				if !found {
-					t.Fail(fmt.Errorf("metric %s not found, actual metric table: %s", expected, actualPretty.String()))
-					return
-				}
-
-				// if !harvest.Metrics.Has(expected) {
-				// 	actualPretty := bytes.Buffer{}
-				// 	json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
-				// 	t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", expected, actualPretty.String()))
-				// }
-			}
-		}
 	}
 
 	if nil != t.metricsDontExist {
