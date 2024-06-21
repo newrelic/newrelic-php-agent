@@ -36,11 +36,6 @@ services:
     ports:
       - "11211:11211"
     container_name: memcached
-#  mongodb:
-#    image: mongo:latest
-#    restart: always
-#    ports:
-#      - "27019:27019"
   postgres:
     image: postgres
     restart: always
@@ -56,8 +51,6 @@ services:
 
     environment:
       MEMCACHE_HOST: memcached
-
-#      MONGO_HOST: mongodb
 
       MYSQL_DB: database
       MYSQL_USER: admin
@@ -85,8 +78,6 @@ services:
     user: ${UID}:${GID}
     environment:
       MEMCACHE_HOST: memcached
-
-#      MONGO_HOST: mongodb
 
       MYSQL_DB: database
       MYSQL_USER: admin
