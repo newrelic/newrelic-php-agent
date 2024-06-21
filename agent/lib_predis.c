@@ -764,7 +764,9 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_before) {
 
   nr_segment_t* segment = NULL;
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  segment->wraprec = auto_segment->wraprec;
+  if (NULL != segment) {
+    segment->wraprec = auto_segment->wraprec;
+  }
 }
 NR_PHP_WRAPPER_END
 
@@ -894,5 +896,4 @@ void nr_predis_enable(TSRMLS_D) {
       NR_PSTR("Predis\\Connection\\WebdisConnection::executeCommand"),
       nr_predis_webdisconnection_executeCommand TSRMLS_CC);
 #endif /* OAPI */
-
 }
