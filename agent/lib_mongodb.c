@@ -278,6 +278,11 @@ void nr_mongodb_enable() {
       nr_mongodb_operation_after, "count");
 
   nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\CountDocuments::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "countDocuments");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
       NR_PSTR("MongoDB\\Operation\\CreateIndexes::execute"),
       nr_mongodb_operation_before, nr_mongodb_operation_after,
       nr_mongodb_operation_after, "createIndexes");
