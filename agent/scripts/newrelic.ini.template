@@ -1339,7 +1339,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Default: false
 ; Info   : Indicates if attack detection security module is to be enabled
 ;
-newrelic.security.enabled = true
+;newrelic.security.enabled = true
 
 ; Setting: newrelic.security.mode
 ; Type   : string
