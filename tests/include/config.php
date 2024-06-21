@@ -24,14 +24,6 @@ if ("" != $MYSQL_SOCKET) {
   $MYSQL_SERVER = $MYSQL_HOST . ":" . $MYSQL_PORT;
 }
 
-if (class_exists('MongoClient')) {
-  $MONGO_HOST = isset_or('MONGO_HOST', MongoClient::DEFAULT_HOST);
-  $MONGO_PORT = isset_or('MONGO_PORT', MongoClient::DEFAULT_PORT);
-} else {
-  $MONGO_HOST = null;
-  $MONGO_PORT = null;
-}
-
 $MEMCACHE_HOST = isset_or('MEMCACHE_HOST', '127.0.0.1');
 $MEMCACHE_PORT = isset_or('MEMCACHE_PORT', '11211');
 

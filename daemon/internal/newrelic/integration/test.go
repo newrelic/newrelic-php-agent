@@ -604,7 +604,17 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 					expected_version = override_version.(string)
 				}
 
-				if testPackageNameOnly || expected_version == actualPackages[i].Version {
+				if testPackageNameOnly {
+					if " " != actualPackages[i].Version {
+						t.Fail(fmt.Errorf("Expected no package version and a package version was detected - expected \" \" actual %+v. ",
+							actualPackages[i].Version))
+						return
+					} else {
+						continue
+					}
+				}
+
+				if expected_version == actualPackages[i].Version {
 					continue
 				}
 			}

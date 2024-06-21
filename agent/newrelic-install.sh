@@ -852,8 +852,8 @@ disp_get_php_list() {
 
 set_osdifile() {
   osdifile=
-  if [ -n "${NR_INSTALL_INITFILE}" ]; then
-    osdifile="${NR_INSTALL_INITFILE}"
+  if [ -n "${NR_INSTALL_INITSCRIPT}" ]; then
+    osdifile="${NR_INSTALL_INITSCRIPT}"
   fi
   if [ "${ostype}" = "darwin" ]; then
     : ${osdifile:=/usr/bin/newrelic-daemon-service}
@@ -1038,9 +1038,19 @@ for this copy of PHP. We apologize for the inconvenience.
 
   case "${pi_ver}" in
      7.0.*)
+      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
+         echo $warning_message
+      fi
+      log $warning_message
       ;;
 
     7.1.*)
+      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
+      if [ -z "${NR_INSTALL_SILENT}" ]; then
+         echo $warning_message
+      fi
+      log $warning_message
       ;;
 
     7.2.*)
@@ -1780,6 +1790,10 @@ EOF
   set_osdifile
 
   if [ -z "${ispkg}" ]; then
+    # ensure target directory exists
+    if [ ! -d "$(dirname ${osdifile})" ]; then
+      logcmd mkdir -p -m 0755 "$(dirname ${osdifile})"
+    fi
     if logcmd cp -f "${ilibdir}/scripts/init.${ostype}" "${osdifile}"; then
       logcmd chmod 755 "${osdifile}" || {
         fatal "failed to set permissions on ${osdifile}"
@@ -1798,6 +1812,10 @@ EOF
     fi
 
     if [ -n "${sysconf}" -a ! -f "${sysconf}" ]; then
+      # ensure target directory exists
+      if [ ! -d "$(dirname ${sysconf})" ]; then
+        logcmd mkdir -p -m 0755 "$(dirname ${sysconf})"
+      fi
       if logcmd cp -f "${ilibdir}/scripts/newrelic.sysconfig" "${sysconf}"; then
         logcmd chmod 755 "${sysconf}" || {
           fatal "failed to set permissions on ${sysconf}"
