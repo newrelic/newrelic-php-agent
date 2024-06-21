@@ -32,4 +32,6 @@ typedef struct _nr_php_csec_metadata_t {
  *          -2 for invalid internal state
  */
 extern int nr_php_csec_get_metadata(nr_php_csec_metadata_t*);
+typedef int (*nr_php_csec_get_metadata_t)(nr_php_csec_metadata_t*);
+#define NR_PHP_CSEC_GET_METADATA "nr_php_csec_get_metadata"
 #endif
