@@ -205,6 +205,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
   nr_segment_datastore_params_t params = {
+    .collection = NULL,
     .datastore = {
       .type = NR_DATASTORE_MONGODB,
     },
