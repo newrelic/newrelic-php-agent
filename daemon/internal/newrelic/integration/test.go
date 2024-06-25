@@ -533,7 +533,7 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 			return
 		}
 
-		// get array of actual metric from 4rd element
+		// get array of actual metric from 4th element
 		actual := v2[3].([]interface{})
 		found := false
 		for i := 0; i < len(actual); i++ {
