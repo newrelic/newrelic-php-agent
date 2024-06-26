@@ -19,6 +19,27 @@ on:
   pull_request:
 
 jobs:
+  gofmt-check:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v4
+        with:
+          path: php-agent
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./php-agent/daemon/go.mod
+      - name: Display go version
+        run: |
+          go version
+      - name: Run go fmt
+        run: |
+          gofmt -d -e ./php-agent/daemon
+          echo "### gofmt violations found in $(gofmt -l -e ./php-agent/daemon | wc -l) files" >> $GITHUB_STEP_SUMMARY
+          gofmt -l -e ./php-agent/daemon >> $GITHUB_STEP_SUMMARY
+        shell: bash
   daemon-unit-tests:
     runs-on: ubuntu-latest
     env:
