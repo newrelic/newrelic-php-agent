@@ -343,11 +343,9 @@ static zend_function_entry newrelic_functions[] = {
 #ifdef PHP8
     PHP_FE(newrelic_get_linking_metadata, newrelic_arginfo_void)
     PHP_FE(newrelic_get_trace_metadata, newrelic_arginfo_void)
-    PHP_FE(newrelic_get_security_metadata, newrelic_arginfo_void)
 #else
     PHP_FE(newrelic_get_linking_metadata, 0)
     PHP_FE(newrelic_get_trace_metadata, 0)
-    PHP_FE(newrelic_get_security_metadata, 0)
 #endif /* PHP 8 */
     /*
      * Integration test helpers
