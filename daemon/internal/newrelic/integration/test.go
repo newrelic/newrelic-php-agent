@@ -458,6 +458,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	}
 }
 
+// Handles EXPECT_METRICS_EXIST
 func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 	for _, spec := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
 		var err error
