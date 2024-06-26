@@ -21,7 +21,8 @@ typedef enum {
 /*
  * Purpose : Copy requested app meta data into allocated *value.
  *           The caller is responsible for freeing the memory
- *           allocated.
+ *           allocated. The value is a string representation of
+ *           the requested metadata.
  *
  * Params  : Pointer to a nr_php_csec_metadata_t structure
  *
@@ -32,7 +33,7 @@ typedef enum {
  *          -4 for invalid metadata key
  *          -5 for inability to retrieve metadata value
  */
-extern int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t k, void** value);
-typedef int (*nr_php_csec_get_metadata_t)(const nr_php_csec_metadata_key_t k, void** value);
+extern int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t k, char** value);
+typedef int (*nr_php_csec_get_metadata_t)(const nr_php_csec_metadata_key_t k, char** value);
 #define NR_PHP_CSEC_GET_METADATA "nr_php_csec_get_metadata"
 #endif

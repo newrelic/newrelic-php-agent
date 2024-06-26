@@ -14,7 +14,7 @@
 #include "php_compat.h"
 #include "php_newrelic.h"
 
-int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t key, void** p) {
+int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t key, char** p) {
   const char* value = NULL;
 
   if (NULL == p) {
@@ -27,12 +27,12 @@ int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t key, void** p) {
 
   switch (key) {
     case NR_PHP_CSEC_METADATA_HIGH_SECURITY:
-      *p = nr_zalloc(sizeof(int));
-      if (NULL == *p) {
-        return -3;
+      if (NRPRG(app)->info.high_security) {
+        value = "true";
+      } else {
+        value = "false";
       }
-      *((int*)*p) = NRPRG(app)->info.high_security;
-      return 0;
+      break;
     case NR_PHP_CSEC_METADATA_ENTITY_NAME:
       value = nr_app_get_entity_name(NRPRG(app));
       break;
