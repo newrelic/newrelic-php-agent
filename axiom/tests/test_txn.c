@@ -1615,6 +1615,7 @@ static void test_default_trace_id(void) {
       nr_distributed_trace_get_trace_id(txn->distributed_trace));
 
   nr_txn_destroy(&txn);
+  nr_free(paddedid);
 }
 
 static void test_root_segment_priority(void) {
@@ -7568,6 +7569,7 @@ static void test_get_current_trace_id(void) {
                     nr_txn_get_current_trace_id(txn));
 
   nr_txn_destroy(&txn);
+  nr_free(paddedid);
 }
 
 static void test_get_current_span_id(void) {
