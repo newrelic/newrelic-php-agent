@@ -35,12 +35,15 @@ jobs:
       - name: Display go version
         run: |
           go version
-      - name: Run go fmt
+      - name: Run gofmt
         run: |
-          gofmt -d -e ./php-agent/daemon
-          echo "### gofmt violations found in $(gofmt -l -e ./php-agent/daemon | wc -l) files" >> $GITHUB_STEP_SUMMARY
-          gofmt -l -e ./php-agent/daemon >> $GITHUB_STEP_SUMMARY
-        shell: bash
+          GOFMT_REPORTED_FILES="$(gofmt -l -e ./php-agent/daemon)"
+          if [ ! -z "$GOFMT_REPORTED_FILES" ]; then
+            gofmt -d -e ./php-agent/daemon
+            echo "### gofmt violations found in $(echo "$GOFMT_REPORTED_FILES" | wc -l) files" >> $GITHUB_STEP_SUMMARY
+            echo "$GOFMT_REPORTED_FILES" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
   daemon-unit-tests:
     runs-on: ubuntu-latest
     env:
