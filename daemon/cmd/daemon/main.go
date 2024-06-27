@@ -371,7 +371,7 @@ func main() {
 			proxy = false
 		} else {
 			log.Debugf("ARGV[%d]: %s", i, os.Args[i])
-			if ("--proxy" == os.Args[i]) {
+			if "--proxy" == os.Args[i] {
 				proxy = true
 			}
 		}
@@ -570,10 +570,9 @@ func (env *Environment) Set(key, value string) {
 
 // initLog opens the daemon log based on the current configuration settings.
 // If no log has been specified, initLog will try the following standard
-// locations.
-//
-//   /var/log/newrelic/newrelic-daemon.log
-//   /var/log/newrelic-daemon.log
+// locations:
+//   - /var/log/newrelic/newrelic-daemon.log
+//   - /var/log/newrelic-daemon.log
 //
 // If no suitable location can be found, a generic error is returned.
 func initLog(cfg *Config) error {
