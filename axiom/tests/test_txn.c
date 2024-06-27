@@ -1599,7 +1599,7 @@ static void test_default_trace_id(void) {
   nrtxnopt_t opts;
   nrtxn_t* txn;
   const char* txnid;
-  char paddedid[33] = "0000000000000000\0";
+  char paddedid[33] = "0000000000000000";
 
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
@@ -1615,7 +1615,6 @@ static void test_default_trace_id(void) {
       nr_distributed_trace_get_trace_id(txn->distributed_trace));
 
   nr_txn_destroy(&txn);
-  nr_free(paddedid);
 }
 
 static void test_root_segment_priority(void) {
@@ -7528,7 +7527,7 @@ static void test_get_current_trace_id(void) {
   char* trace_id;
   nrtxn_t* txn;
   const char* txn_id;
-  char paddedid[33] = "0000000000000000\0";
+  char paddedid[33] = "0000000000000000";
 
   /* setup and start txn */
   nr_memset(&app, 0, sizeof(app));
@@ -7569,7 +7568,6 @@ static void test_get_current_trace_id(void) {
                     nr_txn_get_current_trace_id(txn));
 
   nr_txn_destroy(&txn);
-  nr_free(paddedid);
 }
 
 static void test_get_current_span_id(void) {
