@@ -489,8 +489,8 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
   nr_free(dt->trace_id);
   if (trace_id) {
     int len = nr_strlen(trace_id);
-    if (len < 33) {
-      int padding = 33 - len;
+    if (len < 32) {
+      int padding = 32 - len;
       char* dest = (char*)malloc(33);
       for (int i=0; i<padding; i++) {
         dest[i] = '0';
