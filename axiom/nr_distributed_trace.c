@@ -491,13 +491,9 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
     int len = nr_strlen(trace_id);
     if (len < 32) {
       int padding = 32 - len;
-      char* dest = (char*)malloc(33);
-      for (int i=0; i<padding; i++) {
-        dest[i] = '0';
-      }
-      dest[padding] = '\0';
-      nr_strcat(dest, trace_id);
-      dt->trace_id = dest;
+      char dest[33];
+      snprintf(dest, sizeof(dest), "%0*d%s", padding, 0, trace_id);
+      dt->trace_id = nr_strdup(dest);
     } else {
       dt->trace_id = nr_strdup(trace_id);
     }

@@ -1599,7 +1599,7 @@ static void test_default_trace_id(void) {
   nrtxnopt_t opts;
   nrtxn_t* txn;
   const char* txnid;
-  char paddedid[32] = "0000000000000000\0";
+  char paddedid[33] = "0000000000000000\0";
 
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
@@ -7528,7 +7528,7 @@ static void test_get_current_trace_id(void) {
   char* trace_id;
   nrtxn_t* txn;
   const char* txn_id;
-  char paddedid[32] = "0000000000000000\0";
+  char paddedid[33] = "0000000000000000\0";
 
   /* setup and start txn */
   nr_memset(&app, 0, sizeof(app));
