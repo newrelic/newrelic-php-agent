@@ -73,6 +73,27 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean(
   return wraprec;
 }
 
+nruserfn_t* nr_php_wrap_user_function_before_after_clean_extra(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback,
+    const char* extra) {
+  nruserfn_t* wraprec = nr_php_wrap_user_function_before_after_clean(
+      name, namelen, before_callback, after_callback, clean_callback);
+
+  if (nrunlikely(NULL == wraprec)) {
+    nrl_warning(NRL_INSTRUMENT, "%s: unable to wrap '%s'", __func__,
+                NRSAFESTR(name));
+    return wraprec;
+  }
+
+  wraprec->extra = extra;
+
+  return wraprec;
+}
+
 nruserfn_t* nr_php_wrap_callable_before_after_clean(
     zend_function* callable,
     nrspecialfn_t before_callback,

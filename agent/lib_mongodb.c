@@ -108,6 +108,8 @@ void nr_mongodb_get_host_and_port_path_or_id(zval* server,
   }
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
+    || defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_mongodb_operation) {
   const char* this_klass = "MongoDB\\Operation\\Executable";
   zval* collection = NULL;
@@ -173,7 +175,174 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
-void nr_mongodb_enable(TSRMLS_D) {
+#else
+
+NR_PHP_WRAPPER(nr_mongodb_operation_before) {
+  (void)wraprec;
+  nr_segment_t* segment = NULL;
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  if (NULL != segment) {
+    segment->wraprec = auto_segment->wraprec;
+  }
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_mongodb_operation_after) {
+  const char* this_klass = "MongoDB\\Operation\\Executable";
+  zval* collection = NULL;
+  zval* database = NULL;
+  zval* server = NULL;
+  zval* this_var = NULL;
+  bool discard_segment = false;
+  nr_datastore_instance_t instance = {
+      .host = NULL,
+      .port_path_or_id = NULL,
+      .database_name = NULL,
+  };
+
+  // tell the compiler to ignore the cast from const char * to char *
+  // to save having to do a strdup operation
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+  nr_segment_datastore_params_t params = {
+    .collection = NULL,
+    .datastore = {
+      .type = NR_DATASTORE_MONGODB,
+    },
+    .operation = (char *)wraprec->extra,
+    .instance = &instance,
+    .callbacks = {
+      .backtrace = nr_php_backtrace_callback,
+    },
+  };
+#pragma GCC diagnostic pop
+  /*
+   * We check for the interface all Collection operations extend, rather than
+   * their specific class. Not all operations have the properties we need but
+   * the ones we hook do (as of mongo-php-library v.1.1).
+   */
+  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
+  if (!nr_php_object_instanceof_class(this_var, this_klass)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: operation is not %s", __func__,
+                     this_klass);
+    discard_segment = true;
+    goto leave;
+  }
+
+  collection = nr_php_get_zval_object_property(this_var, "collectionName");
+  if (nr_php_is_zval_valid_string(collection)) {
+    params.collection = Z_STRVAL_P(collection);
+  }
+
+  database = nr_php_get_zval_object_property(this_var, "databaseName");
+  if (nr_php_is_zval_valid_string(database)) {
+    instance.database_name = Z_STRVAL_P(database);
+  }
+
+  server = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+  nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
+                                          &instance.port_path_or_id);
+
+leave:
+  if (discard_segment) {
+    nr_segment_discard(&auto_segment);
+  } else {
+    nr_segment_datastore_end(&auto_segment, &params);
+  }
+  nr_php_arg_release(&server);
+  nr_php_scope_release(&this_var);
+  nr_free(instance.host);
+  nr_free(instance.port_path_or_id);
+}
+NR_PHP_WRAPPER_END
+
+#endif /* OAPI */
+
+void nr_mongodb_enable() {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Aggregate::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "aggregate");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\BulkWrite::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "bulkWrite");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Count::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "count");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\CountDocuments::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "countDocuments");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\CreateIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "createIndexes");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Delete::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "delete");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Distinct::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "distinct");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DropCollection::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "dropCollection");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DropIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "dropIndexes");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Find::execute"), nr_mongodb_operation_before,
+      nr_mongodb_operation_after, nr_mongodb_operation_after, "find");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\FindAndModify::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "findAndModify");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\InsertMany::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "insertMany");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\InsertOne::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "insertOne");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\ListIndexes::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "listIndexes");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\Update::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "update");
+
+  nr_php_wrap_user_function_before_after_clean_extra(
+      NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
+      nr_mongodb_operation_before, nr_mongodb_operation_after,
+      nr_mongodb_operation_after, "databaseCommand");
+
+#else /* Non-OAPI */
+
   /*
    * We instrument interesting methods on the MongoDB\Collection class via their
    * associated MongoDB\Operation classes.
@@ -264,6 +433,8 @@ void nr_mongodb_enable(TSRMLS_D) {
   nr_php_wrap_user_function_extra(
       NR_PSTR("MongoDB\\Operation\\DatabaseCommand::execute"),
       nr_mongodb_operation, "databaseCommand" TSRMLS_CC);
+
+#endif /* OAPI */
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), "mongodb/mongodb",

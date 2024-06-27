@@ -150,6 +150,14 @@ extern nruserfn_t* nr_php_wrap_callable_before_after_clean(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback);
+
+extern nruserfn_t* nr_php_wrap_user_function_before_after_clean_extra(
+    const char* name,
+    size_t namelen,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback,
+    const char* extra);
 #endif
 extern nruserfn_t* nr_php_wrap_user_function(const char* name,
                                              size_t namelen,
