@@ -489,11 +489,11 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
   nr_free(dt->trace_id);
   if (trace_id) {
     int len = nr_strlen(trace_id);
-    if (len < 32) {
-      int padding = 32 - len;
-      char dest[33];
-      snprintf(dest, sizeof(dest), "%0*d%s", padding, 0, trace_id);
-      dt->trace_id = nr_strdup(dest);
+    if (len < NR_TRACE_ID_SIZE) {
+      int padding = NR_TRACE_ID_SIZE - len;
+      char* dest = (char*)(malloc)(NR_TRACE_ID_SIZE + 1);
+      snprintf(dest, NR_TRACE_ID_SIZE+1, "%0*d%s", padding, 0, trace_id);
+      dt->trace_id = dest;
     } else {
       dt->trace_id = nr_strdup(trace_id);
     }
@@ -1264,7 +1264,7 @@ char* nr_distributed_trace_create_w3c_traceparent_header(const char* trace_id,
    * 0's.
    */
   tmp = nr_string_to_lowercase(trace_id);
-  padding = 32 - nr_strlen(tmp);
+  padding = NR_TRACE_ID_SIZE - nr_strlen(tmp);
   if (padding > 0) {
     snprintf(formatted_trace_id, sizeof(formatted_trace_id), "%0*d%s", padding,
              0, tmp);
