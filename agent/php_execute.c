@@ -484,6 +484,9 @@ typedef struct _nr_library_table_t {
  */
 // clang-format: off
 static nr_library_table_t libraries[] = {
+    /* AWS-SDK-PHP 3 */
+    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
+
     /* Doctrine < 2.18 */
     {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
     /* Doctrine 2.18 reworked the directory structure */
