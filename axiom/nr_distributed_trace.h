@@ -12,6 +12,8 @@
 #include "util_time.h"
 #include "util_object.h"
 
+#define NR_TRACE_ID_SIZE 32
+
 static const char NR_DISTRIBUTED_TRACE_ACCEPT_SUCCESS[]
     = "Supportability/DistributedTrace/AcceptPayload/Success";
 static const char NR_DISTRIBUTED_TRACE_ACCEPT_EXCEPTION[]
