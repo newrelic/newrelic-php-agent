@@ -67,40 +67,47 @@ extern void lib_aws_sdk_php_handle_version() {
 extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
   int MAX_LEN = 512;
   char buf[MAX_LEN];
-  nrobj_t* names = NULL;
-  char* DELIM = "_";
+  char DELIM = '_';
+  char* mod_string = buf;
 
-  if (NULL == metric_name) {
+  if (NULL == metric_name || '\0' == metric_name[0]) {
     return;
   }
   if (NULL == NRPRG(txn)) {
     return;
   }
 
-  /* Strip out the `\\` characters and normalize */
-  names = nr_strsplit(metric_name, "\\", 0 /* discard empty */);
+  /* First, proceed past any leading backslashes */
+  const char* begin = metric_name;
+  while ('\\' == *begin) {
+    begin++;
+  }
+
+  /* If nothing is left in the string, return. */
+  if (NULL == begin || '\0' == begin[0]) {
+    return;
+  }
 
   buf[0] = '\0';
 
-  int num_names = nro_getsize(names);
+  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_CLASS_PREFIX, begin);
 
-  if (num_names > 0) {
-    int cur_len = snprintf(buf, sizeof(buf), "%s%s", PHP_AWS_CLASS_PREFIX,
-                           nro_get_array_string(names, 1, NULL));
-    for (int i = 2; i <= num_names; i++) {
-      const char* name = nro_get_array_string(names, i, NULL);
-      if (NULL != name) {
-        cur_len
-            += snprintf(buf + cur_len, MAX_LEN - cur_len, "%s%s", DELIM, name);
-        if (cur_len >= MAX_LEN) {
-          break;
-        }
-      }
+  /* Replace backslashes */
+  char* p = nr_strchr(mod_string, '\\');
+  /* If it's not the end or NULL replace with delimiter*/
+  while (NULL != p) {
+    if (*(p + 1) == '\0') {
+      /* We're at the end */
+      *p = '\0';
+      p = NULL;
+    } else {
+      /* Somewhere in the middle, let's replace */
+      *p = DELIM;
+      p = nr_strchr(p + 1, '\\');
     }
   }
-  nro_delete(names);
 
-  nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
+  nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, mod_string, 0);
 }
 
 /*
@@ -111,6 +118,7 @@ NR_PHP_WRAPPER(nr_aws_create_metric) {
   if (NULL != wraprec) {
     lib_aws_sdk_php_add_supportability_metric(wraprec->classname);
   }
+
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
