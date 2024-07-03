@@ -7,6 +7,8 @@
 #ifndef LIB_AWS_SDK_PHP_HDR
 #define LIB_AWS_SDK_PHP_HDR
 
-extern void nr_aws_sdk_php_enable(TSRMLS_D);
+extern void nr_aws_sdk_php_enable();
+extern void lib_aws_sdk_php_handle_version();
+extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name);
 
 #endif /* LIB_AWS_SDK_PHP_HDR */
