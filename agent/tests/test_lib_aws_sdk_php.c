@@ -23,6 +23,8 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+#if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO    
+
 static void declare_aws_sdk_class(const char* ns,
                                   const char* klass,
                                   const char* sdk_version) {
@@ -168,3 +170,7 @@ void test_main(void* p NRUNUSED) {
   test_aws_sdk_php_handle_version();
   tlib_php_engine_destroy();
 }
+#else
+void test_main(void* p NRUNUSED) {
+}
+#endif

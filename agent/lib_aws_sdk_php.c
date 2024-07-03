@@ -26,12 +26,13 @@
  * nr_aws_sdk_php_enable which will automatically load the class if it isn't
  * loaded yet and then evaluate the string. However, in the rare case that files
  * are not loaded via autoloader and/or have non-default composer classload
- * settings, if the class is not found, PHP will generate a fatal unrecoverable
- * uncatchable error. While calling this from nr_aws_sdk_php_enable would have
- * been great and would allow the sdk version value to be set only once, to
- * avoid the very unlikely but not impossible fatal error, this will be called
- * from the "Aws\\ClientResolver::_apply_user_agent" wrapper which
- * GUARANTEES that aws/sdk exists and is already loaded.
+ * settings, if the class is not found, PHP 8.2+ will generate a fatal
+ * unrecoverable uncatchable error error whenever it cannot find a class. While
+ * calling this from nr_aws_sdk_php_enable would have been great and would allow
+ * the sdk version value to be set only once, to avoid the very unlikely but not
+ * impossible fatal error, this will be called from the
+ * "Aws\\ClientResolver::_apply_user_agent" wrapper which GUARANTEES that
+ * aws/sdk exists and is already loaded.
  *
  *
  * Additionally given that aws-sdk-php is currently detected from the
@@ -154,4 +155,9 @@ void nr_aws_sdk_php_enable() {
   /* The Sdk class */
   nr_php_wrap_user_function(NR_PSTR("Aws\\Sdk::__construct"),
                             nr_aws_create_metric);
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
 }
