@@ -82,13 +82,20 @@ extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
 
   buf[0] = '\0';
 
-  int cur_len = snprintf(buf, sizeof(buf), "%s%s", PHP_AWS_CLASS_PREFIX,
-                         nro_get_array_string(names, 1, NULL));
-  for (int i = 2, n = nro_getsize(names); i <= n; i++) {
-    const char* name = nro_get_array_string(names, i, NULL);
-    if (NULL != name) {
-      cur_len
-          += snprintf(buf + cur_len, MAX_LEN - cur_len, "%s%s", DELIM, name);
+  int num_names = nro_getsize(names);
+
+  if (num_names > 0) {
+    int cur_len = snprintf(buf, sizeof(buf), "%s%s", PHP_AWS_CLASS_PREFIX,
+                           nro_get_array_string(names, 1, NULL));
+    for (int i = 2; i <= num_names; i++) {
+      const char* name = nro_get_array_string(names, i, NULL);
+      if (NULL != name) {
+        cur_len
+            += snprintf(buf + cur_len, MAX_LEN - cur_len, "%s%s", DELIM, name);
+        if (cur_len >= MAX_LEN) {
+          break;
+        }
+      }
     }
   }
   nro_delete(names);
