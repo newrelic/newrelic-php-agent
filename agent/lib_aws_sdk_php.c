@@ -58,7 +58,7 @@ extern void lib_aws_sdk_php_handle_version() {
   char* version = NULL;
 
   class_entry = nr_php_find_class("aws\\sdk");
-  if (NULL == class_entry) {
+  if (NULL != class_entry) {
     zval_version = nr_php_get_class_constant(class_entry, "VERSION");
 
     if (nr_php_is_zval_non_empty_string(zval_version)) {
