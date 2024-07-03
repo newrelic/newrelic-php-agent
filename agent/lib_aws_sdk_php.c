@@ -65,8 +65,10 @@ extern void lib_aws_sdk_php_handle_version() {
 }
 
 extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
-  char buf[512];
+  int MAX_LEN = 512;
+  char buf[MAX_LEN];
   nrobj_t* names = NULL;
+  char* DELIM = "_";
 
   if (NULL == metric_name) {
     return;
@@ -79,12 +81,14 @@ extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
   names = nr_strsplit(metric_name, "\\", 0 /* discard empty */);
 
   buf[0] = '\0';
-  snprintf(buf, sizeof(buf), "%s%s", PHP_AWS_CLASS_PREFIX,
-           nro_get_array_string(names, 1, NULL));
+
+  int cur_len = snprintf(buf, sizeof(buf), "%s%s", PHP_AWS_CLASS_PREFIX,
+                         nro_get_array_string(names, 1, NULL));
   for (int i = 2, n = nro_getsize(names); i <= n; i++) {
     const char* name = nro_get_array_string(names, i, NULL);
     if (NULL != name) {
-      snprintf(buf, sizeof(buf), "%s_%s", buf, name);
+      cur_len
+          += snprintf(buf + cur_len, MAX_LEN - cur_len, "%s%s", DELIM, name);
     }
   }
   nro_delete(names);
