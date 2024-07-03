@@ -156,6 +156,9 @@ void nr_aws_sdk_php_enable() {
   nr_php_wrap_user_function(NR_PSTR("Aws\\Sdk::__construct"),
                             nr_aws_create_metric);
 
+  nr_php_wrap_user_function(NR_PSTR("Aws\\S3\\S3Client::__construct"),
+                            nr_aws_create_metric);
+
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
