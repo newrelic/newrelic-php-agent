@@ -37,25 +37,32 @@
  *
  * Additionally given that aws-sdk-php is currently detected from the
  * AwsClient.php file, this method will always be called when a client is
- * created. Having separate functionality to extract from Aws/Sdk::__constructor
- * is both not required and is redundant and causes additional overhead.
+ * created unlike Sdk::construct which doesn't show with PHP 8.2+.
+ *
+ * Using Aws/Sdk::__construct for version is currently nonviable as it is
+ * unreliable as a version determiner.
+ * Having separate functionality to extract from Aws/Sdk::__construct
+ * is both not required and is redundant and causes additional overhead and
+ * so only one function is needed to extract version.
+ *
+ * Aws\\ClientResolver::_apply_user_agent a reliable function as it is
+ * always called on client initialization since it is key to populating
+ * the request headers, and it loads Sdk by default.
+ *
+ * Concerns about future/past proofing to the checking prioritized the following
+ * implementation vs using the eval method.
  */
 extern void lib_aws_sdk_php_handle_version() {
+  zval* zval_version = NULL;
+  zend_class_entry* class_entry = NULL;
   char* version = NULL;
-  zval retval;
-  int result = FAILURE;
 
-  result = zend_eval_string("Aws\\Sdk::VERSION;", &retval, "Get AWS Version");
+  class_entry = nr_php_find_class("aws\\sdk");
+  zval_version = nr_php_get_class_constant(class_entry, "VERSION");
 
-  // Add php package to transaction
-  if (SUCCESS == result) {
-    if (nr_php_is_zval_non_empty_string(&retval)) {
-      version = Z_STRVAL(retval);
-    }
-    zval_dtor(&retval);
+  if (nr_php_is_zval_non_empty_string(zval_version)) {
+    version = Z_STRVAL_P(zval_version);
   }
-
-  /* Use the Aws\Sdk::VERSION to determine the version */
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     /* Add php package to transaction */
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
