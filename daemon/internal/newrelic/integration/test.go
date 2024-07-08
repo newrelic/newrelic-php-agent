@@ -468,23 +468,19 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 		name := fields[0]
 		name = strings.TrimSpace(name)
 
-		// -1 means just test for existence not an exact count
+		// -1 means just test for existence without forcing an exact count
 		count = -1
 		if len(fields) == 2 {
 			countStr := strings.TrimSpace(fields[1])
 			if len(countStr) > 0 {
 				// is it "??" - with or without quotes
 				match, _ := regexp.MatchString("^\"*\\?\\?\"*$", countStr)
-				if match {
-					count = -1
-				} else {
+				if !match {
 					count, err = strconv.ParseInt(countStr, 10, 64)
 					if nil != err {
 						t.Fail(fmt.Errorf("EXPECT_METRICS_EXIST has unparsable count: %s", spec))
 					}
 				}
-			} else {
-				count = -1
 			}
 		}
 		expected := strings.Replace(name, "__FILE__", t.Path, -1)
@@ -548,13 +544,9 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 				actualData := actual[i].([]interface{})[1]
 				actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
 
-				metricPasses := true
-				if count == -1 {
-					if actualCount == 0 {
-						metricPasses = false
-					}
-				} else if actualCount != count {
-					metricPasses = false
+				metricPasses := false
+				if (count == -1 && actualCount > 0) || (actualCount == count) {
+					metricPasses = true
 				}
 
 				if !metricPasses {
