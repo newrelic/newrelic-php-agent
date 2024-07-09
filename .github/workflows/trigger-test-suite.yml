@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  trigger-test-suites:
+  trigger-test-suite:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
