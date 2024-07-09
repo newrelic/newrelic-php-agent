@@ -228,7 +228,6 @@ func parsePHPModules(t *Test, content []byte) error {
 	return nil
 }
 
-
 func parseAnalyticEvents(test *Test, content []byte) error {
 	test.analyticEvents = content
 	return nil
