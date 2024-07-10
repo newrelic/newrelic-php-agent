@@ -1435,31 +1435,54 @@ install_agent_here() {
   fi
   srcf="${ilibdir}/agent/${pi_arch}/newrelic-${pi_modver}${zts}.so"
   destf="${pi_extdir}/newrelic.so"
-  logcmd rm -f "${destf}"
+  src_csec="${ilibdir}/agent/${pi_arch}/newrelic_security-${pi_modver}${zts}.so"
+  dest_csec="${pi_extdir}/newrelic_security.so"
+
+  logcmd rm -f "${destf}" "${dest_csec}"
+
   if [ -z "${NR_INSTALL_USE_CP_NOT_LN}" ]; then
     logcmd ln -sf "${srcf}" "${destf}" || {
       istat="failed"
       log "${pdir}: link '${srcf}' -> '${destf}' FAILED!"
+    }
+    logcmd ln -sf "${src_csec}" "${dest_csec}" || {
+      istat="failed"
+      log "${pdir}: link '${src_csec}' -> '${dest_csec}' FAILED!"
     }
   else
     logcmd cp -f "${srcf}" "${destf}" || {
       istat="failed"
       log "${pdir}: copy '${srcf}' -> '${destf}' FAILED!"
     }
+    logcmd cp -f "${src_csec}" "${dest_csec}" || {
+      istat="failed"
+      log "${pdir}: copy '${src_csec}' -> '${dest_csec}' FAILED!"
+    }
   fi
 
   if [ -z "${istat}" -a -n "${pi_extdir2}" ]; then
     destf="${pi_extdir2}/newrelic.so"
-    logcmd rm -f "${destf}"
+    dest_csec="${pi_extdir2}/newrelic_security.so"
+
+    logcmd rm -f "${destf}" "${dest_csec}"
+
     if [ -z "${NR_INSTALL_USE_CP_NOT_LN}" ]; then
       logcmd ln -sf "${srcf}" "${destf}" || {
         istat="failed"
         log "${pdir}: link '${srcf}' -> '${destf}' FAILED!"
       }
+      logcmd ln -sf "${src_csec}" "${dest_csec}" || {
+        istat="failed"
+        log "${pdir}: link '${src_csec}' -> '${dest_csec}' FAILED!"
+      }
     else
       logcmd cp -f "${srcf}" "${destf}" || {
         istat="failed"
         log "${pdir}: copy '${srcf}' -> '${destf}' FAILED!"
+      }
+      logcmd cp -f "${src_csec}" "${dest_csec}" || {
+        istat="failed"
+        log "${pdir}: copy '${src_csec}' -> '${dest_csec}' FAILED!"
       }
     fi
   fi
@@ -1538,7 +1561,13 @@ do_install() {
     if [ -d /var/log ]; then
       logcmd mkdir /var/log/newrelic
       logcmd chmod 0755 /var/log/newrelic
+      logcmd mkdir /var/log/newrelic/nr-security-home
+      logcmd chmod 777 -R /var/log/newrelic/nr-security-home
+      logcmd mkdir -p /var/log/newrelic/nr-security-home/logs/snapshot
+      logcmd chmod 770 nr-security-home/logs
+      logcmd chmod 770 nr-security-home/logs/snapshot
       log "created /var/log/newrelic"
+      log "created /var/log/newrelic/nr-security-home/logs/snapshot"
     fi
   fi
 
@@ -1894,14 +1923,23 @@ remove_if_unchanged() {
 
 remove_from_here() {
   destf="${pi_extdir}/newrelic.so"
+  dest_csec="${pi_extdir}/newrelic_security.so"
+
   if [ -f "${destf}" ]; then
     logcmd rm -f "${destf}"
+  fi
+  if [ -f "${dest_csec}" ]; then
+    logcmd rm -f "${dest_csec}"
   fi
 
   if [ -n "${pi_extdir2}" ]; then
     destf="${pi_extdir2}/newrelic.so"
+    dest_csec="${pi_extdir2}/newrelic_security.so"
     if [ -f "${destf}" ]; then
       logcmd rm -f "${destf}"
+    fi
+    if [ -f "${dest_csec}" ]; then
+      logcmd rm -f "${dest_csec}"
     fi
   fi
 
