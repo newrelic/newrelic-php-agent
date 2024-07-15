@@ -489,7 +489,8 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
   nr_free(dt->trace_id);
   if (trace_id) {
     int len = nr_strlen(trace_id);
-    if (len < NR_TRACE_ID_SIZE) {
+    if (NRINI(distributed_tracing_use_full_trace_id) &&
+        len < NR_TRACE_ID_SIZE) {
       int padding = NR_TRACE_ID_SIZE - len;
       char* dest = (char*)nr_malloc(NR_TRACE_ID_SIZE + 1);
       snprintf(dest, NR_TRACE_ID_SIZE+1, "%0*d%s", padding, 0, trace_id);

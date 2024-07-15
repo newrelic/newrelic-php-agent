@@ -193,3 +193,15 @@
 ;          hooks instrumented.
 ;
 ;newrelic.framework.wordpress.hooks_skip_filename=""
+
+; Setting: newrelic.distributed_tracing.use_full_trace_id
+; Type   : bool
+; Scope  : system
+; Default: false
+; Info   : By default, the agent can create a 16 character trace id. OTLP
+;          collectors expect 32 character trace ids. Setting this to true
+;          increases the size of our 16 character trace ids so that the
+;          span data can be exported to other collectors. This will increase
+;          the amount of data sent to and therefore billed by New Relic.
+;
+;newrelic.distributed_tracing.use_full_trace_id = false
