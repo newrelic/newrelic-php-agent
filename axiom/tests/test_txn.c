@@ -1729,6 +1729,7 @@ static void test_begin(void) {
   opts->max_segments = 0;
   opts->span_queue_batch_size = 1000;
   opts->span_queue_batch_timeout = 1 * NR_TIME_DIVISOR;
+  opts->distributed_tracing_use_full_trace_id = false;
 
   app->rnd = nr_random_create();
   nr_random_seed(app->rnd, 345345);
