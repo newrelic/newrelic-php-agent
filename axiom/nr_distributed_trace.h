@@ -244,9 +244,12 @@ extern void nr_distributed_trace_set_app_id(nr_distributed_trace_t* dt,
  *
  * Params  : 1. The distributed trace.
  *           2. The trace id.
+ *           3. Bool where true indicates to pad the trace_id
+ *              with 0s to make it 32 characters
  */
 void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
-                                       const char* trace_id);
+                                       const char* trace_id,
+                                       bool do_padding);
 
 /*
  * Purpose : Set the distributed trace priority.

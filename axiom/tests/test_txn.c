@@ -1599,11 +1599,33 @@ static void test_default_trace_id(void) {
   nrtxnopt_t opts;
   nrtxn_t* txn;
   const char* txnid;
+
+  nr_memset(&app, 0, sizeof(app));
+  app.state = NR_APP_OK;
+  nr_memset(&opts, 0, sizeof(opts));
+
+  txn = nr_txn_begin(&app, &opts, NULL);
+  txnid = nr_txn_get_guid(txn);
+
+  tlib_fail_if_null("txnid", txnid);
+  tlib_pass_if_str_equal(
+      "txnid=traceid", txnid,
+      nr_distributed_trace_get_trace_id(txn->distributed_trace));
+
+  nr_txn_destroy(&txn);
+}
+
+static void test_padded_trace_id(void) {
+  nrapp_t app;
+  nrtxnopt_t opts;
+  nrtxn_t* txn;
+  const char* txnid;
   char paddedid[33] = "0000000000000000";
 
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
   nr_memset(&opts, 0, sizeof(opts));
+  opts.distributed_tracing_use_full_trace_id = true;
 
   txn = nr_txn_begin(&app, &opts, NULL);
   txnid = nr_txn_get_guid(txn);
@@ -5971,7 +5993,7 @@ static void test_create_w3c_traceparent_header(void) {
   /*
    * Test : valid string random guid
    */
-  nr_distributed_trace_set_trace_id(txn.distributed_trace, "meatballs!");
+  nr_distributed_trace_set_trace_id(txn.distributed_trace, "meatballs!", true);
   actual = nr_txn_create_w3c_traceparent_header(&txn, segment);
   expected = "00-0000000000000000000000meatballs!-";
   tlib_pass_if_not_null("random guid", nr_strstr(actual, expected));
@@ -6727,7 +6749,7 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_distributed_trace_set_trace_id(txn.distributed_trace, "35ff77");
+  nr_distributed_trace_set_trace_id(txn.distributed_trace, "35ff77", false);
   traceparent = nr_txn_create_w3c_traceparent_header(&txn, NULL);
   nr_free(traceparent);
 
@@ -7527,7 +7549,6 @@ static void test_get_current_trace_id(void) {
   char* trace_id;
   nrtxn_t* txn;
   const char* txn_id;
-  char paddedid[33] = "0000000000000000";
 
   /* setup and start txn */
   nr_memset(&app, 0, sizeof(app));
@@ -7548,8 +7569,7 @@ static void test_get_current_trace_id(void) {
   txn_id = nr_txn_get_guid(txn);
   trace_id = nr_txn_get_current_trace_id(txn);
   tlib_fail_if_null("txn id", txn_id);
-  nr_strcat(paddedid, txn_id);
-  tlib_pass_if_str_equal("padded txn_id == trace_id", paddedid, trace_id);
+  tlib_pass_if_str_equal("padded txn_id == trace_id", txn_id, trace_id);
   nr_free(trace_id);
 
   /*
@@ -8250,7 +8270,7 @@ static void test_record_log_event(void) {
         "\","
         "\"level\":\"" LL_UNKN_STR
         "\","
-        "\"trace.id\":\"00000000000000000000000000000000\","
+        "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
         "\"entity.name\":\"" APP_ENTITY_NAME
         "\","
@@ -8290,7 +8310,7 @@ static void test_record_log_event(void) {
         "\","
         "\"level\":\"" LOG_LEVEL
         "\","
-        "\"trace.id\":\"00000000000000000000000000000000\","
+        "\"trace.id\":\"0000000000000000\","
         "\"span.id\":\"0000000000000000\","
         "\"entity.guid\":\"" APP_ENTITY_GUID
         "\","
@@ -8670,6 +8690,7 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_httpsafe();
   test_txn_accept_distributed_trace_payload_optionals();
   test_default_trace_id();
+  test_padded_trace_id();
   test_root_segment_priority();
   test_should_create_span_events();
   test_parent_stacks();
