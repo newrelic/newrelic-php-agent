@@ -465,8 +465,8 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 		var count int64
 
 		fields := strings.Split(spec, ",")
-		name := fields[0]
-		name = strings.TrimSpace(name)
+		expected := fields[0]
+		expected = strings.TrimSpace(expected)
 
 		// -1 means just test for existence without forcing an exact count
 		count = -1
@@ -483,7 +483,6 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 				}
 			}
 		}
-		expected := strings.Replace(name, "__FILE__", t.Path, -1)
 
 		id := newrelic.AgentRunID("?? agent run id")
 		actualJSON, _ := newrelic.IntegrationData(harvest.Metrics, id, time.Now())
