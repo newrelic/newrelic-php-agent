@@ -27,7 +27,7 @@ newrelic.code_level_metrics.enabled=false
   "?? agent run id",
   {
     "reservoir_size": 10000,
-    "events_seen": 6800
+    "events_seen": 7000
   },
   "??"
 ]
