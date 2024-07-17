@@ -77,8 +77,6 @@ extern void lib_aws_sdk_php_handle_version() {
 extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
   int MAX_LEN = 512;
   char buf[MAX_LEN];
-  char DELIM = '_';
-  char* mod_string = buf;
 
   if (NULL == metric_name || '\0' == metric_name[0]) {
     return;
@@ -86,38 +84,10 @@ extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
   if (NULL == NRPRG(txn)) {
     return;
   }
-
-  /* First, proceed past any leading backslashes */
-  const char* begin = metric_name;
-  while ('\\' == *begin) {
-    begin++;
-  }
-
-  /* If nothing is left in the string, return. */
-  if (NULL == begin || '\0' == begin[0]) {
-    return;
-  }
-
   buf[0] = '\0';
 
-  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_CLASS_PREFIX, begin);
-
-  /* Replace backslashes */
-  char* p = nr_strchr(mod_string, '\\');
-  /* If it's not the end or NULL replace with delimiter*/
-  while (NULL != p) {
-    if (*(p + 1) == '\0') {
-      /* We're at the end */
-      *p = '\0';
-      p = NULL;
-    } else {
-      /* Somewhere in the middle, let's replace */
-      *p = DELIM;
-      p = nr_strchr(p + 1, '\\');
-    }
-  }
-
-  nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, mod_string, 0);
+  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_CLASS_PREFIX, metric_name);
+  nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
 
 /*

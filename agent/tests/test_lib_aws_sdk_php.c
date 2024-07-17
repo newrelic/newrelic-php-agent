@@ -9,21 +9,12 @@
 #include "lib_aws_sdk_php.h"
 #include "fw_support.h"
 
-#define LIBRARY_NAME "aws/aws-sdk-php"
-#define LIBRARY_MAJOR_VERSION "7"
-#define LIBRARY_MAJOR_VERSION_2 "10"
-#define LIBRARY_MAJOR_VERSION_3 "100"
-#define LIBRARY_MAJOR_VERSION_4 "1.23"
-#define LIBRARY_MAJOR_VERSION_5 "12.34"
-#define LIBRARY_MAJOR_VERSION_6 "123.45"
-#define LIBRARY_MAJOR_VERSION_7 "0.4.5"
-#define PACKAGE_METRIC "Supportability/PHP/package/" LIBRARY_NAME
-#define PHP_AWS_CLASS_PREFIX "Supportability/library/aws/aws-sdk-php/"
-
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
 #if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO
+
+#define PHP_AWS_CLASS_PREFIX "Supportability/library/aws/aws-sdk-php/"
 
 static void declare_aws_sdk_class(const char* ns,
                                   const char* klass,
@@ -55,28 +46,28 @@ static void test_aws_sdk_php_add_supportability_metric(void) {
   lib_aws_sdk_php_add_supportability_metric("one\\two");
   tlib_pass_if_not_null(
       "aws supportability metric 1: service/client metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "one_two"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "one\\two"));
 
   lib_aws_sdk_php_add_supportability_metric("three\\four");
   tlib_pass_if_not_null(
       "aws supportability metric 2: service/client metric created",
       nrm_find(NRPRG(txn)->unscoped_metrics,
-               PHP_AWS_CLASS_PREFIX "three_four"));
+               PHP_AWS_CLASS_PREFIX "three\\four"));
 
   lib_aws_sdk_php_add_supportability_metric("three\\four\\five");
   tlib_pass_if_not_null(
       "aws supportability metric 3: service/client metric created",
       nrm_find(NRPRG(txn)->unscoped_metrics,
-               PHP_AWS_CLASS_PREFIX "three_four_five"));
+               PHP_AWS_CLASS_PREFIX "three\\four\\five"));
 
   lib_aws_sdk_php_add_supportability_metric("three\\");
   tlib_pass_if_not_null(
       "aws supportability metric 4: service/client metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "three"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "three\\"));
   lib_aws_sdk_php_add_supportability_metric("\\four");
   tlib_pass_if_not_null(
       "aws supportability metric 5: service/client metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "four"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PHP_AWS_CLASS_PREFIX "\\four"));
   lib_aws_sdk_php_add_supportability_metric("five");
   tlib_pass_if_not_null(
       "aws supportability metric 6: service/client metric created",
@@ -86,6 +77,16 @@ static void test_aws_sdk_php_add_supportability_metric(void) {
 }
 
 static void test_aws_sdk_php_handle_version(void) {
+#define LIBRARY_NAME "aws/aws-sdk-php"
+#define LIBRARY_MAJOR_VERSION "7"
+#define LIBRARY_MAJOR_VERSION_2 "10"
+#define LIBRARY_MAJOR_VERSION_3 "100"
+#define LIBRARY_MAJOR_VERSION_4 "4.23"
+#define LIBRARY_MAJOR_VERSION_55 "55.34"
+#define LIBRARY_MAJOR_VERSION_6123 "6123.45"
+#define LIBRARY_MAJOR_VERSION_0 "0.4.5"
+#define PACKAGE_METRIC "Supportability/PHP/package/" LIBRARY_NAME
+
   /*
    * If lib_aws_sdk_php_handle_version function is ever called, we have already
    * detected the aws-sdk-php library.
@@ -124,27 +125,27 @@ static void test_aws_sdk_php_handle_version(void) {
   lib_aws_sdk_php_handle_version();
   tlib_pass_if_not_null(
       "version test 4: package metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/1/detected"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/4/detected"));
   tlib_php_request_end();
 
   tlib_php_request_start();
-  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_5);
+  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_55);
   lib_aws_sdk_php_handle_version();
   tlib_pass_if_not_null(
       "version test 5: package metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/12/detected"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/55/detected"));
   tlib_php_request_end();
 
   tlib_php_request_start();
-  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_6);
+  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_6123);
   lib_aws_sdk_php_handle_version();
   tlib_pass_if_not_null(
       "version test 6: package metric created",
-      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/123/detected"));
+      nrm_find(NRPRG(txn)->unscoped_metrics, PACKAGE_METRIC "/6123/detected"));
   tlib_php_request_end();
 
   tlib_php_request_start();
-  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_7);
+  declare_aws_sdk_class("Aws", "Sdk", LIBRARY_MAJOR_VERSION_0);
   lib_aws_sdk_php_handle_version();
   tlib_pass_if_not_null(
       "version test 7: package metric created",
