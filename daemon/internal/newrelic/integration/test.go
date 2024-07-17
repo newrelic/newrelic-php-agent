@@ -10,10 +10,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -456,6 +458,115 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	}
 }
 
+// Handles EXPECT_METRICS_EXIST
+func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
+	for _, spec := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
+		var err error
+		var count int64
+
+		fields := strings.Split(spec, ",")
+		name := fields[0]
+		name = strings.TrimSpace(name)
+
+		// -1 means just test for existence without forcing an exact count
+		count = -1
+		if len(fields) == 2 {
+			countStr := strings.TrimSpace(fields[1])
+			if len(countStr) > 0 {
+				// is it "??" - with or without quotes
+				match, _ := regexp.MatchString("^\"*\\?\\?\"*$", countStr)
+				if !match {
+					count, err = strconv.ParseInt(countStr, 10, 64)
+					if nil != err {
+						t.Fail(fmt.Errorf("EXPECT_METRICS_EXIST has unparsable count: %s", spec))
+					}
+				}
+			}
+		}
+		expected := strings.Replace(name, "__FILE__", t.Path, -1)
+
+		id := newrelic.AgentRunID("?? agent run id")
+		actualJSON, _ := newrelic.IntegrationData(harvest.Metrics, id, time.Now())
+
+		actualPretty := bytes.Buffer{}
+		json.Indent(&actualPretty, actualJSON, "", "  ")
+
+		// scrub actual spans
+		scrubjson := ScrubLineNumbers(actualJSON)
+		scrubjson = ScrubFilename(scrubjson, t.Path)
+		scrubjson = ScrubHost(scrubjson)
+
+		// parse actual JSON to internal format since we can't get the actual count from
+		// the MetricTable type
+		var x1 interface{}
+		if err := json.Unmarshal(scrubjson, &x1); nil != err {
+			t.Fatal(fmt.Errorf("unable to parse actual metric like json for fuzzy matching: %v"+
+				"actual metric table: %s", err, actualPretty.String()))
+			return
+		}
+
+		// expect x1 to be of type "[]interface {}" which wraps the entire metric event data
+		// within this generic array there will be:
+		// - a string of the form "?? agent run id"
+		// - a timestamp
+		// - another timestamp
+		// - an array of all metrics
+		//   - an array for a single metric
+		//   - map containing key for the metric name - can include scope
+		//   - array of length 6 containing metric data values
+
+		// test initial type is as expected
+		switch x1.(type) {
+		case []interface{}:
+		default:
+			t.Fatal(errors.New("metric event data json doesnt match expected format"))
+			return
+		}
+
+		// expect array of len 4
+		v2, _ := x1.([]interface{})
+		if len(v2) != 4 {
+			t.Fatal(errors.New("metric event data json doesnt match expected format - expected 4 elements"))
+			return
+		}
+
+		// get array of actual metric from 4th element
+		actual := v2[3].([]interface{})
+		found := false
+		for i := 0; i < len(actual); i++ {
+			actualName := actual[i].([]interface{})[0].(map[string]interface{})
+			act1 := actualName["name"]
+			act2 := actualName["scope"]
+
+			// only support an empty scope for now
+			if act1 == expected && act2 == nil {
+				// compare count
+				actualData := actual[i].([]interface{})[1]
+				actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
+
+				metricPasses := false
+				if (count == -1 && actualCount > 0) || (actualCount == count) {
+					metricPasses = true
+				}
+
+				if !metricPasses {
+					t.Fail(fmt.Errorf("metric count does not match for %s: expected = %d actual = %d\n"+
+						"actual metric table: %s", expected, count, actualCount, actualPretty.String()))
+					return
+				}
+
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Fail(fmt.Errorf("metric %s not found, actual metric table: %s", expected, actualPretty.String()))
+			return
+		}
+	}
+}
+
 func (t *Test) comparePayload(expected json.RawMessage, pc newrelic.PayloadCreator, isMetrics bool) {
 	if nil == expected {
 		// No expected output has been specified:  Anything passes.
@@ -694,15 +805,7 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	}
 
 	if nil != t.metricsExist {
-		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
-			name = strings.TrimSpace(name)
-			expected := strings.Replace(name, "__FILE__", t.Path, -1)
-			if !harvest.Metrics.Has(expected) {
-				actualPretty := bytes.Buffer{}
-				json.Indent(&actualPretty, []byte(harvest.Metrics.DebugJSON()), "", "  ")
-				t.Fail(fmt.Errorf("metric does not exist: %s\n\nactual metric table: %s", expected, actualPretty.String()))
-			}
-		}
+		t.compareMetricsExist(harvest)
 	}
 
 	if nil != t.metricsDontExist {
