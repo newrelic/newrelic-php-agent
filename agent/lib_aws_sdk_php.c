@@ -81,7 +81,7 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
   int MAX_LEN = 512;
   char buf[MAX_LEN];
 
-  if (NULL == service_name || '\0' == service_name[0]) {
+  if (nr_strempty(service_name)) {
     return;
   }
   if (NULL == NRPRG(txn)) {
