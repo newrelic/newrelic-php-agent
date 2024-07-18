@@ -8134,6 +8134,126 @@ static void test_segment_record_error(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_segment_record_error_with_additional_params(void) {
+  nrapp_t app = {
+      .state = NR_APP_OK,
+      .limits = {
+        .analytics_events = NR_MAX_ANALYTIC_EVENTS,
+        .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      },
+  };
+  nrtxnopt_t opts;
+  nr_segment_t* segment;
+  nrtxn_t* txn;
+
+  /* Setup transaction and segment */
+  nr_memset(&opts, 0, sizeof(opts));
+  opts.distributed_tracing_enabled = 1;
+  opts.span_events_enabled = 1;
+  txn = nr_txn_begin(&app, &opts, NULL);
+  segment = nr_segment_start(txn, NULL, NULL);
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+  txn->options.allow_raw_exception_messages = 1;
+
+  /* No error attributes added if error collection isn't enabled */
+  txn->options.err_enabled = 0;
+  nr_txn_record_error_with_additional_attributes(
+      txn, 1, true, "low priority message", "low priority class", "random.php",
+      150, "random context", 256, "[\"A\",\"B\"]");
+  tlib_pass_if_null("No segment error created", segment->error);
+  txn->options.err_enabled = 1;
+
+  /* Do not add to current segment */
+  nr_txn_record_error_with_additional_attributes(txn, 0.5, false,
+                       "low priority message", "low priority class", "random php", 150, "random context", 256, "[\"A\",\"B\"]");
+  tlib_pass_if_not_null("Txn error event created", txn->error);
+  tlib_pass_if_null("Segment error NOT created", segment->error);
+  tlib_pass_if_str_equal("Correct txn error.message", "low priority message",
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("Correct txn error.class", "low priority class",
+                         nr_error_get_klass(txn->error));
+
+  /* Normal operation: txn error prioritized over previous */
+  nr_txn_record_error_with_additional_attributes(
+      txn, 1, true, "random message", "random class", "random.php",
+      150, "random context", 256, "[\"A\",\"B\"]");
+  tlib_pass_if_not_null("Txn error event created", txn->error);
+  tlib_pass_if_not_null("Segment error created", segment->error);
+  tlib_pass_if_str_equal("Correct segment error.message", "random message",
+                         segment->error->error_message);
+  tlib_pass_if_str_equal("Correct segment error.class", "random class",
+                         segment->error->error_class);
+  tlib_pass_if_str_equal("Correct segment error.file", "random.php",
+                         segment->error->error_file);                 
+  tlib_pass_if_int_equal("Correct segment error.line", 150,
+                         segment->error->error_line);
+  tlib_pass_if_str_equal("Correct segment error.context", "random context",
+                         segment->error->error_context);
+  tlib_pass_if_int_equal("Correct segment error.no", 256,
+                         segment->error->error_no);
+  tlib_pass_if_str_equal("txn error message matches segment error message",
+                         segment->error->error_message,
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("txn error class matches segment error class",
+                         segment->error->error_class,
+                         nr_error_get_klass(txn->error));
+
+  /* Multiple errors on the same segment */
+  nr_txn_record_error_with_additional_attributes(
+      txn, 1, true, "random message 2", "random class 2", "random.php2",
+      150, "random context2", 256, "[\"A\",\"B\"]");
+
+  tlib_pass_if_str_equal("Segment error.message overwritten", "random message 2",
+                         segment->error->error_message);
+  tlib_pass_if_str_equal("Segment error.class overwritten", "random class 2",
+                         segment->error->error_class);
+  tlib_pass_if_str_equal("txn error message matches segment error message",
+                         segment->error->error_message,
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("txn error class matches segment error class",
+                         segment->error->error_class,
+                         nr_error_get_klass(txn->error));
+
+  /* High_security */
+  txn->high_security = 1;
+  nr_txn_record_error_with_additional_attributes(
+      txn, 1, true, "secure message", "random class", "random.php",
+      150, "random context", 256, "[\"A\",\"B\"]");
+  tlib_pass_if_not_null("Segment error created", segment->error);
+  tlib_pass_if_str_equal("Secure error.message",
+                         NR_TXN_HIGH_SECURITY_ERROR_MESSAGE,
+                         segment->error->error_message);
+  tlib_pass_if_str_equal("Correct segment error class", "random class",
+                         segment->error->error_class);
+  tlib_pass_if_str_equal("txn error message matches segment error message",
+                         segment->error->error_message,
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("txn error class matches segment error class",
+                         segment->error->error_class,
+                         nr_error_get_klass(txn->error));
+  txn->high_security = 0;
+
+  /* allow_raw_exception_messages */
+  txn->options.allow_raw_exception_messages = 0;
+  nr_txn_record_error_with_additional_attributes(
+      txn, 1, true, "another secure message", "another random class", "random.php",
+      150, "random context", 256, "[\"A\",\"B\"]");
+  tlib_pass_if_not_null("Segment error created", segment->error);
+  tlib_pass_if_str_equal("Secure error message",
+                         NR_TXN_ALLOW_RAW_EXCEPTION_MESSAGE,
+                         segment->error->error_message);
+  tlib_pass_if_str_equal("Correct segment error.class", "another random class",
+                         segment->error->error_class);
+  tlib_pass_if_str_equal("txn error message matches segment error message",
+                         segment->error->error_message,
+                         nr_error_get_message(txn->error));
+  tlib_pass_if_str_equal("txn error class matches segment error class",
+                         segment->error->error_class,
+                         nr_error_get_klass(txn->error));
+
+  nr_txn_destroy(&txn);
+}
+
 static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   nrapp_t app;
   nrtxnopt_t opts;
@@ -8721,6 +8841,7 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
+  test_segment_record_error_with_additional_params();
   test_log_level_verify();
   test_record_log_event();
   test_txn_log_configuration();
