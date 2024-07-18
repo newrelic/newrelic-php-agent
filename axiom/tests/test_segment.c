@@ -2853,6 +2853,12 @@ static void test_segment_set_error_attributes(void) {
   nr_segment_set_error(&segment, NULL, NULL);
   tlib_pass_if_null("Null segment error", segment.error);
 
+  nr_segment_set_error_with_additional_params(NULL, "error.message", "error.class", "rand1", 125, "rand3", 100);
+  tlib_pass_if_null("Null segment error", segment.error);
+
+  nr_segment_set_error_with_additional_params(NULL, "error.message", NULL, "rand1", 125, NULL, 100);
+  tlib_pass_if_null("Null segment error", segment.error);
+
   /*
    *  Test : Normal operation.
    */
@@ -2867,6 +2873,12 @@ static void test_segment_set_error_attributes(void) {
                          segment.error->error_message);
   tlib_pass_if_str_equal("error.class", "error.class 1",
                          segment.error->error_class);
+
+  nr_segment_set_error_with_additional_params(&segment, "error.message", "error.class", "error.file", 125, "rand3", 100);
+  tlib_pass_if_str_equal("error.file", "error.file",
+                         segment.error->error_file);
+  tlib_pass_if_int_equal("error.line", 125,
+                         segment.error->error_line);
 
   nr_segment_destroy_fields(&segment);
 }
