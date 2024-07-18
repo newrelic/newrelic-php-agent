@@ -1241,6 +1241,9 @@ void nr_txn_destroy_fields(nrtxn_t* txn) {
   nro_delete(txn->intrinsics);
   nr_string_pool_destroy(&txn->datastore_products);
   nr_slowsqls_destroy(&txn->slowsqls);
+  if (nr_error_get_option(txn->error) > 0) { 
+    nr_error_destroy_additional_params(&txn->error);
+  }
   nr_error_destroy(&txn->error);
   nr_distributed_trace_destroy(&txn->distributed_trace);
   nr_segment_destroy_tree(txn->segment_root);
@@ -1635,6 +1638,103 @@ void nr_txn_record_error(nrtxn_t* txn,
                    "recording error priority=%d msg='%.48s' cls='%.48s'"
                    "span_id='%.48s'",
                    priority, NRSAFESTR(errmsg), NRSAFESTR(errclass),
+                   NRSAFESTR(span_id));
+  nr_free(span_id);
+}
+
+void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
+                         int priority,
+                         bool add_to_current_segment,
+                         const char* error_message,
+                         const char* error_class,
+                         const char* error_file,
+                         int error_line,
+                         char* error_context,
+                         int error_no,
+                         const char* stacktrace_json) {
+  nr_segment_t* current_segment = NULL;
+  char* span_id = NULL;
+  nr_error_t* error = NULL;
+
+  if (nrunlikely((0 == txn) || (0 == txn->options.err_enabled) || (0 == error_message)
+                 || (0 == txn->status.recording)
+                 || (0 == error_message[0])
+                 || (0 == stacktrace_json)
+                 || (0 == error_class)
+                 || (0 == error_file)
+                 || (0 == error_line)
+                 || (0 == error_context)
+                 || (0 == error_no))) {
+    return;
+  }
+
+  if ((txn->error) && (priority < nr_error_priority(txn->error))) {
+    /*priority of new error is lower, so we don't need to do anything */
+    return;
+  }
+
+  if (txn->high_security) {
+    error_message = NR_TXN_HIGH_SECURITY_ERROR_MESSAGE;
+  }
+
+  if (0 == txn->options.allow_raw_exception_messages) {
+    error_message = NR_TXN_ALLOW_RAW_EXCEPTION_MESSAGE;
+  }
+
+  /* Only try to get a span_id in cases where we know spans should be created.
+   */
+  if (nr_txn_should_create_span_events(txn)) {
+    span_id = nr_txn_get_current_span_id(txn);
+
+    /*
+     * The specification says span_id MUST be included so if span events are
+     * enabled but the span_id doesn't exist, then don't create the error
+     * event.
+     */
+    if (nrunlikely(NULL == span_id)) {
+      nrl_error(NRL_TXN,
+                "Expected span_id to create an error but span_id = NULL.");
+      return;
+    }
+
+    if (add_to_current_segment) {
+      current_segment = nr_txn_get_current_segment(txn, NULL);
+
+      if (current_segment) {
+        nr_segment_set_error_with_additional_params(current_segment, error_message, error_class, error_file, error_line, error_context, error_no);
+        nrl_verbosedebug(NRL_TXN,
+                         "recording segment error: msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d'"
+                         "span_id='%.48s'",
+                         NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
+                         NRSAFESTR(span_id));
+      }
+    }
+  }
+  error = nr_error_create_additional_params(priority, error_message, error_class, error_file,
+                          error_line, error_context, error_no, stacktrace_json,
+                          span_id, nr_get_time());
+
+  /*
+   * Ensure previous error is destroyed only we have a valid one to replace it
+   * with.
+   */
+  
+  if (nrunlikely(NULL == error)) {
+    nrl_verbosedebug(NRL_TXN,
+                     "The following returned NULL from create error: "
+                     "priority=%d msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d' span_id='%.48s'",
+                     priority, NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
+                     NRSAFESTR(span_id));
+    return;
+  }
+  if (txn->error) {
+    nr_error_destroy_additional_params(&txn->error);
+  }
+  txn->error = error;
+  nrl_verbosedebug(NRL_TXN,
+                   "recording error priority=%d msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d'"
+                   "span_id='%.48s'",
+                   priority, NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
                    NRSAFESTR(span_id));
   nr_free(span_id);
 }
@@ -2480,6 +2580,12 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
   nro_set_hash_string(params, "error.class", nr_error_get_klass(txn->error));
   nro_set_hash_string(params, "error.message",
                       nr_error_get_message(txn->error));
+  if (nr_error_get_option(txn->error) > 0) { 
+    nro_set_hash_string(params, "error.file", nr_error_get_file(txn->error));
+    nro_set_hash_int(params, "error.line", nr_error_get_line(txn->error));
+    nro_set_hash_string(params, "error.context", nr_error_get_context(txn->error));
+    nro_set_hash_int(params, "error.no", nr_error_get_no(txn->error));
+  }
   nro_set_hash_string(params, "transactionName", txn->name);
   nro_set_hash_double(params, "duration",
                       ((double)duration) / NR_TIME_DIVISOR_D);

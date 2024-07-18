@@ -474,6 +474,17 @@ extern nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority);
 #define NR_TXN_ALLOW_RAW_EXCEPTION_MESSAGE \
   "Message removed by New Relic security settings"
 
+extern void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
+                         int priority,
+                         bool add_to_current_segment,
+                         const char* error_message,
+                         const char* error_class,
+                         const char* error_file,
+                         int error_line,
+                         char* error_context,
+                         int error_no,
+                         const char* stacktrace_json);
+
 extern void nr_txn_record_error(nrtxn_t* txn,
                                 int priority,
                                 bool add_to_segment,

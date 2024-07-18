@@ -25,6 +25,11 @@ struct _nr_error_t {
   int priority;          /* Error priority - lowest to highest */
   char* message;         /* Error message */
   char* klass;           /* Error class */
+  char* error_file;      /* Error file */
+  int error_line;        /* Error line */
+  char* error_context;   /* Error context */
+  int error_no;          /* Error number */
+  int option;            /* Error option */
   char* stacktrace_json; /* Stack trace in JSON format */
   char* span_id; /* ID of the current executing span at the time the error
                     occurred */

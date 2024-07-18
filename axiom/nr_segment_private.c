@@ -87,5 +87,7 @@ void nr_segment_error_destroy_fields(nr_segment_error_t* segment_error) {
 
   nr_free(segment_error->error_message);
   nr_free(segment_error->error_class);
+  nr_free(segment_error->error_file);
+  nr_free(segment_error->error_context);
   nr_free(segment_error);
 }
