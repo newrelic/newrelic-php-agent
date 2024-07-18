@@ -1642,29 +1642,26 @@ void nr_txn_record_error(nrtxn_t* txn,
   nr_free(span_id);
 }
 
-void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
-                         int priority,
-                         bool add_to_current_segment,
-                         const char* error_message,
-                         const char* error_class,
-                         const char* error_file,
-                         int error_line,
-                         char* error_context,
-                         int error_no,
-                         const char* stacktrace_json) {
+void nr_txn_record_error_with_additional_attributes(
+    nrtxn_t* txn,
+    int priority,
+    bool add_to_current_segment,
+    const char* error_message,
+    const char* error_class,
+    const char* error_file,
+    int error_line,
+    char* error_context,
+    int error_no,
+    const char* stacktrace_json) {
   nr_segment_t* current_segment = NULL;
   char* span_id = NULL;
   nr_error_t* error = NULL;
 
-  if (nrunlikely((0 == txn) || (0 == txn->options.err_enabled) || (0 == error_message)
-                 || (0 == txn->status.recording)
-                 || (0 == error_message[0])
-                 || (0 == stacktrace_json)
-                 || (0 == error_class)
-                 || (0 == error_file)
-                 || (0 == error_line)
-                 || (0 == error_context)
-                 || (0 == error_no))) {
+  if (nrunlikely((0 == txn) || (0 == txn->options.err_enabled)
+                 || (0 == error_message) || (0 == txn->status.recording)
+                 || (0 == error_message[0]) || (0 == stacktrace_json)
+                 || (0 == error_class) || (0 == error_file) || (0 == error_line)
+                 || (0 == error_context) || (0 == error_no))) {
     return;
   }
 
@@ -1701,30 +1698,37 @@ void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
       current_segment = nr_txn_get_current_segment(txn, NULL);
 
       if (current_segment) {
-        nr_segment_set_error_with_additional_params(current_segment, error_message, error_class, error_file, error_line, error_context, error_no);
+        nr_segment_set_error_with_additional_params(
+            current_segment, error_message, error_class, error_file, error_line,
+            error_context, error_no);
         nrl_verbosedebug(NRL_TXN,
-                         "recording segment error: msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d'"
+                         "recording segment error: msg='%.48s' cls='%.48s' "
+                         "file='%.48s' line='%d' context='%.48s' num='%d'"
                          "span_id='%.48s'",
-                         NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
+                         NRSAFESTR(error_message), NRSAFESTR(error_class),
+                         NRSAFESTR(error_file), error_line,
+                         NRSAFESTR(error_context), error_no,
                          NRSAFESTR(span_id));
       }
     }
   }
-  error = nr_error_create_additional_params(priority, error_message, error_class, error_file,
-                          error_line, error_context, error_no, stacktrace_json,
-                          span_id, nr_get_time());
+  error = nr_error_create_additional_params(
+      priority, error_message, error_class, error_file, error_line,
+      error_context, error_no, stacktrace_json, span_id, nr_get_time());
 
   /*
    * Ensure previous error is destroyed only we have a valid one to replace it
    * with.
    */
-  
+
   if (nrunlikely(NULL == error)) {
     nrl_verbosedebug(NRL_TXN,
                      "The following returned NULL from create error: "
-                     "priority=%d msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d' span_id='%.48s'",
-                     priority, NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
-                     NRSAFESTR(span_id));
+                     "priority=%d msg='%.48s' cls='%.48s' file='%.48s' "
+                     "line='%d' context='%.48s' num='%d' span_id='%.48s'",
+                     priority, NRSAFESTR(error_message), NRSAFESTR(error_class),
+                     NRSAFESTR(error_file), error_line,
+                     NRSAFESTR(error_context), error_no, NRSAFESTR(span_id));
     return;
   }
   if (txn->error) {
@@ -1732,10 +1736,12 @@ void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
   }
   txn->error = error;
   nrl_verbosedebug(NRL_TXN,
-                   "recording error priority=%d msg='%.48s' cls='%.48s' file='%.48s' line='%d' context='%.48s' num='%d'"
+                   "recording error priority=%d msg='%.48s' cls='%.48s' "
+                   "file='%.48s' line='%d' context='%.48s' num='%d'"
                    "span_id='%.48s'",
-                   priority, NRSAFESTR(error_message), NRSAFESTR(error_class), NRSAFESTR(error_file), error_line, NRSAFESTR(error_context), error_no,
-                   NRSAFESTR(span_id));
+                   priority, NRSAFESTR(error_message), NRSAFESTR(error_class),
+                   NRSAFESTR(error_file), error_line, NRSAFESTR(error_context),
+                   error_no, NRSAFESTR(span_id));
   nr_free(span_id);
 }
 
