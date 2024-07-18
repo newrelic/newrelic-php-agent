@@ -165,7 +165,7 @@ NR_PHP_WRAPPER_END
 void nr_aws_sdk_php_enable() {
   /* This will be used to extract the version. */
   nr_php_wrap_user_function(NR_PSTR("Aws\\ClientResolver::_apply_user_agent"),
-                            nr_aws_version);
+                            nr_create_aws_sdk_version_metrics);
   /* Called when initializing all other Clients */
   nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::parseClass"),
                             nr_aws_client_parse_class);
