@@ -207,8 +207,8 @@ func OverrideDockerId(util *Data, id string) error {
 	if nil == util.Vendors {
 		util.Vendors = &vendors{}
 	}
-	util.Vendors.Docker = &docker{ID: id}	
-	return nil	
+	util.Vendors.Docker = &docker{ID: id}
+	return nil
 }
 
 func OverrideVendors(util *Data) {
@@ -222,20 +222,20 @@ func OverrideVendors(util *Data) {
 }
 
 func GetDockerId(util *Data) (string, error) {
-    id := ""
-    if nil == util {
-        return id, fmt.Errorf("Util is nil")
-    }
-    if util.Vendors.isEmpty() {
-        return id, fmt.Errorf("Vendors structure is empty")
-    }
-    if nil == util.Vendors.Docker {
-        return id, fmt.Errorf("Docker structure is empty")
-    }
+	id := ""
+	if nil == util {
+		return id, fmt.Errorf("Util is nil")
+	}
+	if util.Vendors.isEmpty() {
+		return id, fmt.Errorf("Vendors structure is empty")
+	}
+	if nil == util.Vendors.Docker {
+		return id, fmt.Errorf("Docker structure is empty")
+	}
 
-    id = util.Vendors.Docker.ID
+	id = util.Vendors.Docker.ID
 
-    return id, nil
+	return id, nil
 }
 
 func GatherMemory(util *Data) error {

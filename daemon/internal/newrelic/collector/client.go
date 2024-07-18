@@ -58,15 +58,15 @@ type RpmControls struct {
 // Agent Behavior Summary:
 //
 // on connect/preconnect:
-//     410 means shutdown
-//     200, 202 mean success (start run)
-//     all other response codes and errors mean try after backoff
+//   - 410 means shutdown
+//   - 200, 202 mean success (start run)
+//   - all other response codes and errors mean try after backoff
 //
 // on harvest:
-//     410 means shutdown
-//     401, 409 mean restart run
-//     408, 429, 500, 503 mean save data for next harvest
-//     all other response codes and errors discard the data and continue the current harvest
+//   - 410 means shutdown
+//   - 401, 409 mean restart run
+//   - 408, 429, 500, 503 mean save data for next harvest
+//   - all other response codes and errors discard the data and continue the current harvest
 type RPMResponse struct {
 	StatusCode int
 	Body       []byte
@@ -97,7 +97,6 @@ func removeURLFromError(err error) error {
 		ue.URL = "**REDACTED-URL**"
 	}
 
-
 	return err
 }
 
@@ -116,7 +115,7 @@ func (resp RPMResponse) IsDisconnect() bool {
 
 // IsRestartException indicates that the agent should restart.
 // 401 (License Exception) is considered a restart exception according to the spec,
-//   and is included here as such, however the PHP agent will not restart on a 401 and instead stop
+// and is included here as such, however the PHP agent will not restart on a 401 and instead stop
 func (resp RPMResponse) IsRestartException() bool {
 	return resp.StatusCode == 401 || resp.StatusCode == 409
 }

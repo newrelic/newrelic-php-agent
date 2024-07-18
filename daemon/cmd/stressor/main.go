@@ -122,8 +122,8 @@ const DaemonSampleRate = 3 * time.Second
 
 // Application Behavior Constants
 // In order to roughly mimic the PHP agent, these should settings match
-//  NR_APP_UNKNOWN_QUERY_BACKOFF_LIMIT_SECONDS
-//  NR_APP_REFRESH_QUERY_PERIOD_SECONDS
+//   - NR_APP_UNKNOWN_QUERY_BACKOFF_LIMIT_SECONDS
+//   - NR_APP_REFRESH_QUERY_PERIOD_SECONDS
 const (
 	connectedAppInfoPeriod   = 20 * time.Second
 	unconnectedAppInfoPeriod = 5 * time.Second

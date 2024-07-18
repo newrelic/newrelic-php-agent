@@ -45,8 +45,9 @@
  *   viburnum           18Mar2024 (10.19)
  *   wallflower         06May2024 (10.20)
  *   xerophyllum        20May2024 (10.21)
+ *   yarrow             26Jun2024 (10.22)
  */
-#define NR_CODENAME "yarrow"
+#define NR_CODENAME "zinnia"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

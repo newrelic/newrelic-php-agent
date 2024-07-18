@@ -65,13 +65,13 @@ func NewDecoder(r io.Reader) *Decoder {
 //
 // Decode implements the following PEG.
 //
-// INI     = ((KEYWORD WS* '=' WS* VALUE) / COMMENT / WS)*
-// KEYWORD = ALPHA (ALPHA / NUMERIC / '_' / '.')*
-// VALUE   = QUOTED / DQUOTED / RAW
-// QUOTED  = '\'' .* '\''
-// DQUOTED = '"' .* '"'
-// RAW     = .* EOL
-// COMMENT = ('#' / ';') .* EOL
+//	INI     = ((KEYWORD WS* '=' WS* VALUE) / COMMENT / WS)*
+//	KEYWORD = ALPHA (ALPHA / NUMERIC / '_' / '.')*
+//	VALUE   = QUOTED / DQUOTED / RAW
+//	QUOTED  = '\'' .* '\''
+//	DQUOTED = '"' .* '"'
+//	RAW     = .* EOL
+//	COMMENT = ('#' / ';') .* EOL
 func (d *Decoder) Decode(v interface{}) (err error) {
 	val := reflect.ValueOf(v)
 	if val.Kind() != reflect.Ptr {

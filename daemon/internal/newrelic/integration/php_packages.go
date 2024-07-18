@@ -51,13 +51,14 @@ type ComposerJSON struct {
 	Installed []ComposerPackage
 }
 
-//
 // Given a JSON harvest payload, extract the PHP packages
 //
-// Params 1 : JSON byte string containing update_loaded_modules endpoint data
+// Params 1:
+//   - JSON byte string containing update_loaded_modules endpoint data
 //
-// Returns :  []PhpPackage with extracted package info, sorted by package name
-//            nil upon error processing JSON
+// Returns:
+//   - []PhpPackage with extracted package info, sorted by package name
+//   - nil upon error processing JSON
 func GetPhpPackagesFromData(data []byte) ([]PhpPackage, error) {
 	var pkgs []PhpPackage
 	var x []interface{}
@@ -279,11 +280,11 @@ func (pkgs *PhpPackagesCollection) OverrideVersionsFile() string {
 
 // Detects installed PHP packages
 //
-// Returns :  []PhpPackage with extracted package info, sorted by package name
-//            nil upon error processing JSON
+// Returns:
+//   - []PhpPackage with extracted package info, sorted by package name
+//   - nil upon error processing JSON
 //
-// Notes   :  Currently only supports an application created with composer
-//
+// Notes: Currently only supports an application created with composer
 func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, error) {
 
 	var err error
