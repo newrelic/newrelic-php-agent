@@ -94,7 +94,7 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
 
-NR_PHP_WRAPPER(nr_aws_version) {
+NR_PHP_WRAPPER(nr_create_aws_sdk_version_metrics) {
   (void)wraprec;
   NR_PHP_WRAPPER_CALL;
   nr_lib_aws_sdk_php_handle_version();
@@ -109,7 +109,7 @@ NR_PHP_WRAPPER_END
  * need to store it, we just need to snag it from the return value as it goes
  * through the client initialization process.
  */
-NR_PHP_WRAPPER(nr_aws_client_parse_class) {
+NR_PHP_WRAPPER(nr_create_aws_service_metric) {
   (void)wraprec;
 
   zval** ret_val_ptr = NULL;
