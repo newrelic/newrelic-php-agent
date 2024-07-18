@@ -8,15 +8,17 @@
  * https://github.com/aws/aws-sdk-php
  */
 #include "php_agent.h"
+#include "php_call.h"
+#include "php_hash.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_logging.h"
-#include "php_call.h"
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
-#define PHP_AWS_CLASS_PREFIX "Supportability/library/aws/aws-sdk-php/"
+#define PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX \
+  "Supportability/PHP/AWS/Services/"
 
 /*
  * In a normal course of events, the following line will always work
@@ -52,7 +54,7 @@
  * Concerns about future/past proofing to the checking prioritized the following
  * implementation vs using the eval method.
  */
-extern void lib_aws_sdk_php_handle_version() {
+void nr_lib_aws_sdk_php_handle_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
   char* version = NULL;
@@ -74,11 +76,12 @@ extern void lib_aws_sdk_php_handle_version() {
   nr_php_zval_free(&zval_version);
 }
 
-extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
+void nr_lib_aws_sdk_php_add_supportability_service_metric(
+    const char* service_name) {
   int MAX_LEN = 512;
   char buf[MAX_LEN];
 
-  if (NULL == metric_name || '\0' == metric_name[0]) {
+  if (NULL == service_name || '\0' == service_name[0]) {
     return;
   }
   if (NULL == NRPRG(txn)) {
@@ -86,28 +89,44 @@ extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name) {
   }
   buf[0] = '\0';
 
-  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_CLASS_PREFIX, metric_name);
+  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX,
+           service_name);
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
-
-/*
- * Any wrapped function pointing here will automatically have it's class
- * name created as a supportability metric.
- */
-NR_PHP_WRAPPER(nr_aws_create_metric) {
-  if (NULL != wraprec) {
-    lib_aws_sdk_php_add_supportability_metric(wraprec->classname);
-  }
-
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_aws_version) {
   (void)wraprec;
 
-  lib_aws_sdk_php_handle_version();
+  nr_lib_aws_sdk_php_handle_version();
   NR_PHP_WRAPPER_CALL;
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * AwsClient::parseClass
+ * This is called from the base AwsClient class for every client associated
+ * with a service during client initialization.
+ * parseClass already computes the service name for internal use, so we don't
+ * need to store it, we just need to snag it from the return value as it goes
+ * through the client initialization process.
+ */
+NR_PHP_WRAPPER(nr_aws_client_parse_class) {
+  (void)wraprec;
+
+  zval** ret_val_ptr = NULL;
+  ret_val_ptr = NR_GET_RETURN_VALUE_PTR;
+
+  NR_PHP_WRAPPER_CALL;
+
+  if (NULL != ret_val_ptr && nr_php_is_zval_valid_array(*ret_val_ptr)) {
+    /* obtain ret_val_ptr[0] which contains the service name */
+    zval* service_name
+        = nr_php_zend_hash_index_find(Z_ARRVAL_P(*ret_val_ptr), 0);
+    if (nr_php_is_zval_non_empty_string(service_name)) {
+      nr_lib_aws_sdk_php_add_supportability_service_metric(
+          Z_STRVAL_P(service_name));
+    }
+  }
 }
 NR_PHP_WRAPPER_END
 
@@ -145,18 +164,12 @@ NR_PHP_WRAPPER_END
  * never be ignored until a client is called.
  */
 void nr_aws_sdk_php_enable() {
-  /* This is will guarantee we can extract the version. */
+  /* This will be used to extract the version. */
   nr_php_wrap_user_function(NR_PSTR("Aws\\ClientResolver::_apply_user_agent"),
                             nr_aws_version);
-  /* This is the base of all other Clients */
-  nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::__construct"),
-                            nr_aws_create_metric);
-  /* The Sdk class */
-  nr_php_wrap_user_function(NR_PSTR("Aws\\Sdk::__construct"),
-                            nr_aws_create_metric);
-
-  nr_php_wrap_user_function(NR_PSTR("Aws\\S3\\S3Client::__construct"),
-                            nr_aws_create_metric);
+  /* Called when initializing all other Clients */
+  nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::parseClass"),
+                            nr_aws_client_parse_class);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,

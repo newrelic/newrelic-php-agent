@@ -8,7 +8,8 @@
 #define LIB_AWS_SDK_PHP_HDR
 
 extern void nr_aws_sdk_php_enable();
-extern void lib_aws_sdk_php_handle_version();
-extern void lib_aws_sdk_php_add_supportability_metric(const char* metric_name);
+extern void nr_lib_aws_sdk_php_handle_version();
+extern void nr_lib_aws_sdk_php_add_supportability_service_metric(
+    const char* service_name);
 
 #endif /* LIB_AWS_SDK_PHP_HDR */
