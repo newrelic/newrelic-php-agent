@@ -78,8 +78,8 @@ void nr_lib_aws_sdk_php_handle_version() {
 
 void nr_lib_aws_sdk_php_add_supportability_service_metric(
     const char* service_name) {
-  int MAX_LEN = 512;
-  char buf[MAX_LEN];
+  int MAX_METRIC_NAME_LEN = 256; /* total MAX metric name length per agent-specs */
+  char buf[MAX_METRIC_NAME_LEN];
 
   if (nr_strempty(service_name)) {
     return;
@@ -89,7 +89,7 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
   }
   buf[0] = '\0';
 
-  snprintf(buf, MAX_LEN, "%s%s", PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX,
+  snprintf(buf, MAX_METRIC_NAME_LEN, "%s%s", PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX,
            service_name);
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
