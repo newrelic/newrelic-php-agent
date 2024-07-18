@@ -96,9 +96,8 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
 
 NR_PHP_WRAPPER(nr_aws_version) {
   (void)wraprec;
-
-  nr_lib_aws_sdk_php_handle_version();
   NR_PHP_WRAPPER_CALL;
+  nr_lib_aws_sdk_php_handle_version();
 }
 NR_PHP_WRAPPER_END
 
