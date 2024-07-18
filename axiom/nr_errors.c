@@ -38,10 +38,48 @@ nr_error_t* nr_error_create(int priority,
   error->message = nr_strdup(message);
   error->klass = nr_strdup(klass);
   error->stacktrace_json = nr_strdup(stacktrace_json);
+  error->option = 0;
 
   if (NULL != span_id) {
     error->span_id = nr_strdup(span_id);
   }
+  return error;
+}
+
+nr_error_t* nr_error_create_additional_params(int priority,
+                                              const char* message,
+                                              const char* klass,
+                                              const char* error_file,
+                                              int error_line,
+                                              const char* error_context,
+                                              int error_no,
+                                              const char* stacktrace_json,
+                                              const char* span_id,
+                                              nrtime_t when) {
+  nr_error_t* error;
+
+  if (0 == message || 0 == klass || 0 == error_file || 0 == error_context
+      || 0 == stacktrace_json) {
+    return 0;
+  }
+
+  error = (nr_error_t*)nr_zalloc(sizeof(nr_error_t));
+  error->priority = priority;
+  error->when = when;
+  error->message = nr_strdup(message);
+  error->klass = nr_strdup(klass);
+  error->error_file = nr_strdup(error_file);
+  error->error_line = error_line;
+  error->error_context = nr_strdup(error_context);
+  error->error_no = error_no;
+
+  error->stacktrace_json = nr_strdup(stacktrace_json);
+
+  if (NULL != span_id) {
+    error->span_id = nr_strdup(span_id);
+  }
+
+  error->option = 1;
   return error;
 }
 
@@ -57,6 +95,41 @@ const char* nr_error_get_klass(const nr_error_t* error) {
     return NULL;
   }
   return error->klass;
+}
+
+const char* nr_error_get_file(const nr_error_t* error) {
+  if (NULL == error) {
+    return NULL;
+  }
+  return error->error_file;
+}
+
+int nr_error_get_line(const nr_error_t* error) {
+  if (NULL == error) {
+    return 0;
+  }
+  return error->error_line;
+}
+
+const char* nr_error_get_context(const nr_error_t* error) {
+  if (NULL == error) {
+    return NULL;
+  }
+  return error->error_context;
+}
+
+int nr_error_get_no(const nr_error_t* error) {
+  if (NULL == error) {
+    return 0;
+  }
+  return error->error_no;
+}
+
+int nr_error_get_option(const nr_error_t* error) {
+  if (NULL == error) {
+    return 0;
+  }
+  return error->option;
 }
 
 nrtime_t nr_error_get_time(const nr_error_t* error) {
@@ -92,6 +165,25 @@ void nr_error_destroy(nr_error_t** error_ptr) {
   }
   nr_free(error->message);
   nr_free(error->klass);
+  nr_free(error->span_id);
+  nr_free(error->stacktrace_json);
+  nr_realfree((void**)error_ptr);
+}
+
+void nr_error_destroy_additional_params(nr_error_t** error_ptr) {
+  nr_error_t* error;
+
+  if (0 == error_ptr) {
+    return;
+  }
+  error = *error_ptr;
+  if (0 == error) {
+    return;
+  }
+  nr_free(error->message);
+  nr_free(error->klass);
+  nr_free(error->error_file);
+  nr_free(error->error_context);
   nr_free(error->span_id);
   nr_free(error->stacktrace_json);
   nr_realfree((void**)error_ptr);

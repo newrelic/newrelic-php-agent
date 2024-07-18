@@ -1189,6 +1189,37 @@ void nr_segment_set_error(nr_segment_t* segment,
   segment->error->error_class = error_class ? nr_strdup(error_class) : NULL;
 }
 
+void nr_segment_set_error_with_additional_params(nr_segment_t* segment,
+                                                 const char* error_message,
+                                                 const char* error_class,
+                                                 const char* error_file,
+                                                 int error_line,
+                                                 char* error_context,
+                                                 int error_no) {
+  if ((NULL == segment) || (NULL == error_message) || (NULL == error_class)
+      || NULL == error_file || (NULL == error_context)) {
+    return;
+  }
+
+  if (NULL == segment->error) {
+    segment->error = nr_zalloc(sizeof(nr_segment_error_t));
+  }
+
+  nr_free(segment->error->error_message);
+  nr_free(segment->error->error_class);
+  nr_free(segment->error->error_file);
+  nr_free(segment->error->error_context);
+
+  segment->error->error_message
+      = error_message ? nr_strdup(error_message) : NULL;
+  segment->error->error_class = error_class ? nr_strdup(error_class) : NULL;
+  segment->error->error_file = error_file ? nr_strdup(error_file) : NULL;
+  segment->error->error_line = error_line ? error_line : 0;
+  segment->error->error_context
+      = error_context ? nr_strdup(error_context) : NULL;
+  segment->error->error_no = error_no ? error_no : 0;
+}
+
 bool nr_segment_attributes_user_add(nr_segment_t* segment,
                                     uint32_t destination,
                                     const char* name,

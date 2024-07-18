@@ -71,14 +71,16 @@ PHP_FUNCTION(newrelic_notice_error) {
   const char* errclass = "NoticedError";
   char* errormsgstr = NULL;
   nr_string_len_t errormsglen = 0;
-  zend_long ignore1 = 0;
-  char* ignore2 = 0;
-  nr_string_len_t ignore3 = 0;
-  zend_long ignore4 = 0;
+  zend_long error_number = 0;
+  char* error_file = NULL;
+  nr_string_len_t error_file_len = 0;
+  zend_long error_line = 0;
   zval* exc = NULL;
-  zval* ignore5 = NULL;
+  nr_string_len_t error_context_len = 0;
+  char* error_context = NULL;
   int priority = 0;
   zval* ignore = NULL;
+  bool determine = false;
 
   NR_UNUSED_RETURN_VALUE;
   NR_UNUSED_RETURN_VALUE_PTR;
@@ -144,12 +146,14 @@ PHP_FUNCTION(newrelic_notice_error) {
     case 5:
       if (FAILURE
           == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                      ZEND_NUM_ARGS() TSRMLS_CC, "lsslz!",
-                                      &ignore1, &errormsgstr, &errormsglen,
-                                      &ignore2, &ignore3, &ignore4, &ignore5)) {
+                                      ZEND_NUM_ARGS() TSRMLS_CC, "lssls!",
+                                      &error_number, &errormsgstr, &errormsglen,
+                                      &error_file, &error_file_len, &error_line,
+                                      &error_context, &error_context_len)) {
         nrl_debug(NRL_API, "newrelic_notice_error: invalid five arguments");
         RETURN_NULL();
       }
+      determine = true;
       break;
 
     default:
@@ -168,13 +172,30 @@ PHP_FUNCTION(newrelic_notice_error) {
     }
   }
 
-  {
+  if (!determine) {
     char* buf = nr_strndup(errormsgstr, errormsglen);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
 
     nr_txn_record_error(NRPRG(txn), priority, true, buf, errclass, stack_json);
 
     nr_free(buf);
+    nr_free(stack_json);
+
+    RETURN_TRUE;
+  }
+  if (determine) {
+    char* buf1 = nr_strndup(errormsgstr, errormsglen);
+    char* buf2 = nr_strndup(error_file, error_file_len);
+    char* buf3 = nr_strndup(error_context, error_context_len);
+    char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
+
+    nr_txn_record_error_with_additional_attributes(
+        NRPRG(txn), priority, true, buf1, errclass, buf2,
+        error_line, buf3, error_number, stack_json);
+
+    nr_free(buf1);
+    nr_free(buf2);
+    nr_free(buf3);
     nr_free(stack_json);
 
     RETURN_TRUE;
