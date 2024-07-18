@@ -168,7 +168,7 @@ void nr_aws_sdk_php_enable() {
                             nr_create_aws_sdk_version_metrics);
   /* Called when initializing all other Clients */
   nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::parseClass"),
-                            nr_aws_client_parse_class);
+                            nr_create_aws_service_metric);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
