@@ -14,10 +14,6 @@ tlib_parallel_info_t parallel_info
 
 #if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO
 
-#define PHP_AWS_CLASS_PREFIX "Supportability/library/aws/aws-sdk-php/"
-#define PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX \
-  "Supportability/PHP/AWS/Services/"
-
 static void declare_aws_sdk_class(const char* ns,
                                   const char* klass,
                                   const char* sdk_version) {
