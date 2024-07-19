@@ -489,12 +489,17 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
 
   nr_free(dt->trace_id);
   if (trace_id) {
-    int len = nr_strlen(trace_id);
-    if (do_padding && len < NR_TRACE_ID_SIZE) {
-      int padding = NR_TRACE_ID_SIZE - len;
-      char* dest = (char*)nr_malloc(NR_TRACE_ID_SIZE + 1);
-      snprintf(dest, NR_TRACE_ID_SIZE+1, "%0*d%s", padding, 0, trace_id);
-      dt->trace_id = dest;
+    if (do_padding) {
+      int len = nr_strlen(trace_id);
+      if (len < NR_TRACE_ID_SIZE) {
+        int padding = NR_TRACE_ID_SIZE - len;
+        char* dest = (char*)nr_malloc(NR_TRACE_ID_SIZE + 1);
+        for (int i=0; i < padding; i++) {
+          dest[i] = '0';
+        }
+        nr_strcpy(dest + padding, trace_id);
+        dt->trace_id = dest;
+      }
     } else {
       dt->trace_id = nr_strdup(trace_id);
     }
