@@ -17,8 +17,6 @@
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
-#define PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX \
-  "Supportability/PHP/AWS/Services/"
 
 /*
  * In a normal course of events, the following line will always work
@@ -79,7 +77,6 @@ void nr_lib_aws_sdk_php_handle_version() {
 void nr_lib_aws_sdk_php_add_supportability_service_metric(
     const char* service_name) {
   /* total MAX metric name length per agent-specs */
-  int MAX_METRIC_NAME_LEN = 256;
   char buf[MAX_METRIC_NAME_LEN];
   char* cp = NULL;
 
@@ -90,13 +87,10 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
     return;
   }
 
-  buf[0] = '\0';
   cp = buf;
   strcpy(cp, PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX);
-  cp += sizeof(PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX) - 1;
-  strlcpy(
-      cp, service_name,
-      MAX_METRIC_NAME_LEN - nr_strlen(PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX));
+  cp += PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX_LEN - 1;
+  strlcpy(cp, service_name, MAX_AWS_SERVICE_NAME_LEN);
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
 
