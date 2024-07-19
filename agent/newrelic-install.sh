@@ -327,10 +327,10 @@ check_file "${ilibdir}/scripts/newrelic.ini.template"
 # MAKE SURE TO UPDATE THIS LIST WHENEVER SUPPORT IS ADDED OR REMOVED
 # FOR A PHP VERSION
 # Currently supported versions:
-#    (7.0, 7.1, 7.2, 7.3, 7.4)
+#    (7.2, 7.3, 7.4)
 # for x64
 if [ ${arch} = x64 ]; then
-for pmv in "20151012" "20160303" "20170718" "20180731" "20190902"; do
+for pmv in "20170718" "20180731" "20190902"; do
   check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
 done
 fi
@@ -535,8 +535,6 @@ add_to_path /usr/local/php
 add_to_path /usr/local/php/bin
 add_to_path /usr/local/zend/bin
 
-add_to_path /usr/local/php-7.0/bin
-add_to_path /usr/local/php-7.1/bin
 add_to_path /usr/local/php-7.2/bin
 add_to_path /usr/local/php-7.3/bin
 add_to_path /usr/local/php-7.4/bin
@@ -548,8 +546,6 @@ add_to_path /usr/local/php-8.3/bin
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
 
-add_to_path /usr/php-7.0/bin
-add_to_path /usr/php-7.1/bin
 add_to_path /usr/php-7.2/bin
 add_to_path /usr/php-7.3/bin
 add_to_path /usr/php-7.4/bin
@@ -558,8 +554,6 @@ add_to_path /usr/php-8.1/bin
 add_to_path /usr/php-8.2/bin
 add_to_path /usr/php-8.3/bin
 
-add_to_path /usr/php/7.0/bin
-add_to_path /usr/php/7.1/bin
 add_to_path /usr/php/7.2/bin
 add_to_path /usr/php/7.3/bin
 add_to_path /usr/php/7.4/bin
@@ -571,8 +565,6 @@ add_to_path /usr/php/8.3/bin
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
 
-add_to_path /opt/php-7.0/bin
-add_to_path /opt/php-7.1/bin
 add_to_path /opt/php-7.2/bin
 add_to_path /opt/php-7.3/bin
 add_to_path /opt/php-7.4/bin
@@ -1037,22 +1029,6 @@ for this copy of PHP. We apologize for the inconvenience.
   fi
 
   case "${pi_ver}" in
-     7.0.*)
-      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
-      if [ -z "${NR_INSTALL_SILENT}" ]; then
-         echo $warning_message
-      fi
-      log $warning_message
-      ;;
-
-    7.1.*)
-      warning_message="${pdir}: Support for PHP '${pi_ver}' in the New Relic PHP agent is deprecated."
-      if [ -z "${NR_INSTALL_SILENT}" ]; then
-         echo $warning_message
-      fi
-      log $warning_message
-      ;;
-
     7.2.*)
       ;;
 
@@ -1249,8 +1225,6 @@ does not exist. This particular instance of PHP will be skipped.
 #
   pi_modver=
   case "${pi_ver}" in
-    7.0.*)  pi_modver="20151012" ;;
-    7.1.*)  pi_modver="20160303" ;;
     7.2.*)  pi_modver="20170718" ;;
     7.3.*)  pi_modver="20180731" ;;
     7.4.*)  pi_modver="20190902" ;;
