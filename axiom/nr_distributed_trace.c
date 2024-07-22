@@ -497,7 +497,7 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
         for (int i=0; i < padding; i++) {
           dest[i] = '0';
         }
-        nr_strcpy(dest + padding, trace_id);
+        strcpy(dest + padding, trace_id);
         dt->trace_id = dest;
       } else {
         dt->trace_id = nr_strdup(trace_id);
