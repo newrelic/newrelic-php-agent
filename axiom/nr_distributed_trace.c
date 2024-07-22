@@ -501,7 +501,7 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
         dt->trace_id = dest;
       } else {
         dt->trace_id = nr_strdup(trace_id);
-      {
+      }
     } else {
       dt->trace_id = nr_strdup(trace_id);
     }
