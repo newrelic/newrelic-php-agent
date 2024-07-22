@@ -18,7 +18,7 @@ Only 6800 span events must be sent when the limit is set to 6800.
 newrelic.distributed_tracing_enabled = 1
 newrelic.transaction_tracer.threshold = 0
 newrelic.cross_application_tracer.enabled = false
-newrelic.span_events.max_samples_stored = 6800
+newrelic.span_events.max_samples_stored = 7000
 newrelic.code_level_metrics.enabled=false
 */
 
