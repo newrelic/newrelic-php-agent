@@ -1625,7 +1625,7 @@ static void test_padded_trace_id(void) {
   nr_memset(&app, 0, sizeof(app));
   app.state = NR_APP_OK;
   nr_memset(&opts, 0, sizeof(opts));
-  opts.distributed_tracing_use_full_trace_id = true;
+  opts.distributed_tracing_pad_trace_id = true;
 
   txn = nr_txn_begin(&app, &opts, NULL);
   txnid = nr_txn_get_guid(txn);
@@ -1729,7 +1729,7 @@ static void test_begin(void) {
   opts->max_segments = 0;
   opts->span_queue_batch_size = 1000;
   opts->span_queue_batch_timeout = 1 * NR_TIME_DIVISOR;
-  opts->distributed_tracing_use_full_trace_id = false;
+  opts->distributed_tracing_pad_trace_id = false;
 
   app->rnd = nr_random_create();
   nr_random_seed(app->rnd, 345345);

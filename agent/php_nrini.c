@@ -3079,11 +3079,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enable
 /*
  * trace id character size
  */
-STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.use_full_trace_id",
+STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.pad_trace_id",
                      "0",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
-                     distributed_tracing_use_full_trace_id,
+                     distributed_tracing_pad_trace_id,
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
