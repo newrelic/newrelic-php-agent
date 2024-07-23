@@ -12,6 +12,7 @@
 #include "util_time.h"
 #include "util_object.h"
 
+/* This is the maximum size of trace id that the backend will accept */
 #define NR_TRACE_ID_SIZE 32
 
 static const char NR_DISTRIBUTED_TRACE_ACCEPT_SUCCESS[]
