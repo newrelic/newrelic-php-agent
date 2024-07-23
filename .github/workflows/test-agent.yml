@@ -19,6 +19,31 @@ on:
   pull_request:
 
 jobs:
+  gofmt-check:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v4
+        with:
+          path: php-agent
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./php-agent/daemon/go.mod
+          cache: false
+      - name: Display go version
+        run: |
+          go version
+      - name: Run gofmt
+        run: |
+          GOFMT_REPORTED_FILES="$(gofmt -l -e ./php-agent/daemon)"
+          if [ ! -z "$GOFMT_REPORTED_FILES" ]; then
+            gofmt -d -e ./php-agent/daemon
+            echo "### gofmt violations found in $(echo "$GOFMT_REPORTED_FILES" | wc -l) files" >> $GITHUB_STEP_SUMMARY
+            echo "$GOFMT_REPORTED_FILES" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
   daemon-unit-tests:
     runs-on: ubuntu-latest
     env:
@@ -72,12 +97,8 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
           - arch: arm64
             php: '7.2'
           - arch: arm64
@@ -117,9 +138,7 @@ jobs:
             echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
           elif [[ ${{ matrix.platform }} = 'gnu' ]]; then
             echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
-          elif [[ ${{matrix.php}} = '7.0' || ${{matrix.php}} = '7.1' ]]; then
-            echo "AGENT_CHECK_VARIANT=check" >> $GITHUB_OUTPUT
-          else 
+          else
             echo "AGENT_CHECK_VARIANT=valgrind" >> $GITHUB_OUTPUT
           fi
       - name: Build axiom
@@ -183,12 +202,8 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64, arm64]
-        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         exclude:
-          - arch: arm64
-            php: '7.0'
-          - arch: arm64
-            php: '7.1'
           - arch: arm64
             php: '7.2'
           - arch: arm64

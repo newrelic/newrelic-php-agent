@@ -65,10 +65,10 @@ func triggerBuilder(t HarvestType, duration time.Duration) HarvestTriggerFunc {
 
 // To create a group of goroutines that may be cancelled by sending a single
 // message on a single channel, this function:
-// - Creates a cancel channel for the goroutine function f.
-// - Starts the goroutine.
-// - Returns the newly-created cancel channel so that it may be added to a
-//   broadcast group.
+//   - Creates a cancel channel for the goroutine function f.
+//   - Starts the goroutine.
+//   - Returns the newly-created cancel channel so that it may be added to a
+//     broadcast group.
 func startGroupMember(f HarvestTriggerFunc, trigger chan HarvestType) chan bool {
 	cancel := make(chan bool)
 	go f(trigger, cancel)
@@ -144,10 +144,10 @@ func customTriggerBuilder(reply *ConnectReply) HarvestTriggerFunc {
 
 // This function returns the harvest trigger function that should be used for
 // this agent.  In priority order:
-//   1. Either it uses the ConnectReply to build custom triggers as specified by
-//      the New Relic server-side collector.
-//   2. Or it creates a default harvest trigger, harvesting all data at the
-//      default period.
+//  1. Either it uses the ConnectReply to build custom triggers as specified by
+//     the New Relic server-side collector.
+//  2. Or it creates a default harvest trigger, harvesting all data at the
+//     default period.
 func getHarvestTrigger(key collector.LicenseKey, reply *ConnectReply) HarvestTriggerFunc {
 	// Build a trigger from the server-side collector configuration.
 	if reply.isHarvestAll() {

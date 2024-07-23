@@ -357,6 +357,14 @@ void nr_mongodb_enable() {
                                   nr_mongodb_operation, "count" TSRMLS_CC);
 
   /*
+   * `count` has been deprecated in later versions of mongodb and replaced by
+   * `countDocuments`
+   */
+  nr_php_wrap_user_function_extra(
+      NR_PSTR("MongoDB\\Operation\\CountDocuments::execute"),
+      nr_mongodb_operation, "countDocuments");
+
+  /*
    * This also catches MongoDB\Collection::createIndex
    */
   nr_php_wrap_user_function_extra(
