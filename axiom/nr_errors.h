@@ -116,14 +116,6 @@ extern const char* nr_error_get_context(const nr_error_t* error);
 extern int nr_error_get_no(const nr_error_t* error);
 
 /*
- * Purpose : Determine if the option is 0 or 1. If 1, then this means the error
- * has additional arguments.
- *
- * Returns : Either 0 or 1
- */
-extern int nr_error_get_option(const nr_error_t* error);
-
-/*
  * Purpose : Get the span_id of an error.
  *
  * Returns : The span_id of the error or NULL on failure.
