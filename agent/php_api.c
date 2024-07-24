@@ -173,29 +173,22 @@ PHP_FUNCTION(newrelic_notice_error) {
   }
 
   if (!determine) {
-    char* buf = nr_strndup(errormsgstr, errormsglen);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
 
-    nr_txn_record_error(NRPRG(txn), priority, true, buf, errclass, stack_json);
+    nr_txn_record_error(NRPRG(txn), priority, true, errormsgstr, errclass,
+                        stack_json);
 
-    nr_free(buf);
     nr_free(stack_json);
 
     RETURN_TRUE;
   }
   if (determine) {
-    char* buf1 = nr_strndup(errormsgstr, errormsglen);
-    char* buf2 = nr_strndup(error_file, error_file_len);
-    char* buf3 = nr_strndup(error_context, error_context_len);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
 
     nr_txn_record_error_with_additional_attributes(
-        NRPRG(txn), priority, true, buf1, errclass, buf2,
-        error_line, buf3, error_number, stack_json);
+        NRPRG(txn), priority, true, errormsgstr, errclass, error_file,
+        error_line, error_context, error_number, stack_json);
 
-    nr_free(buf1);
-    nr_free(buf2);
-    nr_free(buf3);
     nr_free(stack_json);
 
     RETURN_TRUE;
