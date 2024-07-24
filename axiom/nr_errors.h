@@ -150,11 +150,6 @@ extern int nr_error_priority(const nr_error_t* error);
 extern void nr_error_destroy(nr_error_t** error_ptr);
 
 /*
- * Purpose : Destroys an error with extra parameters, freeing all of its associated memory.
- */
-extern void nr_error_destroy_additional_params(nr_error_t** error_ptr);
-
-/*
  * Purpose : Turn an error into the JSON format expected by the 'error_v1'
  *           command.  Returns NULL if an error occurs.
  */
