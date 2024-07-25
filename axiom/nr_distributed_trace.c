@@ -489,7 +489,7 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
 
   nr_free(dt->trace_id);
   if (trace_id) {
-    if (do_padding) {
+    if (nrunlikely(do_padding)) {
       int len = nr_strlen(trace_id);
       if (len < NR_TRACE_ID_SIZE) {
         int padding = NR_TRACE_ID_SIZE - len;
