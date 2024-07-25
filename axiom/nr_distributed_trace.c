@@ -1272,7 +1272,7 @@ char* nr_distributed_trace_create_w3c_traceparent_header(const char* trace_id,
    * 0's.
    */
   tmp = nr_string_to_lowercase(trace_id);
-  padding = NR_TRACE_ID_SIZE - nr_strlen(tmp);
+  padding = 32 - nr_strlen(tmp);
   if (padding > 0) {
     snprintf(formatted_trace_id, sizeof(formatted_trace_id), "%0*d%s", padding,
              0, tmp);
