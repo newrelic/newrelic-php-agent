@@ -2879,6 +2879,21 @@ STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing_exclude_newrelic_header",
                      newrelic_globals,
                      0)
 
+/*
+ * This setting is not documented and affects the length of the interally used
+ * trace id. This INI setting should not be modified unless requested by
+ * customer.
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.pad_trace_id",
+                     "",  // default is false represented as an empty string -
+                          // see notes about PHP INI parser
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     distributed_tracing_pad_trace_id,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+
 /**
  * Flag to turn the span events on/off
  * When on, the agent will create span events. Span events require that
@@ -3072,18 +3087,6 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enable
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      vulnerability_management_package_detection_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
-
-/*
- * trace id character size
- */
-STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.pad_trace_id",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     distributed_tracing_pad_trace_id,
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
