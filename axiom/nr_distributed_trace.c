@@ -494,7 +494,7 @@ void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
       if (len < NR_TRACE_ID_MAX_SIZE) {
         int padding = NR_TRACE_ID_MAX_SIZE - len;
         char* dest = (char*)nr_malloc(NR_TRACE_ID_MAX_SIZE + 1);
-        for (int i=0; i < padding; i++) {
+        for (int i = 0; i < padding; i++) {
           dest[i] = '0';
         }
         strcpy(dest + padding, trace_id);
