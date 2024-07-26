@@ -1677,12 +1677,14 @@ static void test_distributed_trace_set_trace_id(const bool pad_trace_id) {
       "",                  // empty string
       "1234567890",        // 10 characters
       "1234567890abcdef",  // 16 characters
+      "1234567890abcdef1234567890abcdef", // 32 characters
       "1234567890123456789012345678901234567890123456789012345678901234567890"  // 64 characters
   };
   const char* t_padded[] = {
       "00000000000000000000000000000000",  // empty string lpadded to NR_TRACE_ID_MAX_SIZE with '0'
       "00000000000000000000001234567890",  // 10 characters lpadded to NR_TRACE_ID_MAX_SIZE with '0'
       "00000000000000001234567890abcdef",  // 16 characters lpadded to NR_TRACE_ID_MAX_SIZE with '0'
+      "1234567890abcdef1234567890abcdef",  // 32 characters - no padding done
       "1234567890123456789012345678901234567890123456789012345678901234567890" // 64 characters - no padding
     };
   // clang-format on
