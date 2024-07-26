@@ -5,13 +5,13 @@
  */
 
 /*DESCRIPTION
-This is the max that can be sent with DT only.  With span limit > 6800,
+This is the max that can be sent with DT only.  With span limit > 7000,
 infinite tracing NEEDS to be enabled; otherwise, the daemon will
 error out with the following type message:
 `Error: listener: closing connection: maximum message size exceeded, (2886388 > 2097152)`
 The maximum without DT is 7200; however, it causes 
 the listener to slow down so much that it will cause intermittent failures on other samples_stored tests.
-Only 6800 span events must be sent when the limit is set to 6800.
+Only 7000 span events must be sent when the limit is set to 7000.
 */
 
 /*INI
