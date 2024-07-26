@@ -5965,6 +5965,10 @@ static void test_create_w3c_traceparent_header(void) {
 
   nr_memset(&txn, 0, sizeof(nrtxn_t));
   txn.options.span_events_enabled = true;
+  // default value for padding can be used for this test, because other
+  // test (test_distributed_trace_create_trace_parent_header) already
+  // covers using trace_id of different lengths when w3c header is created.
+  txn.options.distributed_tracing_pad_trace_id = false;
   txn.status.recording = true;
   txn.rnd = nr_random_create();
   txn.status.recording = 1;
@@ -5994,7 +5998,9 @@ static void test_create_w3c_traceparent_header(void) {
   /*
    * Test : valid string random guid
    */
-  nr_distributed_trace_set_trace_id(txn.distributed_trace, "meatballs!", true);
+  nr_distributed_trace_set_trace_id(
+      txn.distributed_trace, "meatballs!",
+      txn.options.distributed_tracing_pad_trace_id);
   actual = nr_txn_create_w3c_traceparent_header(&txn, segment);
   expected = "00-0000000000000000000000meatballs!-";
   tlib_pass_if_not_null("random guid", nr_strstr(actual, expected));
@@ -6305,6 +6311,10 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
   txn.app_connect_reply = nro_new_hash();
   txn.unscoped_metrics = nrm_table_create(0);
   nro_set_hash_string(txn.app_connect_reply, "trusted_account_key", "123");
+  // default value for padding can be used for this test, because other
+  // test (test_distributed_trace_create_trace_parent_header) already
+  // covers using trace_id of different lengths when w3c header is created.
+  txn.options.distributed_tracing_pad_trace_id = false;
 
 #define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET    \
   txn.distributed_trace->inbound.set = 0;   \
@@ -6750,7 +6760,9 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_distributed_trace_set_trace_id(txn.distributed_trace, "35ff77", false);
+  nr_distributed_trace_set_trace_id(
+      txn.distributed_trace, "35ff77",
+      txn.options.distributed_tracing_pad_trace_id);
   traceparent = nr_txn_create_w3c_traceparent_header(&txn, NULL);
   nr_free(traceparent);
 
@@ -7565,12 +7577,12 @@ static void test_get_current_trace_id(void) {
                     nr_txn_get_current_trace_id(NULL));
 
   /*
-   * Test : Correct trace id
+   * Test : trace id  == txn_id with default pad_trace_id setting - no padding
    */
   txn_id = nr_txn_get_guid(txn);
   trace_id = nr_txn_get_current_trace_id(txn);
   tlib_fail_if_null("txn id", txn_id);
-  tlib_pass_if_str_equal("padded txn_id == trace_id", txn_id, trace_id);
+  tlib_pass_if_str_equal("txn_id == trace_id", txn_id, trace_id);
   nr_free(trace_id);
 
   /*
@@ -7587,6 +7599,26 @@ static void test_get_current_trace_id(void) {
   nr_distributed_trace_destroy(&txn->distributed_trace);
   tlib_pass_if_null("DT is null. null trace id is returned",
                     nr_txn_get_current_trace_id(txn));
+
+  nr_txn_destroy(&txn);
+
+  /* setup and start txn */
+  nr_memset(&app, 0, sizeof(app));
+  nr_memset(&opts, 0, sizeof(opts));
+  app.state = NR_APP_OK;
+  opts.distributed_tracing_enabled = 1;
+  opts.distributed_tracing_pad_trace_id = true;
+  txn = nr_txn_begin(&app, &opts, NULL);
+  /*
+   * Test : trace id  != txn_id with trace_id padding enabled
+   */
+  txn_id = nr_txn_get_guid(txn);
+  trace_id = nr_txn_get_current_trace_id(txn);
+  tlib_fail_if_null("txn id", txn_id);
+  tlib_fail_if_str_equal("txn_id != trace_id", txn_id, trace_id);
+  tlib_pass_if_str_equal("txn_id = ltrim(trace_id)", txn_id,
+                         trace_id + (nr_strlen(trace_id) - NR_GUID_SIZE));
+  nr_free(trace_id);
 
   nr_txn_destroy(&txn);
 }
