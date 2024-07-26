@@ -1615,30 +1615,6 @@ static void test_default_trace_id(void) {
   nr_txn_destroy(&txn);
 }
 
-static void test_padded_trace_id(void) {
-  nrapp_t app;
-  nrtxnopt_t opts;
-  nrtxn_t* txn;
-  const char* txnid;
-  char paddedid[33] = "0000000000000000";
-
-  nr_memset(&app, 0, sizeof(app));
-  app.state = NR_APP_OK;
-  nr_memset(&opts, 0, sizeof(opts));
-  opts.distributed_tracing_pad_trace_id = true;
-
-  txn = nr_txn_begin(&app, &opts, NULL);
-  txnid = nr_txn_get_guid(txn);
-
-  tlib_fail_if_null("txnid", txnid);
-  nr_strcat(paddedid, txnid);
-  tlib_pass_if_str_equal(
-      "txnid=traceid", paddedid,
-      nr_distributed_trace_get_trace_id(txn->distributed_trace));
-
-  nr_txn_destroy(&txn);
-}
-
 static void test_root_segment_priority(void) {
   nrapp_t app;
   nrtxnopt_t opts;
@@ -7562,6 +7538,7 @@ static void test_get_current_trace_id(void) {
   char* trace_id;
   nrtxn_t* txn;
   const char* txn_id;
+  const char* dt_trace_id;
 
   /* setup and start txn */
   nr_memset(&app, 0, sizeof(app));
@@ -7614,10 +7591,12 @@ static void test_get_current_trace_id(void) {
    */
   txn_id = nr_txn_get_guid(txn);
   trace_id = nr_txn_get_current_trace_id(txn);
+  dt_trace_id = nr_distributed_trace_get_trace_id(txn->distributed_trace);
   tlib_fail_if_null("txn id", txn_id);
   tlib_fail_if_str_equal("txn_id != trace_id", txn_id, trace_id);
   tlib_pass_if_str_equal("txn_id = ltrim(trace_id)", txn_id,
                          trace_id + (nr_strlen(trace_id) - NR_GUID_SIZE));
+  tlib_pass_if_str_equal("trace_id = dt_trace_id", trace_id, dt_trace_id);
   nr_free(trace_id);
 
   nr_txn_destroy(&txn);
@@ -8723,7 +8702,6 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_httpsafe();
   test_txn_accept_distributed_trace_payload_optionals();
   test_default_trace_id();
-  test_padded_trace_id();
   test_root_segment_priority();
   test_should_create_span_events();
   test_parent_stacks();
