@@ -91,8 +91,9 @@ typedef struct _nrtxnopt_t {
 
   int distributed_tracing_enabled; /* Whether distributed tracing functionality
                                       is enabled */
-  bool distributed_tracing_pad_trace_id; /* whether to always create a
-                                                 32 character trace id */
+  bool distributed_tracing_pad_trace_id; /* whether to pad internally generated
+                                            trace_id to NR_TRACE_ID_MAX_SIZE
+                                            characters */
   bool distributed_tracing_exclude_newrelic_header; /* Whether distributed
                                                        tracing outbound headers
                                                        should omit newrelic
