@@ -633,7 +633,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
    */
   guid = nr_guid_create(app->rnd);
   nr_distributed_trace_set_txn_id(nt->distributed_trace, guid);
-  nr_distributed_trace_set_trace_id(nt->distributed_trace, guid);
+  nr_distributed_trace_set_trace_id(nt->distributed_trace, guid,
+                                    opts->distributed_tracing_pad_trace_id);
 
   nr_distributed_trace_set_trusted_key(
       nt->distributed_trace,
