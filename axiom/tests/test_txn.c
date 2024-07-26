@@ -8161,6 +8161,8 @@ static void test_segment_record_error_with_additional_params(void) {
       txn, 1, true, "low priority message", "low priority class", "random.php",
       150, "random context", 256, "[\"A\",\"B\"]");
   tlib_pass_if_null("No segment error created", segment->error);
+
+  /* Enable error collection */
   txn->options.err_enabled = 1;
 
   /* Do not add to current segment */
