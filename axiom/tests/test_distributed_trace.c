@@ -1670,6 +1670,44 @@ static void test_distributed_trace_create_trace_parent_header(void) {
   nr_free(actual);
 }
 
+static void test_distributed_trace_set_trace_id(const bool pad_trace_id) {
+  nr_distributed_trace_t dt = {0};
+  // clang-format off
+  const char* t_input[] = {
+      "",                  // empty string
+      "1234567890",        // 10 characters
+      "1234567890abcdef",  // 16 characters
+      "1234567890123456789012345678901234567890123456789012345678901234567890"  // 64 characters
+  };
+  const char* t_padded[] = {
+      "00000000000000000000000000000000",  // empty string lpadded to NR_TRACE_ID_MAX_SIZE with '0'
+      "00000000000000000000001234567890",  // 10 characters lpadded to NR_TRACE_ID_MAX_SIZE with '0'
+      "00000000000000001234567890abcdef",  // 16 characters lpadded to NR_TRACE_ID_MAX_SIZE with '0'
+      "1234567890123456789012345678901234567890123456789012345678901234567890" // 64 characters - no padding
+    };
+  // clang-format on
+
+  /*
+   * Test : NULL input => no trace id generated
+   */
+  nr_distributed_trace_set_trace_id(&dt, NULL, pad_trace_id);
+  tlib_pass_if_null("NULL trace id", dt.trace_id);
+
+  /*
+   * Test : valid input => trace id generated
+   */
+  for (long unsigned int i = 0; i < sizeof(t_input) / sizeof(t_input[0]); i++) {
+    const char* expected = t_input[i];
+    if (pad_trace_id) {
+      expected = t_padded[i];
+    }
+    nr_distributed_trace_set_trace_id(&dt, t_input[i], pad_trace_id);
+    tlib_pass_if_not_null("trace id is set", dt.trace_id);
+    tlib_pass_if_str_equal("trace id has correct value", dt.trace_id, expected);
+    nr_free(dt.trace_id);
+  }
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -1707,4 +1745,6 @@ void test_main(void* p NRUNUSED) {
 
   test_create_trace_state_header();
   test_distributed_trace_create_trace_parent_header();
+  test_distributed_trace_set_trace_id(false);
+  test_distributed_trace_set_trace_id(true);
 }
