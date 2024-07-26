@@ -45,6 +45,7 @@ extern void nr_zend_enable(TSRMLS_D);
 extern void nr_fw_zend2_enable(TSRMLS_D);
 
 /* Libraries. */
+extern void nr_aws_sdk_php_enable();
 extern void nr_doctrine2_enable(TSRMLS_D);
 extern void nr_guzzle3_enable(TSRMLS_D);
 extern void nr_guzzle4_enable(TSRMLS_D);

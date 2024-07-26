@@ -481,14 +481,30 @@ void nr_distributed_trace_set_app_id(nr_distributed_trace_t* dt,
 }
 
 void nr_distributed_trace_set_trace_id(nr_distributed_trace_t* dt,
-                                       const char* trace_id) {
+                                       const char* trace_id,
+                                       bool do_padding) {
   if (NULL == dt) {
     return;
   }
 
   nr_free(dt->trace_id);
   if (trace_id) {
-    dt->trace_id = nr_strdup(trace_id);
+    if (nrunlikely(do_padding)) {
+      int len = nr_strlen(trace_id);
+      if (len < NR_TRACE_ID_MAX_SIZE) {
+        int padding = NR_TRACE_ID_MAX_SIZE - len;
+        char* dest = (char*)nr_malloc(NR_TRACE_ID_MAX_SIZE + 1);
+        for (int i = 0; i < padding; i++) {
+          dest[i] = '0';
+        }
+        strcpy(dest + padding, trace_id);
+        dt->trace_id = dest;
+      } else {
+        dt->trace_id = nr_strdup(trace_id);
+      }
+    } else {
+      dt->trace_id = nr_strdup(trace_id);
+    }
   }
 }
 

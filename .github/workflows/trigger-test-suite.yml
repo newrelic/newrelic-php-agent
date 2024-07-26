@@ -8,11 +8,11 @@ on:
   pull_request:
 
 jobs:
-  trigger-multiverse-tests:
+  trigger-test-suite:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.TEST_SUITE_REPO_GH_TOKEN }}
     steps:
-      - name: Trigger Multiverse Test Suite
+      - name: Trigger Test Suite
         run: |
           gh workflow run -R ${{ secrets.TEST_SUITE_REPO }} ${{ secrets.TEST_SUITE_WORKFLOW }} -f agent_git_ref=${{ github.head_ref }} -f pr-number=${{ github.event.number }}

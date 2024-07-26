@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-This is the max that can be sent with DT only.  With span limit < 7000,
+This is the max that can be sent with DT only.  With span limit > 7000,
 infinite tracing NEEDS to be enabled; otherwise, the daemon will
 error out with the following type message:
 `Error: listener: closing connection: maximum message size exceeded, (2886388 > 2097152)`
