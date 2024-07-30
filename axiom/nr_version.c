@@ -48,7 +48,7 @@
  *   yarrow             26Jun2024 (10.22)
  *   zinnia             30Jul2024 (11.0)
  */
-#define NR_CODENAME "amethyst""
+#define NR_CODENAME "amethyst"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
