@@ -117,7 +117,7 @@ extern zend_module_entry newrelic_module_entry;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-#define NR_GET_RETURN_VALUE_PTR &func_return_value
+#define NR_GET_RETURN_VALUE_PTR func_return_value ? &func_return_value : NULL
 #else
 #define NR_GET_RETURN_VALUE_PTR nr_php_get_return_value_ptr(TSRMLS_C)
 #endif
