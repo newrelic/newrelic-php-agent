@@ -117,6 +117,10 @@ typedef struct _nr_segment_metric_t {
 typedef struct _nr_segment_error_t {
   char* error_message; /* The error message that will appear on a span event. */
   char* error_class;   /* The error class that will appear on a span event. */
+  char* error_file;
+  int error_line;
+  char* error_context;
+  int error_no;
 } nr_segment_error_t;
 
 /*
@@ -648,6 +652,26 @@ extern void nr_segment_set_error(nr_segment_t* segment,
 extern void nr_segment_record_exception(nr_segment_t* segment,
                                         const char* error_message,
                                         const char* error_class);
+
+/*
+ * Purpose : Set the error attributes on a segment.
+ *
+ * Params  : 1. The pointer to the segment.
+ *           2. The error message that will be added.
+ *           3. The error class that will be added.
+ *           4. The error file that will be added.
+ *           5. The error line that will be added.
+ *           6. The error context that will be added.
+ *           7. The error number that will be added.
+ */
+extern void nr_segment_set_error_with_additional_params(
+    nr_segment_t* segment,
+    const char* error_message,
+    const char* error_class,
+    const char* errfile,
+    int errline,
+    char* errcontext,
+    int error_no);
 
 /*
  * Purpose : Gets the child_ix of a segment.
