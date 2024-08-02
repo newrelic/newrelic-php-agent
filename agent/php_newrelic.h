@@ -645,6 +645,7 @@ struct {
 #ifdef NRPROF
 enum {
   PHP_TXN_BEGIN,
+  FCALL_INIT,
   FCALL_BEGIN,
   FCALL_END,
   MAX_LATENCY_FUNCS,
@@ -700,6 +701,7 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 #define NRPROF_DUMP(abs_duration, txn_duration) do { \
     nrl_debug(NRL_AGENT, "abs_duration: " NR_TIME_FMT "us, txn_duration: "  NR_TIME_FMT "us", abs_duration, txn_duration); \
     nrl_debug(NRL_AGENT, "PHP_TXN_BEGIN: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_BEGIN]); \
+    nrl_debug(NRL_AGENT, "FCALL_INIT: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_INIT], NRPRG(profing).duration[FCALL_INIT]); \
     nrl_debug(NRL_AGENT, "FCALL_BEGIN: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_BEGIN], NRPRG(profing).duration[FCALL_BEGIN]); \
     nrl_debug(NRL_AGENT, "FCALL_END: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_END], NRPRG(profing).duration[FCALL_END]); \
     { nrtime_t tx_latency = 0; \

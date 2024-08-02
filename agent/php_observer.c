@@ -87,13 +87,20 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   return handlers;
 }
 
+static inline zend_observer_fcall_handlers nr_php_observer_fcall_init(zend_execute_data* execute_data) {
+  NRPROF_START;
+  zend_observer_fcall_handlers handlers = nr_php_fcall_register_handlers(execute_data);
+  NRPROF_STOP(FCALL_INIT);
+  return handlers;
+}
+
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 
 void nr_php_observer_minit() {
   /*
    * Register the Observer API handlers.
    */
-  zend_observer_fcall_register(nr_php_fcall_register_handlers);
+  zend_observer_fcall_register(nr_php_observer_fcall_init);
 
   /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
