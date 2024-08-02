@@ -69,6 +69,26 @@
  */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+
+static void nr_show_fcall_init(zend_execute_data *execute_data) {
+  const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+  const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
+  if (NR_OP_ARRAY->scope) {
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: scope={%.*s} function={" NRP_FMT_UQ "}@ " NRP_FMT_UQ ":%d",
+        NRSAFELEN(nr_php_class_entry_name_length(NR_OP_ARRAY->scope)),
+        nr_php_class_entry_name(NR_OP_ARRAY->scope),
+        NRP_PHP(function_name ? function_name : "?"),
+        NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
+  } else if (NR_OP_ARRAY->function_name) {
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: function={" NRP_FMT_UQ "}@ " NRP_FMT_UQ ":%d",
+                     NRP_PHP(function_name), NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
+  } else if (NR_OP_ARRAY->filename) {
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: file={" NRP_FMT "}",
+                    NRP_FILENAME(filename));
+  } else {
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: ?");
+  }
+}
 /*
  * Register the begin and end function handlers with the Observer API.
  */
@@ -77,11 +97,17 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
   if (NULL == execute_data) {
+    nrl_verbosedebug(NRL_AGENT, "%s: execute_data is NULL", __func__);
     return handlers;
   }
   if ((NULL == execute_data->func)
       || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: execute_data->func is NULL or "
+               "internal function", __func__);
     return handlers;
+  }
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
+    nr_show_fcall_init(execute_data);
   }
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;
@@ -141,15 +167,18 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   zend_observer_fcall_handlers handlers = {NULL, NULL};
   nruserfn_t* wraprec = NULL;
   if (NULL == execute_data) {
+    nrl_verbosedebug(NRL_AGENT, "%s: execute_data is NULL", __func__);
       return handlers;
   }
   if ((NULL == execute_data->func)
       || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
+    nrl_verbosedebug(NRL_AGENT, "%s: execute_data->func is NULL or "
+               "internal function", __func__);
     return handlers;
   }
-  //if (execute_data->func && execute_data->func->common.function_name) {
-  //  printf("REGISTER %s\n", ZSTR_VAL(execute_data->func->common.function_name));
-  //}
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
+    nr_show_fcall_init(execute_data);
+  }
   wraprec = nr_php_get_wraprec(execute_data->func);
   handlers.begin = nr_php_observer_determine_begin_handler(wraprec);
   handlers.end = nr_php_observer_determine_end_handler(wraprec);
