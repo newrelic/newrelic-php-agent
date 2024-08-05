@@ -2317,29 +2317,43 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
 
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
 void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
+  NRPROF_START;
   nr_php_observer_fcall_begin_common(execute_data, false, false);
+  NRPROF_STOP(FCALL_BEGIN);
 }
 void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data) {
+  NRPROF_START;
   nr_php_observer_fcall_begin_common(execute_data, true, false);
+  NRPROF_STOP(FCALL_BEGIN);
 }
 void nr_php_observer_fcall_begin_name_transaction(zend_execute_data* execute_data) {
+  NRPROF_START;
   nr_php_observer_fcall_begin_common(execute_data, true, true);
+  NRPROF_STOP(FCALL_BEGIN);
 }
 void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                             zval* func_return_value) {
+  NRPROF_START;
     nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true, false);
+  NRPROF_STOP(FCALL_END);
 }
 void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
                                              zval* func_return_value) {
+  NRPROF_START;
     nr_php_observer_fcall_end_common(execute_data, func_return_value, true, true, false);
+  NRPROF_STOP(FCALL_END);
 }
 void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
                                             zval* func_return_value) {
+  NRPROF_START;
     nr_php_observer_fcall_end_common(execute_data, func_return_value, false, false, false);
+  NRPROF_STOP(FCALL_END);
 }
 void nr_php_observer_fcall_end_exception_handler(zend_execute_data* execute_data,
                                                  zval* func_return_value) {
+  NRPROF_START;
     nr_php_observer_fcall_end_common(execute_data, func_return_value, false, true, true);
+  NRPROF_STOP(FCALL_END);
 }
 
 // These empty functions (rather than NULL) are used to know if instrumentation
@@ -2348,10 +2362,13 @@ void nr_php_observer_fcall_end_exception_handler(zend_execute_data* execute_data
 // previously called. These will only be used when tt_detail is 0.
 void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data) {
   (void)execute_data;
+  NRPROF_START;
+  NRPROF_STOP(FCALL_BEGIN);
 }
 
 void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
                                      zval* func_return_value) {
+  NRPROF_START;
   (void)execute_data;
   (void)func_return_value;
 
@@ -2359,6 +2376,7 @@ void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
   if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
     nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS);
   }
+  NRPROF_STOP(FCALL_END);
 }
 
 #endif

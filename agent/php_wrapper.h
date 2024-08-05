@@ -275,6 +275,7 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
 #else
 #define NR_PHP_WRAPPER_START(name)                          \
   NR_PHP_WRAPPER_PROTOTYPE(name) {                          \
+    NRPROF_START;                                           \
     int was_executed = 0;                                   \
     bool in_begin = true;\
     int zcaught = 0;                                        \
@@ -330,6 +331,7 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   if (zcaught) {                                     \
     zend_bailout();                                  \
   }                                                  \
+  NRPROF_STOP(FCALL_END);                            \
 }
 #endif
 
