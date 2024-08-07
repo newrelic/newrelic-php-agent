@@ -36,3 +36,29 @@ nrobj_t* nr_php_txn_get_supported_security_policy_settings();
  * Params  : 1. The current transaction.
  */
 extern void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC);
+
+/*
+ * Purpose : Create and record metrics for the PHP and agent versions.
+ *
+ * Params  : 1. The current transaction.
+ *
+ * Notes   : This function relies on NR_VERSION and the value of
+ *           NRPRG(php_version) to create the metrics.
+ */
+extern void nr_create_agent_php_version_metrics(nrtxn_t* txn);
+
+/*
+ * Purpose : Create and record metric for a specific agent version.
+ *
+ * Params  : 1. The current transaction.
+ *           2. The agent version.
+ */
+extern void nr_create_agent_version_metric(nrtxn_t* txn, const char* version);
+
+/*
+ * Purpose : Create and record metric for a specific PHP version.
+ *
+ * Params  : 1. The current transaction.
+ *           2. The PHP agent version.
+ */
+extern void nr_create_php_version_metric(nrtxn_t* txn, const char* version);

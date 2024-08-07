@@ -669,6 +669,62 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 #undef FMT_BOOL
 }
 
+void nr_create_agent_version_metric(nrtxn_t* txn, const char* version) {
+  char* metric_name = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  if (nr_strempty(version)) {
+    return;
+  }
+
+  metric_name = nr_formatf("Supportability/PHP/AgentVersion/%s", version);
+  nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+  nr_free(metric_name);
+}
+
+void nr_create_php_version_metric(nrtxn_t* txn, const char* version) {
+  char* metric_name = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  if (nr_strempty(version)) {
+    return;
+  }
+
+  metric_name = nr_formatf("Supportability/PHP/Version/%s", version);
+  nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+  nr_free(metric_name);
+}
+
+void nr_create_agent_php_version_metrics(nrtxn_t* txn) {
+  char* version = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+#ifdef NR_VERSION
+  version = NR_VERSION;
+#else
+  version = "unknown";
+#endif
+
+  nr_create_agent_version_metric(txn, version);
+
+  if (!nr_strempty(NR_PHP_PROCESS_GLOBALS(php_version))) {
+    version = NR_PHP_PROCESS_GLOBALS(php_version);
+  } else {
+    version = "unknown";
+  }
+
+  nr_create_php_version_metric(txn, version);
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
