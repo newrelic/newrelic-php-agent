@@ -174,24 +174,24 @@ static void test_create_php_version_metric() {
   count = nrm_table_size(txn->unscoped_metrics);
 
   /* Test invalid values are properly handled */
-  nr_create_php_version_metric(NULL, NULL);
+  nr_php_txn_create_php_version_metric(NULL, NULL);
   tlib_pass_if_int_equal("PHP version metric shouldnt be created 1", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_php_version_metric(txn, NULL);
+  nr_php_txn_create_php_version_metric(txn, NULL);
   tlib_pass_if_int_equal("PHP version metric shouldnt be created 2", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_php_version_metric(NULL, "7.4.0");
+  nr_php_txn_create_php_version_metric(NULL, "7.4.0");
   tlib_pass_if_int_equal("PHP version metric shouldnt be created 3", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_php_version_metric(txn, "");
+  nr_php_txn_create_php_version_metric(txn, "");
   tlib_pass_if_int_equal("PHP version metric shouldnt be created 4", count,
                          nrm_table_size(txn->unscoped_metrics));
 
   /* test valid values */
-  nr_create_php_version_metric(txn, "7.4.0");
+  nr_php_txn_create_php_version_metric(txn, "7.4.0");
   tlib_pass_if_int_equal("PHP version metric should be create", count + 1,
                          nrm_table_size(txn->unscoped_metrics));
 
@@ -216,24 +216,24 @@ static void test_create_agent_version_metric() {
   count = nrm_table_size(txn->unscoped_metrics);
 
   /* Test invalid values are properly handled */
-  nr_create_agent_version_metric(NULL, NULL);
+  nr_php_txn_create_agent_version_metric(NULL, NULL);
   tlib_pass_if_int_equal("Agent version metric shouldnt be created 1", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_agent_version_metric(txn, NULL);
+  nr_php_txn_create_agent_version_metric(txn, NULL);
   tlib_pass_if_int_equal("Agent version metric shouldnt be created 2", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_agent_version_metric(NULL, "7.4.0");
+  nr_php_txn_create_agent_version_metric(NULL, "7.4.0");
   tlib_pass_if_int_equal("Agent version metric shouldnt be created 3", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_create_agent_version_metric(txn, "");
+  nr_php_txn_create_agent_version_metric(txn, "");
   tlib_pass_if_int_equal("Agent version metric shouldnt be created 4", count,
                          nrm_table_size(txn->unscoped_metrics));
 
   /* test valid values */
-  nr_create_agent_version_metric(txn, "11.0.0.0");
+  nr_php_txn_create_agent_version_metric(txn, "11.0.0.0");
   tlib_pass_if_int_equal("Agent version metric should be create", count + 1,
                          nrm_table_size(txn->unscoped_metrics));
 
@@ -267,7 +267,7 @@ static void test_create_agent_php_version_metrics() {
   char* agent_version_name
       = nr_formatf(AGENT_VERSION_METRIC_BASE "/%s", NR_VERSION);
 
-  nr_create_agent_php_version_metrics(txn);
+  nr_php_txn_create_agent_php_version_metrics(txn);
 
   /* Test the PHP version metric creation */
   const nrmetric_t* metric = nrm_find(txn->unscoped_metrics, php_version_name);
