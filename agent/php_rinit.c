@@ -124,6 +124,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   nr_stack_init(&NRPRG(drupal_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
   nr_stack_init(&NRPRG(drupal_invoke_all_states), NR_STACK_DEFAULT_CAPACITY);
   NRPRG(predis_ctxs).dtor = str_stack_dtor;
+  NRPRG(wordpress_tags).dtor = str_stack_dtor;
   NRPRG(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
 #endif
 

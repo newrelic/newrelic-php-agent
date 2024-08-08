@@ -19,12 +19,17 @@ struct _nruserfn_t;
  * This is an unused structure that is used to ensure that a bare return won't
  * compile in a user wrapper.
  */
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+typedef void (*nrspecialfn_t)(zend_execute_data*, ...);
+
+#else
 struct nrspecialfn_return_t {
   int zcaught;
 };
 typedef struct nrspecialfn_return_t (*nrspecialfn_t)(
     NR_SPECIALFNPTR_PROTO TSRMLS_DC);
 
+#endif
 typedef void (*nruserfn_declared_t)(TSRMLS_D);
 
 /*
@@ -104,6 +109,9 @@ typedef struct _nruserfn_t {
   nr_string_len_t drupal_hook_len;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   char* wordpress_plugin_theme;
+#endif
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  zend_function* func;        /* the underlying function that this wraprec wraps */
 #endif
 } nruserfn_t;
 

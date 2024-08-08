@@ -72,6 +72,7 @@
 /*
  * Register the begin and end function handlers with the Observer API.
  */
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO /* PHP8+ */
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
@@ -86,6 +87,122 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   handlers.end = nr_php_observer_fcall_end;
   return handlers;
 }
+
+#else
+
+static zend_observer_fcall_begin_handler nr_php_observer_determine_begin_handler(nruserfn_t* wraprec) {
+  zend_observer_fcall_begin_handler begin = NULL;
+
+  if (NULL == wraprec) {
+    if (NRINI(tt_detail)) {
+      begin = nr_php_observer_fcall_begin;
+    } else {
+      begin = nr_php_observer_empty_fcall_begin;
+    }
+  } else {
+    if (wraprec->special_instrumentation_before) {
+      begin = (zend_observer_fcall_begin_handler)wraprec->special_instrumentation_before;
+    } else if (wraprec->is_names_wt_simple) {
+      begin = nr_php_observer_fcall_begin_name_transaction;
+    } else if (wraprec->is_transient) {
+      begin = nr_php_observer_fcall_begin;
+    } else {
+      begin = nr_php_observer_fcall_begin_instrumented;
+    }
+  }
+  return begin;
+}
+
+static zend_observer_fcall_end_handler nr_php_observer_determine_end_handler(nruserfn_t* wraprec) {
+  zend_observer_fcall_end_handler end = NULL;
+
+  if (NULL == wraprec) {
+    if (NRINI(tt_detail)) {
+      end = nr_php_observer_fcall_end;
+    } else {
+      end = nr_php_observer_empty_fcall_end;
+    }
+  } else {
+    if (wraprec->special_instrumentation) {
+      end = (zend_observer_fcall_end_handler)wraprec->special_instrumentation;
+    } else if (wraprec->is_exception_handler) {
+      end = nr_php_observer_fcall_end_exception_handler;
+    } else if (wraprec->create_metric) {
+      end = nr_php_observer_fcall_end_create_metric;
+    } else {
+      end = nr_php_observer_fcall_end;
+    }
+  }
+  return end;
+}
+
+static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
+    zend_execute_data* execute_data) {
+  zend_observer_fcall_handlers handlers = {NULL, NULL};
+  nruserfn_t* wraprec = NULL;
+  if (NULL == execute_data) {
+      return handlers;
+  }
+  if ((NULL == execute_data->func)
+      || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
+    return handlers;
+  }
+  //if (execute_data->func && execute_data->func->common.function_name) {
+  //  printf("REGISTER %s\n", ZSTR_VAL(execute_data->func->common.function_name));
+  //}
+  wraprec = nr_php_get_wraprec(execute_data->func);
+  handlers.begin = nr_php_observer_determine_begin_handler(wraprec);
+  handlers.end = nr_php_observer_determine_end_handler(wraprec);
+  if (wraprec) {
+    nr_txn_force_single_count(NRPRG(txn), wraprec->supportability_metric);
+  }
+  return handlers;
+}
+
+bool nr_php_observer_is_registered(zend_function* func) {
+  zend_observer_fcall_begin_handler *begin_handler;
+  if (func == NULL) {
+    return false;
+  }
+  begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(func)->common), zend_observer_fcall_op_array_extension);
+  // begin_handler will be NULL if the observer hasn't been installed yet.
+  // *begin_Handler will be (void*)2 if the function has not yet been called.
+  return (begin_handler && *begin_handler != (void*)2);
+}
+
+bool nr_php_observer_remove_begin_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return false;
+  }
+  zend_observer_fcall_begin_handler begin = nr_php_observer_determine_begin_handler(wraprec);;
+  return zend_observer_remove_begin_handler(func, begin);
+}
+
+bool nr_php_observer_remove_end_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return false;
+  }
+  zend_observer_fcall_end_handler end = nr_php_observer_determine_end_handler(wraprec);
+  return zend_observer_remove_end_handler(func, end);
+}
+
+void nr_php_observer_add_begin_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return;
+  }
+  zend_observer_fcall_begin_handler begin = nr_php_observer_determine_begin_handler(wraprec);;
+  zend_observer_add_begin_handler(func, begin);
+}
+
+void nr_php_observer_add_end_handler(zend_function* func, nruserfn_t* wraprec) {
+  if (!nr_php_observer_is_registered(func)) {
+    return;
+  }
+  zend_observer_fcall_end_handler end = nr_php_observer_determine_end_handler(wraprec);
+  zend_observer_add_end_handler(func, end);
+}
+#endif
+
 
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 

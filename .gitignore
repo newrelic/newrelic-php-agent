@@ -1,6 +1,6 @@
 # Build artifacts
-agent/configure.ac
 agent/newrelic.map
+agent/configure.ac
 agent/*.dep
 axiom/tests/*.tmp
 bin/
@@ -13,3 +13,4 @@ php_agent.log
 
 # Dev artifacts
 .vscode
+*.log
