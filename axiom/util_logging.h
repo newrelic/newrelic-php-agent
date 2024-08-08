@@ -57,6 +57,7 @@ typedef enum _nrloglev_t {
 #define NRL_CAT 0x00800000
 #define NRL_MISC 0x20000000
 #define NRL_TEST 0x40000000
+#define NRL_NRPROF 0x80000000
 #define NRL_ALL_FLAGS 0x7fffffff
 
 /*

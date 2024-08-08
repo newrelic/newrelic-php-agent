@@ -51,6 +51,7 @@ static nrl_subsys_names_t subsys_names[] = {{"autorum", NRL_AUTORUM},
                                             {"cat", NRL_CAT},
                                             {"test", NRL_TEST},
                                             {"misc", NRL_MISC},
+                                            {"nrprof", NRL_NRPROF},
                                             {"*", NRL_ALL_FLAGS},
                                             {"all", NRL_ALL_FLAGS}};
 static int num_subsys_names = sizeof(subsys_names) / sizeof(nrl_subsys_names_t);

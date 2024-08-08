@@ -699,21 +699,21 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 #define NRPROF_START nrtime_t __nrprof_func_start = nr_get_time()
 #define NRPROF_STOP(f) do {  NRPRG(profing).count[f] += 1; NRPRG(profing).duration[f] += nr_time_duration(__nrprof_func_start, nr_get_time()); } while(0)
 #define NRPROF_DUMP(abs_duration, txn_duration) do { \
-    nrl_debug(NRL_AGENT, "abs_duration: " NR_TIME_FMT "us, txn_duration: "  NR_TIME_FMT "us", abs_duration, txn_duration); \
-    nrl_debug(NRL_AGENT, "PHP_TXN_BEGIN: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_BEGIN]); \
-    nrl_debug(NRL_AGENT, "FCALL_INIT: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_INIT], NRPRG(profing).duration[FCALL_INIT]); \
-    nrl_debug(NRL_AGENT, "FCALL_BEGIN: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_BEGIN], NRPRG(profing).duration[FCALL_BEGIN]); \
-    nrl_debug(NRL_AGENT, "FCALL_END: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_END], NRPRG(profing).duration[FCALL_END]); \
+    nrl_debug(NRL_NRPROF, "abs_duration: " NR_TIME_FMT "us, txn_duration: "  NR_TIME_FMT "us", abs_duration, txn_duration); \
+    nrl_debug(NRL_NRPROF, "PHP_TXN_BEGIN: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_BEGIN]); \
+    nrl_debug(NRL_NRPROF, "FCALL_INIT: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_INIT], NRPRG(profing).duration[FCALL_INIT]); \
+    nrl_debug(NRL_NRPROF, "FCALL_BEGIN: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_BEGIN], NRPRG(profing).duration[FCALL_BEGIN]); \
+    nrl_debug(NRL_NRPROF, "FCALL_END: %u " NR_TIME_FMT "us", NRPRG(profing).count[FCALL_END], NRPRG(profing).duration[FCALL_END]); \
     { nrtime_t tx_latency = 0; \
         for (int f = 0; f < MAX_LATENCY_FUNCS; f++) { \
             tx_latency += NRPRG(profing).duration[f]; \
         } \
-        nrl_debug(NRL_AGENT, "TX_LATENCY: " NR_TIME_FMT "us, %.2f%%", tx_latency, ((double)tx_latency*100.0)/(double)txn_duration); \
+        nrl_debug(NRL_NRPROF, "TX_LATENCY: " NR_TIME_FMT "us, %.2f%%", tx_latency, ((double)tx_latency*100.0)/(double)txn_duration); \
     } \
-    nrl_debug(NRL_AGENT, "PHP_TXN_END: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_END]); \
-    nrl_debug(NRL_AGENT, "POST_DEACTIVATE: " NR_TIME_FMT "us", NRPRG(profing).duration[POST_DEACTIVATE]); \
-    nrl_debug(NRL_AGENT, "WRAPREC_SET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_SET], NRPRG(profing).duration[WRAPREC_SET]); \
-    nrl_debug(NRL_AGENT, "WRAPREC_GET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_GET], NRPRG(profing).duration[WRAPREC_GET]); \
+    nrl_debug(NRL_NRPROF, "PHP_TXN_END: " NR_TIME_FMT "us", NRPRG(profing).duration[PHP_TXN_END]); \
+    nrl_debug(NRL_NRPROF, "POST_DEACTIVATE: " NR_TIME_FMT "us", NRPRG(profing).duration[POST_DEACTIVATE]); \
+    nrl_debug(NRL_NRPROF, "WRAPREC_SET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_SET], NRPRG(profing).duration[WRAPREC_SET]); \
+    nrl_debug(NRL_NRPROF, "WRAPREC_GET: %u " NR_TIME_FMT "us", NRPRG(profing).count[WRAPREC_GET], NRPRG(profing).duration[WRAPREC_GET]); \
 } while(0)
 #else
 #define NRPROF_INIT
