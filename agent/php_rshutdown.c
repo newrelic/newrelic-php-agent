@@ -161,7 +161,9 @@ int nr_php_post_deactivate(void) {
   abs_stop_time = nr_get_time();
   abs_duration = nr_time_duration(abs_start_time, abs_stop_time);
   NRPROF_STOP(POST_DEACTIVATE);
-  NRPROF_DUMP(abs_duration, txn_duration);
+  if (0 != NRPRG(app)) {
+    NRPROF_DUMP(abs_duration, txn_duration);
+  }
   duration = nr_time_duration(start, abs_stop_time);
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done " NR_TIME_FMT "us", duration);
   return SUCCESS;
