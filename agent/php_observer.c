@@ -74,13 +74,13 @@ static void nr_show_fcall_init(zend_execute_data *execute_data) {
   const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
   const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
   if (NR_OP_ARRAY->scope) {
-    nrl_verbosedebug(NRL_AGENT, "fcall_init: scope={%.*s} function={" NRP_FMT_UQ "}@ " NRP_FMT_UQ ":%d",
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: scope={%.*s} function={" NRP_FMT_UQ "} @ " NRP_FMT_UQ ":%d",
         NRSAFELEN(nr_php_class_entry_name_length(NR_OP_ARRAY->scope)),
         nr_php_class_entry_name(NR_OP_ARRAY->scope),
         NRP_PHP(function_name ? function_name : "?"),
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
-    nrl_verbosedebug(NRL_AGENT, "fcall_init: function={" NRP_FMT_UQ "}@ " NRP_FMT_UQ ":%d",
+    nrl_verbosedebug(NRL_AGENT, "fcall_init: function={" NRP_FMT_UQ "} @ " NRP_FMT_UQ ":%d",
                      NRP_PHP(function_name), NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
     nrl_verbosedebug(NRL_AGENT, "fcall_init: file={" NRP_FMT "}",
