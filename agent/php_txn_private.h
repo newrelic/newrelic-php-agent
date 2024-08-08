@@ -45,7 +45,7 @@ extern void nr_php_txn_handle_fpm_error(nrtxn_t* txn TSRMLS_DC);
  * Notes   : This function relies on NR_VERSION and the value of
  *           NRPRG(php_version) to create the metrics.
  */
-extern void nr_create_agent_php_version_metrics(nrtxn_t* txn);
+extern void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn);
 
 /*
  * Purpose : Create and record metric for a specific agent version.
@@ -53,7 +53,8 @@ extern void nr_create_agent_php_version_metrics(nrtxn_t* txn);
  * Params  : 1. The current transaction.
  *           2. The agent version.
  */
-extern void nr_create_agent_version_metric(nrtxn_t* txn, const char* version);
+extern void nr_php_txn_create_agent_version_metric(nrtxn_t* txn,
+                                                   const char* version);
 
 /*
  * Purpose : Create and record metric for a specific PHP version.
@@ -61,4 +62,5 @@ extern void nr_create_agent_version_metric(nrtxn_t* txn, const char* version);
  * Params  : 1. The current transaction.
  *           2. The PHP agent version.
  */
-extern void nr_create_php_version_metric(nrtxn_t* txn, const char* version);
+extern void nr_php_txn_create_php_version_metric(nrtxn_t* txn,
+                                                 const char* version);

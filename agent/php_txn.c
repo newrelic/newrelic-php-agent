@@ -669,7 +669,7 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 #undef FMT_BOOL
 }
 
-void nr_create_agent_version_metric(nrtxn_t* txn, const char* version) {
+void nr_php_txn_create_agent_version_metric(nrtxn_t* txn, const char* version) {
   char* metric_name = NULL;
 
   if (NULL == txn) {
@@ -685,7 +685,7 @@ void nr_create_agent_version_metric(nrtxn_t* txn, const char* version) {
   nr_free(metric_name);
 }
 
-void nr_create_php_version_metric(nrtxn_t* txn, const char* version) {
+void nr_php_txn_create_php_version_metric(nrtxn_t* txn, const char* version) {
   char* metric_name = NULL;
 
   if (NULL == txn) {
@@ -701,7 +701,7 @@ void nr_create_php_version_metric(nrtxn_t* txn, const char* version) {
   nr_free(metric_name);
 }
 
-void nr_create_agent_php_version_metrics(nrtxn_t* txn) {
+void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
   char* version = NULL;
 
   if (NULL == txn) {
@@ -714,7 +714,7 @@ void nr_create_agent_php_version_metrics(nrtxn_t* txn) {
   version = "unknown";
 #endif
 
-  nr_create_agent_version_metric(txn, version);
+  nr_php_txn_create_agent_version_metric(txn, version);
 
   if (!nr_strempty(NR_PHP_PROCESS_GLOBALS(php_version))) {
     version = NR_PHP_PROCESS_GLOBALS(php_version);
@@ -722,7 +722,7 @@ void nr_create_agent_php_version_metrics(nrtxn_t* txn) {
     version = "unknown";
   }
 
-  nr_create_php_version_metric(txn, version);
+  nr_php_txn_create_php_version_metric(txn, version);
 }
 
 nr_status_t nr_php_txn_begin(const char* appnames,
