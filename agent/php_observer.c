@@ -166,8 +166,8 @@ bool nr_php_observer_is_registered(zend_function* func) {
   }
   begin_handler = (zend_observer_fcall_begin_handler *)&ZEND_OP_ARRAY_EXTENSION((&(func)->common), zend_observer_fcall_op_array_extension);
   // begin_handler will be NULL if the observer hasn't been installed yet.
-  // *begin_Handler will be NULL if the function has not yet been called.
-  return (begin_handler && *begin_handler);
+  // *begin_Handler will be (void*)2 if the function has not yet been called.
+  return (begin_handler && *begin_handler != (void*)2);
 }
 
 bool nr_php_observer_remove_begin_handler(zend_function* func, nruserfn_t* wraprec) {
