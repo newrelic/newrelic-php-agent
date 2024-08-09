@@ -56,6 +56,7 @@ extern void nr_phpunit_enable(TSRMLS_D);
 extern void nr_predis_enable(TSRMLS_D);
 extern void nr_zend_http_enable(TSRMLS_D);
 extern void nr_monolog_enable(TSRMLS_D);
+extern void nr_get_package_information(TSRMLS_D);
 
 /* Vulnerability Management Packages */
 extern void nr_drupal_version(void);

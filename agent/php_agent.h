@@ -847,6 +847,9 @@ extern zval* nr_php_parse_str(const char* str, size_t len TSRMLS_DC);
  */
 extern bool nr_php_function_is_static_method(const zend_function* func);
 
+extern nr_composer_classification_t nr_composer_special(
+    const char* filename TSRMLS_DC);
+
 /*
  * Purpose : Get the execution data for the current PHP environment.
  *
