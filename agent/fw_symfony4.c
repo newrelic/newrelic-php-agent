@@ -5,6 +5,7 @@
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_error.h"
+#include "php_globals.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
@@ -213,6 +214,56 @@ end:
   nr_php_zval_free(&request);
 }
 NR_PHP_WRAPPER_END
+
+void nr_get_package_information() {
+  zval retval;
+  int result = -1;
+  char* func_string
+      = ""
+        "(function() {"
+        "  try {"
+        "      if (class_exists('Composer\\InstalledVersions')) {"
+        "          if (method_exists('Composer\\InstalledVersions', "
+        "             'getInstalledPackages') && method_exists('Composer\\InstalledVersions', "
+        "             'getVersion')) {"
+        "            return Composer\\InstalledVersions::getInstalledPackages();"
+        "          } else {"
+        "            return NULL;"
+        "          }"
+        "      } else {"
+        "        return NULL;"
+        "      }"
+        "  } catch (Exception $e) {"
+        "      return NULL;"
+        "  }"
+        "})();";
+
+  char* getVersion = "Composer\\InstalledVersions::getVersion(\"%s\");";
+  zend_eval_string(func_string, &retval, "Retrieve symfony package name");
+  
+  if (result == SUCCESS) {
+    if (Z_TYPE(retval) == IS_ARRAY) {
+      zval* value;
+      char buf[512];
+      int result2;
+      zval retval2;
+      char* version;
+      (void)version;
+      ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), value) {
+        if (Z_TYPE_P(value) == IS_STRING) {
+          snprintf(buf, sizeof(buf), getVersion, Z_STRVAL_P(value));
+          result2 = zend_eval_string(buf, &retval2, "Retrieve symfony Version");
+          if (SUCCESS == result2) {
+            if (nr_php_is_zval_valid_string(&retval2)) {
+              version = Z_STRVAL(retval2);
+            }
+          }
+        }
+      } ZEND_HASH_FOREACH_END();
+    }
+    zval_dtor(&retval);
+  }
+}
 
 void nr_symfony4_enable(TSRMLS_D) {
   /*
