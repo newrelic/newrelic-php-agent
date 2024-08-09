@@ -476,6 +476,7 @@ typedef struct _nr_library_table_t {
   const char* library_name;
   const char* file_to_check;
   size_t file_to_check_len;
+  nr_composer_special_fn_t special;
   nr_library_enable_fn_t enable;
 } nr_library_table_t;
 
@@ -485,28 +486,28 @@ typedef struct _nr_library_table_t {
 // clang-format: off
 static nr_library_table_t libraries[] = {
     /* AWS-SDK-PHP 3 */
-    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
+    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), 0, nr_aws_sdk_php_enable},
 
     /* Doctrine < 2.18 */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), 0, nr_doctrine2_enable},
     /* Doctrine 2.18 reworked the directory structure */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), 0, nr_doctrine2_enable},
 
-    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
-    {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
-    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
+    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), 0, nr_guzzle3_enable},
+    {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), 0, nr_guzzle4_enable},
+    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), 0, nr_guzzle6_enable},
 
-    {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
+    {"MongoDB", NR_PSTR("mongodb/src/client.php"), 0, nr_mongodb_enable},
 
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
      */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), 0, nr_phpunit_enable},
+    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), 0, nr_phpunit_enable},
 
-    {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
-    {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
+    {"Predis", NR_PSTR("predis/src/client.php"), 0, nr_predis_enable},
+    {"Predis", NR_PSTR("predis/client.php"), 0, nr_predis_enable},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -514,14 +515,14 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all. This is
      * necessary for Magento in particular, which is built on ZF1.
      */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
+    {"Zend_Http", NR_PSTR("zend/http/client.php"), 0, nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), 0, nr_laminas_http_enable},
 
     /*
      * Other frameworks, detected only, but not specifically
@@ -529,53 +530,53 @@ static nr_library_table_t libraries[] = {
      * detection of a supported framework or library later (since a transaction
      * can only have one framework).
      */
-    {"Aura1", NR_PSTR("aura/framework/system.php"), NULL},
-    {"Aura2", NR_PSTR("aura/di/src/containerinterface.php"), NULL},
-    {"Aura3", NR_PSTR("aura/di/src/containerconfiginterface.php"), NULL},
-    {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
-    {"Fuel", NR_PSTR("fuel/core/classes/fuel.php"), NULL},
-    {"Lithium", NR_PSTR("lithium/core/libraries.php"), NULL},
-    {"Phpbb", NR_PSTR("phpbb/request/request.php"), NULL},
-    {"Phpixie2", NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), NULL},
-    {"Phpixie3", NR_PSTR("phpixie/framework.php"), NULL},
-    {"React", NR_PSTR("react/event-loop/src/loopinterface.php"), NULL},
-    {"SilverStripe", NR_PSTR("injector/silverstripeinjectioncreator.php"), NULL},
-    {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
-    {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
-    {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
+    {"Aura1", NR_PSTR("aura/framework/system.php"), 0, NULL},
+    {"Aura2", NR_PSTR("aura/di/src/containerinterface.php"), 0, NULL},
+    {"Aura3", NR_PSTR("aura/di/src/containerconfiginterface.php"), 0, NULL},
+    {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), 0, NULL},
+    {"Fuel", NR_PSTR("fuel/core/classes/fuel.php"), 0, NULL},
+    {"Lithium", NR_PSTR("lithium/core/libraries.php"), 0, NULL},
+    {"Phpbb", NR_PSTR("phpbb/request/request.php"), 0, NULL},
+    {"Phpixie2", NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), 0, NULL},
+    {"Phpixie3", NR_PSTR("phpixie/framework.php"), 0, NULL},
+    {"React", NR_PSTR("react/event-loop/src/loopinterface.php"), 0, NULL},
+    {"SilverStripe", NR_PSTR("injector/silverstripeinjectioncreator.php"), 0, NULL},
+    {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), 0, NULL},
+    {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), 0, NULL},
+    {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), 0, NULL},
 
     /*
      * Other CMS (content management systems), detected only, but
      * not specifically instrumented.
      */
-    {"Moodle", NR_PSTR("moodlelib.php"), NULL},
+    {"Moodle", NR_PSTR("moodlelib.php"), 0, NULL},
     /*
      * It is likely that this will never be found, since the CodeIgniter.php
      * will get loaded first, and as such mark this transaction as belonging to
      * CodeIgniter, and not Expession Engine.
      */
-    {"ExpressionEngine", NR_PSTR("system/expressionengine/config/config.php"), NULL},
+    {"ExpressionEngine", NR_PSTR("system/expressionengine/config/config.php"), 0, NULL},
     /*
      * ExpressionEngine 5, however, has a very obvious file we can look for.
      */
-    {"ExpressionEngine5", NR_PSTR("expressionengine/boot/boot.php"), NULL},
+    {"ExpressionEngine5", NR_PSTR("expressionengine/boot/boot.php"), 0, NULL},
     /*
      * DokuWiki uses doku.php as an entry point, but has other files that are
      * loaded directly that this won't pick up. That's probably OK for
      * supportability metrics, but we'll add the most common name for the
      * configuration file as well just in case.
      */
-    {"DokuWiki", NR_PSTR("doku.php"), NULL},
-    {"DokuWiki", NR_PSTR("conf/dokuwiki.php"), NULL},
+    {"DokuWiki", NR_PSTR("doku.php"), 0, NULL},
+    {"DokuWiki", NR_PSTR("conf/dokuwiki.php"), 0, NULL},
 
     /*
      * SugarCRM no longer has a community edition, so this likely only works
      * with older versions.
      */
-    {"SugarCRM", NR_PSTR("sugarobjects/sugarconfig.php"), NULL},
+    {"SugarCRM", NR_PSTR("sugarobjects/sugarconfig.php"), 0, NULL},
 
-    {"Xoops", NR_PSTR("class/xoopsload.php"), NULL},
-    {"E107", NR_PSTR("e107_handlers/e107_class.php"), NULL},
+    {"Xoops", NR_PSTR("class/xoopsload.php"), 0, NULL},
+    {"E107", NR_PSTR("e107_handlers/e107_class.php"), 0, NULL},
 };
 // clang-format: on
 
@@ -584,15 +585,15 @@ static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 // clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
-    {"Monolog", NR_PSTR("monolog/logger.php"), nr_monolog_enable},
+    {"Monolog", NR_PSTR("monolog/logger.php"), 0, nr_monolog_enable},
     /* Consolidation/Log - Logging for PHP */
-    {"Consolidation/Log", NR_PSTR("consolidation/log/src/logger.php"), NULL},
+    {"Consolidation/Log", NR_PSTR("consolidation/log/src/logger.php"), 0, NULL},
     /* laminas-log - Logging for PHP */
-    {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), NULL},
+    {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), 0, NULL},
     /* cakephp-log - Logging for PHP */
-    {"cakephp-log", NR_PSTR("cakephp/log/log.php"), NULL},
+    {"cakephp-log", NR_PSTR("cakephp/log/log.php"), 0, NULL},
     /* Analog - Logging for PHP */
-    {"Analog", NR_PSTR("analog/analog.php"), NULL},
+    {"Analog", NR_PSTR("analog/analog.php"), 0, NULL},
 };
 // clang-format: on
 
@@ -931,6 +932,28 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
+static void nr_execute_handle_composer(const char* filename,
+                                       const size_t filename_len TSRMLS_DC) {
+  size_t i;
+
+  for (i = 0; i < num_libraries; i++) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(libraries[i].file_to_check))) {
+      if (libraries[i].special) {
+        nr_composer_classification_t special
+            = libraries[i].special(filename TSRMLS_CC);
+        if (FILE_EXISTS == special) {
+          nr_fw_support_add_library_supportability_metric(
+              NRPRG(txn), libraries[i].library_name);
+          if (NULL != libraries[i].enable) {
+            libraries[i].enable(TSRMLS_C);
+          }
+        }
+      }
+    }
+  }
+}
+
 static void nr_execute_handle_logging_framework(const char* filename,
                                                 const size_t filename_len
                                                     TSRMLS_DC) {
@@ -999,6 +1022,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_composer(filename, filename_len);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_execute_handle_package(filename);
