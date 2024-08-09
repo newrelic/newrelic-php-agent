@@ -287,6 +287,7 @@ nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,
   int reply_len;
   const char* reply_json;
   const char* entity_guid;
+  const char* account_id; /* Csec : Added for extracting account_id */
 
   if ((NULL == data) || (0 == len)) {
     return NR_FAILURE;
@@ -383,6 +384,20 @@ nr_status_t nr_cmd_appinfo_process_reply(const uint8_t* data,
   } else {
     app->entity_guid = NULL;
   }
+
+  /*
+   * Csec : Added for extracting account_id
+   */
+  nr_free(app->account_id);
+  account_id = nro_get_hash_string(app->connect_reply, "account_id", NULL);
+  if (NULL != account_id) {
+    app->account_id = nr_strdup(account_id);
+  } else {
+    app->account_id = NULL;
+  }
+  /*
+   * Csec : Added for extracting account_id
+   */
 
   nrl_debug(NRL_ACCT, "APPINFO reply full app='%.*s' agent_run_id=%s",
             NRP_APPNAME(app->info.appname), app->agent_run_id);
