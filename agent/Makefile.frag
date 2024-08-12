@@ -49,10 +49,13 @@ $(PHP_MODULES): .libs/deps.mk
 newrelic.la: $(PHP_AXIOM)/libaxiom.a
 
 #
-# The version number is needed by php_newrelic.c and php_txn.c as a static string literal,
+# The version number is needed by several source files as a static string literal,
 # so it can be placed in the module entry.
 #
 include ../make/version.mk
+php_api_internal.lo: CPPFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
+php_api_internal.lo: ../VERSION
+
 php_newrelic.lo: CPPFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
 php_newrelic.lo: ../VERSION
 

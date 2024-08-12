@@ -103,6 +103,27 @@ PHP_FUNCTION(newrelic_get_hostname) {
   nr_free(hostname);
 }
 
+PHP_FUNCTION(newrelic_get_agent_version) {
+  char* version = NULL;
+
+  NR_UNUSED_HT;
+  NR_UNUSED_RETURN_VALUE_PTR;
+  NR_UNUSED_RETURN_VALUE_USED;
+  NR_UNUSED_THIS_PTR;
+  NR_UNUSED_TSRMLS;
+
+  if (FAILURE == zend_parse_parameters_none()) {
+    RETURN_FALSE;
+  }
+
+#ifdef NR_VERSION
+  version = NR_VERSION;
+#else
+  version = "unknown";
+#endif
+  nr_php_zval_str(return_value, version);
+}
+
 /*
  * Purpose: Extend an array with the given metrics.
  *

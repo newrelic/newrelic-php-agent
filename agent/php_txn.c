@@ -1176,6 +1176,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
                   "Supportability/execute/allocated_segment_count",
                   nr_txn_allocated_segment_count(txn));
 
+    /* Agent and PHP version metrics*/
+    nr_php_txn_create_agent_php_version_metrics(txn);
+
     /* Add CPU and memory metrics */
     nr_php_resource_usage_sampler_end(TSRMLS_C);
 
