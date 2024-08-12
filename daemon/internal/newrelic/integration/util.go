@@ -10,7 +10,7 @@ import (
 	"os/exec"
 )
 
-func GetPHPVersion() (string) {
+func GetPHPVersion() string {
 	cmd := exec.Command("php", "-r", "echo PHP_VERSION;")
 
 	output, err := cmd.Output()
@@ -18,13 +18,13 @@ func GetPHPVersion() (string) {
 		fmt.Printf("Failed to get PHP version: %v\n", err)
 		return "failed"
 	}
-	
+
 	return string(output)
 }
 
-func GetAgentVersion(agent_extension string) (string) {
+func GetAgentVersion(agent_extension string) string {
 	cmd := exec.Command("php", "-d", "extension="+agent_extension, "-r", "echo newrelic_get_agent_version();")
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("Failed to get agent version: %v", err).Error()
