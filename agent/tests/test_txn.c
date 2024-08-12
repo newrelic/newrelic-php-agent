@@ -291,6 +291,9 @@ static void test_create_agent_php_version_metrics() {
   tlib_pass_if_str_equal("happy path: Agent version metric name check",
                          metric_name, agent_version_name);
 
+  nr_free(agent_version_name);
+  nr_free(php_version_name);
+
   tlib_php_request_end();
 }
 
