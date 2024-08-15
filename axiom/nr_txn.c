@@ -2537,13 +2537,6 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
   nro_set_hash_string(params, "error.class", nr_error_get_klass(txn->error));
   nro_set_hash_string(params, "error.message",
                       nr_error_get_message(txn->error));
-  if (nr_error_get_file(txn->error) && nr_error_get_context(txn->error)) {
-    nro_set_hash_string(params, "error.file", nr_error_get_file(txn->error));
-    nro_set_hash_int(params, "error.line", nr_error_get_line(txn->error));
-    nro_set_hash_string(params, "error.context",
-                        nr_error_get_context(txn->error));
-    nro_set_hash_int(params, "error.no", nr_error_get_no(txn->error));
-  }
   nro_set_hash_string(params, "transactionName", txn->name);
   nro_set_hash_double(params, "duration",
                       ((double)duration) / NR_TIME_DIVISOR_D);
@@ -2591,6 +2584,19 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
                                                 NR_ATTRIBUTE_DESTINATION_ERROR);
   user_attributes = nr_attributes_user_to_obj(txn->attributes,
                                               NR_ATTRIBUTE_DESTINATION_ERROR);
+  if (nr_error_get_file(txn->error) && nr_error_get_context(txn->error)) {
+    if (NULL == user_attributes) {
+      user_attributes = nro_new_hash();
+    }
+    nro_set_hash_string(user_attributes, "user.error.file",
+                        nr_error_get_file(txn->error));
+    nro_set_hash_int(user_attributes, "user.error.line",
+                     nr_error_get_line(txn->error));
+    nro_set_hash_string(user_attributes, "user.error.context",
+                        nr_error_get_context(txn->error));
+    nro_set_hash_int(user_attributes, "user.error.no",
+                     nr_error_get_no(txn->error));
+  }
   event = nr_analytics_event_create(params, agent_attributes, user_attributes);
 
   nro_delete(params);
