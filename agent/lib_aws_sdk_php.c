@@ -88,9 +88,9 @@ void nr_lib_aws_sdk_php_add_supportability_service_metric(
   }
 
   cp = buf;
-  strcpy(cp, PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX);
+  nr_strcpy(cp, PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX);
   cp += PHP_AWS_SDK_SERVICE_NAME_METRIC_PREFIX_LEN - 1;
-  strlcpy(cp, service_name, MAX_AWS_SERVICE_NAME_LEN);
+  nr_strlcpy(cp, service_name, MAX_AWS_SERVICE_NAME_LEN);
   nrm_force_add(NRPRG(txn) ? NRTXN(unscoped_metrics) : 0, buf, 0);
 }
 
