@@ -203,6 +203,13 @@ typedef enum _nr_cpu_usage_t {
   NR_CPU_USAGE_COUNT = 2
 } nr_cpu_usage_t;
 
+typedef struct _nr_composer_info_t {
+  int composer_detected;
+  int api_called;
+  int file_exists;
+  int inside_eval_string;
+} nr_composer_info_t;
+
 /*
  * Possible transaction types, which go into the type bitfield in the nrtxn_t
  * struct.
@@ -302,6 +309,7 @@ typedef struct _nrtxn_t {
   nr_distributed_trace_t*
       distributed_trace; /* distributed tracing metadata for the transaction */
   nr_span_queue_t* span_queue; /* span queue when 8T is enabled */
+  nr_composer_info_t detection_status;
 
   /*
    * flag to indicate if one time (per transaction) logging metrics
