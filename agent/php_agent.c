@@ -1229,36 +1229,3 @@ bool nr_php_function_is_static_method(const zend_function* func) {
 
   return (func->common.fn_flags & ZEND_ACC_STATIC);
 }
-
-nr_composer_classification_t nr_composer_special(
-    const char* filename TSRMLS_DC) {
-  NR_UNUSED_TSRMLS;
-
-  if (nr_strcaseidx(filename, "vendor/composer/") >= 0) {
-    zval retval;
-    int result = -1;
-    char* func_string
-      = ""
-        "(function() {"
-        "  try {"
-        "    if (file_exists('vendor/composer/installed.php')) {"
-        "      return 'SUCCESS';"
-        "    } else {"
-        "      return NULL;"
-        "    }"
-        "  } catch (exception $e) {"
-        "      return NULL;"
-        "  }"
-        "})();";
-    result = zend_eval_string(func_string, &retval, "check if file exists" TSRMLS_CC);
-    if (result == SUCCESS) {
-      NR_PHP_PROCESS_GLOBALS(composer_exists) = 1;
-      return FILE_EXISTS;
-    } else {
-      NR_PHP_PROCESS_GLOBALS(composer_exists) = 0;
-      return FILE_DOES_NOT_EXIST;
-    }
-  }
-
-  return FILE_DOES_NOT_EXIST;
-}
