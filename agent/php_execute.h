@@ -41,13 +41,6 @@ typedef enum {
 typedef nr_framework_classification_t (*nr_framework_special_fn_t)(
     const char* filename TSRMLS_DC);
 
-typedef enum {
-  FILE_EXISTS,         /* The file we are looking for exists */
-  FILE_DOES_NOT_EXIST, /* The file we are looking for does not exist */
-} nr_composer_classification_t;
-typedef nr_composer_classification_t (*nr_composer_special_fn_t)(
-    const char* filename);
-
 /*
  * Version specific metadata that we have to gather before we call the original
  * execute_ex handler, as different versions of PHP behave differently in terms
