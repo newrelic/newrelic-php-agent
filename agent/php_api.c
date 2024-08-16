@@ -172,27 +172,19 @@ PHP_FUNCTION(newrelic_notice_error) {
     }
   }
 
-  if (!determine) {
-    char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
-
-    nr_txn_record_error(NRPRG(txn), priority, true, errormsgstr, errclass,
-                        stack_json);
-
-    nr_free(stack_json);
-
-    RETURN_TRUE;
-  }
   if (determine) {
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
-
     nr_txn_record_error_with_additional_attributes(
         NRPRG(txn), priority, true, errormsgstr, errclass, error_file,
         error_line, error_context, error_number, stack_json);
-
     nr_free(stack_json);
-
     RETURN_TRUE;
   }
+  char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
+  nr_txn_record_error(NRPRG(txn), priority, true, errormsgstr, errclass,
+                      stack_json);
+  nr_free(stack_json);
+  RETURN_TRUE;
 }
 
 /*
