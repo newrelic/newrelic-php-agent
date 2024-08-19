@@ -356,7 +356,6 @@ static zend_function_entry newrelic_functions[] = {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
     PHP_FE(newrelic_get_hostname, newrelic_arginfo_void)
-    PHP_FE(newrelic_get_agent_version, newrelic_arginfo_void)
     PHP_FE(newrelic_get_slowsqls, newrelic_arginfo_void)
     PHP_FE(newrelic_get_trace_json, newrelic_arginfo_void)
     PHP_FE(newrelic_get_error_json, newrelic_arginfo_void)
@@ -364,7 +363,6 @@ static zend_function_entry newrelic_functions[] = {
     PHP_FE(newrelic_is_recording, newrelic_arginfo_void)
 #else
     PHP_FE(newrelic_get_hostname, 0)
-    PHP_FE(newrelic_get_agent_version, 0)
     PHP_FE(newrelic_get_slowsqls, 0)
     PHP_FE(newrelic_get_trace_json, 0)
     PHP_FE(newrelic_get_error_json, 0)

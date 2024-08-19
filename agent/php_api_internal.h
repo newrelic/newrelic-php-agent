@@ -26,13 +26,6 @@ extern PHP_FUNCTION(newrelic_get_request_metadata);
 extern PHP_FUNCTION(newrelic_get_hostname);
 
 /*
- * Proto   : string newrelic_get_hostname ()
- *
- * Returns : The agent version as a string.
- */
-extern PHP_FUNCTION(newrelic_get_agent_version);
-
-/*
  * Proto   : array newrelic_get_metric_table ([bool $scoped = false])
  *
  * Params  : 1. True to return scoped metrics; false to return unscoped
