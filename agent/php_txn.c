@@ -708,11 +708,7 @@ void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
     return;
   }
 
-#ifdef NR_VERSION
   version = NR_VERSION;
-#else
-  version = "unknown";
-#endif
 
   nr_php_txn_create_agent_version_metric(txn, version);
 
