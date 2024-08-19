@@ -24,4 +24,4 @@ if (!extension_loaded('newrelic')) {
 }
 
 echo "PHP Version: " . phpversion() . "\n";
-echo "Agent Version: " . newrelic_get_agent_version() . "\n";
+echo "Agent Version: " . phpversion('newrelic') . "\n";

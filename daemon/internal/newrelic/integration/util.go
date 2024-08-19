@@ -23,7 +23,7 @@ func GetPHPVersion() string {
 }
 
 func GetAgentVersion(agent_extension string) string {
-	cmd := exec.Command("php", "-d", "extension="+agent_extension, "-r", "echo newrelic_get_agent_version();")
+	cmd := exec.Command("php", "-d", "extension="+agent_extension, "-r", "echo phpversion('newrelic');")
 
 	output, err := cmd.Output()
 	if err != nil {
