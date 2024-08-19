@@ -53,8 +53,6 @@ newrelic.la: $(PHP_AXIOM)/libaxiom.a
 # so it can be placed in the module entry.
 #
 include ../make/version.mk
-php_api_internal.lo: CPPFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
-php_api_internal.lo: ../VERSION
 
 php_newrelic.lo: CPPFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
 php_newrelic.lo: ../VERSION
@@ -270,7 +268,6 @@ endif
 #
 # Need agent version for test_txn
 #
-#NEWRELIC_CFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
 tests/test_txn.o: EXTRA_CFLAGS += -DNR_VERSION="\"$(AGENT_VERSION)\""
 tests/test_txn.o: ../VERSION
 
