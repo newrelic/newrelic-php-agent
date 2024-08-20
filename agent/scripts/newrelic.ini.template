@@ -1416,3 +1416,119 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          sure the file permissions are correct.
 ;
 ;newrelic.security.validator.client_ssl_cert_filepath = ""
+
+; Setting: newrelic.security.skip_iast_scan.api
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of valid pcre regex of apis separated by | (pipe) to be 
+;          skipped for scanning
+;
+;newrelic.security.skip_iast_scan.api = "api1|api2"
+
+; Setting: newrelic.security.skip_iast_scan.parameters.header
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request header keys separated by :: (double colon) to be 
+;          skipped for scanning
+;
+;newrelic.security.skip_iast_scan.parameters.header = "X-Forwaded-For"
+
+; Setting: newrelic.security.skip_iast_scan.parameters.query
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request query keys separated by :: (double colon) to be 
+;          skipped for scanning
+;
+;newrelic.security.skip_iast_scan.parameters.query = "q1::q2"
+
+; Setting: newrelic.security.skip_iast_scan.parameters.body
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request body keys separated by :: (double colon) to be 
+;          skipped for scanning
+;
+;newrelic.security.skip_iast_scan.parameters.body = "object.cc_number"
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.insecure_settings
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if insecure settings attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.insecure_settings = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.invalid_file_access
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if invalid file access attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.invalid_file_access = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.sql_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if sql injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.sql_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.nosql_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if nosql injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.nosql_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.ldap_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if ldap injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.ldap_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.javascript_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if javascript injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.javascript_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.command_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if command injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.command_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.xpath_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if xpath injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.xpath_injection = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.ssrf
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if ssrf injection attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.ssrf = false
+
+; Setting: newrelic.security.skip_iast_scan.iast_detection_category.rxss
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if reflected xss attack category is to be skipped
+;
+;newrelic.security.skip_iast_scan.iast_detection_category.rxss = false
