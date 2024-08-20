@@ -376,7 +376,6 @@ func main() {
 	// Env vars common to all tests.
 	ctx.Env["EXTERNAL_HOST"] = externalHost
 
-	// Store PHP and agent versions
 	ctx.Env["PHP_VERSION"] = integration.GetPHPVersion()
 
 	agent_extension, ok := ctx.Settings["extension"]
