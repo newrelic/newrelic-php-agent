@@ -216,34 +216,22 @@ static void test_create_agent_version_metric() {
   count = nrm_table_size(txn->unscoped_metrics);
 
   /* Test invalid values are properly handled */
-  nr_php_txn_create_agent_version_metric(NULL, NULL);
-  tlib_pass_if_int_equal("Agent version metric shouldnt be created 1", count,
+  nr_php_txn_create_agent_version_metric(NULL);
+  tlib_pass_if_int_equal("Agent version metric shouldnt be created - txn is NULL", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_php_txn_create_agent_version_metric(txn, NULL);
-  tlib_pass_if_int_equal("Agent version metric shouldnt be created 2", count,
-                         nrm_table_size(txn->unscoped_metrics));
-
-  nr_php_txn_create_agent_version_metric(NULL, "7.4.0");
-  tlib_pass_if_int_equal("Agent version metric shouldnt be created 3", count,
-                         nrm_table_size(txn->unscoped_metrics));
-
-  nr_php_txn_create_agent_version_metric(txn, "");
-  tlib_pass_if_int_equal("Agent version metric shouldnt be created 4", count,
-                         nrm_table_size(txn->unscoped_metrics));
-
-  /* test valid values */
-  nr_php_txn_create_agent_version_metric(txn, "11.0.0.0");
-  tlib_pass_if_int_equal("Agent version metric should be create", count + 1,
+  /* Test valid values */
+  nr_php_txn_create_agent_version_metric(txn);
+  tlib_pass_if_int_equal("Agent version metric should be created - txn is not NULL", count + 1,
                          nrm_table_size(txn->unscoped_metrics));
 
   const nrmetric_t* metric
-      = nrm_find(txn->unscoped_metrics, AGENT_VERSION_METRIC_BASE "/11.0.0.0");
+      = nrm_find(txn->unscoped_metrics, AGENT_VERSION_METRIC_BASE "/" NR_VERSION);
   const char* metric_name = nrm_get_name(txn->unscoped_metrics, metric);
 
   tlib_pass_if_not_null("Agent version metric found", metric);
   tlib_pass_if_str_equal("Agent version metric name check", metric_name,
-                         AGENT_VERSION_METRIC_BASE "/11.0.0.0");
+                         AGENT_VERSION_METRIC_BASE "/" NR_VERSION);
 
   tlib_php_request_end();
 }

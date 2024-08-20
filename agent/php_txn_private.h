@@ -51,10 +51,11 @@ extern void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn);
  * Purpose : Create and record metric for a specific agent version.
  *
  * Params  : 1. The current transaction.
- *           2. The agent version.
+ *
+ * Notes   : This function relies on the value of the macro NR_VERSION
+ *           to create.
  */
-extern void nr_php_txn_create_agent_version_metric(nrtxn_t* txn,
-                                                   const char* version);
+extern void nr_php_txn_create_agent_version_metric(nrtxn_t* txn);
 
 /*
  * Purpose : Create and record metric for a specific PHP version.

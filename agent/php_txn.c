@@ -669,20 +669,13 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 #undef FMT_BOOL
 }
 
-void nr_php_txn_create_agent_version_metric(nrtxn_t* txn, const char* version) {
-  char* metric_name = NULL;
-
+void nr_php_txn_create_agent_version_metric(nrtxn_t* txn) {
   if (NULL == txn) {
     return;
   }
 
-  if (nr_strempty(version)) {
-    return;
-  }
-
-  metric_name = nr_formatf("Supportability/PHP/AgentVersion/%s", version);
-  nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
-  nr_free(metric_name);
+  nrm_force_add(NRTXN(unscoped_metrics),
+                "Supportability/PHP/AgentVersion/" NR_VERSION, 0);
 }
 
 void nr_php_txn_create_php_version_metric(nrtxn_t* txn, const char* version) {
@@ -707,10 +700,7 @@ void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
   if (NULL == txn) {
     return;
   }
-
-  version = NR_VERSION;
-
-  nr_php_txn_create_agent_version_metric(txn, version);
+  nr_php_txn_create_agent_version_metric(txn);
 
   if (!nr_strempty(NR_PHP_PROCESS_GLOBALS(php_version))) {
     version = NR_PHP_PROCESS_GLOBALS(php_version);
