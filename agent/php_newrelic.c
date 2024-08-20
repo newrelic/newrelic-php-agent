@@ -120,8 +120,8 @@ ZEND_BEGIN_ARG_INFO_EX(newrelic_arginfo_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 #endif /* PHP 8.0+ */
 
-ZEND_BEGIN_ARG_INFO_EX(newrelic_get_request_metadata_arginfo, 0, 0, 0) 
-ZEND_ARG_INFO(0, transport) 
+ZEND_BEGIN_ARG_INFO_EX(newrelic_get_request_metadata_arginfo, 0, 0, 0)
+ZEND_ARG_INFO(0, transport)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_add_custom_parameter_arginfo, 0, 0, 2)
@@ -222,7 +222,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(newrelic_set_user_id_arginfo, 0, 0, 1)
 ZEND_ARG_INFO(0, uuid)
 ZEND_END_ARG_INFO()
-
 
 ZEND_BEGIN_ARG_INFO_EX(newrelic_set_error_group_callback_arginfo, 0, 0, 1)
 ZEND_ARG_INFO(0, callback)

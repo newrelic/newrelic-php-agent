@@ -669,6 +669,48 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
 #undef FMT_BOOL
 }
 
+void nr_php_txn_create_agent_version_metric(nrtxn_t* txn) {
+  if (NULL == txn) {
+    return;
+  }
+
+  nrm_force_add(NRTXN(unscoped_metrics),
+                "Supportability/PHP/AgentVersion/" NR_VERSION, 0);
+}
+
+void nr_php_txn_create_php_version_metric(nrtxn_t* txn, const char* version) {
+  char* metric_name = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  if (nr_strempty(version)) {
+    return;
+  }
+
+  metric_name = nr_formatf("Supportability/PHP/Version/%s", version);
+  nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+  nr_free(metric_name);
+}
+
+void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
+  char* version = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+  nr_php_txn_create_agent_version_metric(txn);
+
+  if (!nr_strempty(NR_PHP_PROCESS_GLOBALS(php_version))) {
+    version = NR_PHP_PROCESS_GLOBALS(php_version);
+  } else {
+    version = "unknown";
+  }
+
+  nr_php_txn_create_php_version_metric(txn, version);
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -1119,6 +1161,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     nrm_force_add(txn->unscoped_metrics,
                   "Supportability/execute/allocated_segment_count",
                   nr_txn_allocated_segment_count(txn));
+
+    /* Agent and PHP version metrics*/
+    nr_php_txn_create_agent_php_version_metrics(txn);
 
     /* Add CPU and memory metrics */
     nr_php_resource_usage_sampler_end(TSRMLS_C);

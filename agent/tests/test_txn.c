@@ -161,6 +161,133 @@ static void test_max_segments_config_values(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+#define PHP_VERSION_METRIC_BASE "Supportability/PHP/Version"
+#define AGENT_VERSION_METRIC_BASE "Supportability/PHP/AgentVersion"
+
+static void test_create_php_version_metric() {
+  nrtxn_t* txn;
+  int count;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  count = nrm_table_size(txn->unscoped_metrics);
+
+  /* Test invalid values are properly handled */
+  nr_php_txn_create_php_version_metric(NULL, NULL);
+  tlib_pass_if_int_equal("PHP version metric shouldnt be created 1", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_php_version_metric(txn, NULL);
+  tlib_pass_if_int_equal("PHP version metric shouldnt be created 2", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_php_version_metric(NULL, "7.4.0");
+  tlib_pass_if_int_equal("PHP version metric shouldnt be created 3", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_php_version_metric(txn, "");
+  tlib_pass_if_int_equal("PHP version metric shouldnt be created 4", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  /* test valid values */
+  nr_php_txn_create_php_version_metric(txn, "7.4.0");
+  tlib_pass_if_int_equal("PHP version metric should be create", count + 1,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  const nrmetric_t* metric
+      = nrm_find(txn->unscoped_metrics, PHP_VERSION_METRIC_BASE "/7.4.0");
+  const char* metric_name = nrm_get_name(txn->unscoped_metrics, metric);
+
+  tlib_pass_if_not_null("PHP version metric found", metric);
+  tlib_pass_if_str_equal("PHP version metric name check", metric_name,
+                         PHP_VERSION_METRIC_BASE "/7.4.0");
+
+  tlib_php_request_end();
+}
+
+static void test_create_agent_version_metric() {
+  nrtxn_t* txn;
+  int count;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  count = nrm_table_size(txn->unscoped_metrics);
+
+  /* Test invalid values are properly handled */
+  nr_php_txn_create_agent_version_metric(NULL);
+  tlib_pass_if_int_equal("Agent version metric shouldnt be created - txn is NULL", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  /* Test valid values */
+  nr_php_txn_create_agent_version_metric(txn);
+  tlib_pass_if_int_equal("Agent version metric should be created - txn is not NULL", count + 1,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  const nrmetric_t* metric
+      = nrm_find(txn->unscoped_metrics, AGENT_VERSION_METRIC_BASE "/" NR_VERSION);
+  const char* metric_name = nrm_get_name(txn->unscoped_metrics, metric);
+
+  tlib_pass_if_not_null("Agent version metric found", metric);
+  tlib_pass_if_str_equal("Agent version metric name check", metric_name,
+                         AGENT_VERSION_METRIC_BASE "/" NR_VERSION);
+
+  tlib_php_request_end();
+}
+
+static void test_create_agent_php_version_metrics() {
+  nrtxn_t* txn;
+
+  /*
+   * Test : Create agent PHP version metrics.
+   */
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  zval* expected_php_zval = tlib_php_request_eval_expr("phpversion();");
+
+  char* php_version_name = nr_formatf(PHP_VERSION_METRIC_BASE "/%s",
+                                      Z_STRVAL_P(expected_php_zval));
+
+  nr_php_zval_free(&expected_php_zval);
+
+  char* agent_version_name
+      = nr_formatf(AGENT_VERSION_METRIC_BASE "/%s", NR_VERSION);
+
+  nr_php_txn_create_agent_php_version_metrics(txn);
+
+  /* Test the PHP version metric creation */
+  const nrmetric_t* metric = nrm_find(txn->unscoped_metrics, php_version_name);
+  const char* metric_name = nrm_get_name(txn->unscoped_metrics, metric);
+
+  tlib_pass_if_not_null("happy path: PHP version metric created", metric);
+  tlib_pass_if_not_null("happy path: PHP version metric name created",
+                        metric_name);
+
+  tlib_pass_if_str_equal("happy path: PHP version metric name check",
+                         metric_name, php_version_name);
+
+  /* Test the agent version metric creation*/
+  metric = nrm_find(txn->unscoped_metrics, agent_version_name);
+  metric_name = nrm_get_name(txn->unscoped_metrics, metric);
+
+  tlib_pass_if_not_null("happy path: Agent version metric created", metric);
+  tlib_pass_if_not_null("happy path: Agent version metric name created",
+                        metric_name);
+
+  tlib_pass_if_str_equal("happy path: Agent version metric name check",
+                         metric_name, agent_version_name);
+
+  nr_free(agent_version_name);
+  nr_free(php_version_name);
+
+  tlib_php_request_end();
+}
+
+#undef PHP_VERSION_METRIC_BASE
+#undef AGENT_VERSION_METRIC_BASE
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -175,8 +302,11 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create(
       "newrelic.transaction_events.attributes.include=request.uri" PTSRMLS_CC);
 
-  test_handle_fpm_error(TSRMLS_C);
-  test_max_segments_config_values(TSRMLS_C);
+  test_handle_fpm_error();
+  test_max_segments_config_values();
+  test_create_php_version_metric();
+  test_create_agent_version_metric();
+  test_create_agent_php_version_metrics();
 
-  tlib_php_engine_destroy(TSRMLS_C);
+  tlib_php_engine_destroy();
 }

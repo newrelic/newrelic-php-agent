@@ -376,6 +376,14 @@ func main() {
 	// Env vars common to all tests.
 	ctx.Env["EXTERNAL_HOST"] = externalHost
 
+	ctx.Env["PHP_VERSION"] = integration.GetPHPVersion()
+
+	agent_extension, ok := ctx.Settings["extension"]
+	if !ok {
+		agent_extension = "newrelic.so"
+	}
+	ctx.Env["AGENT_VERSION"] = integration.GetAgentVersion(agent_extension)
+
 	handler, err := startDaemon("unix", *flagPort, flagSecurityToken.String(), flagSecuityPolicies.String())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
