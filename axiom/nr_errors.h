@@ -40,7 +40,9 @@ extern nr_error_t* nr_error_create(int priority,
 
 /*
  * Purpose : Create a new error for the use case where additional parameters are
- * passed in.
+ * passed in. The following parameters are required and can not be NULL: klass
+ * and stacktrace_json. If these are NULL, the function will return 0. The
+ * remaining parameters can be passed in as NULL if they are not needed.
  *
  * Params  : 1. The importance of the error.  Higher number is more important.
  *           2. Message string.
@@ -77,62 +79,62 @@ extern nr_error_t* nr_error_create_additional_params(
 /*
  * Purpose : Get the message of an error.
  *
- * Returns : The message of the error or NULL on failure.
+ * Returns : The message of the error or NULL if not defined.
  */
 extern const char* nr_error_get_message(const nr_error_t* error);
 /*
  * Purpose : Get the klass of an error.
  *
- * Returns : The klass of the error or NULL on failure.
+ * Returns : The klass of the error or NULL if not defined.
  */
 extern const char* nr_error_get_klass(const nr_error_t* error);
 
 /*
  * Purpose : Get the error file of an error.
  *
- * Returns : The error file of the error or NULL on failure.
+ * Returns : The error file of the error or NULL if not defined.
  */
 extern const char* nr_error_get_file(const nr_error_t* error);
 
 /*
  * Purpose : Get the error line of an error.
  *
- * Returns : The error line of the error or 0 on failure.
+ * Returns : The error line of the error or 0 if not defined.
  */
 extern int nr_error_get_line(const nr_error_t* error);
 
 /*
  * Purpose : Get the error context of an error.
  *
- * Returns : The error context of the error or NULL on failure.
+ * Returns : The error context of the error or NULL if not defined.
  */
 extern const char* nr_error_get_context(const nr_error_t* error);
 
 /*
  * Purpose : Get the error number of an error.
  *
- * Returns : The error number of the error or 0 on failure.
+ * Returns : The error number of the error or 0 if not defined.
  */
 extern int nr_error_get_no(const nr_error_t* error);
 
 /*
  * Purpose : Get the span_id of an error.
  *
- * Returns : The span_id of the error or NULL on failure.
+ * Returns : The span_id of the error or NULL if not defined.
  */
 extern const char* nr_error_get_span_id(const nr_error_t* error);
 
 /*
  * Purpose : Get the time of an error.
  *
- * Returns : The time of the error or 0 on failure.
+ * Returns : The time of the error or 0 if not defined.
  */
 extern nrtime_t nr_error_get_time(const nr_error_t* error);
 
 /*
  * Purpose : Get the priority of an error.
  *
- * Returns : The priority of the error or 0 on failure.
+ * Returns : The priority of the error or 0 if not defined.
  */
 extern int nr_error_priority(const nr_error_t* error);
 
