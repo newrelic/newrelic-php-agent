@@ -117,10 +117,10 @@ typedef struct _nr_segment_metric_t {
 typedef struct _nr_segment_error_t {
   char* error_message; /* The error message that will appear on a span event. */
   char* error_class;   /* The error class that will appear on a span event. */
-  char* error_file;
-  int error_line;
-  char* error_context;
-  int error_no;
+  char* error_file;    /* The error file that will appear on a span event. */
+  int error_line;      /* The error line that will appear on a span event. */
+  char* error_context; /* The error context that will appear on a span event. */
+  int error_no;        /* The error number that will appear on a span event. */
 } nr_segment_error_t;
 
 /*
