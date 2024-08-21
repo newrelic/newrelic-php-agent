@@ -2841,6 +2841,19 @@ static void test_segment_to_span_event(void) {
   nr_txn_destroy(&txn);
 }
 
+#define test_segment_set_error_with_additional_params(                      \
+    SEGMENT, MESSAGE, CLASS, ERRFILE, LINE, CONTEXT, NUM)                   \
+  nr_segment_set_error_with_additional_params(&SEGMENT, MESSAGE, CLASS,     \
+                                              ERRFILE, LINE, CONTEXT, NUM); \
+  tlib_pass_if_str_equal("error.message", MESSAGE,                          \
+                         SEGMENT.error->error_message);                     \
+  tlib_pass_if_str_equal("error.class", CLASS, SEGMENT.error->error_class); \
+  tlib_pass_if_str_equal("error.file", ERRFILE, SEGMENT.error->error_file); \
+  tlib_pass_if_int_equal("error.line", LINE, SEGMENT.error->error_line);    \
+  tlib_pass_if_str_equal("error.context", CONTEXT,                          \
+                         SEGMENT.error->error_context);                     \
+  tlib_pass_if_int_equal("error.num", NUM, SEGMENT.error->error_no);
+
 static void test_segment_set_error_attributes(void) {
   nr_segment_t segment = {.type = NR_SEGMENT_CUSTOM};
 
@@ -2874,11 +2887,10 @@ static void test_segment_set_error_attributes(void) {
   tlib_pass_if_str_equal("error.class", "error.class 1",
                          segment.error->error_class);
 
-  nr_segment_set_error_with_additional_params(&segment, "error.message", "error.class", "error.file", 125, "rand3", 100);
-  tlib_pass_if_str_equal("error.file", "error.file",
-                         segment.error->error_file);
-  tlib_pass_if_int_equal("error.line", 125,
-                         segment.error->error_line);
+  test_segment_set_error_with_additional_params(segment, "error.message", "error.class", "error.file", 125, "error.context", 100);
+  test_segment_set_error_with_additional_params(segment, NULL, "error.class", "error.file", 125, "error.context", 100);
+  test_segment_set_error_with_additional_params(segment, "error.message", "error.class", NULL, 125, "error.context", 100);
+  test_segment_set_error_with_additional_params(segment, "error.message", "error.class", "error.file", 125, NULL, 100);
 
   nr_segment_destroy_fields(&segment);
 }
