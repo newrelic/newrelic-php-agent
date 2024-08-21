@@ -146,7 +146,7 @@ PHP_FUNCTION(newrelic_notice_error) {
     case 5:
       if (FAILURE
           == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                      ZEND_NUM_ARGS() TSRMLS_CC, "lssls!",
+                                      ZEND_NUM_ARGS() TSRMLS_CC, "ls!s!ls!",
                                       &error_number, &errormsgstr, &errormsglen,
                                       &error_file, &error_file_len, &error_line,
                                       &error_context, &error_context_len)) {
