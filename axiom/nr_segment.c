@@ -1199,8 +1199,6 @@ void nr_segment_set_error_with_additional_params(nr_segment_t* segment,
   nr_free(segment->error->error_class);
   nr_free(segment->error->error_file);
   nr_free(segment->error->error_context);
-  nr_free(segment->error->error_file);
-  nr_free(segment->error->error_context);
 
   segment->error->error_class = error_class ? nr_strdup(error_class) : NULL;
   segment->error->error_no = error_no;
