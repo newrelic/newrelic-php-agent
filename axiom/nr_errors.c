@@ -20,7 +20,7 @@ nr_error_t* nr_error_create(int priority,
                             const char* stacktrace_json,
                             const char* span_id,
                             nrtime_t when) {
-  if (0 == message || 0 == klass || 0 == stacktrace_json) {
+  if (NULL == message || NULL == klass || NULL == stacktrace_json) {
     return 0;
   }
   return nr_error_create_additional_params(priority, message, klass, NULL, 0, NULL, 0,
