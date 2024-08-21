@@ -141,10 +141,8 @@ void nr_error_destroy(nr_error_t** error_ptr) {
   nr_free(error->klass);
   nr_free(error->span_id);
   nr_free(error->stacktrace_json);
-  if ((NULL != error->error_file) && (NULL != error->error_context)) {
-    nr_free(error->error_file);
-    nr_free(error->error_context);
-  }
+  nr_free(error->error_file);
+  nr_free(error->error_context);
   nr_realfree((void**)error_ptr);
 }
 
