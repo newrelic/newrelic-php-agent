@@ -14,37 +14,6 @@
 #include "util_strings.h"
 #include "util_time.h"
 
-static nr_error_t* nr_error_create_helper(int priority,
-                            const char* message,
-                            const char* klass,
-                            const char* error_file,
-                            int error_line,
-                            const char* error_context,
-                            int error_no,
-                            const char* stacktrace_json,
-                            const char* span_id,
-                            nrtime_t when) {
-  nr_error_t* error;
-
-  error = (nr_error_t*)nr_zalloc(sizeof(nr_error_t));
-  error->priority = priority;
-  error->when = when;
-  error->message = nr_strdup(message);
-  error->klass = nr_strdup(klass);
-  error->stacktrace_json = nr_strdup(stacktrace_json);
-  if (NULL != error_file && NULL != error_context) {
-    error->error_file = nr_strdup(error_file);
-    error->error_line = error_line;
-    error->error_context = nr_strdup(error_context);
-    error->error_no = error_no;
-  }
-
-  if (NULL != span_id) {
-    error->span_id = nr_strdup(span_id);
-  }
-  return error;
-}
-
 nr_error_t* nr_error_create(int priority,
                             const char* message,
                             const char* klass,
@@ -54,7 +23,7 @@ nr_error_t* nr_error_create(int priority,
   if (0 == message || 0 == klass || 0 == stacktrace_json) {
     return 0;
   }
-  return nr_error_create_helper(priority, message, klass, NULL, 0, NULL, 0,
+  return nr_error_create_additional_params(priority, message, klass, NULL, 0, NULL, 0,
                          stacktrace_json, span_id, when);
 }
 
@@ -68,12 +37,31 @@ nr_error_t* nr_error_create_additional_params(int priority,
                                               const char* stacktrace_json,
                                               const char* span_id,
                                               nrtime_t when) {
-  if (0 == message || 0 == klass || 0 == error_file || 0 == error_context
-      || 0 == stacktrace_json) {
+  nr_error_t* error;
+  if (NULL == klass || NULL == stacktrace_json) {
     return 0;
   }
-  return nr_error_create_helper(priority, message, klass, error_file, error_line, error_context, error_no,
-                         stacktrace_json, span_id, when);
+
+  error = (nr_error_t*)nr_zalloc(sizeof(nr_error_t));
+  error->priority = priority;
+  error->when = when;
+  error->klass = nr_strdup(klass);
+  error->stacktrace_json = nr_strdup(stacktrace_json);
+  error->error_line = error_line;
+  error->error_no = error_no;
+  if (NULL != message) {
+    error->message = nr_strdup(message);
+  }
+  if (NULL != error_file) {
+    error->error_file = nr_strdup(error_file);
+  }
+  if (NULL != error_context) {
+    error->error_context = nr_strdup(error_context);
+  }
+  if (NULL != span_id) {
+    error->span_id = nr_strdup(span_id);
+  }
+  return error;
 }
 
 const char* nr_error_get_message(const nr_error_t* error) {
