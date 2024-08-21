@@ -452,6 +452,45 @@ extern void nr_txn_set_request_uri(nrtxn_t* txn, const char* uri);
  */
 extern nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority);
 
+#define NR_TXN_HIGH_SECURITY_ERROR_MESSAGE \
+  "Message removed by New Relic high_security setting"
+
+#define NR_TXN_ALLOW_RAW_EXCEPTION_MESSAGE \
+  "Message removed by New Relic security settings"
+
+/*
+ * Purpose : Record the given error in the transaction with additional
+ * attributes being reported as user attributes. If the additional attributes
+ * are passed in as NULL, then they will not be reported.
+ *
+ * Params  : 1. The transaction pointer.
+ *           2. The priority of the error. A higher number indicates a more
+ *              serious error.
+ *           3. Whether to add the error to the current segment.
+ *           4. The error message.
+ *           5. The error class.
+ *           6. The error line.
+ *           7. The error file.
+ *           8. The error context.
+ *           9. The error number.
+ *          10. The stack trace in JSON format.
+ *
+ * Returns : Nothing.
+ *
+ * Notes   : This function will still record an error when high security is
+ *           enabled but the message will be replaced with a placeholder.
+ */
+extern void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
+                         int priority,
+                         bool add_to_current_segment,
+                         const char* error_message,
+                         const char* error_class,
+                         const char* error_file,
+                         int error_line,
+                         char* error_context,
+                         int error_no,
+                         const char* stacktrace_json);
+
 /*
  * Purpose : Record the given error in the transaction.
  *
@@ -468,23 +507,6 @@ extern nr_status_t nr_txn_record_error_worthy(const nrtxn_t* txn, int priority);
  * Notes   : This function will still record an error when high security is
  *           enabled but the message will be replaced with a placeholder.
  */
-#define NR_TXN_HIGH_SECURITY_ERROR_MESSAGE \
-  "Message removed by New Relic high_security setting"
-
-#define NR_TXN_ALLOW_RAW_EXCEPTION_MESSAGE \
-  "Message removed by New Relic security settings"
-
-extern void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
-                         int priority,
-                         bool add_to_current_segment,
-                         const char* error_message,
-                         const char* error_class,
-                         const char* error_file,
-                         int error_line,
-                         char* error_context,
-                         int error_no,
-                         const char* stacktrace_json);
-
 extern void nr_txn_record_error(nrtxn_t* txn,
                                 int priority,
                                 bool add_to_segment,
