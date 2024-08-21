@@ -8161,6 +8161,7 @@ static void test_segment_record_error_with_additional_params(void) {
       txn, 1, true, "low priority message", "low priority class", "random.php",
       150, "random context", 256, "[\"A\",\"B\"]");
   tlib_pass_if_null("No segment error created", segment->error);
+  tlib_pass_if_null("No txn error created", txn->error);
 
   /* Enable error collection */
   txn->options.err_enabled = 1;
@@ -8200,7 +8201,8 @@ static void test_segment_record_error_with_additional_params(void) {
                          segment->error->error_class,
                          nr_error_get_klass(txn->error));
 
-  /* Multiple errors on the same segment */
+  /* Multiple errors on the same segment where the new error is
+     prioritized over the previous because of priority level*/
   nr_txn_record_error_with_additional_attributes(
       txn, 1, true, "random message 2", "random class 2", "random.php2",
       150, "random context2", 256, "[\"A\",\"B\"]");
