@@ -13,6 +13,7 @@
 #include "php_explain_mysqli.h"
 #include "php_file_get_contents.h"
 #include "php_globals.h"
+#include "php_hash.h"
 #include "php_httprequest_send.h"
 #include "php_internal_instrument.h"
 #include "php_mysql.h"
@@ -1529,6 +1530,66 @@ NR_INNER_WRAPPER(memcache_function) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
                                              nr_wrapper->extra, NULL,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+static nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
+    const char* host,
+    zend_long port) {
+  nr_datastore_instance_t* instance = NULL;
+  if (port == 0) { // local socket
+    instance = nr_datastore_instance_create("localhost", host, NULL);
+  } else {
+    char* port_str = nr_formatf("%ld", (long)port);
+    instance  = nr_datastore_instance_create(host, port_str, NULL);
+    nr_free(port_str);
+  }
+  return instance;
+}
+
+NR_INNER_WRAPPER(memcached_connect_function) {
+  char* host = NULL;
+  nr_string_len_t host_len = 0;
+  zend_long port = 0;
+  zend_long weight = 0;
+  nr_datastore_instance_t* instance = NULL;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s|ll", &host,
+          &host_len, &port, &weight)) {
+    if (NULL != host) {
+      instance = nr_php_memcached_create_datastore_instance(host, port);
+    }
+  }
+  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
+                                             nr_wrapper->extra, instance,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+NR_INNER_WRAPPER(memcached_multi_connect_function) {
+  zval* servers = NULL;
+  zval* server = NULL;
+  zend_ulong num_key = 0;
+  nr_php_string_hash_key_t* string_key = NULL;
+  nr_datastore_instance_t* instance = NULL;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "a", &servers)) {
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(servers), num_key, string_key, server) {
+      (void)num_key;
+      (void)string_key;
+      zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
+      zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
+      if (NULL != host) {
+        instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
+        nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
+                                                   nr_wrapper->extra, instance,
+                                                   INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      }
+    }
+    ZEND_HASH_FOREACH_END();
+  }
 }
 
 /*
@@ -3098,6 +3159,8 @@ NR_OUTER_WRAPPER(memcached_set)
 NR_OUTER_WRAPPER(memcached_setbykey)
 NR_OUTER_WRAPPER(memcached_setmulti)
 NR_OUTER_WRAPPER(memcached_setmultibykey)
+NR_OUTER_WRAPPER(memcached_addserver)
+NR_OUTER_WRAPPER(memcached_addservers)
 
 NR_OUTER_WRAPPER(redis_append)
 NR_OUTER_WRAPPER(redis_bitcount)
@@ -3511,6 +3574,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       memcache_function, 0, "set")
   NR_INTERNAL_WRAPREC("memcached::setmultibykey", memcached_setmultibykey,
                       memcache_function, 0, "set")
+  NR_INTERNAL_WRAPREC("memcached::addServer", memcached_addserver,
+                      memcached_connect_function, 0, "connect");
+  NR_INTERNAL_WRAPREC("memcached::addServers", memcached_addservers,
+                      memcached_multi_connect_function, 0, "connect");
 
   NR_INTERNAL_WRAPREC("redis::connect", redis_connect, redis_connect, 0,
                       "connect")
