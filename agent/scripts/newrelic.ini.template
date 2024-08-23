@@ -1373,30 +1373,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.security.agent.enabled = false
 
-; Setting: newrelic.security.detection.rci.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of remote code injection attack category is to be enabled
-;
-;newrelic.security.detection.rci.enabled = true
-
-; Setting: newrelic.security.detection.rxss.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of reflected xss attack category is to be enabled
-;
-;newrelic.security.detection.rxss.enabled = true
-
-; Setting: newrelic.security.detection.deserialization.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of deserialization attack category is to be enabled
-;
-;newrelic.security.detection.deserialization.enabled = true
-
 ; Setting: newrelic.security.request.body_limit
 ; Type   : unsigned integer
 ; Scope  : system
@@ -1442,7 +1418,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : A list of request query keys separated by :: (double colon) to be 
 ;          skipped for scanning
 ;
-;newrelic.security.skip_iast_scan.parameters.query = "q1::q2"
+;newrelic.security.skip_iast_scan.parameters.query = "username::password"
 
 ; Setting: newrelic.security.skip_iast_scan.parameters.body
 ; Type   : string
@@ -1451,7 +1427,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : A list of request body keys separated by :: (double colon) to be 
 ;          skipped for scanning
 ;
-;newrelic.security.skip_iast_scan.parameters.body = "object.cc_number"
+;newrelic.security.skip_iast_scan.parameters.body = "account.email::account.contact"
 
 ; Setting: newrelic.security.skip_iast_scan.iast_detection_category.insecure_settings
 ; Type   : boolean
@@ -1532,3 +1508,37 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Indicates if reflected xss attack category is to be skipped
 ;
 ;newrelic.security.skip_iast_scan.iast_detection_category.rxss = false
+
+; Setting: newrelic.security.scan_schedule.delay
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the delay in minutes after which IAST scan should start
+;
+;newrelic.security.scan_schedule.delay = 0
+
+; Setting: newrelic.security.scan_schedule.duration
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the duration in minutes for which IAST scan should running
+;          default will be forever
+;
+;newrelic.security.scan_schedule.duration = 0
+
+; Setting: newrelic.security.scan_schedule.schedule
+; Type   : string
+; Scope  : system
+; Default: "0 0 * * * ?"
+; Info   : Sets the IAST run schedule in cron format. scan_schedule.delay
+;          takes precedence over schedule
+;
+;newrelic.security.scan_schedule.schedule = "0 0 * * * ?"
+
+; Setting: newrelic.security.scan_schedule.always_sample_traces
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : If true, event sampling will be done regardless of delay
+;
+;newrelic.security.scan_schedule.always_sample_traces = false
