@@ -544,7 +544,12 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 				actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
 
 				metricPasses := false
-				if (count == -1 && actualCount > 0) || (actualCount == count) {
+
+				// apdex metrics can have a count of 0 since the count field is
+				// actually the "satisfied" count, not a total count of metric
+				// as it is for other types of metrics
+				apdex_metric := strings.HasPrefix(expected, "Apdex/")
+				if (count == -1 && (apdex_metric || actualCount > 0)) || (actualCount == count) {
 					metricPasses = true
 				}
 
@@ -751,6 +756,8 @@ var (
 		regexp.MustCompile(`^Supportability\/InstrumentedFunction`),
 		regexp.MustCompile(`^Supportability\/TxnData\/.*`),
 		regexp.MustCompile(`^Supportability/C/NewrelicVersion/.*`),
+		regexp.MustCompile(`^Supportability/PHP/Version/.*`),
+		regexp.MustCompile(`^Supportability/PHP/AgentVersion/.*`),
 	}
 )
 
