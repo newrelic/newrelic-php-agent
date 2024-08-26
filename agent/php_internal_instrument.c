@@ -769,6 +769,7 @@ static void nr_php_instrument_datastore_operation_call(
     nr_datastore_t datastore,
     const char* operation,
     nr_datastore_instance_t* instance,
+    bool instance_only,
     INTERNAL_FUNCTION_PARAMETERS) {
   int zcaught = 0;
   nr_segment_t* segment = NULL;
@@ -778,6 +779,7 @@ static void nr_php_instrument_datastore_operation_call(
       },
       .operation = nr_strdup(operation),
       .instance  = instance,
+      .instance_only = instance_only,
       .callbacks = {
           .backtrace = nr_php_backtrace_callback,
       },
@@ -833,7 +835,7 @@ NR_INNER_WRAPPER(mysqli_commit) {
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MYSQL,
-                                             "commit", instance,
+                                             "commit", instance, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1528,7 +1530,7 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
  */
 NR_INNER_WRAPPER(memcache_function) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                             nr_wrapper->extra, NULL,
+                                             nr_wrapper->extra, NULL, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1562,7 +1564,7 @@ NR_INNER_WRAPPER(memcached_connect_function) {
     }
   }
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                             nr_wrapper->extra, instance,
+                                             NULL, instance, true,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1584,7 +1586,7 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
       if (NULL != host) {
         instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
         nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                                   nr_wrapper->extra, instance,
+                                                   NULL, instance, true,
                                                    INTERNAL_FUNCTION_PARAM_PASSTHRU);
       }
     }
@@ -1617,7 +1619,7 @@ NR_INNER_WRAPPER(redis_connect) {
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                             nr_wrapper->extra, instance,
+                                             nr_wrapper->extra, instance, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1676,7 +1678,7 @@ NR_INNER_WRAPPER(redis_function) {
   instance = nr_php_redis_retrieve_datastore_instance(this_obj TSRMLS_CC);
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                             nr_wrapper->extra, instance,
+                                             nr_wrapper->extra, instance, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -2669,7 +2671,7 @@ NR_INNER_WRAPPER(ob_flush_common) {
  */
 NR_INNER_WRAPPER(mongodb_execute) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MONGODB,
-                                             "execute", NULL,
+                                             "execute", NULL, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -3574,10 +3576,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       memcache_function, 0, "set")
   NR_INTERNAL_WRAPREC("memcached::setmultibykey", memcached_setmultibykey,
                       memcache_function, 0, "set")
-  NR_INTERNAL_WRAPREC("memcached::addServer", memcached_addserver,
-                      memcached_connect_function, 0, "connect");
-  NR_INTERNAL_WRAPREC("memcached::addServers", memcached_addservers,
-                      memcached_multi_connect_function, 0, "connect");
+  NR_INTERNAL_WRAPREC("memcached::addserver", memcached_addserver,
+                      memcached_connect_function, 0, 0);
+  NR_INTERNAL_WRAPREC("memcached::addservers", memcached_addservers,
+                      memcached_multi_connect_function, 0, 0);
 
   NR_INTERNAL_WRAPREC("redis::connect", redis_connect, redis_connect, 0,
                       "connect")

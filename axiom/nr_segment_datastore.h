@@ -24,6 +24,9 @@ typedef struct _nr_segment_datastore_params_t {
                        extracted from the SQL for SQL segments. */
   nr_datastore_instance_t*
       instance; /* Any instance information that was collected. */
+  bool instance_only; /* true if only the instance metric is wanted,
+                         collection and operation fields will not be
+                         used or extracted from the SQL */
 
   /*
    * Datastore type fields.
