@@ -3902,7 +3902,10 @@ static void test_error_to_event(void) {
                          "\"nr.transactionGuid\":\"abcd\","
                          "\"guid\":\"abcd\""
                          "},"
-                         "{\"user_long\":1},"
+                         "{"
+                         "\"user_long\":1,"
+                         "\"user.error.message\":\"the_msg\""
+                         "},"
                          "{\"agent_long\":2}"
                          "]",
                          nr_analytics_event_json(event));
@@ -3931,7 +3934,10 @@ static void test_error_to_event(void) {
                          "\"nr.transactionGuid\":\"abcd\","
                          "\"guid\":\"abcd\""
                          "},"
-                         "{\"user_long\":1},"
+                         "{"
+                         "\"user_long\":1,"
+                         "\"user.error.message\":\"the_msg\""
+                         "},"
                          "{\"agent_long\":2}"
                          "]");
   nr_analytics_event_destroy(&event);
@@ -3960,7 +3966,10 @@ static void test_error_to_event(void) {
                          "\"nr.syntheticsJobId\":\"b\","
                          "\"nr.syntheticsMonitorId\":\"c\""
                          "},"
-                         "{\"user_long\":1},"
+                         "{"
+                         "\"user_long\":1,"
+                         "\"user.error.message\":\"the_msg\""
+                         "},"
                          "{\"agent_long\":2}"
                          "]");
   nr_analytics_event_destroy(&event);

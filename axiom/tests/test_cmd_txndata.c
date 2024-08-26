@@ -673,7 +673,9 @@ static void test_encode_error_events(void) {
               "\"nr.transactionGuid\":\"abcd\","
               "\"guid\":\"abcd\""
               "},"
-              "{},"
+              "{"
+              "\"user.error.message\":\"msg\""
+              "},"
               "{}"
               "]"),
       nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),
