@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is flowers
  *
- *   cosmos             29Jun2022 (10.0)
  *   dahlia             19Sep2022 (10.1)
  *   echinacea          03Oct2022 (10.2)
  *   freesia            03Nov2022 (10.3)
@@ -47,8 +46,9 @@
  *   xerophyllum        20May2024 (10.21)
  *   yarrow             26Jun2024 (10.22)
  *   zinnia             30Jul2024 (11.0)
+ *   amethyst           26Aug2024 (11.1)
  */
-#define NR_CODENAME "amethyst"
+#define NR_CODENAME "bowenite"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
