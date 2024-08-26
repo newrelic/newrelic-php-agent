@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Test the use case where two parameters are passed into newrelic_notice_error 
-and the exception is shown as the error message.
+Test the use case where five parameters are passed into newrelic_notice_error and
+ensure all parameters show up as error attributes.
 */
 
 /*EXPECT_ERROR_EVENTS
@@ -21,8 +21,8 @@ and the exception is shown as the error message.
             {
                 "type": "TransactionError",
                 "timestamp": "??",
-                "error.class": "Exception",
-                "error.message": "Noticed exception 'Exception' with message 'Sample Exception' in __FILE__:??",
+                "error.class": "NoticedError",
+                "error.message": "Test Error Has Occurred!",
                 "transactionName": "??",
                 "duration": "??",
                 "nr.transactionGuid": "??",
@@ -32,11 +32,17 @@ and the exception is shown as the error message.
                 "traceId": "??",
                 "spanId": "??"
             },
-            {},
+            {
+                "user.error.message": "Test Error Has Occurred!",   
+                "user.error.file": "Random.php",
+                "user.error.line": 100,
+                "user.error.context": "Random Error Has Been Detected",
+                "user.error.number": 256
+            },
             {}
         ]
     ]
 ]
 */
 
-newrelic_notice_error("Test Error Has Occurred!", new Exception('Sample Exception'));
+newrelic_notice_error(256, "Test Error Has Occurred!", "Random.php", 100, "Random Error Has Been Detected");

@@ -5,8 +5,7 @@
  */
 
 /*DESCRIPTION
-Test the use case where five parameters are passed into newrelic_notice_error and
-ensure all parameters show up as error attributes.
+Ensure null values are handled correctly when passed into newrelic_notice_error.
 */
 
 /*EXPECT_ERROR_EVENTS
@@ -23,10 +22,6 @@ ensure all parameters show up as error attributes.
                 "timestamp": "??",
                 "error.class": "NoticedError",
                 "error.message": "Test Error Has Occurred!",
-                "error.file": "random.php",
-                "error.line": 46,
-                "error.context": "Random Error Has Been Detected",
-                "error.no": 256,
                 "transactionName": "??",
                 "duration": "??",
                 "nr.transactionGuid": "??",
@@ -36,11 +31,15 @@ ensure all parameters show up as error attributes.
                 "traceId": "??",
                 "spanId": "??"
             },
-            {},
+            {   
+                "user.error.message": "Test Error Has Occurred!",
+                "user.error.line": 100,
+                "user.error.number": 256
+            },
             {}
         ]
     ]
 ]
 */
 
-newrelic_notice_error(256, "Test Error Has Occurred!", "random.php", 46, "Random Error Has Been Detected");
+newrelic_notice_error(256, "Test Error Has Occurred!", null, 100, null);
