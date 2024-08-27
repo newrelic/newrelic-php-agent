@@ -549,7 +549,7 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 				// actually the "satisfied" count, not a total count of metric
 				// as it is for other types of metrics
 				apdex_metric := strings.HasPrefix(expected, "Apdex/")
-				if (count == -1 && (apdex_metric || actualCount > 0)) || (actualCount == count) {
+				if (apdex_metric || (count == -1 && actualCount > 0)) || (actualCount == count) {
 					metricPasses = true
 				}
 
