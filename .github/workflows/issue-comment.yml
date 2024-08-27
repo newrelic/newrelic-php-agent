@@ -23,6 +23,12 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.token }}
     steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v4
+        with:
+          path: php-agent
+          repository: ${{ inputs.origin }}/newrelic-php-agent
+          ref: ${{ inputs.ref }}
       - name: respond to issue
         run: |
           gh issue comment ${{ inputs.issue-number }} --body "${{ inputs.message }}"
