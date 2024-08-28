@@ -799,6 +799,34 @@ static void nr_php_instrument_datastore_operation_call(
   }
 }
 
+/* 
+ * Like nr_php_instrument_datastore_operation_call() but does not
+ * call the underlying internal function
+ */
+static void nr_php_instrument_datastore_operation(
+    nr_datastore_t datastore,
+    const char* operation,
+    nr_datastore_instance_t* instance,
+    bool instance_only,
+    INTERNAL_FUNCTION_PARAMETERS) {
+  nr_segment_t* segment = NULL;
+  nr_segment_datastore_params_t params = {
+      .datastore = {
+          .type = datastore,
+      },
+      .operation = nr_strdup(operation),
+      .instance  = instance,
+      .instance_only = instance_only,
+      .callbacks = {
+          .backtrace = nr_php_backtrace_callback,
+      },
+  };
+
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  nr_segment_datastore_end(&segment, &params);
+  nr_free(params.operation);
+}
+
 /*
  * Handle
  *   bool mysqli_commit ( object $link [, int $flags=0, string $name] )
@@ -1574,6 +1602,7 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
   zend_ulong num_key = 0;
   nr_php_string_hash_key_t* string_key = NULL;
   nr_datastore_instance_t* instance = NULL;
+  int zcaught = 0;
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1585,12 +1614,19 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
       zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
       if (NULL != host) {
         instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
-        nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                                   NULL, instance, true,
-                                                   INTERNAL_FUNCTION_PARAM_PASSTHRU);
+        nr_php_instrument_datastore_operation(NR_DATASTORE_MEMCACHE,
+                                              NULL, instance, true,
+                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
       }
     }
     ZEND_HASH_FOREACH_END();
+  }
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
   }
 }
 
