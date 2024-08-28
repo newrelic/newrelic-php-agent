@@ -42,7 +42,7 @@ ok - delete
     [{"name":"Datastore/allOther"},                                   [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                              [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/allOther"},                         [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Memcached/__HOST__/11211"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Memcached/memcached/11211"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],

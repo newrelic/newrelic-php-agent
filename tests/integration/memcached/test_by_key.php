@@ -48,7 +48,7 @@ ok - deleteByKey
     [{"name":"Datastore/allOther"},                                   [11, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                              [11, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/allOther"},                         [11, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Memcached/__HOST__/11211"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Memcached/memcached/11211"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/add"},                    [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/add",
       "scope":"OtherTransaction/php__FILE__"},                        [2, "??", "??", "??", "??", "??"]],
