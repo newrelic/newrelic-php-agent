@@ -1176,17 +1176,13 @@ void nr_segment_set_error(nr_segment_t* segment,
   if ((NULL == segment) || (NULL == error_message && NULL == error_class)) {
     return;
   }
-  nr_segment_set_error_with_additional_params(segment, error_message, error_class, NULL, 0,
-                              NULL, 0);
+  nr_segment_set_error_with_additional_params(segment, error_message, error_class, NULL);
 }
 
 void nr_segment_set_error_with_additional_params(nr_segment_t* segment,
                                                  const char* error_message,
                                                  const char* error_class,
-                                                 const char* error_file,
-                                                 int error_line,
-                                                 char* error_context,
-                                                 int error_no) {
+                                                 nr_user_error_t* user_error) {
   if (NULL == segment || NULL == error_class) {
     return;
   }
@@ -1197,21 +1193,13 @@ void nr_segment_set_error_with_additional_params(nr_segment_t* segment,
 
   nr_free(segment->error->error_message);
   nr_free(segment->error->error_class);
-  nr_free(segment->error->error_file);
-  nr_free(segment->error->error_context);
+  nr_free(segment->error->user_error);
 
-  segment->error->error_class = error_class ? nr_strdup(error_class) : NULL;
-  segment->error->error_no = error_no;
-  segment->error->error_line = error_line;
   if (NULL != error_message) {
     segment->error->error_message = error_message ? nr_strdup(error_message) : NULL;
   }
-  if (NULL != error_file) {
-    segment->error->error_file = error_file ? nr_strdup(error_file) : NULL;
-  }
-  if (NULL != error_context) {
-    segment->error->error_context = error_context ? nr_strdup(error_context) : NULL;
-  }
+  segment->error->error_class = error_class ? nr_strdup(error_class) : NULL;
+  segment->error->user_error = user_error;
 }
 
 bool nr_segment_attributes_user_add(nr_segment_t* segment,

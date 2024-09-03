@@ -485,11 +485,8 @@ extern void nr_txn_record_error_with_additional_attributes(nrtxn_t* txn,
                          bool add_to_current_segment,
                          const char* error_message,
                          const char* error_class,
-                         const char* error_file,
-                         int error_line,
-                         char* error_context,
-                         int error_no,
-                         const char* stacktrace_json);
+                         const char* stacktrace_json,
+                         nr_user_error_t* user_error);
 
 /*
  * Purpose : Record the given error in the transaction.

@@ -17,6 +17,14 @@
  */
 typedef struct _nr_error_t nr_error_t;
 
+typedef struct _nr_user_error_t {
+  char* user_error_message; /* User error message */
+  char* user_error_file;    /* User error file */
+  char* user_error_context; /* User error context */
+  int user_error_line;      /* User error line */
+  int user_error_number;    /* User error number */
+} nr_user_error_t;
+
 /*
  * Purpose : Create a new error.
  *
@@ -37,6 +45,14 @@ extern nr_error_t* nr_error_create(int priority,
                                    const char* stacktrace_json,
                                    const char* span_id,
                                    nrtime_t when);
+
+extern void nr_user_error_destroy(nr_user_error_t* user_error_ptr);
+
+extern nr_user_error_t* nr_user_error_create(const char* user_error_message,
+                                             int user_error_number,
+                                             const char* user_error_file,
+                                             int user_error_line,
+                                             const char* user_error_context);
 
 /*
  * Purpose : Create a new error for the use case where additional parameters are
@@ -64,10 +80,7 @@ extern nr_error_t* nr_error_create_additional_params(
     int priority,
     const char* message,
     const char* klass,
-    const char* error_file,
-    int error_line,
-    const char* error_context,
-    int error_no,
+    nr_user_error_t* user_error,
     const char* stacktrace_json,
     const char* span_id,
     nrtime_t when);
@@ -88,34 +101,6 @@ extern const char* nr_error_get_message(const nr_error_t* error);
  * Returns : The klass of the error or NULL if not defined.
  */
 extern const char* nr_error_get_klass(const nr_error_t* error);
-
-/*
- * Purpose : Get the error file of an error.
- *
- * Returns : The error file of the error or NULL if not defined.
- */
-extern const char* nr_error_get_file(const nr_error_t* error);
-
-/*
- * Purpose : Get the error line of an error.
- *
- * Returns : The error line of the error or 0 if not defined.
- */
-extern int nr_error_get_line(const nr_error_t* error);
-
-/*
- * Purpose : Get the error context of an error.
- *
- * Returns : The error context of the error or NULL if not defined.
- */
-extern const char* nr_error_get_context(const nr_error_t* error);
-
-/*
- * Purpose : Get the error number of an error.
- *
- * Returns : The error number of the error or 0 if not defined.
- */
-extern int nr_error_get_no(const nr_error_t* error);
 
 /*
  * Purpose : Get the span_id of an error.

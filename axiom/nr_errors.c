@@ -23,17 +23,13 @@ nr_error_t* nr_error_create(int priority,
   if (NULL == message || NULL == klass || NULL == stacktrace_json) {
     return 0;
   }
-  return nr_error_create_additional_params(priority, message, klass, NULL, 0, NULL, 0,
-                         stacktrace_json, span_id, when);
+  return nr_error_create_additional_params(priority, message, klass, NULL, stacktrace_json, span_id, when);
 }
 
 nr_error_t* nr_error_create_additional_params(int priority,
                                               const char* message,
                                               const char* klass,
-                                              const char* error_file,
-                                              int error_line,
-                                              const char* error_context,
-                                              int error_no,
+                                              nr_user_error_t* user_error,
                                               const char* stacktrace_json,
                                               const char* span_id,
                                               nrtime_t when) {
@@ -47,21 +43,33 @@ nr_error_t* nr_error_create_additional_params(int priority,
   error->when = when;
   error->klass = nr_strdup(klass);
   error->stacktrace_json = nr_strdup(stacktrace_json);
-  error->error_line = error_line;
-  error->error_no = error_no;
+  error->user_error = user_error;
   if (NULL != message) {
     error->message = nr_strdup(message);
-  }
-  if (NULL != error_file) {
-    error->error_file = nr_strdup(error_file);
-  }
-  if (NULL != error_context) {
-    error->error_context = nr_strdup(error_context);
   }
   if (NULL != span_id) {
     error->span_id = nr_strdup(span_id);
   }
   return error;
+}
+
+nr_user_error_t* nr_user_error_create(const char* user_error_message, int user_error_number, const char* user_error_file, int user_error_line, const char* user_error_context) {
+  nr_user_error_t* user_error = (nr_user_error_t*)nr_malloc(sizeof(nr_user_error_t));
+  user_error->user_error_message = nr_strdup(user_error_message);
+  user_error->user_error_number = user_error_number;
+  user_error->user_error_file = nr_strdup(user_error_file);
+  user_error->user_error_line = user_error_line;
+  user_error->user_error_context = nr_strdup(user_error_context);
+  return user_error;
+}
+
+void nr_user_error_destroy(nr_user_error_t* user_error) {
+  if (NULL != user_error) {
+    nr_free(user_error->user_error_message);
+    nr_free(user_error->user_error_file);
+    nr_free(user_error->user_error_context);
+    nr_free(user_error);
+  }
 }
 
 const char* nr_error_get_message(const nr_error_t* error) {
@@ -76,34 +84,6 @@ const char* nr_error_get_klass(const nr_error_t* error) {
     return NULL;
   }
   return error->klass;
-}
-
-const char* nr_error_get_file(const nr_error_t* error) {
-  if (NULL == error) {
-    return NULL;
-  }
-  return error->error_file;
-}
-
-int nr_error_get_line(const nr_error_t* error) {
-  if (NULL == error) {
-    return 0;
-  }
-  return error->error_line;
-}
-
-const char* nr_error_get_context(const nr_error_t* error) {
-  if (NULL == error) {
-    return NULL;
-  }
-  return error->error_context;
-}
-
-int nr_error_get_no(const nr_error_t* error) {
-  if (NULL == error) {
-    return 0;
-  }
-  return error->error_no;
 }
 
 nrtime_t nr_error_get_time(const nr_error_t* error) {
@@ -141,8 +121,7 @@ void nr_error_destroy(nr_error_t** error_ptr) {
   nr_free(error->klass);
   nr_free(error->span_id);
   nr_free(error->stacktrace_json);
-  nr_free(error->error_file);
-  nr_free(error->error_context);
+  nr_user_error_destroy(error->user_error);
   nr_realfree((void**)error_ptr);
 }
 

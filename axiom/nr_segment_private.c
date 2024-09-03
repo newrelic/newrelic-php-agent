@@ -5,6 +5,7 @@
 
 #include "nr_axiom.h"
 
+#include "nr_errors.h"
 #include "nr_segment_private.h"
 #include "nr_segment.h"
 #include "nr_txn.h"
@@ -87,7 +88,6 @@ void nr_segment_error_destroy_fields(nr_segment_error_t* segment_error) {
 
   nr_free(segment_error->error_message);
   nr_free(segment_error->error_class);
-  nr_free(segment_error->error_file);
-  nr_free(segment_error->error_context);
+  nr_user_error_destroy(segment_error->user_error);
   nr_free(segment_error);
 }

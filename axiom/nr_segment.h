@@ -117,10 +117,7 @@ typedef struct _nr_segment_metric_t {
 typedef struct _nr_segment_error_t {
   char* error_message; /* The error message that will appear on a span event. */
   char* error_class;   /* The error class that will appear on a span event. */
-  char* error_file;    /* The error file that will appear on a span event. */
-  int error_line;      /* The error line that will appear on a span event. */
-  char* error_context; /* The error context that will appear on a span event. */
-  int error_no;        /* The error number that will appear on a span event. */
+  nr_user_error_t* user_error; /* The user error that will appear on a span event.*/
 } nr_segment_error_t;
 
 /*
@@ -668,10 +665,7 @@ extern void nr_segment_set_error_with_additional_params(
     nr_segment_t* segment,
     const char* error_message,
     const char* error_class,
-    const char* errfile,
-    int errline,
-    char* errcontext,
-    int error_no);
+    nr_user_error_t* user_error);
 
 /*
  * Purpose : Gets the child_ix of a segment.

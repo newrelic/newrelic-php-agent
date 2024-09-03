@@ -31,9 +31,7 @@ Test the use case where two parameters are passed into newrelic_notice_error.
                 "traceId": "??",
                 "spanId": "??"
             },
-            {   
-                "user.error.message": "Noticed exception 'Exception' with message 'Sample Exception' in __FILE__:??"
-            },
+            {},
             {}
         ]
     ]

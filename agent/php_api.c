@@ -11,6 +11,7 @@
 #include "php_hash.h"
 #include "php_user_instrument.h"
 #include "fw_drupal_common.h"
+#include "nr_errors.h"
 #include "nr_rum.h"
 #include "util_logging.h"
 #include "util_memory.h"
@@ -71,16 +72,17 @@ PHP_FUNCTION(newrelic_notice_error) {
   const char* errclass = "NoticedError";
   char* errormsgstr = NULL;
   nr_string_len_t errormsglen = 0;
-  zend_long error_number = 0;
-  char* error_file = NULL;
-  nr_string_len_t error_file_len = 0;
-  zend_long error_line = 0;
+  char* user_error_message = NULL;
+  nr_string_len_t user_error_message_len = 0;
+  zend_long user_error_number = 0;
+  char* user_error_file = NULL;
+  nr_string_len_t user_error_file_len = 0;
+  zend_long user_error_line = 0;
   zval* exc = NULL;
-  nr_string_len_t error_context_len = 0;
-  char* error_context = NULL;
+  nr_string_len_t user_error_context_len = 0;
+  char* user_error_context = NULL;
   int priority = 0;
-  zval* ignore = NULL;
-  bool determine = false;
+  bool five_params = false;
 
   NR_UNUSED_RETURN_VALUE;
   NR_UNUSED_RETURN_VALUE_PTR;
@@ -134,11 +136,11 @@ PHP_FUNCTION(newrelic_notice_error) {
     case 2:
       if (FAILURE
           == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                      ZEND_NUM_ARGS() TSRMLS_CC, "zo!", &ignore,
+                                      ZEND_NUM_ARGS() TSRMLS_CC, "s!o!", &user_error_message, &user_error_message_len,
                                       &exc)) {
         nrl_debug(NRL_API,
                   "newrelic_notice_error: invalid two arguments: expected "
-                  "exception as second argument");
+                  "string as first argument and exception as second argument");
         RETURN_NULL();
       }
       break;
@@ -147,13 +149,13 @@ PHP_FUNCTION(newrelic_notice_error) {
       if (FAILURE
           == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                       ZEND_NUM_ARGS() TSRMLS_CC, "ls!s!ls!",
-                                      &error_number, &errormsgstr, &errormsglen,
-                                      &error_file, &error_file_len, &error_line,
-                                      &error_context, &error_context_len)) {
+                                      &user_error_number, &user_error_message, &user_error_message_len,
+                                      &user_error_file, &user_error_file_len, &user_error_line,
+                                      &user_error_context, &user_error_context_len)) {
         nrl_debug(NRL_API, "newrelic_notice_error: invalid five arguments");
         RETURN_NULL();
       }
-      determine = true;
+      five_params = true;
       break;
 
     default:
@@ -172,11 +174,14 @@ PHP_FUNCTION(newrelic_notice_error) {
     }
   }
 
-  if (determine) {
+  if (five_params) {
+    nr_user_error_t* user_error = nr_user_error_create(
+        user_error_message, user_error_number, user_error_file, user_error_line,
+        user_error_context);
     char* stack_json = nr_php_backtrace_to_json(NULL TSRMLS_CC);
-    nr_txn_record_error_with_additional_attributes(
-        NRPRG(txn), priority, true, errormsgstr, errclass, error_file,
-        error_line, error_context, error_number, stack_json);
+    nr_txn_record_error_with_additional_attributes(NRPRG(txn), priority, true,
+                                                   user_error_message, errclass,
+                                                   stack_json, user_error);
     nr_free(stack_json);
     RETURN_TRUE;
   }

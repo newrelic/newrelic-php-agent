@@ -14,6 +14,8 @@
 #include "nr_agent.h"
 #include "nr_commands.h"
 #include "nr_custom_events.h"
+#include "nr_errors.h"
+#include "nr_errors_private.h"
 #include "nr_guid.h"
 #include "nr_header.h"
 #include "nr_limits.h"
@@ -1559,11 +1561,8 @@ void nr_txn_record_error_with_additional_attributes(
     bool add_to_current_segment,
     const char* error_message,
     const char* error_class,
-    const char* error_file,
-    int error_line,
-    char* error_context,
-    int error_no,
-    const char* stacktrace_json) {
+    const char* stacktrace_json,
+    nr_user_error_t* user_error) {
   nr_segment_t* current_segment = NULL;
   char* span_id = NULL;
   nr_error_t* error = NULL;
@@ -1607,23 +1606,27 @@ void nr_txn_record_error_with_additional_attributes(
       current_segment = nr_txn_get_current_segment(txn, NULL);
 
       if (current_segment) {
-        nr_segment_set_error_with_additional_params(
-              current_segment, error_message, error_class, error_file,
-              error_line, error_context, error_no);
+        if (NULL == user_error) {
+          nr_segment_set_error(current_segment, error_message, error_class);
           nrl_verbosedebug(NRL_TXN,
                            "recording segment error: msg='%.48s' cls='%.48s' "
-                           "file='%.48s' line='%d' context='%.48s' num='%d'"
                            "span_id='%.48s'",
                            NRSAFESTR(error_message), NRSAFESTR(error_class),
-                           NRSAFESTR(error_file), error_line,
-                           NRSAFESTR(error_context), error_no,
                            NRSAFESTR(span_id));
+        } else {
+          nr_segment_set_error_with_additional_params(
+                current_segment, error_message, error_class, user_error);
+        }
       }
     }
   }
-  error = nr_error_create_additional_params(
-        priority, error_message, error_class, error_file, error_line,
-        error_context, error_no, stacktrace_json, span_id, nr_get_time());
+  if (NULL == user_error) {
+    error = nr_error_create(priority, error_message, error_class, stacktrace_json,
+                            span_id, nr_get_time());
+  } else {
+    error = nr_error_create_additional_params(
+        priority, error_message, error_class, user_error, stacktrace_json, span_id, nr_get_time());
+  }
 
   /*
    * Ensure previous error is destroyed only we have a valid one to replace it
@@ -1663,8 +1666,7 @@ void nr_txn_record_error(nrtxn_t* txn,
     return;
   }
   nr_txn_record_error_with_additional_attributes(
-      txn, priority, add_to_current_segment, errmsg, errclass, NULL, 0, NULL, 0,
-      stacktrace_json);
+      txn, priority, add_to_current_segment, errmsg, errclass, stacktrace_json, NULL);
 }
 
 char* nr_txn_create_fn_supportability_metric(const char* function_name,
@@ -2476,6 +2478,34 @@ static void nr_txn_add_metric_count_as_attribute(nrobj_t* attributes,
   }
 }
 
+static nrobj_t* nr_error_user_attributes_to_nro(nr_user_error_t* user_error, nrobj_t* user_attributes) {
+  if (NULL == user_error) {
+    return user_attributes;
+  }
+
+  if (user_error->user_error_message) {
+    nro_set_hash_string(user_attributes, "user.error.message",
+                        user_error->user_error_message);
+  }
+  if (user_error->user_error_file) {
+    nro_set_hash_string(user_attributes, "user.error.file",
+                        user_error->user_error_file);
+  }
+  if (user_error->user_error_context) {
+    nro_set_hash_string(user_attributes, "user.error.context",
+                        user_error->user_error_context);
+  }
+  if (user_error->user_error_number) {
+    nro_set_hash_int(user_attributes, "user.error.number",
+                     user_error->user_error_number);
+  }
+  if (user_error->user_error_line) {
+    nro_set_hash_int(user_attributes, "user.error.line",
+                     user_error->user_error_line);
+  }
+  return user_attributes;
+}
+
 /*
  * This implements the agent Error Events spec:
  * We only omit 'gcCumulative' which doesn't apply and 'port' which is too
@@ -2557,41 +2587,12 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
                                                 NR_ATTRIBUTE_DESTINATION_ERROR);
   user_attributes = nr_attributes_user_to_obj(txn->attributes,
                                               NR_ATTRIBUTE_DESTINATION_ERROR);
-  if (nr_error_get_message(txn->error)) {
-    if (NULL == user_attributes) {
-      user_attributes = nro_new_hash();
-    }
-    nro_set_hash_string(user_attributes, "user.error.message",
-                        nr_error_get_message(txn->error));
+  
+  if (NULL == user_attributes) {
+    user_attributes = nro_new_hash();
   }
-  if (nr_error_get_file(txn->error)) {
-    if (NULL == user_attributes) {
-      user_attributes = nro_new_hash();
-    }
-    nro_set_hash_string(user_attributes, "user.error.file",
-                        nr_error_get_file(txn->error));
-  }
-  if (nr_error_get_context(txn->error)) {
-    if (NULL == user_attributes) {
-      user_attributes = nro_new_hash();
-    }
-    nro_set_hash_string(user_attributes, "user.error.context",
-                        nr_error_get_context(txn->error));
-  }
-  if (nr_error_get_no(txn->error)) {
-    if (NULL == user_attributes) {
-      user_attributes = nro_new_hash();
-    }
-    nro_set_hash_int(user_attributes, "user.error.number",
-                     nr_error_get_no(txn->error));
-  }
-  if (nr_error_get_line(txn->error)) {
-    if (NULL == user_attributes) {
-      user_attributes = nro_new_hash();
-    }
-    nro_set_hash_int(user_attributes, "user.error.line",
-                     nr_error_get_line(txn->error));
-  }
+  
+  user_attributes = nr_error_user_attributes_to_nro(txn->error->user_error, user_attributes);
   event = nr_analytics_event_create(params, agent_attributes, user_attributes);
 
   nro_delete(params);
