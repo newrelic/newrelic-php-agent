@@ -16,6 +16,7 @@
 #include "php_hash.h"
 #include "php_httprequest_send.h"
 #include "php_internal_instrument.h"
+#include "php_memcached.h"
 #include "php_mysql.h"
 #include "php_mysqli.h"
 #include "php_pdo.h"
@@ -1560,20 +1561,6 @@ NR_INNER_WRAPPER(memcache_function) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
                                              nr_wrapper->extra, NULL, false,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-
-static nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
-    const char* host,
-    zend_long port) {
-  nr_datastore_instance_t* instance = NULL;
-  if (port == 0) { // local socket
-    instance = nr_datastore_instance_create("localhost", host, NULL);
-  } else {
-    char* port_str = nr_formatf("%ld", (long)port);
-    instance  = nr_datastore_instance_create(host, port_str, NULL);
-    nr_free(port_str);
-  }
-  return instance;
 }
 
 NR_INNER_WRAPPER(memcached_connect_function) {
