@@ -508,7 +508,6 @@ static nr_library_table_t libraries[] = {
 
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
-    {"PHP_Package", NR_PSTR("vendor/autoload.php"), nr_composer_detected},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -933,28 +932,11 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
-void nr_composer_detected() {
-  if (NULL != NRPRG(txn) && !NRPRG(txn)->detection_status.composer_detected) {
-    const char* magic_file_1
-        = "vendor/composer/autoload_real.php";
-    const char* composer_file = "vendor/composer/installed.php";
-    // the below should be using the absolute path
-    if (0 == nr_access(magic_file_1, F_OK | R_OK)) {
-      if (0 == nr_access(composer_file, F_OK | R_OK)) {
-        NRPRG(txn)->detection_status.composer_detected = 1;
-        NRPRG(txn)->detection_status.file_exists = 1;
-        NRPRG(txn)->detection_status.api_called = 0;
-        NRPRG(txn)->detection_status.inside_eval_string = 0;
-      }
-    }
-  }
-}
-
 static void nr_get_composer_package_information() {
   zval retval;
   int result = -1;
 
-  if (NRPRG(txn)->detection_status.inside_eval_string) {
+  if (NRPRG(txn)->composer_info.inside_eval_string) {
     return;
   }
 
@@ -998,14 +980,14 @@ static void nr_get_composer_package_information() {
         "  }"
         "})();";  
 
-  NRPRG(txn)->detection_status.inside_eval_string = 1;
+  NRPRG(txn)->composer_info.inside_eval_string = 1;
   result = zend_eval_string(check, &retval, "check if class and methods exist" TSRMLS_CC);
-  NRPRG(txn)->detection_status.inside_eval_string = 0;
+  NRPRG(txn)->composer_info.inside_eval_string = 0;
   
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_NULL) {
       if (NULL != NRPRG(txn)) {
-        NRPRG(txn)->detection_status.api_called = 1;
+        NRPRG(txn)->composer_info.api_called = 1;
       }
       nrl_verbosedebug(NRL_TXN, "IS_NULL");
       return;
@@ -1018,10 +1000,10 @@ static void nr_get_composer_package_information() {
     }
   }
   zval_dtor(&retval);
-  NRPRG(txn)->detection_status.inside_eval_string = 1;
+  NRPRG(txn)->composer_info.inside_eval_string = 1;
   result = zend_eval_string(getpackagename, &retval,
                               "get installed packages by name" TSRMLS_CC);
-  NRPRG(txn)->detection_status.inside_eval_string = 0;
+  NRPRG(txn)->composer_info.inside_eval_string = 0;
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_ARRAY) {
       zval* value;
@@ -1033,9 +1015,9 @@ static void nr_get_composer_package_information() {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), value) {
         if (Z_TYPE_P(value) == IS_STRING) {
           buf = nr_formatf(getversion, Z_STRVAL_P(value));
-          NRPRG(txn)->detection_status.inside_eval_string = 1;
+          NRPRG(txn)->composer_info.inside_eval_string = 1;
           result2 = zend_eval_string(buf, &retval2, "retrieve version for packages");
-          NRPRG(txn)->detection_status.inside_eval_string = 0;
+          NRPRG(txn)->composer_info.inside_eval_string = 0;
           nr_free(buf);
           if (SUCCESS == result2) {
             if (nr_php_is_zval_valid_string(&retval2)) {
@@ -1050,21 +1032,60 @@ static void nr_get_composer_package_information() {
       ZEND_HASH_FOREACH_END();
     } else {
       if (NULL != NRPRG(txn)) {
-        NRPRG(txn)->detection_status.api_called = 1;
+        NRPRG(txn)->composer_info.api_called = 1;
       }
       zval_dtor(&retval);
       return;
     }
     zval_dtor(&retval);
-    NRPRG(txn)->detection_status.api_called = 1;
+    NRPRG(txn)->composer_info.api_called = 1;
   }
 }
 
-static void nr_execute_handle_composer() {
-  if (NRPRG(txn)->detection_status.file_exists) {
-    if (!NRPRG(txn)->detection_status.api_called) {
-      nr_get_composer_package_information();
-    }
+static bool nr_execute_autoload_is_composer(const char* filename, const size_t filename_len) {
+#define COMPOSER_MAGIC_FILE "composer/autoload_real.php"
+  char* vendor_path = NULL; // result of dirname(filename)
+  char* composer_magic_file = NULL; // vendor_path + COMPOSER_MAGIC_FILE
+  char* cp = NULL;
+  bool composer_detected = false;
+
+  // vendor_path = dirname(filename):
+  // 1. allocate space on stack
+  vendor_path = nr_alloca(filename_len+1);
+  // 2. copy filename to vendor_path
+  nr_strcpy(vendor_path, filename);
+  // 3. // find last occurence of '/' in vendor_path
+  cp = nr_strrchr(vendor_path, '/');
+  // 4. replace '/' with '\0' to get the directory path
+  *cp = '\0';
+
+  // composer_magic_file = vendor_path + "/composer/autoload_real.php"
+  composer_magic_file = nr_str_append(vendor_path, COMPOSER_MAGIC_FILE, "/");
+
+  if (0 == nr_access(composer_magic_file, F_OK | R_OK)) {
+    nrl_debug(NRL_INSTRUMENT, "detected composer with %s", composer_magic_file);
+    composer_detected = true;
+    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
+  }
+
+  nr_free(composer_magic_file);
+  return composer_detected;
+}
+
+static void nr_execute_handle_autoload(const char* filename, const size_t filename_len) {
+#define AUTOLOAD_MAGIC_FILE "vendor/autoload.php"
+#define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
+
+  if (NRPRG(txn)->composer_info.autoload_detected) {
+    return;
+  }
+
+  if (nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE, AUTOLOAD_MAGIC_FILE_LEN)) {
+    nrl_debug(NRL_INSTRUMENT, "detected autoload with %s, which ends with %s", filename, AUTOLOAD_MAGIC_FILE);
+    NRPRG(txn)->composer_info.autoload_detected = true;
+    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
+
+    NRPRG(txn)->composer_info.composer_detected = nr_execute_autoload_is_composer(filename, filename_len);
   }
 }
 
@@ -1136,7 +1157,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
-  nr_execute_handle_composer(filename, filename_len);
+  nr_execute_handle_autoload(filename, filename_len);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_execute_handle_package(filename);
@@ -1175,8 +1196,8 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_php_add_user_instrumentation(TSRMLS_C);
 
-  if (NRPRG(txn)->detection_status.composer_detected && !NRPRG(txn)->detection_status.api_called) {
-    nr_execute_handle_composer(filename, filename_len);
+  if (NRPRG(txn)->composer_info.composer_detected && !NRPRG(txn)->composer_info.api_called) {
+    nr_get_composer_package_information();
   }
 }
 
