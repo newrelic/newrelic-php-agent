@@ -58,10 +58,30 @@ void nr_php_api_add_supportability_metric(const char* name TSRMLS_DC) {
 
 /*
  * Purpose : (New Relic API) Pretend that there is an error at this exact spot.
- *           Useful for business logic errors. newrelic_notice_error($errstr)
+ *           Useful for business logic errors. 
+ *              - newrelic_notice_error($errstr)
+ *                   - $errstr : string : The error message to record
  *              - newrelic_notice_error($exception)
+ *                   - $exception : object : The exception to use to record the exception
+ *                  NOTE: This version is compatible with being a callback for set_exception_handler()
  *              - newrelic_notice_error($errstr,$exception)
+ *                   - $errstr : string : The error message to record
+ *                   - $exception : object : The exception to use to record the exception 
+ *                  NOTE: The $errstr value is ignored!  Started with agent version 4.23
+ *              - newrelic_notice_error($errno,$errstr,$fname,$line_nr)
+ *                   - $errno : int : The error number
+ *                   - $errstr : string : The error message
+ *                   - $fname : string : The filename where the error occurred
+ *                   - $line_nr : int : The line number where the error occurred
+ *                  NOTE: This version is compatible with being a callback for set_error_handler() for PHP 8+
  *              - newrelic_notice_error($errno,$errstr,$fname,$line_nr,$ctx)
+ *                   - $errno : int : The error number
+ *                   - $errstr : string : The error message
+ *                   - $fname : string : The filename where the error occurred
+ *                   - $line_nr : int : The line number where the error occurred
+ *                   - $ctx : array : The context of the error  
+ *                  NOTE: This version is compatible with being a callback for set_error_handler() for PHP < 8
+ *                        The $ctx is ignored!
  */
 #ifdef TAGS
 void zif_newrelic_notice_error(void); /* ctags landing pad only */
@@ -141,10 +161,15 @@ PHP_FUNCTION(newrelic_notice_error) {
       }
       break;
 
+    case 4:
     case 5:
+      /* PHP 8+ will only pass the first 4 parameters so the 5th parameter is 
+       * declared to be optional.  Also this parameter is completely ignored
+       * so it doesn't matter if it is passed or not.
+       */
       if (FAILURE
           == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                      ZEND_NUM_ARGS() TSRMLS_CC, "lsslz!",
+                                      ZEND_NUM_ARGS() TSRMLS_CC, "lssl|z!",
                                       &ignore1, &errormsgstr, &errormsglen,
                                       &ignore2, &ignore3, &ignore4, &ignore5)) {
         nrl_debug(NRL_API, "newrelic_notice_error: invalid five arguments");
@@ -153,7 +178,7 @@ PHP_FUNCTION(newrelic_notice_error) {
       break;
 
     default:
-      nrl_debug(NRL_API, "newrelic_notice_error: invalid number of arguments");
+      nrl_debug(NRL_API, "newrelic_notice_error: invalid number of arguments: %d", ZEND_NUM_ARGS());
       RETURN_NULL();
   }
 
