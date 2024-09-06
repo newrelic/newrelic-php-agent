@@ -1042,25 +1042,27 @@ static void nr_get_composer_package_information() {
   }
 }
 
-static bool nr_execute_autoload_is_composer(const char* filename, const size_t filename_len) {
+static bool nr_execute_autoload_is_composer(const char* filename) {
 #define COMPOSER_MAGIC_FILE "composer/autoload_real.php"
+#define COMPOSER_MAGIC_FILE_LEN (sizeof(COMPOSER_MAGIC_FILE) - 1)
   char* vendor_path = NULL; // result of dirname(filename)
   char* composer_magic_file = NULL; // vendor_path + COMPOSER_MAGIC_FILE
   char* cp = NULL;
   bool composer_detected = false;
 
   // vendor_path = dirname(filename):
-  // 1. allocate space on stack
-  vendor_path = nr_alloca(filename_len+1);
-  // 2. copy filename to vendor_path
-  nr_strcpy(vendor_path, filename);
-  // 3. // find last occurence of '/' in vendor_path
+  // 1. copy filename to vendor_path
+  vendor_path = nr_strdup(filename);
+  // 2. // find last occurence of '/' in vendor_path
   cp = nr_strrchr(vendor_path, '/');
-  // 4. replace '/' with '\0' to get the directory path
+  // 3. replace '/' with '\0' to get the directory path
   *cp = '\0';
 
   // composer_magic_file = vendor_path + "/composer/autoload_real.php"
-  composer_magic_file = nr_str_append(vendor_path, COMPOSER_MAGIC_FILE, "/");
+  cp = composer_magic_file = nr_malloc(nr_strlen(vendor_path) + COMPOSER_MAGIC_FILE_LEN + 2);
+  cp = nr_strcpy(cp, vendor_path);
+  *cp++ = '/';
+  cp = nr_strcpy(cp, COMPOSER_MAGIC_FILE);
 
   if (0 == nr_access(composer_magic_file, F_OK | R_OK)) {
     nrl_debug(NRL_INSTRUMENT, "detected composer with %s", composer_magic_file);
@@ -1068,6 +1070,7 @@ static bool nr_execute_autoload_is_composer(const char* filename, const size_t f
     nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
   }
 
+  nr_free(vendor_path);
   nr_free(composer_magic_file);
   return composer_detected;
 }
@@ -1085,7 +1088,7 @@ static void nr_execute_handle_autoload(const char* filename, const size_t filena
     NRPRG(txn)->composer_info.autoload_detected = true;
     nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
 
-    NRPRG(txn)->composer_info.composer_detected = nr_execute_autoload_is_composer(filename, filename_len);
+    NRPRG(txn)->composer_info.composer_detected = nr_execute_autoload_is_composer(filename);
   }
 }
 
