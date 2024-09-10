@@ -193,6 +193,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
+          include-hidden-files: true
           path: php-agent/agent/.libs/*.gc*
   integration-tests:
     needs: [daemon-unit-tests, agent-unit-test]
