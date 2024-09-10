@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 The agent should record a traced error when newrelic_notice_error is
-called with 4 parameters.
+used as a callback handler for set_error_handler().
 */
 
 /*EXPECT_TRACED_ERRORS
