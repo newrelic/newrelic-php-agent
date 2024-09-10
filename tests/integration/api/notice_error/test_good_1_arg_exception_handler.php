@@ -110,8 +110,6 @@ used as a callback handler for set_exception_handler().
 ]
 */
 
-require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
-
 function a()
 {
   throw new Exception("1 arg exception");

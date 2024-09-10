@@ -90,8 +90,6 @@ called with 4 parameters.
 ]
 */
 
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/tap.php');
-
 function a() {
     // Four argument form requires integer, string, string, integer
     // This is like the five argument form but for PHP 8+ where the context is not supplied

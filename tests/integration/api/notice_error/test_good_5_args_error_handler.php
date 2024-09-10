@@ -110,8 +110,6 @@ used as a callback handler for set_error_handler().
 ]
 */
 
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/tap.php');
-
 function a() {
     trigger_error("5 arg error", E_USER_ERROR);
 }

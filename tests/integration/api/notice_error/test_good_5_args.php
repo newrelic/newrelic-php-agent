@@ -90,8 +90,6 @@ called with 5 parameters.
 ]
 */
 
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/tap.php');
-
 function a() {
   // Five argument form requires second arg to be convertible to a string.
   newrelic_notice_error(42, "5 arg error", "file", __LINE__, "string");

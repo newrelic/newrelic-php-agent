@@ -90,8 +90,6 @@ called with 1 argument which is an string.
 ]
 */
 
-require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
-
 function a()
 {
   // First arg must be a string or an exception. 
