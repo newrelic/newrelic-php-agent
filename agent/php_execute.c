@@ -932,16 +932,36 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
-static void nr_get_composer_package_information() {
+static bool nr_execute_handle_autoload_composer_is_initialized() {
+  zend_class_entry* zce = NULL;
+
+  if (NULL == (zce = nr_php_find_class("composer\\installedversions"))) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "Composer\\InstalledVersions class not found");
+    return false;
+  };
+
+  // the class is found - there's hope!
+  if (NULL == nr_php_find_class_method(zce, "getinstalledpackages") || NULL == nr_php_find_class_method(zce, "getversion")) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "Composer\\InstalledVersions class found, but methods not found");
+    return false;
+  }
+
+  return true;
+}
+
+static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
+  char* code = NULL;
   zval retval;
   int result = -1;
 
-  if (NRPRG(txn)->composer_info.inside_eval_string) {
-    return;
+  if (nr_execute_handle_autoload_composer_is_initialized()) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: already initialized", __func__);
+    return NR_SUCCESS;
   }
 
-  char* check
-      = ""
+#if 0
+  code
+      = nr_formatf(""
         "(function() {"
         "  try {"
         "      if (class_exists('Composer\\InstalledVersions')) {"
@@ -958,13 +978,38 @@ static void nr_get_composer_package_information() {
         "  } catch (Exception $e) {"
         "      return NULL;"
         "  }"
-        "})();";
+        "})();");
+#else
+  code = nr_formatf("include_once '%s/composer/InstalledVersions.php';", vendor_path);
+#endif
+
+  result = zend_eval_string(code, &retval, "newrelic\\init_composer_api");
+  if (result != SUCCESS) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: zend_eval_string(%s) failed, result=%d", __func__, code, result);
+    return NR_FAILURE;
+  }
+
+  zval_dtor(&retval);
+  nr_free(code);
+
+  // Make sure runtime API is available after loading Composer\\InstalledVersions class:
+  if (!nr_execute_handle_autoload_composer_is_initialized()) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: unable to initialize Composer runtime API", __func__);
+    return NR_FAILURE;
+  }
+
+  return NR_SUCCESS;
+}
+
+static void nr_execute_handle_autoload_composer_get_packages_information(const char* vendor_path) {
+  zval retval;
+  int result = -1;
 
   char* getpackagename = 
         ""
         "(function() {"
         "  try {"
-        "      return Composer\\InstalledVersions::getInstalledPackages();"
+        "      return \\Composer\\InstalledVersions::getInstalledPackages();"
         "  } catch (Exception $e) {"
         "      return NULL;"
         "  }"
@@ -974,36 +1019,22 @@ static void nr_get_composer_package_information() {
         ""
         "(function() {"
         "  try {"
-        "      return Composer\\InstalledVersions::getVersion(\"%s\");"
+        "      return \\Composer\\InstalledVersions::getVersion(\"%s\");"
         "  } catch (Exception $e) {"
         "      return NULL;"
         "  }"
         "})();";  
 
-  NRPRG(txn)->composer_info.inside_eval_string = 1;
-  result = zend_eval_string(check, &retval, "check if class and methods exist" TSRMLS_CC);
-  NRPRG(txn)->composer_info.inside_eval_string = 0;
-  
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_NULL) {
-      if (NULL != NRPRG(txn)) {
-        NRPRG(txn)->composer_info.api_called = 1;
-      }
-      nrl_verbosedebug(NRL_TXN, "IS_NULL");
-      return;
-    } else if (Z_TYPE(retval) == IS_FALSE) {
-      nrl_verbosedebug(NRL_TXN, "IS_FALSE");
-      return;
-    } else if (Z_TYPE(retval) != IS_TRUE) {
-      nrl_verbosedebug(NRL_TXN, "NOT_TRUE");
-      return;
-    }
+  if (NR_SUCCESS != nr_execute_handle_autoload_composer_init(vendor_path)) {
+    nrl_debug(NRL_INSTRUMENT, "%s - unable to initialize Composer runtime API - package info unavailable", __func__);
+    return;
   }
-  zval_dtor(&retval);
-  NRPRG(txn)->composer_info.inside_eval_string = 1;
+
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available", __func__);
+
+#if 1
   result = zend_eval_string(getpackagename, &retval,
                               "get installed packages by name" TSRMLS_CC);
-  NRPRG(txn)->composer_info.inside_eval_string = 0;
   if (result == SUCCESS) {
     if (Z_TYPE(retval) == IS_ARRAY) {
       zval* value;
@@ -1015,9 +1046,7 @@ static void nr_get_composer_package_information() {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), value) {
         if (Z_TYPE_P(value) == IS_STRING) {
           buf = nr_formatf(getversion, Z_STRVAL_P(value));
-          NRPRG(txn)->composer_info.inside_eval_string = 1;
           result2 = zend_eval_string(buf, &retval2, "retrieve version for packages");
-          NRPRG(txn)->composer_info.inside_eval_string = 0;
           nr_free(buf);
           if (SUCCESS == result2) {
             if (nr_php_is_zval_valid_string(&retval2)) {
@@ -1031,24 +1060,27 @@ static void nr_get_composer_package_information() {
       }
       ZEND_HASH_FOREACH_END();
     } else {
-      if (NULL != NRPRG(txn)) {
-        NRPRG(txn)->composer_info.api_called = 1;
-      }
       zval_dtor(&retval);
       return;
     }
     zval_dtor(&retval);
-    NRPRG(txn)->composer_info.api_called = 1;
   }
+#else
+  zv = nr_php_call(NULL, "Composer\\InstalledVersions::getInstalledPackages", NULL);
+  if (NULL != zv) {
+    char strbuf[NR_EXECUTE_DEBUG_STRBUFSZ];
+    nr_format_zval_for_debug(zv, strbuf, 0, NR_EXECUTE_DEBUG_STRBUFSZ - 1,
+                            0);
+    nrl_always("Composer\\InstalledVersions::getInstalledPackages()=%s",
+                    strbuf);
+    nr_php_zval_free(&zv);
+  }
+#endif
 }
 
-static bool nr_execute_autoload_is_composer(const char* filename) {
-#define COMPOSER_MAGIC_FILE "composer/autoload_real.php"
-#define COMPOSER_MAGIC_FILE_LEN (sizeof(COMPOSER_MAGIC_FILE) - 1)
+static char* nr_execute_handle_autoload_composer_get_vendor_path(const char* filename) {
   char* vendor_path = NULL; // result of dirname(filename)
-  char* composer_magic_file = NULL; // vendor_path + COMPOSER_MAGIC_FILE
   char* cp = NULL;
-  bool composer_detected = false;
 
   // vendor_path = dirname(filename):
   // 1. copy filename to vendor_path
@@ -1058,21 +1090,52 @@ static bool nr_execute_autoload_is_composer(const char* filename) {
   // 3. replace '/' with '\0' to get the directory path
   *cp = '\0';
 
-  // composer_magic_file = vendor_path + "/composer/autoload_real.php"
-  cp = composer_magic_file = nr_malloc(nr_strlen(vendor_path) + COMPOSER_MAGIC_FILE_LEN + 2);
-  cp = nr_strcpy(cp, vendor_path);
-  *cp++ = '/';
-  cp = nr_strcpy(cp, COMPOSER_MAGIC_FILE);
+  return vendor_path;
+}
 
+static bool nr_execute_handle_autoload_composer_file_exists(const char* vendor_path, const char* filename) {
+  char* composer_magic_file = NULL; // vendor_path + filename
+  bool file_exists = false;
+
+  composer_magic_file = nr_formatf("%s/%s", vendor_path, filename);
   if (0 == nr_access(composer_magic_file, F_OK | R_OK)) {
-    nrl_debug(NRL_INSTRUMENT, "detected composer with %s", composer_magic_file);
-    composer_detected = true;
-    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
+    file_exists = true;
+  }
+  nr_free(composer_magic_file);
+  return file_exists;
+}
+
+static void nr_execute_handle_autoload_composer(const char* filename) {
+// Composer signature file"
+#define COMPOSER_MAGIC_FILE_1 "composer/autoload_real.php"
+#define COMPOSER_MAGIC_FILE_1_LEN (sizeof(COMPOSER_MAGIC_FILE_1) - 1)
+// Composer runtime API file:
+#define COMPOSER_MAGIC_FILE_2 "composer/InstalledVersions.php"
+#define COMPOSER_MAGIC_FILE_2_LEN (sizeof(COMPOSER_MAGIC_FILE_2) - 1)
+  char* vendor_path = NULL; // result of dirname(filename)
+
+  vendor_path = nr_execute_handle_autoload_composer_get_vendor_path(filename);
+  if (NULL == vendor_path) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "unable to get vendor path from '%s'", filename);
+    return;
   }
 
+  if (!nr_execute_handle_autoload_composer_file_exists(vendor_path, COMPOSER_MAGIC_FILE_1)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'", COMPOSER_MAGIC_FILE_1, vendor_path);
+    return;
+  }
+
+  if (!nr_execute_handle_autoload_composer_file_exists(vendor_path, COMPOSER_MAGIC_FILE_2)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'", COMPOSER_MAGIC_FILE_2, vendor_path);
+    return;
+  }
+
+  nrl_verbosedebug(NRL_FRAMEWORK, "detected composer");
+  NRPRG(txn)->composer_info.composer_detected = true;
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
+
+  nr_execute_handle_autoload_composer_get_packages_information(vendor_path);
   nr_free(vendor_path);
-  nr_free(composer_magic_file);
-  return composer_detected;
 }
 
 static void nr_execute_handle_autoload(const char* filename, const size_t filename_len) {
@@ -1080,16 +1143,20 @@ static void nr_execute_handle_autoload(const char* filename, const size_t filena
 #define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
 
   if (NRPRG(txn)->composer_info.autoload_detected) {
+    // autoload already handled
     return;
   }
 
-  if (nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE, AUTOLOAD_MAGIC_FILE_LEN)) {
-    nrl_debug(NRL_INSTRUMENT, "detected autoload with %s, which ends with %s", filename, AUTOLOAD_MAGIC_FILE);
-    NRPRG(txn)->composer_info.autoload_detected = true;
-    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
-
-    NRPRG(txn)->composer_info.composer_detected = nr_execute_autoload_is_composer(filename);
+  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE, AUTOLOAD_MAGIC_FILE_LEN)) {
+    // not an autoload file
+    return;
   }
+
+  nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s", filename, AUTOLOAD_MAGIC_FILE);
+  NRPRG(txn)->composer_info.autoload_detected = true;
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
+
+  nr_execute_handle_autoload_composer(filename);
 }
 
 static void nr_execute_handle_logging_framework(const char* filename,
@@ -1199,9 +1266,6 @@ static void nr_php_execute_file(const zend_op_array* op_array,
 
   nr_php_add_user_instrumentation(TSRMLS_C);
 
-  if (NRPRG(txn)->composer_info.composer_detected && !NRPRG(txn)->composer_info.api_called) {
-    nr_get_composer_package_information();
-  }
 }
 
 /*
