@@ -206,8 +206,6 @@ typedef enum _nr_cpu_usage_t {
 typedef struct _nr_composer_info_t {
   bool autoload_detected;
   bool composer_detected;
-  int api_called;
-  int inside_eval_string;
 } nr_composer_info_t;
 
 /*
