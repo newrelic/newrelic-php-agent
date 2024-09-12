@@ -1,4 +1,13 @@
 <?php
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+This file is the core of real Composer's runtime API, and agent verifies its presence to determine if Composer is used.
+It contains \Composer\InstalledVersions class with methods used by the agent to get the installed packages and their versions.
+*/
 
 namespace Composer;
 class InstalledVersions
