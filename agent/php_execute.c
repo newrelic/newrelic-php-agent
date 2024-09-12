@@ -1109,9 +1109,11 @@ static void nr_execute_handle_autoload_composer(const char* filename) {
 // Composer signature file"
 #define COMPOSER_MAGIC_FILE_1 "composer/autoload_real.php"
 #define COMPOSER_MAGIC_FILE_1_LEN (sizeof(COMPOSER_MAGIC_FILE_1) - 1)
-// Composer runtime API file:
+// Composer runtime API files:
 #define COMPOSER_MAGIC_FILE_2 "composer/InstalledVersions.php"
 #define COMPOSER_MAGIC_FILE_2_LEN (sizeof(COMPOSER_MAGIC_FILE_2) - 1)
+#define COMPOSER_MAGIC_FILE_3 "composer/installed.php"
+#define COMPOSER_MAGIC_FILE_3_LEN (sizeof(COMPOSER_MAGIC_FILE_3) - 1)
   char* vendor_path = NULL; // result of dirname(filename)
 
   vendor_path = nr_execute_handle_autoload_composer_get_vendor_path(filename);
@@ -1127,6 +1129,11 @@ static void nr_execute_handle_autoload_composer(const char* filename) {
 
   if (!nr_execute_handle_autoload_composer_file_exists(vendor_path, COMPOSER_MAGIC_FILE_2)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'", COMPOSER_MAGIC_FILE_2, vendor_path);
+    return;
+  }
+
+  if (!nr_execute_handle_autoload_composer_file_exists(vendor_path, COMPOSER_MAGIC_FILE_3)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'", COMPOSER_MAGIC_FILE_3, vendor_path);
     return;
   }
 
