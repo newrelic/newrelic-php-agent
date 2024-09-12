@@ -371,6 +371,18 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		if 0 < len(version) {
 			pkgs.packages = append(pkgs.packages, PhpPackage{"wordpress", version})
 		}
+	} else if 1 < len(splitCmd) && "composer-show.php" == splitCmd[1] {
+		lines := strings.Split(string(out), "\n")
+		version := ""
+		for _, line := range lines {
+			//fmt.Printf("line is |%s|\n", line)
+			splitLine := strings.Split(line, "=>")
+			if 2 == len(splitLine) {
+				name := strings.TrimSpace(splitLine[0])
+				version = strings.TrimSpace(splitLine[1])
+				pkgs.packages = append(pkgs.packages, PhpPackage{name, version})
+			}
+		}
 	} else {
 		return nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
 	}

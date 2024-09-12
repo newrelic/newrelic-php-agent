@@ -1055,8 +1055,13 @@ static void nr_execute_handle_autoload_composer_get_packages_information(const c
           }
         }
         zval_dtor(&retval2);
-        nrl_verbosedebug(NRL_TXN, "package %s, version %s",
+        nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
                          NRSAFESTR(Z_STRVAL_P(value)), NRSAFESTR(version));
+        if (NRINI(vulnerability_management_package_detection_enabled)) {
+          nr_txn_add_php_package(NRPRG(txn), NRSAFESTR(Z_STRVAL_P(value)), NRSAFESTR(version));
+        }
+        nr_fw_support_add_package_supportability_metric(NRPRG(txn), NRSAFESTR(Z_STRVAL_P(value)),
+                                                      NRSAFESTR(version));
       }
       ZEND_HASH_FOREACH_END();
     } else {
