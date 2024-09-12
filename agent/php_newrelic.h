@@ -593,6 +593,9 @@ nrinibool_t
 nrinibool_t
     vulnerability_management_package_detection_enabled; /* newrelic.vulnerability_management.package_detection.enabled
                                                          */
+nrinibool_t
+    vulnerability_management_composer_detection_enabled; /* newrelic.vulnerability_management.composer_detection.enabled
+                                                          */
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*

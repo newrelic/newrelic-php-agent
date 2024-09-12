@@ -7,10 +7,12 @@
 /*DESCRIPTION
 Test detection of autoloader when Composer is used. Supportability metrics for
 Autoloader and Composer libraries should be present. Additionally, package
-supportability metrics should be present for each package detected.
+supportability metrics should be present for each package detected. Package
+harvest should contain all packages reported by composer.
 */
 
 /*INI
+newrelic.vulnerability_management.composer_detection.enabled=true
 */
 
 /*EXPECT_PHP_PACKAGES
