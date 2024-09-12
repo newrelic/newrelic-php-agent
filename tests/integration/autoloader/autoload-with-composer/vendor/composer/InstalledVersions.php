@@ -30,4 +30,11 @@ class InstalledVersions
         // Return the package names
         return array_keys(self::$installed);
     }
+
+    // Mock of 'composer show' used by integration tests to generate list of packages:
+    public static function show() {
+        foreach (self::$installed as $package => $version) {
+            echo "$package => $version\n";
+        }
+    }
 }

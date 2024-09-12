@@ -13,6 +13,11 @@ supportability metrics should be present for each package detected.
 /*INI
 */
 
+/*EXPECT_PHP_PACKAGES
+command=php composer-show.php
+expected_packages=vendor1/package1, vendor2/package2
+*/
+
 /*EXPECT_METRICS_EXIST
 Supportability/library/Autoloader/detected, 1
 Supportability/library/Composer/detected, 1
