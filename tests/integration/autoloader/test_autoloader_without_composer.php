@@ -20,4 +20,6 @@ Supportability/library/Autoloader/detected, 1
 Supportability/library/Composer/detected
 */
 
+/*EXPECT_TRACED_ERRORS null*/
+
 require 'autoload-without-composer/vendor/autoload.php';
