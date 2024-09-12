@@ -25,7 +25,6 @@
 #include "util_metrics.h"
 #include "util_number_converter.h"
 #include "util_strings.h"
-#include "util_syscalls.h"
 #include "util_url.h"
 #include "util_url.h"
 #include "util_metrics.h"
@@ -1064,7 +1063,6 @@ static void nr_php_execute_file(const zend_op_array* op_array,
   }
 
   nr_php_add_user_instrumentation(TSRMLS_C);
-
 }
 
 /*
