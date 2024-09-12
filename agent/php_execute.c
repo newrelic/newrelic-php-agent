@@ -1154,6 +1154,11 @@ static void nr_execute_handle_autoload(const char* filename, const size_t filena
 #define AUTOLOAD_MAGIC_FILE "vendor/autoload.php"
 #define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
 
+  if (!NRINI(vulnerability_management_composer_detection_enabled)) {
+    // do nothing when use of composer to collect package info is disabled
+    return;
+  }
+
   if (NRPRG(txn)->composer_info.autoload_detected) {
     // autoload already handled
     return;
