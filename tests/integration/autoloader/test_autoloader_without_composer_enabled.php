@@ -5,11 +5,13 @@
  */
 
 /*DESCRIPTION
-Test detection of autoloader when Composer is not used. Supportability metrics for
+Test detection of autoloader when Composer is not used and use of composer for
+package detection is enabled. Supportability metrics for
 Autoloader library should be present but Composer should not.
 */
 
 /*INI
+newrelic.vulnerability_management.composer_detection.enabled=true
 */
 
 /*EXPECT_METRICS_EXIST
