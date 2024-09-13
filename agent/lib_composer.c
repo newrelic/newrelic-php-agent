@@ -73,6 +73,7 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: zend_eval_string(%s) failed, result=%d", __func__,
                      code, result);
+    nr_free(code);
     return NR_FAILURE;
   }
 
