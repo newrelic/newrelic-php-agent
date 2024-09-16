@@ -12,28 +12,34 @@ It contains \Composer\InstalledVersions class with methods used by the agent to 
 namespace Composer;
 class InstalledVersions
 {
-    // Mocked data: installed packages and their versions
-    private static $installed = [
-        'vendor1/package1' => '1.1.3',
-        'vendor2/package2' => '2.1.5'
-    ];
-
     // This Composer's runtime API method is used by the agent to get the installed version of a package:
     public static function getVersion(string $packageName)
     {
-        return self::$installed[$packageName];
+        $installed = self::getAllRawData();
+        return $installed[0]['versions'][$packageName]['version'];
     }
 
     // This Composer's runtime API method is used by the agent to get the list of installed packages:
     public static function getInstalledPackages()
     {
         // Return the package names
-        return array_keys(self::$installed);
+        $installed = self::getAllRawData();
+        return array_keys($installed[0]['versions']);
+    }
+
+    // This Composer's runtime API method is used by the agent to get the list of installed packages:
+    public static function getAllRawData()
+    {
+        $installed = require __DIR__ . '/installed.php';
+        // This mock only returns a single dataset; in real life, there could be more
+        return array($installed);
     }
 
     // Mock of 'composer show' used by integration tests to generate list of packages:
     public static function show() {
-        foreach (self::$installed as $package => $version) {
+        $installed = self::getAllRawData();
+        foreach ($installed[0]['versions'] as $package => $info) {
+            $version = ltrim($info['pretty_version'], 'v');
             echo "$package => $version\n";
         }
     }

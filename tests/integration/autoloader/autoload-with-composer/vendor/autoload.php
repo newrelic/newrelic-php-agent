@@ -9,4 +9,4 @@ This file is the usual entry point for installing and using PSR-4 Autoloader.
 The agent verifies its presence to determine if PSR-4 Autoloader is used.
 */
 
-echo "";
+require_once __DIR__ . '/composer/autoload_real.php';
