@@ -21,6 +21,7 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
   };
 
   // the class is found - there's hope!
+#if 0
   if (NULL == nr_php_find_class_method(zce, "getinstalledpackages")
       || NULL == nr_php_find_class_method(zce, "getversion")) {
     nrl_verbosedebug(
@@ -28,6 +29,14 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
         "Composer\\InstalledVersions class found, but methods not found");
     return false;
   }
+#else
+  if (NULL == nr_php_find_class_method(zce, "getallrawdata")) {
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Composer\\InstalledVersions class found, but methods not found");
+    return false;
+  }
+#endif
 
   return true;
 }
@@ -93,9 +102,11 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
 
 static void nr_execute_handle_autoload_composer_get_packages_information(
     const char* vendor_path) {
-  zval retval;
+  zval retval;  // This is used as a return value for zend_eval_string.
+                // It will only be set if the result of the eval is SUCCESS.
   int result = -1;
 
+#if 0
   char* getpackagename
       = ""
         "(function() {"
@@ -119,6 +130,25 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         "      return NULL;"
         "  }"
         "})();";
+#else
+    char* getallrawdata
+        = ""
+        "(function() {"
+        "  try {"
+        "    $packages = array();"
+        "    foreach (\\Composer\\InstalledVersions::getAllRawData() as $installed) { "
+        "      foreach ($installed['versions'] as $packageName => $packageData) {"
+        "        if (isset($packageData['pretty_version'])) {"
+        "          $packages[$packageName] = ltrim($packageData['pretty_version'], 'v');"
+        "        }"
+        "      }"
+        "    }"
+        "    return $packages;"
+        "  } catch (Exception $e) {"
+        "    return NULL;"
+        "  }"
+        "})();";
+#endif
 
   if (NR_SUCCESS != nr_execute_handle_autoload_composer_init(vendor_path)) {
     nrl_debug(NRL_INSTRUMENT,
@@ -131,7 +161,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available",
                    __func__);
 
-#if 1
+#if 0
   result = zend_eval_string(getpackagename, &retval,
                             "get installed packages by name" TSRMLS_CC);
   if (result == SUCCESS) {
@@ -179,15 +209,37 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     zval_dtor(&retval);
   }
 #else
-  zv = nr_php_call(NULL, "Composer\\InstalledVersions::getInstalledPackages",
-                   NULL);
-  if (NULL != zv) {
-    char strbuf[NR_EXECUTE_DEBUG_STRBUFSZ];
-    nr_format_zval_for_debug(zv, strbuf, 0, NR_EXECUTE_DEBUG_STRBUFSZ - 1, 0);
-    nrl_always("Composer\\InstalledVersions::getInstalledPackages()=%s",
-               strbuf);
-    nr_php_zval_free(&zv);
+  result = zend_eval_string(getallrawdata, &retval, "composer_getallrawdata.php");
+  if (SUCCESS != result) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed", __func__);
+    return;
   }
+  if (IS_ARRAY == Z_TYPE(retval)) {
+    zend_string* package_name = NULL;
+    zval* package_version = NULL;
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(retval), package_name, package_version) {
+      if (NULL == package_name || NULL == package_version) {
+        continue;
+      }
+      if (nr_php_is_zval_non_empty_string(package_version)) {
+        nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
+                         NRSAFESTR(ZSTR_VAL(package_name)),
+                         NRSAFESTR(Z_STRVAL_P(package_version)));
+        if (NRINI(vulnerability_management_package_detection_enabled)) {
+          nr_txn_add_php_package(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
+                                NRSAFESTR(Z_STRVAL_P(package_version)));
+        }
+        nr_fw_support_add_package_supportability_metric(
+            NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
+            NRSAFESTR(Z_STRVAL_P(package_version)));
+      }
+    }
+    ZEND_HASH_FOREACH_END();
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s - installed packages is not an array", __func__);
+  }
+  zval_dtor(&retval);
 #endif
 }
 
