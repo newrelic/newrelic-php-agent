@@ -1170,7 +1170,22 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
 }
 
 /*
- * Purpose : Add php packages to transaction. This function should only be
+ * Purpose : Add php package to transaction from desired source. This function should only be
+ *           called when Vulnerability Management is enabled.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Package version
+ *           4. Source priority
+ *
+ */
+void nr_txn_add_php_package_from_source(nrtxn_t* txn,
+                            char* package_name,
+                            char* package_version,
+                            const nr_php_package_source_priority_t source);
+
+/*
+ * Purpose : Add php package to transaction from legacy source. This function should only be
  *           called when Vulnerability Management is enabled.
  *
  * Params  : 1. The transaction
