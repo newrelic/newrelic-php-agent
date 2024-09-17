@@ -10,6 +10,7 @@
 #include "util_random.h"
 #include "util_vector.h"
 #include "util_hashmap.h"
+#include "util_strings.h"
 
 #define PHP_PACKAGE_VERSION_UNKNOWN " "
 
@@ -138,6 +139,26 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
     return nr_hashmap_has(h->data, package_name, package_len);
   }
   return 0;
+}
+
+/*
+ * Purpose : Retrieve a pointer to php package from the collection
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. The name of the package to retrieve
+ *
+ * Returns : Returns pointer to php package if the package exists or NULL
+ */
+static inline nr_php_package_t* nr_php_packages_get_package(nr_php_packages_t* php_packages,
+                                              const char* package_name) {
+  if (NULL == package_name) {
+    return NULL;
+  }
+
+  if (nrlikely(NULL != php_packages && NULL != php_packages->data)) {
+    return (nr_php_package_t*)nr_hashmap_get(php_packages->data, package_name, nr_strlen(package_name));
+  }
+  return NULL;
 }
 
 /*

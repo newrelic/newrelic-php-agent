@@ -378,8 +378,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     char version[MAJOR_VERSION_LENGTH];
     snprintf(version, sizeof(version), "%d", api);
-    nr_fw_support_add_package_supportability_metric(NRPRG(txn),
-                                                    PHP_PACKAGE_NAME, version);
+    nr_txn_add_package_major_version_supportability_metric(NRPRG(txn),
+                                                    PHP_PACKAGE_NAME, version, nr_fw_support_add_package_supportability_metric);
   }
 
   /* Record the log event */
