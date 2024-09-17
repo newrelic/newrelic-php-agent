@@ -3518,3 +3518,24 @@ void nr_txn_add_php_package(nrtxn_t* txn,
   nr_txn_add_php_package_from_source(txn, package_name, package_version,
                                      NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
+
+void nr_txn_add_package_major_version_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* fallback_version,
+    void (*add_metric_callback)(nrtxn_t*, const char*, const char*)) {
+  const char* version = fallback_version;
+
+  if (NULL == txn || NULL == package_name) {
+    return;
+  }
+
+  if (txn->composer_info.composer_detected && NULL != txn->php_packages) {
+    nr_php_package_t *p = nr_php_packages_get_package(txn->php_packages, package_name);
+    if (p) {
+      version = p->package_version;
+    }
+  }
+  
+  add_metric_callback(txn, package_name, version);
+}

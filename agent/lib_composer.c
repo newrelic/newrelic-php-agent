@@ -214,8 +214,6 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
             nr_txn_add_php_package(NRPRG(txn), NRSAFESTR(Z_STRVAL_P(value)),
                                   NRSAFESTR(version));
           }
-          nr_fw_support_add_package_supportability_metric(
-              NRPRG(txn), NRSAFESTR(Z_STRVAL_P(value)), NRSAFESTR(version));
         }
       }
       ZEND_HASH_FOREACH_END();
@@ -244,9 +242,6 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                          NRSAFESTR(Z_STRVAL_P(package_version)));
         nr_txn_add_php_package_from_source(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
                             NRSAFESTR(Z_STRVAL_P(package_version)), NR_PHP_PACKAGE_SOURCE_COMPOSER);
-        nr_fw_support_add_package_supportability_metric(
-            NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
-            NRSAFESTR(Z_STRVAL_P(package_version)));
       }
     }
     ZEND_HASH_FOREACH_END();

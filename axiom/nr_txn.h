@@ -1197,4 +1197,22 @@ void nr_txn_add_php_package(nrtxn_t* txn,
                             char* package_name,
                             char* package_version);
 
+/*
+ * Purpose : Add php package major version supportability metric.
+ *           This function will look for package version in php_packages
+ *           and fall back to the version provided if php_packages don't
+ *           contain package_name.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Fallback package version
+ *           4. Function to add metric (nr_fw_support_add_package_supportability_metric)
+ *
+ */
+extern void nr_txn_add_package_major_version_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* fallback_version,
+    void (*add_metric_callback)(nrtxn_t*, const char*, const char*));
+
 #endif /* NR_TXN_HDR */
