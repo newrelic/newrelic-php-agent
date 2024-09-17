@@ -107,6 +107,18 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                 // It will only be set if the result of the eval is SUCCESS.
   int result = -1;
 
+  // nurunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
+    // do nothing when collecting package information for vulnerability management is disabled
+    return;
+  }
+
+  // nurunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(!NRINI(vulnerability_management_composer_detection_enabled))) {
+    // do nothing when use of composer to collect package info is disabled
+    return;
+  }
+
 #if 0
   char* getpackagename
       = ""
@@ -230,10 +242,8 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
                          NRSAFESTR(ZSTR_VAL(package_name)),
                          NRSAFESTR(Z_STRVAL_P(package_version)));
-        if (NRINI(vulnerability_management_package_detection_enabled)) {
-          nr_txn_add_php_package_from_source(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
-                                NRSAFESTR(Z_STRVAL_P(package_version)), NR_PHP_PACKAGE_SOURCE_COMPOSER);
-        }
+        nr_txn_add_php_package_from_source(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
+                            NRSAFESTR(Z_STRVAL_P(package_version)), NR_PHP_PACKAGE_SOURCE_COMPOSER);
         nr_fw_support_add_package_supportability_metric(
             NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
             NRSAFESTR(Z_STRVAL_P(package_version)));
