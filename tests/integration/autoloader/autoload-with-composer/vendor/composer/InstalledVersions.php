@@ -38,7 +38,7 @@ class InstalledVersions
     // This Composer's runtime API method is used by the agent to get the root package:
     public static function getRootPackage()
     {
-        $installed = require __DIR__ . '/installed.php';
+        $installed = self::getAllRawData();
         // This mock only returns a single dataset; in real life, there could be more
         return $installed[0]['root'];
     }
