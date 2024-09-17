@@ -3494,9 +3494,10 @@ void nr_txn_record_log_event(nrtxn_t* txn,
   nr_txn_add_logging_metrics(txn, log_level_name);
 }
 
-void nr_txn_add_php_package(nrtxn_t* txn,
+void nr_txn_add_php_package_from_source(nrtxn_t* txn,
                             char* package_name,
-                            char* package_version) {
+                            char* package_version,
+                            const nr_php_package_source_priority_t source) {
   nr_php_package_t* p = NULL;
 
   if (nrunlikely(NULL == txn)) {
@@ -3507,6 +3508,13 @@ void nr_txn_add_php_package(nrtxn_t* txn,
     return;
   }
 
-  p = nr_php_package_create(package_name, package_version);
+  p = nr_php_package_create_with_source(package_name, package_version, source);
   nr_php_packages_add_package(txn->php_packages, p);
+}
+
+void nr_txn_add_php_package(nrtxn_t* txn,
+                            char* package_name,
+                            char* package_version) {
+  nr_txn_add_php_package_from_source(txn, package_name, package_version,
+                                     NR_PHP_PACKAGE_SOURCE_LEGACY);
 }

@@ -13,9 +13,15 @@
 
 #define PHP_PACKAGE_VERSION_UNKNOWN " "
 
+typedef enum {
+  NR_PHP_PACKAGE_SOURCE_LEGACY,
+  NR_PHP_PACKAGE_SOURCE_COMPOSER
+} nr_php_package_source_priority_t;
+
 typedef struct _nr_php_package_t {
   char* package_name;
   char* package_version;
+  nr_php_package_source_priority_t source_priority;
 } nr_php_package_t;
 
 typedef struct _nr_php_packages_t {
@@ -23,7 +29,23 @@ typedef struct _nr_php_packages_t {
 } nr_php_packages_t;
 
 /*
- * Purpose : Create a new php package. If the name is null, then no package will
+ * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
+ *           be created. If the version is null (version = NULL), then
+ *           the package will still be created and the version will be set to an
+ *           empty string with a space.
+ *
+ * Params  : 1. Package name
+ *           2. Package version
+ *           3. Package source priority (legacy or composer)
+ *
+ * Returns : A php package that has a name and version. If
+ *           nr_php_packages_add_package() is not called, then it must be freed
+ *           by nr_php_package_destroy()
+ */
+extern nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, const nr_php_package_source_priority_t source_priority);
+
+/*
+ * Purpose : Create a new php package with legacy source priority. If the name is null, then no package will
  *           be created. If the version is null (version = NULL), then
  *           the package will still be created and the version will be set to an
  *           empty string with a space.

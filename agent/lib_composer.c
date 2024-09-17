@@ -231,8 +231,8 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                          NRSAFESTR(ZSTR_VAL(package_name)),
                          NRSAFESTR(Z_STRVAL_P(package_version)));
         if (NRINI(vulnerability_management_package_detection_enabled)) {
-          nr_txn_add_php_package(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
-                                NRSAFESTR(Z_STRVAL_P(package_version)));
+          nr_txn_add_php_package_from_source(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
+                                NRSAFESTR(Z_STRVAL_P(package_version)), NR_PHP_PACKAGE_SOURCE_COMPOSER);
         }
         nr_fw_support_add_package_supportability_metric(
             NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
