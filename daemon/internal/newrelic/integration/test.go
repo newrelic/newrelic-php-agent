@@ -722,21 +722,21 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		for i, _ := range expectedPackages {
 			var matchingIdx int = -1
 			for j, pkg := range actualPackages {
-				fmt.Printf("Comparing %s to %s\n", pkg.Name, expectedPackages[i].Name)
+				//fmt.Printf("Comparing %s to %s\n", pkg.Name, expectedPackages[i].Name)
 				if pkg.Name == expectedPackages[i].Name {
-					fmt.Printf("Match - index = %d\n", j)
+					//fmt.Printf("Match - index = %d\n", j)
 					matchingIdx = j
 					break
 				}
 			}
 
-			fmt.Printf("MatchingIdx: %d\n", matchingIdx)
-			fmt.Printf("expectedPatckages[%d]: %+v\n", i, expectedPackages[i])
-			if -1 != matchingIdx {
-				fmt.Printf("actualPackages[%d]: %+v\n", matchingIdx, actualPackages[matchingIdx])
-			} else {
-				fmt.Printf("no match in actualPackages!\n")
-			}
+			//fmt.Printf("MatchingIdx: %d\n", matchingIdx)
+			//fmt.Printf("expectedPatckages[%d]: %+v\n", i, expectedPackages[i])
+			// if -1 != matchingIdx {
+			// 	fmt.Printf("actualPackages[%d]: %+v\n", matchingIdx, actualPackages[matchingIdx])
+			// } else {
+			// 	fmt.Printf("no match in actualPackages!\n")
+			// }
 
 			if -1 != matchingIdx {
 				testPackageNameOnly := false
