@@ -802,14 +802,15 @@ static void nr_php_instrument_datastore_operation_call(
 
 /* 
  * Like nr_php_instrument_datastore_operation_call() but does not
- * call the underlying internal function
+ * call the underlying internal function. This allows multiple
+ * datastore metrics to be creating during a single underlying
+ * PHP call.
  */
 static void nr_php_instrument_datastore_operation(
     nr_datastore_t datastore,
     const char* operation,
     nr_datastore_instance_t* instance,
-    bool instance_only,
-    INTERNAL_FUNCTION_PARAMETERS) {
+    bool instance_only) {
   nr_segment_t* segment = NULL;
   nr_segment_datastore_params_t params = {
       .datastore = {
@@ -1602,8 +1603,7 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
       if (NULL != host) {
         instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
         nr_php_instrument_datastore_operation(NR_DATASTORE_MEMCACHE,
-                                              NULL, instance, true,
-                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
+                                              NULL, instance, true);
       }
     }
     ZEND_HASH_FOREACH_END();
