@@ -140,7 +140,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         "    $packages = array();"
         "    foreach (\\Composer\\InstalledVersions::getAllRawData() as $installed) { "
         "      foreach ($installed['versions'] as $packageName => $packageData) {"
-        "        if ($packageName == @$root_package['name']) {"
+        "        if (is_array($root_package) && array_key_exists('name', $root_package) && $packageName == $root_package['name']) {"
         "          continue;"
         "        }"
         "        if (isset($packageData['pretty_version'])) {"
