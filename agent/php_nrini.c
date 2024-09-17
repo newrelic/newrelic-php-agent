@@ -3091,11 +3091,11 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enable
                      newrelic_globals,
                      nr_enabled_disabled_dh)
 
-STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_detection.enabled",
+STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      "0",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
-                     vulnerability_management_composer_detection_enabled,
+                     vulnerability_management_composer_api_enabled,
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)

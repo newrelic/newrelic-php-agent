@@ -940,7 +940,7 @@ static void nr_execute_handle_autoload(const char* filename, const size_t filena
     return;
   }
 
-  if (!NRINI(vulnerability_management_composer_detection_enabled)) {
+  if (!NRINI(vulnerability_management_composer_api_enabled)) {
     // do nothing when use of composer to collect package info is disabled
     return;
   }

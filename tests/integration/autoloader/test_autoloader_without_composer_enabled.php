@@ -11,7 +11,7 @@ Autoloader library should be present but Composer should not.
 */
 
 /*INI
-newrelic.vulnerability_management.composer_detection.enabled=true
+newrelic.vulnerability_management.composer_api.enabled=true
 */
 
 /*EXPECT_METRICS_EXIST

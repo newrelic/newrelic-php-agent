@@ -12,7 +12,7 @@ harvest should contain all packages reported by composer.
 */
 
 /*INI
-newrelic.vulnerability_management.composer_detection.enabled=true
+newrelic.vulnerability_management.composer_api.enabled=true
 */
 
 /*EXPECT_PHP_PACKAGES
