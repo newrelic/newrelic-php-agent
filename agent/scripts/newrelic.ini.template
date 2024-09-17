@@ -1333,11 +1333,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.vulnerability_management.package_detection.enabled = true
 
-; Setting: newrelic.vulnerability_management.composer_detection.enabled
+; Setting: newrelic.vulnerability_management.composer_api.enabled
 ; Type   : boolean
 ; Scope  : per-directory
 ; Default: false
 ; Info   : Toggles whether the agent should try using Composer's runtime API
-;          to gather package detection information for vulnerability management.
+;          to gather package information for vulnerability management.
 ;
-;newrelic.vulnerability_management.composer_detection.enabled = false
+;newrelic.vulnerability_management.composer_api.enabled = false
