@@ -30,7 +30,8 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
     return false;
   }
 #else
-  if (NULL == nr_php_find_class_method(zce, "getallrawdata")) {
+  if (NULL == nr_php_find_class_method(zce, "getallrawdata")
+      || NULL == nr_php_find_class_method(zce, "getrootpackage")) {
     nrl_verbosedebug(
         NRL_INSTRUMENT,
         "Composer\\InstalledVersions class found, but methods not found");
@@ -135,9 +136,13 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         = ""
         "(function() {"
         "  try {"
+        "    $root_package = \\Composer\\InstalledVersions::getRootPackage();"
         "    $packages = array();"
         "    foreach (\\Composer\\InstalledVersions::getAllRawData() as $installed) { "
         "      foreach ($installed['versions'] as $packageName => $packageData) {"
+        "        if ($packageName == @$root_package['name']) {"
+        "          continue;"
+        "        }"
         "        if (isset($packageData['pretty_version'])) {"
         "          $packages[$packageName] = ltrim($packageData['pretty_version'], 'v');"
         "        }"
