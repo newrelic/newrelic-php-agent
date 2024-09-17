@@ -356,7 +356,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		detected := ComposerJSON{}
 		json.Unmarshal([]byte(out), &detected)
 		for _, v := range detected.Installed {
-			fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
+			//fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
 			if pkgs.config.expectAllDetected || StringSliceContains(supported, v.Name) {
 				var version string
 
@@ -367,9 +367,9 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 					version = v.Version
 				}
 				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, version})
-				fmt.Printf("   -> %s in supported!\n", v.Name)
+				//fmt.Printf("   -> %s in supported!\n", v.Name)
 			} else {
-				fmt.Printf("   -> %s NOT in supported!\n", v.Name)
+				//fmt.Printf("   -> %s NOT in supported!\n", v.Name)
 			}
 		}
 	} else if 1 < len(splitCmd) && "wp-cli.phar" == splitCmd[1] {
