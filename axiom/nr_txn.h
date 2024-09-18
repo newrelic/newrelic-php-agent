@@ -1170,49 +1170,34 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
 }
 
 /*
- * Purpose : Add php package to transaction from desired source. This function should only be
- *           called when Vulnerability Management is enabled.
+ * Purpose : Add php package to transaction from desired source. This function
+ * should only be called when Vulnerability Management is enabled.
  *
  * Params  : 1. The transaction
  *           2. Package name
  *           3. Package version
  *           4. Source priority
  *
+ * Returns : pointer to added package on success or NULL otherwise.
  */
-void nr_txn_add_php_package_from_source(nrtxn_t* txn,
-                            char* package_name,
-                            char* package_version,
-                            const nr_php_package_source_priority_t source);
+nr_php_package_t* nr_txn_add_php_package_from_source(
+    nrtxn_t* txn,
+    char* package_name,
+    char* package_version,
+    const nr_php_package_source_priority_t source);
 
 /*
- * Purpose : Add php package to transaction from legacy source. This function should only be
- *           called when Vulnerability Management is enabled.
+ * Purpose : Add php package to transaction from legacy source. This function
+ * should only be called when Vulnerability Management is enabled.
  *
  * Params  : 1. The transaction
  *           2. Package name
  *           3. Package version
  *
+ * Returns : pointer to added package on success or NULL otherwise.
  */
-void nr_txn_add_php_package(nrtxn_t* txn,
-                            char* package_name,
-                            char* package_version);
-
-/*
- * Purpose : Add php package major version supportability metric.
- *           This function will look for package version in php_packages
- *           and fall back to the version provided if php_packages don't
- *           contain package_name.
- *
- * Params  : 1. The transaction
- *           2. Package name
- *           3. Fallback package version
- *           4. Function to add metric (nr_fw_support_add_package_supportability_metric)
- *
- */
-extern void nr_txn_add_package_major_version_supportability_metric(
-    nrtxn_t* txn,
-    const char* package_name,
-    const char* fallback_version,
-    void (*add_metric_callback)(nrtxn_t*, const char*, const char*));
+nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
+                                         char* package_name,
+                                         char* package_version);
 
 #endif /* NR_TXN_HDR */

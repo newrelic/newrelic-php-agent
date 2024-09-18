@@ -669,6 +669,7 @@ NR_PHP_WRAPPER_END
 void nr_drupal_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
+  nr_php_package_t* p = NULL;
 
   class_entry = nr_php_find_class("drupal");
   if (NULL == class_entry) {
@@ -687,10 +688,10 @@ void nr_drupal_version() {
   if (nr_php_is_zval_valid_string(zval_version)) {
     char* version = Z_STRVAL_P(zval_version);
     if (NRINI(vulnerability_management_package_detection_enabled)) {
-      nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+      p = nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
     }
-    nr_txn_add_package_major_version_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                    version, nr_fw_support_add_package_supportability_metric);
+    nr_fw_support_add_package_supportability_metric(
+        NRPRG(txn), PHP_PACKAGE_NAME, version, p);
   }
 
   nr_php_zval_free(&zval_version);

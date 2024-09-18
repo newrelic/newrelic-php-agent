@@ -352,10 +352,11 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
 
   char* version = nr_php_get_object_constant(this_var, "VERSION");
+  nr_php_package_t* p = NULL;
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
-    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    p = nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
   }
 
   /*
@@ -366,8 +367,8 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   if (NULL == version) {
     version = nr_php_get_object_constant(this_var, "MAJOR_VERSION");
   }
-  nr_txn_add_package_major_version_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                  version, nr_fw_support_add_package_supportability_metric);
+  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                  version, p);
   nr_free(version);
 
   (void)wraprec;
