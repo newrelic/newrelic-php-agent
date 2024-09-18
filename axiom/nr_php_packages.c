@@ -88,14 +88,15 @@ nr_php_packages_t* nr_php_packages_create() {
   return h;
 }
 
-void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
+nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
+                                              nr_php_package_t* p) {
   nr_php_package_t* package;
   if (NULL == h) {
-    return;
+    return NULL;
   }
 
   if (NULL == p || NULL == p->package_name || NULL == p->package_version) {
-    return;
+    return NULL;
   }
 
   // If package with the same key already exists, we will check if the value is
@@ -108,10 +109,11 @@ void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
       package->package_version = nr_strdup(p->package_version);
     }
     nr_php_package_destroy(p);
-    return;
+    return package;
   }
 
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
+  return p;
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

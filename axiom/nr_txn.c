@@ -3510,8 +3510,7 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
   }
 
   p = nr_php_package_create_with_source(package_name, package_version, source);
-  nr_php_packages_add_package(txn->php_packages, p);
-  return p;
+  return nr_php_packages_add_package(txn->php_packages, p);
 }
 
 nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
