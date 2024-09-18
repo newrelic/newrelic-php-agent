@@ -8597,6 +8597,8 @@ static void test_nr_txn_add_php_package(void) {
   char* package_name4 = "Wordpress";
   char* package_version4 = PHP_PACKAGE_VERSION_UNKNOWN;
   nrtxn_t* txn = new_txn(0);
+  nr_php_package_t* p1 = NULL;
+  nr_php_package_t* p2 = NULL;
 
   /*
    * NULL parameters: ensure it does not crash
@@ -8620,6 +8622,13 @@ static void test_nr_txn_add_php_package(void) {
                          json);
 
   nr_free(json);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+  p2 = nr_txn_add_php_package(txn, package_name1, package_version2);
+  tlib_pass_if_ptr_equal(
+      "same package name, different version, add returns same pointer", p1, p2);
   nr_txn_destroy(&txn);
 }
 

@@ -87,10 +87,10 @@ extern nr_php_packages_t* nr_php_packages_create(void);
  *           2. A pointer to the php package that needs to be added to the
  *              collection
  *
- * Returns : Nothing
+ * Returns : pointer to added package on success or NULL otherwise.
  */
-extern void nr_php_packages_add_package(nr_php_packages_t* h,
-                                        nr_php_package_t* p);
+extern nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
+                                                     nr_php_package_t* p);
 
 /*
  * Purpose : Destroy/free the collection
