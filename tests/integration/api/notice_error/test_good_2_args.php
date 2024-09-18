@@ -89,6 +89,37 @@ called with 2 parameters.
 ]
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": "??"
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "Exception",
+        "errorMessage": "Noticed exception 'Exception' with message '2 arg exception' in __FILE__:??"
+      }
+    ]
+  ]
+]
+*/
+
 function a()
 {
   // Args must be string, exception.

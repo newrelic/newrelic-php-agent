@@ -110,6 +110,37 @@ used as a callback handler for set_error_handler().
 ]
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": "??"
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "NoticedError",
+        "errorMessage": "4 arg error"
+      }
+    ]
+  ]
+]
+*/
+
 function a() {
     trigger_error("4 arg error", E_USER_ERROR);
 }

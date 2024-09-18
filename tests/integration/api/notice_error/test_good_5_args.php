@@ -90,6 +90,38 @@ called with 5 parameters.
 ]
 */
 
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": "??"
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "NoticedError",
+        "errorMessage": "5 arg error"
+      }
+    ]
+  ]
+]
+*/
+
 function a() {
   // Five argument form requires second arg to be convertible to a string.
   newrelic_notice_error(42, "5 arg error", "file", __LINE__, "string");

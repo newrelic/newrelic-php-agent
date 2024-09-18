@@ -89,6 +89,37 @@ called with 1 argument which is an exception.
 ]
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": "??"
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "Exception",
+        "errorMessage": "Noticed exception 'Exception' with message '1 arg exception' in __FILE__:??"
+      }
+    ]
+  ]
+]
+*/
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
 function a()

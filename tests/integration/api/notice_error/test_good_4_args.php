@@ -90,6 +90,38 @@ called with 4 parameters.
 ]
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": "??"
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "NoticedError",
+        "errorMessage": "4 arg error"
+      }
+    ]
+  ]
+]
+*/
+
+
 function a() {
     // Four argument form requires integer, string, string, integer
     // This is like the five argument form but for PHP 8+ where the context is not supplied
