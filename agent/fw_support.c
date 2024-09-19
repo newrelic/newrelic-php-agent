@@ -71,11 +71,14 @@ void nr_fw_support_add_package_supportability_metric(
   // override provided package_version only if:
   // - php_package is provided
   // - its version is not NULL
-  if (NULL != p && NULL != p->package_version) {
+  // - its version is not PHP_PACKAGE_VERSION_UNKNOWN
+  if (NULL != p && NULL != p->package_version
+      && 0 != nr_strcmp(p->package_version, PHP_PACKAGE_VERSION_UNKNOWN)) {
     version = p->package_version;
   }
 
-  if (NULL == version) {
+  // only generate metric if version is known
+  if (NULL == version || 0 == nr_strcmp(version, PHP_PACKAGE_VERSION_UNKNOWN)) {
     return;
   }
 
