@@ -152,6 +152,7 @@ static void test_fw_supportability_metrics_with_vm_enabled(void) {
          .source_priority = NR_PHP_PACKAGE_SOURCE_COMPOSER};
   txn->unscoped_metrics = nrm_table_create(10);
 
+  NRINI(force_framework) = false;
   nr_fw_support_add_package_supportability_metric(
       txn, LIBRARY_NAME, LIBRARY_MAJOR_VERSION, &php_package);
   tlib_pass_if_not_null(
