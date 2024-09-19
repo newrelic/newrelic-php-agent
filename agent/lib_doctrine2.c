@@ -16,6 +16,8 @@
 #include "php_call.h"
 #include "lib_doctrine2.h"
 
+#define PHP_PACKAGE_NAME "doctrine/orm"
+
 /*
  * This answers the somewhat complicated question of whether we should
  * instrument DQL, which is dependent on the input query setting as well as SQL
@@ -106,7 +108,11 @@ void nr_doctrine2_enable(TSRMLS_D) {
 #endif /* OAPI */
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "doctrine/orm",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+  nr_fw_support_add_package_supportability_metric(
+      NRPRG(txn), PHP_PACKAGE_NAME, NULL,
+      nr_php_packages_get_package(NRPRG(txn)->php_packages,
+                                  PHP_PACKAGE_NAME));  
 }

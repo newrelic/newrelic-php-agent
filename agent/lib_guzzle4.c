@@ -33,6 +33,8 @@
 #include "util_logging.h"
 #include "util_memory.h"
 
+#define PHP_PACKAGE_NAME "guzzlehttp/guzzle"
+
 /*
  * We rely on the const correctness of certain Zend functions that weren't
  * const correct before 5.3 and/or 5.4: since Guzzle 4 requires 5.4.0 anyway,
@@ -520,9 +522,14 @@ void nr_guzzle4_enable(TSRMLS_D) {
                             nr_guzzle_client_construct TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "guzzlehttp/guzzle",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_fw_support_add_package_supportability_metric(
+      NRPRG(txn), PHP_PACKAGE_NAME, NULL,
+      nr_php_packages_get_package(NRPRG(txn)->php_packages,
+                                  PHP_PACKAGE_NAME));
 }
 
 void nr_guzzle4_minit(TSRMLS_D) {
