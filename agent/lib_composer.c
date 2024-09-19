@@ -21,15 +21,6 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
   };
 
   // the class is found - there's hope!
-#if 0
-  if (NULL == nr_php_find_class_method(zce, "getinstalledpackages")
-      || NULL == nr_php_find_class_method(zce, "getversion")) {
-    nrl_verbosedebug(
-        NRL_INSTRUMENT,
-        "Composer\\InstalledVersions class found, but methods not found");
-    return false;
-  }
-#else
   if (NULL == nr_php_find_class_method(zce, "getallrawdata")
       || NULL == nr_php_find_class_method(zce, "getrootpackage")) {
     nrl_verbosedebug(
@@ -37,7 +28,6 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
         "Composer\\InstalledVersions class found, but methods not found");
     return false;
   }
-#endif
 
   return true;
 }
@@ -119,32 +109,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     return;
   }
 
-#if 0
-  char* getpackagename
-      = ""
-        "(function() {"
-        "  try {"
-        "      return \\Composer\\InstalledVersions::getInstalledPackages();"
-        "  } catch (Exception $e) {"
-        "      return NULL;"
-        "  }"
-        "})();";
-
-  char* getversion
-      = ""
-        "(function() {"
-        "  try {"
-        "      $v = \\Composer\\InstalledVersions::getPrettyVersion(\"%s\");"
-        "      if ($v != null && strlen($v) > 0) {"
-        "          $v = ltrim($v, 'v');"
-        "      }"
-        "      return $v;"
-        "  } catch (Exception $e) {"
-        "      return NULL;"
-        "  }"
-        "})();";
-#else
-    char* getallrawdata
+  char* getallrawdata
         = ""
         "(function() {"
         "  try {"
@@ -165,7 +130,6 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         "    return NULL;"
         "  }"
         "})();";
-#endif
 
   if (NR_SUCCESS != nr_execute_handle_autoload_composer_init(vendor_path)) {
     nrl_debug(NRL_INSTRUMENT,
@@ -178,52 +142,6 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available",
                    __func__);
 
-#if 0
-  result = zend_eval_string(getpackagename, &retval,
-                            "get installed packages by name" TSRMLS_CC);
-  if (result == SUCCESS) {
-    if (Z_TYPE(retval) == IS_ARRAY) {
-      zval* value;
-      char* buf;
-      int result2;
-      zval retval2;
-      char* version = NULL;
-      (void)version;
-      ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), value) {
-        if (Z_TYPE_P(value) == IS_STRING) {
-          buf = nr_formatf(getversion, Z_STRVAL_P(value));
-          result2 = zend_eval_string(buf, &retval2,
-                                     "retrieve version for packages");
-          nr_free(buf);
-          if (SUCCESS == result2) {
-            if (nr_php_is_zval_valid_string(&retval2)) {
-              version = Z_STRVAL(retval2);
-            } else if (nr_php_is_zval_null(&retval2)) {
-              nrl_verbose(NRL_INSTRUMENT,
-                          "version was IS_NULL for package %s",
-                          Z_STRVAL_P(value));
-              version = NULL;
-            }
-          }
-        }
-        zval_dtor(&retval2);
-        nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
-                         NRSAFESTR(Z_STRVAL_P(value)), NRSAFESTR(version));
-        if (NULL != version) {
-          if (NRINI(vulnerability_management_package_detection_enabled)) {
-            nr_txn_add_php_package(NRPRG(txn), NRSAFESTR(Z_STRVAL_P(value)),
-                                  NRSAFESTR(version));
-          }
-        }
-      }
-      ZEND_HASH_FOREACH_END();
-    } else {
-      zval_dtor(&retval);
-      return;
-    }
-    zval_dtor(&retval);
-  }
-#else
   result = zend_eval_string(getallrawdata, &retval, "composer_getallrawdata.php");
   if (SUCCESS != result) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed", __func__);
@@ -250,7 +168,6 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                      "%s - installed packages is not an array", __func__);
   }
   zval_dtor(&retval);
-#endif
 }
 
 static char* nr_execute_handle_autoload_composer_get_vendor_path(
