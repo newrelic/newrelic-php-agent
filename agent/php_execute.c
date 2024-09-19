@@ -931,7 +931,8 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
-static void nr_execute_handle_autoload(const char* filename, const size_t filename_len) {
+static void nr_execute_handle_autoload(const char* filename,
+                                       const size_t filename_len) {
 #define AUTOLOAD_MAGIC_FILE "vendor/autoload.php"
 #define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
 
@@ -950,12 +951,14 @@ static void nr_execute_handle_autoload(const char* filename, const size_t filena
     return;
   }
 
-  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE, AUTOLOAD_MAGIC_FILE_LEN)) {
+  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
+                       AUTOLOAD_MAGIC_FILE_LEN)) {
     // not an autoload file
     return;
   }
 
-  nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s", filename, AUTOLOAD_MAGIC_FILE);
+  nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s",
+            filename, AUTOLOAD_MAGIC_FILE);
   NRPRG(txn)->composer_info.autoload_detected = true;
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
 
