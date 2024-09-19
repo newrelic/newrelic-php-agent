@@ -27,7 +27,8 @@ static void test_fw_supportability_metrics_with_vm_disabled(void) {
 #define LIBRARY_MAJOR_VERSION_7 "0.4.5"
 #define LIBRARY_METRIC "Supportability/library/" LIBRARY_NAME "/detected"
 #define LOGGING_LIBRARY_METRIC "Supportability/Logging/PHP/" LIBRARY_NAME
-#define PACKAGE_METRIC "Supportability/PHP/package/" LIBRARY_NAME
+#define PACKAGE_METRIC_PREFIX "Supportability/PHP/package/"
+#define PACKAGE_METRIC PACKAGE_METRIC_PREFIX LIBRARY_NAME
   nrtxn_t t;
   nrtxn_t* txn = &t;
   nr_php_package_t* php_package = NULL;
@@ -150,9 +151,35 @@ static void test_fw_supportability_metrics_with_vm_enabled(void) {
       = {.package_name = LIBRARY_NAME,
          .package_version = NULL,
          .source_priority = NR_PHP_PACKAGE_SOURCE_COMPOSER};
+  nr_php_package_t php_package_unknown_version
+      = {.package_name = LIBRARY_NAME,
+         .package_version = PHP_PACKAGE_VERSION_UNKNOWN,
+         .source_priority = NR_PHP_PACKAGE_SOURCE_COMPOSER};
   txn->unscoped_metrics = nrm_table_create(10);
 
   NRINI(force_framework) = false;
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME, NULL,
+                                                  &php_package_null_version);
+  tlib_pass_if_null(
+      "library major version metric not created when version is unknown - "
+      "version is NULL and package version is NULL",
+      nrm_get_metric(txn->unscoped_metrics, 0));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME,
+                                                  PHP_PACKAGE_VERSION_UNKNOWN,
+                                                  &php_package_null_version);
+  tlib_pass_if_null(
+      "library major version metric not created when version is unknown - "
+      "version is PHP_PACKAGE_VERSION_UNKNOWN and package version is NULL",
+      nrm_get_metric(txn->unscoped_metrics, 0));
+
+  nr_fw_support_add_package_supportability_metric(txn, LIBRARY_NAME, NULL,
+                                                  &php_package_unknown_version);
+  tlib_pass_if_null(
+      "library major version metric not created when version is unknown - "
+      "version is NULL and package version is PHP_PACKAGE_VERSION_UNKNOWN",
+      nrm_get_metric(txn->unscoped_metrics, 0));
+
   nr_fw_support_add_package_supportability_metric(
       txn, LIBRARY_NAME, LIBRARY_MAJOR_VERSION, &php_package);
   tlib_pass_if_not_null(
