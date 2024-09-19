@@ -42,31 +42,8 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
     return NR_SUCCESS;
   }
 
-#if 0
-  (void)vendor_path;
-  code
-      = nr_formatf(""
-        "(function() {"
-        "  try {"
-        "      if (class_exists('Composer\\InstalledVersions')) {"
-        "          if (method_exists('Composer\\InstalledVersions', "
-        "             'getInstalledPackages') && method_exists('Composer\\InstalledVersions', "
-        "             'getVersion')) {"
-        "            return true;"
-        "          } else {"
-        "            return false;"
-        "          }"
-        "      } else {"
-        "        return false;"
-        "      }"
-        "  } catch (Exception $e) {"
-        "      return NULL;"
-        "  }"
-        "})();");
-#else
   code = nr_formatf("include_once '%s/composer/InstalledVersions.php';",
                     vendor_path);
-#endif
 
   result = zend_eval_string(code, &retval, "newrelic\\init_composer_api");
   if (result != SUCCESS) {
