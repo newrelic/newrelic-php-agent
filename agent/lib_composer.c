@@ -76,7 +76,8 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
 
   // nurunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
-    // do nothing when collecting package information for vulnerability management is disabled
+    // do nothing when collecting package information for vulnerability
+    // management is disabled
     return;
   }
 
@@ -86,6 +87,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     return;
   }
 
+  // clang-format off
   char* getallrawdata
         = ""
         "(function() {"
@@ -107,6 +109,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         "    return NULL;"
         "  }"
         "})();";
+  // clang-format on
 
   if (NR_SUCCESS != nr_execute_handle_autoload_composer_init(vendor_path)) {
     nrl_debug(NRL_INSTRUMENT,
@@ -119,15 +122,18 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available",
                    __func__);
 
-  result = zend_eval_string(getallrawdata, &retval, "composer_getallrawdata.php");
+  result
+      = zend_eval_string(getallrawdata, &retval, "composer_getallrawdata.php");
   if (SUCCESS != result) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed", __func__);
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed",
+                     __func__);
     return;
   }
   if (IS_ARRAY == Z_TYPE(retval)) {
     zend_string* package_name = NULL;
     zval* package_version = NULL;
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(retval), package_name, package_version) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(retval), package_name,
+                                  package_version) {
       if (NULL == package_name || NULL == package_version) {
         continue;
       }
@@ -135,14 +141,16 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
                          NRSAFESTR(ZSTR_VAL(package_name)),
                          NRSAFESTR(Z_STRVAL_P(package_version)));
-        nr_txn_add_php_package_from_source(NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
-                            NRSAFESTR(Z_STRVAL_P(package_version)), NR_PHP_PACKAGE_SOURCE_COMPOSER);
+        nr_txn_add_php_package_from_source(
+            NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
+            NRSAFESTR(Z_STRVAL_P(package_version)),
+            NR_PHP_PACKAGE_SOURCE_COMPOSER);
       }
     }
     ZEND_HASH_FOREACH_END();
   } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s - installed packages is not an array", __func__);
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s - installed packages is not an array",
+                     __func__);
   }
   zval_dtor(&retval);
 }
