@@ -9,6 +9,17 @@
 Mock of 'composer show' used by integration tests to generate list of packages.
 */
 
+$installedVersions = "autoload-with-composer/vendor/composer/InstalledVersions.php";
 
-include "autoload-with-composer/vendor/composer/InstalledVersions.php";
-Composer\InstalledVersions::show();
+if ($argc > 1) {
+    $installedVersions = $argv[1];
+}
+
+include $installedVersions;
+if ($argc > 2) {
+    $package = $argv[2];
+    $version = Composer\InstalledVersions::getVersion($package);
+    echo "$package => $version\n";
+} else {
+    Composer\InstalledVersions::show();
+}
