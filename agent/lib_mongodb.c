@@ -18,6 +18,8 @@
 
 #include "lib_mongodb_private.h"
 
+#define PHP_PACKAGE_NAME "mongodb/mongodb"
+
 static int nr_mongodb_is_server(const zval* obj TSRMLS_DC) {
   return nr_php_object_instanceof_class(obj,
                                         "MongoDB\\Driver\\Server" TSRMLS_CC);
@@ -445,7 +447,12 @@ void nr_mongodb_enable() {
 #endif /* OAPI */
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "mongodb/mongodb",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_fw_support_add_package_supportability_metric(
+    NRPRG(txn), PHP_PACKAGE_NAME, NULL,
+    nr_php_packages_get_package(NRPRG(txn)->php_packages,
+                                PHP_PACKAGE_NAME));
 }
