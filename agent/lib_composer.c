@@ -73,6 +73,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   zval retval;  // This is used as a return value for zend_eval_string.
                 // It will only be set if the result of the eval is SUCCESS.
   int result = -1;
+  nrobj_t* fixup_list = NULL;
 
   // nurunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
@@ -132,6 +133,8 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   if (IS_ARRAY == Z_TYPE(retval)) {
     zend_string* package_name = NULL;
     zval* package_version = NULL;
+    fixup_list = nro_new_array();
+
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(retval), package_name,
                                   package_version) {
       if (NULL == package_name || NULL == package_version) {
@@ -141,6 +144,19 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
                          NRSAFESTR(ZSTR_VAL(package_name)),
                          NRSAFESTR(Z_STRVAL_P(package_version)));
+        /* See if package was already defined without a version by 
+         * legacy package detection.  Keep a list of these and at 
+         * the end make package supportability metrics for these
+         */
+        nr_php_package_t *p = nr_php_packages_get_package(NRPRG(txn)->php_packages,
+                                        NRSAFESTR(ZSTR_VAL(package_name)));
+        if (NULL != p && 0 == nr_strncmp(p->package_version, PHP_PACKAGE_VERSION_UNKNOWN, 
+            strlen(PHP_PACKAGE_VERSION_UNKNOWN))) {
+          nro_set_array_string(fixup_list, 0, ZSTR_VAL(package_name));
+          nrl_verbose(NRL_INSTRUMENT,
+                      "Adding package %s to fixup list for supportability metric",
+                      NRSAFESTR(ZSTR_VAL(package_name)));
+        }
         nr_txn_add_php_package_from_source(
             NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
             NRSAFESTR(Z_STRVAL_P(package_version)),
@@ -151,6 +167,24 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   } else {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s - installed packages is not an array",
                      __func__);
+  }
+
+  /* if any packages need fixup do it now */
+  if (NULL != fixup_list) {
+    int num_packages = nro_getsize(fixup_list);
+    for (int i = 0; i < num_packages; i++) {
+      const char* package_name = nro_get_array_string(fixup_list, i + 1, NULL);
+      if (package_name != NULL) {
+        nr_fw_support_add_package_supportability_metric(
+            NRPRG(txn), package_name, NULL,
+            nr_php_packages_get_package(NRPRG(txn)->php_packages,
+                                        package_name));
+        nrl_verbosedebug(NRL_INSTRUMENT,
+                         "Handled fixup for package supportability metric for %s",
+                         package_name);
+      }
+    }
+    nro_delete(fixup_list);
   }
   zval_dtor(&retval);
 }

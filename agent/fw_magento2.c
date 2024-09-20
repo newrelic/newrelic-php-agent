@@ -540,7 +540,7 @@ void nr_magento2_enable(TSRMLS_D) {
       nr_magento2_ui_controller_execute TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "magento",
+    nr_txn_add_php_package(NRPRG(txn), "magento/magento2-base",
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 }
