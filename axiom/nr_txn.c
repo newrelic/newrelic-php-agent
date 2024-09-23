@@ -3519,3 +3519,14 @@ nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
   return nr_txn_add_php_package_from_source(txn, package_name, package_version,
                                             NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
+
+void nr_txn_php_package_set_options(nrtxn_t* txn,
+                                    char* package_name,
+                                    nr_php_package_options_t options) {
+  nr_php_packages_set_package_options(txn->php_packages, package_name, options);
+}
+
+nr_php_package_options_t nr_txn_php_package_get_options(nrtxn_t* txn,
+                                                        char* package_name) {
+  return nr_php_packages_get_package_options(txn->php_packages, package_name);
+}

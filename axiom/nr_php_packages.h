@@ -19,15 +19,24 @@ typedef enum {
   NR_PHP_PACKAGE_SOURCE_COMPOSER
 } nr_php_package_source_priority_t;
 
+#define NR_PHP_PACKAGE_OPTION_MAJOR_METRIC (1 << 0)
+typedef uint32_t nr_php_package_options_t;
+
 typedef struct _nr_php_package_t {
   char* package_name;
   char* package_version;
   nr_php_package_source_priority_t source_priority;
+  nr_php_package_options_t options;
 } nr_php_package_t;
 
 typedef struct _nr_php_packages_t {
   nr_hashmap_t* data;
 } nr_php_packages_t;
+
+typedef void(nr_php_packages_iter_t)(void* value,
+                                     const char* name,
+                                     size_t name_len,
+                                     void* user_data);
 
 /*
  * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
@@ -68,6 +77,32 @@ extern nr_php_package_t* nr_php_package_create(char* name, char* version);
  * Returns : Nothing
  */
 extern void nr_php_package_destroy(nr_php_package_t* p);
+
+/*
+ * Purpose : Sets the options on a php package.
+ *           The options are used to store additional information about the
+ *           package.
+ *
+ * Params  : 1. A pointer to the pointer of nr_php_package_t
+ *           2. Options to set on the package, represented as a bit field
+ *              stored in the nr_php_package_options_t type
+ *
+ * Returns : Nothing
+ */
+extern void nr_php_package_set_options(nr_php_package_t* p,
+                                       nr_php_package_options_t options);
+
+/*
+ * Purpose : Gets the options on a php package.
+ *           The options are used to store additional information about the
+ *           package.
+ *
+ * Params  : 1. A pointer to the pointer of nr_php_package_t
+ *
+ * Returns : Options to set on the package, represented as a bit field
+ *           stored in the nr_php_package_options_t type
+ */
+extern nr_php_package_options_t nr_php_package_get_options(nr_php_package_t* p);
 
 /*
  * Purpose : Allocate memory for new collection that will hold packages
@@ -149,8 +184,9 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
  *
  * Returns : Returns pointer to php package if the package exists or NULL
  */
-static inline nr_php_package_t* nr_php_packages_get_package(nr_php_packages_t* php_packages,
-                                              const char* package_name) {
+static inline nr_php_package_t* nr_php_packages_get_package(
+    nr_php_packages_t* php_packages,
+    const char* package_name) {
   if (NULL == package_name) {
     return NULL;
   }
@@ -160,6 +196,44 @@ static inline nr_php_package_t* nr_php_packages_get_package(nr_php_packages_t* p
   }
   return NULL;
 }
+
+/*
+ * Purpose : Set package options for a package in the collection
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. The name of the package to modify
+ *           3. The options to set on the package
+ *
+ * Returns : Nothing
+ */
+void nr_php_packages_set_package_options(nr_php_packages_t* h,
+                                         const char* package_name,
+                                         nr_php_package_options_t options);
+
+/*
+ * Purpose : Get package options for a package in the collection
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. The name of the package to modify
+ *
+ * Returns : The options to for the package.
+ */
+nr_php_package_options_t nr_php_packages_get_package_options(
+    nr_php_packages_t* h,
+    const char* package_name);
+
+/*
+ * Purpose : Iterate over packages calling callback function
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. Callback function (nr_php_packages_iter_t)
+ *           3. Pointer to user data (can be NULL)
+ *
+ * Returns : Nothing
+ */
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata);
 
 /*
  * Purpose : Converts a package to a json
