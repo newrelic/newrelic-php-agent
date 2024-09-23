@@ -524,5 +524,14 @@ void nr_monolog_enable(TSRMLS_D) {
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
+    /* Usually we would set the package major metric option here, but legacy
+     * VM detection will get the version from the logger API constant
+     * and we create the package major metric then as it will work even
+     * if the composer API is not being used for VM.
+     *
+     * The version detection is done in the addRecord wrapper and only
+     * returns a major number, so this value is not stored in the PHP
+     * package record for monolog.  This is different than most packages.
+     */
   }
 }

@@ -1196,8 +1196,35 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
  *
  * Returns : pointer to added package on success or NULL otherwise.
  */
-nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
-                                         char* package_name,
-                                         char* package_version);
+extern nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
+                                                char* package_name,
+                                                char* package_version);
+
+/*
+ * Purpose : Set option(s) on a php package. Options contain
+ *           additional context for each package.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Option(s) to set (nr_php_packages_options_t)
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_php_package_set_options(nrtxn_t* txn,
+                                           char* package_name,
+                                           nr_php_package_options_t options);
+
+/*
+ * Purpose : Get option(s) on a php package. Options contain
+ *           additional context for each package.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *
+ * Returns : Option(s) to set (nr_php_packages_options_t).
+ */
+extern nr_php_package_options_t nr_txn_php_package_get_options(
+    nrtxn_t* txn,
+    char* package_name);
 
 #endif /* NR_TXN_HDR */

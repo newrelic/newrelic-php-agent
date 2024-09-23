@@ -55,6 +55,7 @@ nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, c
                                        // string with a space according to spec
   }
   p->source_priority = source_priority;
+  p->options = 0;
 
   nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s', source %s",
                    p->package_name, p->package_version, nr_php_package_source_priority_to_string(source_priority));
@@ -71,6 +72,20 @@ void nr_php_package_destroy(nr_php_package_t* p) {
     nr_free(p->package_version);
     nr_free(p);
   }
+}
+
+void nr_php_package_set_options(nr_php_package_t* p,
+                                nr_php_package_options_t options) {
+  if (NULL != p) {
+    p->options = options;
+  }
+}
+
+nr_php_package_options_t nr_php_package_get_options(nr_php_package_t* p) {
+  if (NULL == p) {
+    return 0;
+  }
+  return p->options;
 }
 
 nr_php_packages_t* nr_php_packages_create() {
@@ -114,6 +129,58 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
 
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
   return p;
+}
+
+void nr_php_packages_set_package_options(nr_php_packages_t* h,
+                                         const char* package_name,
+                                         nr_php_package_options_t options) {
+  nr_php_package_t* package;
+
+  if (NULL == h) {
+    return;
+  }
+
+  if (nr_strempty(package_name)) {
+    return;
+  }
+
+  package = nr_php_packages_get_package(h, package_name);
+  if (NULL == package) {
+    return;
+  }
+
+  nr_php_package_set_options(package, options);
+}
+
+nr_php_package_options_t nr_php_packages_get_package_options(
+    nr_php_packages_t* h,
+    const char* package_name) {
+  nr_php_package_t* package;
+
+  if (NULL == h) {
+    return 0;
+  }
+
+  if (nr_strempty(package_name)) {
+    return 0;
+  }
+
+  package = nr_php_packages_get_package(h, package_name);
+  if (NULL == package) {
+    return 0;
+  }
+
+  return nr_php_package_get_options(package);
+}
+
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata) {
+  if (NULL == packages || NULL == callback) {
+    return;
+  }
+
+  nr_hashmap_apply(packages->data, (nr_hashmap_apply_func_t)callback, userdata);
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

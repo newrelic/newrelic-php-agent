@@ -65,3 +65,10 @@ extern void nr_php_txn_create_agent_version_metric(nrtxn_t* txn);
  */
 extern void nr_php_txn_create_php_version_metric(nrtxn_t* txn,
                                                  const char* version);
+
+/*
+ * Purpose : Create and record metric for a package major versions.
+ *
+ * Params  : 1. The current transaction.
+ */
+extern void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn);
