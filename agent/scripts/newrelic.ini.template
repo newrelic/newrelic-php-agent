@@ -1543,3 +1543,14 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Always sample traces regardless of other schedule settings
 ;
 ;newrelic.security.scan_schedule.always_sample_traces = false
+
+; Setting: newrelic.security.iast_test_identifier
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Sets the identifier for allowing users to run IAST for CI/CD. Provide
+;          a unique identifier (i.e. Build Id) to filter application tests properly.
+;          Also, configurable via env variable NEW_RELIC_SECURITY_IAST_TEST_IDENTIFIER
+;          which takes precedence over this config.
+;
+;newrelic.security.iast_test_identifier = ""
