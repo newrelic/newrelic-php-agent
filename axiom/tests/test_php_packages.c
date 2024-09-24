@@ -222,7 +222,7 @@ static void test_php_package_priority(void) {
     count = nr_php_packages_count(hm);
     tlib_pass_if_int_equal("add same package", 1, count);
 
-    p = (nr_php_package_t*)nr_hashmap_get(hm->data, PACKAGE_NAME, nr_strlen(PACKAGE_NAME));
+    p = nr_php_packages_get_package(hm, PACKAGE_NAME);
     tlib_pass_if_not_null("package exists", p);
     tlib_pass_if_str_equal("package version from composer wins", COMPOSER_VERSION, p->package_version);
 
@@ -244,7 +244,7 @@ static void test_php_package_priority(void) {
     count = nr_php_packages_count(hm);
     tlib_pass_if_int_equal("add same package", 1, count);
 
-    p = (nr_php_package_t*)nr_hashmap_get(hm->data, PACKAGE_NAME, nr_strlen(PACKAGE_NAME));
+    p = nr_php_packages_get_package(hm, PACKAGE_NAME);
     tlib_pass_if_not_null("package exists", p);
     tlib_pass_if_str_equal("package version from composer wins", COMPOSER_VERSION, p->package_version);
 
@@ -266,7 +266,7 @@ static void test_php_package_priority(void) {
   count = nr_php_packages_count(hm);
   tlib_pass_if_int_equal("add same package", 1, count);
 
-  p = (nr_php_package_t*)nr_hashmap_get(hm->data, PACKAGE_NAME, nr_strlen(PACKAGE_NAME));
+  p = nr_php_packages_get_package(hm, PACKAGE_NAME);
   tlib_pass_if_not_null("package exists", p);
   tlib_pass_if_str_equal("package version from last composer wins", COMPOSER_VERSION_2, p->package_version);
 
