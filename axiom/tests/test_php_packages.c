@@ -197,8 +197,10 @@ static void test_php_package_priority(void) {
 #define NO_VERSION NULL
 #define PACKAGE_VERSION "1.0.0"
 #define COMPOSER_VERSION "1.0.1"
+#define COMPOSER_VERSION_2 "2.0.1"
   nr_php_package_t* legacy_package;
   nr_php_package_t* composer_package;
+  nr_php_package_t* composer_package_2;
   nr_php_package_t* p;
   nr_php_packages_t* hm = NULL;
   int count;
@@ -248,6 +250,27 @@ static void test_php_package_priority(void) {
 
     nr_php_packages_destroy(&hm);
   }
+
+  // Package added with composer priority only - last version from composer should win
+  composer_package = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
+  tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package->source_priority);
+
+  composer_package_2 = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION_2, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
+  tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package_2->source_priority);
+
+  hm = nr_php_packages_create();
+  // order of adding packages: composer first, composer second
+  nr_php_packages_add_package(hm, composer_package);
+  nr_php_packages_add_package(hm, composer_package_2);
+
+  count = nr_php_packages_count(hm);
+  tlib_pass_if_int_equal("add same package", 1, count);
+
+  p = (nr_php_package_t*)nr_hashmap_get(hm->data, PACKAGE_NAME, nr_strlen(PACKAGE_NAME));
+  tlib_pass_if_not_null("package exists", p);
+  tlib_pass_if_str_equal("package version from last composer wins", COMPOSER_VERSION_2, p->package_version);
+
+  nr_php_packages_destroy(&hm);
 }
 
 tlib_parallel_info_t parallel_info
