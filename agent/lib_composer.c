@@ -88,7 +88,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   }
 
   // clang-format off
-  const char* getallrawdata
+  char* getallrawdata
         = ""
         "(function() {"
         "  try {"
