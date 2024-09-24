@@ -35,7 +35,7 @@ static bool nr_execute_handle_autoload_composer_is_initialized() {
 static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
   char* code = NULL;
   zval retval;
-  int result = -1;
+  int result = FAILURE;
 
   if (nr_execute_handle_autoload_composer_is_initialized()) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: already initialized", __func__);
@@ -72,7 +72,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     const char* vendor_path) {
   zval retval;  // This is used as a return value for zend_eval_string.
                 // It will only be set if the result of the eval is SUCCESS.
-  int result = -1;
+  int result = FAILURE;
 
   // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
