@@ -12,21 +12,6 @@ It contains \Composer\InstalledVersions class with methods used by the agent to 
 namespace Composer;
 class InstalledVersions
 {
-    // This Composer's runtime API method is used by the agent to get the installed version of a package:
-    public static function getVersion(string $packageName)
-    {
-        $installed = self::getAllRawData();
-        return $installed[0]['versions'][$packageName]['version'];
-    }
-
-    // This Composer's runtime API method is used by the agent to get the list of installed packages:
-    public static function getInstalledPackages()
-    {
-        // Return the package names
-        $installed = self::getAllRawData();
-        return array_keys($installed[0]['versions']);
-    }
-
     // This Composer's runtime API method is used by the agent to get the list of installed packages:
     public static function getAllRawData()
     {

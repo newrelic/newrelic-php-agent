@@ -17,8 +17,9 @@ if ($argc > 1) {
 
 include $installedVersions;
 if ($argc > 2) {
+    $installed = Composer\InstalledVersions::getAllRawData();
     $package = $argv[2];
-    $version = Composer\InstalledVersions::getVersion($package);
+    $version = ltrim($installed[0]['versions'][$package]['pretty_version'], 'v');
     echo "$package => $version\n";
 } else {
     Composer\InstalledVersions::show();
