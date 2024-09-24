@@ -149,8 +149,11 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     }
     ZEND_HASH_FOREACH_END();
   } else {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s - installed packages is not an array",
-                     __func__);
+    char strbuf[80];
+    nr_format_zval_for_debug(&retval, strbuf, 0, sizeof(strbuf) - 1, 0);
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s - installed packages is: " NRP_FMT ", not an array",
+                     __func__, NRP_ARGSTR(strbuf));
   }
   zval_dtor(&retval);
 }
