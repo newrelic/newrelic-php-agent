@@ -175,7 +175,12 @@ static char* nr_execute_handle_autoload_composer_get_vendor_path(
   // 2. // find last occurence of '/' in vendor_path
   cp = nr_strrchr(vendor_path, '/');
   // 3. replace '/' with '\0' to get the directory path
-  *cp = '\0';
+  if (NULL != cp) {
+    *cp = '\0';
+  } else {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s - no '/' in filename '%s'", __func__,
+                     filename);
+  }
 
   return vendor_path;
 }
