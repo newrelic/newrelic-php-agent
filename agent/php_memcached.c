@@ -1,3 +1,8 @@
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "php_memcached.h"
 #include "nr_datastore_instance.h"
 #include "php_agent.h"
