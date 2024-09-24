@@ -204,15 +204,22 @@ static void test_php_package_priority(void) {
   nr_php_package_t* p;
   nr_php_packages_t* hm = NULL;
   int count;
-  char* legacy_versions[] = {
-      NO_VERSION, PACKAGE_VERSION};
+  char* legacy_versions[] = {NO_VERSION, PACKAGE_VERSION};
 
   // Package added with legacy priority first - version from composer should win
-  for (size_t i = 0; i < sizeof(legacy_versions)/sizeof(legacy_versions[0]); i++) {
-    legacy_package = nr_php_package_create(PACKAGE_NAME, legacy_versions[i]); // legacy priority
-    tlib_pass_if_int_equal("create package by uses legacy priority", NR_PHP_PACKAGE_SOURCE_LEGACY, legacy_package->source_priority);
-    composer_package = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
-    tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package->source_priority);
+  for (size_t i = 0; i < sizeof(legacy_versions) / sizeof(legacy_versions[0]);
+       i++) {
+    legacy_package = nr_php_package_create(
+        PACKAGE_NAME, legacy_versions[i]);  // legacy priority
+    tlib_pass_if_int_equal("create package by uses legacy priority",
+                           NR_PHP_PACKAGE_SOURCE_LEGACY,
+                           legacy_package->source_priority);
+    composer_package = nr_php_package_create_with_source(
+        PACKAGE_NAME, COMPOSER_VERSION,
+        NR_PHP_PACKAGE_SOURCE_COMPOSER);  // composer priority
+    tlib_pass_if_int_equal("create package by uses composer priority",
+                           NR_PHP_PACKAGE_SOURCE_COMPOSER,
+                           composer_package->source_priority);
 
     hm = nr_php_packages_create();
     // order of adding packages: legacy first, composer second
@@ -224,17 +231,27 @@ static void test_php_package_priority(void) {
 
     p = nr_php_packages_get_package(hm, PACKAGE_NAME);
     tlib_pass_if_not_null("package exists", p);
-    tlib_pass_if_str_equal("package version from composer wins", COMPOSER_VERSION, p->package_version);
+    tlib_pass_if_str_equal("package version from composer wins",
+                           COMPOSER_VERSION, p->package_version);
 
     nr_php_packages_destroy(&hm);
   }
 
-  // Package added with composer priority first - version from composer should win
-  for (size_t i = 0; i < sizeof(legacy_versions)/sizeof(legacy_versions[0]); i++) {
-    legacy_package = nr_php_package_create(PACKAGE_NAME, legacy_versions[i]); // legacy priority
-    tlib_pass_if_int_equal("create package by uses legacy priority", NR_PHP_PACKAGE_SOURCE_LEGACY, legacy_package->source_priority);
-    composer_package = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
-    tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package->source_priority);
+  // Package added with composer priority first - version from composer should
+  // win
+  for (size_t i = 0; i < sizeof(legacy_versions) / sizeof(legacy_versions[0]);
+       i++) {
+    legacy_package = nr_php_package_create(
+        PACKAGE_NAME, legacy_versions[i]);  // legacy priority
+    tlib_pass_if_int_equal("create package by uses legacy priority",
+                           NR_PHP_PACKAGE_SOURCE_LEGACY,
+                           legacy_package->source_priority);
+    composer_package = nr_php_package_create_with_source(
+        PACKAGE_NAME, COMPOSER_VERSION,
+        NR_PHP_PACKAGE_SOURCE_COMPOSER);  // composer priority
+    tlib_pass_if_int_equal("create package by uses composer priority",
+                           NR_PHP_PACKAGE_SOURCE_COMPOSER,
+                           composer_package->source_priority);
 
     hm = nr_php_packages_create();
     // order of adding packages: legacy first, composer second
@@ -246,17 +263,27 @@ static void test_php_package_priority(void) {
 
     p = nr_php_packages_get_package(hm, PACKAGE_NAME);
     tlib_pass_if_not_null("package exists", p);
-    tlib_pass_if_str_equal("package version from composer wins", COMPOSER_VERSION, p->package_version);
+    tlib_pass_if_str_equal("package version from composer wins",
+                           COMPOSER_VERSION, p->package_version);
 
     nr_php_packages_destroy(&hm);
   }
 
-  // Package added with composer priority only - last version from composer should win
-  composer_package = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
-  tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package->source_priority);
+  // Package added with composer priority only - last version from composer
+  // should win
+  composer_package = nr_php_package_create_with_source(
+      PACKAGE_NAME, COMPOSER_VERSION,
+      NR_PHP_PACKAGE_SOURCE_COMPOSER);  // composer priority
+  tlib_pass_if_int_equal("create package by uses composer priority",
+                         NR_PHP_PACKAGE_SOURCE_COMPOSER,
+                         composer_package->source_priority);
 
-  composer_package_2 = nr_php_package_create_with_source(PACKAGE_NAME, COMPOSER_VERSION_2, NR_PHP_PACKAGE_SOURCE_COMPOSER); // composer priority
-  tlib_pass_if_int_equal("create package by uses composer priority", NR_PHP_PACKAGE_SOURCE_COMPOSER, composer_package_2->source_priority);
+  composer_package_2 = nr_php_package_create_with_source(
+      PACKAGE_NAME, COMPOSER_VERSION_2,
+      NR_PHP_PACKAGE_SOURCE_COMPOSER);  // composer priority
+  tlib_pass_if_int_equal("create package by uses composer priority",
+                         NR_PHP_PACKAGE_SOURCE_COMPOSER,
+                         composer_package_2->source_priority);
 
   hm = nr_php_packages_create();
   // order of adding packages: composer first, composer second
@@ -268,7 +295,8 @@ static void test_php_package_priority(void) {
 
   p = nr_php_packages_get_package(hm, PACKAGE_NAME);
   tlib_pass_if_not_null("package exists", p);
-  tlib_pass_if_str_equal("package version from last composer wins", COMPOSER_VERSION_2, p->package_version);
+  tlib_pass_if_str_equal("package version from last composer wins",
+                         COMPOSER_VERSION_2, p->package_version);
 
   nr_php_packages_destroy(&hm);
 }
