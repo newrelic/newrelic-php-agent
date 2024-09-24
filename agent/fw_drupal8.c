@@ -761,6 +761,6 @@ void nr_drupal8_enable(TSRMLS_D) {
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 
-  nr_txn_php_package_set_options(NRPRG(txn), PHP_PACKAGE_NAME,
-                                 NR_PHP_PACKAGE_OPTION_MAJOR_METRIC);
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

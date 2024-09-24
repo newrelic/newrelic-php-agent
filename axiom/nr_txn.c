@@ -542,6 +542,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
   nt->log_events = nr_log_events_create(app->limits.log_events);
   nt->php_packages = nr_php_packages_create();
+  nt->php_package_suggestions = nr_php_packages_create();
 
   /*
    * reset flag for creation of one-time logging metrics
@@ -1246,6 +1247,7 @@ void nr_txn_destroy_fields(nrtxn_t* txn) {
   nr_segment_destroy_tree(txn->segment_root);
   nr_hashmap_destroy(&txn->parent_stacks);
   nr_php_packages_destroy(&txn->php_packages);
+  nr_php_packages_destroy(&txn->php_package_suggestions);
   nr_stack_destroy_fields(&txn->default_parent_stack);
   nr_slab_destroy(&txn->segment_slab);
   nr_minmax_heap_set_destructor(txn->segment_heap, NULL, NULL);
@@ -3520,13 +3522,23 @@ nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
                                             NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
 
-void nr_txn_php_package_set_options(nrtxn_t* txn,
-                                    char* package_name,
-                                    nr_php_package_options_t options) {
-  nr_php_packages_set_package_options(txn->php_packages, package_name, options);
-}
+void nr_txn_suggest_package_supportability_metric(nrtxn_t* txn,
+                                                  const char* package_name,
+                                                  const char* package_version) {
+  nr_php_package_t* p = NULL;
 
-nr_php_package_options_t nr_txn_php_package_get_options(nrtxn_t* txn,
-                                                        char* package_name) {
-  return nr_php_packages_get_package_options(txn->php_packages, package_name);
+  if (nrunlikely(NULL == txn)) {
+    return;
+  }
+
+  if (nr_strempty(package_name)) {
+    return;
+  }
+
+  nrl_verbosedebug(NRL_TXN, "Suggesting package %s %s", NRSAFESTR(package_name),
+                   NRSAFESTR(package_version));
+
+  p = nr_php_package_create_with_source(package_name, package_version,
+                                        NR_PHP_PACKAGE_SOURCE_SUGGESTION);
+  nr_php_packages_add_package(txn->php_package_suggestions, p);
 }

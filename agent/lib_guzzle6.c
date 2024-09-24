@@ -352,19 +352,10 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
 
   char* version = nr_php_get_object_constant(this_var, "VERSION");
-  nr_php_package_t* p = NULL;
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
-    p = nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
-
-    /* mark package for package major metric creation later if
-     * a full version was detected
-     */
-    if (NULL != version) {
-      nr_txn_php_package_set_options(NRPRG(txn), PHP_PACKAGE_NAME,
-                                     NR_PHP_PACKAGE_OPTION_MAJOR_METRIC);
-    }
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
   }
 
   /*
@@ -378,10 +369,15 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
    */
   if (NULL == version) {
     version = nr_php_get_object_constant(this_var, "MAJOR_VERSION");
-    nr_fw_support_add_package_supportability_metric(
-        NRPRG(txn), PHP_PACKAGE_NAME, version, p);
   }
 
+  /* if version is still NULL that is OK this next call will accept
+   * that value and when supportability metrics are made for
+   * packages if another method has determined the package version
+   * (composer api for example) then it will be filled in at that time
+   */
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
   nr_free(version);
 
   (void)wraprec;

@@ -25,6 +25,8 @@ typedef struct {
 
 static inline const char* nr_php_package_source_priority_to_string(const nr_php_package_source_priority_t source_priority) {
   switch (source_priority) {
+    case NR_PHP_PACKAGE_SOURCE_SUGGESTION:
+      return "suggestion";
     case NR_PHP_PACKAGE_SOURCE_LEGACY:
       return "legacy";
     case NR_PHP_PACKAGE_SOURCE_COMPOSER:
@@ -34,7 +36,10 @@ static inline const char* nr_php_package_source_priority_to_string(const nr_php_
   }
 }
 
-nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, const nr_php_package_source_priority_t source_priority) {
+nr_php_package_t* nr_php_package_create_with_source(
+    const char* name,
+    const char* version,
+    const nr_php_package_source_priority_t source_priority) {
   nr_php_package_t* p = NULL;
 
   if (NULL == name) {
@@ -55,14 +60,13 @@ nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, c
                                        // string with a space according to spec
   }
   p->source_priority = source_priority;
-  p->options = 0;
 
   nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s', source %s",
                    p->package_name, p->package_version, nr_php_package_source_priority_to_string(source_priority));
   return p;
 }
 
-nr_php_package_t* nr_php_package_create(char* name, char* version) {
+nr_php_package_t* nr_php_package_create(const char* name, const char* version) {
   return nr_php_package_create_with_source(name, version, NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
 
@@ -72,20 +76,6 @@ void nr_php_package_destroy(nr_php_package_t* p) {
     nr_free(p->package_version);
     nr_free(p);
   }
-}
-
-void nr_php_package_set_options(nr_php_package_t* p,
-                                nr_php_package_options_t options) {
-  if (NULL != p) {
-    p->options = options;
-  }
-}
-
-nr_php_package_options_t nr_php_package_get_options(nr_php_package_t* p) {
-  if (NULL == p) {
-    return 0;
-  }
-  return p->options;
 }
 
 nr_php_packages_t* nr_php_packages_create() {
@@ -129,48 +119,6 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
 
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
   return p;
-}
-
-void nr_php_packages_set_package_options(nr_php_packages_t* h,
-                                         const char* package_name,
-                                         nr_php_package_options_t options) {
-  nr_php_package_t* package;
-
-  if (NULL == h) {
-    return;
-  }
-
-  if (nr_strempty(package_name)) {
-    return;
-  }
-
-  package = nr_php_packages_get_package(h, package_name);
-  if (NULL == package) {
-    return;
-  }
-
-  nr_php_package_set_options(package, options);
-}
-
-nr_php_package_options_t nr_php_packages_get_package_options(
-    nr_php_packages_t* h,
-    const char* package_name) {
-  nr_php_package_t* package;
-
-  if (NULL == h) {
-    return 0;
-  }
-
-  if (nr_strempty(package_name)) {
-    return 0;
-  }
-
-  package = nr_php_packages_get_package(h, package_name);
-  if (NULL == package) {
-    return 0;
-  }
-
-  return nr_php_package_get_options(package);
 }
 
 void nr_php_packages_iterate(nr_php_packages_t* packages,

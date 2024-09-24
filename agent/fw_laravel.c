@@ -962,9 +962,10 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
-    nr_txn_php_package_set_options(NRPRG(txn), PHP_PACKAGE_NAME,
-                                   NR_PHP_PACKAGE_OPTION_MAJOR_METRIC);
   }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
 
   if (version) {
     nrl_debug(NRL_FRAMEWORK, "Laravel version is " NRP_FMT, NRP_PHP(version));
