@@ -207,21 +207,21 @@ void nr_composer_handle_autoload(const char* filename) {
                                                        COMPOSER_MAGIC_FILE_1)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'",
                      COMPOSER_MAGIC_FILE_1, vendor_path);
-    return;
+    goto leave;
   }
 
   if (!nr_execute_handle_autoload_composer_file_exists(vendor_path,
                                                        COMPOSER_MAGIC_FILE_2)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'",
                      COMPOSER_MAGIC_FILE_2, vendor_path);
-    return;
+    goto leave;
   }
 
   if (!nr_execute_handle_autoload_composer_file_exists(vendor_path,
                                                        COMPOSER_MAGIC_FILE_3)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "'%s' not found in '%s'",
                      COMPOSER_MAGIC_FILE_3, vendor_path);
-    return;
+    goto leave;
   }
 
   nrl_verbosedebug(NRL_FRAMEWORK, "detected composer");
@@ -229,5 +229,6 @@ void nr_composer_handle_autoload(const char* filename) {
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
 
   nr_execute_handle_autoload_composer_get_packages_information(vendor_path);
+leave:
   nr_free(vendor_path);
 }
