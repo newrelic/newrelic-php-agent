@@ -11,7 +11,7 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
-// When package detection for vulnerability management is disbled,
+// When package detection for vulnerability management is disabled,
 // txn->php_packages is not populated and package version cannot
 // be obtained from php_package. This test is to ensure that
 // the package supportability metric is created in case php_package

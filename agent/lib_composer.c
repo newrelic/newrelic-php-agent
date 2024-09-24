@@ -74,14 +74,14 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                 // It will only be set if the result of the eval is SUCCESS.
   int result = -1;
 
-  // nurunlikely because this should alredy be ensured by the caller
+  // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
     // do nothing when collecting package information for vulnerability
     // management is disabled
     return;
   }
 
-  // nurunlikely because this should alredy be ensured by the caller
+  // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_composer_api_enabled))) {
     // do nothing when use of composer to collect package info is disabled
     return;
