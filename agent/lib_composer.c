@@ -139,12 +139,10 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
       }
       if (nr_php_is_zval_non_empty_string(package_version)) {
         nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
-                         NRSAFESTR(ZSTR_VAL(package_name)),
-                         NRSAFESTR(Z_STRVAL_P(package_version)));
-        nr_txn_add_php_package_from_source(
-            NRPRG(txn), NRSAFESTR(ZSTR_VAL(package_name)),
-            NRSAFESTR(Z_STRVAL_P(package_version)),
-            NR_PHP_PACKAGE_SOURCE_COMPOSER);
+                         ZSTR_VAL(package_name), Z_STRVAL_P(package_version));
+        nr_txn_add_php_package_from_source(NRPRG(txn), ZSTR_VAL(package_name),
+                                           Z_STRVAL_P(package_version),
+                                           NR_PHP_PACKAGE_SOURCE_COMPOSER);
       }
     }
     ZEND_HASH_FOREACH_END();
