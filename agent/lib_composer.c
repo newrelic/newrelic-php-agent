@@ -163,6 +163,12 @@ static char* nr_execute_handle_autoload_composer_get_vendor_path(
   char* vendor_path = NULL;  // result of dirname(filename)
   char* cp = NULL;
 
+  // nrunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(NULL == filename)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s - filename is NULL", __func__);
+    return NULL;
+  }
+
   // vendor_path = dirname(filename):
   // 1. copy filename to vendor_path
   vendor_path = nr_strdup(filename);
@@ -179,6 +185,18 @@ static bool nr_execute_handle_autoload_composer_file_exists(
     const char* filename) {
   char* composer_magic_file = NULL;  // vendor_path + filename
   bool file_exists = false;
+
+  // nrunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(NULL == vendor_path)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s - vendor_path is NULL", __func__);
+    return false;
+  }
+
+  // nrunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(NULL == filename)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s - filename is NULL", __func__);
+    return false;
+  }
 
   composer_magic_file = nr_formatf("%s/%s", vendor_path, filename);
   if (0 == nr_access(composer_magic_file, F_OK | R_OK)) {
@@ -198,6 +216,12 @@ void nr_composer_handle_autoload(const char* filename) {
 #define COMPOSER_MAGIC_FILE_3 "composer/installed.php"
 #define COMPOSER_MAGIC_FILE_3_LEN (sizeof(COMPOSER_MAGIC_FILE_3) - 1)
   char* vendor_path = NULL;  // result of dirname(filename)
+
+  // nrunlikely because this should alredy be ensured by the caller
+  if (nrunlikely(NULL == filename)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s - filename is NULL", __func__);
+    return;
+  }
 
   vendor_path = nr_execute_handle_autoload_composer_get_vendor_path(filename);
   if (NULL == vendor_path) {
