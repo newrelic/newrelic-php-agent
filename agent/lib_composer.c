@@ -105,7 +105,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
         "      }"
         "    }"
         "    return $packages;"
-        "  } catch (Exception $e) {"
+        "  } catch (Throwable $e) {"
         "    return NULL;"
         "  }"
         "})();";
