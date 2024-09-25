@@ -724,6 +724,10 @@ static void nr_php_txn_php_package_create_major_metric(void* value,
   (void)key;
   (void)key_len;
 
+  if (NULL == txn) {
+    return;
+  }
+
   if (NULL == suggested) {
     return;
   }
@@ -739,7 +743,7 @@ static void nr_php_txn_php_package_create_major_metric(void* value,
                    "'%s', suggested version '%s', actual version '%s'",
                    NRSAFESTR(suggested->package_name),
                    NRSAFESTR(suggested->package_version),
-                   NRSAFESTR(actual ? actual->package_version : ""));
+                   NRSAFESTR(NULL != actual ? actual->package_version : ""));
   nr_fw_support_add_package_supportability_metric(
       txn, suggested->package_name, suggested->package_version, actual);
 }
