@@ -123,8 +123,9 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
   }
 
   /*
-   * Aws/Sdk class does not exist, should not create package metric suggestion
-   * if no version This case should never happen in real situations.
+   * Aws/Sdk class does not exist, should create package metric suggestion
+   * with PHP_PACKAGE_VERSION_UNKNOWN version. This case should never happen
+   * in real situations.
    */
   tlib_php_request_start();
 
@@ -133,17 +134,14 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
   p = nr_php_packages_get_package(
       NRPRG(txn)->php_package_major_version_metrics_suggestions, LIBRARY_NAME);
 
-  test_description = nr_formatf(TEST_DESCRIPTION_FMT, i, library_versions[i],
-                                "suggestion created");
-  tlib_pass_if_not_null(test_description, p);
-  nr_free(test_description);
-
-  test_description
-      = nr_formatf(TEST_DESCRIPTION_FMT, i, library_versions[i],
-                   "suggested version set to PHP_PACKAGE_VERSION_UNKNOWN");
-  tlib_pass_if_str_equal(test_description, PHP_PACKAGE_VERSION_UNKNOWN,
-                         p->package_version);
-  nr_free(test_description);
+  tlib_pass_if_not_null(
+      "nr_lib_aws_sdk_php_handle_version when Aws\\Sdk class is not defined - "
+      "suggestion created",
+      p);
+  tlib_pass_if_str_equal(
+      "nr_lib_aws_sdk_php_handle_version when Aws\\Sdk class is not defined - "
+      "suggested version set to PHP_PACKAGE_VERSION_UNKNOWN",
+      PHP_PACKAGE_VERSION_UNKNOWN, p->package_version);
 
   tlib_php_request_end();
 }
