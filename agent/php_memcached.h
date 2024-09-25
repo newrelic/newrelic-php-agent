@@ -16,7 +16,7 @@
  *           2. The memcached port as given as given to Memcached::addServer().
  */
 extern nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
-    const char* host,
+    const char* host_or_socket,
     zend_long port);
 
 #endif
