@@ -286,8 +286,9 @@ typedef struct _nrtxn_t {
       custom_events;               /* Custom events created through the API. */
   nr_log_events_t* log_events;     /* Log events pool */
   nr_php_packages_t* php_packages; /* Detected php packages */
-  nr_php_packages_t* php_package_suggestions; /* Suggested packages for major
-                                                 metric creation */
+  nr_php_packages_t*
+      php_package_major_version_metrics_suggestions; /* Suggested packages for
+                                  major metric creation */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -1205,10 +1206,10 @@ extern nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
 /*
  * Purpose : Add php package suggestion to transaction. This function
  * can be used when Vulnerability Management is not enabled.  It will
- * add the package to the transaction's php_package_suggestions list.
- * At the end of the transaction this list is traversed and any
- * suggestions with a known version will have a package major version
- * metric created.
+ * add the package to the transaction's
+ * php_package_major_version_metrics_suggestions list. At the end of the
+ * transaction this list is traversed and any suggestions with a known version
+ * will have a package major version metric created.
  *
  * Params  : 1. The transaction
  *           2. Package name

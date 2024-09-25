@@ -104,8 +104,9 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
     declare_aws_sdk_class("Aws", "Sdk", library_versions[i]);
     nr_lib_aws_sdk_php_handle_version();
 
-    p = nr_php_packages_get_package(NRPRG(txn)->php_package_suggestions,
-                                    LIBRARY_NAME);
+    p = nr_php_packages_get_package(
+        NRPRG(txn)->php_package_major_version_metrics_suggestions,
+        LIBRARY_NAME);
 
     test_description = nr_formatf(TEST_DESCRIPTION_FMT, i, library_versions[i],
                                   "suggestion created");
@@ -129,8 +130,8 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
 
   nr_lib_aws_sdk_php_handle_version();
 
-  p = nr_php_packages_get_package(NRPRG(txn)->php_package_suggestions,
-                                  LIBRARY_NAME);
+  p = nr_php_packages_get_package(
+      NRPRG(txn)->php_package_major_version_metrics_suggestions, LIBRARY_NAME);
 
   test_description = nr_formatf(TEST_DESCRIPTION_FMT, i, library_versions[i],
                                 "suggestion created");
