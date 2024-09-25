@@ -8,9 +8,9 @@
 #include "php_agent.h"
 #include "php_txn_private.h"
 
-#define LIBRARY_NAME "php/php-package"
-#define PACKAGE_VERSION "1.2.3"
-#define PACKAGE_MAJOR_VERSION "1"
+#define LIBRARY_NAME "vendor_name/package_name"
+#define LIBRARY_VERSION "1.2.3"
+#define LIBRARY_MAJOR_VERSION "1"
 #define COMPOSER_PACKAGE_VERSION "2.1.3"
 #define COMPOSER_MAJOR_VERSION "2"
 #define PACKAGE_METRIC_PREFIX "Supportability/PHP/package/"
@@ -20,7 +20,7 @@ tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 nr_php_package_t php_package
     = {.package_name = LIBRARY_NAME,
-       .package_version = PACKAGE_VERSION,
+       .package_version = LIBRARY_VERSION,
        .source_priority = NR_PHP_PACKAGE_SOURCE_COMPOSER};
 
 static void test_nr_php_txn_php_package_create_major_metric() {
@@ -134,14 +134,14 @@ static void test_nr_php_txn_create_packages_major_metrics() {
    * 8. test that causes "actual" to be NULL in callback
    */
   nr_txn_suggest_package_supportability_metric(txn, LIBRARY_NAME,
-                                               PACKAGE_VERSION);
+                                               LIBRARY_VERSION);
   nr_php_txn_create_packages_major_metrics(txn);
   tlib_pass_if_int_equal("suggestion with valid version, metric created", 1,
                          nrm_table_size(txn->unscoped_metrics));
   tlib_pass_if_not_null(
       "php package major version is used for 'detected' metric",
       nrm_find(txn->unscoped_metrics,
-               PACKAGE_METRIC "/" PACKAGE_MAJOR_VERSION "/detected"));
+               PACKAGE_METRIC "/" LIBRARY_MAJOR_VERSION "/detected"));
 
   /* reset metrics */
   nrm_table_destroy(&txn->unscoped_metrics);
@@ -195,7 +195,7 @@ static void test_nr_php_txn_create_packages_major_metrics() {
 
   /* 6. package with unknown version and suggestion with known version */
   nr_txn_suggest_package_supportability_metric(txn, LIBRARY_NAME,
-                                               PACKAGE_VERSION);
+                                               LIBRARY_VERSION);
   nr_txn_add_php_package_from_source(txn, LIBRARY_NAME,
                                      PHP_PACKAGE_VERSION_UNKNOWN,
                                      NR_PHP_PACKAGE_SOURCE_COMPOSER);
@@ -205,7 +205,7 @@ static void test_nr_php_txn_create_packages_major_metrics() {
   tlib_pass_if_not_null(
       "php package suggestion major version is used for 'detected' metric",
       nrm_find(txn->unscoped_metrics,
-               PACKAGE_METRIC "/" PACKAGE_MAJOR_VERSION "/detected"));
+               PACKAGE_METRIC "/" LIBRARY_MAJOR_VERSION "/detected"));
 
   /* reset everything */
   nrm_table_destroy(&txn->unscoped_metrics);
