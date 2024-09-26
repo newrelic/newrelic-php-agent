@@ -12,7 +12,7 @@
 #include "util_sql.h"
 #include "util_logging.h"
 
-static bool create_instance_metric(nr_segment_t* segment,
+static nr_status_t create_instance_metric(nr_segment_t* segment,
                                    const char* product,
                                    nr_segment_datastore_t* datastore,
                                    const nr_datastore_instance_t* instance) {
@@ -23,7 +23,7 @@ static bool create_instance_metric(nr_segment_t* segment,
   nrtxn_t* txn = segment->txn;
   char* instance_metric = NULL;
   if (NULL == instance || 0 == txn->options.instance_reporting_enabled) {
-    return false;
+    return NR_FAILURE;
   }
 
   if (txn->options.database_name_reporting_enabled) {
@@ -39,7 +39,7 @@ static bool create_instance_metric(nr_segment_t* segment,
                                             instance->port_path_or_id);
 
   nr_free(instance_metric);
-  return true;
+  return NR_SUCCESS;
 }
 
 static char* create_metrics(nr_segment_t* segment,
