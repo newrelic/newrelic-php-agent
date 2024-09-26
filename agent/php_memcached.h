@@ -14,6 +14,8 @@
  *
  * Params  : 1. The memcached host or socket name as given to Memcached::addServer().
  *           2. The memcached port as given as given to Memcached::addServer().
+ *
+ * Returns: nr_datastore_instance_t* that the caller is responsible for freeing
  */
 extern nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
     const char* host_or_socket,
