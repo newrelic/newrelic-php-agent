@@ -77,9 +77,11 @@ static char* create_metrics(nr_segment_t* segment,
   nr_free(statement_metric);
 
   create_instance_metric(segment, product, datastore, instance);
-  nr_datastore_instance_set_host(&datastore->instance, instance->host);
-  nr_datastore_instance_set_port_path_or_id(&datastore->instance,
-                                            instance->port_path_or_id);
+  if (NULL != instance && 0 != txn->options.instance_reporting_enabled) {
+    nr_datastore_instance_set_host(&datastore->instance, instance->host);
+    nr_datastore_instance_set_port_path_or_id(&datastore->instance,
+                                              instance->port_path_or_id);
+  }
   return scoped_metric;
 }
 
