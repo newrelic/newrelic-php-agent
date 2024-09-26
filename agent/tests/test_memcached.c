@@ -80,6 +80,15 @@ static void test_create_datastore_instance(void) {
           .port_path_or_id = "6379",
       }),
       nr_php_memcached_create_datastore_instance("host.name", 6379));
+
+  assert_datastore_instance_equals_destroy(
+      "NULL socket",
+      &((nr_datastore_instance_t){
+          .host = system_host_name,
+          .database_name = "unknown",
+          .port_path_or_id = "unknown",
+      }),
+      nr_php_memcached_create_datastore_instance(NULL, 0));
 }
 
 void test_main(void* p NRUNUSED) {
