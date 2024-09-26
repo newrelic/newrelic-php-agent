@@ -1211,7 +1211,7 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     /* Agent and PHP version metrics*/
     nr_php_txn_create_agent_php_version_metrics(txn);
 
-    /* PHP packages major number metrics */
+    /* PHP packages major version metrics */
     nr_php_txn_create_packages_major_metrics(txn);
 
     /* Add CPU and memory metrics */
