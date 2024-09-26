@@ -310,10 +310,6 @@ static void nr_php_packages_itereate_callback(void* value,
   const char* name = key;
   nrbuf_t* buf = (nrbuf_t*)user_data;
 
-  (void)key_len;
-  (void)name;
-  (void)package;
-
   if (NULL == buf) {
     return;
   }
