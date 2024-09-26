@@ -1595,9 +1595,7 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
   if (SUCCESS
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a", &servers)) {
-    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(servers), num_key, string_key, server) {
-      (void)num_key;
-      (void)string_key;
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
       zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
       zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
       if (NULL != host) {
