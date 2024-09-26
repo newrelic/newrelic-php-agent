@@ -60,7 +60,7 @@ monolog2.EMERGENCY: emergency []
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/PHP/package/monolog/monolog/2/detected"},           [8, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/PHP/package/monolog/monolog/2/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]]
   ]
 ]

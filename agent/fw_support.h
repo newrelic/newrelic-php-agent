@@ -8,6 +8,7 @@
 #define FW_SUPPORT_HDR
 
 #include "php_user_instrument.h"
+#include "nr_php_packages.h"
 
 extern void nr_php_framework_add_supportability_metric(
     const char* framework_name,
@@ -44,11 +45,13 @@ extern void nr_fw_support_add_logging_supportability_metric(
  * Params  : 1. Transaction object
  *           2. Package name
  *           3. Package version
+ *           4. PHP package reported for vulnerability management
  *
  */
 extern void nr_fw_support_add_package_supportability_metric(
     nrtxn_t* txn,
     const char* package_name,
-    const char* package_version);
+    const char* package_version,
+    nr_php_package_t* p);
 
 #endif /* FW_SUPPORT_HDR */

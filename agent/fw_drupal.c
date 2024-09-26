@@ -20,6 +20,8 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#define PHP_PACKAGE_NAME "drupal/drupal"
+
 /*
  * Set the Web Transaction (WT) name to "(cached page)"
  *
@@ -879,4 +881,12 @@ void nr_drupal_enable(TSRMLS_D) {
   nr_php_user_function_add_declared_callback(
       NR_PSTR("drupal_http_request"), nr_drupal_replace_http_request TSRMLS_CC);
 #endif
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

@@ -23,7 +23,23 @@ typedef struct {
   bool package_added;
 } nr_php_package_json_builder_t;
 
-nr_php_package_t* nr_php_package_create(char* name, char* version) {
+static inline const char* nr_php_package_source_priority_to_string(const nr_php_package_source_priority_t source_priority) {
+  switch (source_priority) {
+    case NR_PHP_PACKAGE_SOURCE_SUGGESTION:
+      return "suggestion";
+    case NR_PHP_PACKAGE_SOURCE_LEGACY:
+      return "legacy";
+    case NR_PHP_PACKAGE_SOURCE_COMPOSER:
+      return "composer";
+    default:
+      return "unknown";
+  }
+}
+
+nr_php_package_t* nr_php_package_create_with_source(
+    const char* name,
+    const char* version,
+    const nr_php_package_source_priority_t source_priority) {
   nr_php_package_t* p = NULL;
 
   if (NULL == name) {
@@ -43,10 +59,15 @@ nr_php_package_t* nr_php_package_create(char* name, char* version) {
         PHP_PACKAGE_VERSION_UNKNOWN);  // if null, version is set to an empty
                                        // string with a space according to spec
   }
+  p->source_priority = source_priority;
 
-  nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s'",
-                   p->package_name, p->package_version);
+  nrl_verbosedebug(NRL_INSTRUMENT, "Creating PHP Package '%s', version '%s', source %s",
+                   p->package_name, p->package_version, nr_php_package_source_priority_to_string(source_priority));
   return p;
+}
+
+nr_php_package_t* nr_php_package_create(const char* name, const char* version) {
+  return nr_php_package_create_with_source(name, version, NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
 
 void nr_php_package_destroy(nr_php_package_t* p) {
@@ -72,14 +93,15 @@ nr_php_packages_t* nr_php_packages_create() {
   return h;
 }
 
-void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
+nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
+                                              nr_php_package_t* p) {
   nr_php_package_t* package;
   if (NULL == h) {
-    return;
+    return NULL;
   }
 
   if (NULL == p || NULL == p->package_name || NULL == p->package_version) {
-    return;
+    return NULL;
   }
 
   // If package with the same key already exists, we will check if the value is
@@ -87,15 +109,26 @@ void nr_php_packages_add_package(nr_php_packages_t* h, nr_php_package_t* p) {
   package = (nr_php_package_t*)nr_hashmap_get(h->data, p->package_name,
                                               nr_strlen(p->package_name));
   if (NULL != package) {
-    if (0 != nr_strcmp(package->package_version, p->package_version)) {
+    if (package->source_priority <= p->source_priority && 0 != nr_strcmp(package->package_version, p->package_version)) {
       nr_free(package->package_version);
       package->package_version = nr_strdup(p->package_version);
     }
     nr_php_package_destroy(p);
-    return;
+    return package;
   }
 
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
+  return p;
+}
+
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata) {
+  if (NULL == packages || NULL == callback) {
+    return;
+  }
+
+  nr_hashmap_apply(packages->data, (nr_hashmap_apply_func_t)callback, userdata);
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

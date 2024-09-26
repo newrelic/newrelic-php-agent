@@ -19,10 +19,12 @@
 #include "nr_agent.h"
 #include "nr_commands.h"
 #include "nr_header.h"
+#include "nr_php_packages.h"
 #include "nr_rum.h"
 #include "nr_segment_children.h"
 #include "nr_txn.h"
 #include "nr_version.h"
+#include "fw_support.h"
 #include "util_labels.h"
 #include "util_logging.h"
 #include "util_memory.h"
@@ -711,6 +713,50 @@ void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
   nr_php_txn_create_php_version_metric(txn, version);
 }
 
+void nr_php_txn_php_package_create_major_metric(void* value,
+                                                const char* key,
+                                                size_t key_len,
+                                                void* user_data) {
+  nrtxn_t* txn = (nrtxn_t*)user_data;
+  nr_php_package_t* suggested = value;
+  nr_php_package_t* actual = NULL;
+
+  (void)key;
+  (void)key_len;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  if (NULL == suggested) {
+    return;
+  }
+
+  /* see if the actual packages has a version we can use over the
+   * one provided with the suggested package
+   */
+  actual
+      = nr_php_packages_get_package(txn->php_packages, suggested->package_name);
+
+  nrl_verbosedebug(
+      NRL_INSTRUMENT,
+      "Creating PHP Package Supportability Metric for package "
+      "'%s', suggested version '%s', actual version '%s'",
+      NRSAFESTR(suggested->package_name), NRSAFESTR(suggested->package_version),
+      NRSAFESTR(NULL != actual ? actual->package_version : "NULL"));
+  nr_fw_support_add_package_supportability_metric(
+      txn, suggested->package_name, suggested->package_version, actual);
+}
+
+void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn) {
+  if (NULL == txn) {
+    return;
+  }
+
+  nr_php_packages_iterate(txn->php_package_major_version_metrics_suggestions,
+                          nr_php_txn_php_package_create_major_metric, txn);
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -1164,6 +1210,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
     /* Agent and PHP version metrics*/
     nr_php_txn_create_agent_php_version_metrics(txn);
+
+    /* PHP packages major version metrics */
+    nr_php_txn_create_packages_major_metrics(txn);
 
     /* Add CPU and memory metrics */
     nr_php_resource_usage_sampler_end(TSRMLS_C);

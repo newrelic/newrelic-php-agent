@@ -203,6 +203,11 @@ typedef enum _nr_cpu_usage_t {
   NR_CPU_USAGE_COUNT = 2
 } nr_cpu_usage_t;
 
+typedef struct _nr_composer_info_t {
+  bool autoload_detected;
+  bool composer_detected;
+} nr_composer_info_t;
+
 /*
  * Possible transaction types, which go into the type bitfield in the nrtxn_t
  * struct.
@@ -281,6 +286,9 @@ typedef struct _nrtxn_t {
       custom_events;               /* Custom events created through the API. */
   nr_log_events_t* log_events;     /* Log events pool */
   nr_php_packages_t* php_packages; /* Detected php packages */
+  nr_php_packages_t*
+      php_package_major_version_metrics_suggestions; /* Suggested packages for
+                                  major metric creation */
   nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
   nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
 
@@ -302,6 +310,7 @@ typedef struct _nrtxn_t {
   nr_distributed_trace_t*
       distributed_trace; /* distributed tracing metadata for the transaction */
   nr_span_queue_t* span_queue; /* span queue when 8T is enabled */
+  nr_composer_info_t composer_info;
 
   /*
    * flag to indicate if one time (per transaction) logging metrics
@@ -1164,16 +1173,52 @@ static inline nr_segment_t* nr_txn_allocate_segment(nrtxn_t* txn) {
 }
 
 /*
- * Purpose : Add php packages to transaction. This function should only be
- *           called when Vulnerability Management is enabled.
+ * Purpose : Add php package to transaction from desired source. This function
+ * should only be called when Vulnerability Management is enabled.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Package version
+ *           4. Source priority
+ *
+ * Returns : pointer to added package on success or NULL otherwise.
+ */
+nr_php_package_t* nr_txn_add_php_package_from_source(
+    nrtxn_t* txn,
+    char* package_name,
+    char* package_version,
+    const nr_php_package_source_priority_t source);
+
+/*
+ * Purpose : Add php package to transaction from legacy source. This function
+ * should only be called when Vulnerability Management is enabled.
  *
  * Params  : 1. The transaction
  *           2. Package name
  *           3. Package version
  *
+ * Returns : pointer to added package on success or NULL otherwise.
  */
-void nr_txn_add_php_package(nrtxn_t* txn,
-                            char* package_name,
-                            char* package_version);
+extern nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
+                                                char* package_name,
+                                                char* package_version);
 
+/*
+ * Purpose : Add php package suggestion to transaction. This function
+ * can be used when Vulnerability Management is not enabled.  It will
+ * add the package to the transaction's
+ * php_package_major_version_metrics_suggestions list. At the end of the
+ * transaction this list is traversed and any suggestions with a known version
+ * will have a package major version metric created.
+ *
+ * Params  : 1. The transaction
+ *           2. Package name
+ *           3. Package version (can be NULL or PHP_PACKAGE_VERSION_UNKNOWN)
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_suggest_package_supportability_metric(
+    nrtxn_t* txn,
+    const char* package_name,
+    const char* package_version);
 #endif /* NR_TXN_HDR */

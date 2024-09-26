@@ -13,6 +13,8 @@
 #include "util_logging.h"
 #include "util_memory.h"
 
+#define PHP_PACKAGE_NAME "laminas/laminas-mvc"
+
 /*
  * Laminas is a rebranding of Zend, but the logic remains the same,
  * it is simply a name change and corresponds directly to Zend 3.x.
@@ -163,7 +165,10 @@ void nr_laminas3_enable(TSRMLS_D) {
       nr_laminas3_name_the_wt TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "laminas/laminas-mvc",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

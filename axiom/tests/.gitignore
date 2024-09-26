@@ -82,6 +82,7 @@ test_number_converter
 test_obfuscate
 test_object
 test_offsets
+test_php_packages
 test_postgres
 test_quarantine
 test_random

@@ -11,9 +11,12 @@
 #include "php_wrapper.h"
 #include "php_hash.h"
 #include "fw_hooks.h"
+#include "fw_support.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+
+#define PHP_PACKAGE_NAME "laravel/lumen-framework"
 
 /*
  * Sets the web transaction name. If strip_base == true,
@@ -232,7 +235,10 @@ void nr_lumen_enable(TSRMLS_D) {
 #endif
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "laravel/lumen-framework",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

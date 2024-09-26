@@ -14,6 +14,7 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#define PHP_PACKAGE_NAME "yiisoft/yii2"
 /*
  * Yii1: Set the web transaction name from the controllerId + actionId combo.
  *
@@ -221,4 +222,12 @@ void nr_yii2_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("yii\\base\\ErrorHandler::logException"),
                             nr_yii2_error_handler_wrapper TSRMLS_CC);
 #endif
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
+                           PHP_PACKAGE_VERSION_UNKNOWN);
+  }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

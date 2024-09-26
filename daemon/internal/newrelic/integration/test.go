@@ -637,6 +637,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var expectedPkgsCollection *PhpPackagesCollection
 	var expectNullPkgs bool
 	var version_overrides map[string]interface{}
+	var subsetMatch bool = false
 
 	if nil != t.phpPackagesConfig {
 		var err error
@@ -656,6 +657,19 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				t.Fatal(err)
 				return
 			}
+
+			// Determine if we expect an exact match between expected and actual packages
+			// when using the composer API in the agent to detect packages it is possible
+			// it will return packages which the "composer show" command does not.  These
+			// are usually virtual or other types of packages which "composer show"
+			// decides to not show.
+			//
+			// Currently the test handles this by listing all the packages that the agent
+			// detected but "composer show" did not as "Notes" on the test results.
+			//
+			// Tests for the legacy package detection mechanism still expect an exact match.
+			//
+			subsetMatch = expectedPkgsCollection.config.expectAllDetected
 		}
 	} else {
 		// no configuration given for package (no EXPECT_PHP_PACKAGES in test case) so don't run test
@@ -690,22 +704,44 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		if nil == expectedPackages {
 			t.Fail(fmt.Errorf("No expected PHP packages, harvest contains %+v\n", actualPackages))
 		}
-		// compare expected and actual lists of packages
+		// Compare expected and actual lists of packages
 		// since package names should be identical, iterate over
 		// expected list and compare element by element with same
 		// position in actual list.  Name and version should match.
 		// this works because the functions which generate these
 		// lists sort them by package name for us
-		if len(expectedPackages) != len(actualPackages) {
+		//
+		// As explained above - if testing results from the Composer API
+		// agent detection mechanism, we may not get an exact match so
+		// we relax the test that the lengths of the two lists are the same
+		if !subsetMatch && (len(expectedPackages) != len(actualPackages)) {
 			t.Fail(fmt.Errorf("Expected and actual php packages differ in length %d vs %d: expected %+v actual %+v",
 				len(expectedPackages), len(actualPackages), expectedPackages, actualPackages))
 			return
 		}
 		for i, _ := range expectedPackages {
-			if expectedPackages[i].Name == actualPackages[i].Name {
+			var matchingIdx int = -1
+			for j, pkg := range actualPackages {
+				//fmt.Printf("Comparing %s to %s\n", pkg.Name, expectedPackages[i].Name)
+				if pkg.Name == expectedPackages[i].Name {
+					//fmt.Printf("Match - index = %d\n", j)
+					matchingIdx = j
+					break
+				}
+			}
+
+			//fmt.Printf("MatchingIdx: %d\n", matchingIdx)
+			//fmt.Printf("expectedPatckages[%d]: %+v\n", i, expectedPackages[i])
+			// if -1 != matchingIdx {
+			// 	fmt.Printf("actualPackages[%d]: %+v\n", matchingIdx, actualPackages[matchingIdx])
+			// } else {
+			// 	fmt.Printf("no match in actualPackages!\n")
+			// }
+
+			if -1 != matchingIdx {
 				testPackageNameOnly := false
 				if nil != expectedPkgsCollection.config.packageNameOnly {
-					testPackageNameOnly = StringSliceContains(expectedPkgsCollection.config.packageNameOnly, actualPackages[i].Name)
+					testPackageNameOnly = StringSliceContains(expectedPkgsCollection.config.packageNameOnly, actualPackages[matchingIdx].Name)
 					if testPackageNameOnly {
 						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.packageNameOnly))
 					}
@@ -720,22 +756,40 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				}
 
 				if testPackageNameOnly {
-					if " " != actualPackages[i].Version {
+					if " " != actualPackages[matchingIdx].Version {
 						t.Fail(fmt.Errorf("Expected no package version and a package version was detected - expected \" \" actual %+v. ",
-							actualPackages[i].Version))
+							actualPackages[matchingIdx].Version))
 						return
 					} else {
 						continue
 					}
 				}
 
-				if expected_version == actualPackages[i].Version {
+				if expected_version == actualPackages[matchingIdx].Version {
 					continue
+				} else {
+					t.Fail(fmt.Errorf("Expected version %s does not match actual version %s for package %s",
+						expected_version, actualPackages[matchingIdx].Version, expectedPackages[i].Name))
+					return
 				}
 			}
-			t.Fail(fmt.Errorf("Expected and actual Php packages do not match: expected %+v actual %+v. Complete expected %v actual %v.",
-				expectedPackages[i], actualPackages[i], expectedPackages, actualPackages))
+			t.Fail(fmt.Errorf("Expected Php packages do not match any actual packages: expected %+v\nComplete:\nexpected %v\nactual %v.\n",
+				expectedPackages[i], expectedPackages, actualPackages))
 			return
+		}
+
+		// create notes for all packages in the actual list not in the expected list
+		for ii, _ := range actualPackages {
+			var found bool = false
+			for _, pkg := range expectedPackages {
+				if pkg.Name == actualPackages[ii].Name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.AddNote(fmt.Sprintf("Detected package not in expected: %+v", actualPackages[ii]))
+			}
 		}
 	} else {
 		if nil != expectedPackages {
