@@ -34,9 +34,6 @@ static nr_status_t create_instance_metric(nr_segment_t* segment,
   instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
                                instance->host, instance->port_path_or_id);
   nr_segment_add_metric(segment, instance_metric, false);
-  nr_datastore_instance_set_host(&datastore->instance, instance->host);
-  nr_datastore_instance_set_port_path_or_id(&datastore->instance,
-                                            instance->port_path_or_id);
 
   nr_free(instance_metric);
   return NR_SUCCESS;
@@ -80,6 +77,9 @@ static char* create_metrics(nr_segment_t* segment,
   nr_free(statement_metric);
 
   create_instance_metric(segment, product, datastore, instance);
+  nr_datastore_instance_set_host(&datastore->instance, instance->host);
+  nr_datastore_instance_set_port_path_or_id(&datastore->instance,
+                                            instance->port_path_or_id);
   return scoped_metric;
 }
 
