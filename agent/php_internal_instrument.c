@@ -1574,14 +1574,20 @@ NR_INNER_WRAPPER(memcached_connect_function) {
   if (SUCCESS
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|ll", &host,
-          &host_len, &port, &weight)) {
-    if (NULL != host) {
-      instance = nr_php_memcached_create_datastore_instance(host, port);
+          &host_len, &port, &weight) &&
+      NULL != host) {
+    instance = nr_php_memcached_create_datastore_instance(host, port);
+    nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
+                                               NULL, instance, true,
+                                               INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  } else {
+    zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                       INTERNAL_FUNCTION_PARAM_PASSTHRU);
+    if (zcaught) {
+      zend_bailout();
+      /* NOTREACHED */
     }
   }
-  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                             NULL, instance, true,
-                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
 NR_INNER_WRAPPER(memcached_multi_connect_function) {
