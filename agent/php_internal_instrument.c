@@ -1570,6 +1570,7 @@ NR_INNER_WRAPPER(memcached_connect_function) {
   zend_long port = 0;
   zend_long weight = 0;
   nr_datastore_instance_t* instance = NULL;
+  int zcaught = 0;
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1593,8 +1594,6 @@ NR_INNER_WRAPPER(memcached_connect_function) {
 NR_INNER_WRAPPER(memcached_multi_connect_function) {
   zval* servers = NULL;
   zval* server = NULL;
-  zend_ulong num_key = 0;
-  nr_php_string_hash_key_t* string_key = NULL;
   nr_datastore_instance_t* instance = NULL;
   int zcaught = 0;
 
