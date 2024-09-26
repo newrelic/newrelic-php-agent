@@ -1564,7 +1564,7 @@ NR_INNER_WRAPPER(memcache_function) {
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
-NR_INNER_WRAPPER(memcached_connect_function) {
+NR_INNER_WRAPPER(memcached_add_server) {
   char* host = NULL;
   nr_string_len_t host_len = 0;
   zend_long port = 0;
@@ -1591,7 +1591,7 @@ NR_INNER_WRAPPER(memcached_connect_function) {
   }
 }
 
-NR_INNER_WRAPPER(memcached_multi_connect_function) {
+NR_INNER_WRAPPER(memcached_add_servers) {
   zval* servers = NULL;
   zval* server = NULL;
   nr_datastore_instance_t* instance = NULL;
@@ -3603,9 +3603,9 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("memcached::setmultibykey", memcached_setmultibykey,
                       memcache_function, 0, "set")
   NR_INTERNAL_WRAPREC("memcached::addserver", memcached_addserver,
-                      memcached_connect_function, 0, 0);
+                      memcached_add_server, 0, 0);
   NR_INTERNAL_WRAPREC("memcached::addservers", memcached_addservers,
-                      memcached_multi_connect_function, 0, 0);
+                      memcached_add_servers, 0, 0);
 
   NR_INTERNAL_WRAPREC("redis::connect", redis_connect, redis_connect, 0,
                       "connect")
