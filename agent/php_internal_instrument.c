@@ -1594,7 +1594,7 @@ NR_INNER_WRAPPER(memcached_multi_connect_function) {
 
   if (SUCCESS
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "a", &servers)) {
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a", &servers)) {
     ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(servers), num_key, string_key, server) {
       (void)num_key;
       (void)string_key;
