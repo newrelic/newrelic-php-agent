@@ -1603,7 +1603,7 @@ NR_INNER_WRAPPER(memcached_add_servers) {
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
       zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
       zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
-      if (NULL != host) {
+      if (NULL != host && NULL != port) {
         instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
         nr_php_instrument_datastore_operation(NR_DATASTORE_MEMCACHE,
                                               NULL, instance, true);
