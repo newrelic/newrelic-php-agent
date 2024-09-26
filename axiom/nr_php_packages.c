@@ -25,6 +25,8 @@ typedef struct {
 
 static inline const char* nr_php_package_source_priority_to_string(const nr_php_package_source_priority_t source_priority) {
   switch (source_priority) {
+    case NR_PHP_PACKAGE_SOURCE_SUGGESTION:
+      return "suggestion";
     case NR_PHP_PACKAGE_SOURCE_LEGACY:
       return "legacy";
     case NR_PHP_PACKAGE_SOURCE_COMPOSER:
@@ -34,7 +36,10 @@ static inline const char* nr_php_package_source_priority_to_string(const nr_php_
   }
 }
 
-nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, const nr_php_package_source_priority_t source_priority) {
+nr_php_package_t* nr_php_package_create_with_source(
+    const char* name,
+    const char* version,
+    const nr_php_package_source_priority_t source_priority) {
   nr_php_package_t* p = NULL;
 
   if (NULL == name) {
@@ -61,7 +66,7 @@ nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, c
   return p;
 }
 
-nr_php_package_t* nr_php_package_create(char* name, char* version) {
+nr_php_package_t* nr_php_package_create(const char* name, const char* version) {
   return nr_php_package_create_with_source(name, version, NR_PHP_PACKAGE_SOURCE_LEGACY);
 }
 
@@ -114,6 +119,16 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
 
   nr_hashmap_set(h->data, p->package_name, nr_strlen(p->package_name), p);
   return p;
+}
+
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata) {
+  if (NULL == packages || NULL == callback) {
+    return;
+  }
+
+  nr_hashmap_apply(packages->data, (nr_hashmap_apply_func_t)callback, userdata);
 }
 
 char* nr_php_package_to_json(nr_php_package_t* package) {

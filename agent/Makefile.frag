@@ -107,6 +107,7 @@ TEST_BINARIES = \
 	tests/test_php_minit \
 	tests/test_php_stack \
 	tests/test_php_stacked_segment \
+	tests/test_php_txn \
 	tests/test_php_wrapper \
 	tests/test_predis \
 	tests/test_redis \

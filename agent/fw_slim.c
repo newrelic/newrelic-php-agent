@@ -152,7 +152,6 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_slim_application_construct) {
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
   char* version = NULL;
-  nr_php_package_t* p = NULL;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -161,11 +160,11 @@ NR_PHP_WRAPPER(nr_slim_application_construct) {
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
-    p = nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
   }
 
-  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                  version, p);
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
 
   nr_free(version);
   nr_php_scope_release(&this_var);

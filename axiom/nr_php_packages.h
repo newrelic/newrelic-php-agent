@@ -15,6 +15,7 @@
 #define PHP_PACKAGE_VERSION_UNKNOWN " "
 
 typedef enum {
+  NR_PHP_PACKAGE_SOURCE_SUGGESTION,
   NR_PHP_PACKAGE_SOURCE_LEGACY,
   NR_PHP_PACKAGE_SOURCE_COMPOSER
 } nr_php_package_source_priority_t;
@@ -28,6 +29,11 @@ typedef struct _nr_php_package_t {
 typedef struct _nr_php_packages_t {
   nr_hashmap_t* data;
 } nr_php_packages_t;
+
+typedef void(nr_php_packages_iter_t)(void* value,
+                                     const char* name,
+                                     size_t name_len,
+                                     void* user_data);
 
 /*
  * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
@@ -43,7 +49,10 @@ typedef struct _nr_php_packages_t {
  *           nr_php_packages_add_package() is not called, then it must be freed
  *           by nr_php_package_destroy()
  */
-extern nr_php_package_t* nr_php_package_create_with_source(char* name, char* version, const nr_php_package_source_priority_t source_priority);
+extern nr_php_package_t* nr_php_package_create_with_source(
+    const char* name,
+    const char* version,
+    const nr_php_package_source_priority_t source_priority);
 
 /*
  * Purpose : Create a new php package with legacy source priority. If the name is null, then no package will
@@ -58,7 +67,8 @@ extern nr_php_package_t* nr_php_package_create_with_source(char* name, char* ver
  *           nr_php_packages_add_package() is not called, then it must be freed
  *           by nr_php_package_destroy()
  */
-extern nr_php_package_t* nr_php_package_create(char* name, char* version);
+extern nr_php_package_t* nr_php_package_create(const char* name,
+                                               const char* version);
 
 /*
  * Purpose : Destroy/free php package
@@ -149,8 +159,9 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
  *
  * Returns : Returns pointer to php package if the package exists or NULL
  */
-static inline nr_php_package_t* nr_php_packages_get_package(nr_php_packages_t* php_packages,
-                                              const char* package_name) {
+static inline nr_php_package_t* nr_php_packages_get_package(
+    nr_php_packages_t* php_packages,
+    const char* package_name) {
   if (NULL == package_name) {
     return NULL;
   }
@@ -160,6 +171,19 @@ static inline nr_php_package_t* nr_php_packages_get_package(nr_php_packages_t* p
   }
   return NULL;
 }
+
+/*
+ * Purpose : Iterate over packages calling callback function
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. Callback function (nr_php_packages_iter_t)
+ *           3. Pointer to user data (can be NULL)
+ *
+ * Returns : Nothing
+ */
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata);
 
 /*
  * Purpose : Converts a package to a json

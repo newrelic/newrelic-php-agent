@@ -56,7 +56,6 @@ void nr_lib_aws_sdk_php_handle_version() {
   zval* zval_version = NULL;
   zend_class_entry* class_entry = NULL;
   char* version = NULL;
-  nr_php_package_t* p = NULL;
 
   class_entry = nr_php_find_class("aws\\sdk");
   if (NULL != class_entry) {
@@ -68,10 +67,12 @@ void nr_lib_aws_sdk_php_handle_version() {
   }
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     /* Add php package to transaction */
-    p = nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
   }
-  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                  version, p);
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
+
   nr_php_zval_free(&zval_version);
 }
 

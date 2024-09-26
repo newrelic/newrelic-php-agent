@@ -239,8 +239,6 @@ void nr_lumen_enable(TSRMLS_D) {
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 
-  nr_fw_support_add_package_supportability_metric(
-      NRPRG(txn), PHP_PACKAGE_NAME, NULL,
-      nr_php_packages_get_package(NRPRG(txn)->php_packages,
-                                  PHP_PACKAGE_NAME));
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }
