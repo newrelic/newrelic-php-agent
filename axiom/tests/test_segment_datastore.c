@@ -197,6 +197,35 @@ static void test_create_metrics_no_table_no_operation(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_create_metrics_instance_only(void) {
+  nrtxn_t* txn = new_txn(0);
+  nrtime_t duration = 4 * NR_TIME_DIVISOR;
+  nr_segment_datastore_params_t params = sample_segment_datastore_params();
+  nr_datastore_instance_t instance = {.host = "hostname",
+                                      .port_path_or_id = "123",
+                                      .database_name = "my database"};
+  nr_segment_t* segment = NULL;
+  char* tname = "create metrics";
+
+  params.instance = &instance;
+  params.instance_only = true;
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+
+  test_segment_datastore_end_and_keep(&segment, &params);
+
+  /*
+   * Test : Create only the instance metric
+   */
+  test_metric_vector_size(segment->metrics, 1);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/hostname/123",
+                              false);
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_instance_info_reporting_disabled(void) {
   nrtxn_t* txn = new_txn(0);
   nrtime_t duration = 4 * NR_TIME_DIVISOR;
@@ -1127,6 +1156,7 @@ tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 void test_main(void* p NRUNUSED) {
   test_bad_parameters();
   test_create_metrics();
+  test_create_metrics_instance_only();
   test_create_metrics_no_table();
   test_create_metrics_no_table_no_operation();
   test_instance_info_reporting_disabled();
