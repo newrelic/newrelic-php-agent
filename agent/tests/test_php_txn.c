@@ -10,6 +10,7 @@
 
 #define LIBRARY_NAME "vendor_name/package_name"
 #define LIBRARY_VERSION "1.2.3"
+#define DEVEL_LIBRARY_VERSION "1.2.x-dev"
 #define LIBRARY_MAJOR_VERSION "1"
 #define COMPOSER_PACKAGE_VERSION "2.1.3"
 #define COMPOSER_MAJOR_VERSION "2"
@@ -110,6 +111,7 @@ static void test_nr_php_txn_create_packages_major_metrics() {
    *        6. package with unknown version and suggestion with known version
    *        7. package with unknown version and suggestion with unknown version
    *        8. test that causes "actual" to be NULL in callback
+   *        9. package with known "dev" version with and suggestion with unknown version
    */
 
   /* 1. suggestion with NULL version, no packages */
@@ -226,6 +228,29 @@ static void test_nr_php_txn_create_packages_major_metrics() {
       "suggestion and package w/o version, metric not created", 0,
       nrm_table_size(txn->unscoped_metrics));
 
+  /* reset everything */
+  nrm_table_destroy(&txn->unscoped_metrics);
+  txn->unscoped_metrics = nrm_table_create(10);
+  nr_php_packages_destroy(&txn->php_packages);
+  txn->php_packages = nr_php_packages_create();
+  nr_php_packages_destroy(&txn->php_package_major_version_metrics_suggestions);
+  txn->php_package_major_version_metrics_suggestions = nr_php_packages_create();
+
+  /* 9. package with known "dev" version with and suggestion with unknown version */
+  nr_txn_suggest_package_supportability_metric(txn, LIBRARY_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
+  nr_txn_add_php_package_from_source(txn, LIBRARY_NAME,
+                                     DEVEL_LIBRARY_VERSION,
+                                     NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  nr_php_txn_create_packages_major_metrics(txn);
+  tlib_pass_if_int_equal("suggestion with valid 'dev' version, metric created", 1,
+                         nrm_table_size(txn->unscoped_metrics));
+  tlib_pass_if_not_null(
+      "php package suggestion major version with 'dev' is used for 'detected' metric",
+      nrm_find(txn->unscoped_metrics,
+               PACKAGE_METRIC "/" LIBRARY_MAJOR_VERSION "/detected"));
+
+
   /* cleanup */
   nr_php_packages_destroy(&txn->php_packages);
   nr_php_packages_destroy(&txn->php_package_major_version_metrics_suggestions);
@@ -233,6 +258,7 @@ static void test_nr_php_txn_create_packages_major_metrics() {
 
   tlib_php_request_end();
 }
+
 
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
