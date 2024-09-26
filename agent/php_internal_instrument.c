@@ -1573,7 +1573,7 @@ NR_INNER_WRAPPER(memcached_connect_function) {
 
   if (SUCCESS
       == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s|ll", &host,
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|ll", &host,
           &host_len, &port, &weight)) {
     if (NULL != host) {
       instance = nr_php_memcached_create_datastore_instance(host, port);
