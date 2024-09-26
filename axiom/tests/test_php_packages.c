@@ -7,7 +7,6 @@
 #include "tlib_main.h"
 #include "util_memory.h"
 
-#include "stdio.h"
 static void test_php_package_create_destroy(void) {
   nr_php_package_t* package;
   nr_php_package_t* null_package = NULL;
