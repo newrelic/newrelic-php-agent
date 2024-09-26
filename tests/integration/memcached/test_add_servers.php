@@ -31,4 +31,5 @@ $memcached->addServers(array(
                        array("host1", 1),
                        array("host2", 2),
                        array("host3", 11211)));
+$memcached->addServers(array());
 $memcached->quit();
