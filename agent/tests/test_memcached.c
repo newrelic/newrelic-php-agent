@@ -92,10 +92,6 @@ static void test_create_datastore_instance(void) {
 }
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
-
   system_host_name = nr_system_get_hostname();
 
   test_create_datastore_instance();
