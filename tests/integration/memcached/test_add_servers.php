@@ -20,6 +20,7 @@ added at once
 Datastore/instance/Memcached/host1/1
 Datastore/instance/Memcached/host2/2
 Datastore/instance/Memcached/host3/11211
+Datastore/instance/Memcached/host4/1
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
@@ -32,4 +33,8 @@ $memcached->addServers(array(
                        array("host2", 2),
                        array("host3", 11211)));
 $memcached->addServers(array());
+$memcached->addServers(array(array("host4", 1, "test field")));
+$memcached->addServers(array(array(1)));
+$memcached->addServers(array(array("host1")));
+$memcached->addServers(array(array(1, "host1")));
 $memcached->quit();
