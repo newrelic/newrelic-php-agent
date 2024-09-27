@@ -65,3 +65,24 @@ extern void nr_php_txn_create_agent_version_metric(nrtxn_t* txn);
  */
 extern void nr_php_txn_create_php_version_metric(nrtxn_t* txn,
                                                  const char* version);
+
+/*
+ * Purpose : Callback for nr_php_packages_iterate to create major
+ *           version metrics.
+ *
+ * Params  : 1. PHP suggestion package version
+ *           2. PHP suggestion package name
+ *           3. PHP suggestion package name length
+ *           4. The current transaction (via userdata)
+ */
+extern void nr_php_txn_php_package_create_major_metric(void* value,
+                                                       const char* key,
+                                                       size_t key_len,
+                                                       void* user_data);
+
+/*
+ * Purpose : Create and record metric for a package major versions.
+ *
+ * Params  : 1. The current transaction.
+ */
+extern void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn);

@@ -58,23 +58,39 @@ void nr_fw_support_add_logging_supportability_metric(nrtxn_t* txn,
 void nr_fw_support_add_package_supportability_metric(
     nrtxn_t* txn,
     const char* package_name,
-    const char* package_version) {
-  if (NULL == txn || NULL == package_name || NULL == package_version) {
+    const char* package_version,
+    nr_php_package_t* p) {
+  if (NULL == txn || NULL == package_name) {
     return;
   }
 
   char* metname = NULL;
   char major_version[MAJOR_VERSION_LENGTH] = {0};
+  const char* version = package_version;
+
+  // override provided package_version only if:
+  // - php_package is provided
+  // - its version is not NULL
+  // - its version is not PHP_PACKAGE_VERSION_UNKNOWN
+  if (NULL != p && NULL != p->package_version
+      && 0 != nr_strcmp(p->package_version, PHP_PACKAGE_VERSION_UNKNOWN)) {
+    version = p->package_version;
+  }
+
+  // only generate metric if version is known
+  if (NULL == version || 0 == nr_strcmp(version, PHP_PACKAGE_VERSION_UNKNOWN)) {
+    return;
+  }
 
   /* The below for loop checks if the major version of the package is more than
    * one digit and keeps looping until a '.' is encountered or one of the
    * conditions is met.
    */
-  for (int i = 0; package_version[i] && i < MAJOR_VERSION_LENGTH - 1; i++) {
-    if ('.' == package_version[i]) {
+  for (int i = 0; version[i] && i < MAJOR_VERSION_LENGTH - 1; i++) {
+    if ('.' == version[i]) {
       break;
     }
-    major_version[i] = package_version[i];
+    major_version[i] = version[i];
   }
 
   if (NR_FW_UNSET == NRINI(force_framework)) {

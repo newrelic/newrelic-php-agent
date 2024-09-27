@@ -69,8 +69,10 @@ void nr_lib_aws_sdk_php_handle_version() {
     /* Add php package to transaction */
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
   }
-  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                  version);
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
+
   nr_php_zval_free(&zval_version);
 }
 

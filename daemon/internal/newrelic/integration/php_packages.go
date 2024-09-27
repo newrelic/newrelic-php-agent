@@ -31,12 +31,13 @@ type PhpPackagesCollection struct {
 // PHP packages config describes how to collect the JSON for the packages installed
 // for the current test case
 type PhpPackagesConfiguration struct {
-	path                 string
-	command              string
-	supportedListFile    string
-	overrideVersionsFile string
-	expectedPackages     []string
-	packageNameOnly      []string
+	path                 string   //
+	command              string   // command to run to detect packages
+	supportedListFile    string   // JSON file containing list of packages we expect agent to detect
+	overrideVersionsFile string   // JSON file containing overrides for expected package versions
+	expectedPackages     []string // manual override of packages we expect to detect
+	packageNameOnly      []string // list of packages which only have a name because agent cannot determine the version
+	expectAllDetected    bool     // flag to indicate we expect all packages detected by the command "command"
 }
 
 // composer package JSON
@@ -159,16 +160,22 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 		}
 	}
 
-	if supportedOK && expectedOK {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - cannot specify 'supported_packages' and 'expected packages' - got %+v", params)
+	// or "expect_all" which means we expect the agent to detect all the packages that the "command" option would detect
+	_, expectAllOK := params["expect_all"]
+
+	if (supportedOK && expectedOK) || (supportedOK && expectAllOK) || (expectedOK && expectAllOK) {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify one of 'supported_packages', "+
+			"'expected packages' or 'expect_all' - got %+v", params)
 	}
 
-	if !supportedOK && !expectedOK {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'supported_packages' or 'expected packages' - got %+v", params)
+	if !supportedOK && !expectedOK && !expectAllOK {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'supported_packages' or 'expected packages' "+
+			"or 'expect_all' - got %+v", params)
 	}
 
-	if supportedOK && !commandOK {
-		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option with `supported_packages` - got %+v", params)
+	if (supportedOK || expectAllOK) && !commandOK {
+		return nil, fmt.Errorf("Improper EXPECT_PHP_PACKAGES config - must specify 'command' option with `supported_packages` / "+
+			"'expect_all' - got %+v", params)
 	}
 
 	// optional option to specify which packages will only have a name because agent cannot determine the version
@@ -209,7 +216,8 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 			supportedListFile:    supportedListFile,
 			overrideVersionsFile: overrideVersionsFile,
 			expectedPackages:     expectedPackagesArr,
-			packageNameOnly:      packageNameOnlyArr},
+			packageNameOnly:      packageNameOnlyArr,
+			expectAllDetected:    expectAllOK},
 	}
 
 	return p, nil
@@ -296,17 +304,26 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 	var supported []string
 
 	// get list of packages we expected the agent to detect
-	// this can be one of 2 scenarios:
+	// this can be one of 3 scenarios:
 	//  1) test case used the "supported_packages" option which gives a JSON file which
 	//     lists all the packages the agent can detect
 	//  2) test case used the "expected_packages" options which provides a comma separated
 	//     list of packages we expect the agent to detect
+	//  3) test case used the "expect_all" option which means we expect the agent to
+	//     detect all the packages that the "command" option would detect
 	//
-	//  Option #1 is preferable as it provides the most comprehensive view of what the agent can do.
+	//  Options #1 and #2 are mutually exclusive, and are intended for testing the legacy VM detection
+	//  mechanism where the agent looks for "magic" files of a package and examinew internals of the
+	//  package to determine its version.
+	//
+	//  Option #1 is preferable when it available as it provides the most comprehensive view of what the agent can do.
 	//
 	//  Option #2 is needed because some test cases do not exercise all the packages which are
 	//  installed and so the agent will not detect everything for that test case run which it could
 	//  theorectically detect if the test case used all the available packages installed.
+	//
+	//  Option #3 is used when testing the agent's ability to detect packages using the Composer API.  In
+	//  this case we expect the agent to detect the exact same packages as composer would detect.
 	//
 	//  Once the list of packages the agent is expected to detect is created it is used to filter
 	//  down the package list returned by running the "command" (usually composer) option for the
@@ -318,8 +335,9 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		}
 	} else if 0 < len(pkgs.config.expectedPackages) {
 		supported = pkgs.config.expectedPackages
-	} else {
-		return nil, fmt.Errorf("Error determining expected packages - supported_packages and expected_packages are both empty")
+	} else if !pkgs.config.expectAllDetected {
+		return nil, fmt.Errorf("Error determining expected packages - supported_packages and expected_packages are both empty " +
+			"and expect_all is false")
 	}
 
 	splitCmd := strings.Split(pkgs.config.command, " ")
@@ -339,7 +357,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		json.Unmarshal([]byte(out), &detected)
 		for _, v := range detected.Installed {
 			//fmt.Printf("composer detected %s %s\n", v.Name, v.Version)
-			if StringSliceContains(supported, v.Name) {
+			if pkgs.config.expectAllDetected || StringSliceContains(supported, v.Name) {
 				var version string
 
 				// remove any 'v' from front of version string
@@ -370,6 +388,18 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		}
 		if 0 < len(version) {
 			pkgs.packages = append(pkgs.packages, PhpPackage{"wordpress", version})
+		}
+	} else if 1 < len(splitCmd) && "composer-show.php" == splitCmd[1] {
+		lines := strings.Split(string(out), "\n")
+		version := ""
+		for _, line := range lines {
+			//fmt.Printf("line is |%s|\n", line)
+			splitLine := strings.Split(line, "=>")
+			if 2 == len(splitLine) {
+				name := strings.TrimSpace(splitLine[0])
+				version = strings.TrimSpace(splitLine[1])
+				pkgs.packages = append(pkgs.packages, PhpPackage{name, version})
+			}
 		}
 	} else {
 		return nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])

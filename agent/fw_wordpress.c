@@ -804,8 +804,7 @@ void nr_wordpress_version() {
         "})();";
 
   zval retval;
-  int result
-      = zend_eval_string(func_string, &retval, "Get Wordpress Version");
+  int result = zend_eval_string(func_string, &retval, "Get Wordpress Version");
   // Add php package to transaction
   if (SUCCESS == result) {
     if (nr_php_is_zval_valid_string(&retval)) {
@@ -813,8 +812,9 @@ void nr_wordpress_version() {
       if (NRINI(vulnerability_management_package_detection_enabled)) {
         nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
       }
-      nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                      version);
+
+      nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                   version);
     }
     zval_dtor(&retval);
   }

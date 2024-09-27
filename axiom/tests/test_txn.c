@@ -8597,6 +8597,8 @@ static void test_nr_txn_add_php_package(void) {
   char* package_name4 = "Wordpress";
   char* package_version4 = PHP_PACKAGE_VERSION_UNKNOWN;
   nrtxn_t* txn = new_txn(0);
+  nr_php_package_t* p1 = NULL;
+  nr_php_package_t* p2 = NULL;
 
   /*
    * NULL parameters: ensure it does not crash
@@ -8620,6 +8622,130 @@ static void test_nr_txn_add_php_package(void) {
                          json);
 
   nr_free(json);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+  p2 = nr_txn_add_php_package(txn, package_name1, package_version2);
+  tlib_pass_if_ptr_equal(
+      "same package name, different version, add returns same pointer", p1, p2);
+  nr_txn_destroy(&txn);
+}
+
+static void test_nr_txn_add_php_package_from_source(void) {
+  char* json;
+  char* package_name1 = "Laravel";
+  char* package_version1 = "8.83.27";
+  char* package_name2 = "Slim";
+  char* package_version2 = "4.12.0";
+  char* package_name3 = "Drupal";
+  char* package_version3 = NULL;
+  char* package_name4 = "Wordpress";
+  char* package_version4 = PHP_PACKAGE_VERSION_UNKNOWN;
+  nrtxn_t* txn = new_txn(0);
+  nr_php_package_t* p1 = NULL;
+  nr_php_package_t* p2 = NULL;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_add_php_package_from_source(NULL, NULL, NULL, 0);
+  nr_txn_add_php_package_from_source(NULL, package_name1, package_version1, 0);
+  nr_txn_add_php_package_from_source(txn, NULL, package_version1, 0);
+  nr_txn_add_php_package_from_source(txn, package_name1, NULL, 0);
+
+  // Test: add php packages to transaction
+  nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                     NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  nr_txn_add_php_package_from_source(txn, package_name2, package_version2,
+                                     NR_PHP_PACKAGE_SOURCE_LEGACY);
+  nr_txn_add_php_package_from_source(txn, package_name3, package_version3,
+                                     NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  nr_txn_add_php_package_from_source(txn, package_name4, package_version4,
+                                     NR_PHP_PACKAGE_SOURCE_LEGACY);
+  json = nr_php_packages_to_json(txn->php_packages);
+
+  tlib_pass_if_str_equal("correct json",
+                         "[[\"Laravel\",\"8.83.27\",{}],"
+                         "[\"Drupal\",\" \",{}],[\"Wordpress\",\" \",{}],"
+                         "[\"Slim\",\"4.12.0\",{}]]",
+                         json);
+
+  nr_free(json);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  p2 = nr_txn_add_php_package_from_source(txn, package_name1, package_version2,
+                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  tlib_pass_if_ptr_equal(
+      "same package name, different version, add returns same pointer", p1, p2);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                          NR_PHP_PACKAGE_SOURCE_LEGACY);
+  p2 = nr_txn_add_php_package_from_source(txn, package_name1, package_version2,
+                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  tlib_pass_if_ptr_equal(
+      "same package name, different version, add returns different pointer", p1,
+      p2);
+  tlib_pass_if_str_equal("composer version used", package_version2,
+                         p2->package_version);
+
+  nr_txn_destroy(&txn);
+}
+
+static void test_nr_txn_suggest_package_supportability_metric(void) {
+  char* json;
+  char* package_name1 = "Laravel";
+  char* package_version1 = "8.83.27";
+  char* package_name2 = "Slim";
+  char* package_version2 = "4.12.0";
+  char* package_name3 = "Drupal";
+  char* package_version3 = NULL;
+  char* package_name4 = "Wordpress";
+  char* package_version4 = PHP_PACKAGE_VERSION_UNKNOWN;
+  nrtxn_t* txn = new_txn(0);
+  nr_php_package_t* p1 = NULL;
+  nr_php_package_t* p2 = NULL;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_suggest_package_supportability_metric(NULL, NULL, NULL);
+  nr_txn_suggest_package_supportability_metric(NULL, package_name1,
+                                               package_version1);
+  nr_txn_suggest_package_supportability_metric(txn, NULL, package_version1);
+  nr_txn_suggest_package_supportability_metric(txn, package_name1, NULL);
+
+  // Test: add php packages to transaction
+  nr_txn_suggest_package_supportability_metric(txn, package_name1,
+                                               package_version1);
+  nr_txn_suggest_package_supportability_metric(txn, package_name2,
+                                               package_version2);
+  nr_txn_suggest_package_supportability_metric(txn, package_name3,
+                                               package_version3);
+  nr_txn_suggest_package_supportability_metric(txn, package_name4,
+                                               package_version4);
+  json = nr_php_packages_to_json(
+      txn->php_package_major_version_metrics_suggestions);
+
+  tlib_pass_if_str_equal("correct json",
+                         "[[\"Laravel\",\"8.83.27\",{}],"
+                         "[\"Drupal\",\" \",{}],[\"Wordpress\",\" \",{}],"
+                         "[\"Slim\",\"4.12.0\",{}]]",
+                         json);
+
+  nr_free(json);
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+  p2 = nr_txn_add_php_package(txn, package_name1, package_version2);
+  tlib_pass_if_ptr_equal(
+      "same package name, different version, add returns same pointer", p1, p2);
   nr_txn_destroy(&txn);
 }
 
@@ -8725,4 +8851,6 @@ void test_main(void* p NRUNUSED) {
   test_record_log_event();
   test_txn_log_configuration();
   test_nr_txn_add_php_package();
+  test_nr_txn_add_php_package_from_source();
+  test_nr_txn_suggest_package_supportability_metric();
 }

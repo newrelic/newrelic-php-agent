@@ -15,6 +15,9 @@ ok - 2 args
 ok - 2 args
 ok - 3 args
 ok - 4 args
+ok - 4 args
+ok - 4 args
+ok - 4 args
 ok - 5 args
 ok - 6 args
 */
@@ -32,9 +35,15 @@ tap_equal(null, newrelic_notice_error(curl_init()), "1 arg");
 tap_equal(null, newrelic_notice_error("", 42), "2 args");
 tap_equal(null, newrelic_notice_error("", array()), "2 args");
 
-// Three and four argument forms are not allowed.
+// Three argument forms are not allowed.
 tap_equal(null, newrelic_notice_error(42, "message", "file"), "3 args");
-tap_equal(null, newrelic_notice_error(42, "message", "file", __LINE__), "4 args");
+
+// Four argument form requires integer, string, string, integer
+// This is like the five argument form but for PHP 8+ where the context is not supplied
+tap_equal(null, newrelic_notice_error("", "message", "file", __LINE__), "4 args");
+tap_equal(null, newrelic_notice_error(42, array(), "file", __LINE__), "4 args");
+tap_equal(null, newrelic_notice_error("", "message", array(), __LINE__), "4 args");
+tap_equal(null, newrelic_notice_error("", "message", "file", ""), "4 args");
 
 // Five argument form requires second arg to be convertible to a string.
 tap_equal(null, newrelic_notice_error("", curl_init()), "5 args");

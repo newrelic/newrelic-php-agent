@@ -359,15 +359,25 @@ NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
   }
 
   /*
- * If we were unable to get the full version before, at least we can extract
- * the major version to send to the supportability metric.
- * This is relevant to guzzle7+ which no longer supplies full version.
- */
+   * If we were unable to get the full version before, at least we can extract
+   * the major version to send to the supportability metric now, as
+   * this incomplete version will not be stored in a php package record
+   * and so the supportability metric cannot be created later like for
+   * most packages.
+   *
+   * This is relevant to guzzle7+ which no longer supplies full version.
+   */
   if (NULL == version) {
     version = nr_php_get_object_constant(this_var, "MAJOR_VERSION");
   }
-  nr_fw_support_add_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                  version);
+
+  /* if version is still NULL that is OK this next call will accept
+   * that value and when supportability metrics are made for
+   * packages if another method has determined the package version
+   * (composer api for example) then it will be filled in at that time
+   */
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
   nr_free(version);
 
   (void)wraprec;

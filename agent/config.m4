@@ -230,7 +230,8 @@ if test "$PHP_NEWRELIC" = "yes"; then
   fw_zend2.c fw_zend.c"
   LIBRARIES="lib_aws_sdk_php.c lib_monolog.c lib_doctrine2.c lib_guzzle3.c \
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
-  lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c"
+  lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c \
+  lib_composer.c"
   PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, \\$(NEWRELIC_CFLAGS))
 
   PHP_SUBST(NEWRELIC_CFLAGS)

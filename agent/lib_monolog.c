@@ -378,8 +378,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
         = nr_monolog_get_timestamp(api, argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     char version[MAJOR_VERSION_LENGTH];
     snprintf(version, sizeof(version), "%d", api);
-    nr_fw_support_add_package_supportability_metric(NRPRG(txn),
-                                                    PHP_PACKAGE_NAME, version);
+    nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                 version);
   }
 
   /* Record the log event */
@@ -523,4 +523,7 @@ void nr_monolog_enable(TSRMLS_D) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }

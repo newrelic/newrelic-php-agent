@@ -411,7 +411,7 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_PSTR("symfony/bundle/frameworkbundle/frameworkbundle.php"), 0,
      nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony4", "symfony4", NR_PSTR("http-kernel/httpkernel.php"), 0,
-     nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5 */
+     nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5/6/7 */
 
     {"WordPress", "wordpress", NR_PSTR("wp-config.php"), 0, nr_wordpress_enable,
      NR_FW_WORDPRESS},
@@ -931,6 +931,40 @@ static void nr_execute_handle_library(const char* filename,
   }
 }
 
+static void nr_execute_handle_autoload(const char* filename,
+                                       const size_t filename_len) {
+#define AUTOLOAD_MAGIC_FILE "vendor/autoload.php"
+#define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
+
+  if (!NRINI(vulnerability_management_package_detection_enabled)) {
+    // do nothing when vulnerability management package detection is disabled
+    return;
+  }
+
+  if (!NRINI(vulnerability_management_composer_api_enabled)) {
+    // do nothing when use of composer to collect package info is disabled
+    return;
+  }
+
+  if (NRPRG(txn)->composer_info.autoload_detected) {
+    // autoload already handled
+    return;
+  }
+
+  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
+                       AUTOLOAD_MAGIC_FILE_LEN)) {
+    // not an autoload file
+    return;
+  }
+
+  nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s",
+            filename, AUTOLOAD_MAGIC_FILE);
+  NRPRG(txn)->composer_info.autoload_detected = true;
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
+
+  nr_composer_handle_autoload(filename);
+}
+
 static void nr_execute_handle_logging_framework(const char* filename,
                                                 const size_t filename_len
                                                     TSRMLS_DC) {
@@ -999,6 +1033,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_autoload(filename, filename_len);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_execute_handle_package(filename);

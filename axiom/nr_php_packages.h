@@ -10,20 +10,52 @@
 #include "util_random.h"
 #include "util_vector.h"
 #include "util_hashmap.h"
+#include "util_strings.h"
 
 #define PHP_PACKAGE_VERSION_UNKNOWN " "
+
+typedef enum {
+  NR_PHP_PACKAGE_SOURCE_SUGGESTION,
+  NR_PHP_PACKAGE_SOURCE_LEGACY,
+  NR_PHP_PACKAGE_SOURCE_COMPOSER
+} nr_php_package_source_priority_t;
 
 typedef struct _nr_php_package_t {
   char* package_name;
   char* package_version;
+  nr_php_package_source_priority_t source_priority;
 } nr_php_package_t;
 
 typedef struct _nr_php_packages_t {
   nr_hashmap_t* data;
 } nr_php_packages_t;
 
+typedef void(nr_php_packages_iter_t)(void* value,
+                                     const char* name,
+                                     size_t name_len,
+                                     void* user_data);
+
 /*
- * Purpose : Create a new php package. If the name is null, then no package will
+ * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
+ *           be created. If the version is null (version = NULL), then
+ *           the package will still be created and the version will be set to an
+ *           empty string with a space.
+ *
+ * Params  : 1. Package name
+ *           2. Package version
+ *           3. Package source priority (legacy or composer)
+ *
+ * Returns : A php package that has a name and version. If
+ *           nr_php_packages_add_package() is not called, then it must be freed
+ *           by nr_php_package_destroy()
+ */
+extern nr_php_package_t* nr_php_package_create_with_source(
+    const char* name,
+    const char* version,
+    const nr_php_package_source_priority_t source_priority);
+
+/*
+ * Purpose : Create a new php package with legacy source priority. If the name is null, then no package will
  *           be created. If the version is null (version = NULL), then
  *           the package will still be created and the version will be set to an
  *           empty string with a space.
@@ -35,7 +67,8 @@ typedef struct _nr_php_packages_t {
  *           nr_php_packages_add_package() is not called, then it must be freed
  *           by nr_php_package_destroy()
  */
-extern nr_php_package_t* nr_php_package_create(char* name, char* version);
+extern nr_php_package_t* nr_php_package_create(const char* name,
+                                               const char* version);
 
 /*
  * Purpose : Destroy/free php package
@@ -64,10 +97,10 @@ extern nr_php_packages_t* nr_php_packages_create(void);
  *           2. A pointer to the php package that needs to be added to the
  *              collection
  *
- * Returns : Nothing
+ * Returns : pointer to added package on success or NULL otherwise.
  */
-extern void nr_php_packages_add_package(nr_php_packages_t* h,
-                                        nr_php_package_t* p);
+extern nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
+                                                     nr_php_package_t* p);
 
 /*
  * Purpose : Destroy/free the collection
@@ -117,6 +150,40 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
   }
   return 0;
 }
+
+/*
+ * Purpose : Retrieve a pointer to php package from the collection
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. The name of the package to retrieve
+ *
+ * Returns : Returns pointer to php package if the package exists or NULL
+ */
+static inline nr_php_package_t* nr_php_packages_get_package(
+    nr_php_packages_t* php_packages,
+    const char* package_name) {
+  if (NULL == package_name) {
+    return NULL;
+  }
+
+  if (nrlikely(NULL != php_packages && NULL != php_packages->data)) {
+    return (nr_php_package_t*)nr_hashmap_get(php_packages->data, package_name, nr_strlen(package_name));
+  }
+  return NULL;
+}
+
+/*
+ * Purpose : Iterate over packages calling callback function
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *           2. Callback function (nr_php_packages_iter_t)
+ *           3. Pointer to user data (can be NULL)
+ *
+ * Returns : Nothing
+ */
+void nr_php_packages_iterate(nr_php_packages_t* packages,
+                             nr_php_packages_iter_t callback,
+                             void* userdata);
 
 /*
  * Purpose : Converts a package to a json
