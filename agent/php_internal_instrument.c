@@ -1541,7 +1541,6 @@ NR_INNER_WRAPPER(memcached_add_server) {
   nr_datastore_instance_t* instance = NULL;
   char* instance_metric = NULL;
   int zcaught = 0;
-  nr_segment_t* segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1551,12 +1550,12 @@ NR_INNER_WRAPPER(memcached_add_server) {
     instance = nr_php_memcached_create_datastore_instance(host, port);
     instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
                                instance->host, instance->port_path_or_id);
+    nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
     nr_free(instance);
-    nr_segment_add_metric(segment, instance_metric, false);
+    nr_free(instance_metric);
   }
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  nr_segment_end(&segment);
   if (zcaught) {
     zend_bailout();
     /* NOTREACHED */
@@ -1569,7 +1568,6 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   nr_datastore_instance_t* instance = NULL;
   char* instance_metric = NULL;
   int zcaught = 0;
-  nr_segment_t* segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1583,8 +1581,9 @@ NR_INNER_WRAPPER(memcached_add_servers) {
           instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
           instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
                                        instance->host, instance->port_path_or_id);
-          nr_segment_add_metric(segment, instance_metric, false);
+          nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
           nr_free(instance);
+          nr_free(instance_metric);
         }
       }
       ZEND_HASH_FOREACH_END();
@@ -1593,7 +1592,6 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-  nr_segment_end(&segment);
   if (zcaught) {
     zend_bailout();
     /* NOTREACHED */
