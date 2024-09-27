@@ -211,6 +211,7 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
   scoped_metric
       = create_metrics(segment, duration, datastore_string, collection,
                        operation, &datastore, params->instance);
+
   nr_segment_set_name(segment, scoped_metric);
 
   /*
