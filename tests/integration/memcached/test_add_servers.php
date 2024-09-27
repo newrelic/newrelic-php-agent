@@ -37,4 +37,5 @@ $memcached->addServers(array(array("host4", 1, "test field")));
 $memcached->addServers(array(array(1)));
 $memcached->addServers(array(array("host1")));
 $memcached->addServers(array(array(1, "host1")));
+//$memcahed->addServers("string"); crashes PHP
 $memcached->quit();
