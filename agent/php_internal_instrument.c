@@ -770,7 +770,6 @@ static void nr_php_instrument_datastore_operation_call(
     nr_datastore_t datastore,
     const char* operation,
     nr_datastore_instance_t* instance,
-    bool instance_only,
     INTERNAL_FUNCTION_PARAMETERS) {
   int zcaught = 0;
   nr_segment_t* segment = NULL;
@@ -780,7 +779,6 @@ static void nr_php_instrument_datastore_operation_call(
       },
       .operation = nr_strdup(operation),
       .instance  = instance,
-      .instance_only = instance_only,
       .callbacks = {
           .backtrace = nr_php_backtrace_callback,
       },
@@ -836,7 +834,7 @@ NR_INNER_WRAPPER(mysqli_commit) {
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MYSQL,
-                                             "commit", instance, false,
+                                             "commit", instance,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1531,7 +1529,7 @@ NR_INNER_WRAPPER(mysqli_stmt_prepare) {
  */
 NR_INNER_WRAPPER(memcache_function) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                             nr_wrapper->extra, NULL, false,
+                                             nr_wrapper->extra, NULL,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1627,7 +1625,7 @@ NR_INNER_WRAPPER(redis_connect) {
   }
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                             nr_wrapper->extra, instance, false,
+                                             nr_wrapper->extra, instance,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -1686,7 +1684,7 @@ NR_INNER_WRAPPER(redis_function) {
   instance = nr_php_redis_retrieve_datastore_instance(this_obj TSRMLS_CC);
 
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                             nr_wrapper->extra, instance, false,
+                                             nr_wrapper->extra, instance,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -2679,7 +2677,7 @@ NR_INNER_WRAPPER(ob_flush_common) {
  */
 NR_INNER_WRAPPER(mongodb_execute) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MONGODB,
-                                             "execute", NULL, false,
+                                             "execute", NULL,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 

@@ -12,33 +12,6 @@
 #include "util_sql.h"
 #include "util_logging.h"
 
-static nr_status_t create_instance_metric(nr_segment_t* segment,
-                                   const char* product,
-                                   nr_segment_datastore_t* datastore,
-                                   const nr_datastore_instance_t* instance) {
-  /*
-   * If a datastore instance was provided, we need to add the relevant data to
-   * the segment and the relavant metrics.
-   */
-  nrtxn_t* txn = segment->txn;
-  char* instance_metric = NULL;
-  if (NULL == instance || 0 == txn->options.instance_reporting_enabled) {
-    return NR_FAILURE;
-  }
-
-  if (txn->options.database_name_reporting_enabled) {
-    nr_datastore_instance_set_database_name(&datastore->instance,
-                                            instance->database_name);
-  }
-
-  instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
-                               instance->host, instance->port_path_or_id);
-  nr_segment_add_metric(segment, instance_metric, false);
-
-  nr_free(instance_metric);
-  return NR_SUCCESS;
-}
-
 static char* create_metrics(nr_segment_t* segment,
                             nrtime_t duration,
                             const char* product,
@@ -51,6 +24,7 @@ static char* create_metrics(nr_segment_t* segment,
   char* rollup_metric = NULL;
   char* scoped_metric = NULL;
   char* statement_metric = NULL;
+  char* instance_metric = NULL;
 
   nrm_force_add(txn->unscoped_metrics, "Datastore/all", duration);
 
@@ -76,12 +50,28 @@ static char* create_metrics(nr_segment_t* segment,
   nr_free(operation_metric);
   nr_free(statement_metric);
 
-  create_instance_metric(segment, product, datastore, instance);
-  if (NULL != instance && 0 != txn->options.instance_reporting_enabled) {
-    nr_datastore_instance_set_host(&datastore->instance, instance->host);
-    nr_datastore_instance_set_port_path_or_id(&datastore->instance,
-                                              instance->port_path_or_id);
+  /*
+   * If a datastore instance was provided, we need to add the relevant data to
+   * the segment and the relavant metrics.
+   */
+  if (NULL == instance || 0 == txn->options.instance_reporting_enabled) {
+    return scoped_metric;
   }
+
+  if (txn->options.database_name_reporting_enabled) {
+    nr_datastore_instance_set_database_name(&datastore->instance,
+                                            instance->database_name);
+  }
+
+  instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
+                               instance->host, instance->port_path_or_id);
+  nr_segment_add_metric(segment, instance_metric, false);
+  nr_datastore_instance_set_host(&datastore->instance, instance->host);
+  nr_datastore_instance_set_port_path_or_id(&datastore->instance,
+                                            instance->port_path_or_id);
+
+  nr_free(instance_metric);
+
   return scoped_metric;
 }
 
@@ -218,14 +208,10 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
    * The allWeb and allOther rollup metrics are created at the end of the
    * transaction since the background status may change.
    */
-  if (!params->instance_only) {
-    scoped_metric
-        = create_metrics(segment, duration, datastore_string, collection,
-                         operation, &datastore, params->instance);
-    nr_segment_set_name(segment, scoped_metric);
-  } else {
-    create_instance_metric(segment, datastore_string, &datastore, params->instance);
-  }
+  scoped_metric
+      = create_metrics(segment, duration, datastore_string, collection,
+                       operation, &datastore, params->instance);
+  nr_segment_set_name(segment, scoped_metric);
 
   /*
    * Add the explain plan, if we have one.
