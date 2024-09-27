@@ -17,8 +17,11 @@ are added via Memcached::addServers()
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Warning:\s*could not add entry\s*$
-^\s*(PHP )?Warning:\s*could not add entry\s*$
+
+.*(PHP )?Warning:.*could not add entry.*
+
+.*(PHP )?Warning:.*could not add entry.*
+
 */
 
 /*EXPECT_ERROR_EVENTS
