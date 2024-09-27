@@ -800,35 +800,6 @@ static void nr_php_instrument_datastore_operation_call(
   }
 }
 
-/* 
- * Like nr_php_instrument_datastore_operation_call() but does not
- * call the underlying internal function. This allows multiple
- * datastore metrics to be creating during a single underlying
- * PHP call.
- */
-static void nr_php_instrument_datastore_operation(
-    nr_datastore_t datastore,
-    const char* operation,
-    nr_datastore_instance_t* instance,
-    bool instance_only) {
-  nr_segment_t* segment = NULL;
-  nr_segment_datastore_params_t params = {
-      .datastore = {
-          .type = datastore,
-      },
-      .operation = nr_strdup(operation),
-      .instance  = instance,
-      .instance_only = instance_only,
-      .callbacks = {
-          .backtrace = nr_php_backtrace_callback,
-      },
-  };
-
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  nr_segment_datastore_end(&segment, &params);
-  nr_free(params.operation);
-}
-
 /*
  * Handle
  *   bool mysqli_commit ( object $link [, int $flags=0, string $name] )
@@ -1570,7 +1541,9 @@ NR_INNER_WRAPPER(memcached_add_server) {
   zend_long port = 0;
   zend_long weight = 0;
   nr_datastore_instance_t* instance = NULL;
+  char* instance_metric = NULL;
   int zcaught = 0;
+  nr_segment_t* segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1578,16 +1551,17 @@ NR_INNER_WRAPPER(memcached_add_server) {
           &host_len, &port, &weight) &&
       NULL != host) {
     instance = nr_php_memcached_create_datastore_instance(host, port);
-    nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
-                                               NULL, instance, true,
-                                               INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  } else {
-    zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
-                                       INTERNAL_FUNCTION_PARAM_PASSTHRU);
-    if (zcaught) {
-      zend_bailout();
-      /* NOTREACHED */
-    }
+    instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
+                               instance->host, instance->port_path_or_id);
+    nr_free(instance);
+    nr_segment_add_metric(segment, instance_metric, false);
+  }
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  nr_segment_end(&segment);
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
   }
 }
 
@@ -1595,7 +1569,9 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   zval* servers = NULL;
   zval* server = NULL;
   nr_datastore_instance_t* instance = NULL;
+  char* instance_metric = NULL;
   int zcaught = 0;
+  nr_segment_t* segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (SUCCESS
       == zend_parse_parameters_ex(
@@ -1607,8 +1583,10 @@ NR_INNER_WRAPPER(memcached_add_servers) {
         if (NULL != host && NULL != port &&
             Z_TYPE_P(host) == IS_STRING && Z_TYPE_P(port) == IS_LONG) {
           instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
-          nr_php_instrument_datastore_operation(NR_DATASTORE_MEMCACHE,
-                                                NULL, instance, true);
+          instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
+                                       instance->host, instance->port_path_or_id);
+          nr_segment_add_metric(segment, instance_metric, false);
+          nr_free(instance);
         }
       }
       ZEND_HASH_FOREACH_END();
@@ -1617,6 +1595,7 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+  nr_segment_end(&segment);
   if (zcaught) {
     zend_bailout();
     /* NOTREACHED */
