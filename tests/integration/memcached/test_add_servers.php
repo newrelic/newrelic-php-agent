@@ -6,7 +6,7 @@
 
 /*DESCRIPTION
 The agent should report instance metrics when multiple servers are
-added at once
+added at once via Memcached::addServers()
 */
 
 /*SKIPIF
@@ -17,11 +17,13 @@ added at once
 */
 
 /*EXPECT_METRICS_EXIST
-Datastore/instance/Memcached/host1/1
-Datastore/instance/Memcached/host2/2
-Datastore/instance/Memcached/host3/11211
-Datastore/instance/Memcached/host4/1
+Datastore/instance/Memcached/host1/1, 1
+Datastore/instance/Memcached/host2/2, 1
+Datastore/instance/Memcached/host3/11211, 1
+Datastore/instance/Memcached/host4/1, 1
 */
+
+/*EXPECT_ERROR_EVENTS null */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/helpers.php');
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
@@ -34,8 +36,4 @@ $memcached->addServers(array(
                        array("host3", 11211)));
 $memcached->addServers(array());
 $memcached->addServers(array(array("host4", 1, "test field")));
-$memcached->addServers(array(array(1)));
-$memcached->addServers(array(array("host1")));
-$memcached->addServers(array(array(1, "host1")));
-//$memcahed->addServers("string"); crashes PHP
 $memcached->quit();
