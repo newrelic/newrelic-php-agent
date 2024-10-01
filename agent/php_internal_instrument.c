@@ -1551,7 +1551,7 @@ NR_INNER_WRAPPER(memcached_add_server) {
     instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
                                instance->host, instance->port_path_or_id);
     nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
-    nr_free(instance);
+    nr_php_datastore_instance_destroy(instance);
     nr_free(instance_metric);
   }
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1582,7 +1582,7 @@ NR_INNER_WRAPPER(memcached_add_servers) {
           instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
                                        instance->host, instance->port_path_or_id);
           nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
-          nr_free(instance);
+          nr_php_datastore_instance_destroy(instance);
           nr_free(instance_metric);
         }
       }
