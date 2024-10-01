@@ -1554,3 +1554,14 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          which takes precedence over this config.
 ;
 ;newrelic.security.iast_test_identifier = ""
+
+; Setting: newrelic.security.scan_controllers.scan_instance_count
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the number of application instances where IAST analysis should be performed
+;          for a specific entity. Allowed values are 0 or 1, where 0 signifies run on
+;          all application instances for that specific entity.
+;          If `newrelic.security.iast_test_identifier` is specified, this value is by default 1.
+;
+;newrelic.security.iast_test_identifier = 0
