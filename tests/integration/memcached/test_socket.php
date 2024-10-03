@@ -17,7 +17,7 @@ added at once
 */
 
 /*EXPECT_METRICS_EXIST
-Datastore/instance/Memcached/__HOST__/my_socket, 1
+Datastore/instance/Memcached/__HOST__/my/socket, 1
 */
 
 /*EXPECT_ERROR_EVENTS null */
@@ -27,5 +27,5 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/memcache.inc');
 
 $memcached = new Memcached();
-$memcached->addServer("my_socket", 0);
+$memcached->addServer("my/socket", 0);
 $memcached->quit();
