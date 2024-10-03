@@ -39,6 +39,24 @@ static void test_create_datastore_instance(void) {
   assert_datastore_instance_equals_destroy(
       "empty host",
       &((nr_datastore_instance_t){
+          .host = system_host_name,
+          .database_name = "unknown",
+          .port_path_or_id = "unknown",
+      }),
+      nr_php_memcached_create_datastore_instance(NULL, 0));
+
+  assert_datastore_instance_equals_destroy(
+      "host.name socket",
+      &((nr_datastore_instance_t){
+          .host = "host.name",
+          .database_name = "unknown",
+          .port_path_or_id = "11211",
+      }),
+      nr_php_memcached_create_datastore_instance("host.name", 11211));
+
+  assert_datastore_instance_equals_destroy(
+      "host and port",
+      &((nr_datastore_instance_t){
           .host = "unknown",
           .database_name = "unknown",
           .port_path_or_id = "6379",
@@ -46,49 +64,13 @@ static void test_create_datastore_instance(void) {
       nr_php_memcached_create_datastore_instance("", 6379));
 
   assert_datastore_instance_equals_destroy(
-      "localhost socket",
-      &((nr_datastore_instance_t){
-          .host = system_host_name,
-          .database_name = "unknown",
-          .port_path_or_id = "localhost",
-      }),
-      nr_php_memcached_create_datastore_instance("localhost", 0));
-
-  assert_datastore_instance_equals_destroy(
-      "localhost and port",
-      &((nr_datastore_instance_t){
-          .host = system_host_name,
-          .database_name = "unknown",
-          .port_path_or_id = "6379",
-      }),
-      nr_php_memcached_create_datastore_instance("localhost", 6379));
-
-  assert_datastore_instance_equals_destroy(
-      "host.name socket",
-      &((nr_datastore_instance_t){
-          .host = system_host_name,
-          .database_name = "unknown",
-          .port_path_or_id = "host.name",
-      }),
-      nr_php_memcached_create_datastore_instance("host.name", 0));
-
-  assert_datastore_instance_equals_destroy(
-      "host and port",
-      &((nr_datastore_instance_t){
-          .host = "host.name",
-          .database_name = "unknown",
-          .port_path_or_id = "6379",
-      }),
-      nr_php_memcached_create_datastore_instance("host.name", 6379));
-
-  assert_datastore_instance_equals_destroy(
       "NULL socket",
       &((nr_datastore_instance_t){
-          .host = system_host_name,
+          .host = "unknown",
           .database_name = "unknown",
-          .port_path_or_id = "unknown",
+          .port_path_or_id = "11211",
       }),
-      nr_php_memcached_create_datastore_instance(NULL, 0));
+      nr_php_memcached_create_datastore_instance(NULL, 11211));
 }
 
 void test_main(void* p NRUNUSED) {
