@@ -1563,7 +1563,7 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   if (SUCCESS
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a", &servers)) {
-    if (Z_TYPE_P(servers) == IS_ARRAY) {
+    if (NULL != servers && Z_TYPE_P(servers) == IS_ARRAY) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
         zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
         zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
