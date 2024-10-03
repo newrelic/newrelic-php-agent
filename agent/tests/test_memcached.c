@@ -15,9 +15,6 @@ tlib_parallel_info_t parallel_info
 static char* system_host_name;
 
 static void test_create_datastore_instance(void) {
-  /*
-   * Test : Normal operation.
-   */
   assert_datastore_instance_equals_destroy(
       "named socket",
       &((nr_datastore_instance_t){
