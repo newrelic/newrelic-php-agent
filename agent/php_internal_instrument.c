@@ -1538,8 +1538,6 @@ NR_INNER_WRAPPER(memcached_add_server) {
   nr_string_len_t host_len = 0;
   zend_long port = 0;
   zend_long weight = 0;
-  nr_datastore_instance_t* instance = NULL;
-  char* instance_metric = NULL;
   int zcaught = 0;
 
   if (SUCCESS
@@ -1547,12 +1545,7 @@ NR_INNER_WRAPPER(memcached_add_server) {
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|ll", &host,
           &host_len, &port, &weight) &&
       NULL != host) {
-    instance = nr_php_memcached_create_datastore_instance(host, port);
-    instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
-                               instance->host, instance->port_path_or_id);
-    nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
-    nr_datastore_instance_destroy(&instance);
-    nr_free(instance_metric);
+    nr_php_memcached_create_instance_metric(host, port);
   }
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -1565,8 +1558,6 @@ NR_INNER_WRAPPER(memcached_add_server) {
 NR_INNER_WRAPPER(memcached_add_servers) {
   zval* servers = NULL;
   zval* server = NULL;
-  nr_datastore_instance_t* instance = NULL;
-  char* instance_metric = NULL;
   int zcaught = 0;
 
   if (SUCCESS
@@ -1576,14 +1567,9 @@ NR_INNER_WRAPPER(memcached_add_servers) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
         zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
         zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
-        if (NULL != host && NULL != port &&
-            Z_TYPE_P(host) == IS_STRING && Z_TYPE_P(port) == IS_LONG) {
-          instance = nr_php_memcached_create_datastore_instance(Z_STRVAL_P(host), Z_LVAL_P(port));
-          instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
-                                       instance->host, instance->port_path_or_id);
-          nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
-          nr_datastore_instance_destroy(&instance);
-          nr_free(instance_metric);
+        if (nr_php_is_zval_valid_string(host) &&
+            nr_php_is_zval_valid_integer(port)) {
+          nr_php_memcached_create_instance_metric(Z_STRVAL_P(host), Z_LVAL_P(port));
         }
       }
       ZEND_HASH_FOREACH_END();

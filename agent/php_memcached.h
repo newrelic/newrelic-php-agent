@@ -21,4 +21,17 @@ extern nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
     const char* host_or_socket,
     zend_long port);
 
+/*
+ * Purpose : Create a memcached instance metric
+ *
+ * Params  : 1. The memcached host or socket name as given to Memcached::addServer().
+ *              Must be non-null.
+ *           2. The memcached port as given as given to Memcached::addServer().
+ *              Must be non-null.
+ */
+extern void nr_php_memcached_create_instance_metric(
+    const char* host_or_socket,
+    zend_long port);
+
+
 #endif

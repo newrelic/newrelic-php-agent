@@ -21,3 +21,14 @@ nr_datastore_instance_t* nr_php_memcached_create_datastore_instance(
   return instance;
 }
 
+void nr_php_memcached_create_instance_metric(
+    const char* host_or_socket,
+    zend_long port) {
+  nr_datastore_instance_t* instance
+    = nr_php_memcached_create_datastore_instance(host_or_socket, port);
+  char* instance_metric = nr_formatf("Datastore/instance/Memcached/%s/%s",
+                                     instance->host, instance->port_path_or_id);
+  nrm_force_add(NRPRG(txn)->unscoped_metrics, instance_metric, 0);
+  nr_datastore_instance_destroy(&instance);
+  nr_free(instance_metric);
+}
