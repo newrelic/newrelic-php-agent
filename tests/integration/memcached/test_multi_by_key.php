@@ -42,7 +42,7 @@ ok - deleteMultiByKey
     [{"name":"Datastore/allOther"},                                   [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                              [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/allOther"},                         [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Memcached/memcached/11211"},          [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Memcached/ENV[MEMCACHE_HOST]/ENV[MEMCACHE_PORT]"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get"},                    [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/get",
       "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
