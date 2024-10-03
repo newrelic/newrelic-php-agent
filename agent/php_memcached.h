@@ -10,7 +10,7 @@
 #include "php_includes.h"
 
 /*
- * Purpose : Create a datastore instance metadata for a Memcached connection.
+ * Purpose : Create a datastore instance metadata for a Memcached server.
  *
  * Params  : 1. The memcached host or socket name as given to Memcached::addServer().
  *           2. The memcached port as given as given to Memcached::addServer().
