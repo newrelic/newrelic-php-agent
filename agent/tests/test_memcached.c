@@ -70,10 +70,58 @@ static void test_create_datastore_instance(void) {
       nr_php_memcached_create_datastore_instance(NULL, 11211));
 }
 
+static void test_create_instance_metric(void) {
+    nrtxn_t* txn;
+    nrmetric_t* metric;
+    char* metric_str;
+    tlib_php_engine_create("");
+    tlib_php_request_start();
+    txn = NRPRG(txn);
+
+    nr_php_memcached_create_instance_metric("host", 11211);
+    metric = nrm_find(txn->unscoped_metrics, "Datastore/instance/Memcached/host/11211");
+    tlib_pass_if_not_null("metric found", metric);
+
+    nr_php_memcached_create_instance_metric("", 11211);
+    metric = nrm_find(txn->unscoped_metrics, "Datastore/instance/Memcached/unknown/11211");
+    tlib_pass_if_not_null("metric found", metric);
+
+    nr_php_memcached_create_instance_metric(NULL, 7);
+    metric = nrm_find(txn->unscoped_metrics, "Datastore/instance/Memcached/unknown/7");
+    tlib_pass_if_not_null("metric found", metric);
+
+    nr_php_memcached_create_instance_metric("path/to/sock", 0);
+    metric_str = nr_formatf("Datastore/instance/Memcached/%s/path/to/sock", system_host_name);
+    metric = nrm_find(txn->unscoped_metrics, metric_str);
+    nr_free(metric_str);
+    tlib_pass_if_not_null("metric found", metric);
+
+    nr_php_memcached_create_instance_metric("", 0);
+    metric_str = nr_formatf("Datastore/instance/Memcached/%s/unknown", system_host_name);
+    metric = nrm_find(txn->unscoped_metrics, metric_str);
+    nr_free(metric_str);
+    tlib_pass_if_not_null("metric found", metric);
+
+    // restart the transaction because the next metric is the same as a previous metric
+    tlib_php_request_end();
+    tlib_php_request_start();
+    txn = NRPRG(txn);
+
+    nr_php_memcached_create_instance_metric(NULL, 0);
+    metric_str = nr_formatf("Datastore/instance/Memcached/%s/unknown", system_host_name);
+    metric = nrm_find(txn->unscoped_metrics, metric_str);
+    nr_free(metric_str);
+    tlib_pass_if_not_null("metric found", metric);
+
+    tlib_php_request_end();
+    tlib_php_engine_destroy();
+}
+
 void test_main(void* p NRUNUSED) {
   system_host_name = nr_system_get_hostname();
 
   test_create_datastore_instance();
+  test_create_instance_metric();
 
   nr_free(system_host_name);
 }
