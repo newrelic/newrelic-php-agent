@@ -59,6 +59,8 @@ require_once(realpath (dirname ( __FILE__ )) . '/../../include/tap.php');
 require_once(realpath (dirname ( __FILE__ )) . '/memcache.inc');
 
 $memcached = new Memcached();
+$memcached->addServer(5, 5);
+//$memcached->addServer("host", string); crashes PHP
 $memcached->addServers(array(array(1)));
 $memcached->addServers(array(array("host1")));
 $memcached->addServers(array(array(1, "host1")));
