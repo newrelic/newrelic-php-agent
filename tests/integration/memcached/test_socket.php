@@ -5,8 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should report instance metrics when multiple servers are
-added at once
+The agent should report instance metrics for sockets when port is 0
 */
 
 /*SKIPIF
