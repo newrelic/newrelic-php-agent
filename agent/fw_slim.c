@@ -181,17 +181,17 @@ void nr_slim_enable(TSRMLS_D) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
   /* Slim 3 */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Slim\\Route::run"), nr_slim3_4_route_run, NULL, NULL);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("Slim\\Route::run"), nr_slim3_4_route_run, NULL);
 
   /* Slim 4 */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Slim\\Routing\\Route::run"), nr_slim3_4_route_run, NULL, NULL);
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("Slim\\Routing\\Route::run"), nr_slim3_4_route_run, NULL);
 
   /* Slim 4 */
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("Slim\\Routing\\Dispatcher::dispatch"), nr_slim4_route_dispatch,
-      NULL, NULL);
+      NULL);
 #else
   /* Slim 4*/
   nr_php_wrap_user_function(NR_PSTR("Slim\\Routing\\Route::run"),

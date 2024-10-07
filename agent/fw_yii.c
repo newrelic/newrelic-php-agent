@@ -93,12 +93,11 @@ NR_PHP_WRAPPER_END
 void nr_yii1_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("CAction::runWithParams"), nr_yii1_runWithParams_wrapper, NULL,
-      NULL);
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
+      NR_PSTR("CAction::runWithParams"), nr_yii1_runWithParams_wrapper, NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("CInlineAction::runWithParams"), nr_yii1_runWithParams_wrapper,
-      NULL, NULL);
+      NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("CAction::runWithParams"),
                             nr_yii1_runWithParams_wrapper TSRMLS_CC);
@@ -196,12 +195,12 @@ NR_PHP_WRAPPER_END
 void nr_yii2_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("yii\\base\\Action::runWithParams"),
-      nr_yii2_runWithParams_wrapper, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
+      nr_yii2_runWithParams_wrapper, NULL);
+  nr_php_wrap_user_function_before_after(
       NR_PSTR("yii\\base\\InlineAction::runWithParams"),
-      nr_yii2_runWithParams_wrapper, NULL, NULL);
+      nr_yii2_runWithParams_wrapper, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("yii\\base\\Action::runWithParams"),
                             nr_yii2_runWithParams_wrapper TSRMLS_CC);
