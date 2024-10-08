@@ -522,7 +522,7 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all.
      */
     {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
-
+#if defined(DETECT_EXTRA_PACKAGES) && DETECT_EXTRA_PACKAGES != 0
     /*
      * Other frameworks, detected only, but not specifically
      * instrumented. We detect these as libraries so that we don't prevent
@@ -576,6 +576,7 @@ static nr_library_table_t libraries[] = {
 
     {"Xoops", NR_PSTR("class/xoopsload.php"), NULL},
     {"E107", NR_PSTR("e107_handlers/e107_class.php"), NULL},
+#endif
 };
 // clang-format: on
 
@@ -585,6 +586,7 @@ static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
     {"Monolog", NR_PSTR("monolog/logger.php"), nr_monolog_enable},
+#if defined(DETECT_EXTRA_PACKAGES) && DETECT_EXTRA_PACKAGES != 0
     /* Consolidation/Log - Logging for PHP */
     {"Consolidation/Log", NR_PSTR("consolidation/log/src/logger.php"), NULL},
     /* laminas-log - Logging for PHP */
@@ -593,6 +595,7 @@ static nr_library_table_t logging_frameworks[] = {
     {"cakephp-log", NR_PSTR("cakephp/log/log.php"), NULL},
     /* Analog - Logging for PHP */
     {"Analog", NR_PSTR("analog/analog.php"), NULL},
+#endif
 };
 // clang-format: on
 
