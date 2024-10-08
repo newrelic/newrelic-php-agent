@@ -603,14 +603,17 @@ static size_t num_logging_frameworks
 typedef struct _nr_vuln_mgmt_table_t {
   const char* package_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_vuln_mgmt_enable_fn_t enable;
 } nr_vuln_mgmt_table_t;
 
 /* Note that all paths should be in lowercase. */
+// clang-format: off
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", "drupal/component/dependencyinjection/container.php", nr_drupal_version},
-    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+    {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
+    {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
+// clang-format: on
 
 static const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
@@ -990,27 +993,21 @@ static void nr_execute_handle_logging_framework(const char* filename,
   }
 }
 
-#undef STR_AND_LEN
-
-static void nr_execute_handle_package(const char* filename) {
-  if (NULL == filename || 0 >= nr_strlen(filename)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: The file name is NULL",
-                     __func__);
-    return;
-  }
-  char* filename_lower = nr_string_to_lowercase(filename);
+static void nr_execute_handle_package(const char* filename,
+                                      const size_t filename_len) {
   size_t i = 0;
 
   for (i = 0; i < num_packages; i++) {
-    if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
       if (NULL != vuln_mgmt_packages[i].enable) {
         vuln_mgmt_packages[i].enable();
       }
     }
   }
-
-  nr_free(filename_lower);
 }
+
+#undef STR_AND_LEN
 
 /*
  * Purpose : Detect library and framework usage from a PHP file.
@@ -1036,7 +1033,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_autoload(filename, filename_len);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_execute_handle_package(filename);
+    nr_execute_handle_package(filename, filename_len);
   }
 }
 
