@@ -1250,11 +1250,76 @@ static void test_iendswith(void) {
   tlib_pass_if_bool_equal("not quite match", false,
                           nr_striendswith(NR_PSTR("foobarr"), NR_PSTR("bar")));
 
-  tlib_pass_if_bool_equal("suffix match", true,
+  tlib_pass_if_bool_equal("suffix match, same case", true,
                           nr_striendswith(NR_PSTR("foobar"), NR_PSTR("bar")));
 
-  tlib_pass_if_bool_equal("exact match", true,
+  tlib_pass_if_bool_equal("exact match, same case", true,
                           nr_striendswith(NR_PSTR("bar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match, diff case, 1", true,
+                          nr_striendswith(NR_PSTR("foobar"), NR_PSTR("BAR")));
+
+  tlib_pass_if_bool_equal("exact match, diff case, 1", true,
+                          nr_striendswith(NR_PSTR("bar"), NR_PSTR("BAR")));
+
+  tlib_pass_if_bool_equal("suffix match, diff case, 2", true,
+                          nr_striendswith(NR_PSTR("fooBAR"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("exact match, diff case, 2", true,
+                          nr_striendswith(NR_PSTR("BAR"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match, mixed case, 1", true,
+                          nr_striendswith(NR_PSTR("foobAr"), NR_PSTR("BaR")));
+
+  tlib_pass_if_bool_equal("exact match, mixed case, 1", true,
+                          nr_striendswith(NR_PSTR("BaR"), NR_PSTR("bAr")));
+}
+
+static void test_endswith(void) {
+  tlib_pass_if_bool_equal("input is NULL", false,
+                          nr_strendswith(NULL, 4, NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("pattern is NULL", false,
+                          nr_strendswith(NR_PSTR("foo"), NULL, 0));
+
+  tlib_pass_if_bool_equal("input is empty", false,
+                          nr_strendswith(NR_PSTR(""), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("pattern is empty", true,
+                          nr_strendswith(NR_PSTR("foo"), NR_PSTR("")));
+
+  tlib_pass_if_bool_equal("input is too short", false,
+                          nr_strendswith(NR_PSTR("ar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal(
+      "no match", false, nr_strendswith(NR_PSTR("foobarbaz"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("not quite match", false,
+                          nr_strendswith(NR_PSTR("foobarr"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match, same case", true,
+                          nr_strendswith(NR_PSTR("foobar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("exact match, same case", true,
+                          nr_strendswith(NR_PSTR("bar"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match, diff case, 1", false,
+                          nr_strendswith(NR_PSTR("foobar"), NR_PSTR("BAR")));
+
+  tlib_pass_if_bool_equal("exact match, diff case, 1", false,
+                          nr_strendswith(NR_PSTR("bar"), NR_PSTR("BAR")));
+
+  tlib_pass_if_bool_equal("suffix match, diff case, 2", false,
+                          nr_strendswith(NR_PSTR("fooBAR"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("exact match, diff case, 2", false,
+                          nr_strendswith(NR_PSTR("BAR"), NR_PSTR("bar")));
+
+  tlib_pass_if_bool_equal("suffix match, mixed case, 1", false,
+                          nr_strendswith(NR_PSTR("foobAr"), NR_PSTR("BaR")));
+
+  tlib_pass_if_bool_equal("exact match, mixed case, 1", false,
+                          nr_strendswith(NR_PSTR("BaR"), NR_PSTR("bAr")));
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
@@ -1295,6 +1360,7 @@ void test_main(void* p NRUNUSED) {
   test_strsplit();
   test_str_append();
   test_iendswith();
+  test_endswith();
 
   /*
    * character tests

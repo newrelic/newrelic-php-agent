@@ -471,4 +471,36 @@ static inline bool nr_striendswith(const char* s,
   return 0 == nr_stricmp(suffix, pattern);
 }
 
+/*
+ * Purpose : Checks whether a string ends with the specified pattern. Note that
+ * nr_strendswith is case-sensitive.
+ *
+ * Params  : 1. The input string to examine.
+ *           2. The input string length.
+ *           3. The pattern to look for at the end of the string.
+ *           4. The pattern length.
+ *
+ * Returns : The true if input string ends with the pattern or false otherwise.
+ */
+static inline bool nr_strendswith(const char* s,
+                                   const size_t slen,
+                                   const char* pattern,
+                                   const size_t pattern_len) {
+  const char* suffix;
+
+  if (slen < pattern_len) {
+    /* input shorter than pattern */
+    return false;
+  }
+
+  if (NULL == s) {
+    /* invalid input */
+    return false;
+  }
+
+  /* compare input's suffix with the pattern and return result */
+  suffix = s + (slen - pattern_len);
+  return 0 == nr_strcmp(suffix, pattern);
+}
+
 #endif /* UTIL_STRINGS_HDR */

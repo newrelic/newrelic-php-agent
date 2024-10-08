@@ -848,7 +848,7 @@ static nrframework_t nr_try_detect_framework(
   size_t i;
 
   for (i = 0; i < num_frameworks; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
+    if (nr_strendswith(STR_AND_LEN(filename),
                         STR_AND_LEN(frameworks[i].file_to_check))) {
       /*
        * If we have a special check function and it tells us to ignore
@@ -919,7 +919,7 @@ static void nr_execute_handle_library(const char* filename,
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
+    if (nr_strendswith(STR_AND_LEN(filename),
                         STR_AND_LEN(libraries[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 libraries[i].library_name);
@@ -954,7 +954,7 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
-  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
+  if (!nr_strendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
                        AUTOLOAD_MAGIC_FILE_LEN)) {
     // not an autoload file
     return;
@@ -975,7 +975,7 @@ static void nr_execute_handle_logging_framework(const char* filename,
   size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
+    if (nr_strendswith(STR_AND_LEN(filename),
                         STR_AND_LEN(logging_frameworks[i].file_to_check))) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 logging_frameworks[i].library_name);
@@ -998,7 +998,7 @@ static void nr_execute_handle_package(const char* filename,
   size_t i = 0;
 
   for (i = 0; i < num_packages; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
+    if (nr_strendswith(STR_AND_LEN(filename),
                         STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
       if (NULL != vuln_mgmt_packages[i].enable) {
         vuln_mgmt_packages[i].enable();
