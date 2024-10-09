@@ -403,18 +403,22 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   zval* retval = NULL;
 
 #define ADD_IF_INT_SET(args, argc, value) \
+  args[argc] = nr_php_zval_alloc();       \
   if (value) {                            \
-    args[argc] = nr_php_zval_alloc();     \
     ZVAL_LONG(args[argc], value);         \
-    argc++;                               \
-  }
+  } else {                                \
+    ZVAL_NULL(args[argc]);                \
+  }                                       \
+  argc++;
 
 #define ADD_IF_STR_SET(args, argc, value) \
+  args[argc] = nr_php_zval_alloc();       \
   if (value) {                            \
-    args[argc] = nr_php_zval_alloc();     \
     nr_php_zval_str(args[argc], value);   \
-    argc++;                               \
-  }
+  } else {                                \
+    ZVAL_NULL(args[argc]);                \
+  }                                       \
+  argc++;
 
   ADD_IF_STR_SET(argv, argc,
                  nr_php_mysqli_strip_persistent_prefix(metadata->host));
