@@ -1385,10 +1385,8 @@ EOF
       #
 
       if [ -d "${cfg_pfx}/mods-available" -a -f "${cfg_pfx}/mods-available/newrelic.ini" ]; then
-        if [ -f ${pi_inidir_cli}/*-newrelic.ini ]; then
-          pi_inidir_cli="${cfg_pfx}/mods-available"
-        fi
-        if [ -f ${pi_inidir_dso}/*-newrelic.ini ]; then
+        pi_inidir_cli="${cfg_pfx}/mods-available"
+        if [ -n ${pi_inidir_dso} ]; then
           pi_inidir_dso="${cfg_pfx}/mods-available"
         fi
       fi
