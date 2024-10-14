@@ -21,9 +21,8 @@
 #endif
 
 /*
- * Current version naming scheme is flowers
+ * Current version naming scheme is gemstones
  *
- *   dahlia             19Sep2022 (10.1)
  *   echinacea          03Oct2022 (10.2)
  *   freesia            03Nov2022 (10.3)
  *   goldenrod          12Dec2022 (10.4)
@@ -47,8 +46,9 @@
  *   yarrow             26Jun2024 (10.22)
  *   zinnia             30Jul2024 (11.0)
  *   amethyst           26Aug2024 (11.1)
+ *   bowenite           30Sep2024 (11.2)
  */
-#define NR_CODENAME "bowenite"
+#define NR_CODENAME "corundum"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

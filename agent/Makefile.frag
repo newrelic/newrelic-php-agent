@@ -93,6 +93,7 @@ TEST_BINARIES = \
 	tests/test_internal_instrument \
 	tests/test_hash \
 	tests/test_lib_aws_sdk_php \
+	tests/test_memcached \
 	tests/test_mongodb \
 	tests/test_monolog \
 	tests/test_mysql \

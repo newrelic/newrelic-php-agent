@@ -13,8 +13,10 @@
 #include "php_explain_mysqli.h"
 #include "php_file_get_contents.h"
 #include "php_globals.h"
+#include "php_hash.h"
 #include "php_httprequest_send.h"
 #include "php_internal_instrument.h"
+#include "php_memcached.h"
 #include "php_mysql.h"
 #include "php_mysqli.h"
 #include "php_pdo.h"
@@ -1529,6 +1531,57 @@ NR_INNER_WRAPPER(memcache_function) {
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_MEMCACHE,
                                              nr_wrapper->extra, NULL,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
+NR_INNER_WRAPPER(memcached_add_server) {
+  char* host = NULL;
+  nr_string_len_t host_len = 0;
+  zend_long port = 0;
+  zend_long weight = 0;
+  int zcaught = 0;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|ll", &host,
+          &host_len, &port, &weight) &&
+      NULL != host) {
+    nr_php_memcached_create_instance_metric(host, port);
+  }
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+NR_INNER_WRAPPER(memcached_add_servers) {
+  zval* servers = NULL;
+  zval* server = NULL;
+  int zcaught = 0;
+
+  if (SUCCESS
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a", &servers)) {
+    if (NULL != servers && Z_TYPE_P(servers) == IS_ARRAY) {
+      ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
+        zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
+        zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
+        if (nr_php_is_zval_valid_string(host) &&
+            nr_php_is_zval_valid_integer(port)) {
+          nr_php_memcached_create_instance_metric(Z_STRVAL_P(host), Z_LVAL_P(port));
+        }
+      }
+      ZEND_HASH_FOREACH_END();
+    }
+  }
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
 }
 
 /*
@@ -3098,6 +3151,8 @@ NR_OUTER_WRAPPER(memcached_set)
 NR_OUTER_WRAPPER(memcached_setbykey)
 NR_OUTER_WRAPPER(memcached_setmulti)
 NR_OUTER_WRAPPER(memcached_setmultibykey)
+NR_OUTER_WRAPPER(memcached_addserver)
+NR_OUTER_WRAPPER(memcached_addservers)
 
 NR_OUTER_WRAPPER(redis_append)
 NR_OUTER_WRAPPER(redis_bitcount)
@@ -3511,6 +3566,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       memcache_function, 0, "set")
   NR_INTERNAL_WRAPREC("memcached::setmultibykey", memcached_setmultibykey,
                       memcache_function, 0, "set")
+  NR_INTERNAL_WRAPREC("memcached::addserver", memcached_addserver,
+                      memcached_add_server, 0, 0);
+  NR_INTERNAL_WRAPREC("memcached::addservers", memcached_addservers,
+                      memcached_add_servers, 0, 0);
 
   NR_INTERNAL_WRAPREC("redis::connect", redis_connect, redis_connect, 0,
                       "connect")
