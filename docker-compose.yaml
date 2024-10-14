@@ -24,6 +24,8 @@ services:
       retries: 3
       start_period: 20s
     container_name: mysqldb
+    volumes:
+      - var-run-mysqld:/var/run/mysqld
   redisdb:
     image: redis
     restart: always
@@ -56,6 +58,7 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWD: admin
       MYSQL_HOST: mysqldb
+      MYSQL_SOCKET: /var/run/mysqld/mysqld.sock
 
       PG_HOST: postgres
       PG_PORT: 5432
@@ -67,6 +70,7 @@ services:
 
     volumes:
        - ${AGENT_CODE:-$PWD}:/usr/local/src/newrelic-php-agent
+       - var-run-mysqld:/var/run/mysqld
     entrypoint: tail
     command: -f /dev/null
     container_name: nr-php
@@ -83,6 +87,7 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWD: admin
       MYSQL_HOST: mysqldb
+      MYSQL_SOCKET: /var/run/mysqld/mysqld.sock
 
       PG_HOST: postgres
       PG_PORT: 5432
@@ -97,8 +102,12 @@ services:
       NEWRELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
     volumes:
        - ${PWD}:/usr/src/myapp
+       - var-run-mysqld:/var/run/mysqld
     working_dir: /usr/src/myapp
     stdin_open: true
     tty: true
     container_name: agent-devenv
     profiles: ["dev"]
+
+volumes:
+  var-run-mysqld:
