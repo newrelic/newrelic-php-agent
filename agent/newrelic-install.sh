@@ -1371,6 +1371,25 @@ EOF
       if [ -d "${cfg_pfx}/fpm/conf.d" ]; then
         pi_inidir_dso="${cfg_pfx}/fpm/conf.d"
       fi
+
+      #
+      # Debian can use a mods-available directory to store the ini files.
+      # It creates a symlink from the ini file in the conf.d directory that
+      # our installer can fail to find (because the symlink is prefixed with
+      # "20-" (notably the number can change based on configurations).
+      # While this install script will not install into the mods-available
+      # directory, our .deb installer can. Therefore, we want to detect if
+      # newrelic has previously been installed in the mods-available directory
+      # so that we do not create an additional ini file -- which would result in
+      # the conf.d directory having both newrelic.ini and 20-newrelic.ini.
+      #
+
+      if [ -d "${cfg_pfx}/mods-available" -a -f "${cfg_pfx}/mods-available/newrelic.ini" ]; then
+        pi_inidir_cli="${cfg_pfx}/mods-available"
+        if [ -n "${pi_inidir_dso}" ]; then
+          pi_inidir_dso="${cfg_pfx}/mods-available"
+        fi
+      fi
     fi
   done
 
