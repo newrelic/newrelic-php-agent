@@ -523,59 +523,7 @@ static nr_library_table_t libraries[] = {
      */
     {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
 
-    /*
-     * Other frameworks, detected only, but not specifically
-     * instrumented. We detect these as libraries so that we don't prevent
-     * detection of a supported framework or library later (since a transaction
-     * can only have one framework).
-     */
-    {"Aura1", NR_PSTR("aura/framework/system.php"), NULL},
-    {"Aura2", NR_PSTR("aura/di/src/containerinterface.php"), NULL},
-    {"Aura3", NR_PSTR("aura/di/src/containerconfiginterface.php"), NULL},
     {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
-    {"Fuel", NR_PSTR("fuel/core/classes/fuel.php"), NULL},
-    {"Lithium", NR_PSTR("lithium/core/libraries.php"), NULL},
-    {"Phpbb", NR_PSTR("phpbb/request/request.php"), NULL},
-    {"Phpixie2", NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), NULL},
-    {"Phpixie3", NR_PSTR("phpixie/framework.php"), NULL},
-    {"React", NR_PSTR("react/event-loop/src/loopinterface.php"), NULL},
-    {"SilverStripe", NR_PSTR("injector/silverstripeinjectioncreator.php"), NULL},
-    {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
-    {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
-    {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
-
-    /*
-     * Other CMS (content management systems), detected only, but
-     * not specifically instrumented.
-     */
-    {"Moodle", NR_PSTR("moodlelib.php"), NULL},
-    /*
-     * It is likely that this will never be found, since the CodeIgniter.php
-     * will get loaded first, and as such mark this transaction as belonging to
-     * CodeIgniter, and not Expession Engine.
-     */
-    {"ExpressionEngine", NR_PSTR("system/expressionengine/config/config.php"), NULL},
-    /*
-     * ExpressionEngine 5, however, has a very obvious file we can look for.
-     */
-    {"ExpressionEngine5", NR_PSTR("expressionengine/boot/boot.php"), NULL},
-    /*
-     * DokuWiki uses doku.php as an entry point, but has other files that are
-     * loaded directly that this won't pick up. That's probably OK for
-     * supportability metrics, but we'll add the most common name for the
-     * configuration file as well just in case.
-     */
-    {"DokuWiki", NR_PSTR("doku.php"), NULL},
-    {"DokuWiki", NR_PSTR("conf/dokuwiki.php"), NULL},
-
-    /*
-     * SugarCRM no longer has a community edition, so this likely only works
-     * with older versions.
-     */
-    {"SugarCRM", NR_PSTR("sugarobjects/sugarconfig.php"), NULL},
-
-    {"Xoops", NR_PSTR("class/xoopsload.php"), NULL},
-    {"E107", NR_PSTR("e107_handlers/e107_class.php"), NULL},
 };
 // clang-format: on
 
@@ -590,9 +538,6 @@ static nr_library_table_t logging_frameworks[] = {
     /* laminas-log - Logging for PHP */
     {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), NULL},
     /* cakephp-log - Logging for PHP */
-    {"cakephp-log", NR_PSTR("cakephp/log/log.php"), NULL},
-    /* Analog - Logging for PHP */
-    {"Analog", NR_PSTR("analog/analog.php"), NULL},
 };
 // clang-format: on
 
