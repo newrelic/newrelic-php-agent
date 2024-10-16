@@ -1,3 +1,5 @@
+_is_set
+_set
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -398,48 +400,53 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     zval* link,
     const nr_mysqli_metadata_link_t* metadata TSRMLS_DC) {
   zend_ulong argc = 0;
+  zend_ulong arg_required = 0;
   zval* argv[7] = {0};
   zend_ulong i;
   zval* retval = NULL;
 
-#define ADD_IF_INT_SET(args, argc, value) \
-  args[argc] = nr_php_zval_alloc();       \
-  if (value) {                            \
-    ZVAL_LONG(args[argc], value);         \
-  } else {                                \
-    ZVAL_NULL(args[argc]);                \
-  }                                       \
-  argc++;
+#define ADD_IF_INT_SET(is_set, args, argc, value) \
+  if (value) {                                    \
+    args[argc] = nr_php_zval_alloc();             \
+    ZVAL_LONG(args[argc], value);                 \
+    argc++;                                       \
+  } else if (false == is_set) {                   \
+    args[argc] = nr_php_zval_alloc();             \
+    ZVAL_NULL(args[argc]);                        \
+    argc++;                                       \
+  }
 
-#define ADD_IF_STR_SET(args, argc, value) \
-  args[argc] = nr_php_zval_alloc();       \
-  if (value) {                            \
-    nr_php_zval_str(args[argc], value);   \
-  } else {                                \
-    ZVAL_NULL(args[argc]);                \
-  }                                       \
-  argc++;
+#define ADD_IF_STR_SET(is_set, args, argc, value) \
+  if (value) {                                    \
+    args[argc] = nr_php_zval_alloc();             \
+    nr_php_zval_str(args[argc], value);           \
+    argc++;                                       \
+  } else if (false == is_set) {                   \
+    args[argc] = nr_php_zval_alloc();             \
+    ZVAL_NULL(args[argc]);                        \
+    argc++;                                       \
+  }
 
-  ADD_IF_STR_SET(argv, argc,
+  ADD_IF_STR_SET(true, argv, argc,
                  nr_php_mysqli_strip_persistent_prefix(metadata->host));
-  ADD_IF_STR_SET(argv, argc, metadata->user);
-  ADD_IF_STR_SET(argv, argc, metadata->password);
-
+  ADD_IF_STR_SET(true, argv, argc, metadata->user);
+  ADD_IF_STR_SET(true, argv, argc, metadata->password);
   /*
    * We can only add the remaining metadata fields if we already have three
    * arguments (host, user and password) above, lest we accidentally set the
    * wrong positional argument to something it doesn't mean.
    */
+  arg_required = argc;
   if (argc == 3) {
-    ADD_IF_STR_SET(argv, argc, metadata->database);
-    ADD_IF_INT_SET(argv, argc, metadata->port);
-    ADD_IF_STR_SET(argv, argc, metadata->socket);
+    ADD_IF_STR_SET(false, argv, argc, metadata->database);
+    ADD_IF_INT_SET(false, argv, argc, metadata->port);
+    ADD_IF_STR_SET(false, argv, argc, metadata->socket);
 
     /*
      * Avoid defaulting the final $flags argument to null.
      */
     if (metadata->flags) {
-      ADD_IF_INT_SET(argv, argc, metadata->flags);
+      ADD_IF_INT_SET(false, argv, argc, metadata->flags);
     }
   }
 
@@ -460,7 +467,7 @@ static nr_status_t nr_php_mysqli_link_real_connect(
    * If we didn't specify the database in the connection parameters, we need to
    * call mysqli::select_db here.
    */
-  if (metadata->database && (argc < 4)) {
+  if (metadata->database && (arg_required < 3)) {
     zval* database = nr_php_zval_alloc();
 
     nr_php_zval_str(database, metadata->database);
