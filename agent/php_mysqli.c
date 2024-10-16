@@ -403,52 +403,46 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   zend_ulong i;
   zval* retval = NULL;
 
-#define ADD_IF_INT_SET(is_set, args, argc, value) \
+#define ADD_IF_INT_SET(null_ok, args, argc, value) \
   if (value) {                                    \
     args[argc] = nr_php_zval_alloc();             \
     ZVAL_LONG(args[argc], value);                 \
     argc++;                                       \
-  } else if (false == is_set) {                   \
+  } else if (true == null_ok) {                   \
     args[argc] = nr_php_zval_alloc();             \
     ZVAL_NULL(args[argc]);                        \
     argc++;                                       \
   }
 
-#define ADD_IF_STR_SET(is_set, args, argc, value) \
+#define ADD_IF_STR_SET(null_ok, args, argc, value) \
   if (value) {                                    \
     args[argc] = nr_php_zval_alloc();             \
     nr_php_zval_str(args[argc], value);           \
     argc++;                                       \
-  } else if (false == is_set) {                   \
+  } else if (true == null_ok) {                   \
     args[argc] = nr_php_zval_alloc();             \
     ZVAL_NULL(args[argc]);                        \
     argc++;                                       \
   }
 
-  ADD_IF_STR_SET(true, argv, argc,
+  ADD_IF_STR_SET(false, argv, argc,
                  nr_php_mysqli_strip_persistent_prefix(metadata->host));
-  ADD_IF_STR_SET(true, argv, argc, metadata->user);
-  ADD_IF_STR_SET(true, argv, argc, metadata->password);
+  ADD_IF_STR_SET(false, argv, argc, metadata->user);
+  ADD_IF_STR_SET(false, argv, argc, metadata->password);
+
   /*
    * We can only add the remaining metadata fields if we already have three
    * arguments (host, user and password) above, lest we accidentally set the
-   * wrong positional argument to something it doesn't mean.
+   * wrong positional argument to something it doesn't mean.  Note, prior
+   * to 7.4 not all args are nullable.
    */
   arg_required = argc;
   if (argc == 3) {
-    ADD_IF_STR_SET(false, argv, argc, metadata->database);
-    ADD_IF_INT_SET(false, argv, argc, metadata->port);
-    ADD_IF_STR_SET(false, argv, argc, metadata->socket);
-
-    /*
-     * Avoid defaulting the final $flags argument to null.
-     */
-    if (metadata->flags) {
-      ADD_IF_INT_SET(false, argv, argc, metadata->flags);
-    }
-  }
-
-  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
+    ADD_IF_STR_SET(true, argv, argc, metadata->database);
+    ADD_IF_INT_SET(true, argv, argc, metadata->port);
+    ADD_IF_STR_SET(true, argv, argc, metadata->socket);
+    ADD_IF_INT_SET(false, argv, argc, metadata->flags);
+  }  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
 
   for (i = 0; i < argc; i++) {
     nr_php_zval_free(&argv[i]);
