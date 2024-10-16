@@ -477,23 +477,23 @@ test-services-stop:
 
 dev-shell:
 	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; bash"
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; bash"
 
 dev-build:
 	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all"
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all"
 
 dev-unit-tests:
 	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
 
 dev-integration-tests:
 	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-all:
 	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-stop:
 	docker compose --profile dev stop
