@@ -523,59 +523,7 @@ static nr_library_table_t libraries[] = {
      */
     {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
 
-    /*
-     * Other frameworks, detected only, but not specifically
-     * instrumented. We detect these as libraries so that we don't prevent
-     * detection of a supported framework or library later (since a transaction
-     * can only have one framework).
-     */
-    {"Aura1", NR_PSTR("aura/framework/system.php"), NULL},
-    {"Aura2", NR_PSTR("aura/di/src/containerinterface.php"), NULL},
-    {"Aura3", NR_PSTR("aura/di/src/containerconfiginterface.php"), NULL},
     {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
-    {"Fuel", NR_PSTR("fuel/core/classes/fuel.php"), NULL},
-    {"Lithium", NR_PSTR("lithium/core/libraries.php"), NULL},
-    {"Phpbb", NR_PSTR("phpbb/request/request.php"), NULL},
-    {"Phpixie2", NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), NULL},
-    {"Phpixie3", NR_PSTR("phpixie/framework.php"), NULL},
-    {"React", NR_PSTR("react/event-loop/src/loopinterface.php"), NULL},
-    {"SilverStripe", NR_PSTR("injector/silverstripeinjectioncreator.php"), NULL},
-    {"SilverStripe4", NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
-    {"Typo3", NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
-    {"Typo3", NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
-
-    /*
-     * Other CMS (content management systems), detected only, but
-     * not specifically instrumented.
-     */
-    {"Moodle", NR_PSTR("moodlelib.php"), NULL},
-    /*
-     * It is likely that this will never be found, since the CodeIgniter.php
-     * will get loaded first, and as such mark this transaction as belonging to
-     * CodeIgniter, and not Expession Engine.
-     */
-    {"ExpressionEngine", NR_PSTR("system/expressionengine/config/config.php"), NULL},
-    /*
-     * ExpressionEngine 5, however, has a very obvious file we can look for.
-     */
-    {"ExpressionEngine5", NR_PSTR("expressionengine/boot/boot.php"), NULL},
-    /*
-     * DokuWiki uses doku.php as an entry point, but has other files that are
-     * loaded directly that this won't pick up. That's probably OK for
-     * supportability metrics, but we'll add the most common name for the
-     * configuration file as well just in case.
-     */
-    {"DokuWiki", NR_PSTR("doku.php"), NULL},
-    {"DokuWiki", NR_PSTR("conf/dokuwiki.php"), NULL},
-
-    /*
-     * SugarCRM no longer has a community edition, so this likely only works
-     * with older versions.
-     */
-    {"SugarCRM", NR_PSTR("sugarobjects/sugarconfig.php"), NULL},
-
-    {"Xoops", NR_PSTR("class/xoopsload.php"), NULL},
-    {"E107", NR_PSTR("e107_handlers/e107_class.php"), NULL},
 };
 // clang-format: on
 
@@ -590,9 +538,6 @@ static nr_library_table_t logging_frameworks[] = {
     /* laminas-log - Logging for PHP */
     {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), NULL},
     /* cakephp-log - Logging for PHP */
-    {"cakephp-log", NR_PSTR("cakephp/log/log.php"), NULL},
-    /* Analog - Logging for PHP */
-    {"Analog", NR_PSTR("analog/analog.php"), NULL},
 };
 // clang-format: on
 
@@ -603,14 +548,17 @@ static size_t num_logging_frameworks
 typedef struct _nr_vuln_mgmt_table_t {
   const char* package_name;
   const char* file_to_check;
+  size_t file_to_check_len;
   nr_vuln_mgmt_enable_fn_t enable;
 } nr_vuln_mgmt_table_t;
 
 /* Note that all paths should be in lowercase. */
+// clang-format: off
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", "drupal/component/dependencyinjection/container.php", nr_drupal_version},
-    {"Wordpress", "wp-includes/version.php", nr_wordpress_version},
+    {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
+    {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
+// clang-format: on
 
 static const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
@@ -990,27 +938,21 @@ static void nr_execute_handle_logging_framework(const char* filename,
   }
 }
 
-#undef STR_AND_LEN
-
-static void nr_execute_handle_package(const char* filename) {
-  if (NULL == filename || 0 >= nr_strlen(filename)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: The file name is NULL",
-                     __func__);
-    return;
-  }
-  char* filename_lower = nr_string_to_lowercase(filename);
+static void nr_execute_handle_package(const char* filename,
+                                      const size_t filename_len) {
   size_t i = 0;
 
   for (i = 0; i < num_packages; i++) {
-    if (nr_stridx(filename_lower, vuln_mgmt_packages[i].file_to_check) >= 0) {
+    if (nr_striendswith(STR_AND_LEN(filename),
+                        STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
       if (NULL != vuln_mgmt_packages[i].enable) {
         vuln_mgmt_packages[i].enable();
       }
     }
   }
-
-  nr_free(filename_lower);
 }
+
+#undef STR_AND_LEN
 
 /*
  * Purpose : Detect library and framework usage from a PHP file.
@@ -1036,7 +978,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_autoload(filename, filename_len);
   nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_execute_handle_package(filename);
+    nr_execute_handle_package(filename, filename_len);
   }
 }
 
