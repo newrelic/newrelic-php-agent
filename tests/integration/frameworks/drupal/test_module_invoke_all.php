@@ -15,9 +15,6 @@ newrelic.application_logging.metrics.enabled = false
 /*SKIPIF
 <?php
 require("skipif.inc");
-if (version_compare(PHP_VERSION, "8.0", ">=")) {
-  die("skip: PHP >= 8.0 uses other test\n");
-}
 */
 
 /*EXPECT
