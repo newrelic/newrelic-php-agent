@@ -1373,14 +1373,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.security.agent.enabled = false
 
-; Setting: newrelic.security.request.body_limit
-; Type   : unsigned integer
-; Scope  : system
-; Default: 300
-; Info   : Sets the maximum limit of the request body to be read in kb.
-;
-;newrelic.security.request.body_limit = 300
-
 ; Setting: newrelic.security.validator.client_ssl_cert_filepath
 ; Type   : string
 ; Scope  : system
