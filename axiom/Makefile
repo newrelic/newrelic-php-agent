@@ -17,7 +17,6 @@
 # Useful variables:
 #
 # AR:     The archiver used to build a static library (default: ar).
-# CC:     The C compiler to use (default: gcc).
 # CFLAGS: Flags to give the C compiler when building object files.
 #
 
@@ -113,6 +112,7 @@ OBJS := \
 	nr_segment_children.o \
 	nr_segment_datastore.o \
 	nr_segment_external.o \
+	nr_segment_message.o \
 	nr_segment_private.o \
 	nr_segment_terms.o \
 	nr_segment_traces.o \
