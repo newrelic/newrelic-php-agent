@@ -34,7 +34,8 @@ typedef struct _nrtxn_t nrtxn_t;
 typedef enum _nr_segment_type_t {
   NR_SEGMENT_CUSTOM,
   NR_SEGMENT_DATASTORE,
-  NR_SEGMENT_EXTERNAL
+  NR_SEGMENT_EXTERNAL,
+  NR_SEGMENT_MESSAGE
 } nr_segment_type_t;
 
 /*
@@ -109,6 +110,16 @@ typedef struct _nr_segment_external_t {
   uint64_t status;
 } nr_segment_external_t;
 
+typedef struct _nr_segment_message_t {
+  char* transaction_guid;
+  char* action;           /* MUST be one of: produce, consume */
+  char* library;          /* MUST be one of: JMS, RabbitMQ, SNS, SQS */
+  char* destination_type; /* MUST be: Queue, Topic, Temporary Queue, Temporary
+                             Topic, Exchange */
+  uint64_t destination_name; /* The name of the Queue, Topic, or Exchange;
+                                otherwise, Temp */
+} nr_segment_message_t;
+
 typedef struct _nr_segment_metric_t {
   char* name;
   bool scoped;
@@ -132,6 +143,7 @@ typedef struct _nr_segment_error_t {
 typedef union {
   nr_segment_datastore_t datastore;
   nr_segment_external_t external;
+  nr_segment_message_t message;
 } nr_segment_typed_attributes_t;
 
 typedef struct _nr_segment_t {
@@ -179,8 +191,8 @@ typedef struct _nr_segment_t {
   int priority; /* Used to determine which segments are preferred for span event
                    creation */
   nr_segment_typed_attributes_t* typed_attributes; /* Attributes specific to
-                                                      external or datastore
-                                                      segments. */
+                                                      external, datastore,
+                                                      or message segments. */
   nr_segment_error_t* error; /* segment error attributes */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
@@ -314,6 +326,17 @@ extern bool nr_segment_set_datastore(nr_segment_t* segment,
  */
 extern bool nr_segment_set_external(nr_segment_t* segment,
                                     const nr_segment_external_t* external);
+
+/*
+ * Purpose : Mark the segment as being a message segment.
+ *
+ * Params  : 1. The pointer to the segment.
+ *           2. The message attributes, which will be copied into the segment.
+ *
+ * Returns : true if successful, false otherwise.
+ */
+extern bool nr_segment_set_message(nr_segment_t* segment,
+                                   const nr_segment_message_t* message);
 /*
  * Purpose : Add a child to a segment.
  *
