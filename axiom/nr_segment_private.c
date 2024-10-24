@@ -39,6 +39,17 @@ void nr_segment_external_destroy_fields(nr_segment_external_t* external) {
   nr_free(external->procedure);
 }
 
+void nr_segment_message_destroy_fields(nr_segment_message_t* message) {
+  if (nrunlikely(NULL == message)) {
+    return;
+  }
+
+  nr_free(message->action);
+  nr_free(message->library);
+  nr_free(message->destination_type);
+  nr_free(message->destination_name);
+}
+
 void nr_segment_destroy_typed_attributes(
     nr_segment_type_t type,
     nr_segment_typed_attributes_t** attributes) {
@@ -54,6 +65,8 @@ void nr_segment_destroy_typed_attributes(
     nr_segment_datastore_destroy_fields(&attrs->datastore);
   } else if (NR_SEGMENT_EXTERNAL == type) {
     nr_segment_external_destroy_fields(&attrs->external);
+  } else if (NR_SEGMENT_MESSAGE == type) {
+    nr_segment_message_destroy_fields(&attrs->external);
   }
 
   nr_free(attrs);
