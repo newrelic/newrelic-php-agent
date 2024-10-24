@@ -162,6 +162,15 @@ static void add_typed_attributes_to_buffer(nrbuf_t* buf,
                                    ext->transaction_guid, false);
       add_hash_key_value_to_buffer_int(buf, "status", &ext->status);
     } break;
+    case NR_SEGMENT_MESSAGE: {
+      const nr_segment_message_t* message = &segment->typed_attributes->message;
+      add_hash_key_value_to_buffer(buf, "action", message->action, false);
+      add_hash_key_value_to_buffer(buf, "library", message->library, false);
+      add_hash_key_value_to_buffer(buf, "destination_type",
+                                   message->destination_type, false);
+      add_hash_key_value_to_buffer(buf, "destination_name",
+                                   message->destination_name, false);
+    } break;
     case NR_SEGMENT_CUSTOM:
     default:
       break;
