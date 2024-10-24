@@ -88,21 +88,7 @@ RUN if [ -z "$(grep '^8\.' /etc/debian_version)" ]; then \
     fi
 
 # install composer
-WORKDIR /usr/src
-
-# based on https://getcomposer.org/doc/faqs/how-to-install-composer-programmatically.md
-RUN \
- EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')" \
- && php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
- && ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")" \
- && if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; \
-  then \
-    >&2 echo 'ERROR: Invalid installer checksum'; \
-    rm composer-setup.php; \
-    exit 1; \
-  fi \
- && php composer-setup.php \
- && php -r "unlink('composer-setup.php');"
+COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 
 #
 # The explain plan in the sql tests contain partition/filtered properties
@@ -152,13 +138,9 @@ RUN \
 # install predis
 # installation will be in /usr/src/vendor/predis/predis
 # which is value which should be used for PREDIS_HOME
-RUN php composer.phar require "predis/predis"
-RUN php composer.phar update
-
-#
-# install composer and make executable so it can be used in dev env
-#
-RUN cp composer.phar /usr/local/bin/composer && chmod +x /usr/local/bin/composer
+WORKDIR /usr/src
+RUN composer require "predis/predis"
+RUN composer update
 
 #
 # These args need to be repeated so we can propagate the VARS within this build context.
