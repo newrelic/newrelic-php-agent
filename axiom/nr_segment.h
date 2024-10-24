@@ -111,12 +111,11 @@ typedef struct _nr_segment_external_t {
 } nr_segment_external_t;
 
 typedef struct _nr_segment_message_t {
-  char* transaction_guid;
   char* action;           /* MUST be one of: produce, consume */
   char* library;          /* MUST be one of: JMS, RabbitMQ, SNS, SQS */
   char* destination_type; /* MUST be: Queue, Topic, Temporary Queue, Temporary
                              Topic, Exchange */
-  uint64_t destination_name; /* The name of the Queue, Topic, or Exchange;
+  char* destination_name; /* The name of the Queue, Topic, or Exchange;
                                 otherwise, Temp */
 } nr_segment_message_t;
 
