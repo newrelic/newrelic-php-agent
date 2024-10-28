@@ -72,13 +72,9 @@ RUN apt-get update && apt-get install -y \
   wget \
   zip && apt-get clean
 
-#
-# Download and install Go
-#
-RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
-    wget https://go.dev/dl/go1.21.1.linux-${arch}.tar.gz -O- | tar -C /usr/local -zxvf -;
-
-RUN ln -s /usr/local/go/bin/go /usr/bin/go
+# install latest go to work with the daemon
+COPY --from=golang /usr/local/go /usr/local/go
+ENV PATH /usr/local/go/bin:$PATH
 
 #
 # If the debian version is buster, don't install python-dev-is-python3
