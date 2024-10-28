@@ -148,7 +148,6 @@ NR_PHP_WRAPPER_END
  *
  */
 NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
-  zval* arg1 = 0;
   zval* this_var = 0;
   zval* czval = 0;
   char* controller = 0;
@@ -156,8 +155,9 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
   int clen = 0;
   int alen = 0;
   char* name = 0;
-  zval* params;
-  zval* azval;
+  zval* params = NULL;
+  zval* request = NULL;
+  zval action_param;
 
   (void)wraprec;
   NR_UNUSED_SPECIALFN;
@@ -193,37 +193,24 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
     }
   }
 
-  arg1 = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (!nr_php_is_zval_valid_object(arg1)) {
-    NR_PHP_WRAPPER_CALL;
-    goto end;
-  }
-
   NR_PHP_WRAPPER_CALL;
 
-  params = nr_php_get_zval_object_property(arg1, "params" TSRMLS_CC);
-  if (0 == params) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no params found in request");
+  request = nr_php_call(this_var, "getRequest");
+  if (!nr_php_is_zval_valid_object(request)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no request found in controller");
     goto end;
   }
 
-  if (IS_ARRAY != Z_TYPE_P(params)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: request params is not an array");
+  nr_php_zval_str(&action_param, "action");
+  params = nr_php_call(request, "getParam", &action_param);
+  zval_dtor(&action_param);
+  if (!nr_php_is_zval_valid_string(params)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no action param found in request");
     goto end;
-  }
-
-  azval = nr_php_get_zval_object_property(params, "action" TSRMLS_CC);
-  if (0 == azval) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no params['action'] in request");
   } else {
-    if (!nr_php_is_zval_valid_string(azval)) {
-      nrl_verbosedebug(NRL_FRAMEWORK,
-                       "CakePHP: no string-valued params['action'] in request");
-    } else {
-      alen = Z_STRLEN_P(azval);
-      action = (char*)nr_alloca(alen + 1);
-      nr_strxcpy(action, Z_STRVAL_P(azval), alen);
-    }
+    alen = Z_STRLEN_P(params);
+    action = (char*)nr_alloca(alen + 1);
+    nr_strxcpy(action, Z_STRVAL_P(params), alen);
   }
 
   if ((0 == clen) && (0 == alen)) {
@@ -249,8 +236,9 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
                   NR_NOT_OK_TO_OVERWRITE);
 
 end:
-  nr_php_arg_release(&arg1);
   nr_php_scope_release(&this_var);
+  nr_php_zval_free(&request);
+  nr_php_zval_free(&params);
 }
 NR_PHP_WRAPPER_END
 
