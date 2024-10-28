@@ -331,14 +331,7 @@ typedef struct _nr_framework_table_t {
  */
 // clang-format: off
 static const nr_framework_table_t all_frameworks[] = {
-    /*
-     * Watch out:
-     *   cake1.2 and cake1.3 use a subdirectory named 'cake' (lower case)
-     *   cake2.0 and on use a subdirectory named 'Cake' (upper case file name)
-     */
-    {"CakePHP", "cakephp", NR_PSTR("cake/libs/object.php"), nr_cakephp_special_1,
-     nr_cakephp_enable_1, NR_FW_CAKEPHP},
-    {"CakePHP", "cakephp", NR_PSTR("cake/core/app.php"), nr_cakephp_special_2,
+    {"CakePHP", "cakephp", NR_PSTR("cakephp/src/core/functions.php"), 0,
      nr_cakephp_enable_2, NR_FW_CAKEPHP},
 
     /*
