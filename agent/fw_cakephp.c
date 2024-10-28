@@ -315,8 +315,9 @@ void nr_cakephp_enable_1(TSRMLS_D) {
  * Enable CakePHP 2.0+
  */
 void nr_cakephp_enable_2(TSRMLS_D) {
-  nr_php_wrap_user_function(NR_PSTR("Controller::invokeAction"),
-                            nr_cakephp_name_the_wt_2 TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
+      nr_cakephp_name_the_wt_2 TSRMLS_CC);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
