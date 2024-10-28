@@ -107,8 +107,16 @@ COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-# redis
-RUN pecl install redis && docker-php-ext-enable redis
+# install redis extension required by test_redis:
+RUN \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
+  if [ "$php_cmp" = 1 ]; then \
+    # install latest redis for PHPs >= 7.4
+    echo 'no' | pecl install redis; \
+  else \
+    # install redis-4.3.0 - last one with support for php 7.2
+    echo 'no' | pecl install redis-4.3.0; \
+  fi && docker-php-ext-enable redis
 
 # memcache
 # Pre 8.0 requires 4.0.5.2
