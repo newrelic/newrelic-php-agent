@@ -321,9 +321,11 @@ void nr_cakephp_enable_2(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("CakeException::__construct"), nr_cakephp_problem_2, NULL, NULL);
+      NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
+      nr_cakephp_problem_2, NULL, NULL);
 #else
-  nr_php_wrap_user_function(NR_PSTR("CakeException::__construct"),
-                            nr_cakephp_problem_2 TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
+      nr_cakephp_problem_2 TSRMLS_CC);
 #endif
 }
