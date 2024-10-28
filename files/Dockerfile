@@ -40,6 +40,7 @@ RUN apt-get install -y gdb valgrind libcurl4-openssl-dev pkg-config libpq-dev li
 #
 RUN apt-get update && apt-get install -y \
   autoconf \
+  argon2 libghc-argon2-dev \
   autotools-dev \
   build-essential \
   bzip2 \
@@ -59,7 +60,6 @@ RUN apt-get update && apt-get install -y \
   make \
   perl \
   strace \
-  python-dev-is-python3 \
   python3-yaml \
   sqlite3 \
   libsqlite3-dev \
@@ -81,10 +81,10 @@ RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
 RUN ln -s /usr/local/go/bin/go /usr/bin/go
 
 #
-# If the debian version is jessie, don't install argon2
+# If the debian version is buster, don't install python-dev-is-python3
 #
-RUN if [ -z "$(grep '^8\.' /etc/debian_version)" ]; then \
-    apt-get install -y argon2 libghc-argon2-dev; \
+RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
+    apt-get install -y python-dev-is-python3; \
     fi
 
 # install composer
