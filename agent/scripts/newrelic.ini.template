@@ -1347,6 +1347,8 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Scope  : per-directory
 ; Default: true
 ; Info   : If this setting is true, then message parameters will be captured and
-;          stored on their respective segments.
+;          stored on their respective segments. While enabled, specific attributes
+;          can be filtered by using newrelic.attributes.include/exclude and
+;          newrelic.span_events.attributes.include/exclude
 ;
 ;newrelic.message_tracer.segment_parameters.enabled = true
