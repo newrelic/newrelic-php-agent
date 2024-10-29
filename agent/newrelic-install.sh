@@ -335,10 +335,10 @@ for pmv in "20170718" "20180731" "20190902"; do
 done
 fi
 # Currently supported versions:
-#    (8.0, 8.1, 8.2, 8.3)
+#    (8.0, 8.1, 8.2, 8.3, 8.4)
 # for x64 and aarch64
 if [ ${arch} = x64 ] || [ ${arch} = aarch64 ]; then
-  for pmv in "20200930" "20210902" "20220829" "20230831"; do
+  for pmv in "20200930" "20210902" "20220829" "20230831" "20240924"; do
     check_file "${ilibdir}/agent/${arch}/newrelic-${pmv}.so"
   done
 fi
@@ -542,6 +542,7 @@ add_to_path /usr/local/php-8.0/bin
 add_to_path /usr/local/php-8.1/bin
 add_to_path /usr/local/php-8.2/bin
 add_to_path /usr/local/php-8.3/bin
+add_to_path /usr/local/php-8.4/bin
 
 add_to_path /opt/local/bin
 add_to_path /usr/php/bin
@@ -553,6 +554,7 @@ add_to_path /usr/php-8.0/bin
 add_to_path /usr/php-8.1/bin
 add_to_path /usr/php-8.2/bin
 add_to_path /usr/php-8.3/bin
+add_to_path /usr/php-8.4/bin
 
 add_to_path /usr/php/7.2/bin
 add_to_path /usr/php/7.3/bin
@@ -561,6 +563,7 @@ add_to_path /usr/php/8.0/bin
 add_to_path /usr/php/8.1/bin
 add_to_path /usr/php/8.2/bin
 add_to_path /usr/php/8.3/bin
+add_to_path /usr/php/8.4/bin
 
 add_to_path /opt/php/bin
 add_to_path /opt/zend/bin
@@ -572,6 +575,7 @@ add_to_path /opt/php-8.0/bin
 add_to_path /opt/php-8.1/bin
 add_to_path /opt/php-8.2/bin
 add_to_path /opt/php-8.3/bin
+add_to_path /opt/php-8.4/bin
 
 if [ -n "${NR_INSTALL_PATH}" ]; then
   oIFS="${IFS}"
@@ -1052,7 +1056,11 @@ for this copy of PHP. We apologize for the inconvenience.
 
     8.3.*)
       pi_php8="yes"
-      ;;      
+      ;;  
+
+    8.4.*)
+      pi_php8="yes"
+      ;;          
 
     *)
       error "unsupported version '${pi_ver}' of PHP found at:
@@ -1232,6 +1240,7 @@ does not exist. This particular instance of PHP will be skipped.
     8.1.*)  pi_modver="20210902" ;;
     8.2.*)  pi_modver="20220829" ;;
     8.3.*)  pi_modver="20230831" ;;
+    8.4.*)  pi_modver="20240924" ;;
   esac
   log "${pdir}: pi_modver=${pi_modver}"
 

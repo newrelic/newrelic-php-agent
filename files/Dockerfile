@@ -9,7 +9,7 @@
 
 ARG PHP_VER
 
-FROM php:${PHP_VER:-8.3}
+FROM php:${PHP_VER:-8.4}
 
 RUN docker-php-source extract
 
