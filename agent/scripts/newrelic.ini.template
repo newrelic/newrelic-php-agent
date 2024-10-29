@@ -1341,3 +1341,12 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          to gather package information for vulnerability management.
 ;
 ;newrelic.vulnerability_management.composer_api.enabled = false
+
+; Setting: newrelic.message_tracer.segment_parameters.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : If this setting is true, then message parameters will be captured and
+;          stored on their respective segments.
+;
+;newrelic.message_tracer.segment_parameters.enabled = true
