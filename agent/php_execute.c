@@ -332,7 +332,7 @@ typedef struct _nr_framework_table_t {
 // clang-format: off
 static const nr_framework_table_t all_frameworks[] = {
     {"CakePHP", "cakephp", NR_PSTR("cakephp/src/core/functions.php"), 0,
-     nr_cakephp_enable_2, NR_FW_CAKEPHP},
+     nr_cakephp_enable, NR_FW_CAKEPHP},
 
     /*
      * Watch out: frameworks or CMS' build on top of CodeIgniter might not get
@@ -515,8 +515,6 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all.
      */
     {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
-
-    {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
 };
 // clang-format: on
 

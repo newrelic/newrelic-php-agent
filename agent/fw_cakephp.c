@@ -129,15 +129,11 @@ end:
 NR_PHP_WRAPPER_END
 
 /*
- * For CakePHP 2.0 and on, we do things a little differently as the params
- * array doesn't exist in the component any more. Instead we hook the
- * Controller's invokeAction method. This gets the request as a parameter
- * and we get the action from the params array in that object. The
- * controller object ($this) has a name, and that name is used (along
- * with the word "Controller" appended which is what the CakePHP code does).
- *
- * CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
- * As such, functionality added in PHP 7.1+ is not well supported.
+ *  For CakePHP 4.0 and on, we retrieve the current controller object
+ *  and are able to extract the controller name from that. We then
+ *  retrieve the request object from the controller and are able to
+ *  extract the action name from that. We then concatenate the two
+ *  strings to form the transaction name.
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
@@ -147,7 +143,7 @@ NR_PHP_WRAPPER_END
  * default way of calling the wrapped function in func_end.
  *
  */
-NR_PHP_WRAPPER(nr_cakephp_name_the_wt_2) {
+NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
   zval* this_var = 0;
   zval* czval = 0;
   char* controller = 0;
@@ -269,15 +265,12 @@ NR_PHP_WRAPPER(nr_cakephp_problem_1) {
 NR_PHP_WRAPPER_END
 
 /*
- * CakePHP 2.0+
+ * CakePHP 4.0+
  *
  * If the action or controller is not found during the dispatch process, the
  * appropriate Exception will be created and thrown. We wrap the CakeException
  * constructor instead of the Exception handler, since CakePHP allows for the
  * handler to be completely replaced.
- *
- *  CakePHP 2.x is end-of-life and in maintenance mode (critical bugfixes only).
- * As such, functionality added in PHP 7.1+ is not well supported.
  *
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
@@ -286,7 +279,7 @@ NR_PHP_WRAPPER_END
  * ensure OAPI compatibility. This entails that the first wrapped call gets to
  * name the txn.
  */
-NR_PHP_WRAPPER(nr_cakephp_problem_2) {
+NR_PHP_WRAPPER(nr_cakephp_problem_4) {
   const char* name = "Exception";
 
   (void)wraprec;
@@ -312,9 +305,9 @@ void nr_cakephp_enable_1(TSRMLS_D) {
 }
 
 /*
- * Enable CakePHP 2.0+
+ * Enable CakePHP 4.0+
  */
-void nr_cakephp_enable_2(TSRMLS_D) {
+void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
       nr_cakephp_name_the_wt_2 TSRMLS_CC);
@@ -322,10 +315,10 @@ void nr_cakephp_enable_2(TSRMLS_D) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
-      nr_cakephp_problem_2, NULL, NULL);
+      nr_cakephp_problem_4, NULL, NULL);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
-      nr_cakephp_problem_2 TSRMLS_CC);
+      nr_cakephp_problem_4 TSRMLS_CC);
 #endif
 }
