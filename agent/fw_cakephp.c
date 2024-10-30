@@ -12,6 +12,8 @@
 #include "util_logging.h"
 #include "util_memory.h"
 
+#define PHP_PACKAGE_NAME "cakephp/cakephp"
+
 nr_framework_classification_t nr_cakephp_special_1(
     const char* filename TSRMLS_DC) {
   NR_UNUSED_TSRMLS;
@@ -311,6 +313,8 @@ void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
       nr_cakephp_name_the_wt_2 TSRMLS_CC);
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
