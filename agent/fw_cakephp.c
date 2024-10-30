@@ -312,7 +312,7 @@ void nr_cakephp_enable_1(TSRMLS_D) {
 void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
-      nr_cakephp_name_the_wt_2 TSRMLS_CC);
+      nr_cakephp_name_the_wt_4 TSRMLS_CC);
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                PHP_PACKAGE_VERSION_UNKNOWN);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
