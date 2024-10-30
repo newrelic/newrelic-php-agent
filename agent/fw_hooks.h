@@ -12,6 +12,7 @@
  */
 #include "php_execute.h"
 
+extern void nr_cakephp_enable_1(TSRMLS_D);
 extern void nr_cakephp_enable(TSRMLS_D);
 extern nr_framework_classification_t nr_cakephp_special_1(
     const char* filename TSRMLS_DC);
