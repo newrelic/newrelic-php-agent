@@ -153,7 +153,7 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
   int clen = 0;
   int alen = 0;
   char* name = 0;
-  zval* params = NULL;
+  zval* action_zval = NULL;
   zval* request = NULL;
   zval action_param;
 
@@ -200,15 +200,15 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
   }
 
   nr_php_zval_str(&action_param, "action");
-  params = nr_php_call(request, "getParam", &action_param);
+  action_zval = nr_php_call(request, "getParam", &action_param);
   zval_dtor(&action_param);
-  if (!nr_php_is_zval_valid_string(params)) {
+  if (!nr_php_is_zval_valid_string(action_zval)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no action param found in request");
     goto end;
   } else {
-    alen = Z_STRLEN_P(params);
+    alen = Z_STRLEN_P(action_zval);
     action = (char*)nr_alloca(alen + 1);
-    nr_strxcpy(action, Z_STRVAL_P(params), alen);
+    nr_strxcpy(action, Z_STRVAL_P(action_zval), alen);
   }
 
   if ((0 == clen) && (0 == alen)) {
@@ -236,7 +236,7 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
 end:
   nr_php_scope_release(&this_var);
   nr_php_zval_free(&request);
-  nr_php_zval_free(&params);
+  nr_php_zval_free(&action_zval);
 }
 NR_PHP_WRAPPER_END
 
