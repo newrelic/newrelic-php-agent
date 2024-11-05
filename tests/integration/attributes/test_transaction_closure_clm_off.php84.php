@@ -10,11 +10,8 @@ The agent should *not* send code level metrics (CLM) when disabled.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
 */
 
@@ -87,7 +84,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -104,7 +101,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -121,7 +118,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",

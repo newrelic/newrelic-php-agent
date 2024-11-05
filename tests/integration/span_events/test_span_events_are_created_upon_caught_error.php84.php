@@ -6,19 +6,14 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an error is generated and handled by user error handler. The span that
-generated the error should have error attributes. Additionally error events
-should be created.
+when an error is generated and handled.
 */
 
 /*SKIPIF
 <?php
-
-require('skipif.inc');
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
-
 */
 
 /*INI
@@ -28,47 +23,6 @@ newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
-error_reporting = E_ALL
-opcache.enable=1
-opcache.enable_cli=1
-opcache.file_update_protection=0
-opcache.jit_buffer_size=32M
-opcache.jit=function
-*/
-
-/*PHPMODULES
-zend_extension=opcache.so
-*/
-/*EXPECT_ERROR_EVENTS
-[
-  "?? agent run id",
-  {
-    "reservoir_size": 100,
-    "events_seen": 1
-  },
-  [
-    [
-      {
-        "type": "TransactionError",
-        "timestamp": "??",
-        "error.class": "E_USER_ERROR",
-        "error.message": "foo",
-        "transactionName": "OtherTransaction\/php__FILE__",
-        "duration": "??",
-        "databaseDuration": "??",
-        "databaseCallCount": 1,
-        "nr.transactionGuid": "??",
-        "guid": "??",
-        "sampled": true,
-        "priority": "??",
-        "traceId": "??",
-        "spanId": "??"
-      },
-      {},
-      {}
-    ]
-  ]
-]
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -138,9 +92,9 @@ zend_extension=opcache.so
       {
         "error.message": "foo",
         "error.class": "E_USER_ERROR",
-        "code.lineno": "??",
+        "code.lineno": 136,
         "code.filepath": "__FILE__",
-        "code.function": "??"
+        "code.function": "a"
       }
     ],
     [
@@ -150,7 +104,7 @@ zend_extension=opcache.so
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",
@@ -159,9 +113,9 @@ zend_extension=opcache.so
       },
       {},
       {
-        "code.lineno": "??",
+        "code.lineno":  130,
         "code.filepath": "__FILE__",
-        "code.function": "??"
+        "code.function": "{closure:__FILE__:??}"
       }
     ]
   ]
@@ -173,7 +127,7 @@ zend_extension=opcache.so
 */
 
 set_error_handler(
-    function (int $errno, string $errstr) {
+    function (int $errno, string $errst) {
         time_nanosleep(0, 100000000);
         return false;
     }

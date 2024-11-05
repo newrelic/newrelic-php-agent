@@ -16,6 +16,9 @@ error events should be created.
 if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: test for oapi agent only\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 */
 
 /*INI
