@@ -6,7 +6,19 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an error is generated and handled.
+when an error is generated and handled by user error handler. The span that
+generated the error should have error attributes. Additionally error events
+should be created.
+*/
+
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
+}
+
 */
 
 /*INI
@@ -16,7 +28,47 @@ newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
-newrelic.code_level_metrics.enabled=false
+error_reporting = E_ALL
+opcache.enable=1
+opcache.enable_cli=1
+opcache.file_update_protection=0
+opcache.jit_buffer_size=32M
+opcache.jit=function
+*/
+
+/*PHPMODULES
+zend_extension=opcache.so
+*/
+/*EXPECT_ERROR_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 100,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "E_USER_ERROR",
+        "error.message": "foo",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": 1,
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -85,7 +137,10 @@ newrelic.code_level_metrics.enabled=false
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.class": "E_USER_ERROR",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ],
     [
@@ -95,7 +150,7 @@ newrelic.code_level_metrics.enabled=false
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",
@@ -103,7 +158,11 @@ newrelic.code_level_metrics.enabled=false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
+      }
     ]
   ]
 ]
@@ -114,7 +173,7 @@ newrelic.code_level_metrics.enabled=false
 */
 
 set_error_handler(
-    function () {
+    function (int $errno, string $errstr) {
         time_nanosleep(0, 100000000);
         return false;
     }
