@@ -232,7 +232,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
   lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c \
   lib_composer.c"
-  PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, \\$(NEWRELIC_CFLAGS))
+  PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, $(NEWRELIC_CFLAGS))
 
   PHP_SUBST(NEWRELIC_CFLAGS)
 
