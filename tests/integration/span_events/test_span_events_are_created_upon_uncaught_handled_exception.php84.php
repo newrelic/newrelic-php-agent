@@ -6,19 +6,16 @@
 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an error is generated and handled by user error handler. The span that
-generated the error should have error attributes. Additionally error events
-should be created.
+when an uncaught exception is handled by the user exception handler. The
+span that generated the exception should have error attributes. Additionally
+error events should be created.
 */
 
 /*SKIPIF
 <?php
-
-require('skipif.inc');
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
-
 */
 
 /*INI
@@ -26,24 +23,13 @@ newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
-display_errors=1
-log_errors=0
-error_reporting = E_ALL
-opcache.enable=1
-opcache.enable_cli=1
-opcache.file_update_protection=0
-opcache.jit_buffer_size=32M
-opcache.jit=function
 */
 
-/*PHPMODULES
-zend_extension=opcache.so
-*/
 /*EXPECT_ERROR_EVENTS
 [
   "?? agent run id",
   {
-    "reservoir_size": 100,
+    "reservoir_size": "??",
     "events_seen": 1
   },
   [
@@ -51,12 +37,12 @@ zend_extension=opcache.so
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_USER_ERROR",
-        "error.message": "foo",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "databaseDuration": "??",
-        "databaseCallCount": 1,
+        "databaseCallCount": "??",
         "nr.transactionGuid": "??",
         "guid": "??",
         "sampled": true,
@@ -136,11 +122,11 @@ zend_extension=opcache.so
       },
       {},
       {
-        "error.message": "foo",
-        "error.class": "E_USER_ERROR",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "error.class": "RuntimeException",
         "code.lineno": "??",
         "code.filepath": "__FILE__",
-        "code.function": "??"
+        "code.function": "a"
       }
     ],
     [
@@ -150,7 +136,7 @@ zend_extension=opcache.so
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",
@@ -161,28 +147,27 @@ zend_extension=opcache.so
       {
         "code.lineno": "??",
         "code.filepath": "__FILE__",
-        "code.function": "??"
+        "code.function": "{closure:__FILE__:??}"
       }
     ]
   ]
 ]
 */
 
-/*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
+/*EXPECT
 */
 
-set_error_handler(
-    function (int $errno, string $errstr) {
+set_exception_handler(
+    function (Throwable $ex) {
         time_nanosleep(0, 100000000);
-        return false;
+        exit(0); 
     }
 );
 
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    throw new RuntimeException('oops');
 }
 
 newrelic_record_datastore_segment(

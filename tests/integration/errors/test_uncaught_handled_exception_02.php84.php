@@ -23,11 +23,8 @@ log_errors=0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0.0 not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
 */
 
@@ -135,7 +132,7 @@ if (version_compare(PHP_VERSION, "8.4", ">=")) {
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",

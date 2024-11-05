@@ -15,8 +15,8 @@ should be created.
 <?php
 
 require('skipif.inc');
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
 
 */
@@ -33,7 +33,7 @@ opcache.enable=1
 opcache.enable_cli=1
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
-opcache.jit=function
+opcache.jit=tracing
 */
 
 /*PHPMODULES
@@ -70,7 +70,6 @@ zend_extension=opcache.so
   ]
 ]
 */
-
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
@@ -150,7 +149,7 @@ zend_extension=opcache.so
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",

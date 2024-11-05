@@ -14,6 +14,9 @@ when an error is generated and handled.
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 */
 
 /*INI

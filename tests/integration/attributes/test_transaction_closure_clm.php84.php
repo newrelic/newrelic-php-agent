@@ -5,16 +5,14 @@
  */
 
 /*DESCRIPTION
-The agent should *not* send code level metrics (CLM) when disabled.
+The agent should send code level metrics (CLM) including function name,
+class name, and lineno for closures.
  */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
 */
 
@@ -22,7 +20,7 @@ if (version_compare(PHP_VERSION, "8.4", ">=")) {
 newrelic.distributed_tracing_enabled=1
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled=false
-newrelic.code_level_metrics.enabled=false
+newrelic.code_level_metrics.enabled=true
 */
 
 /*EXPECT_ANALYTICS_EVENTS
@@ -87,7 +85,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -95,7 +93,11 @@ newrelic.code_level_metrics.enabled=false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 151,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure:__FILE__:??}"
+      }
     ],
     [
       {
@@ -104,7 +106,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -112,7 +114,11 @@ newrelic.code_level_metrics.enabled=false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 159,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure:__FILE__:??}"
+      }
     ],
     [
       {
@@ -121,7 +127,7 @@ newrelic.code_level_metrics.enabled=false
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -129,7 +135,11 @@ newrelic.code_level_metrics.enabled=false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": 159,
+        "code.filepath": "__FILE__",
+        "code.function": "{closure:__FILE__:??}"
+      }
     ]
   ]
 ]
