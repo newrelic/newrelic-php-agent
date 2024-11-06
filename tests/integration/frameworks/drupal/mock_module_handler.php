@@ -10,6 +10,11 @@ namespace Drupal\Core\Extension {
         public function invokeAllWith($hook_str, $callback);
     }
     class ModuleHandler implements ModuleHandlerInterface {
+        public function __construct(bool $except=false) {
+            if ($except) {
+                throw new Exception("Constructor told to except");
+            }
+        }
         public function invokeAllWith($hook_str, $callback) {
             if ($hook_str == "hook_1") {
                 $module = "module_a";
