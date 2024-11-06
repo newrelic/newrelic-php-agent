@@ -182,7 +182,10 @@ typedef struct _nr_segment_t {
                                                       external or datastore
                                                       segments. */
   nr_segment_error_t* error; /* segment error attributes */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+  void* execute_data;
+
+#elif ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
 
   /*

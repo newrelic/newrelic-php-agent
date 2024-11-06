@@ -17,6 +17,7 @@
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
 
 #include "Zend/zend_observer.h"
+#include "php_user_instrument.h"
 
 /*
  * Purpose: There are a few various places, aside from the php_execute_* family
@@ -76,6 +77,32 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value);
 
 
+#if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
+bool nr_php_observer_is_registered(zend_function* func);
+bool nr_php_observer_remove_begin_handler(zend_function* func, nruserfn_t* wraprec);
+bool nr_php_observer_remove_end_handler(zend_function* func, nruserfn_t* wraprec);
+void nr_php_observer_add_begin_handler(zend_function* func, nruserfn_t* wraprec);
+void nr_php_observer_add_end_handler(zend_function* func, nruserfn_t* wraprec);
+
+/* 
+ * These different forms of fcall_begin and fcall_end are needed to properly utilize
+ * the fields in a wraprec without looking it up every call.
+*/
+void nr_php_observer_empty_fcall_begin(zend_execute_data* execute_data);
+void nr_php_observer_fcall_begin_instrumented(zend_execute_data* execute_data);
+void nr_php_observer_fcall_begin_name_transaction(zend_execute_data* execute_data);
+
+void nr_php_observer_empty_fcall_end(zend_execute_data* execute_data,
+                                     zval* func_return_value);
+void nr_php_observer_fcall_begin_late(zend_execute_data* execute_data, nrtime_t txn_start_time, bool name_transaction);
+void nr_php_observer_fcall_end_keep_segment(zend_execute_data* execute_data,
+                                            zval* func_return_value);
+void nr_php_observer_fcall_end_late(zend_execute_data* execute_data, bool create_metric, nrtime_t txn_start_time);
+void nr_php_observer_fcall_end_create_metric(zend_execute_data* execute_data,
+                                             zval* func_return_value);
+void nr_php_observer_fcall_end_exception_handler(zend_execute_data* execute_data,
+                                                 zval* func_return_value);
+#endif /* PHP 8.2+ */
 #endif /* PHP8+ */
 
 #endif  // NEWRELIC_PHP_AGENT_PHP_OBSERVER_H

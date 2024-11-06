@@ -252,9 +252,17 @@ extern void nr_php_scope_release(zval** ppzv);
  */
 extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 #define NR_PHP_WRAPPER_PROTOTYPE(name) \
   struct nrspecialfn_return_t name(NR_SPECIALFNPTR_PROTO TSRMLS_DC)
 
+#else
+
+#define NR_PHP_WRAPPER_PROTOTYPE(name) \
+  void name(zend_execute_data* execute_data, ...)
+#endif
+
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 #define NR_PHP_WRAPPER_START(name)                          \
   NR_PHP_WRAPPER_PROTOTYPE(name) {                          \
     int was_executed = 0;                                   \
@@ -264,9 +272,34 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
                                                             \
     (void)auto_segment;  // auto_segment isn't generally used in wrapper
                          // functions
+#else
+#define NR_PHP_WRAPPER_START(name)                          \
+  NR_PHP_WRAPPER_PROTOTYPE(name) {                          \
+    int was_executed = 0;                                   \
+    bool in_begin = true;\
+    int zcaught = 0;                                        \
+    nruserfn_t* wraprec = NULL;                             \
+    zval* func_return_value = NULL;                         \
+    const nrtxn_t* txn = NRPRG(txn);                        \
+    const nrtime_t txn_start_time = nr_txn_start_time(txn); \
+                                                            \
+    nr_segment_t* auto_segment = nr_txn_get_current_segment(NRPRG(txn), NULL); \
+    if (!auto_segment || auto_segment->execute_data != execute_data) { \
+      nr_php_observer_fcall_begin(execute_data);            \
+    } else { \
+      va_list args; \
+      va_start(args, execute_data); \
+      func_return_value = va_arg(args, zval*); \
+      va_end(args); \
+      in_begin = false;                                      \
+      nr_php_observer_fcall_end_keep_segment(execute_data,        \
+              func_return_value); \
+    }
+#endif
 
 #define NR_PHP_WRAPPER(name) static NR_PHP_WRAPPER_START(name)
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 #define NR_PHP_WRAPPER_END                           \
   callback_end:                                      \
   __attribute__((unused));                           \
@@ -281,7 +314,25 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     struct nrspecialfn_return_t _retval = {zcaught}; \
     return _retval;                                  \
   }                                                  \
-  }
+}
+#else
+#define NR_PHP_WRAPPER_END                           \
+  callback_end:                                      \
+  __attribute__((unused));                           \
+  if (!was_executed) {                               \
+    NR_PHP_WRAPPER_CALL                              \
+  }                                                  \
+  if (in_begin) {                                   \
+    nr_php_observer_fcall_begin_late(execute_data, txn_start_time, false);\
+  } else {                                                \
+    nr_php_observer_fcall_end_late(execute_data, false, txn_start_time); \
+  } \
+  if (zcaught) {                                     \
+    zend_bailout();                                  \
+  }                                                  \
+}
+#endif
+
 
 #define NR_PHP_WRAPPER_CALL                                                 \
   if (!was_executed) {                                                      \
@@ -326,11 +377,16 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     }                                                                       \
   } while (0)
 
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
 #define NR_PHP_WRAPPER_DELEGATE(name)                                \
   if (!was_executed) {                                               \
     zcaught = ((name)(NR_SPECIALFNPTR_ORIG_ARGS TSRMLS_CC)).zcaught; \
     was_executed = 1;                                                \
   }
+#else
+#define NR_PHP_WRAPPER_DELEGATE(name)                                \
+  ((name)(execute_data, func_return_value));
+#endif
 
 static inline bool is_instrumentation_set_and_not_equal(
     nrspecialfn_t instrumentation,
