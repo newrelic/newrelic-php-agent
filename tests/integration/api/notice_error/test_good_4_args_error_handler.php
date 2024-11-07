@@ -142,8 +142,8 @@ used as a callback handler for set_error_handler().
 */
 
 function a() {
-    trigger_error("4 arg error", E_USER_ERROR);
+    trigger_error("4 arg error", E_USER_WARNING);
 }
 
-set_error_handler('newrelic_notice_error', E_USER_ERROR);
+set_error_handler('newrelic_notice_error', E_USER_WARNING);
 a();

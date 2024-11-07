@@ -13,6 +13,9 @@ when an error is generated and left to the default error handler.
 <?php
 
 require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHPs < 8.4\n");
+}
 
 */
 
@@ -101,7 +104,7 @@ zend_extension=opcache.so
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "??"
@@ -112,13 +115,13 @@ zend_extension=opcache.so
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
+^\s*(PHP )?Warning:\s*foo in .*? on line [0-9]+\s*$
 */
 
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    trigger_error('foo', E_USER_WARNING);
 }
 
 newrelic_record_datastore_segment(
@@ -129,5 +132,3 @@ newrelic_record_datastore_segment(
     )
 );
 a();
-
-echo 'this should never be printed';
