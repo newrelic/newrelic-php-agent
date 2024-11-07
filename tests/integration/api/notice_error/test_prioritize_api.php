@@ -84,7 +84,7 @@ function gamma($password)
 
 function omega()
 {
-    trigger_error("ignore me", E_USER_ERROR);
+    trigger_error("ignore me", E_USER_WARNING);
 }
 
 gamma('my super secret password that New Relic cannot know');

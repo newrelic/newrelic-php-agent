@@ -48,7 +48,7 @@ opcache.jit=function
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "error.message": "foo",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
@@ -134,7 +134,7 @@ opcache.jit=function
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "??"
@@ -166,7 +166,7 @@ opcache.jit=function
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
+^\s*(PHP )?Warning:\s*foo in .*? on line [0-9]+\s*$
 */
 require('opcache_test.inc');
 
@@ -180,7 +180,7 @@ set_error_handler(
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    trigger_error('foo', E_USER_WARNING);
 }
 
 newrelic_record_datastore_segment(
@@ -191,5 +191,3 @@ newrelic_record_datastore_segment(
     )
 );
 a();
-
-echo 'this should never be printed';
