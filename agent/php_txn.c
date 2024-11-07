@@ -955,7 +955,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   NRTXNGLOBAL(mysqli_links) = nr_mysqli_metadata_create();
 
   nr_php_add_user_instrumentation(TSRMLS_C);
-  nr_php_resource_usage_sampler_start(TSRMLS_C);
+  //nr_php_resource_usage_sampler_start(TSRMLS_C);
   nr_php_gather_global_params(NRPRG(txn) TSRMLS_CC);
 
   NRTXN(special_flags.no_sql_parsing)
@@ -1215,7 +1215,7 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     nr_php_txn_create_packages_major_metrics(txn);
 
     /* Add CPU and memory metrics */
-    nr_php_resource_usage_sampler_end(TSRMLS_C);
+    //nr_php_resource_usage_sampler_end(TSRMLS_C);
 
     nr_txn_set_http_status(txn, nr_php_http_response_code(TSRMLS_C));
 
