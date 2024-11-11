@@ -269,30 +269,38 @@ NR_PHP_WRAPPER_END
 /*
  * CakePHP 4.0+
  *
- * If the action or controller is not found during the dispatch process, the
- * appropriate Exception will be created and thrown. We wrap the CakeException
- * constructor instead of the Exception handler, since CakePHP allows for the
- * handler to be completely replaced.
- *
- * txn naming scheme:
- * In this case, `nr_txn_set_path` is called before `NR_PHP_WRAPPER_CALL` with
- * `NR_NOT_OK_TO_OVERWRITE` and as this corresponds to calling the wrapped
- * function in func_begin it needs to be explicitly set as a before_callback to
- * ensure OAPI compatibility. This entails that the first wrapped call gets to
- * name the txn.
+ * Report errors and exceptions caught by CakePHP's error handler.
  */
-NR_PHP_WRAPPER(nr_cakephp_problem_4) {
-  const char* name = "Exception";
+NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
+  zval* exception = NULL;
+  char* request_uri
+      = nr_strdup(nr_php_get_server_global("REQUEST_URI" TSRMLS_CC));
 
-  (void)wraprec;
   NR_UNUSED_SPECIALFN;
+  (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_CAKEPHP);
 
-  nr_txn_set_path("CakePHP", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
+  exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (!nr_php_is_zval_valid_object(exception)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: exception is NULL or not an object",
+                     __func__);
+    goto end;
+  }
+
+  if (NR_SUCCESS
+      != nr_php_error_record_exception(
+          NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
+          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
+  }
+
+  nr_txn_set_path("CakePHP", NRPRG(txn), request_uri, NR_PATH_TYPE_ACTION,
                   NR_NOT_OK_TO_OVERWRITE);
 
-  NR_PHP_WRAPPER_CALL;
+end:
+  nr_php_arg_release(&exception);
+  nr_free(request_uri);
 }
 NR_PHP_WRAPPER_END
 
@@ -313,16 +321,10 @@ void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
       nr_cakephp_name_the_wt_4 TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR(
+          "Cake\\Error\\Middleware\\ErrorHandlerMiddleware::handleException"),
+      nr_cakephp_error_handler_wrapper TSRMLS_CC);
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                PHP_PACKAGE_VERSION_UNKNOWN);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
-      nr_cakephp_problem_4, NULL, NULL);
-#else
-  nr_php_wrap_user_function(
-      NR_PSTR("Cake\\Core\\Exception\\CakeException::__construct"),
-      nr_cakephp_problem_4 TSRMLS_CC);
-#endif
 }
