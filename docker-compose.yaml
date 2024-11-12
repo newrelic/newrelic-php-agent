@@ -2,7 +2,6 @@
 # Copyright 2021 New Relic Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-version: '3.8'
 services:
 # The Database
   mysqldb:
@@ -79,6 +78,8 @@ services:
     build:
       context: .
       dockerfile: files/Dockerfile
+      args:
+        PHP_VER: ${PHP:-8.3}
     user: ${UID}:${GID}
     environment:
       MEMCACHE_HOST: memcached
