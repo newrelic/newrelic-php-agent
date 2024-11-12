@@ -14,30 +14,30 @@ FROM php:${PHP_VER:-8.3}
 RUN docker-php-source extract
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 #
 # PHP dependencies
 #
 RUN apt-get update \
- && apt-get -y install gcc git netcat-openbsd \
+ && apt-get install -y --no-install-recommends gcc git netcat-openbsd \
  libpcre3 libpcre3-dev psmisc automake libtool \
  insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
  zlib1g-dev libmcrypt-dev
 
 # pgsql extension
-RUN apt-get install -y libpq-dev
+RUN apt-get install -y --no-install-recommends libpq-dev
 RUN docker-php-ext-install pgsql
 
 #
 # Other tools
 #
-RUN apt-get install -y gdb valgrind libcurl4-openssl-dev pkg-config libpq-dev libedit-dev libreadline-dev git
+RUN apt-get install -y --no-install-recommends gdb valgrind libcurl4-openssl-dev pkg-config libpq-dev libedit-dev libreadline-dev git
 
 #
 # Install other packages.
 #
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y  --no-install-recommends \
   autoconf \
   argon2 libghc-argon2-dev \
   autotools-dev \
@@ -79,7 +79,7 @@ ENV PATH /usr/local/go/bin:$PATH
 # If the debian version is buster, don't install python-dev-is-python3
 #
 RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
-    apt-get install -y python-dev-is-python3; \
+    apt-get install -y  --no-install-recommends python-dev-is-python3; \
     fi
 
 # install composer
@@ -124,7 +124,7 @@ RUN \
   fi
 
 # memcached
-RUN apt-get install -y libmemcached-dev
+RUN apt-get install -y --no-install-recommends libmemcached-dev
 RUN pecl install memcached && docker-php-ext-enable memcached
 
 # uopz
