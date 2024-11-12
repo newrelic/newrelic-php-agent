@@ -479,23 +479,23 @@ devenv-image:
 	@docker compose --profile dev build devenv
 
 dev-shell: devenv-image
-	docker compose --profile dev up --pull --remove-orphans -d
+	docker compose --profile dev up --pull missing --remove-orphans -d
 	docker compose exec -it devenv bash -c "sh files/set_path.sh ; bash"
 
 dev-build: devenv-image
-	docker compose --profile dev up --pull --remove-orphans -d
+	docker compose --profile dev up --pull missing --remove-orphans -d
 	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all"
 
 dev-unit-tests: devenv-image
-	docker compose --profile dev up --pull --remove-orphans -d
+	docker compose --profile dev up --pull missing --remove-orphans -d
 	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
 
 dev-integration-tests: devenv-image
-	docker compose --profile dev up --pull --remove-orphans -d
+	docker compose --profile dev up --pull missing --remove-orphans -d
 	docker compose exec -it devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-all: devenv-image
-	docker compose --profile dev up --pull --remove-orphans -d
+	docker compose --profile dev up --pull missing --remove-orphans -d
 	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-stop:
