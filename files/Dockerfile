@@ -14,62 +14,51 @@ FROM php:${PHP_VER:-8.3}
 RUN docker-php-source extract
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential
-
-#
-# PHP dependencies
-#
-RUN apt-get update \
- && apt-get install -y --no-install-recommends gcc git netcat-openbsd \
- libpcre3 libpcre3-dev psmisc automake libtool \
- insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
- zlib1g-dev libmcrypt-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install build entrypoint - make:
+    make \
+# Makefile's default shell:
+    bash \
+# git; techincally not needed to build agent but is required for successfull
+# processing of top level Makefile:
+# - make/version.mk if GIT_COMMIT is not defined, git is used to compute it:
+    git \
+# The following are required to build PHP extension:
+    $PHPIZE_DEPS \
+# valgrind, awk; required for agent-valgrind and axiom-valgrind targets
+    valgrind gawk \
+# Other useful developer tools:
+    vim lcov gdb strace ccache procps psmisc curl wget bzip2 zip unzip perl sqlite3 openssl \
+# Other build dependencies:
+    argon2 \
+    automake \
+    autotools-dev \
+    dnsutils \
+    gyp \
+    insserv \
+    libc6 libc6-dev libc6-dbg \
+    libcurl4-openssl-dev \
+    libedit-dev \
+    libghc-argon2-dev \
+    libgtest-dev \
+    libmcrypt-dev \
+    libonig-dev \
+    libpcre3 libpcre3-dev \
+    libreadline-dev \
+    libssl-dev \
+    libsqlite3-dev \
+    libtool \
+    libxml2 libxml2-dev \
+    locales \
+    locales-all \
+    netcat-openbsd \
+    python3-yaml \
+    ${PHP_USER_SPECIFIED_PACKAGES} \
+    zlib1g-dev
 
 # pgsql extension
 RUN apt-get install -y --no-install-recommends libpq-dev
 RUN docker-php-ext-install pgsql
-
-#
-# Other tools
-#
-RUN apt-get install -y --no-install-recommends gdb valgrind libcurl4-openssl-dev pkg-config libpq-dev libedit-dev libreadline-dev git
-
-#
-# Install other packages.
-#
-RUN apt-get update && apt-get install -y  --no-install-recommends \
-  autoconf \
-  argon2 libghc-argon2-dev \
-  autotools-dev \
-  build-essential \
-  bzip2 \
-  ccache \
-  curl \
-  dnsutils \
-  git \
-  gyp \
-  lcov \
-  libc6 \
-  libc6-dbg \
-  libc6-dev \
-  libgtest-dev \
-  libtool \
-  locales \
-  locales-all \
-  make \
-  perl \
-  strace \
-  python3-yaml \
-  sqlite3 \
-  libsqlite3-dev \
-  openssl \
-  libxml2 \
-  libxml2-dev \
-  libonig-dev \
-  libssl-dev \
-  unzip \
-  wget \
-  zip && apt-get clean
 
 # install latest go to work with the daemon
 COPY --from=golang /usr/local/go /usr/local/go
