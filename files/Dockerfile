@@ -14,8 +14,7 @@ FROM php:${PHP_VER:-8.3}
 RUN docker-php-source extract
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update
-RUN apt-get install -y build-essential
+RUN apt-get update && apt-get install -y build-essential
 
 #
 # PHP dependencies
