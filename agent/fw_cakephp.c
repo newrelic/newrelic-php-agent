@@ -280,7 +280,7 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_CAKEPHP);
 
-  exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  exception = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
   if (!nr_php_is_zval_valid_object(exception)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: exception is NULL or not an object",
                      __func__);
