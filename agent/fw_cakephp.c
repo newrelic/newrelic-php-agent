@@ -318,11 +318,11 @@ void nr_cakephp_enable_1(TSRMLS_D) {
 void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
-      nr_cakephp_name_the_wt_4 TSRMLS_CC);
+      nr_cakephp_name_the_wt_4);
   nr_php_wrap_user_function(
       NR_PSTR(
           "Cake\\Error\\Middleware\\ErrorHandlerMiddleware::handleException"),
-      nr_cakephp_error_handler_wrapper TSRMLS_CC);
+      nr_cakephp_error_handler_wrapper);
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                PHP_PACKAGE_VERSION_UNKNOWN);
 }
