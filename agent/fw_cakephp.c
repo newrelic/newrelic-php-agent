@@ -290,7 +290,7 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
   if (NR_SUCCESS
       != nr_php_error_record_exception(
           NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
-          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC)) {
+          "Uncaught exception ", &NRPRG(exception_filters))) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
   }
 
