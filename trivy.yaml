@@ -1,0 +1,14 @@
+scan:
+  scanners: 
+    - vuln
+    - misconfig
+  skip-dirs: vendor
+
+severities:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+  - LOW
+
+vulnerability:
+  ignore-unfixed: true
