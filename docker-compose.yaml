@@ -80,7 +80,6 @@ services:
       dockerfile: files/Dockerfile
       args:
         PHP_VER: ${PHP:-8.3}
-    user: ${UID}:${GID}
     environment:
       MEMCACHE_HOST: memcached
 
