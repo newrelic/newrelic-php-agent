@@ -274,6 +274,7 @@ NR_PHP_WRAPPER_END
  */
 NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
   zval* exception = NULL;
+  char* request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI"));
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -294,12 +295,12 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
   }
 
-  nr_txn_set_path("CakePHP", NRPRG(txn),
-                  nr_php_get_server_global("REQUEST_URI"), NR_PATH_TYPE_ACTION,
+  nr_txn_set_path("CakePHP", NRPRG(txn), request_uri, NR_PATH_TYPE_ACTION,
                   NR_NOT_OK_TO_OVERWRITE);
 
 end:
   nr_php_arg_release(&exception);
+  nr_free(request_uri);
 }
 NR_PHP_WRAPPER_END
 
