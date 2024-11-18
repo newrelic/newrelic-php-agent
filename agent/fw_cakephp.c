@@ -295,7 +295,7 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
   }
 
-  nr_txn_set_path("CakePHP", NRPRG(txn), request_uri, NR_PATH_TYPE_ACTION,
+  nr_txn_set_path("CakePHP", NRPRG(txn), request_uri, NR_PATH_TYPE_URI,
                   NR_NOT_OK_TO_OVERWRITE);
 
 end:
