@@ -274,7 +274,7 @@ NR_PHP_WRAPPER_END
  */
 NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
   zval* exception = NULL;
-  char* request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI"));
+  char* request_uri = nr_php_get_server_global("REQUEST_URI");
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
