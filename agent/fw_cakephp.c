@@ -154,7 +154,7 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
   }
 
   if (NULL != request_uri) {
-    nr_txn_set_path("CakePHP", NRPRG(txn), request_uri, NR_PATH_TYPE_URI,
+    nr_txn_set_path("CakePHP Exception", NRPRG(txn), request_uri, NR_PATH_TYPE_URI,
                     NR_OK_TO_OVERWRITE);
   } else {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: request uri is NULL", __func__);
