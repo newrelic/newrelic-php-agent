@@ -87,7 +87,7 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
   nr_php_zval_str(&action_param, "action");
   action_zval = nr_php_call(request, "getParam", &action_param);
   zval_dtor(&action_param);
-  if (!nr_php_is_zval_valid_string(action_zval)) {
+  if (!nr_php_is_zval_non_empty_string(action_zval)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no action param found in request");
     goto end;
   } else {
