@@ -13,6 +13,7 @@
 #include "util_object.h"
 #include "util_strings.h"
 #include "util_time.h"
+#include "util_logging.h"
 
 nr_error_t* nr_error_create(int priority,
                             const char* message,
@@ -21,14 +22,18 @@ nr_error_t* nr_error_create(int priority,
                             const char* span_id,
                             nrtime_t when) {
   nr_error_t* error;
+  nrl_warning(NRL_WARNING, "%s: CREATING ERROR", __func__);
 
   if (0 == message) {
+    nrl_warning(NRL_WARNING, "%s: EMPTY MESSAGE", __func__);
     return 0;
   }
   if (0 == klass) {
+    nrl_warning(NRL_WARNING, "%s: EMPTY KLASS", __func__);
     return 0;
   }
   if (0 == stacktrace_json) {
+    nrl_warning(NRL_WARNING, "%s: EMPTY STACKTRACE_JSON", __func__);
     return 0;
   }
 

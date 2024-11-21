@@ -1565,14 +1565,18 @@ void nr_txn_record_error(nrtxn_t* txn,
   char* span_id = NULL;
   nr_error_t* error = NULL;
 
+  nrl_warning(NRL_ERROR, "%s: RECORDING ERROR", __func__);
+
   if (nrunlikely((0 == txn) || (0 == txn->options.err_enabled) || (0 == errmsg)
                  || (0 == errclass) || (0 == txn->status.recording)
                  || (0 == errmsg[0]) || (0 == errclass[0])
                  || (0 == stacktrace_json))) {
+    nrl_warning(NRL_ERROR, "%s: MISSING DATA BAILOUT", __func__);
     return;
   }
 
   if ((txn->error) && (priority < nr_error_priority(txn->error))) {
+    nrl_warning(NRL_ERROR, "%s: ERROR PRIORITY TOO LOW", __func__);
     /*priority of new error is lower, so we don't need to do anything */
     return;
   }
