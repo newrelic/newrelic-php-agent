@@ -246,6 +246,8 @@ PHP_FUNCTION(newrelic_exception_handler) {
   NR_UNUSED_RETURN_VALUE_USED;
   NR_UNUSED_THIS_PTR;
 
+  nrl_warning(NRL_ERROR, "IN EXCEPTION HANDLER");
+
   if ((FAILURE
        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                    ZEND_NUM_ARGS() TSRMLS_CC, "z", &exception))
@@ -272,8 +274,8 @@ PHP_FUNCTION(newrelic_exception_handler) {
    */
 
   nr_php_error_record_exception(
-      NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
-      true, "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+      NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, true,
+      "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
   /*
    * Finally, we need to generate an E_ERROR to match what PHP would have done
    * if this handler wasn't installed. Happily, PHP exposes an API function
@@ -317,7 +319,7 @@ int nr_php_error_get_priority(int type) {
     case E_USER_DEPRECATED:
       return 30;
     case E_STRICT: /* Included for backward compatibility */
-      return 10;      
+      return 10;
     case E_USER_NOTICE:
       return 0;
     case E_NOTICE:
@@ -330,6 +332,8 @@ int nr_php_error_get_priority(int type) {
 void nr_php_error_install_exception_handler(TSRMLS_D) {
   int has_user_exception_handler;
 
+  nrl_warning(NRL_ERROR, "%s: ATTTEMPTING TO INSTALL EXCEPTION HANDLER",
+              __func__);
   /*
    * Not calling set_exception_handler() here is intentional: we don't want to
    * generate useless supportability metrics here, nor do we want to risk
@@ -339,6 +343,7 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
    * then we don't want to do anything anyway.
    */
   if (NR_PHP_PROCESS_GLOBALS(special_flags).no_exception_handler) {
+    nrl_warning(NRL_ERROR, "%s: NO EXCEPTION HANDLER?", __func__);
     return;
   }
 
@@ -354,11 +359,13 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
 #endif /* PHP7 */
 
   if (has_user_exception_handler) {
-    nrl_verbosedebug(NRL_ERROR,
-                     "%s: unexpected user_exception_handler already installed, "
-                     "pushing it onto the exception handler stack and "
-                     "installing ours instead",
-                     __func__);
+    nrl_warning(NRL_ERROR, "%s: USER EXCEPTION HANDLER: %s", __func__,
+                Z_STRVAL_P(&EG(user_exception_handler)));
+    nrl_warning(NRL_ERROR,
+                "%s: unexpected user_exception_handler already installed, "
+                "pushing it onto the exception handler stack and "
+                "installing ours instead",
+                __func__);
 
     /*
      * All we have to do is push the existing handler onto the
@@ -467,7 +474,8 @@ static long nr_php_error_exception_line(zval* exception TSRMLS_DC) {
  *           will need to free, or NULL if no message could be extracted.
  */
 static char* nr_php_error_exception_message(zval* exception TSRMLS_DC) {
-  zval* message_zv = nr_php_get_zval_base_exception_property(exception, "message");
+  zval* message_zv
+      = nr_php_get_zval_base_exception_property(exception, "message");
   char* message = NULL;
 
   if (nr_php_is_zval_valid_string(message_zv)) {
@@ -565,18 +573,20 @@ static int nr_php_should_record_error(int type, const char* format TSRMLS_DC) {
    * For a the following error types:
    * E_WARNING || E_CORE_WARNING || E_COMPILE_WARNING || E_USER_WARNING
    * PHP triggers an exception if EH_THROW is toggled on and then immediately
-   * returns after throwing the exception. PHP 7 additionally triggers an exception 
-   * for E_RECOVERABLE_ERROR.
-   * See for more info:
+   * returns after throwing the exception. PHP 7 additionally triggers an
+   * exception for E_RECOVERABLE_ERROR. See for more info:
    * https://github.com/php/php-src/blob/master/main/main.c In that case, we
    * should not handle it, but we should exit and let the exception handler
    * deal with it; otherwise, we could record an error even if an exception is
    * caught.
    */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING | E_RECOVERABLE_ERROR)
+#define E_ERRORS_THROWING_EXCEPTIONS                               \
+  (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING \
+   | E_RECOVERABLE_ERROR)
 #else
-#define E_ERRORS_THROWING_EXCEPTIONS (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING)
+#define E_ERRORS_THROWING_EXCEPTIONS \
+  (E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING)
 #endif
 
 #define E_THROWS_EXCEPTION(e) ((E_ERRORS_THROWING_EXCEPTIONS & e) == e)
@@ -649,8 +659,8 @@ void nr_php_error_cb(int type,
 
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
     errclass = nr_php_error_get_type_string(type);
-    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true,
-                        msg, errclass, stack_json);
+    nr_txn_record_error(NRPRG(txn), nr_php_error_get_priority(type), true, msg,
+                        errclass, stack_json);
 
     /*
      * Error Fingerprinting Callback
@@ -760,8 +770,7 @@ nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
                                            stack_json);
   }
 
-  nr_txn_record_error(NRPRG(txn), priority,
-                      add_to_current_segment,
+  nr_txn_record_error(NRPRG(txn), priority, add_to_current_segment,
                       error_message, klass, stack_json);
 
   nr_free(error_message);
