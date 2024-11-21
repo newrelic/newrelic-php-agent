@@ -57,7 +57,9 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -72,7 +74,9 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
       wraprec->special_instrumentation_before(wraprec, segment,
                                               NR_EXECUTE_ORIG_ARGS);
     }
-    zend_catch { zcaught = 1; }
+    zend_catch {
+      zcaught = 1;
+    }
     zend_end_try();
   }
 
@@ -89,7 +93,9 @@ int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
       wraprec->special_instrumentation_clean(wraprec, segment,
                                              NR_EXECUTE_ORIG_ARGS);
     }
-    zend_catch { zcaught = 1; }
+    zend_catch {
+      zcaught = 1;
+    }
     zend_end_try();
   }
   return zcaught;
@@ -109,7 +115,9 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -215,7 +223,8 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * Wordpress and predis for custom instrumentation that sets
  * `is_transient`.
  *
- * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
+ * Transient wrappers get disposed of at the end of each request at RSHUTDOWN
+ lifecycle.
  *
  * When overwriting the zend_execute_ex function, every effort was made to
  * reduce performance overhead because until the agent returns control, we are
@@ -571,6 +580,7 @@ void nr_php_add_custom_tracer(const char* namestr, int namestrlen TSRMLS_DC) {
 }
 
 void nr_php_add_exception_function(zend_function* func TSRMLS_DC) {
+  nrl_warning(NRL_ERROR, "%s: ADDING EXCEPTION FUNCTION", __func__);
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(func TSRMLS_CC);
 
   if (wraprec) {

@@ -10,7 +10,8 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 static void nr_php_wraprec_add_before_after_clean_callbacks(
-    const char* name, size_t namelen,
+    const char* name,
+    size_t namelen,
     nruserfn_t* wraprec,
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
@@ -31,8 +32,8 @@ static void nr_php_wraprec_add_before_after_clean_callbacks(
     return;
   }
 
-  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_before,
-                                           before_callback)) {
+  if (is_instrumentation_set_and_not_equal(
+          wraprec->special_instrumentation_before, before_callback)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: attempting to set special_instrumentation_before "
                      "for %.*s, but "
@@ -41,8 +42,8 @@ static void nr_php_wraprec_add_before_after_clean_callbacks(
     return;
   }
 
-  if (is_instrumentation_set_and_not_equal(wraprec->special_instrumentation_clean,
-                                           clean_callback)) {
+  if (is_instrumentation_set_and_not_equal(
+          wraprec->special_instrumentation_clean, clean_callback)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: attempting to set special_instrumentation_clean "
                      "for %.*s, but "
@@ -62,13 +63,10 @@ nruserfn_t* nr_php_wrap_user_function_before_after_clean(
     nrspecialfn_t before_callback,
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback) {
-
   nruserfn_t* wraprec = nr_php_add_custom_tracer_named(name, namelen);
 
-  nr_php_wraprec_add_before_after_clean_callbacks(name, namelen, wraprec,
-                                                  before_callback,
-                                                  after_callback,
-                                                  clean_callback);
+  nr_php_wraprec_add_before_after_clean_callbacks(
+      name, namelen, wraprec, before_callback, after_callback, clean_callback);
 
   return wraprec;
 }
@@ -102,6 +100,7 @@ nruserfn_t* nr_php_wrap_callable_before_after_clean(
   char* name = NULL;
 
   /* creates a transient wraprec */
+  nrl_warning(NRL_ERROR, "%s: CREATING TRANSIENT WRAPREC", __func__);
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
 
   /*
@@ -110,10 +109,9 @@ nruserfn_t* nr_php_wrap_callable_before_after_clean(
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
     name = nr_php_function_debug_name(callable);
   }
-  nr_php_wraprec_add_before_after_clean_callbacks(name, nr_strlen(name), wraprec,
-                                                  before_callback,
-                                                  after_callback,
-                                                  clean_callback);
+  nr_php_wraprec_add_before_after_clean_callbacks(
+      name, nr_strlen(name), wraprec, before_callback, after_callback,
+      clean_callback);
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT) && NULL != name) {
     nr_free(name);
   }
@@ -156,6 +154,7 @@ nruserfn_t* nr_php_wrap_user_function_extra(const char* name,
 nruserfn_t* nr_php_wrap_callable(zend_function* callable,
                                  nrspecialfn_t callback TSRMLS_DC) {
   /* creates a transient wraprec */
+  nrl_warning(NRL_ERROR, "%s: CREATE TRANSIENT WRAPREC", __func__);
   nruserfn_t* wraprec = nr_php_add_custom_tracer_callable(callable TSRMLS_CC);
 
   if (wraprec && callback) {
