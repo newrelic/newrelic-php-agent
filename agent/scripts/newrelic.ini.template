@@ -1557,3 +1557,95 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          If `newrelic.security.iast_test_identifier` is specified, this value is by default 1.
 ;
 ;newrelic.security.iast_test_identifier = 0
+
+; Setting: newrelic.security.scan_controllers.report_http_response_body
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : This configuration allows user to enable / disable sending of HTTP responses body.
+;	       Disabling reading of http response body will also disable RXSS vulnerability detection.
+;
+;newrelic.security.scan_controllers.report_http_response_body = true
+
+; Setting: newrelic.security.restriction_criteria.account_info.account_id_values
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode`. 
+;          A list of account id values separated by :: (double colon) to run IAST
+;          on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.account_id_values = "account1::account2"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.header.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the header on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.header.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.header.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of header keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.header.location = "X-Account::X-Nr-Account"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.body.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the body on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.body.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.body.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of body keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.body.location = "account.id::account.test.id"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.query.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the query on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.query.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.query.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of query keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.query.location = "id::user"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.path.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the path on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.path.enabled = false
