@@ -1373,38 +1373,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.security.agent.enabled = false
 
-; Setting: newrelic.security.detection.rci.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of remote code injection attack category is to be enabled
-;
-;newrelic.security.detection.rci.enabled = true
-
-; Setting: newrelic.security.detection.rxss.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of reflected xss attack category is to be enabled
-;
-;newrelic.security.detection.rxss.enabled = true
-
-; Setting: newrelic.security.detection.deserialization.enabled
-; Type   : boolean
-; Scope  : system
-; Default: true
-; Info   : Indicates if detection of deserialization attack category is to be enabled
-;
-;newrelic.security.detection.deserialization.enabled = true
-
-; Setting: newrelic.security.request.body_limit
-; Type   : unsigned integer
-; Scope  : system
-; Default: 300
-; Info   : Sets the maximum limit of the request body to be read in kb.
-;
-;newrelic.security.request.body_limit = 300
-
 ; Setting: newrelic.security.validator.client_ssl_cert_filepath
 ; Type   : string
 ; Scope  : system
@@ -1416,3 +1384,268 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          sure the file permissions are correct.
 ;
 ;newrelic.security.validator.client_ssl_cert_filepath = ""
+
+; Setting: newrelic.security.exclude_from_iast_scan.api
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of valid pcre regex of apis separated by | (pipe) to be 
+;          excluded for scanning. Make sure each pipe separated regex is correct,
+;          otherwise none of the regexes will be applicable.
+;
+;newrelic.security.exclude_from_iast_scan.api = "api1|api2"
+
+; Setting: newrelic.security.exclude_from_iast_scan.http_request_parameters.header
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request header keys separated by :: (double colon) to be 
+;          excluded for scanning
+;
+;newrelic.security.exclude_from_iast_scan.http_request_parameters.header = "X-Forwaded-For"
+
+; Setting: newrelic.security.exclude_from_iast_scan.http_request_parameters.query
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request query keys separated by :: (double colon) to be 
+;          excluded for scanning
+;
+;newrelic.security.exclude_from_iast_scan.http_request_parameters.query = "username::password"
+
+; Setting: newrelic.security.exclude_from_iast_scan.http_request_parameters.body
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : A list of request body keys separated by :: (double colon) to be 
+;          excluded for scanning
+;
+;newrelic.security.exclude_from_iast_scan.http_request_parameters.body = "account.email::account.contact"
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.insecure_settings
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if insecure settings attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.insecure_settings = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.invalid_file_access
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if invalid file access attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.invalid_file_access = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.sql_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if sql injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.sql_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.nosql_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if nosql injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.nosql_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.ldap_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if ldap injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.ldap_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.javascript_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if javascript injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.javascript_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.command_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if command injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.command_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.xpath_injection
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if xpath injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.xpath_injection = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.ssrf
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if ssrf injection attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.ssrf = false
+
+; Setting: newrelic.security.exclude_from_iast_scan.iast_detection_category.rxss
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Indicates if reflected xss attack category is to be excluded
+;
+;newrelic.security.exclude_from_iast_scan.iast_detection_category.rxss = false
+
+; Setting: newrelic.security.scan_schedule.delay
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the delay in minutes after which IAST scan should start
+;
+;newrelic.security.scan_schedule.delay = 0
+
+; Setting: newrelic.security.scan_schedule.duration
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the duration in minutes for which IAST scan should running
+;          default will be forever
+;
+;newrelic.security.scan_schedule.duration = 0
+
+; Setting: newrelic.security.scan_schedule.schedule
+; Type   : string
+; Scope  : system
+; Default: "0 0 * * * ?"
+; Info   : Sets the IAST run schedule in cron format. scan_schedule.delay
+;          takes precedence over schedule
+;
+;newrelic.security.scan_schedule.schedule = "0 0 * * * ?"
+
+; Setting: newrelic.security.scan_schedule.always_sample_traces
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Always sample traces regardless of other schedule settings
+;
+;newrelic.security.scan_schedule.always_sample_traces = false
+
+; Setting: newrelic.security.iast_test_identifier
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Sets the identifier for allowing users to run IAST for CI/CD. Provide
+;          a unique identifier (i.e. Build Id) to filter application tests properly.
+;          Also, configurable via env variable NEW_RELIC_SECURITY_IAST_TEST_IDENTIFIER
+;          which takes precedence over this config.
+;
+;newrelic.security.iast_test_identifier = ""
+
+; Setting: newrelic.security.scan_controllers.scan_instance_count
+; Type   : unsigned integer
+; Scope  : system
+; Default: 0
+; Info   : Sets the number of application instances where IAST analysis should be performed
+;          for a specific entity. Allowed values are 0 or 1, where 0 signifies run on
+;          all application instances for that specific entity.
+;          If `newrelic.security.iast_test_identifier` is specified, this value is by default 1.
+;
+;newrelic.security.iast_test_identifier = 0
+
+; Setting: newrelic.security.scan_controllers.report_http_response_body
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : This configuration allows user to enable / disable sending of HTTP responses body.
+;	       Disabling reading of http response body will also disable RXSS vulnerability detection.
+;
+;newrelic.security.scan_controllers.report_http_response_body = true
+
+; Setting: newrelic.security.restriction_criteria.account_info.account_id_values
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode`. 
+;          A list of account id values separated by :: (double colon) to run IAST
+;          on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.account_id_values = "account1::account2"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.header.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the header on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.header.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.header.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of header keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.header.location = "X-Account::X-Nr-Account"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.body.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the body on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.body.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.body.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of body keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.body.location = "account.id::account.test.id"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.query.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the query on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.query.enabled = false
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.query.location
+; Type   : string
+; Scope  : system
+; Default: none
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          A list of query keys separated by :: (double colon) to lookup account id values to
+;          run IAST on specific test accounts only.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.query.location = "id::user"
+
+; Setting: newrelic.security.restriction_criteria.account_info.mapping_parameters.path.enabled
+; Type   : boolean
+; Scope  : system
+; Default: false
+; Info   : Applicable only with IAST_RESTRICTION as `newrelic.security.mode` and 
+;          `newrelic.security.restriction_criteria.account_info.account_id_values`.
+;          Indicates if account id value is to be looked up in the path on which to run IAST.
+;
+;newrelic.security.restriction_criteria.account_info.mapping_parameters.path.enabled = false
