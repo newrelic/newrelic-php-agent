@@ -21,13 +21,15 @@
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
-NR_PHP_WRAPPER(nr_symfony4_exception) {
+NR_PHP_WRAPPER(nr_drupal_exception) {
   int priority = nr_php_error_get_priority(E_ERROR);
   zval* event = NULL;
   zval* exception = NULL;
 
   /* Warning avoidance */
   (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
 
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
     NR_PHP_WRAPPER_CALL;
@@ -785,10 +787,9 @@ void nr_drupal8_enable(TSRMLS_D) {
 
   nr_php_error_install_exception_handler();
 
-  nr_php_wrap_user_function(
-      NR_PSTR("Symfony\\Component\\HttpKernel\\"
-              "EventListener\\ErrorListener::onKernelException"),
-      nr_symfony4_exception TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExcepti"
+                                    "onSubscriberBase::onException"),
+                            nr_drupal_exception TSRMLS_CC);
   /*
    * The drupal_modules config setting controls instrumentation of modules,
    * hooks, and views.
