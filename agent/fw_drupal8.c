@@ -21,6 +21,64 @@
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
+NR_PHP_WRAPPER(nr_symfony4_exception) {
+  int priority = nr_php_error_get_priority(E_ERROR);
+  zval* event = NULL;
+  zval* exception = NULL;
+
+  /* Warning avoidance */
+  (void)wraprec;
+
+  /* Verify that we are using symfony 4, otherwise bail. */
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_SYMFONY4);
+
+  if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  /* Get the event that was given. */
+  event = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  /* Call the original function. */
+  NR_PHP_WRAPPER_CALL;
+
+  if (0 == nr_php_is_zval_valid_object(event)) {
+    nrl_verbosedebug(NRL_TXN,
+                     "Symfony 4: KernelEvent::onKernelException() does not "
+                     "have an event parameter");
+    goto end;
+  }
+
+  /*
+   * Get the exception from the event.
+   * Firstly, we check if ExceptionEvent is available - if yes, that means we
+   * are using Symfony 5
+   */
+  exception = nr_php_call(event, "getThrowable");
+  if (!nr_php_is_zval_valid_object(exception)) {
+    exception = nr_php_call(event, "getException");
+  }
+
+  if (!nr_php_is_zval_valid_object(exception)) {
+    nrl_verbosedebug(NRL_TXN,
+                     "Symfony 4: getException() returned a non-object");
+    goto end;
+  }
+
+  if (NR_SUCCESS
+      != nr_php_error_record_exception(NRPRG(txn), exception, priority, true,
+                                       NULL,
+                                       &NRPRG(exception_filters) TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_TXN, "Symfony 4: unable to record exception");
+  }
+
+end:
+  nr_php_arg_release(&event);
+  nr_php_zval_free(&exception);
+}
+NR_PHP_WRAPPER_END
+
 /*
  * Purpose : Convenience function to handle adding a callback to a method,
  *           given a class entry and a method name. This will check the
@@ -729,6 +787,11 @@ void nr_drupal8_enable(TSRMLS_D) {
                             nr_drupal8_name_the_wt TSRMLS_CC);
 
   nr_php_error_install_exception_handler();
+
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\"
+              "EventListener\\ErrorListener::onKernelException"),
+      nr_symfony4_exception TSRMLS_CC);
   /*
    * The drupal_modules config setting controls instrumentation of modules,
    * hooks, and views.
