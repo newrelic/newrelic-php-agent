@@ -29,9 +29,6 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
   /* Warning avoidance */
   (void)wraprec;
 
-  /* Verify that we are using symfony 4, otherwise bail. */
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_SYMFONY4);
-
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
     NR_PHP_WRAPPER_CALL;
     goto end;
