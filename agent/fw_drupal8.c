@@ -21,7 +21,7 @@
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
-NR_PHP_WRAPPER(nr_drupal_exception) {
+NR_PHP_WRAPPER(nr_symfony4_exception) {
   int priority = nr_php_error_get_priority(E_ERROR);
   zval* event = NULL;
   zval* exception = NULL;
@@ -30,7 +30,7 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
   (void)wraprec;
   nrl_warning(NRL_ERROR, "nr_drupal_exception: HANDLING DRUPAL EXCEPTION");
 
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+  // NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
 
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
     nrl_warning(NRL_ERROR, "nr_drupal_exception: NOT ERROR WORTHY");
@@ -789,9 +789,14 @@ void nr_drupal8_enable(TSRMLS_D) {
 
   nr_php_error_install_exception_handler();
 
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExcepti"
-                                    "onSubscriberBase::onException"),
-                            nr_drupal_exception TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\HttpKernel\\"
+              "EventListener\\ExceptionListener::onKernelException"),
+      nr_symfony4_exception TSRMLS_CC);
+
+  // nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExcepti"
+  //                                   "onSubscriberBase::onException"),
+  //                           nr_drupal_exception TSRMLS_CC);
   /*
    * The drupal_modules config setting controls instrumentation of modules,
    * hooks, and views.
