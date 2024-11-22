@@ -331,15 +331,8 @@ typedef struct _nr_framework_table_t {
  */
 // clang-format: off
 static const nr_framework_table_t all_frameworks[] = {
-    /*
-     * Watch out:
-     *   cake1.2 and cake1.3 use a subdirectory named 'cake' (lower case)
-     *   cake2.0 and on use a subdirectory named 'Cake' (upper case file name)
-     */
-    {"CakePHP", "cakephp", NR_PSTR("cake/libs/object.php"), nr_cakephp_special_1,
-     nr_cakephp_enable_1, NR_FW_CAKEPHP},
-    {"CakePHP", "cakephp", NR_PSTR("cake/core/app.php"), nr_cakephp_special_2,
-     nr_cakephp_enable_2, NR_FW_CAKEPHP},
+    {"CakePHP", "cakephp", NR_PSTR("cakephp/src/core/functions.php"), 0,
+     nr_cakephp_enable, NR_FW_CAKEPHP},
 
     /*
      * Watch out: frameworks or CMS' build on top of CodeIgniter might not get
@@ -522,8 +515,6 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all.
      */
     {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
-
-    {"CakePHP3", NR_PSTR("cakephp/src/core/functions.php"), NULL},
 };
 // clang-format: on
 
