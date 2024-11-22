@@ -28,10 +28,12 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
 
   /* Warning avoidance */
   (void)wraprec;
+  nrl_warning(NRL_ERROR, "nr_drupal_exception: HANDLING DRUPAL EXCEPTION");
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
 
   if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
+    nrl_warning(NRL_ERROR, "nr_drupal_exception: NOT ERROR WORTHY");
     NR_PHP_WRAPPER_CALL;
     goto end;
   }
