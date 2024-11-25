@@ -791,7 +791,11 @@ void nr_drupal8_enable(TSRMLS_D) {
 
   nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExcepti"
                                     "onSubscriberBase::onException"),
-                            nr_drupal_exception TSRMLS_CC);
+                            nr_drupal_exception);
+
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\FinalExcept"
+                                    "ionSubscriber::onException"),
+                            nr_drupal_exception);
   /*
    * The drupal_modules config setting controls instrumentation of modules,
    * hooks, and views.
