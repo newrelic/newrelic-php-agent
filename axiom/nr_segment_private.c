@@ -44,10 +44,12 @@ void nr_segment_message_destroy_fields(nr_segment_message_t* message) {
     return;
   }
 
-  nr_free(message->action);
-  nr_free(message->library);
-  nr_free(message->destination_type);
   nr_free(message->destination_name);
+  nr_free(message->messaging_system);
+  nr_free(message->cloud_region);
+  nr_free(message->cloud_account_id);
+  nr_free(message->cloud_resource_id);
+  nr_free(message->server_address);
 }
 
 void nr_segment_destroy_typed_attributes(
