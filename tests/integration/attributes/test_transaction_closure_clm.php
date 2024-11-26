@@ -118,7 +118,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 162,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
@@ -139,7 +139,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 162,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
