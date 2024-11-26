@@ -73,7 +73,7 @@ jobs:
           LIBC: ${{matrix.platform}}
           PLATFORM: linux/${{inputs.arch}}
           AGENT_CODE: ${{github.workspace}}/php-agent
-          IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
+          IMAGE_VERSION: v3
         working-directory: ./php-agent
         run: |
           make test-services-start
