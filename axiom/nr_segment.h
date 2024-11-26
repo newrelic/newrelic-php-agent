@@ -111,12 +111,27 @@ typedef struct _nr_segment_external_t {
 } nr_segment_external_t;
 
 typedef struct _nr_segment_message_t {
-  char* action;           /* MUST be one of: produce, consume */
-  char* library;          /* MUST be one of: JMS, RabbitMQ, SNS, SQS */
-  char* destination_type; /* MUST be: Queue, Topic, Temporary Queue, Temporary
-                             Topic, Exchange */
-  char* destination_name; /* The name of the Queue, Topic, or Exchange;
-                                otherwise, Temp */
+  /*
+   * Attributes needed for entity relationship building.
+   * Compare to OTEL attributes:
+   * https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/
+   * cloud.account.id, cloud.region, messaging.system and server.address are
+   * used to create relationships between APM and cloud services. It may not
+   * make sense to add these attributes unless they are used for creating one of
+   * the relationships in Entity Relationships.
+   */
+
+  char* destination_name;  /* The name of the Queue, Topic, or Exchange;
+                                 otherwise, Temp. Needed for SQS relationship. */
+  char* cloud_region;      /*Targeted region; ex:us-east-1*. Needed for SQS
+                              relationship.*/
+  char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
+                              relationship.*/
+  char* messaging_system;  /* for ex: aws_sqs. Needed for SQS relationship.*/
+  char* cloud_resource_id; /*The ARN of the AWS resource being accessed.*/
+  char* server_address;    /* the server domain name or IP address.  Needed for
+                              MQBROKER relationship.*/
+
 } nr_segment_message_t;
 
 typedef struct _nr_segment_metric_t {
