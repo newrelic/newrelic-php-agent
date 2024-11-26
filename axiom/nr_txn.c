@@ -3259,15 +3259,17 @@ char* nr_txn_get_current_trace_id(nrtxn_t* txn) {
   const char* trace_id;
 
   if (NULL == txn) {
+    nrl_debug(NRL_AGENT, "%s", "nr_txn_get_current_trace_id : txn is NULL");
     return NULL;
   }
 
   trace_id = nr_distributed_trace_get_trace_id(txn->distributed_trace);
+  nrl_debug(NRL_AGENT, "nr_distributed_trace_get_trace_id : %s", trace_id);
 
   if ((NULL == trace_id) || (!txn->options.distributed_tracing_enabled)) {
     return NULL;
   }
-
+  nrl_debug(NRL_AGENT, "returning trace_id : %s", trace_id);
   return nr_strdup(trace_id);
 }
 
