@@ -21,7 +21,8 @@ typedef struct _nr_span_event_t nr_span_event_t;
 typedef enum {
   NR_SPAN_GENERIC,
   NR_SPAN_HTTP,
-  NR_SPAN_DATASTORE
+  NR_SPAN_DATASTORE,
+  NR_SPAN_MESSAGE
 } nr_span_category_t;
 
 /*
@@ -43,6 +44,18 @@ typedef enum {
   NR_SPAN_EXTERNAL_URL,
   NR_SPAN_EXTERNAL_METHOD
 } nr_span_event_external_member_t;
+
+/*
+ * Fields that can be set on message spans.
+ */
+typedef enum {
+  NR_SPAN_MESSAGE_DESTINATION_NAME,
+  NR_SPAN_MESSAGE_CLOUD_REGION,
+  NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID,
+  NR_SPAN_MESSAGE_MESSAGING_SYSTEM,
+  NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID,
+  NR_SPAN_MESSAGE_SERVER_ADDRESS
+} nr_span_event_message_member_t;
 
 /*
  * The parent attributes that can be set on service entry spans.
@@ -169,6 +182,18 @@ extern void nr_span_event_set_external(nr_span_event_t* event,
  */
 extern void nr_span_event_set_external_status(nr_span_event_t* event,
                                               const uint64_t status);
+
+/*
+ * Purpose : Set a message attribute.
+ *
+ * Params : 1. The target Span Event that should be changed.
+ *          2. The message attribute to be set.
+ *          3. The string value that the field will be after the function has
+ *             executed.
+ */
+extern void nr_span_event_set_message(nr_span_event_t* event,
+                                      nr_span_event_message_member_t member,
+                                      const char* new_value);
 
 /*
  * Purpose : Set a user attribute.

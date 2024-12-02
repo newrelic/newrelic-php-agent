@@ -328,6 +328,35 @@ void nr_span_event_set_external_status(nr_span_event_t* event,
   nro_set_hash_ulong(event->agent_attributes, "http.statusCode", status);
 }
 
+void nr_span_event_set_message(nr_span_event_t* event,
+                                nr_span_event_message_member_t member,
+                                const char* new_value) {
+  if (NULL == event || NULL == new_value) {
+    return;
+  }
+
+  switch (member) {
+    case NR_SPAN_MESSAGE_DESTINATION_NAME:
+      nro_set_hash_string(event->agent_attributes, "messaging.destination.name", new_value);
+      break;
+    case NR_SPAN_MESSAGE_CLOUD_REGION:
+      nro_set_hash_string(event->agent_attributes, "cloud.region", new_value);
+      break;
+    case NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID:
+      nro_set_hash_string(event->intrinsics, "cloud.account.id", new_value);
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
+      nro_set_hash_string(event->agent_attributes, "messaging.system", new_value);
+      break;
+    case NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID:
+      nro_set_hash_string(event->agent_attributes, "cloud.resource_id", new_value);
+      break;
+    case   NR_SPAN_MESSAGE_SERVER_ADDRESS:
+      nro_set_hash_string(event->intrinsics, "server.address", new_value);
+      break;
+  }
+}
+
 /*
  * Getters.
  *
