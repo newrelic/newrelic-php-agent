@@ -155,6 +155,8 @@ void nr_span_event_set_category(nr_span_event_t* event,
 
     case NR_SPAN_MESSAGE:
       nro_set_hash_string(event->intrinsics, "category", "message");
+      /* give it a default value in case we exit before spankind is set*/
+      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND);
       break;
   }
 }
