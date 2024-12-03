@@ -141,19 +141,44 @@ void nr_span_event_set_category(nr_span_event_t* event,
   switch (category) {
     case NR_SPAN_DATASTORE:
       nro_set_hash_string(event->intrinsics, "category", "datastore");
-      nro_set_hash_string(event->intrinsics, "span.kind", "client");
+      nr_span_event_set_spankind(event, NR_SPAN_CLIENT);
       break;
 
     case NR_SPAN_GENERIC:
       nro_set_hash_string(event->intrinsics, "category", "generic");
-      if (nro_get_hash_value(event->intrinsics, "span.kind", NULL)) {
-        nro_set_hash_none(event->intrinsics, "span.kind");
-      }
-      break;
+      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND) break;
 
     case NR_SPAN_HTTP:
       nro_set_hash_string(event->intrinsics, "category", "http");
+      nr_span_event_set_spankind(event, NR_SPAN_CLIENT);
+      break;
+
+    case NR_SPAN_MESSAGE:
+      nro_set_hash_string(event->intrinsics, "category", "message");
+      break;
+  }
+}
+
+void nr_span_event_set_spankind(nr_span_event_t* event,
+                                nr_span_spankind_t spankind) {
+  if (NULL == event) {
+    return;
+  }
+
+  switch (spankind) {
+    case NR_SPAN_PRODUCER:
+      nro_set_hash_string(event->intrinsics, "span.kind", "producer");
+      break;
+    case NR_SPAN_CLIENT:
       nro_set_hash_string(event->intrinsics, "span.kind", "client");
+      break;
+    case NR_SPAN_CONSUMER:
+      nro_set_hash_string(event->intrinsics, "span.kind", "consumer");
+      break;
+    case NR_SPAN_NO_SPANKIND:
+      if (nro_get_hash_value(event->intrinsics, "span.kind", NULL)) {
+        nro_set_hash_none(event->intrinsics, "span.kind");
+      }
       break;
   }
 }
@@ -329,15 +354,16 @@ void nr_span_event_set_external_status(nr_span_event_t* event,
 }
 
 void nr_span_event_set_message(nr_span_event_t* event,
-                                nr_span_event_message_member_t member,
-                                const char* new_value) {
+                               nr_span_event_message_member_t member,
+                               const char* new_value) {
   if (NULL == event || NULL == new_value) {
     return;
   }
 
   switch (member) {
     case NR_SPAN_MESSAGE_DESTINATION_NAME:
-      nro_set_hash_string(event->agent_attributes, "messaging.destination.name", new_value);
+      nro_set_hash_string(event->agent_attributes, "messaging.destination.name",
+                          new_value);
       break;
     case NR_SPAN_MESSAGE_CLOUD_REGION:
       nro_set_hash_string(event->agent_attributes, "cloud.region", new_value);
@@ -346,12 +372,14 @@ void nr_span_event_set_message(nr_span_event_t* event,
       nro_set_hash_string(event->intrinsics, "cloud.account.id", new_value);
       break;
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
-      nro_set_hash_string(event->agent_attributes, "messaging.system", new_value);
+      nro_set_hash_string(event->agent_attributes, "messaging.system",
+                          new_value);
       break;
     case NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID:
-      nro_set_hash_string(event->agent_attributes, "cloud.resource_id", new_value);
+      nro_set_hash_string(event->agent_attributes, "cloud.resource_id",
+                          new_value);
       break;
-    case   NR_SPAN_MESSAGE_SERVER_ADDRESS:
+    case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       nro_set_hash_string(event->intrinsics, "server.address", new_value);
       break;
   }
