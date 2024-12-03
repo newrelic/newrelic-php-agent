@@ -121,8 +121,9 @@ typedef struct _nr_segment_message_t {
    * the relationships in Entity Relationships.
    */
 
-  char* destination_name;  /* The name of the Queue, Topic, or Exchange;
-                                 otherwise, Temp. Needed for SQS relationship. */
+  nr_span_spankind_t message_type; /*The type of message, producer/consumer.*/
+  char* destination_name;          /* The name of the Queue, Topic, or Exchange;
+                                         otherwise, Temp. Needed for SQS relationship. */
   char* cloud_region;      /*Targeted region; ex:us-east-1*. Needed for SQS
                               relationship.*/
   char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
