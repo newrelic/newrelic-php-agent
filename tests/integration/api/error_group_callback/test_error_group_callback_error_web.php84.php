@@ -13,7 +13,7 @@ Tests newrelic_set_error_group_callback() API for Web errors.
 if (version_compare(PHP_VERSION, "8.4", "<")) {
   die("skip: older test for PHPs < 8.4\n");
 }
-
+*/
 
 /*ENVIRONMENT
 REQUEST_METHOD=GET
