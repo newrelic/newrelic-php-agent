@@ -6,7 +6,7 @@ on:
       - dev
   pull_request:
   schedule:
-    - cron: '0 9 * * *' # Same time as CI Cron
+    - cron: '0 0 * * 0' # Every Sunday at 12:00 AM
 
 jobs:
   trivy-scan:
