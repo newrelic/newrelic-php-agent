@@ -22,7 +22,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Deprecated: test(): Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter in .*? on line [0-9]+\s*$
+^\s*(PHP )?Deprecated: test\(\): Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS

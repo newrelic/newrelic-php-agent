@@ -32,7 +32,7 @@ message => I'M COVERED IN BEES
 file => .*test_error_group_callback_error_web.php
 stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php \(.*\)"," in alpha called at .*test_error_group_callback_error_web.php \(.*\)"\]
 <br \/>
-<b>Fatal error<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>.*<\/b><br \/>
+<b>Warning<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>.*<\/b><br \/>
 */
 
 /*EXPECT_METRICS 
