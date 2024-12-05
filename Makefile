@@ -475,25 +475,28 @@ test-services-stop:
 # Docker Development Environment
 #
 
-dev-shell:
-	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; bash"
+devenv-image:
+	@docker compose --profile dev build devenv
 
-dev-build:
-	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all"
+dev-shell: devenv-image
+	docker compose --profile dev up --pull missing --remove-orphans -d
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; bash"
 
-dev-unit-tests:
-	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
+dev-build: devenv-image
+	docker compose --profile dev up --pull missing --remove-orphans -d
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all"
 
-dev-integration-tests:
-	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+dev-unit-tests: devenv-image
+	docker compose --profile dev up --pull missing --remove-orphans -d
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 valgrind"
 
-dev-all:
-	docker compose --profile dev up --build --remove-orphans -d
-	docker exec -it agent-devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+dev-integration-tests: devenv-image
+	docker compose --profile dev up --pull missing --remove-orphans -d
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
+
+dev-all: devenv-image
+	docker compose --profile dev up --pull missing --remove-orphans -d
+	docker compose exec -it devenv bash -c "sh files/set_path.sh ; make -j4 all valgrind; ./bin/integration_runner -agent ./agent/.libs/newrelic.so"
 
 dev-stop:
 	docker compose --profile dev stop

@@ -1,5 +1,0 @@
-name: ubuntu16-build-action
-description: 'Build the agent on ubuntu 16'
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
