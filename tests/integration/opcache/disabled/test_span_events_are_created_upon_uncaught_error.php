@@ -13,6 +13,9 @@ when an error is generated and left to the default error handler.
 <?php
 
 require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHPs 8.4+\n");
+}
 
 */
 
@@ -115,7 +118,7 @@ require('opcache_test.inc');
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    @trigger_error('foo', E_USER_ERROR);
 }
 
 newrelic_record_datastore_segment(

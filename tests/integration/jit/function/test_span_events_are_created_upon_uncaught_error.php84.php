@@ -9,6 +9,16 @@ Test that span events are correctly created from any eligible segment, even
 when an error is generated and left to the default error handler.
 */
 
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHPs 8.4+\n");
+}
+
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -16,13 +26,16 @@ newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
-newrelic.code_level_metrics.enabled=false
+error_reporting = E_ALL
+opcache.enable=1
+opcache.enable_cli=1
+opcache.file_update_protection=0
+opcache.jit_buffer_size=32M
+opcache.jit=function
 */
 
-/*SKIPIF
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4\n");
-}
+/*PHPMODULES
+zend_extension=opcache.so
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -91,7 +104,10 @@ if (version_compare(PHP_VERSION, "8.4", ">=")) {
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.class": "E_USER_ERROR",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "??"
       }
     ]
   ]
