@@ -854,6 +854,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
+  opts.message_tracer_segment_parameters_enabled
+      = NRINI(message_tracer_segment_parameters_enabled);
 
   /*
    * Enable the behaviour whereby asynchronous time is discounted from the total
@@ -1165,7 +1167,7 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_segment_t* segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
-  while(NULL != segment && segment != NRTXN(segment_root)) {
+  while (NULL != segment && segment != NRTXN(segment_root)) {
     nr_segment_end(&segment);
     segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
   }
