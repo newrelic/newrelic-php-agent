@@ -22,17 +22,15 @@ QUERY_STRING=foo=1&bar=2
 
 /*EXPECT_REGEX
 ok - callback registered
-request_uri => \/test_error_group_callback_error_web.php\?foo=1&bar=2
-path => .*test_error_group_callback_error_web.php
+request_uri => \/test_error_group_callback_error_web.php84.php\?foo=1&bar=2
+path => .*test_error_group_callback_error_web.php84.php
 method => GET
 status_code => 200
 
 klass => E_USER_WARNING
 message => I'M COVERED IN BEES
-file => .*test_error_group_callback_error_web.php
-stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php \(.*\)"," in alpha called at .*test_error_group_callback_error_web.php \(.*\)"\]
-<br \/>
-<b>Warning<\/b>:  I'M COVERED IN BEES in <b>.*test_error_group_callback_error_web.php<\/b> on line <b>.*<\/b><br \/>
+file => .*test_error_group_callback_error_web.php84.php
+stack => \[" in trigger_error called at .*test_error_group_callback_error_web.php84.php \(.*\)"," in alpha called at .*test_error_group_callback_error_web.php84.php \(.*\)"\]
 */
 
 /*EXPECT_METRICS 
