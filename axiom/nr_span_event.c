@@ -146,7 +146,8 @@ void nr_span_event_set_category(nr_span_event_t* event,
 
     case NR_SPAN_GENERIC:
       nro_set_hash_string(event->intrinsics, "category", "generic");
-      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND) break;
+      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND);
+      break;
 
     case NR_SPAN_HTTP:
       nro_set_hash_string(event->intrinsics, "category", "http");
@@ -178,6 +179,7 @@ void nr_span_event_set_spankind(nr_span_event_t* event,
       nro_set_hash_string(event->intrinsics, "span.kind", "consumer");
       break;
     case NR_SPAN_NO_SPANKIND:
+    default:
       if (nro_get_hash_value(event->intrinsics, "span.kind", NULL)) {
         nro_set_hash_none(event->intrinsics, "span.kind");
       }
