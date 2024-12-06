@@ -68,7 +68,7 @@ void nr_segment_destroy_typed_attributes(
   } else if (NR_SEGMENT_EXTERNAL == type) {
     nr_segment_external_destroy_fields(&attrs->external);
   } else if (NR_SEGMENT_MESSAGE == type) {
-    nr_segment_message_destroy_fields(&attrs->external);
+    nr_segment_message_destroy_fields(&attrs->message);
   }
 
   nr_free(attrs);

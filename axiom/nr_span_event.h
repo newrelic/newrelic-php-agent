@@ -29,7 +29,7 @@ typedef enum {
  * The spankinds a span may fall into.
  * This is set according to:
  * 1) guidelines in agent-specs which state datastore and http spans set
- * span.kind to client and further states that generic span.kind is unset 
+ * span.kind to client and further states that generic span.kind is unset
  *
  * 2) for message spans follow guidance here:
  * https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
@@ -148,8 +148,8 @@ extern void nr_span_event_set_transaction_name(nr_span_event_t* event,
                                                const char* transaction_name);
 extern void nr_span_event_set_category(nr_span_event_t* event,
                                        nr_span_category_t category);
-extern void nr_span_event_set_category(nr_span_event_t* event,
-                                       nr_span_category_t category);
+extern void nr_span_event_set_spankind(nr_span_event_t* event,
+                                       nr_span_spankind_t category);
 extern void nr_span_event_set_timestamp(nr_span_event_t* event, nrtime_t time);
 extern void nr_span_event_set_duration(nr_span_event_t* event,
                                        nrtime_t duration);

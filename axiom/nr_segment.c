@@ -322,8 +322,7 @@ static void nr_populate_message_spans(nr_span_event_t* span_event,
   }
 
   nr_span_event_set_spankind(span_event,
-                             segment->typed_attributes->message_type);
-
+                             segment->typed_attributes->message.message_action);
   nr_span_event_set_message(
       span_event, NR_SPAN_MESSAGE_DESTINATION_NAME,
       segment->typed_attributes->message.destination_name);
@@ -633,7 +632,7 @@ bool nr_segment_set_external(nr_segment_t* segment,
 }
 
 bool nr_segment_set_message(nr_segment_t* segment,
-                            const nr_segment_external_t* message) {
+                            const nr_segment_message_t* message) {
   if (nrunlikely((NULL == segment) || (NULL == message))) {
     return false;
   }
@@ -646,13 +645,13 @@ bool nr_segment_set_message(nr_segment_t* segment,
   // clang-format off
   // Initialize the fields of the message attributes, one field per line.
   segment->typed_attributes->message = (nr_segment_message_t){
-      .message_type = message->message_type,
+      .message_action = message->message_action,
       .destination_name = message->destination_name ? nr_strdup(message->destination_name) : NULL,
-      .destination_name = message->cloud_region ? nr_strdup(message->cloud_region) : NULL,
-      .destination_name = message->cloud_account_id ? nr_strdup(message->cloud_account_id) : NULL,
-      .destination_name = message->messaging_system ? nr_strdup(message->messaging_system) : NULL,
-      .destination_name = message->cloud_resource_id ? nr_strdup(message->cloud_resource_id) : NULL,
-      .destination_name = message->server_address ? nr_strdup(message->server_address) : NULL,
+      .cloud_region = message->cloud_region ? nr_strdup(message->cloud_region) : NULL,
+      .cloud_account_id = message->cloud_account_id ? nr_strdup(message->cloud_account_id) : NULL,
+      .messaging_system = message->messaging_system ? nr_strdup(message->messaging_system) : NULL,
+      .cloud_resource_id = message->cloud_resource_id ? nr_strdup(message->cloud_resource_id) : NULL,
+      .server_address = message->server_address ? nr_strdup(message->server_address) : NULL,
   };
   // clang-format on
 
