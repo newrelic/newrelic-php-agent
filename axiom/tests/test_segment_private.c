@@ -25,6 +25,7 @@ static void test_bad_parameters(void) {
   nr_segment_destroy_fields(NULL);
   nr_segment_datastore_destroy_fields(NULL);
   nr_segment_external_destroy_fields(NULL);
+  nr_segment_message_destroy_fields(NULL);
   nr_segment_metric_destroy_fields(NULL);
   nr_segment_error_destroy_fields(NULL);
 }
@@ -205,7 +206,6 @@ static void test_set_custom(void) {
   tlib_pass_if_int_equal(
       "Setting an untyped segment to custom must set the type",
       (int)NR_SEGMENT_CUSTOM, (int)s.type);
-
   nr_segment_set_datastore(&t, &d);
   tlib_pass_if_true("Setting a datastore segment to custom must be successful",
                     nr_segment_set_custom(&t), "Expected true");
@@ -316,6 +316,51 @@ static void test_set_destroy_external_fields(void) {
                                       &s.typed_attributes);
 }
 
+static void test_set_destroy_message_fields(void) {
+  nr_segment_t s = {.type = NR_SEGMENT_MESSAGE};
+
+  nr_segment_message_t m = {.message_action = NR_SPAN_CLIENT,
+                            .cloud_region = "my_cloud_region",
+                            .cloud_account_id = "12345678",
+                            .messaging_system = "my_messaging_system",
+                            .cloud_resource_id = "my_cloud_resource_id",
+                            .server_address = "localhost"};
+
+  nr_segment_external_t e = {.transaction_guid = "transaction_guid",
+                             .uri = "uri",
+                             .library = "library",
+                             .procedure = "procedure",
+                             .status = 200};
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_false(
+      "Setting a NULL segment's message attributes must not be successful",
+      nr_segment_set_message(NULL, &m), "Expected false");
+
+  tlib_pass_if_false(
+      "Setting a segment with NULL message attributes must not be successful",
+      nr_segment_set_message(&s, NULL), "Expected false");
+
+  /*
+   * Test : Normal operation.
+   */
+  tlib_pass_if_true("Setting a segment's message attributes must be successful",
+                    nr_segment_set_message(&s, &m), "Expected true");
+
+  tlib_pass_if_true(
+      "Setting a segment from message attributes to external attributes must "
+      "be successful",
+      nr_segment_set_external(&s, &e), "Expected true");
+
+  /* Valgrind shall affirm that the attributes for s were cleaned
+   * up when the segment type was changed from message to external.
+   */
+
+  /* Clean up */
+  nr_segment_destroy_typed_attributes(NR_SEGMENT_EXTERNAL, &s.typed_attributes);
+}
+
 static void test_destroy_typed_attributes(void) {
   nr_segment_t s = {0};
   char* test_string = "0123456789";
@@ -328,6 +373,22 @@ static void test_destroy_typed_attributes(void) {
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE, NULL);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE,
                                       &s.typed_attributes);
+  nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, NULL);
+  nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, &s.typed_attributes);
+
+  /*
+   * Test : Clean up typed attributes for a message segment
+   */
+  s.type = NR_SEGMENT_MESSAGE;
+  s.typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
+  s.typed_attributes->message.cloud_region = nr_strdup("us-west-1");
+  s.typed_attributes->message.cloud_account_id = nr_strdup("12345678");
+  s.typed_attributes->message.cloud_resource_id = nr_strdup("resource_id_info");
+  s.typed_attributes->message.destination_name = nr_strdup("queue_name");
+  s.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
+  s.typed_attributes->message.server_address = nr_strdup("localhost");
+
+  nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, &s.typed_attributes);
 
   /*
    * Test : Clean up typed attributes for an external segment
@@ -394,6 +455,7 @@ void test_main(void* p NRUNUSED) {
   test_set_custom();
   test_set_destroy_datastore_fields();
   test_set_destroy_external_fields();
+  test_set_destroy_message_fields();
   test_destroy_typed_attributes();
   test_destroy_fields();
   test_destroy_metric();
