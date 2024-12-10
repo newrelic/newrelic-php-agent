@@ -25,12 +25,22 @@ static void nr_segment_message_set_attrs(
   message_attributes.message_action = params->message_action;
 
   if (options.message_tracer_segment_parameters_enabled) {
-    message_attributes.destination_name = params->destination_name;
-    message_attributes.cloud_region = params->cloud_region;
-    message_attributes.cloud_account_id = params->cloud_account_id;
-    message_attributes.messaging_system = params->messaging_system;
-    message_attributes.cloud_resource_id = params->cloud_resource_id;
-    message_attributes.server_address = params->server_address;
+    message_attributes.destination_name = nr_strempty(params->destination_name)
+                                              ? NULL
+                                              : params->destination_name;
+    message_attributes.cloud_region
+        = nr_strempty(params->cloud_region) ? NULL : params->cloud_region;
+    message_attributes.cloud_account_id = nr_strempty(params->cloud_account_id)
+                                              ? NULL
+                                              : params->cloud_account_id;
+    message_attributes.messaging_system = nr_strempty(params->messaging_system)
+                                              ? NULL
+                                              : params->messaging_system;
+    message_attributes.cloud_resource_id
+        = nr_strempty(params->cloud_resource_id) ? NULL
+                                                 : params->cloud_resource_id;
+    message_attributes.server_address
+        = nr_strempty(params->server_address) ? NULL : params->server_address;
   }
 
   nr_segment_set_message(segment, &message_attributes);
@@ -42,20 +52,20 @@ static void nr_segment_message_set_attrs(
  *
  * Metrics created during this call
  * ----------------------------------------------------------------------------------
- * MessageBroker/all                                                Unscoped
- * Always MessageBroker/{library}/all Scoped   Always
+ * MessageBroker/all                                         Unscoped Always
+ * MessageBroker/{library}/all                               coped   Always
  *
  * Metrics created based on MessageBroker/all (in nr_txn_create_rollup_metrics)
  * ----------------------------------------------------------------------------------
- * MessageBroker/allWeb                                             Unscoped Web
- * MessageBroker/allOther                                           Unscoped
- * non-Web
+ * MessageBroker/allWeb                                  Unscoped Web
+ * MessageBroker/allOther                                Unscoped non-Web
  *
  * Segment name
  * -----------------------------------------------------------------------------------
  * MessageBroker/{library}/all Always
  * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
- * non-temp MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp dest
+ *                                                                            non-temp
+ * MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp
  *
  *
  * These metrics are dictated by the spec located here:
@@ -86,6 +96,7 @@ static char* nr_segment_message_create_metrics(
     nrtime_t duration) {
   const char* action_string = NULL;
   const char* destination_type_string = NULL;
+  const char* library_string = NULL;
   char* rollup_metric = NULL;
   char* scoped_metric = NULL;
 
@@ -93,7 +104,7 @@ static char* nr_segment_message_create_metrics(
     return NULL;
   }
 
-  if (NULL == message_params || NULL == message_params->library) {
+  if (NULL == message_params) {
     return NULL;
   }
 
@@ -106,7 +117,12 @@ static char* nr_segment_message_create_metrics(
 
   nrm_force_add(segment->txn->unscoped_metrics, "MessageBroker/all", duration);
 
-  rollup_metric = nr_formatf("MessageBroker/%s/all", message_params->library);
+  if (nr_strempty(message_params->library)) {
+    library_string = "<unknown>";
+  } else {
+    library_string = message_params->library;
+  }
+  rollup_metric = nr_formatf("MessageBroker/%s/all", library_string);
   nrm_force_add(segment->txn->unscoped_metrics, rollup_metric, duration);
   nr_free(rollup_metric);
 
@@ -122,7 +138,7 @@ static char* nr_segment_message_create_metrics(
   } else if (NR_SPAN_CONSUMER == message_params->message_action) {
     action_string = "Consume";
   } else {
-    action_string = "Unknown";
+    action_string = "<unknown>";
   }
 
   switch (message_params->destination_type) {
@@ -138,26 +154,26 @@ static char* nr_segment_message_create_metrics(
       destination_type_string = "Exchange";
       break;
     default:
-      destination_type_string = "Unknown";
+      destination_type_string = "<unknown>";
       break;
   }
   /*
    * Create the scoped metric
    * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
-   * non-temp MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp dest
+   * non-temp MessageBroker/{Library}/{DestinationType}/{Action}/Temp
    */
   if (NR_MESSAGE_DESTINATION_TYPE_TEMP_QUEUE == message_params->destination_type
       || NR_MESSAGE_DESTINATION_TYPE_TEMP_TOPIC
              == message_params->destination_type) {
-    scoped_metric
-        = nr_formatf("MessageBroker/%s/%s/%s/Temp", message_params->library,
-                     destination_type_string, action_string);
+    scoped_metric = nr_formatf("MessageBroker/%s/%s/%s/Temp", library_string,
+                               destination_type_string, action_string);
   } else {
-    scoped_metric = nr_formatf(
-        "MessageBroker/%s/%s/%s/Named/%s", message_params->library,
-        destination_type_string, action_string,
-        message_params->destination_name ? message_params->destination_name
-                                         : "Unknown");
+    scoped_metric
+        = nr_formatf("MessageBroker/%s/%s/%s/Named/%s", library_string,
+                     destination_type_string, action_string,
+                     nr_strempty(message_params->destination_name)
+                         ? "<unknown>"
+                         : message_params->destination_name);
   }
 
   nr_segment_add_metric(segment, scoped_metric, true);
