@@ -62,6 +62,7 @@ X-NewRelic-Synthetics=ENV[SYNTHETICS_HEADER_supportability]
         "nr.syntheticsJobId": "jjjjjjj-jjjj-1234-jjjj-jjjjjjjjjjjj",
         "nr.syntheticsMonitorId": "mmmmmmm-mmmm-1234-mmmm-mmmmmmmmmmmm",
         "externalDuration": "??",
+        "externalCallCount": "1",
         "guid": "??",
         "sampled": true,
         "priority": "??",
