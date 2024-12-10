@@ -12,6 +12,7 @@
 #include "nr_segment.h"
 #include "nr_segment_datastore.h"
 #include "nr_segment_external.h"
+#include "nr_segment_message.h"
 #include "tlib_main.h"
 #include "util_metrics_private.h"
 #include "nr_limits.h"
@@ -287,7 +288,7 @@ static NRUNUSED bool test_segment_end_and_keep(nr_segment_t** segment_ptr) {
 }
 
 /*
- * Purpose : Ends an external  segment without nulling out the segment pointer.
+ * Purpose : Ends an external segment without nulling out the segment pointer.
  *
  * WARNING : This can only be used safely when the segment priority queue is
  *           disabled.
@@ -324,6 +325,26 @@ static NRUNUSED bool test_segment_datastore_end_and_keep(
   segment = *segment_ptr;
 
   return nr_segment_datastore_end(&segment, params);
+}
+
+/*
+ * Purpose : Ends a message segment without nulling out the segment pointer.
+ *
+ * WARNING : This can only be used safely when the segment priority queue is
+ *           disabled.
+ */
+static NRUNUSED bool test_segment_message_end_and_keep(
+    nr_segment_t** segment_ptr,
+    nr_segment_message_params_t* params) {
+  nr_segment_t* segment;
+
+  if (NULL == segment_ptr) {
+    return false;
+  }
+
+  segment = *segment_ptr;
+
+  return nr_segment_message_end(&segment, params);
 }
 
 #endif /* TEST_SEGMENT_HELPERS_HDR */
