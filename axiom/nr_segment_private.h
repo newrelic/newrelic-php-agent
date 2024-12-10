@@ -34,6 +34,13 @@ void nr_segment_datastore_destroy_fields(nr_segment_datastore_t* datastore);
 void nr_segment_external_destroy_fields(nr_segment_external_t* external);
 
 /*
+ * Purpose : Free all data related to a segment's message metadata.
+ *
+ * Params  : 1. A pointer to a segment's nr_segment_message_t structure.
+ */
+void nr_segment_message_destroy_fields(nr_segment_message_t* message);
+
+/*
  * Purpose : Free all data related to a segment metric.
  *
  * Params  : 1. A pointer to a segment's nr_segment_metric_t structure.

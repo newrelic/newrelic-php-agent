@@ -162,6 +162,21 @@ static void add_typed_attributes_to_buffer(nrbuf_t* buf,
                                    ext->transaction_guid, false);
       add_hash_key_value_to_buffer_int(buf, "status", &ext->status);
     } break;
+    case NR_SEGMENT_MESSAGE: {
+      const nr_segment_message_t* message = &segment->typed_attributes->message;
+      add_hash_key_value_to_buffer(buf, "destination_name",
+                                   message->destination_name, false);
+      add_hash_key_value_to_buffer(buf, "messaging_system",
+                                   message->messaging_system, false);
+      add_hash_key_value_to_buffer(buf, "cloud_region", message->cloud_region,
+                                   false);
+      add_hash_key_value_to_buffer(buf, "cloud_account_id",
+                                   message->cloud_account_id, false);
+      add_hash_key_value_to_buffer(buf, "cloud_resource_id",
+                                   message->cloud_resource_id, false);
+      add_hash_key_value_to_buffer(buf, "server_address",
+                                   message->server_address, false);
+    } break;
     case NR_SEGMENT_CUSTOM:
     default:
       break;
