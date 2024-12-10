@@ -1,0 +1,2 @@
+# Ignore missing HEALTHCHECK in Dockerfile - devenv service from files/Dockerfile doesn't need it:
+AVD-DS-0026

@@ -14,95 +14,65 @@ FROM php:${PHP_VER:-8.3}
 RUN docker-php-source extract
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update
-RUN apt-get install -y build-essential
-
-#
-# PHP dependencies
-#
-RUN apt-get update \
- && apt-get -y install gcc git netcat-openbsd \
- libpcre3 libpcre3-dev psmisc automake libtool \
- insserv procps vim ${PHP_USER_SPECIFIED_PACKAGES} \
- zlib1g-dev libmcrypt-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install build entrypoint - make:
+    make \
+# Makefile's default shell:
+    bash \
+# git; techincally not needed to build agent but is required for successfull
+# processing of top level Makefile:
+# - make/version.mk if GIT_COMMIT is not defined, git is used to compute it:
+    git \
+# The following are required to build PHP extension:
+    $PHPIZE_DEPS \
+# valgrind, awk; required for agent-valgrind and axiom-valgrind targets
+    valgrind gawk \
+# Other useful developer tools:
+    vim lcov gdb strace ccache procps psmisc curl wget bzip2 zip unzip perl sqlite3 openssl \
+# Other build dependencies:
+    argon2 \
+    automake \
+    autotools-dev \
+    dnsutils \
+    gyp \
+    insserv \
+    libc6 libc6-dev libc6-dbg \
+    libcurl4-openssl-dev \
+    libedit-dev \
+    libghc-argon2-dev \
+    libgtest-dev \
+    libmcrypt-dev \
+    libonig-dev \
+    libpcre3 libpcre3-dev \
+    libreadline-dev \
+    libssl-dev \
+    libsqlite3-dev \
+    libtool \
+    libxml2 libxml2-dev \
+    locales \
+    locales-all \
+    netcat-openbsd \
+    python3-yaml \
+    ${PHP_USER_SPECIFIED_PACKAGES} \
+    zlib1g-dev
 
 # pgsql extension
-RUN apt-get install -y libpq-dev
+RUN apt-get install -y --no-install-recommends libpq-dev
 RUN docker-php-ext-install pgsql
 
-#
-# Other tools
-#
-RUN apt-get install -y gdb valgrind libcurl4-openssl-dev pkg-config libpq-dev libedit-dev libreadline-dev git
+# install latest go to work with the daemon
+COPY --from=golang /usr/local/go /usr/local/go
+ENV PATH /usr/local/go/bin:$PATH
 
 #
-# Install other packages.
+# If the debian version is buster, don't install python-dev-is-python3
 #
-RUN apt-get update && apt-get install -y \
-  autoconf \
-  autotools-dev \
-  build-essential \
-  bzip2 \
-  ccache \
-  curl \
-  dnsutils \
-  git \
-  gyp \
-  lcov \
-  libc6 \
-  libc6-dbg \
-  libc6-dev \
-  libgtest-dev \
-  libtool \
-  locales \
-  locales-all \
-  make \
-  perl \
-  strace \
-  python-dev-is-python3 \
-  python3-yaml \
-  sqlite3 \
-  libsqlite3-dev \
-  openssl \
-  libxml2 \
-  libxml2-dev \
-  libonig-dev \
-  libssl-dev \
-  unzip \
-  wget \
-  zip && apt-get clean
-
-#
-# Download and install Go
-#
-RUN arch=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
-    wget https://go.dev/dl/go1.21.1.linux-${arch}.tar.gz -O- | tar -C /usr/local -zxvf -;
-
-RUN ln -s /usr/local/go/bin/go /usr/bin/go
-
-#
-# If the debian version is jessie, don't install argon2
-#
-RUN if [ -z "$(grep '^8\.' /etc/debian_version)" ]; then \
-    apt-get install -y argon2 libghc-argon2-dev; \
+RUN if [ -z "$(grep '^10\.' /etc/debian_version)" ]; then \
+    apt-get install -y  --no-install-recommends python-dev-is-python3; \
     fi
 
 # install composer
-WORKDIR /usr/src
-
-# based on https://getcomposer.org/doc/faqs/how-to-install-composer-programmatically.md
-RUN \
- EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')" \
- && php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
- && ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")" \
- && if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; \
-  then \
-    >&2 echo 'ERROR: Invalid installer checksum'; \
-    rm composer-setup.php; \
-    exit 1; \
-  fi \
- && php composer-setup.php \
- && php -r "unlink('composer-setup.php');"
+COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 
 #
 # The explain plan in the sql tests contain partition/filtered properties
@@ -121,8 +91,16 @@ RUN \
 #   the mysql tests a separate machine running mysql server 5.6 is required.
 RUN docker-php-ext-install pdo pdo_mysql
 
-# redis
-RUN pecl install redis && docker-php-ext-enable redis
+# install redis extension required by test_redis:
+RUN \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
+  if [ "$php_cmp" = 1 ]; then \
+    # install latest redis for PHPs >= 7.4
+    echo 'no' | pecl install redis; \
+  else \
+    # install redis-4.3.0 - last one with support for php 7.2
+    echo 'no' | pecl install redis-4.3.0; \
+  fi && docker-php-ext-enable redis
 
 # memcache
 # Pre 8.0 requires 4.0.5.2
@@ -135,7 +113,7 @@ RUN \
   fi
 
 # memcached
-RUN apt-get install -y libmemcached-dev
+RUN apt-get install -y --no-install-recommends libmemcached-dev
 RUN pecl install memcached && docker-php-ext-enable memcached
 
 # uopz
@@ -152,13 +130,9 @@ RUN \
 # install predis
 # installation will be in /usr/src/vendor/predis/predis
 # which is value which should be used for PREDIS_HOME
-RUN php composer.phar require "predis/predis"
-RUN php composer.phar update
-
-#
-# install composer and make executable so it can be used in dev env
-#
-RUN cp composer.phar /usr/local/bin/composer && chmod +x /usr/local/bin/composer
+WORKDIR /usr/src
+RUN composer require "predis/predis"
+RUN composer update
 
 #
 # These args need to be repeated so we can propagate the VARS within this build context.
@@ -174,5 +148,10 @@ ENV PS1="New Relic > "
 RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
   && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 
+ARG USER=developer
+ARG UID=501
+ARG GID=20
+RUN useradd --uid ${UID} --gid ${GID} --shell /bin/bash --create-home ${USER}
+USER ${USER}
 WORKDIR /usr/src/myapp
 CMD ["bash"]
