@@ -1219,11 +1219,15 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
                          "Datastore/allOther");
     nrm_duplicate_metric(txn->unscoped_metrics, "External/all",
                          "External/allOther");
+    nrm_duplicate_metric(txn->unscoped_metrics, "MessageBroker/all",
+                         "MessageBroker/allOther");
   } else {
     nrm_duplicate_metric(txn->unscoped_metrics, "Datastore/all",
                          "Datastore/allWeb");
     nrm_duplicate_metric(txn->unscoped_metrics, "External/all",
                          "External/allWeb");
+    nrm_duplicate_metric(txn->unscoped_metrics, "MessageBroker/all",
+                         "MessageBroker/allWeb");
   }
 
   nr_string_pool_apply(
