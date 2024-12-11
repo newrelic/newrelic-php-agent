@@ -2728,6 +2728,14 @@ bool nr_txn_should_create_span_events(const nrtxn_t* txn) {
   if (nrunlikely(NULL == txn)) {
     return false;
   }
+  nrl_warning(NRL_WARNING, "%s: span_queue=%d", __func__,
+              txn->span_queue != NULL);
+  nrl_warning(NRL_WARNING, "%s: dt sampled=%d", __func__,
+              nr_distributed_trace_is_sampled(txn->distributed_trace));
+  nrl_warning(NRL_WARNING, "%s: txn->options.distributed_tracing_enabled=%d",
+              __func__, txn->options.distributed_tracing_enabled);
+  nrl_warning(NRL_WARNING, "%s: txn->options.span_events_enabled=%d", __func__,
+              txn->options.span_events_enabled);
   return (txn->span_queue
           || nr_distributed_trace_is_sampled(txn->distributed_trace))
          && txn->options.distributed_tracing_enabled
