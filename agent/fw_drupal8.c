@@ -9,6 +9,7 @@
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "php_wrapper.h"
+#include "php_error.h"
 #include "fw_drupal_common.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
@@ -19,6 +20,60 @@
 #include "util_strings.h"
 
 #define PHP_PACKAGE_NAME "drupal/core"
+
+NR_PHP_WRAPPER(nr_drupal_exception) {
+  int priority = nr_php_error_get_priority(E_ERROR);
+  zval* event = NULL;
+  zval* exception = NULL;
+
+  /* Warning avoidance */
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  if (NR_SUCCESS != nr_txn_record_error_worthy(NRPRG(txn), priority)) {
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  /* Get the event that was given. */
+  event = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
+  /* Call the original function. */
+  NR_PHP_WRAPPER_CALL;
+
+  if (0 == nr_php_is_zval_valid_object(event)) {
+    nrl_verbosedebug(NRL_TXN,
+                     "Drupal: ExceptionSubscriber::onException() does not "
+                     "have an `event` parameter");
+    goto end;
+  }
+
+  /*
+   * Get the exception from the event.
+   */
+  exception = nr_php_call(event, "getThrowable");
+  if (!nr_php_is_zval_valid_object(exception)) {
+    exception = nr_php_call(event, "getException");
+  }
+
+  if (!nr_php_is_zval_valid_object(exception)) {
+    nrl_verbosedebug(NRL_TXN, "Drupal: getException() returned a non-object");
+    goto end;
+  }
+
+  if (NR_SUCCESS
+      != nr_php_error_record_exception(NRPRG(txn), exception, priority, true,
+                                       NULL,
+                                       &NRPRG(exception_filters) TSRMLS_CC)) {
+    nrl_verbosedebug(NRL_TXN, "Drupal: unable to record exception");
+  }
+
+end:
+  nr_php_arg_release(&event);
+  nr_php_zval_free(&exception);
+}
+NR_PHP_WRAPPER_END
 
 /*
  * Purpose : Convenience function to handle adding a callback to a method,
@@ -729,6 +784,32 @@ void nr_drupal8_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\Controller\\ControllerResolv"
                                     "er::getControllerFromDefinition"),
                             nr_drupal8_name_the_wt TSRMLS_CC);
+
+  /*
+   * ExceptionSubscribers handle Drupal errors and exceptions before
+   * the agent has the opportunity to capture them. Instrument several
+   * of these ExceptionSubscriber function `onException` methods in order
+   * to capture Exceptions and Errors in Drupal 9.x+
+   */
+  // clang-format off
+  /*
+   * Utility base class for exception subscribers.
+   */
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExceptionSubscriberBase::onException"),
+                            nr_drupal_exception);
+
+  /*
+   * Log exceptions without further handling.
+   */
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\ExceptionLoggingSubscriber::onException"),
+                            nr_drupal_exception);
+
+  /*
+   * Last-chance handler for exceptions: the final exception subscriber.
+   */
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\FinalExceptionSubscriber::onException"),
+                            nr_drupal_exception);
+  // clang-format on
 
   /*
    * The drupal_modules config setting controls instrumentation of modules,
