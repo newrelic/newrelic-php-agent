@@ -1396,8 +1396,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
      */
     nrl_warning(NRL_WARNING, "wraprec->is_exception_handler: %d",
                 wraprec->is_exception_handler);
-    if (wraprec->is_exception_handler
-        && !nr_txn_should_create_span_events(NRPRG(txn))) {
+    if (wraprec->is_exception_handler) {
       zval* exception
           = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
       nrl_warning(NRL_WARNING, "php_execute: ATTEMPTING TO RECORD ERROR EVENT");
