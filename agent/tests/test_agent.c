@@ -142,7 +142,11 @@ static void test_function_debug_name(TSRMLS_D) {
   func = nr_php_zval_to_function(closure TSRMLS_CC);
   name = nr_php_function_debug_name(func);
 
+#if ZEND_MODULE_API_NO < ZEND_8_4_X_API_NO
   tlib_pass_if_str_equal("closure", "{closure} declared at -:1", name);
+#else
+  tlib_pass_if_str_equal("closure", "{closure:-:1} declared at -:1", name);
+#endif
 
   nr_php_zval_free(&closure);
   nr_free(name);
