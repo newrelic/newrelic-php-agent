@@ -28,6 +28,7 @@ extern const char* nr_span_event_get_name(const nr_span_event_t* event);
 extern const char* nr_span_event_get_transaction_name(
     const nr_span_event_t* event);
 extern const char* nr_span_event_get_category(const nr_span_event_t* event);
+extern const char* nr_span_event_get_spankind(const nr_span_event_t* event);
 extern nrtime_t nr_span_event_get_timestamp(const nr_span_event_t* event);
 extern double nr_span_event_get_duration(const nr_span_event_t* event);
 extern double nr_span_event_get_priority(const nr_span_event_t* event);
@@ -44,6 +45,9 @@ extern const char* nr_span_event_get_external(
     const nr_span_event_t* event,
     nr_span_event_external_member_t member);
 extern uint64_t nr_span_event_get_external_status(const nr_span_event_t* event);
+extern const char* nr_span_event_get_message(
+    const nr_span_event_t* event,
+    nr_span_event_message_member_t member);
 extern const char* nr_span_event_get_error_message(
     const nr_span_event_t* event);
 extern const char* nr_span_event_get_error_class(const nr_span_event_t* event);

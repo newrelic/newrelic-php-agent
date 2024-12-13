@@ -21,8 +21,29 @@ typedef struct _nr_span_event_t nr_span_event_t;
 typedef enum {
   NR_SPAN_GENERIC,
   NR_SPAN_HTTP,
-  NR_SPAN_DATASTORE
+  NR_SPAN_DATASTORE,
+  NR_SPAN_MESSAGE
 } nr_span_category_t;
+
+/*
+ * The spankinds a span may fall into.
+ * This is set according to:
+ * 1) guidelines in agent-specs which state datastore and http spans set
+ * span.kind to client and further states that generic span.kind is unset
+ *
+ * 2) for message spans follow guidance here:
+ * https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
+ * which states that span.kind is
+ * a) producer when the operation type is create or send(if the context is
+ * create) b) client when the operation type is create or send(if the context is
+ * NOT create) c) consumer when the operation type is process
+ */
+typedef enum {
+  NR_SPAN_PRODUCER,
+  NR_SPAN_CLIENT,
+  NR_SPAN_CONSUMER,
+  NR_SPAN_NO_SPANKIND
+} nr_span_spankind_t;
 
 /*
  * Fields that can be set on datastore spans.
@@ -43,6 +64,18 @@ typedef enum {
   NR_SPAN_EXTERNAL_URL,
   NR_SPAN_EXTERNAL_METHOD
 } nr_span_event_external_member_t;
+
+/*
+ * Fields that can be set on message spans.
+ */
+typedef enum {
+  NR_SPAN_MESSAGE_DESTINATION_NAME,
+  NR_SPAN_MESSAGE_CLOUD_REGION,
+  NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID,
+  NR_SPAN_MESSAGE_MESSAGING_SYSTEM,
+  NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID,
+  NR_SPAN_MESSAGE_SERVER_ADDRESS
+} nr_span_event_message_member_t;
 
 /*
  * The parent attributes that can be set on service entry spans.
@@ -115,6 +148,8 @@ extern void nr_span_event_set_transaction_name(nr_span_event_t* event,
                                                const char* transaction_name);
 extern void nr_span_event_set_category(nr_span_event_t* event,
                                        nr_span_category_t category);
+extern void nr_span_event_set_spankind(nr_span_event_t* event,
+                                       nr_span_spankind_t category);
 extern void nr_span_event_set_timestamp(nr_span_event_t* event, nrtime_t time);
 extern void nr_span_event_set_duration(nr_span_event_t* event,
                                        nrtime_t duration);
@@ -169,6 +204,18 @@ extern void nr_span_event_set_external(nr_span_event_t* event,
  */
 extern void nr_span_event_set_external_status(nr_span_event_t* event,
                                               const uint64_t status);
+
+/*
+ * Purpose : Set a message attribute.
+ *
+ * Params : 1. The target Span Event that should be changed.
+ *          2. The message attribute to be set.
+ *          3. The string value that the field will be after the function has
+ *             executed.
+ */
+extern void nr_span_event_set_message(nr_span_event_t* event,
+                                      nr_span_event_message_member_t member,
+                                      const char* new_value);
 
 /*
  * Purpose : Set a user attribute.

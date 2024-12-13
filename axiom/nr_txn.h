@@ -132,6 +132,8 @@ typedef struct _nrtxnopt_t {
   size_t log_events_max_samples_stored; /* The maximum number of log events per
                                            transaction */
   bool log_metrics_enabled;             /* Whether log metrics are enabled */
+  bool message_tracer_segment_parameters_enabled; /* Determines whether to add
+                                                     message attr */
 } nrtxnopt_t;
 
 typedef enum _nrtxnstatus_cross_process_t {
