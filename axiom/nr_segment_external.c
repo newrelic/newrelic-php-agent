@@ -57,8 +57,8 @@ static void nr_segment_external_set_attrs(
  * External/{host}/all                                                  non-CAT
  * ExternalTransaction/{host}/{external_id}/{external_txnname}          CAT
  *
- * These metrics are dictated by the spec located here:
- * https://source.datanerd.us/agents/agent-specs/blob/master/Cross-Application-Tracing-PORTED.md
+ * These metrics are dictated by the agent-spec in this file:
+ * Cross-Application-Tracing-PORTED.md
  */
 static void nr_segment_external_create_metrics(nr_segment_t* segment,
                                                const char* uri,

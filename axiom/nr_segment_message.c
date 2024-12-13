@@ -68,8 +68,8 @@ static void nr_segment_message_set_attrs(
  * MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp
  *
  *
- * These metrics are dictated by the spec located here:
- * https://source.datanerd.us/agents/agent-specs/blob/master/APIs/messaging.md#metrics
+ * These metrics are dictated by the agent-spec file here:
+ * APIs/messaging.md#metrics
  * When the destination is temporary (such as a temporary queue, or a temporary
  * topic), the destination name MUST be omitted. The metric segment 'Named' MUST
  * be replaced with 'Temp'. The DestinationType segment SHOULD NOT contain
