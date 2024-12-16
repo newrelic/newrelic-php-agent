@@ -142,16 +142,15 @@ ENV PHP_VER=${PHP_VER}
 ARG PS1
 ENV PS1="New Relic > "
 
-# QOL aliases
-# `rebuild` - make clean + make agent + make tests
-# `integ` - run all integration tests
-RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
-  && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
-
 ARG USER=developer
 ARG UID=501
 ARG GID=20
 RUN useradd --uid ${UID} --gid ${GID} --shell /bin/bash --create-home ${USER}
 USER ${USER}
+# QOL aliases
+# `rebuild` - make clean + make agent + make tests
+# `integ` - run all integration tests
+RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
+  && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 WORKDIR /usr/src/myapp
 CMD ["bash"]
