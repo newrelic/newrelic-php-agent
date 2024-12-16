@@ -37,7 +37,7 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
   }
 
   /* Get the event that was given. */
-  event = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  event = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
 
   /* Call the original function. */
   NR_PHP_WRAPPER_CALL;
