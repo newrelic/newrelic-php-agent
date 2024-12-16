@@ -8,6 +8,13 @@
 The agent should capture and report E_USER_ERROR events.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: E_USER_ERROR deprecated in PHP 8.4\n");
+}
+*/
+
 /*INI
 display_errors=1
 log_errors=0
