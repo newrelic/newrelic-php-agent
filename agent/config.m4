@@ -239,6 +239,9 @@ if test "$PHP_NEWRELIC" = "yes"; then
   dnl Define $(PHP_CONFIG) so we can call it when building tests.
   PHP_SUBST(PHP_CONFIG)
 
+  dnl Make sure we include the source directory in the include search path.
+  PHP_ADD_INCLUDE([$abs_srcdir], [1])
+
   dnl Include the Makefile.frag, which we use to handle build time
   dnl dependencies.
   PHP_ADD_MAKEFILE_FRAGMENT
