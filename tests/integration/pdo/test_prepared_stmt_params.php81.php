@@ -36,7 +36,7 @@ ok - execute prepared statement with a param
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from tables where table_name = ? limit ?;",
+      "select * from information_schema.tables where table_name = ? limit ?;",
       "Datastore/statement/MySQL/tables/select",
       1,
       "?? total time",
@@ -88,7 +88,7 @@ function test_prepared_statement() {
   global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
 
   $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD);
-  $stmt = $conn->prepare('select * from tables where table_name = ? limit 1;');
+  $stmt = $conn->prepare('select * from information_schema.tables where table_name = ? limit 1;');
   $stmt->bindValue(1, "missing");
   tap_assert($stmt->execute(), 'execute prepared statement with a param');
 }
