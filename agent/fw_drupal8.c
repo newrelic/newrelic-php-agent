@@ -787,16 +787,6 @@ void nr_drupal8_enable(TSRMLS_D) {
                                     "er::getControllerFromDefinition"),
                             nr_drupal8_name_the_wt TSRMLS_CC);
 
-  nr_php_error_install_exception_handler();
-
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExcepti"
-                                    "onSubscriberBase::onException"),
-                            nr_drupal_exception);
-
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\FinalExcept"
-                                    "ionSubscriber::onException"),
-                            nr_drupal_exception);
-
   nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\ExceptionLo"
                                     "ggingSubscriber::onException"),
                             nr_drupal_exception);
