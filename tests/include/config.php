@@ -13,7 +13,7 @@ function isset_or($check, $alternate = NULL)
 
 $MYSQL_USER   = isset_or('MYSQL_USER', 'root');
 $MYSQL_PASSWD = isset_or('MYSQL_PASSWD', 'root');
-$MYSQL_DB     = 'information_schema'; // TODO: MSL comment here.
+$MYSQL_DB     = isset_or('MYSQL_DB', 'information_schema');
 $MYSQL_HOST   = isset_or('MYSQL_HOST', 'localhost');
 $MYSQL_PORT   = isset_or('MYSQL_PORT', 3306);
 $MYSQL_SOCKET = isset_or('MYSQL_SOCKET', '');
