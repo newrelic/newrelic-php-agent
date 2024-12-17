@@ -11,9 +11,6 @@ PDO::query().
 
 /*SKIPIF
 <?php require('skipif_sqlite.inc');
-if (version_compare(PHP_VERSION, "8.1", ">=")) {
-  die("skip: PHP >= 8.1.0 not supported\n");
-}
 */
 
 /*INI
@@ -82,11 +79,19 @@ function test_pdo_query() {
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (2, 'two');"), 'insert two');
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (3, 'three');"), 'insert three');
 
-  $expected = array(
-    array('id' => '1', 'desc' => 'one'),
-    array('id' => '2', 'desc' => 'two'),
-    array('id' => '3', 'desc' => 'three')
-  );
+  if (version_compare(PHP_VERSION, "8.1", "<")) {
+    $expected = array(
+        array('id' => '1', 'desc' => 'one'),
+        array('id' => '2', 'desc' => 'two'),
+        array('id' => '3', 'desc' => 'three')
+    );
+  } else {
+    $expected = array(
+        array('id' => 1, 'desc' => 'one'),
+        array('id' => 2, 'desc' => 'two'),
+        array('id' => 3, 'desc' => 'three')
+    );
+  }
 
   $result = $conn->query('SELECT * FROM test;');
   $actual = $result->fetchAll(PDO::FETCH_ASSOC);
