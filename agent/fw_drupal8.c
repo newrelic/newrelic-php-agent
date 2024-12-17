@@ -793,12 +793,6 @@ void nr_drupal8_enable(TSRMLS_D) {
    */
   // clang-format off
   /*
-   * Utility base class for exception subscribers.
-   */
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\HttpExceptionSubscriberBase::onException"),
-                            nr_drupal_exception);
-
-  /*
    * Log exceptions without further handling.
    */
   nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\ExceptionLoggingSubscriber::onException"),
