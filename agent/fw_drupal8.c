@@ -54,6 +54,8 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
    */
   exception = nr_php_call(event, "getThrowable");
   if (!nr_php_is_zval_valid_object(exception)) {
+    // be abundantly cautious: free exception before attempting to re-assign
+    nr_php_zval_free(&exception);
     exception = nr_php_call(event, "getException");
   }
 
