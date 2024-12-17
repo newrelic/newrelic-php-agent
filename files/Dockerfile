@@ -89,7 +89,7 @@ COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 #   and 8.0 has problems with how the explanation for informational_schema
 #   work (refer to bug https://bugs.mysql.com/bug.php?id=102536) so to run
 #   the mysql tests a separate machine running mysql server 5.6 is required.
-RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
 
 # install redis extension required by test_redis:
 RUN \
