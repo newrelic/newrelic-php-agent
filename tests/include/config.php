@@ -75,6 +75,10 @@ $PG_HOST       = isset_or('PG_HOST', 'localhost');
 $PG_PORT       = isset_or('PG_PORT', '5433');
 $PG_CONNECTION = "host=$PG_HOST port=$PG_PORT user=$PG_USER password=$PG_PW connect_timeout=1";
 
+$PDO_PGSQL_DSN = 'pgsql:';
+$PDO_PGSQL_DSN .= 'host=' . $PG_HOST . ';';
+$PDO_PGSQL_DSN .= 'port=' . $PG_PORT . ';';
+
 // Header used to track whether or not our CAT instrumentation interferes with
 // other existing headers.
 define('CUSTOMER_HEADER', 'Customer-Header');
