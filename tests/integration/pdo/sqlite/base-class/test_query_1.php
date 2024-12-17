@@ -10,13 +10,15 @@ PDO::query().
 */
 
 /*SKIPIF
-<?php require('skipif_sqlite.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
 */
 
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 */
+
+/*EXPECT_ERROR_EVENTS null*/
 
 /*EXPECT
 ok - create table
@@ -66,39 +68,6 @@ ok - drop table
 ]
 */
 
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
 
-
-
-require_once(dirname(__FILE__).'/../../include/tap.php');
-
-function test_pdo_query() {
-  $conn = new PDO('sqlite::memory:');
-  tap_equal(0, $conn->exec("CREATE TABLE test (id INT, desc VARCHAR(10));"), 'create table');
-
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (1, 'one');"), 'insert one');
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (2, 'two');"), 'insert two');
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (3, 'three');"), 'insert three');
-
-  if (version_compare(PHP_VERSION, "8.1", "<")) {
-    $expected = array(
-        array('id' => '1', 'desc' => 'one'),
-        array('id' => '2', 'desc' => 'two'),
-        array('id' => '3', 'desc' => 'three')
-    );
-  } else {
-    $expected = array(
-        array('id' => 1, 'desc' => 'one'),
-        array('id' => 2, 'desc' => 'two'),
-        array('id' => 3, 'desc' => 'three')
-    );
-  }
-
-  $result = $conn->query('SELECT * FROM test;');
-  $actual = $result->fetchAll(PDO::FETCH_ASSOC);
-  $result->closeCursor();
-  tap_equal($expected, $actual, 'query (1-arg)');
-
-  tap_equal(1, $conn->exec("DROP TABLE test;"), 'drop table');
-}
-
-test_pdo_query();
+test_pdo_query(new PDO('sqlite::memory:'));
