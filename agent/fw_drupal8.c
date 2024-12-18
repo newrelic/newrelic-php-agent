@@ -350,7 +350,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
 
   controller = nr_symfony_object_get_string(request, "_controller");
   if (nr_php_is_zval_non_empty_string(controller)) {
-    name = Z_STRVAL_P(controller);
+    name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = "page_cache";
