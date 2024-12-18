@@ -322,7 +322,6 @@ NR_PHP_WRAPPER_END
  * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
-  char* default_name = "page_cache";
   char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   zval* request = NULL;
@@ -354,7 +353,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     name = Z_STRVAL_P(controller);
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
-    name = default_name;
+    name = "page_cache";
   }
 
 end:
@@ -370,7 +369,6 @@ end:
                     NR_OK_TO_OVERWRITE);
   }
 
-  nr_free(default_name);
   nr_free(name);
   nr_php_zval_free(&request);
   nr_php_zval_free(&controller);
