@@ -322,12 +322,42 @@ NR_PHP_WRAPPER_END
  * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
-  const char* name = "page_cache";
+  char* default_name = "page_cache";
+  char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+  zval* request = NULL;
+  zval* controller = NULL;
 
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  request = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  if (0 == nr_php_is_zval_valid_object(request)) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get does not have a request parameter");
+
+    goto end;
+  }
+
+  if (false
+      == nr_php_object_instanceof_class(
+          request, "Symfony\\Component\\HttpFoundation\\Request")) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get parameter is a non-Request object");
+    goto end;
+  }
+
+  controller = nr_symfony_object_get_string(request, "_controller");
+  if (nr_php_is_zval_non_empty_string(controller)) {
+    name = Z_STRVAL_P(controller);
+  } else {
+    nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
+    name = default_name;
+  }
+
+end:
   NR_PHP_WRAPPER_CALL;
 
   /*
@@ -339,6 +369,11 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
                     NR_OK_TO_OVERWRITE);
   }
+
+  nr_free(default_name);
+  nr_free(name);
+  nr_php_zval_free(&request);
+  nr_php_zval_free(&controller);
 }
 NR_PHP_WRAPPER_END
 
