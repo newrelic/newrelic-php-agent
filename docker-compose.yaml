@@ -14,38 +14,26 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: admin
       MYSQL_HOST: mysqldb
-    ports:
-      - "3306:3306"
     healthcheck:
       test: ["CMD", "mysql", "--user=admin", "--password=admin", "-e", "SELECT 1"]
       interval: 10s
       timeout: 10s
       retries: 3
       start_period: 20s
-    container_name: mysqldb
     volumes:
       - var-run-mysqld:/var/run/mysqld
   redisdb:
     image: redis
     restart: always
-    ports:
-      - "6379:6379"
-    container_name: redisdb
   memcached:
     image: memcached:latest
     restart: always
-    ports:
-      - "11211:11211"
-    container_name: memcached
   postgres:
     image: postgres
     restart: always
     environment:
        POSTGRES_PASSWORD: root
        POSTGRES_USER: postgres
-    ports:
-      - "5432:5432"
-    container_name: postgres
   php:
     platform: ${PLATFORM:-}
     image: newrelic/nr-php-agent-builder:make-php-${PHP:-8.2}-${LIBC:-gnu}-${IMAGE_VERSION:-v1}
@@ -106,7 +94,6 @@ services:
     working_dir: /usr/src/myapp
     stdin_open: true
     tty: true
-    container_name: agent-devenv
     profiles: ["dev"]
 
 volumes:
