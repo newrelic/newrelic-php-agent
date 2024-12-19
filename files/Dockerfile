@@ -153,4 +153,7 @@ USER ${USER}
 RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
   && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 WORKDIR /usr/src/myapp
+# Avoid "fatal: detected dubious ownership in repository at '/usr/src/myapp/'" error
+# when running git commands inside container with host volume mounted:
+RUN git config --global --add safe.directory /usr/src/myapp/
 CMD ["bash"]
