@@ -332,6 +332,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
 
   request = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+  nrl_verbosedebug(NRL_TXN, "IN NEW DRUPAL INSTRUMENTATION");
 
   if (0 == nr_php_is_zval_valid_object(request)) {
     nrl_verbosedebug(
@@ -339,6 +340,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
 
     goto end;
   }
+  nrl_verbosedebug(NRL_TXN, "VALID DRUPAL OBJECT");
 
   if (false
       == nr_php_object_instanceof_class(
@@ -347,31 +349,37 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         NRL_TXN, "Drupal 8 PageCache::get parameter is a non-Request object");
     goto end;
   }
+  nrl_verbosedebug(NRL_TXN, "VALID DRUPAL INSTANCEOFCLASS");
 
   controller = nr_symfony_object_get_string(request, "_controller");
   if (nr_php_is_zval_non_empty_string(controller)) {
+    nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
     name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
-    name = "page_cache";
+    name = nr_strdup("page_cache");
   }
 
 end:
   NR_PHP_WRAPPER_CALL;
 
+  nrl_verbosedebug(NRL_TXN, "DRUPAL WRAPPER CALL MADE");
   /*
    * Drupal\page_cache\StackMiddleware\PageCache::get returns a
    * Symfony\Component\HttpFoundation\Response if there is a cache hit and false
    * otherwise.
    */
   if (retval_ptr && nr_php_is_zval_valid_object(*retval_ptr)) {
+    nrl_verbosedebug(NRL_TXN, "SETTING DRUPAL TXN PATH");
     nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
                     NR_OK_TO_OVERWRITE);
   }
+  nrl_verbosedebug(NRL_TXN, "FREEING DRUPAL WRAPPER MEMORY");
 
   nr_free(name);
   nr_php_zval_free(&request);
   nr_php_zval_free(&controller);
+  nrl_verbosedebug(NRL_TXN, "DRUPAL WRAPPER MEMORY FREED");
 }
 NR_PHP_WRAPPER_END
 
