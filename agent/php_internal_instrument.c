@@ -3840,9 +3840,37 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("sqlite3::exec", sqlite3_exec, sqlite3, 0, 0)
 
   NR_INTERNAL_WRAPREC("pdo::__construct", pdo_construct, pdo_construct, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+  NR_INTERNAL_WRAPREC("pdo\\firebird::__construct", pdo_construct, pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::__construct", pdo_construct, pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::__construct", pdo_construct, pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::__construct", pdo_construct, pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("pdo::query", pdo_query, pdo_query, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+  NR_INTERNAL_WRAPREC("pdo\\firebird::query", pdo_query, pdo_query, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::query", pdo_query, pdo_query, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::query", pdo_query, pdo_query, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::query", pdo_query, pdo_query, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::query", pdo_query, pdo_query, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("pdo::exec", pdo_exec, pdo_exec, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+  NR_INTERNAL_WRAPREC("pdo\\firebird::exec", pdo_exec, pdo_exec, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::exec", pdo_exec, pdo_exec, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::exec", pdo_exec, pdo_exec, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::exec", pdo_exec, pdo_exec, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::exec", pdo_exec, pdo_exec, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("pdo::prepare", pdo_prepare, pdo_prepare, 0, 0)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+  NR_INTERNAL_WRAPREC("pdo\\firebird::prepare", pdo_prepare, pdo_prepare, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::prepare", pdo_prepare, pdo_prepare, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::prepare", pdo_prepare, pdo_prepare, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::prepare", pdo_prepare, pdo_prepare, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::prepare", pdo_prepare, pdo_prepare, 0, 0)
+#endif
   NR_INTERNAL_WRAPREC("pdostatement::execute", pdostmt_execute,
                       pdostatement_execute, 0, 0)
 
