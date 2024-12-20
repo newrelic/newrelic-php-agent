@@ -1,18 +1,18 @@
 <?php
-
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
-PDO::query() when PDO base class constructor is used to create connection
+The agent should record database metrics for the FETCH_COLUMN variant of
+PDO::query() when PDO::connect factory method is used to create connection
 object.
 */
 
 /*SKIPIF
 <?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*INI
@@ -27,7 +27,7 @@ ok - create table
 ok - insert one
 ok - insert two
 ok - insert three
-ok - query (1-arg)
+ok - fetch column
 ok - drop table
 */
 
@@ -46,7 +46,7 @@ Datastore/operation/MySQL/drop, 1
 Datastore/statement/MySQL/test/drop, 1
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-test_pdo_query(new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), 0);
+test_pdo_query(PDO::connect($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), 0);

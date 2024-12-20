@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
+The agent should record database metrics for the FETCH_COLUMN variant of
 PDO::query() when PDO base class constructor is used to create connection
 object.
 */
@@ -19,18 +19,14 @@ newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 */
 
-/*EXPECT_TRACED_ERRORS null*/
-
-/*EXPECT_METRICS_EXIST
-Datastore/Postgres/all
-*/
+/*EXPECT_ERROR_EVENTS null*/
 
 /*EXPECT
 ok - create table
 ok - insert one
 ok - insert two
 ok - insert three
-ok - query (1-arg)
+ok - fetch column
 ok - drop table
 */
 
@@ -49,7 +45,7 @@ Datastore/operation/Postgres/drop, 1
 Datastore/statement/Postgres/test/drop, 1
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
 test_pdo_query(new PDO($PDO_PGSQL_DSN, $PG_USER, $PG_PW), 0);

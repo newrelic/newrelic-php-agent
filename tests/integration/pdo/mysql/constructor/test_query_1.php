@@ -7,7 +7,8 @@
 
 /*DESCRIPTION
 The agent should record Datastore metrics for the one argument form of
-PDO::query().
+PDO::query() when PDO's specialized subclass constructor is used to
+create connection object.
 */
 
 /*SKIPIF
@@ -37,17 +38,16 @@ Datastore/allOther, 6
 Datastore/MySQL/all, 6
 Datastore/MySQL/allOther, 6
 Datastore/operation/MySQL/create, 1
-Datastore/operation/MySQL/drop, 1
-Datastore/operation/MySQL/insert, 3
-Datastore/operation/MySQL/select, 1
 Datastore/statement/MySQL/test/create, 1
-Datastore/statement/MySQL/test/drop, 1
+Datastore/operation/MySQL/insert, 3
 Datastore/statement/MySQL/test/insert, 3
+Datastore/operation/MySQL/select, 1
 Datastore/statement/MySQL/test/select, 1
+Datastore/operation/MySQL/drop, 1
+Datastore/statement/MySQL/test/drop, 1
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$conn = new Pdo\Mysql($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD);
-test_pdo_query($conn, 0);
+test_pdo_query(new Pdo\Mysql($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), 0);

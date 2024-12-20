@@ -11,7 +11,7 @@ object.
 */
 
 /*SKIPIF
-<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_pgsql.inc');
 require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
@@ -21,10 +21,6 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 */
 
 /*EXPECT_TRACED_ERRORS null*/
-
-/*EXPECT_METRICS_EXIST
-Datastore/Postgres/all
-*/
 
 /*EXPECT
 ok - create table
@@ -41,17 +37,16 @@ Datastore/allOther, 6
 Datastore/Postgres/all, 6
 Datastore/Postgres/allOther, 6
 Datastore/operation/Postgres/create, 1
-Datastore/operation/Postgres/drop, 1
-Datastore/operation/Postgres/insert, 3
-Datastore/operation/Postgres/select, 1
 Datastore/statement/Postgres/test/create, 1
-Datastore/statement/Postgres/test/drop, 1
+Datastore/operation/Postgres/insert, 3
 Datastore/statement/Postgres/test/insert, 3
+Datastore/operation/Postgres/select, 1
 Datastore/statement/Postgres/test/select, 1
+Datastore/operation/Postgres/drop, 1
+Datastore/statement/Postgres/test/drop, 1
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$conn = PDO::connect($PDO_PGSQL_DSN, $PG_USER, $PG_PW);
-test_pdo_query($conn, 0);
+test_pdo_query(PDO::connect($PDO_PGSQL_DSN, $PG_USER, $PG_PW), 0);

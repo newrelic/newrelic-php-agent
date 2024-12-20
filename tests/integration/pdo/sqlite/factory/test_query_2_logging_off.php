@@ -5,18 +5,22 @@
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
-PDO::query() when PDO base class constructor is used to create connection
+The agent should record database metrics for the FETCH_COLUMN variant of
+PDO::query() when PDO::connect factory method is used to create connection
 object.
 */
 
 /*SKIPIF
 <?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
 
 /*EXPECT_ERROR_EVENTS null*/
@@ -26,7 +30,7 @@ ok - create table
 ok - insert one
 ok - insert two
 ok - insert three
-ok - query (1-arg)
+ok - fetch column
 ok - drop table
 */
 
@@ -62,13 +66,13 @@ ok - drop table
       "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/select",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2_logging_off.inc');
 
-test_pdo_query(new PDO('sqlite::memory:'));
+test_pdo_query(PDO::Connect('sqlite::memory:'));
