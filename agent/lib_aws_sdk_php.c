@@ -30,9 +30,8 @@
  * error whenever it cannot find a class which must be caught. Calling this
  * from nr_aws_sdk_php_enable would allow the sdk version value to be set only
  * once. To avoid the VERY unlikely but not impossible fatal error, we need to
- * take an extra step to wrap the call in a try/catch block. This means we need
- * to have an additionial zend_string_eval to get the result, but we avoid fatal
- * errors.
+ * wrap the call in a try/catch block and make it a lambda so that we avoid
+ * fatal errors.
  */
 void nr_lib_aws_sdk_php_handle_version() {
   char* version = NULL;
@@ -40,22 +39,20 @@ void nr_lib_aws_sdk_php_handle_version() {
   int result = FAILURE;
 
   result = zend_eval_string(
-      "$nr_aws_sdk_version = '';"
-      "try {"
-      "    $nr_aws_sdk_version = Aws\\Sdk::VERSION;"
-      "} catch(Throwable $_e) {"
-      "}",
-      NULL, "Set nr_aws_sdk_version");
+      "(function() {"
+      "     $nr_aws_sdk_version = '';"
+      "     try {"
+      "          $nr_aws_sdk_version = Aws\\Sdk::VERSION;"
+      "     } catch (Throwable $e) {"
+      "     }"
+      "     return $nr_aws_sdk_version;"
+      "})();",
+      &retval, "Get nr_aws_sdk_version");
 
+  /* See if we got a non-empty/non-null string for version. */
   if (SUCCESS == result) {
-    result = zend_eval_string("$nr_aws_sdk_version", &retval,
-                              "Get nr_aws_sdk_version");
-
-    /* See if we got a non-empty/non-null string for version. */
-    if (SUCCESS == result) {
-      if (nr_php_is_zval_non_empty_string(&retval)) {
-        version = Z_STRVAL(retval);
-      }
+    if (nr_php_is_zval_non_empty_string(&retval)) {
+      version = Z_STRVAL(retval);
     }
   }
 
