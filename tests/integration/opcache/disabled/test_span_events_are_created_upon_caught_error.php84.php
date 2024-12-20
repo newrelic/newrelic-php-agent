@@ -15,8 +15,8 @@ should be created.
 <?php
 
 require('skipif.inc');
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: newer test for PHP 8.4+\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
 }
 
 */
@@ -29,16 +29,13 @@ newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
 error_reporting = E_ALL
-opcache.enable=1
-opcache.enable_cli=1
+opcache.enable=0
+opcache.enable_cli=0
 opcache.file_update_protection=0
 opcache.jit_buffer_size=32M
 opcache.jit=function
 */
 
-/*PHPMODULES
-zend_extension=opcache.so
-*/
 /*EXPECT_ERROR_EVENTS
 [
   "?? agent run id",
@@ -51,7 +48,7 @@ zend_extension=opcache.so
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "error.message": "foo",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
@@ -137,7 +134,7 @@ zend_extension=opcache.so
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "code.lineno": "??",
         "code.filepath": "__FILE__",
         "code.function": "??"
@@ -150,7 +147,7 @@ zend_extension=opcache.so
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",
@@ -169,8 +166,9 @@ zend_extension=opcache.so
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
+^\s*(PHP )?Warning:\s*foo in .*? on line [0-9]+\s*$
 */
+require('opcache_test.inc');
 
 set_error_handler(
     function (int $errno, string $errstr) {
@@ -182,7 +180,7 @@ set_error_handler(
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    trigger_error('foo', E_USER_WARNING);
 }
 
 newrelic_record_datastore_segment(
@@ -193,5 +191,3 @@ newrelic_record_datastore_segment(
     )
 );
 a();
-
-echo 'this should never be printed';

@@ -44,7 +44,7 @@ Tests newrelic_set_user_id() API:
       "??",
       "OtherTransaction\/php__FILE__",
       "I'M COVERED IN BEES",
-      "E_USER_ERROR",
+      "E_USER_WARNING",
       {
         "stack_trace": [
           " in trigger_error called at __FILE__ (??)",
@@ -82,7 +82,7 @@ Tests newrelic_set_user_id() API:
       {
         "type": "TransactionError",
         "timestamp": "??",
-        "error.class": "E_USER_ERROR",
+        "error.class": "E_USER_WARNING",
         "error.message": "I'M COVERED IN BEES",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
@@ -106,7 +106,7 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
 function alpha() 
 {
-    trigger_error("I'M COVERED IN BEES", E_USER_ERROR);
+    trigger_error("I'M COVERED IN BEES", E_USER_WARNING);
 };
 
 $uuid = "0123456789abcdefghijlkmnopqrstuvwxyz";

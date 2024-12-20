@@ -32,7 +32,7 @@ the intrinsic's value is true for normal PHP errors.
       },
       {},
       {
-        "errorType": "E_USER_ERROR",
+        "errorType": "E_USER_WARNING",
         "errorMessage": "This is an error"
       }
     ]
@@ -40,4 +40,4 @@ the intrinsic's value is true for normal PHP errors.
 ]
 */
 
-trigger_error("This is an error", E_USER_ERROR);
+trigger_error("This is an error", E_USER_WARNING);

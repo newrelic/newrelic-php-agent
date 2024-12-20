@@ -17,6 +17,9 @@ error events should be created for PHP 8+ and OAPI.
 if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: PHP < 7.0.0 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 
 require('skipif.inc');
 

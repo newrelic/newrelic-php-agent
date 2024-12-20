@@ -10,11 +10,8 @@ The agent should capture and report deprecation warnings.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.1", "<")) {
-  die("skip: PHP < 8.1.0 not supported\n");
-}
-if (version_compare(PHP_VERSION, "8.4", ">=")) {
-  die("skip: PHP >= 8.4.0 not supported\n");
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: PHP < 8.4.0 not supported\n");
 }
 */
 
@@ -25,7 +22,7 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Deprecated: Optional parameter \$a declared before required parameter \$b is implicitly treated as a required parameter in .*? on line [0-9]+\s*$
+^\s*Deprecated: test\(\): Optional parameter \$a declared before required parameter \$b is implicitly treated as a required parameter in .*? on line [0-9]+\s*$
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -35,7 +32,7 @@ log_errors=0
     [
       "?? when",
       "OtherTransaction/php__FILE__",
-      "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
+      "test(): Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
       "E_DEPRECATED",
       {
         "stack_trace": "??",
@@ -61,7 +58,7 @@ log_errors=0
         "type": "TransactionError",
         "timestamp": "??",
         "error.class": "E_DEPRECATED",
-        "error.message": "Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
+        "error.message": "test(): Optional parameter $a declared before required parameter $b is implicitly treated as a required parameter",
         "transactionName": "OtherTransaction\/php__FILE__",
         "duration": "??",
         "nr.transactionGuid": "??",
