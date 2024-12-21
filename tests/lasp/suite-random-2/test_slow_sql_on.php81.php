@@ -30,8 +30,8 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
     [
       "OtherTransaction/php__FILE__",
       "\u003cunknown\u003e",
-      2691358128,
-      "select * from tables limit ?;",
+      2279837883,
+      "select * from information_schema.tables limit ?;",
       "Datastore/statement/MySQL/tables/select",
       "??",
       "??",
@@ -84,7 +84,7 @@ function test_slow_sql()
     global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
 
     $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD, array());
-    $result = $conn->query('select * from tables limit 1;');
+    $result = $conn->query('select * from information_schema.tables limit 1;');
 }
 
 test_slow_sql();
