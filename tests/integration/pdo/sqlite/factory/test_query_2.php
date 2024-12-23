@@ -5,13 +5,14 @@
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
-PDO::query() when PDO base class constructor is used to create connection
+The agent should record database metrics for the FETCH_COLUMN variant of
+PDO::query() when PDO::connect factory method is used to create connection
 object.
 */
 
 /*SKIPIF
 <?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*INI
@@ -26,7 +27,7 @@ ok - create table
 ok - insert one
 ok - insert two
 ok - insert three
-ok - query (1-arg)
+ok - fetch column
 ok - drop table
 */
 
@@ -69,6 +70,6 @@ ok - drop table
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2.inc');
 
-test_pdo_query(new PDO('sqlite::memory:'));
+test_pdo_query(PDO::Connect('sqlite::memory:'));

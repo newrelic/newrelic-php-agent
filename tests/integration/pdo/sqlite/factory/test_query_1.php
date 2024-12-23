@@ -6,7 +6,8 @@
 
 /*DESCRIPTION
 The agent should record Datastore metrics for the one argument form of
-PDO::query().
+PDO::query() when PDO::connect factory method is used to create connection
+object.
 */
 
 /*SKIPIF

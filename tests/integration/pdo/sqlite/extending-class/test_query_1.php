@@ -6,8 +6,7 @@
 
 /*DESCRIPTION
 The agent should record Datastore metrics for the one argument form of
-PDO::query() when PDO base class constructor is used to create connection
-object.
+PDO::query().
 */
 
 /*SKIPIF
@@ -68,7 +67,12 @@ ok - drop table
   ]
 ]
 */
+namespace MySpace;
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
 
-test_pdo_query(new PDO('sqlite::memory:'));
+class MyPDO extends \PDO
+{
+}
+
+test_pdo_query(new MyPDO('sqlite::memory:'));

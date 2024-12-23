@@ -5,13 +5,14 @@
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
-PDO::query() when PDO base class constructor is used to create connection
+The agent should record database metrics for the FETCH_INTO variant of
+PDO::query() when PDO::connect factory method is used to create connection
 object.
 */
 
 /*SKIPIF
 <?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*INI
@@ -23,10 +24,8 @@ newrelic.datastore_tracer.instance_reporting.enabled = 0
 
 /*EXPECT
 ok - create table
-ok - insert one
-ok - insert two
-ok - insert three
-ok - query (1-arg)
+ok - insert row
+ok - fetch row into object
 ok - drop table
 */
 
@@ -38,17 +37,17 @@ ok - drop table
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                        [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                   [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/SQLite/all"},                                 [6, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/SQLite/allOther"},                            [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/all"},                                        [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/allOther"},                                   [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/all"},                                 [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/SQLite/allOther"},                            [4, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/SQLite/create"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/SQLite/drop"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/SQLite/insert"},                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/operation/SQLite/insert"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/SQLite/select"},                    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/create"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/drop"},                 [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/SQLite/test/insert"},               [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/test/insert"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/select"},               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
@@ -59,7 +58,7 @@ ok - drop table
     [{"name":"Datastore/statement/SQLite/test/drop",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/insert",
-      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/select",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
@@ -69,6 +68,6 @@ ok - drop table
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_4.inc');
 
-test_pdo_query(new PDO('sqlite::memory:'));
+test_pdo_query(PDO::Connect('sqlite::memory:'));
