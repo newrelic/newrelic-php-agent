@@ -49,18 +49,6 @@ typedef struct {
 
 } nr_segment_message_params_t;
 
-static inline void nr_segment_message_destroy_message_params(
-    nr_segment_message_params_t* message_params) {
-  nr_free(message_params->library);
-  nr_free(message_params->destination_name);
-  nr_free(message_params->cloud_region);
-  nr_free(message_params->cloud_account_id);
-  nr_free(message_params->messaging_system);
-  nr_free(message_params->cloud_resource_id);
-  nr_free(message_params->server_address);
-  nr_free(message_params->aws_operation);
-}
-
 /*
  * Purpose : End a message segment and record metrics.
  *
