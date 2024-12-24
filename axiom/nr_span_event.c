@@ -373,7 +373,8 @@ void nr_span_event_set_message(nr_span_event_t* event,
       nro_set_hash_string(event->agent_attributes, "cloud.region", new_value);
       break;
     case NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID:
-      nro_set_hash_string(event->intrinsics, "cloud.account.id", new_value);
+      nro_set_hash_string(event->agent_attributes, "cloud.account.id",
+                          new_value);
       break;
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
       nro_set_hash_string(event->agent_attributes, "messaging.system",
@@ -384,7 +385,7 @@ void nr_span_event_set_message(nr_span_event_t* event,
                           new_value);
       break;
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
-      nro_set_hash_string(event->intrinsics, "server.address", new_value);
+      nro_set_hash_string(event->agent_attributes, "server.address", new_value);
       break;
   }
 }
@@ -541,7 +542,8 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
     case NR_SPAN_MESSAGE_CLOUD_REGION:
       return nro_get_hash_string(event->agent_attributes, "cloud.region", NULL);
     case NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID:
-      return nro_get_hash_string(event->intrinsics, "cloud.account.id", NULL);
+      return nro_get_hash_string(event->agent_attributes, "cloud.account.id",
+                                 NULL);
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
       return nro_get_hash_string(event->agent_attributes, "messaging.system",
                                  NULL);
@@ -549,7 +551,8 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
       return nro_get_hash_string(event->agent_attributes, "cloud.resource_id",
                                  NULL);
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
-      return nro_get_hash_string(event->intrinsics, "server.address", NULL);
+      return nro_get_hash_string(event->agent_attributes, "server.address",
+                                 NULL);
   }
   return NULL;
 }
