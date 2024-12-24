@@ -93,7 +93,8 @@
 #define SPAN_EVENT_COMPARE_MESSAGE(                                           \
     span_event, expected_destination_name, expected_cloud_region,             \
     expected_cloud_account_id, expected_messaging_system,                     \
-    expected_cloud_resource_id, expected_server_address)                      \
+    expected_cloud_resource_id, expected_server_address,                      \
+    expected_aws_operation)                                                   \
   tlib_pass_if_str_equal("destination.name", expected_destination_name,       \
                          nr_span_event_get_message(                           \
                              span_event, NR_SPAN_MESSAGE_DESTINATION_NAME));  \
@@ -111,7 +112,10 @@
                              span_event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID)); \
   tlib_pass_if_str_equal(                                                     \
       "server.address", expected_server_address,                              \
-      nr_span_event_get_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
+      nr_span_event_get_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS)); \
+  tlib_pass_if_str_equal(                                                     \
+      "aws.operation", expected_aws_operation,                                \
+      nr_span_event_get_message(span_event, NR_SPAN_MESSAGE_AWS_OPERATION));
 
 static void nr_vector_span_event_dtor(void* element, void* userdata NRUNUSED) {
   nr_span_event_destroy((nr_span_event_t**)&element);
@@ -741,7 +745,7 @@ static void test_json_print_segments_invalid_typed_attributes(void) {
   SPAN_EVENT_COMPARE(evt_b, "B", NR_SPAN_DATASTORE, evt_root, 7000, 2000);
   SPAN_EVENT_COMPARE_DATASTORE(evt_b, NULL, NULL, NULL, NULL);
   SPAN_EVENT_COMPARE(evt_c, "C", NR_SPAN_MESSAGE, evt_root, 10000, 1000);
-  SPAN_EVENT_COMPARE_MESSAGE(evt_c, NULL, NULL, NULL, NULL, NULL, NULL);
+  SPAN_EVENT_COMPARE_MESSAGE(evt_c, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
   /* Clean up */
   nr_segment_children_deinit(&root.children);
@@ -988,6 +992,7 @@ static void test_json_print_segments_message_attributes(void) {
   A.typed_attributes->message.destination_name = nr_strdup("queue_name");
   A.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
   A.typed_attributes->message.server_address = nr_strdup("localhost");
+  A.typed_attributes->message.aws_operation = nr_strdup("sendMessage");
 
   /*
    * Test : Normal operation
@@ -1002,7 +1007,8 @@ static void test_json_print_segments_message_attributes(void) {
                        "\"cloud_region\":\"us-west-1\","
                        "\"cloud_account_id\":\"12345678\","
                        "\"cloud_resource_id\":\"resource_id_info\","
-                       "\"server_address\":\"localhost\""
+                       "\"server_address\":\"localhost\","
+                       "\"aws_operation\":\"sendMessage\""
                        "},[]]]]");
 
   tlib_pass_if_uint_equal("span event size", nr_vector_size(span_events), 2);
@@ -1014,7 +1020,8 @@ static void test_json_print_segments_message_attributes(void) {
                      9000);
   SPAN_EVENT_COMPARE(evt_a, "A", NR_SPAN_MESSAGE, evt_root, 2000, 5000);
   SPAN_EVENT_COMPARE_MESSAGE(evt_a, "queue_name", "us-west-1", "12345678",
-                             "aws_sqs", "resource_id_info", "localhost");
+                             "aws_sqs", "resource_id_info", "localhost",
+                             "sendMessage");
 
   /* Clean up */
   nr_segment_children_deinit(&root.children);
@@ -1146,7 +1153,7 @@ static void test_json_print_segments_datastore_external_message(void) {
   SPAN_EVENT_COMPARE_EXTERNAL(evt_c, "example.com", "GET", "curl", 200);
   SPAN_EVENT_COMPARE(evt_d, "D", NR_SPAN_MESSAGE, evt_a, 6000, 1000);
   SPAN_EVENT_COMPARE_MESSAGE(evt_d, "queue_name", "us-west-1", NULL, "aws_sqs",
-                             NULL, NULL);
+                             NULL, NULL, NULL);
 
   /* Clean up */
   nr_segment_children_deinit(&root.children);

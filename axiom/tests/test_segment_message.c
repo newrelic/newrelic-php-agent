@@ -20,7 +20,7 @@ typedef struct {
   const char* messaging_system;
   const char* cloud_resource_id;
   const char* server_address;
-
+  const char* aws_operation;
 } segment_message_expecteds_t;
 
 static nr_segment_t* mock_txn_segment(void) {
@@ -66,7 +66,9 @@ static void test_message_segment(nr_segment_message_params_t* params,
   tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.server_address,
                          expecteds.server_address);
-
+  tlib_pass_if_str_equal(expecteds.test_name,
+                         seg->typed_attributes->message.aws_operation,
+                         expecteds.aws_operation);
   nr_txn_destroy(&txn);
 }
 
@@ -125,7 +127,8 @@ static void test_segment_message_destination_type(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test NR_MESSAGE_DESTINATION_TYPE_TEMP_QUEUE destination type */
   test_message_segment(
@@ -147,7 +150,8 @@ static void test_segment_message_destination_type(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test NR_MESSAGE_DESTINATION_TYPE_EXCHANGE destination type */
   test_message_segment(
@@ -169,7 +173,8 @@ static void test_segment_message_destination_type(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test NR_MESSAGE_DESTINATION_TYPE_TOPIC destination type */
   test_message_segment(
@@ -191,7 +196,8 @@ static void test_segment_message_destination_type(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test NR_MESSAGE_DESTINATION_TYPE_QUEUE destination type */
   test_message_segment(
@@ -213,7 +219,8 @@ static void test_segment_message_destination_type(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_message_action(void) {
@@ -244,7 +251,8 @@ static void test_segment_message_message_action(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test NR_SPAN_CONSUMER message action */
 
@@ -266,7 +274,8 @@ static void test_segment_message_message_action(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /*
    * Test NR_SPAN_CLIENT message action; this is not
@@ -290,7 +299,8 @@ static void test_segment_message_message_action(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_library(void) {
@@ -321,7 +331,8 @@ static void test_segment_message_library(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty library */
 
@@ -344,7 +355,8 @@ static void test_segment_message_library(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid library */
 
@@ -366,7 +378,8 @@ static void test_segment_message_library(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_destination_name(void) {
@@ -396,7 +409,8 @@ static void test_segment_message_destination_name(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty destination_name */
   test_message_segment(
@@ -417,7 +431,8 @@ static void test_segment_message_destination_name(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid destination_name */
   test_message_segment(
@@ -438,7 +453,8 @@ static void test_segment_message_destination_name(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_cloud_region(void) {
@@ -467,7 +483,8 @@ static void test_segment_message_cloud_region(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty cloud_region */
   test_message_segment(
@@ -489,7 +506,8 @@ static void test_segment_message_cloud_region(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid cloud_region */
   test_message_segment(
@@ -511,7 +529,8 @@ static void test_segment_message_cloud_region(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_cloud_account_id(void) {
@@ -540,7 +559,8 @@ static void test_segment_message_cloud_account_id(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty cloud_account_id */
   test_message_segment(
@@ -562,7 +582,8 @@ static void test_segment_message_cloud_account_id(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid cloud_account_id */
   test_message_segment(
@@ -584,7 +605,8 @@ static void test_segment_message_cloud_account_id(void) {
           .cloud_account_id = "12345678",
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_messaging_system(void) {
@@ -613,7 +635,8 @@ static void test_segment_message_messaging_system(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty messaging_system */
   test_message_segment(
@@ -635,7 +658,8 @@ static void test_segment_message_messaging_system(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid messaging_system */
   test_message_segment(
@@ -657,7 +681,8 @@ static void test_segment_message_messaging_system(void) {
           .cloud_account_id = NULL,
           .messaging_system = "my_messaging_system",
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_cloud_resource_id(void) {
@@ -686,7 +711,8 @@ static void test_segment_message_cloud_resource_id(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test empty cloud_resource_id */
   test_message_segment(
@@ -708,7 +734,8 @@ static void test_segment_message_cloud_resource_id(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid cloud_resource_id */
   test_message_segment(
@@ -730,7 +757,8 @@ static void test_segment_message_cloud_resource_id(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = "my_resource_id",
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_server_address(void) {
@@ -759,7 +787,8 @@ static void test_segment_message_server_address(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = "localhost"});
+          .server_address = "localhost",
+          .aws_operation = NULL});
 
   /* Test empty server_address */
   test_message_segment(
@@ -781,7 +810,8 @@ static void test_segment_message_server_address(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 
   /* Test valid server_address */
   test_message_segment(
@@ -803,7 +833,84 @@ static void test_segment_message_server_address(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = "localhost"});
+          .server_address = "localhost",
+          .aws_operation = NULL});
+}
+
+static void test_segment_message_aws_operation(void) {
+  /*
+   * aws_operation values should NOT impact the creation
+   * of metrics.
+   */
+
+  /* Test null aws_operation */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .aws_operation = NULL,
+          .library = "SQS",
+          .message_action = NR_SPAN_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test null aws_operation",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .cloud_region = NULL,
+          .cloud_account_id = NULL,
+          .messaging_system = NULL,
+          .cloud_resource_id = NULL,
+          .server_address = NULL,
+          .aws_operation = NULL});
+
+  /* Test empty aws_operation */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .aws_operation = "sendMessage",
+          .library = "SQS",
+          .message_action = NR_SPAN_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test empty aws_operation",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .cloud_region = NULL,
+          .cloud_account_id = NULL,
+          .messaging_system = NULL,
+          .cloud_resource_id = NULL,
+          .server_address = NULL,
+          .aws_operation = NULL});
+
+  /* Test valid aws_operation */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .aws_operation = "sendMessage",
+          .library = "SQS",
+          .message_action = NR_SPAN_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test valid aws_operation",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .cloud_region = NULL,
+          .cloud_account_id = NULL,
+          .messaging_system = NULL,
+          .cloud_resource_id = NULL,
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_parameters_enabled(void) {
@@ -822,7 +929,8 @@ static void test_segment_message_parameters_enabled(void) {
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
-          .destination_name = "my_destination"},
+          .destination_name = "my_destination",
+          .aws_operation = "sendMessage"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test true message_parameters_enabled",
@@ -835,7 +943,8 @@ static void test_segment_message_parameters_enabled(void) {
           .cloud_account_id = "12345678",
           .messaging_system = "my_system",
           .cloud_resource_id = "my_resource_id",
-          .server_address = "localhost"});
+          .server_address = "localhost",
+          .aws_operation = "sendMessage"});
 
   /* Test false message_parameters_enabled */
   test_message_segment(
@@ -848,7 +957,8 @@ static void test_segment_message_parameters_enabled(void) {
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
-          .destination_name = "my_destination"},
+          .destination_name = "my_destination",
+          .aws_operation = "sendMessage"},
       false /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test false message_parameters_enabled",
@@ -860,7 +970,8 @@ static void test_segment_message_parameters_enabled(void) {
           .cloud_account_id = NULL,
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
-          .server_address = NULL});
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 4, .state_size = 0};
@@ -876,5 +987,6 @@ void test_main(void* p NRUNUSED) {
   test_segment_message_messaging_system();
   test_segment_message_cloud_resource_id();
   test_segment_message_server_address();
+  test_segment_message_aws_operation();
   test_segment_message_parameters_enabled();
 }

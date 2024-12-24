@@ -555,6 +555,16 @@ static void test_span_event_message_string_get_and_set(void) {
       "should be the component we set 2", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
 
+  // Test : setting the server address back and forth behaves as expected
+  nr_span_event_set_message(event, NR_SPAN_MESSAGE_AWS_OPERATION, "chicken");
+  tlib_pass_if_str_equal(
+      "should be the component we set 1", "chicken",
+      nr_span_event_get_message(event, NR_SPAN_MESSAGE_AWS_OPERATION));
+  nr_span_event_set_message(event, NR_SPAN_MESSAGE_AWS_OPERATION, "oracle");
+  tlib_pass_if_str_equal(
+      "should be the component we set 2", "oracle",
+      nr_span_event_get_message(event, NR_SPAN_MESSAGE_AWS_OPERATION));
+
   nr_span_event_destroy(&event);
 }
 

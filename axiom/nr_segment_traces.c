@@ -176,6 +176,8 @@ static void add_typed_attributes_to_buffer(nrbuf_t* buf,
                                    message->cloud_resource_id, false);
       add_hash_key_value_to_buffer(buf, "server_address",
                                    message->server_address, false);
+      add_hash_key_value_to_buffer(buf, "aws_operation", message->aws_operation,
+                                   false);
     } break;
     case NR_SEGMENT_CUSTOM:
     default:

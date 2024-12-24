@@ -339,6 +339,8 @@ static void nr_populate_message_spans(nr_span_event_t* span_event,
       segment->typed_attributes->message.cloud_resource_id);
   nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS,
                             segment->typed_attributes->message.server_address);
+  nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_AWS_OPERATION,
+                            segment->typed_attributes->message.aws_operation);
 }
 
 static nr_status_t add_user_attribute_to_span_event(const char* key,
@@ -652,6 +654,7 @@ bool nr_segment_set_message(nr_segment_t* segment,
       .messaging_system = message->messaging_system ? nr_strdup(message->messaging_system) : NULL,
       .cloud_resource_id = message->cloud_resource_id ? nr_strdup(message->cloud_resource_id) : NULL,
       .server_address = message->server_address ? nr_strdup(message->server_address) : NULL,
+      .aws_operation = message->aws_operation ? nr_strdup(message->aws_operation) : NULL,
   };
   // clang-format on
 

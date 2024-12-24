@@ -387,6 +387,9 @@ void nr_span_event_set_message(nr_span_event_t* event,
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       nro_set_hash_string(event->agent_attributes, "server.address", new_value);
       break;
+    case NR_SPAN_MESSAGE_AWS_OPERATION:
+      nro_set_hash_string(event->agent_attributes, "aws.operation", new_value);
+      break;
   }
 }
 
@@ -552,6 +555,9 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
                                  NULL);
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       return nro_get_hash_string(event->agent_attributes, "server.address",
+                                 NULL);
+    case NR_SPAN_MESSAGE_AWS_OPERATION:
+      return nro_get_hash_string(event->agent_attributes, "aws.operation",
                                  NULL);
   }
   return NULL;
