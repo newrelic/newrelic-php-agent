@@ -14,10 +14,341 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_logging.h"
+#include "nr_segment_message.h"
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
+/* Service instrumentation only supported above PHP 8.1+*/
+
+/*
+* Note: For SQS, the command_arg_array will contain the following arrays seen
+below:
+//clang-format off
+$result = $client->receiveMessage(array(
+    // QueueUrl is required
+    'QueueUrl' => 'string',
+    'AttributeNames' => array('string', ... ),
+    'MessageAttributeNames' => array('string', ... ),
+    'MaxNumberOfMessages' => integer,
+    'VisibilityTimeout' => integer,
+    'WaitTimeSeconds' => integer,
+));
+
+$result = $client->sendMessage(array(
+    // QueueUrl is required
+    'QueueUrl' => 'string',
+    // MessageBody is required
+    'MessageBody' => 'string',
+    'DelaySeconds' => integer,
+    'MessageAttributes' => array(
+        // Associative array of custom 'String' key names
+        'String' => array(
+            'StringValue' => 'string',
+            'BinaryValue' => 'string',
+            'StringListValues' => array('string', ... ),
+            'BinaryListValues' => array('string', ... ),
+            // DataType is required
+            'DataType' => 'string',
+        ),
+        // ... repeated
+    ),
+));
+
+
+$result = $client->sendMessageBatch(array(
+    // QueueUrl is required
+    'QueueUrl' => 'string',
+    // Entries is required
+    'Entries' => array(
+        array(
+            // Id is required
+            'Id' => 'string',
+            // MessageBody is required
+            'MessageBody' => 'string',
+            'DelaySeconds' => integer,
+            'MessageAttributes' => array(
+                // Associative array of custom 'String' key names
+                'String' => array(
+                    'StringValue' => 'string',
+                    'BinaryValue' => 'string',
+                    'StringListValues' => array('string', ... ),
+                    'BinaryListValues' => array('string', ... ),
+                    // DataType is required
+                    'DataType' => 'string',
+                ),
+                // ... repeated
+            ),
+        ),
+        // ... repeated
+    ),
+));
+
+//clang-format on
+*/
+void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
+  zval* command_name = NULL;
+  char* command_arg_value = NULL;
+  char* command_name_string = NULL;
+  bool instrumented = false;
+  nr_segment_message_params_t message_params = {
+      .library = "SQS",
+      .destination_type = NR_MESSAGE_DESTINATION_TYPE_QUEUE,
+      .messaging_system = "aws_sqs",
+  };
+
+  if (NULL == segment) {
+    return;
+  }
+
+  /* First get the SQS command_name to determine if we instrument the command.
+   */
+  command_name = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  if (0 == nr_php_is_zval_non_empty_string(command_name)) {
+    /* We can't do anything with an unusable command_name. */
+    nr_php_arg_release(&command_name);
+    return;
+  }
+
+  command_name_string = Z_STRVAL_P(command_name);
+
+  /* Determine if we instrument this command. */
+  if (nr_streq(command_name_string, "sendMessage")
+      || nr_streq(command_name_string, "sendMessageBatch")) {
+    message_params.message_action = NR_SPAN_PRODUCER;
+    instrumented = true;
+  } else if (nr_streq(command_name_string, "receiveMessage")) {
+    message_params.message_action = NR_SPAN_CONSUMER;
+    instrumented = true;
+  }
+
+  if (instrumented) {
+    message_params.aws_operation = command_name_string;
+
+    command_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
+        AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG, NR_EXECUTE_ORIG_ARGS);
+
+    /*
+     *  nr_lib_aws_sdk_php_sqs_parse_queueurl checks for NULL so safe pass
+     * command_arg_value directly in.
+     */
+    nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params);
+
+    /* Now end the instrumented segment as a message segment. */
+    nr_segment_message_end(&segment, &message_params);
+  }
+
+  nr_free(command_arg_value);
+  nr_php_arg_release(&command_name);
+  /*
+   * These are the message_params params that were strduped in
+   * nr_lib_aws_sdk_php_sqs_parse_queueurl
+   */
+  nr_free(message_params.cloud_region);
+  nr_free(message_params.destination_name);
+  nr_free(message_params.cloud_account_id);
+}
+
+void nr_lib_aws_sdk_php_sqs_parse_queueurl(
+    const char* sqs_queueurl,
+    nr_segment_message_params_t* message_params) {
+  char* region = NULL;
+  char* queue_name = NULL;
+  char* account_id = NULL;
+  char queueurl[AWS_QUEUEURL_LEN_MAX];
+  char* queueurl_pointer = NULL;
+
+  if (NULL == sqs_queueurl || NULL == message_params) {
+    return;
+  }
+
+  /*
+   * AWS QueueUrl has a very specific format.
+   * The QueueUrl we are looking for will be of the following format:
+   * queueUrl =
+   * 'https://sqs.REGION_NAME.amazonaws.com/ACCOUNT_ID_NAME/SQS_QUEUE_NAME'
+   * where REGION_NAME, ACCOUNT_ID_NAME, and SQS_QUEUE_NAME are the acutal
+   * values such as: queueUrl =
+   * 'https://sqs.us-east-2.amazonaws.com/123456789012/my_amazing_queue'
+   * If we are unable to match any part of this, the whole decode is suspect and
+   * all values are discarded.
+   *
+   * Due to the overhead involved in escaping the original buffer, creating a
+   * regex, matching a regex, destroying a regex, this method was chosen as a
+   * more performant option.
+   */
+
+  if (NULL == nr_strlcpy(queueurl, sqs_queueurl, AWS_QUEUEURL_LEN_MAX)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+  queueurl_pointer = queueurl;
+
+  /*
+   * Find the pattern of the AWS queueurl that should immediately precede the
+   * region.
+   */
+  if (0 != strncmp(queueurl_pointer, "https://sqs.", 12)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  /*
+   * Find the start of the region.  It follows the 12 chars of 'https://sqs.'
+   * and continues until the next '.' It is safe to move the pointer along at
+   * this point since we allocated a sufficiently big buffer.
+   */
+  queueurl_pointer += 12;
+  if (nr_strempty(queueurl_pointer)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  region = queueurl_pointer;
+
+  /* Find the end of the region. */
+  queueurl_pointer = nr_strchr(queueurl_pointer, '.');
+  if (NULL == queueurl_pointer) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+  *queueurl_pointer = '\0';
+
+  /*
+   * Move the pointer along. Again, we found a valid '.' so moving the pointer
+   * beyond that point should be safe and give us either more string or the end
+   * of the string.
+   */
+  queueurl_pointer += 1;
+  if (nr_strempty(queueurl_pointer)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  /* Move past the next pattern to find the start of the account id. */
+  if (0 != strncmp(queueurl_pointer, "amazonaws.com/", 14)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  /*
+   * Move the pointer along. Since we found a valid pattern match moving the
+   * pointer beyond that point should be safe and give us either more string or
+   * the end of the string.
+   */
+  queueurl_pointer += 14;
+  if (nr_strempty(queueurl_pointer)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  /* If it's not an empty string, we've found the start of the account_id*/
+  account_id = queueurl_pointer;
+
+  /* Find the end of account id which goes until the next forward slash. */
+  queueurl_pointer = nr_strchr(queueurl_pointer, '/');
+  if (NULL == queueurl_pointer) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+  *queueurl_pointer = '\0';
+
+  /* Move the pointer along. */
+  queueurl_pointer += 1;
+  if (nr_strempty(queueurl_pointer)) {
+    /* Malformed queueurl, we can't decode this. */
+    return;
+  }
+
+  /* This should be the start of the start of the queuename.*/
+  queue_name = queueurl_pointer;
+
+  /*
+   * Almost done. At this point, the string should only have queue name left.
+   * Let's check if there's another slash, if it isn't followed by empty string,
+   * the queueurl is malformed.
+   */
+  queueurl_pointer = nr_strchr(queueurl_pointer, '/');
+  if (NULL != queueurl_pointer) {
+    *queueurl_pointer = '\0';
+    /* Let's check if it's followed by empty string */
+    *queueurl_pointer += 1;
+    if (!nr_strempty(queueurl_pointer)) {
+      /* Malformed queueurl, we can't decode this. */
+      return;
+    }
+  }
+
+  /*
+   * SQS entity relationship requires: messaging.system, cloud.region,
+   * cloud.account.id, messaging.destination.name
+   */
+  message_params->destination_name = nr_strdup(queue_name);
+  message_params->cloud_account_id = nr_strdup(account_id);
+  message_params->cloud_region = nr_strdup(region);
+}
+
+char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
+                                               NR_EXECUTE_PROTO) {
+  zval* param_array = NULL;
+  zval* command_arg_array = NULL;
+  char* command_arg_value = NULL;
+
+  if (NULL == command_arg_name) {
+    return NULL;
+  }
+  /* To extract the Aws/AwsClient::__call $argument, we get the second arg. */
+  param_array = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
+
+  if (nr_php_is_zval_valid_array(param_array)) {
+
+    /* The first element in param_array is an array of parameters. */
+    command_arg_array = nr_php_zend_hash_index_find(Z_ARRVAL_P(param_array), 0);
+    if (nr_php_is_zval_valid_array(command_arg_array)) {
+
+      zval* queueurl_arg = nr_php_zend_hash_find(Z_ARRVAL_P(command_arg_array),
+                                                 command_arg_name);
+
+      if (nr_php_is_zval_non_empty_string(queueurl_arg)) {
+        command_arg_value = nr_strdup(Z_STRVAL_P(queueurl_arg));
+      }
+    }
+  }
+
+  nr_php_arg_release(&param_array);
+  return command_arg_value;
+}
+
+/*
+ * For Aws/AwsClient::__call see
+ * https://github.com/aws/aws-sdk-php/blob/master/src/AwsClientInterface.php ALL
+ * client commands are handled by this function, so it is the start and end of
+ * any command. Creates and executes a command for an operation by name.
+ *
+ * Suffixing an operation name with "Async" will return a
+ * promise that can be used to execute commands asynchronously.
+ *
+ * @param string $name      Name of the command to execute.
+ * @param array  $arguments Arguments to pass to the getCommand method.
+ *
+ * @return ResultInterface
+ * @throws \Exception
+ */
+NR_PHP_WRAPPER(nr_aws_client_call) {
+  (void)wraprec;
+
+  const char* klass = NULL;
+  klass
+      = nr_php_class_entry_name(Z_OBJCE_P(nr_php_execute_scope(execute_data)));
+  if (nr_streq(klass, AWS_SDK_PHP_SQSCLIENT_CLASS)) {
+    nr_lib_aws_sdk_php_sqs_handle(auto_segment, NR_EXECUTE_ORIG_ARGS);
+  }
+}
+NR_PHP_WRAPPER_END
+
+#endif /* PHP >= 8.1*/
 /*
  * In a normal course of events, the following line will always work
  * zend_eval_string("Aws\\Sdk::VERSION;", &retval, "Get AWS Version")
@@ -162,4 +493,12 @@ void nr_aws_sdk_php_enable() {
   /* Called when initializing all Clients */
   nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::parseClass"),
                             nr_create_aws_service_metric);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
+  /* We only support instrumentation above PHP 8.1 */
+  /* Called when a service command is issued from a Client */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Aws\\AwsClient::__call"), NULL, nr_aws_client_call,
+      nr_aws_client_call);
+#endif
 }
