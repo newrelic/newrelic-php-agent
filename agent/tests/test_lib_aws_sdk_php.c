@@ -6,11 +6,110 @@
 #include "tlib_php.h"
 
 #include "php_agent.h"
-#include "lib_aws_sdk_php.h"
 #include "fw_support.h"
+#include "nr_segment_message.h"
+#include "lib_aws_sdk_php.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+/*
+ * Aside from service class and version detection, instrumentation is only
+ * supported with PHP 8.1+
+ */
+
+static inline void test_message_param_queueurl_settings_expect_val(
+    nr_segment_message_params_t message_params,
+    char* cloud_region,
+    char* cloud_account_id,
+    char* destination_name) {
+  tlib_pass_if_str_equal("cloud_region should match.",
+                         message_params.cloud_region, cloud_region);
+  tlib_pass_if_str_equal("cloud_account_id should match.",
+                         message_params.cloud_account_id, cloud_account_id);
+  tlib_pass_if_str_equal("destination_name should match.",
+                         message_params.destination_name, destination_name);
+
+  nr_free(message_params.cloud_region);
+  nr_free(message_params.cloud_account_id);
+  nr_free(message_params.destination_name);
+}
+
+static inline void test_message_param_queueurl_settings_expect_null(
+    nr_segment_message_params_t message_params) {
+  tlib_pass_if_null("cloud_region should be null.",
+                    message_params.cloud_region);
+  tlib_pass_if_null("cloud_account_id should be null.",
+                    message_params.cloud_account_id);
+  tlib_pass_if_null("destination_name should be null.",
+                    message_params.destination_name);
+}
+
+static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
+  /*
+   * nr_lib_aws_sdk_php_sqs_parse_queueurl extracts either ALL cloud_region,
+   * cloud_account_id, and destination_name or none.
+   */
+  nr_segment_message_params_t message_params = {0};
+
+// clang-format off
+#define VALID_QUEUE_URL  "https://sqs.us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME"
+#define INVALID_QUEUE_URL_1 "https://us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME"
+#define INVALID_QUEUE_URL_2 "https://sqs.us-east-2.amazonaws.com/123456789012/"
+#define INVALID_QUEUE_URL_3 "https://sqs.us-east-2.amazonaws.com/SQS_QUEUE_NAME"
+#define INVALID_QUEUE_URL_4 "https://random.com"
+#define INVALID_QUEUE_URL_5 "https://sqs.us-east-2.amazonaws.com/123456789012"
+#define INVALID_QUEUE_URL_6 "https://sqs.us-east-2.amazonaws.com/"
+#define INVALID_QUEUE_URL_7 "https://sqs.us-east-2.amazonaws.com"
+#define INVALID_QUEUE_URL_8 "https://sqs.us-east-2.random.com/123456789012/SQS_QUEUE_NAME"
+  // clang-format on
+
+  /* Test null queueurl.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(NULL, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_1, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_2, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_3, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_4, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_5, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_6, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_7, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /* Test Invalid values.  Extracted message_param values should be null.*/
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_8, &message_params);
+  test_message_param_queueurl_settings_expect_null(message_params);
+
+  /*
+   * Test 'https://sqs.us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME'.
+   * Extracted message_param values should set.
+   */
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(VALID_QUEUE_URL, &message_params);
+  test_message_param_queueurl_settings_expect_val(
+      message_params, "us-east-2", "123456789012", "SQS_QUEUE_NAME");
+}
+#endif /* PHP 8.1+ */
 
 #if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO
 
@@ -150,6 +249,9 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   test_nr_lib_aws_sdk_php_add_supportability_service_metric();
   test_nr_lib_aws_sdk_php_handle_version();
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  test_nr_lib_aws_sdk_php_sqs_parse_queueurl();
+#endif /* PHP 8.1+ */
   tlib_php_engine_destroy();
 }
 #else
