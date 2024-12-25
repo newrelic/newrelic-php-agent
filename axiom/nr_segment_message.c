@@ -42,7 +42,7 @@ static void nr_segment_message_set_attrs(
     message_attributes.server_address
         = nr_strempty(params->server_address) ? NULL : params->server_address;
     message_attributes.aws_operation
-        = nr_strempty(params->server_address) ? NULL : params->aws_operation;
+        = nr_strempty(params->aws_operation) ? NULL : params->aws_operation;
   }
 
   nr_segment_set_message(segment, &message_attributes);
