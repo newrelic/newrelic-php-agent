@@ -350,9 +350,6 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   }
   nrl_verbosedebug(NRL_TXN, "VALID DRUPAL INSTANCEOFCLASS");
 
-end:
-  NR_PHP_WRAPPER_CALL;
-
   controller = nr_symfony_object_get_string(request, "_controller");
   if (nr_php_is_zval_non_empty_string(controller)) {
     nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
@@ -361,6 +358,9 @@ end:
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = nr_strdup("page_cache");
   }
+
+end:
+  NR_PHP_WRAPPER_CALL;
 
   nrl_verbosedebug(NRL_TXN, "DRUPAL WRAPPER CALL MADE");
   /*
