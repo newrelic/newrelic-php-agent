@@ -20,7 +20,7 @@ the agent should record a slow sql trace without explain plan.
 
 /*ENVIRONMENT
 DATASTORE_PRODUCT=SQLite
-DATASTORE_COLLECTION=sqlite_schema
+DATASTORE_COLLECTION=sqlite_master
 */
 
 /*INI
@@ -102,5 +102,5 @@ Supportability/TxnData/SlowSQL, 1
 require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_1.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$query = 'select * from sqlite_schema limit 1;';
+$query = 'select * from sqlite_master limit 1;';
 test_prepared_stmt(new PDO('sqlite::memory:'), $query);
