@@ -7,6 +7,7 @@
 #define NR_SEGMENT_MESSAGE_HDR
 
 #include "nr_segment.h"
+#include "nr_segment_traces.h"
 
 /*
  * Note:
@@ -25,28 +26,18 @@ typedef struct {
   /* All strings are null-terminated. When unset, the strings are ingored. */
 
   /* Only used for creating metrics. */
-
   char* library; /* Library; Possible values are SQS, SNS, RabbitMQ, JMS */
   nr_segment_message_destination_type_t
       destination_type; /* Named/temp queue/topic/exchange */
 
   /* Used for creating message attributes. */
   nr_span_spankind_t
-      message_action;      /*The action of the message, e.g.,Produce/Consume.*/
-  char* destination_name;  /*The name of the Queue, Topic, or Exchange;
-                                 otherwise, Temp. Needed for SQS relationship.*/
-  char* cloud_region;      /*Targeted region; ex:us-east-1*. Needed for SQS
-                              relationship.*/
-  char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
-                              relationship.*/
-  char* messaging_system;  /* for ex: aws_sqs. Needed for SQS relationship.*/
-  char* cloud_resource_id; /*A unique identifier given by the cloud resource.
-                              For AWS, this is the ARN of the AWS resource being
-                              accessed.*/
-  char* server_address;    /*The server domain name or IP address.  Needed for
-                              MQBROKER relationship.*/
-  char* aws_operation;     /*The AWS operation being called.*/
-
+      message_action;     /*The action of the message, e.g.,Produce/Consume.*/
+  char* destination_name; /*The name of the Queue, Topic, or Exchange;
+                                otherwise, Temp. Needed for SQS relationship.*/
+  char* messaging_system; /* for ex: aws_sqs. Needed for SQS relationship.*/
+  char* server_address;   /*The server domain name or IP address.  Needed for
+                             MQBROKER relationship.*/
 } nr_segment_message_params_t;
 
 /*

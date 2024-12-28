@@ -122,21 +122,35 @@ typedef struct _nr_segment_message_t {
    */
 
   nr_span_spankind_t
-      message_action;      /*The action of the message, e.g.,Produce/Consume.*/
-  char* destination_name;  /*The name of the Queue, Topic, or Exchange;
-                                 otherwise, Temp. Needed for SQS relationship.*/
+      message_action;     /*The action of the message, e.g.,Produce/Consume.*/
+  char* destination_name; /*The name of the Queue, Topic, or Exchange;
+                                otherwise, Temp. Needed for SQS relationship.*/
+  char* messaging_system; /* for ex: aws_sqs. Needed for SQS relationship.*/
+  char* server_address;   /*The server domain name or IP address.  Needed for
+                             MQBROKER relationship.*/
+} nr_segment_message_t;
+
+typedef struct _nr_segment_cloud_attrs_t {
+  /*
+   * Attributes needed for entity relationship building.
+   * Compare to OTEL attributes:
+   * https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/
+   * cloud.account.id, cloud.region, messaging.system and server.address are
+   * used to create relationships between APM and cloud services. It may not
+   * make sense to add these attributes unless they are used for creating one of
+   * the relationships in Entity Relationships.
+   * These attributes aren't specific to a segment category so don't belong as
+   * typed attributes and can be added whenever they are available.
+   */
   char* cloud_region;      /*Targeted region; ex:us-east-1*. Needed for SQS
                               relationship.*/
   char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
                               relationship.*/
-  char* messaging_system;  /* for ex: aws_sqs. Needed for SQS relationship.*/
   char* cloud_resource_id; /*Unique cloud provider identifier. For AWS, this is
                               the ARN of the AWS resource being accessed.*/
-  char* server_address;    /*The server domain name or IP address.  Needed for
-                              MQBROKER relationship.*/
   char* aws_operation;     /*AWS specific operation name.*/
 
-} nr_segment_message_t;
+} nr_segment_cloud_attrs_t;
 
 typedef struct _nr_segment_metric_t {
   char* name;

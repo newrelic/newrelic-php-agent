@@ -494,16 +494,6 @@ static void test_span_event_message_string_get_and_set(void) {
       "NULL event -> NULL component",
       nr_span_event_get_message(NULL, NR_SPAN_MESSAGE_DESTINATION_NAME));
 
-  // Test : setting the cloud region back and forth behaves as expected
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_REGION, "chicken");
-  tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_REGION));
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_REGION, "oracle");
-  tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_REGION));
-
   // Test : setting the destination name back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME, "chicken");
   tlib_pass_if_str_equal(
@@ -513,16 +503,6 @@ static void test_span_event_message_string_get_and_set(void) {
   tlib_pass_if_str_equal(
       "should be the component we set 2", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME));
-
-  // Test : setting the cloud account id back and forth behaves as expected
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID, "chicken");
-  tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID));
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID, "oracle");
-  tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID));
 
   // Test : setting the messaging system back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM, "chicken");
@@ -534,17 +514,6 @@ static void test_span_event_message_string_get_and_set(void) {
       "should be the component we set 2", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM));
 
-  // Test : setting the cloud resource id back and forth behaves as expected
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID,
-                            "chicken");
-  tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID));
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID, "oracle");
-  tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID));
-
   // Test : setting the server address back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS, "chicken");
   tlib_pass_if_str_equal(
@@ -554,16 +523,6 @@ static void test_span_event_message_string_get_and_set(void) {
   tlib_pass_if_str_equal(
       "should be the component we set 2", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
-
-  // Test : setting the server address back and forth behaves as expected
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_AWS_OPERATION, "chicken");
-  tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_AWS_OPERATION));
-  nr_span_event_set_message(event, NR_SPAN_MESSAGE_AWS_OPERATION, "oracle");
-  tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
-      nr_span_event_get_message(event, NR_SPAN_MESSAGE_AWS_OPERATION));
 
   nr_span_event_destroy(&event);
 }

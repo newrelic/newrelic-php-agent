@@ -320,10 +320,7 @@ static void test_set_destroy_message_fields(void) {
   nr_segment_t s = {.type = NR_SEGMENT_MESSAGE};
 
   nr_segment_message_t m = {.message_action = NR_SPAN_CLIENT,
-                            .cloud_region = "my_cloud_region",
-                            .cloud_account_id = "12345678",
                             .messaging_system = "my_messaging_system",
-                            .cloud_resource_id = "my_cloud_resource_id",
                             .server_address = "localhost"};
 
   nr_segment_external_t e = {.transaction_guid = "transaction_guid",
@@ -381,9 +378,6 @@ static void test_destroy_typed_attributes(void) {
    */
   s.type = NR_SEGMENT_MESSAGE;
   s.typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
-  s.typed_attributes->message.cloud_region = nr_strdup("us-west-1");
-  s.typed_attributes->message.cloud_account_id = nr_strdup("12345678");
-  s.typed_attributes->message.cloud_resource_id = nr_strdup("resource_id_info");
   s.typed_attributes->message.destination_name = nr_strdup("queue_name");
   s.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
   s.typed_attributes->message.server_address = nr_strdup("localhost");

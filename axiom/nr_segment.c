@@ -329,18 +329,8 @@ static void nr_populate_message_spans(nr_span_event_t* span_event,
   nr_span_event_set_message(
       span_event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM,
       segment->typed_attributes->message.messaging_system);
-  nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_CLOUD_REGION,
-                            segment->typed_attributes->message.cloud_region);
-  nr_span_event_set_message(
-      span_event, NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID,
-      segment->typed_attributes->message.cloud_account_id);
-  nr_span_event_set_message(
-      span_event, NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID,
-      segment->typed_attributes->message.cloud_resource_id);
   nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS,
                             segment->typed_attributes->message.server_address);
-  nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_AWS_OPERATION,
-                            segment->typed_attributes->message.aws_operation);
 }
 
 static nr_status_t add_user_attribute_to_span_event(const char* key,
@@ -649,12 +639,8 @@ bool nr_segment_set_message(nr_segment_t* segment,
   segment->typed_attributes->message = (nr_segment_message_t){
       .message_action = message->message_action,
       .destination_name = message->destination_name ? nr_strdup(message->destination_name) : NULL,
-      .cloud_region = message->cloud_region ? nr_strdup(message->cloud_region) : NULL,
-      .cloud_account_id = message->cloud_account_id ? nr_strdup(message->cloud_account_id) : NULL,
       .messaging_system = message->messaging_system ? nr_strdup(message->messaging_system) : NULL,
-      .cloud_resource_id = message->cloud_resource_id ? nr_strdup(message->cloud_resource_id) : NULL,
       .server_address = message->server_address ? nr_strdup(message->server_address) : NULL,
-      .aws_operation = message->aws_operation ? nr_strdup(message->aws_operation) : NULL,
   };
   // clang-format on
 

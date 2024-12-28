@@ -40,17 +40,20 @@ extern void nr_lib_aws_sdk_php_add_supportability_service_metric(
  * same string and if it is malformed, it cannot be used.
  *
  * Params  : 1. The QueueUrl
- *           2. message_params: the extracted values will be set to
- * message_params.cloud_region, message_params.cloud_account_id, and
- * message_params.destination_name Returns :
+ *           2. message_params to set message_params.destination_name
+ *           3. cloud_attrs to set message_params.cloud_region,
+ * message_params.cloud_account_id
+ *
+ * Returns :
  *
  * Note: caller is responsible for
- * freeing message_params.cloud_region, message_params.cloud_account_id, and
+ * freeing cloud_attrs.cloud_region, cloud_attrs.cloud_account_id, and
  * message_params.destination_name
  */
 extern void nr_lib_aws_sdk_php_sqs_parse_queueurl(
     const char* sqs_queueurl,
-    nr_segment_message_params_t* message_params);
+    nr_segment_message_params_t* message_params,
+    nr_segment_cloud_attrs_t* cloud_attrs);
 
 /*
  * Purpose : Handle when an SqsClient initiates a command

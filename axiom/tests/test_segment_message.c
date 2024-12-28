@@ -7,6 +7,16 @@
 #include "nr_header.h"
 #include "nr_segment_message.h"
 #include "test_segment_helpers.h"
+#include "nr_attributes.h"
+#include "nr_attributes_private.h"
+#include "util_hash.h"
+#include "util_memory.h"
+#include "util_object.h"
+#include "util_reply.h"
+#include "util_strings.h"
+#include "util_text.h"
+
+#include "tlib_main.h"
 
 typedef struct {
   const char* test_name;
@@ -30,15 +40,31 @@ static nr_segment_t* mock_txn_segment(void) {
 }
 
 static void test_message_segment(nr_segment_message_params_t* params,
+                                 nr_segment_cloud_attrs_t* cloud_attrs,
                                  bool message_attributes_enabled,
                                  segment_message_expecteds_t expecteds) {
+  uint32_t all = NR_ATTRIBUTE_DESTINATION_ALL;
+  nrobj_t* obj = NULL;
   nr_segment_t* seg = mock_txn_segment();
   nrtxn_t* txn = seg->txn;
   seg->txn->options.message_tracer_segment_parameters_enabled
       = message_attributes_enabled;
 
-  test_segment_message_end_and_keep(&seg, params);
+  nr_segment_traces_add_cloud_attributes(seg, cloud_attrs);
+  /* Check the agent cloud attributes. */
+  obj = nr_attributes_agent_to_obj(seg->attributes, all);
+  tlib_pass_if_str_equal(expecteds.test_name, expecteds.aws_operation,
+                         nro_get_hash_string(obj, "aws.operation", 0));
+  tlib_pass_if_str_equal(expecteds.test_name, expecteds.cloud_resource_id,
+                         nro_get_hash_string(obj, "cloud.resource_id", 0));
+  tlib_pass_if_str_equal(expecteds.test_name, expecteds.cloud_account_id,
+                         nro_get_hash_string(obj, "cloud.account.id", 0));
+  tlib_pass_if_str_equal(expecteds.test_name, expecteds.cloud_region,
+                         nro_get_hash_string(obj, "cloud.region", 0));
+  nro_delete(obj);
 
+  test_segment_message_end_and_keep(&seg, params);
+  /* Check the metrics and txn naming. */
   tlib_pass_if_str_equal(expecteds.test_name, expecteds.name,
                          nr_string_get(seg->txn->trace_strings, seg->name));
   test_txn_metric_created(expecteds.test_name, txn->unscoped_metrics,
@@ -46,29 +72,19 @@ static void test_message_segment(nr_segment_message_params_t* params,
   test_txn_metric_created(expecteds.test_name, txn->unscoped_metrics,
                           expecteds.library_metric);
   test_metric_vector_size(seg->metrics, expecteds.num_metrics);
+
+  /* Check the segment settings and typed attributes. */
   tlib_pass_if_true(expecteds.test_name, NR_SEGMENT_MESSAGE == seg->type,
                     "NR_SEGMENT_MESSAGE");
   tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.destination_name,
                          expecteds.destination_name);
   tlib_pass_if_str_equal(expecteds.test_name,
-                         seg->typed_attributes->message.cloud_region,
-                         expecteds.cloud_region);
-  tlib_pass_if_str_equal(expecteds.test_name,
-                         seg->typed_attributes->message.cloud_account_id,
-                         expecteds.cloud_account_id);
-  tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.messaging_system,
                          expecteds.messaging_system);
   tlib_pass_if_str_equal(expecteds.test_name,
-                         seg->typed_attributes->message.cloud_resource_id,
-                         expecteds.cloud_resource_id);
-  tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.server_address,
                          expecteds.server_address);
-  tlib_pass_if_str_equal(expecteds.test_name,
-                         seg->typed_attributes->message.aws_operation,
-                         expecteds.aws_operation);
   nr_txn_destroy(&txn);
 }
 
@@ -114,7 +130,7 @@ static void test_segment_message_destination_type(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TEMP_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name
           = "Test NR_MESSAGE_DESTINATION_TYPE_TEMP_TOPIC destination type",
@@ -137,7 +153,7 @@ static void test_segment_message_destination_type(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TEMP_QUEUE,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name
           = "Test NR_MESSAGE_DESTINATION_TYPE_TEMP_QUEUE destination type",
@@ -160,7 +176,7 @@ static void test_segment_message_destination_type(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_EXCHANGE,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name
           = "Test NR_MESSAGE_DESTINATION_TYPE_EXCHANGE destination type",
@@ -183,7 +199,7 @@ static void test_segment_message_destination_type(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name
           = "Test NR_MESSAGE_DESTINATION_TYPE_EXCHANGE destination type",
@@ -206,7 +222,7 @@ static void test_segment_message_destination_type(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_QUEUE,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name
           = "Test NR_MESSAGE_DESTINATION_TYPE_QUEUE destination type",
@@ -239,7 +255,7 @@ static void test_segment_message_message_action(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test NR_SPAN_PRODUCER message action",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_queue_or_topic",
@@ -262,7 +278,7 @@ static void test_segment_message_message_action(void) {
           .message_action = NR_SPAN_CONSUMER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test NR_SPAN_CONSUMER message action",
           .name = "MessageBroker/SQS/Topic/Consume/Named/my_queue_or_topic",
@@ -287,7 +303,7 @@ static void test_segment_message_message_action(void) {
           .message_action = NR_SPAN_CLIENT,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test NR_SPAN_CLIENT message action",
           .name = "MessageBroker/SQS/Topic/<unknown>/Named/my_queue_or_topic",
@@ -318,7 +334,7 @@ static void test_segment_message_library(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null library",
           .name
@@ -342,7 +358,7 @@ static void test_segment_message_library(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty library",
           .name
@@ -366,7 +382,7 @@ static void test_segment_message_library(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_queue_or_topic"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid library",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_queue_or_topic",
@@ -397,7 +413,7 @@ static void test_segment_message_destination_name(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = NULL},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null destination_name",
           .name = "MessageBroker/SQS/Topic/Produce/Named/<unknown>",
@@ -419,7 +435,7 @@ static void test_segment_message_destination_name(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = ""},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty destination_name",
           .name = "MessageBroker/SQS/Topic/Produce/Named/<unknown>",
@@ -441,7 +457,7 @@ static void test_segment_message_destination_name(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid destination_name",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -466,12 +482,11 @@ static void test_segment_message_cloud_region(void) {
   /* Test null cloud_region */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_region = NULL,
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null cloud_region",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -489,11 +504,11 @@ static void test_segment_message_cloud_region(void) {
   /* Test empty cloud_region */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_region = "",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_region = ""},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty cloud_region",
@@ -512,11 +527,11 @@ static void test_segment_message_cloud_region(void) {
   /* Test valid cloud_region */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_region = "wild-west-1",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_region = "wild-west-1"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid cloud_region",
@@ -542,12 +557,11 @@ static void test_segment_message_cloud_account_id(void) {
   /* Test null cloud_account_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_account_id = NULL,
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null cloud_account_id",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -565,11 +579,11 @@ static void test_segment_message_cloud_account_id(void) {
   /* Test empty cloud_account_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_account_id = "",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_account_id = ""},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty cloud_account_id",
@@ -588,11 +602,11 @@ static void test_segment_message_cloud_account_id(void) {
   /* Test valid cloud_account_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_account_id = "12345678",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_account_id = "12345678"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid cloud_account_id",
@@ -623,7 +637,7 @@ static void test_segment_message_messaging_system(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null messaging_system",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -646,7 +660,7 @@ static void test_segment_message_messaging_system(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty messaging_system",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -669,7 +683,7 @@ static void test_segment_message_messaging_system(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid messaging_system",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -694,12 +708,11 @@ static void test_segment_message_cloud_resource_id(void) {
   /* Test null cloud_resource_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_resource_id = NULL,
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null cloud_resource_id ",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -717,11 +730,11 @@ static void test_segment_message_cloud_resource_id(void) {
   /* Test empty cloud_resource_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_resource_id = "",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_resource_id = ""},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty cloud_resource_id ",
@@ -740,11 +753,11 @@ static void test_segment_message_cloud_resource_id(void) {
   /* Test valid cloud_resource_id */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .cloud_resource_id = "my_resource_id",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.cloud_resource_id = "my_resource_id"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid cloud_resource_id ",
@@ -775,7 +788,7 @@ static void test_segment_message_server_address(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null server_address",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -798,7 +811,7 @@ static void test_segment_message_server_address(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty server_address",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -821,7 +834,7 @@ static void test_segment_message_server_address(void) {
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid server_address",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -846,12 +859,11 @@ static void test_segment_message_aws_operation(void) {
   /* Test null aws_operation */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .aws_operation = NULL,
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
-      true /* enable attributes */,
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test null aws_operation",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
@@ -869,11 +881,11 @@ static void test_segment_message_aws_operation(void) {
   /* Test empty aws_operation */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .aws_operation = "sendMessage",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.aws_operation = ""},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test empty aws_operation",
@@ -892,11 +904,11 @@ static void test_segment_message_aws_operation(void) {
   /* Test valid aws_operation */
   test_message_segment(
       &(nr_segment_message_params_t){
-          .aws_operation = "sendMessage",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
           .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.aws_operation = "sendMessage"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid aws_operation",
@@ -910,7 +922,7 @@ static void test_segment_message_aws_operation(void) {
           .messaging_system = NULL,
           .cloud_resource_id = NULL,
           .server_address = NULL,
-          .aws_operation = NULL});
+          .aws_operation = "sendMessage"});
 }
 
 static void test_segment_message_parameters_enabled(void) {
@@ -922,15 +934,15 @@ static void test_segment_message_parameters_enabled(void) {
   test_message_segment(
       &(nr_segment_message_params_t){
           .server_address = "localhost",
-          .cloud_region = "wild-west-1",
-          .cloud_account_id = "12345678",
           .messaging_system = "my_system",
-          .cloud_resource_id = "my_resource_id",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
-          .destination_name = "my_destination",
-          .aws_operation = "sendMessage"},
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.aws_operation = "sendMessage",
+                                  .cloud_region = "wild-west-1",
+                                  .cloud_account_id = "12345678",
+                                  .cloud_resource_id = "my_resource_id"},
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test true message_parameters_enabled",
@@ -946,19 +958,22 @@ static void test_segment_message_parameters_enabled(void) {
           .server_address = "localhost",
           .aws_operation = "sendMessage"});
 
-  /* Test false message_parameters_enabled */
+  /*
+   * Test false message_parameters_enabled. Message attributes should not show,
+   * but cloud attributes should be unaffected.
+   */
   test_message_segment(
       &(nr_segment_message_params_t){
           .server_address = "localhost",
-          .cloud_region = "wild-west-1",
-          .cloud_account_id = "12345678",
           .messaging_system = "my_system",
-          .cloud_resource_id = "my_resource_id",
           .library = "SQS",
           .message_action = NR_SPAN_PRODUCER,
           .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
-          .destination_name = "my_destination",
-          .aws_operation = "sendMessage"},
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){.aws_operation = "sendMessage",
+                                  .cloud_region = "wild-west-1",
+                                  .cloud_account_id = "12345678",
+                                  .cloud_resource_id = "my_resource_id"},
       false /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test false message_parameters_enabled",
@@ -967,11 +982,12 @@ static void test_segment_message_parameters_enabled(void) {
           .library_metric = "MessageBroker/SQS/all",
           .num_metrics = 1,
           .destination_name = NULL,
-          .cloud_account_id = NULL,
+          .cloud_region = "wild-west-1",
+          .cloud_account_id = "12345678",
           .messaging_system = NULL,
-          .cloud_resource_id = NULL,
+          .cloud_resource_id = "my_resource_id",
           .server_address = NULL,
-          .aws_operation = NULL});
+          .aws_operation = "sendMessage"});
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 4, .state_size = 0};
