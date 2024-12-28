@@ -265,27 +265,28 @@ static void test_nr_lib_aws_sdk_php_get_command_name() {
 
 static inline void test_message_param_queueurl_settings_expect_val(
     nr_segment_message_params_t message_params,
+    nr_segment_cloud_attrs_t cloud_attrs,
     char* cloud_region,
     char* cloud_account_id,
     char* destination_name) {
-  tlib_pass_if_str_equal("cloud_region should match.",
-                         message_params.cloud_region, cloud_region);
+  tlib_pass_if_str_equal("cloud_region should match.", cloud_attrs.cloud_region,
+                         cloud_region);
   tlib_pass_if_str_equal("cloud_account_id should match.",
-                         message_params.cloud_account_id, cloud_account_id);
+                         cloud_attrs.cloud_account_id, cloud_account_id);
   tlib_pass_if_str_equal("destination_name should match.",
                          message_params.destination_name, destination_name);
 
-  nr_free(message_params.cloud_region);
-  nr_free(message_params.cloud_account_id);
+  nr_free(cloud_attrs.cloud_region);
+  nr_free(cloud_attrs.cloud_account_id);
   nr_free(message_params.destination_name);
 }
 
 static inline void test_message_param_queueurl_settings_expect_null(
-    nr_segment_message_params_t message_params) {
-  tlib_pass_if_null("cloud_region should be null.",
-                    message_params.cloud_region);
+    nr_segment_message_params_t message_params,
+    nr_segment_cloud_attrs_t cloud_attrs) {
+  tlib_pass_if_null("cloud_region should be null.", cloud_attrs.cloud_region);
   tlib_pass_if_null("cloud_account_id should be null.",
-                    message_params.cloud_account_id);
+                    cloud_attrs.cloud_account_id);
   tlib_pass_if_null("destination_name should be null.",
                     message_params.destination_name);
 }
@@ -296,6 +297,7 @@ static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
    * cloud_account_id, and destination_name or none.
    */
   nr_segment_message_params_t message_params = {0};
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
 
   tlib_php_engine_create("");
 
@@ -312,48 +314,58 @@ static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
   // clang-format on
 
   /* Test null queueurl.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(NULL, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(NULL, &message_params, &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_1, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_1, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_2, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_2, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_3, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_3, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_4, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_4, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_5, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_5, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_6, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_6, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_7, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_7, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /* Test Invalid values.  Extracted message_param values should be null.*/
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_8, &message_params);
-  test_message_param_queueurl_settings_expect_null(message_params);
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(INVALID_QUEUE_URL_8, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_null(message_params, cloud_attrs);
 
   /*
    * Test 'https://sqs.us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME'.
    * Extracted message_param values should set.
    */
-  nr_lib_aws_sdk_php_sqs_parse_queueurl(VALID_QUEUE_URL, &message_params);
-  test_message_param_queueurl_settings_expect_val(
-      message_params, "us-east-2", "123456789012", "SQS_QUEUE_NAME");
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(VALID_QUEUE_URL, &message_params,
+                                        &cloud_attrs);
+  test_message_param_queueurl_settings_expect_val(message_params, cloud_attrs,
+                                                  "us-east-2", "123456789012",
+                                                  "SQS_QUEUE_NAME");
 
   tlib_php_engine_destroy();
 }
