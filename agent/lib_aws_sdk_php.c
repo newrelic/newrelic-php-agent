@@ -87,8 +87,23 @@ $result = $client->sendMessageBatch(array(
 
 //clang-format on
 */
-void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
+
+char* nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_PROTO) {
   zval* command_name = NULL;
+  char* command_name_string = NULL;
+
+  /* get the command_name. */
+  command_name = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  if (0 != nr_php_is_zval_non_empty_string(command_name)) {
+    command_name_string = nr_strdup(Z_STRVAL_P(command_name));
+  }
+
+  nr_php_arg_release(&command_name);
+  return command_name_string;
+}
+
+void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
   char* command_arg_value = NULL;
   char* command_name_string = NULL;
   bool instrumented = false;
@@ -102,17 +117,8 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
     return;
   }
 
-  /* First get the SQS command_name to determine if we instrument the command.
-   */
-  command_name = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
-
-  if (0 == nr_php_is_zval_non_empty_string(command_name)) {
-    /* We can't do anything with an unusable command_name. */
-    nr_php_arg_release(&command_name);
-    return;
-  }
-
-  command_name_string = Z_STRVAL_P(command_name);
+  command_name_string
+      = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
 
   /* Determine if we instrument this command. */
   if (nr_streq(command_name_string, "sendMessage")
@@ -141,7 +147,8 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
   }
 
   nr_free(command_arg_value);
-  nr_php_arg_release(&command_name);
+  nr_free(command_name_string);
+
   /*
    * These are the message_params params that were strduped in
    * nr_lib_aws_sdk_php_sqs_parse_queueurl
@@ -303,11 +310,9 @@ char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
   param_array = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
 
   if (nr_php_is_zval_valid_array(param_array)) {
-
     /* The first element in param_array is an array of parameters. */
     command_arg_array = nr_php_zend_hash_index_find(Z_ARRVAL_P(param_array), 0);
     if (nr_php_is_zval_valid_array(command_arg_array)) {
-
       zval* queueurl_arg = nr_php_zend_hash_find(Z_ARRVAL_P(command_arg_array),
                                                  command_arg_name);
 
@@ -323,12 +328,17 @@ char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
 
 /*
  * For Aws/AwsClient::__call see
- * https://github.com/aws/aws-sdk-php/blob/master/src/AwsClientInterface.php ALL
+ * https://github.com/aws/aws-sdk-php/blob/master/src/AwsClientInterface.php
+ * ALL
  * client commands are handled by this function, so it is the start and end of
  * any command. Creates and executes a command for an operation by name.
- *
- * Suffixing an operation name with "Async" will return a
- * promise that can be used to execute commands asynchronously.
+ * When a class command isn't explicitly created as a function, the __call class
+ * handles the invocation.  This means all AWS Client Service commands are
+ * handled by this call. Any invocation starts when this function starts, and
+ * ends when it ends.  This function decodes the command name, determines the
+ * appropriate args, decodes the args, generates a guzzle request to send to the
+ * AWS Service, gets the guzzle response from the AWS Service, and bundles that
+ * response into an AswResult to return.
  *
  * @param string $name      Name of the command to execute.
  * @param array  $arguments Arguments to pass to the getCommand method.
