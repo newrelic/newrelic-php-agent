@@ -1260,7 +1260,10 @@ static inline void nr_php_execute_segment_add_metric(
   if (create_metric) {
     nr_segment_add_metric(segment, buf, true);
   }
-  nr_segment_set_name(segment, buf);
+  if (!segment->name) {
+    /* Only set the segment name if it is not already set. */
+    nr_segment_set_name(segment, buf);
+  }
 }
 
 /*
