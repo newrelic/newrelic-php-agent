@@ -103,9 +103,10 @@ char* nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_PROTO) {
   return command_name_string;
 }
 
-void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
+void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
+                                   char* command_name_string,
+                                   NR_EXECUTE_PROTO) {
   char* command_arg_value = NULL;
-  char* command_name_string = NULL;
   bool instrumented = false;
   nr_segment_message_params_t message_params = {
       .library = "SQS",
@@ -117,9 +118,6 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
   if (NULL == segment) {
     return;
   }
-
-  command_name_string
-      = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
 
   /* Determine if we instrument this command. */
   if (nr_streq(command_name_string, "sendMessage")
@@ -153,7 +151,6 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment, NR_EXECUTE_PROTO) {
   }
 
   nr_free(command_arg_value);
-  nr_free(command_name_string);
 
   /*
    * These are the message_params params that were strduped in
@@ -353,15 +350,68 @@ char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
  * @return ResultInterface
  * @throws \Exception
  */
+
+NR_PHP_WRAPPER(nr_aws_client_call_before) {
+  (void)wraprec;
+  nr_segment_t* segment = NULL;
+  /*
+   * Start a segment in case it needs to become an external, message, or
+   * datastore segment.
+   */
+  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  if (NULL != segment) {
+    segment->wraprec = auto_segment->wraprec;
+  }
+}
+NR_PHP_WRAPPER_END
+
 NR_PHP_WRAPPER(nr_aws_client_call) {
   (void)wraprec;
 
   const char* klass = NULL;
+  char* command_name_string = NULL;
+  char* real_class_and_command = NULL;
+  nr_segment_t* segment = NULL;
+
   klass
       = nr_php_class_entry_name(Z_OBJCE_P(nr_php_execute_scope(execute_data)));
-  if (nr_streq(klass, AWS_SDK_PHP_SQSCLIENT_CLASS)) {
-    nr_lib_aws_sdk_php_sqs_handle(auto_segment, NR_EXECUTE_ORIG_ARGS);
+  command_name_string
+      = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
+
+  if (NULL != command_name_string) {
+    if (nr_streq(klass, AWS_SDK_PHP_SQSCLIENT_CLASS)) {
+      nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
+                                    NR_EXECUTE_ORIG_ARGS);
+    }
   }
+ 
+  if (NR_SEGMENT_CUSTOM == auto_segment->type) {
+    /*
+     * It wasn't set to any of the segments that would autoclose the segment so
+     * we need to end the segment that we started in the before wrapper to
+     * handle external,datastore,message segments
+     */
+    nr_segment_discard(&auto_segment);
+  }
+
+  if (NULL != klass && NULL != command_name_string) {
+    /*
+     * If we have klass and command_name_string, we can give the calling segment
+     * a more meaningful name than Aws/AwsClient::__call We can decode it to
+     * Aws/CALLING_CLASS_NAME/CALLING_CLASS_CLIENT::CALLING_CLASS_COMMAND EX:
+     * Aws\\Sqs\\SqsClient::sendMessage
+     */
+
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+    if (NULL != segment) {
+      real_class_and_command
+          = nr_formatf("Custom/%s::%s", klass, command_name_string);
+      nr_segment_set_name(segment, real_class_and_command);
+    }
+  }
+
+  nr_free(command_name_string);
+  nr_free(real_class_and_command);
 }
 NR_PHP_WRAPPER_END
 
@@ -515,7 +565,7 @@ void nr_aws_sdk_php_enable() {
   /* We only support instrumentation above PHP 8.1 */
   /* Called when a service command is issued from a Client */
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Aws\\AwsClient::__call"), NULL, nr_aws_client_call,
-      nr_aws_client_call);
+      NR_PSTR("Aws\\AwsClient::__call"), nr_aws_client_call_before,
+      nr_aws_client_call, nr_aws_client_call);
 #endif
 }

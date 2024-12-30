@@ -36,7 +36,7 @@ extern void nr_lib_aws_sdk_php_add_supportability_service_metric(
 
 /*
  * Purpose : Parses the QueueUrl to extract cloud_region, cloud_account_id, and
- * destination_name.  The extraction sets all or none since the values from the
+ * destination_name.  The extraction sets all or none since the values are from the
  * same string and if it is malformed, it cannot be used.
  *
  * Params  : 1. The QueueUrl
@@ -58,12 +58,15 @@ extern void nr_lib_aws_sdk_php_sqs_parse_queueurl(
 /*
  * Purpose : Handle when an SqsClient initiates a command
  *
- * Params  : 1. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
- *           2. segment : if we instrument the commandName, we'll need to end
- * the segment as a message segment Returns :
+ * Params  : 1. segment : if we instrument the commandName, we'll need to end
+ * the segment as a message segment
+ *           2. command_name_string : the string of the command being called
+ *           3. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
+ * Returns :
  *
  */
 extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
+                                          char* command_name_string,
                                           NR_EXECUTE_PROTO);
 
 /*
@@ -71,8 +74,8 @@ extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
  * an array containing an array of argument name:value pairs. Given an argument
  * name, this will return the value of the argument.
  *
- * Params  : 1. NR_EXECUTE_PROTO (execute_data, func_return_value)
- *           2. arg_name: name of argument to extract from command arg array
+ * Params  : 1. arg_name: name of argument to extract from command arg array
+ *           2. NR_EXECUTE_PROTO (execute_data, func_return_value)
  *
  * Returns : the value of the arg_name; NULL if does not exist
  *
@@ -87,7 +90,6 @@ extern char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
  * which should be the name of the command.
  *
  * Params  : 1. NR_EXECUTE_PROTO (execute_data, func_return_value)
- *           2. command_name: name of the command being called
  *
  * Returns : the value of the command_name; NULL if does not exist
  *
