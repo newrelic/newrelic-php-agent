@@ -36,8 +36,8 @@ extern void nr_lib_aws_sdk_php_add_supportability_service_metric(
 
 /*
  * Purpose : Parses the QueueUrl to extract cloud_region, cloud_account_id, and
- * destination_name.  The extraction sets all or none since the values are from the
- * same string and if it is malformed, it cannot be used.
+ * destination_name.  The extraction sets all or none since the values are from
+ * the same string and if it is malformed, it cannot be used.
  *
  * Params  : 1. The QueueUrl
  *           2. message_params to set message_params.destination_name

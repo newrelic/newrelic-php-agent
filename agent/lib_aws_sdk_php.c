@@ -384,7 +384,7 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
                                     NR_EXECUTE_ORIG_ARGS);
     }
   }
- 
+
   if (NR_SEGMENT_CUSTOM == auto_segment->type) {
     /*
      * It wasn't set to any of the segments that would autoclose the segment so
