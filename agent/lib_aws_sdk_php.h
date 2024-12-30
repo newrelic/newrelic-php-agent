@@ -11,9 +11,12 @@
 /* Service instrumentation only supported above PHP 8.1+*/
 #define SQS_LIBRARY_NAME "SQS"
 #define AWS_SQS_MESSAGING_SERVICE "aws_sqs"
-#define AWS_SDK_PHP_SQSCLIENT_CLASS "Aws\\Sqs\\SqsClient"
+#define AWS_SDK_PHP_SQSCLIENT_CLASS "SqsClient"
+#define AWS_SDK_PHP_SQSCLIENT_CLASS_LEN sizeof(AWS_SDK_PHP_SQSCLIENT_CLASS) - 1
 #define AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG "QueueUrl"
-#define AWS_SDK_PHP_DYNAMODBCLIENT_CLASS "Aws\\DynamoDb\\DynamoDbClient"
+#define AWS_SDK_PHP_DYNAMODBCLIENT_CLASS "DynamoDbClient"
+#define AWS_SDK_PHP_DYNAMODBCLIENT_CLASS_LEN \
+  sizeof(AWS_SDK_PHP_DYNAMODBCLIENT_CLASS) - 1
 #define AWS_QUEUEURL_LEN_MAX 512
 #endif /* PHP 8.1+ */
 

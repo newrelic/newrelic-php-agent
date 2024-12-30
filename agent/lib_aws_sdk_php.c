@@ -378,8 +378,9 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
   command_name_string
       = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
 
-  if (NULL != command_name_string) {
-    if (nr_streq(klass, AWS_SDK_PHP_SQSCLIENT_CLASS)) {
+  if (NULL != command_name_string && NULL != klass) {
+    if (nr_striendswith(klass, nr_strlen(klass), AWS_SDK_PHP_SQSCLIENT_CLASS,
+                        AWS_SDK_PHP_SQSCLIENT_CLASS_LEN)) {
       nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
                                     NR_EXECUTE_ORIG_ARGS);
     }
