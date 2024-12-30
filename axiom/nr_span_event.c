@@ -369,26 +369,12 @@ void nr_span_event_set_message(nr_span_event_t* event,
       nro_set_hash_string(event->agent_attributes, "messaging.destination.name",
                           new_value);
       break;
-    case NR_SPAN_MESSAGE_CLOUD_REGION:
-      nro_set_hash_string(event->agent_attributes, "cloud.region", new_value);
-      break;
-    case NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID:
-      nro_set_hash_string(event->agent_attributes, "cloud.account.id",
-                          new_value);
-      break;
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
       nro_set_hash_string(event->agent_attributes, "messaging.system",
                           new_value);
       break;
-    case NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID:
-      nro_set_hash_string(event->agent_attributes, "cloud.resource_id",
-                          new_value);
-      break;
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       nro_set_hash_string(event->agent_attributes, "server.address", new_value);
-      break;
-    case NR_SPAN_MESSAGE_AWS_OPERATION:
-      nro_set_hash_string(event->agent_attributes, "aws.operation", new_value);
       break;
   }
 }
@@ -542,22 +528,11 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
     case NR_SPAN_MESSAGE_DESTINATION_NAME:
       return nro_get_hash_string(event->agent_attributes,
                                  "messaging.destination.name", NULL);
-    case NR_SPAN_MESSAGE_CLOUD_REGION:
-      return nro_get_hash_string(event->agent_attributes, "cloud.region", NULL);
-    case NR_SPAN_MESSAGE_CLOUD_ACCOUNT_ID:
-      return nro_get_hash_string(event->agent_attributes, "cloud.account.id",
-                                 NULL);
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
       return nro_get_hash_string(event->agent_attributes, "messaging.system",
                                  NULL);
-    case NR_SPAN_MESSAGE_CLOUD_RESOURCE_ID:
-      return nro_get_hash_string(event->agent_attributes, "cloud.resource_id",
-                                 NULL);
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       return nro_get_hash_string(event->agent_attributes, "server.address",
-                                 NULL);
-    case NR_SPAN_MESSAGE_AWS_OPERATION:
-      return nro_get_hash_string(event->agent_attributes, "aws.operation",
                                  NULL);
   }
   return NULL;

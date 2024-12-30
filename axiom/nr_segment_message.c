@@ -28,21 +28,11 @@ static void nr_segment_message_set_attrs(
     message_attributes.destination_name = nr_strempty(params->destination_name)
                                               ? NULL
                                               : params->destination_name;
-    message_attributes.cloud_region
-        = nr_strempty(params->cloud_region) ? NULL : params->cloud_region;
-    message_attributes.cloud_account_id = nr_strempty(params->cloud_account_id)
-                                              ? NULL
-                                              : params->cloud_account_id;
     message_attributes.messaging_system = nr_strempty(params->messaging_system)
                                               ? NULL
                                               : params->messaging_system;
-    message_attributes.cloud_resource_id
-        = nr_strempty(params->cloud_resource_id) ? NULL
-                                                 : params->cloud_resource_id;
     message_attributes.server_address
         = nr_strempty(params->server_address) ? NULL : params->server_address;
-    message_attributes.aws_operation
-        = nr_strempty(params->aws_operation) ? NULL : params->aws_operation;
   }
 
   nr_segment_set_message(segment, &message_attributes);

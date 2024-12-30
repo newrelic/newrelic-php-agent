@@ -168,16 +168,8 @@ static void add_typed_attributes_to_buffer(nrbuf_t* buf,
                                    message->destination_name, false);
       add_hash_key_value_to_buffer(buf, "messaging_system",
                                    message->messaging_system, false);
-      add_hash_key_value_to_buffer(buf, "cloud_region", message->cloud_region,
-                                   false);
-      add_hash_key_value_to_buffer(buf, "cloud_account_id",
-                                   message->cloud_account_id, false);
-      add_hash_key_value_to_buffer(buf, "cloud_resource_id",
-                                   message->cloud_resource_id, false);
       add_hash_key_value_to_buffer(buf, "server_address",
                                    message->server_address, false);
-      add_hash_key_value_to_buffer(buf, "aws_operation", message->aws_operation,
-                                   false);
     } break;
     case NR_SEGMENT_CUSTOM:
     default:
@@ -594,4 +586,66 @@ void nr_segment_traces_create_data(
   nr_buffer_destroy(&buf);
 
   return;
+}
+
+/*
+ * Purpose : If available, add cloud attributes to segment.
+ *
+ * Params  : 1. segment to create and add agent attributes to
+ *           2. nr_segment_cloud_attrs_t* that contains the attributes
+ *
+ * Returns : void
+ *
+ */
+extern void nr_segment_traces_add_cloud_attributes(
+    nr_segment_t* segment,
+    const nr_segment_cloud_attrs_t* cloud_attrs) {
+  if (NULL == cloud_attrs) {
+    return;
+  }
+
+  if (NULL == segment) {
+    return;
+  }
+
+  /*
+   * Ensure a spot for the attributes.
+   */
+
+  if (NULL == segment->attributes) {
+    segment->attributes = nr_attributes_create(segment->txn->attribute_config);
+  }
+
+  if (nrunlikely(NULL == segment->attributes)) {
+    return;
+  }
+
+#define NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION                           \
+  (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR \
+   | NR_ATTRIBUTE_DESTINATION_TXN_EVENT | NR_ATTRIBUTE_DESTINATION_SPAN)
+
+  /*
+   * If the value is empty or null, ignore it.
+   */
+
+  if (!nr_strempty(cloud_attrs->cloud_region)) {
+    nr_attributes_agent_add_string(segment->attributes,
+                                   NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+                                   "cloud.region", cloud_attrs->cloud_region);
+  }
+  if (!nr_strempty(cloud_attrs->cloud_account_id)) {
+    nr_attributes_agent_add_string(
+        segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+        "cloud.account.id", cloud_attrs->cloud_account_id);
+  }
+  if (!nr_strempty(cloud_attrs->cloud_resource_id)) {
+    nr_attributes_agent_add_string(
+        segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+        "cloud.resource_id", cloud_attrs->cloud_resource_id);
+  }
+  if (!nr_strempty(cloud_attrs->aws_operation)) {
+    nr_attributes_agent_add_string(segment->attributes,
+                                   NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+                                   "aws.operation", cloud_attrs->aws_operation);
+  }
 }
