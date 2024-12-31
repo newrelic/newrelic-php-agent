@@ -9,7 +9,7 @@ When PDO base class constructor is used to create connection object
 and a query is executed via PDOStatement::execute() with value bound,
 the agent should
  - not generate errors
- - record a datastore metrics
+ - record datastore metrics
  - record a datastore span event
 Moreover, when the query execution time exceeds the explain threshold,
 the agent should record a slow sql trace with explain plan.

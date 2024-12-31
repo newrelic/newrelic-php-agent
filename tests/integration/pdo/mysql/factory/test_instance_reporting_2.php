@@ -9,7 +9,7 @@ When PDO base class constructor is used to create connection object
 to a database on a localhost via a unix socket,
 and database instance reporting is enabled, the agent should
  - not generate errors
- - record a datastore metrics
+ - record datastore metrics
  - record a datastore instance metric
  - record a datastore span event with instance information
 Moreover, when the query execution time exceeds the explain threshold,
