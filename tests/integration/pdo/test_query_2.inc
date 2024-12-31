@@ -4,6 +4,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*
+  This file contains code that runs the PDO::query test using given connection object.
+  It is common for all database driver specific tests that prepare connection objects
+  using different methods:
+  - ./mysql:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  - ./pgsql:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  - ./sqlite:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  It tests the FETCH_COLUMN variant of PDO::query().
+*/
+
 require_once(dirname(__FILE__).'/../../include/tap.php');
 
 function test_pdo_query($conn, $want_drop_table_result=1) {

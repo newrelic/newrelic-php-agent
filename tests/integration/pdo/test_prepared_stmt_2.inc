@@ -4,6 +4,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*
+  This file contains code that runs the PDOStatement::execute() test on PDOStatement
+  object prepared using a given connection object.
+  It is common for all database driver specific tests that prepare connection objects
+  using different methods:
+  - ./mysql:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  - ./pgsql:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  - ./sqlite:
+    - ./base-class
+    - ./constructor
+    - ./factory
+  It tests PDOStatement with values bound.
+*/
+
 require_once(dirname(__FILE__).'/../../include/tap.php');
 
 function test_prepared_stmt($conn, $query) {
