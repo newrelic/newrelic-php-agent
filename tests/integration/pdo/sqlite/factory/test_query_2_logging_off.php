@@ -73,6 +73,6 @@ ok - drop table
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2_logging_off.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_2.inc');
 
 test_pdo_query(PDO::Connect('sqlite::memory:'));
