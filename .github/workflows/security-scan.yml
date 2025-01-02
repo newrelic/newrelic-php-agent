@@ -45,4 +45,5 @@ jobs:
         if: ${{ github.event_name == 'schedule' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
+          checkout_path: ./php-agent
           sarif_file: trivy-results.sarif
