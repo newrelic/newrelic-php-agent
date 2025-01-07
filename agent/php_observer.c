@@ -69,6 +69,23 @@
  */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+
+static inline zend_observer_fcall_begin_handler nr_php_observer_determine_begin_handler(void) {
+
+  if (NRINI(tt_detail)) {
+    return nr_php_observer_fcall_begin_tt_detail_on;
+  }
+  return nr_php_observer_fcall_begin_tt_detail_off;
+}
+
+static inline zend_observer_fcall_end_handler nr_php_observer_determine_end_handler(void) {
+
+  if (NRINI(tt_detail)) {
+    return nr_php_observer_fcall_end_tt_detail_on;
+  }
+  return nr_php_observer_fcall_end_tt_detail_off;
+}
+
 /*
  * Register the begin and end function handlers with the Observer API.
  */
@@ -82,8 +99,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
       || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
     return handlers;
   }
-  handlers.begin = nr_php_observer_fcall_begin;
-  handlers.end = nr_php_observer_fcall_end;
+  handlers.begin = nr_php_observer_determine_begin_handler();
+  handlers.end = nr_php_observer_determine_end_handler();
   return handlers;
 }
 
