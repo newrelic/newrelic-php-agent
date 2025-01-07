@@ -11,7 +11,7 @@ import (
 )
 
 type kubernetes struct {
-	KubernetesServiceHost string `json:"kubernetes_service_host",omitempty`
+	KubernetesServiceHost string `json:"kubernetes_service_host,omitempty"`
 
 	// Having a custom getter allows the unit tests to mock os.Getenv().
 	environmentVariableGetter func(key string) string
