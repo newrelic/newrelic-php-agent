@@ -93,7 +93,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_WARNING",
-        "code.lineno": 136,
+        "code.lineno": 137,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -114,7 +114,7 @@ log_errors=0
       },
       {},
       {
-        "code.lineno":  130,
+        "code.lineno":  131,
         "code.filepath": "__FILE__",
         "code.function": "{closure:__FILE__:??}"
       }

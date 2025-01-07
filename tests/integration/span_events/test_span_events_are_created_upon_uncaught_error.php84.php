@@ -93,7 +93,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_WARNING",
-        "code.lineno": 108,
+        "code.lineno": 109,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
