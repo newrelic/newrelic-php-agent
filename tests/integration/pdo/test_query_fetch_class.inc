@@ -5,7 +5,7 @@
  */
 
 /*
-  This file contains code that runs the PDO::query test using given connection object.
+  This file contains code that runs the PDO::query test using given connection object. It tests the FETCH_CLASS variant of PDO::query().
   It is common for all database driver specific tests that prepare connection objects
   using different methods:
   - ./mysql:
@@ -20,7 +20,6 @@
     - ./base-class
     - ./constructor
     - ./factory
-  It tests the FETCH_CLASS variant of PDO::query().
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');

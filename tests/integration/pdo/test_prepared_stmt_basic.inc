@@ -6,7 +6,7 @@
 
 /*
   This file contains code that runs the PDOStatement::execute() test on PDOStatement
-  object prepared using a given connection object.
+  object prepared using a given connection object. It tests PDOStatement without any values bound.
   It is common for all database driver specific tests that prepare connection objects
   using different methods:
   - ./mysql:
@@ -21,7 +21,6 @@
     - ./base-class
     - ./constructor
     - ./factory
-  It tests PDOStatement without any values bound.
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');
