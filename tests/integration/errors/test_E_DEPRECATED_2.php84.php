@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 The agent should capture and report deprecation warnings.
+PHP 8.4+ can no longer use E_USER_ERROR.
 */
 
 /*SKIPIF

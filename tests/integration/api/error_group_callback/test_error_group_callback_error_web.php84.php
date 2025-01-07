@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 Tests newrelic_set_error_group_callback() API for Web errors.
+PHP 8.4+ can no longer use E_USER_ERROR.
 */
 
 /*SKIPIF

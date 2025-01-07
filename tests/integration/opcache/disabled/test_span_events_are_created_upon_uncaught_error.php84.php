@@ -7,6 +7,7 @@
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
 when an error is generated and left to the default error handler.
+PHP 8.4+ can no longer use E_USER_ERROR.
 */
 
 /*SKIPIF

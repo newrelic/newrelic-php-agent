@@ -7,6 +7,7 @@
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
 when an error is generated and handled.
+PHP 8.4+ names closures differently.
 */
 
 /*SKIPIF
