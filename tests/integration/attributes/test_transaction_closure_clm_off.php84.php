@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 The agent should *not* send code level metrics (CLM) when disabled.
+PHP 8.4+ names closures differently.
  */
 
 /*SKIPIF

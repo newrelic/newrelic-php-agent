@@ -7,6 +7,7 @@
 /*DESCRIPTION
 The agent should send code level metrics (CLM) including function name,
 class name, and lineno for closures.
+PHP 8.4+ names closures differently.
  */
 
 /*SKIPIF

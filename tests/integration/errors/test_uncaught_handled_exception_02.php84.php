@@ -9,6 +9,7 @@ When a user exception handler unregisters itself as an exception handler when it
 the agent should record the error and add error attributes on all spans leading to uncaught exception as
 well as the one throwing the exception. Error attributtes are not expected on the root span (because
 the exception has been handled) as well as on the span created for exception handler.
+PHP 8.4+ names closures differently.
 */
 
 /*INI
