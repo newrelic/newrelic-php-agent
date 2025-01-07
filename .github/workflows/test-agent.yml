@@ -44,6 +44,39 @@ jobs:
             echo "$GOFMT_REPORTED_FILES" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+  govet:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@v4
+        with:
+          path: php-agent
+      - name: Get go version
+        id: get-go-version
+        run: |
+          echo "go toolchain version required to build the daemon:"
+          toolchain="$(awk '/^toolchain */ {gsub(/^go/, "", $2); print $2}' ./php-agent/daemon/go.mod)"
+          echo "[${toolchain}]"
+          echo "go-toolchain-version=${toolchain}" >> $GITHUB_OUTPUT
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.get-go-version.outputs.go-toolchain-version }}
+          cache-dependency-path: "**/*.sum"
+      - name: Verify go version
+        run: |
+          echo "Verify correct go toolchain version is used"
+          actual="$(go version)"
+          echo "Actual: [$actual]"
+          expected="go version go${{ steps.get-go-version.outputs.go-toolchain-version }} linux/amd64"
+          echo "Expected: [$expected]"
+          if [ "$actual" != "$expected" ]; then
+            exit 1
+          fi
+      - name: Run go vet
+        run: go vet -C ./php-agent/daemon ./...
+        shell: bash
   daemon-unit-tests:
     runs-on: ubuntu-latest
     env:
