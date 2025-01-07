@@ -5,22 +5,23 @@
  */
 
 /*DESCRIPTION
-When PDO base class constructor is used to create connection object
+When PDO's specialized subclass constructor is used to create connection object
 and a query is executed via PDOStatement::execute(), the agent should
  - not generate errors
  - record datastore metrics
  - record a datastore span event
 Moreover, when the query execution time exceeds the explain threshold,
-the agent should record a slow sql trace without explain plan.
+the agent should record a slow sql trace with explain plan.
 */
 
 /*SKIPIF
-<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*ENVIRONMENT
-DATASTORE_PRODUCT=SQLite
-DATASTORE_COLLECTION=sqlite_master
+DATASTORE_PRODUCT=MySQL
+DATASTORE_COLLECTION=tables
 */
 
 /*INI
@@ -47,6 +48,9 @@ Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select, 1
 Supportability/TxnData/SlowSQL, 1
 */
 
+// Slow sql trace for MySQL is expected to contain the explain plan. However, the explain plan
+// varies depending on the MySQL version. Therefore, to ensure portability, wildcard matching
+// is used.
 /*EXPECT_SLOW_SQLS
 [
   [
@@ -54,7 +58,7 @@ Supportability/TxnData/SlowSQL, 1
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from ENV[DATASTORE_COLLECTION] limit ?;",
+      "select * from information_schema.tables limit ?;",
       "Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select",
       1,
       "?? total time",
@@ -64,7 +68,8 @@ Supportability/TxnData/SlowSQL, 1
         "backtrace": [
           "/ in PDOStatement::execute called at .*\/",
           " in test_prepared_stmt called at __FILE__ (??)"
-        ]
+        ],
+        "explain_plan": "??"
       }
     ]
   ]
@@ -93,14 +98,14 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.address": "unknown:unknown",
-      "db.statement": "select * from ENV[DATASTORE_COLLECTION] limit ?;"
+      "db.statement": "select * from information_schema.tables limit ?;"
     }
   ]
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_basic.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$query = 'select * from sqlite_master limit 1;';
-test_prepared_stmt(new PDO('sqlite::memory:'), $query);
+$query = 'select * from information_schema.tables limit 1;';
+test_prepared_stmt(new Pdo\Mysql($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), $query);

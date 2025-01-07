@@ -5,22 +5,21 @@
  */
 
 /*DESCRIPTION
-When PDO::connect factory method is used to create connection object
+When PDO base class constructor is used to create connection object
 and a query is executed via PDOStatement::execute(), the agent should
  - not generate errors
  - record datastore metrics
  - record a datastore span event
 Moreover, when the query execution time exceeds the explain threshold,
-the agent should record a slow sql trace without explain plan.
+the agent should record a slow sql trace with explain plan.
 */
 
 /*SKIPIF
-<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_pgsql.inc');
-require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_mysql.inc');
 */
 
 /*ENVIRONMENT
-DATASTORE_PRODUCT=Postgres
+DATASTORE_PRODUCT=MySQL
 DATASTORE_COLLECTION=tables
 */
 
@@ -48,6 +47,9 @@ Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select, 1
 Supportability/TxnData/SlowSQL, 1
 */
 
+// Slow sql trace for MySQL is expected to contain the explain plan. However, the explain plan
+// varies depending on the MySQL version. Therefore, to ensure portability, wildcard matching
+// is used.
 /*EXPECT_SLOW_SQLS
 [
   [
@@ -65,7 +67,8 @@ Supportability/TxnData/SlowSQL, 1
         "backtrace": [
           "/ in PDOStatement::execute called at .*\/",
           " in test_prepared_stmt called at __FILE__ (??)"
-        ]
+        ],
+        "explain_plan": "??"
       }
     ]
   ]
@@ -100,8 +103,8 @@ Supportability/TxnData/SlowSQL, 1
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_basic.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
 $query = 'select * from information_schema.tables limit 1;';
-test_prepared_stmt(PDO::connect($PDO_PGSQL_DSN, $PG_USER, $PG_PW), $query);
+test_prepared_stmt(new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), $query);

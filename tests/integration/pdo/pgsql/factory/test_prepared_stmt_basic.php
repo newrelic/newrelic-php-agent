@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-When PDO's specialized subclass constructor is used to create connection object
+When PDO::connect factory method is used to create connection object
 and a query is executed via PDOStatement::execute(), the agent should
  - not generate errors
  - record datastore metrics
@@ -15,13 +15,13 @@ the agent should record a slow sql trace without explain plan.
 */
 
 /*SKIPIF
-<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_pgsql.inc');
 require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*ENVIRONMENT
-DATASTORE_PRODUCT=SQLite
-DATASTORE_COLLECTION=sqlite_schema
+DATASTORE_PRODUCT=Postgres
+DATASTORE_COLLECTION=tables
 */
 
 /*INI
@@ -55,7 +55,7 @@ Supportability/TxnData/SlowSQL, 1
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from ENV[DATASTORE_COLLECTION] limit ?;",
+      "select * from information_schema.tables limit ?;",
       "Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select",
       1,
       "?? total time",
@@ -94,14 +94,14 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.address": "unknown:unknown",
-      "db.statement": "select * from ENV[DATASTORE_COLLECTION] limit ?;"
+      "db.statement": "select * from information_schema.tables limit ?;"
     }
   ]
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_basic.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$query = 'select * from sqlite_schema limit 1;';
-test_prepared_stmt(new Pdo\Sqlite('sqlite::memory:'), $query);
+$query = 'select * from information_schema.tables limit 1;';
+test_prepared_stmt(PDO::connect($PDO_PGSQL_DSN, $PG_USER, $PG_PW), $query);

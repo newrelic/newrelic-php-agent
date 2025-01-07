@@ -6,8 +6,7 @@
 
 /*DESCRIPTION
 When PDO's specialized subclass constructor is used to create connection object
-and a query is executed via PDOStatement::execute() with value bound,
-the agent should
+and a query is executed via PDOStatement::execute(), the agent should
  - not generate errors
  - record datastore metrics
  - record a datastore span event
@@ -56,7 +55,7 @@ Supportability/TxnData/SlowSQL, 1
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from information_schema.tables where table_name = ? limit ?;",
+      "select * from information_schema.tables limit ?;",
       "Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select",
       1,
       "?? total time",
@@ -95,14 +94,14 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.address": "unknown:unknown",
-      "db.statement": "select * from information_schema.tables where table_name = ? limit ?;"
+      "db.statement": "select * from information_schema.tables limit ?;"
     }
   ]
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_2.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_basic.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$query = 'select * from information_schema.tables where table_name = ? limit 1;';
+$query = 'select * from information_schema.tables limit 1;';
 test_prepared_stmt(new Pdo\Pgsql($PDO_PGSQL_DSN, $PG_USER, $PG_PW), $query);

@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-When PDO's specialized subclass constructor is used to create connection object
+When PDO::connect factory method is used to create connection object
 and a query is executed via PDOStatement::execute() with value bound,
 the agent should
  - not generate errors
@@ -105,8 +105,8 @@ Supportability/TxnData/SlowSQL, 1
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_2.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_bind_value.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
 $query = 'select * from information_schema.tables where table_name = ? limit 1;';
-test_prepared_stmt(new Pdo\Mysql($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), $query);
+test_prepared_stmt(PDO::connect($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD), $query);

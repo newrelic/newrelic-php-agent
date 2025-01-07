@@ -15,13 +15,13 @@ the agent should record a slow sql trace without explain plan.
 */
 
 /*SKIPIF
-<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_pgsql.inc');
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
 require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*ENVIRONMENT
-DATASTORE_PRODUCT=Postgres
-DATASTORE_COLLECTION=tables
+DATASTORE_PRODUCT=SQLite
+DATASTORE_COLLECTION=sqlite_schema
 */
 
 /*INI
@@ -55,7 +55,7 @@ Supportability/TxnData/SlowSQL, 1
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from information_schema.tables limit ?;",
+      "select * from ENV[DATASTORE_COLLECTION] limit ?;",
       "Datastore/statement/ENV[DATASTORE_PRODUCT]/ENV[DATASTORE_COLLECTION]/select",
       1,
       "?? total time",
@@ -94,14 +94,14 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.address": "unknown:unknown",
-      "db.statement": "select * from information_schema.tables limit ?;"
+      "db.statement": "select * from ENV[DATASTORE_COLLECTION] limit ?;"
     }
   ]
 ]
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_1.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_prepared_stmt_basic.inc');
 require_once(realpath (dirname ( __FILE__ )) . '/../../../../include/config.php');
 
-$query = 'select * from information_schema.tables limit 1;';
-test_prepared_stmt(new Pdo\Pgsql($PDO_PGSQL_DSN, $PG_USER, $PG_PW), $query);
+$query = 'select * from sqlite_schema limit 1;';
+test_prepared_stmt(new Pdo\Sqlite('sqlite::memory:'), $query);
