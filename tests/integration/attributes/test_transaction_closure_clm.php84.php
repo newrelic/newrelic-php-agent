@@ -95,7 +95,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 151,
+        "code.lineno": 152,
         "code.filepath": "__FILE__",
         "code.function": "{closure:__FILE__:??}"
       }
@@ -116,7 +116,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 160,
         "code.filepath": "__FILE__",
         "code.function": "{closure:__FILE__:??}"
       }
@@ -137,7 +137,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 160,
         "code.filepath": "__FILE__",
         "code.function": "{closure:__FILE__:??}"
       }
