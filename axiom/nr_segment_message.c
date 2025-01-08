@@ -45,7 +45,7 @@ static void nr_segment_message_set_attrs(
  * Metrics created during this call
  * ----------------------------------------------------------------------------------
  * MessageBroker/all                                         Unscoped Always
- * MessageBroker/{library}/all                               coped   Always
+ * MessageBroker/{library}/all                               Scoped   Always
  *
  * Metrics created based on MessageBroker/all (in nr_txn_create_rollup_metrics)
  * ----------------------------------------------------------------------------------
