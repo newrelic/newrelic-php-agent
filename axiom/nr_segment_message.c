@@ -55,8 +55,9 @@ static void nr_segment_message_set_attrs(
  * Segment name
  * -----------------------------------------------------------------------------------
  * MessageBroker/{library}/all Always
+ * For non-temp:
  * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
- *                                                                            non-temp
+ * For temp:                                                                       
  * MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp
  *
  *
