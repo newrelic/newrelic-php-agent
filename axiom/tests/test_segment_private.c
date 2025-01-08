@@ -382,6 +382,9 @@ static void test_destroy_typed_attributes(void) {
   s.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
   s.typed_attributes->message.server_address = nr_strdup("localhost");
 
+  /* 
+  * Valgrind shall affirm that the attributes were cleaned up.
+  */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, &s.typed_attributes);
 
   /*
@@ -395,6 +398,9 @@ static void test_destroy_typed_attributes(void) {
   s.typed_attributes->external.procedure = nr_strdup(test_string);
   s.typed_attributes->external.status = 200;
 
+  /* 
+  * Valgrind shall affirm that the attributes were cleaned up.
+  */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_EXTERNAL, &s.typed_attributes);
 
   /*
@@ -413,6 +419,9 @@ static void test_destroy_typed_attributes(void) {
       = nr_strdup(test_string);
   s.typed_attributes->datastore.instance.database_name = nr_strdup(test_string);
 
+  /* 
+  * Valgrind shall affirm that the attributes were cleaned up.
+  */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE,
                                       &s.typed_attributes);
 }
