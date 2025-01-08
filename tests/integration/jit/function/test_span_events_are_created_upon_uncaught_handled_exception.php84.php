@@ -3,10 +3,23 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+ 
 /*DESCRIPTION
 Test that span events are correctly created from any eligible segment, even
-when an error is generated and handled.
+when an uncaught exception is handled by the user exception handler. The
+span that generated the exception should have error attributes. Additionally
+error events should be created.
+PHP 8.4+ names closures differently.
+*/
+
+/*SKIPIF
+<?php
+
+require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", "<")) {
+  die("skip: older test for PHP 8.3 and below\n");
+}
+
 */
 
 /*INI
@@ -16,8 +29,51 @@ newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 display_errors=1
 log_errors=0
-newrelic.code_level_metrics.enabled=false
+error_reporting = E_ALL
+opcache.enable=1
+opcache.enable_cli=1
+opcache.file_update_protection=0
+opcache.jit_buffer_size=32M
+opcache.jit=function
 */
+
+
+/*PHPMODULES
+zend_extension=opcache.so
+*/
+
+/*EXPECT_ERROR_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "RuntimeException",
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "databaseDuration": "??",
+        "databaseCallCount": "??",
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
 
 /*EXPECT_SPAN_EVENTS
 [
@@ -84,8 +140,11 @@ newrelic.code_level_metrics.enabled=false
       },
       {},
       {
-        "error.message": "foo",
-        "error.class": "E_USER_ERROR"
+        "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
+        "error.class": "RuntimeException",
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "a"
       }
     ],
     [
@@ -95,7 +154,7 @@ newrelic.code_level_metrics.enabled=false
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "Custom\/{closure}",
+        "name": "Custom\/{closure:__FILE__:??}",
         "guid": "??",
         "timestamp": "??",
         "duration": "??",
@@ -103,27 +162,30 @@ newrelic.code_level_metrics.enabled=false
         "parentId": "??"
       },
       {},
-      {}
+      {
+        "code.lineno": "??",
+        "code.filepath": "__FILE__",
+        "code.function": "{closure:__FILE__:??}"
+      }
     ]
   ]
 ]
 */
 
-/*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*foo in .*? on line [0-9]+\s*$
+/*EXPECT
 */
 
-set_error_handler(
-    function () {
+set_exception_handler(
+    function (Throwable $exception) {
         time_nanosleep(0, 100000000);
-        return false;
+        exit(0); 
     }
 );
 
 function a()
 {
     time_nanosleep(0, 100000000);
-    trigger_error('foo', E_USER_ERROR);
+    throw new RuntimeException('oops');
 }
 
 newrelic_record_datastore_segment(

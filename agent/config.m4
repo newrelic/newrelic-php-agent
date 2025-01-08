@@ -232,12 +232,15 @@ if test "$PHP_NEWRELIC" = "yes"; then
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
   lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c \
   lib_composer.c"
-  PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, \\$(NEWRELIC_CFLAGS))
+  PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, $(NEWRELIC_CFLAGS))
 
   PHP_SUBST(NEWRELIC_CFLAGS)
 
   dnl Define $(PHP_CONFIG) so we can call it when building tests.
   PHP_SUBST(PHP_CONFIG)
+
+  dnl Make sure we include the source directory in the include search path.
+  PHP_ADD_INCLUDE([$abs_srcdir], [1])
 
   dnl Include the Makefile.frag, which we use to handle build time
   dnl dependencies.

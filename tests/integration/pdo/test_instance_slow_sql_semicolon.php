@@ -36,7 +36,7 @@ ok - datastore instance metric exists
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL id",
-      "select * from tables where engine = ?;",
+      "select * from information_schema.tables where engine = ?;",
       "Datastore/statement/MySQL/tables/select",
       1,
       "?? total time",
@@ -66,7 +66,7 @@ function test_slow_sql() {
   global $PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD;
 
   $conn = new PDO($PDO_MYSQL_DSN, $MYSQL_USER, $MYSQL_PASSWD);
-  $result = $conn->query('select * from tables where engine = \';\';');
+  $result = $conn->query('select * from information_schema.tables where engine = \';\';');
 }
 
 test_slow_sql();
