@@ -372,14 +372,16 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
   char* command_name_string = NULL;
   char* real_class_and_command = NULL;
   nr_segment_t* segment = NULL;
+  zend_class_entry* class_entry = NULL;
 
-  klass
-      = nr_php_class_entry_name(Z_OBJCE_P(nr_php_execute_scope(execute_data)));
+  class_entry = Z_OBJCE_P(nr_php_execute_scope(execute_data));
+  klass = nr_php_class_entry_name(class_entry);
   command_name_string
       = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
 
   if (NULL != command_name_string && NULL != klass) {
-    if (nr_striendswith(klass, nr_strlen(klass), AWS_SDK_PHP_SQSCLIENT_CLASS,
+    if (nr_striendswith(klass, nr_php_class_entry_name_length(class_entry),
+                        AWS_SDK_PHP_SQSCLIENT_CLASS,
                         AWS_SDK_PHP_SQSCLIENT_CLASS_LEN)) {
       nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
                                     NR_EXECUTE_ORIG_ARGS);
