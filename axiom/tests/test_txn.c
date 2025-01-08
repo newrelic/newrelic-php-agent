@@ -4056,6 +4056,7 @@ static void test_create_event(void) {
                          "\"nr.apdexPerfZone\":\"F\","
                          "\"queueDuration\":3.00000,"
                          "\"externalDuration\":2.00000,"
+                         "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
                          "\"error\":false"
