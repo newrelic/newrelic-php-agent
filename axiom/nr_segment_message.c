@@ -25,14 +25,9 @@ static void nr_segment_message_set_attrs(
   message_attributes.message_action = params->message_action;
 
   if (options.message_tracer_segment_parameters_enabled) {
-    message_attributes.destination_name = nr_strempty(params->destination_name)
-                                              ? NULL
-                                              : params->destination_name;
-    message_attributes.messaging_system = nr_strempty(params->messaging_system)
-                                              ? NULL
-                                              : params->messaging_system;
-    message_attributes.server_address
-        = nr_strempty(params->server_address) ? NULL : params->server_address;
+    message_attributes.destination_name = params->destination_name;
+    message_attributes.messaging_system = params->messaging_system;
+    message_attributes.server_address = params->server_address;
   }
 
   nr_segment_set_message(segment, &message_attributes);
@@ -57,8 +52,8 @@ static void nr_segment_message_set_attrs(
  * MessageBroker/{library}/all Always
  * For non-temp:
  * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
- * For temp:                                                                       
- * MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp
+ * For temp:
+ * MessageBroker/{Library}/{DestinationType}/{Action}/Temp
  *
  *
  * These metrics are dictated by the agent-spec file here:
