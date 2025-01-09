@@ -60,8 +60,10 @@ struct _nr_txn_attribute_t {
 #define NR_TXN_ATTRIBUTE_TRACE_ERROR \
   (NR_ATTRIBUTE_DESTINATION_TXN_TRACE | NR_ATTRIBUTE_DESTINATION_ERROR)
 
-#define NR_TXN_ATTR(X, NAME, DESTS) \
-  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { (NAME), (DESTS) }
+#define NR_TXN_ATTR(X, NAME, DESTS)                     \
+  const nr_txn_attribute_t* X = &(nr_txn_attribute_t) { \
+    (NAME), (DESTS)                                     \
+  }
 
 NR_TXN_ATTR(nr_txn_request_uri,
             "request.uri",

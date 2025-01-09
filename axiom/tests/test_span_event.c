@@ -267,33 +267,40 @@ static void test_span_event_spankind(void) {
   nr_span_event_t* event = nr_span_event_create();
 
   // Test : the default is NULL (spankind must be explicitly set)
-  tlib_pass_if_str_equal("The default category", NULL,
+  tlib_pass_if_str_equal("The default spankind is NULL", NULL,
                          nr_span_event_get_spankind(event));
 
   // Test : A null event returns NULL
-  tlib_pass_if_null("The default category", nr_span_event_get_spankind(NULL));
+  tlib_pass_if_null("nr_span_event_get_spankind(NULL) returns NULL",
+                    nr_span_event_get_spankind(NULL));
 
-  // Test : passing a NULL event should not blow up
-  nr_span_event_set_spankind(NULL, NR_SPAN_PRODUCER);
+  // Test : passing a NULL event should not crash
+  nr_span_event_set_spankind(NULL, NR_SPANKIND_PRODUCER);
+
+  // Test : invalid spankind
+  nr_span_event_set_spankind(event, 255);
+  tlib_pass_if_str_equal(
+      "Invalid spankind value doesn't crash and sets spankind to none (NULL)",
+      NULL, nr_span_event_get_spankind(event));
 
   // Test : setting the spankind back and forth
-  nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND);
+  nr_span_event_set_spankind(event, NR_SPANKIND_NO_SPANKIND);
   tlib_pass_if_str_equal(
       "Spankind should be the one we set - no spankind (NULL)", NULL,
       nr_span_event_get_spankind(event));
 
   // Test : setting the spankind back and forth
-  nr_span_event_set_spankind(event, NR_SPAN_PRODUCER);
+  nr_span_event_set_spankind(event, NR_SPANKIND_PRODUCER);
   tlib_pass_if_str_equal("Spankind should be the one we set - producer",
                          "producer", nr_span_event_get_spankind(event));
 
   // Test : setting the spankind back and forth
-  nr_span_event_set_spankind(event, NR_SPAN_CLIENT);
+  nr_span_event_set_spankind(event, NR_SPANKIND_CLIENT);
   tlib_pass_if_str_equal("Spankind should be the one we set - client", "client",
                          nr_span_event_get_spankind(event));
 
   // Test : setting the spankind back and forth
-  nr_span_event_set_spankind(event, NR_SPAN_CONSUMER);
+  nr_span_event_set_spankind(event, NR_SPANKIND_CONSUMER);
   tlib_pass_if_str_equal("Spankind should be the one we set - consumer",
                          "consumer", nr_span_event_get_spankind(event));
 
@@ -478,7 +485,7 @@ static void test_span_events_extern_get_and_set(void) {
 static void test_span_event_message_string_get_and_set(void) {
   nr_span_event_t* event = nr_span_event_create();
 
-  // Test : that is does not blow up when we give the setter a NULL pointer
+  // Test : that is does not crash when we give the setter a NULL pointer
   nr_span_event_set_message(NULL, NR_SPAN_MESSAGE_DESTINATION_NAME, "wallaby");
   tlib_pass_if_null(
       "the destination name should still be NULL",
@@ -488,11 +495,15 @@ static void test_span_event_message_string_get_and_set(void) {
       "given a NULL value we should get a NULL",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME));
 
-  // Test : the getter should not blow up when we send it an event with a NULL
+  // Test : the getter should not crash when we send it an event with a NULL
   // component
   tlib_pass_if_null(
       "NULL event -> NULL component",
       nr_span_event_get_message(NULL, NR_SPAN_MESSAGE_DESTINATION_NAME));
+
+  // Test : send getter invalid range
+  tlib_pass_if_null("invalid range sent to nr_span_event_get_message",
+                    nr_span_event_get_message(event, 54321));
 
   // Test : setting the destination name back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME, "chicken");

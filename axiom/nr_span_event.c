@@ -141,23 +141,23 @@ void nr_span_event_set_category(nr_span_event_t* event,
   switch (category) {
     case NR_SPAN_DATASTORE:
       nro_set_hash_string(event->intrinsics, "category", "datastore");
-      nr_span_event_set_spankind(event, NR_SPAN_CLIENT);
+      nr_span_event_set_spankind(event, NR_SPANKIND_CLIENT);
       break;
 
     case NR_SPAN_GENERIC:
       nro_set_hash_string(event->intrinsics, "category", "generic");
-      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND);
+      nr_span_event_set_spankind(event, NR_SPANKIND_NO_SPANKIND);
       break;
 
     case NR_SPAN_HTTP:
       nro_set_hash_string(event->intrinsics, "category", "http");
-      nr_span_event_set_spankind(event, NR_SPAN_CLIENT);
+      nr_span_event_set_spankind(event, NR_SPANKIND_CLIENT);
       break;
 
     case NR_SPAN_MESSAGE:
       nro_set_hash_string(event->intrinsics, "category", "message");
       /* give it a default value in case we exit before spankind is set*/
-      nr_span_event_set_spankind(event, NR_SPAN_NO_SPANKIND);
+      nr_span_event_set_spankind(event, NR_SPANKIND_NO_SPANKIND);
       break;
   }
 }
@@ -169,16 +169,16 @@ void nr_span_event_set_spankind(nr_span_event_t* event,
   }
 
   switch (spankind) {
-    case NR_SPAN_PRODUCER:
+    case NR_SPANKIND_PRODUCER:
       nro_set_hash_string(event->intrinsics, "span.kind", "producer");
       break;
-    case NR_SPAN_CLIENT:
+    case NR_SPANKIND_CLIENT:
       nro_set_hash_string(event->intrinsics, "span.kind", "client");
       break;
-    case NR_SPAN_CONSUMER:
+    case NR_SPANKIND_CONSUMER:
       nro_set_hash_string(event->intrinsics, "span.kind", "consumer");
       break;
-    case NR_SPAN_NO_SPANKIND:
+    case NR_SPANKIND_NO_SPANKIND:
     default:
       if (nro_get_hash_value(event->intrinsics, "span.kind", NULL)) {
         nro_set_hash_none(event->intrinsics, "span.kind");
@@ -366,15 +366,16 @@ void nr_span_event_set_message(nr_span_event_t* event,
 
   switch (member) {
     case NR_SPAN_MESSAGE_DESTINATION_NAME:
-      nro_set_hash_string(event->agent_attributes, "messaging.destination.name",
-                          new_value);
+      nro_set_hash_string(event->agent_attributes,
+                          NR_ATTR_MESSAGING_DESTINATION_NAME, new_value);
       break;
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
-      nro_set_hash_string(event->agent_attributes, "messaging.system",
+      nro_set_hash_string(event->agent_attributes, NR_ATTR_MESSAGING_SYSTEM,
                           new_value);
       break;
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
-      nro_set_hash_string(event->agent_attributes, "server.address", new_value);
+      nro_set_hash_string(event->agent_attributes, NR_ATTR_SERVER_ADDRESS,
+                          new_value);
       break;
   }
 }
@@ -527,13 +528,13 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
   switch (member) {
     case NR_SPAN_MESSAGE_DESTINATION_NAME:
       return nro_get_hash_string(event->agent_attributes,
-                                 "messaging.destination.name", NULL);
+                                 NR_ATTR_MESSAGING_DESTINATION_NAME, NULL);
     case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
-      return nro_get_hash_string(event->agent_attributes, "messaging.system",
-                                 NULL);
+      return nro_get_hash_string(event->agent_attributes,
+                                 NR_ATTR_MESSAGING_SYSTEM, NULL);
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
-      return nro_get_hash_string(event->agent_attributes, "server.address",
-                                 NULL);
+      return nro_get_hash_string(event->agent_attributes,
+                                 NR_ATTR_SERVER_ADDRESS, NULL);
   }
   return NULL;
 }

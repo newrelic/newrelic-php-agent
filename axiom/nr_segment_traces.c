@@ -629,23 +629,23 @@ extern void nr_segment_traces_add_cloud_attributes(
    */
 
   if (!nr_strempty(cloud_attrs->cloud_region)) {
-    nr_attributes_agent_add_string(segment->attributes,
-                                   NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
-                                   "cloud.region", cloud_attrs->cloud_region);
+    nr_attributes_agent_add_string(
+        segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+        NR_ATTR_CLOUD_REGION, cloud_attrs->cloud_region);
   }
   if (!nr_strempty(cloud_attrs->cloud_account_id)) {
     nr_attributes_agent_add_string(
         segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
-        "cloud.account.id", cloud_attrs->cloud_account_id);
+        NR_ATTR_CLOUD_ACCOUNT_ID, cloud_attrs->cloud_account_id);
   }
   if (!nr_strempty(cloud_attrs->cloud_resource_id)) {
     nr_attributes_agent_add_string(
         segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
-        "cloud.resource_id", cloud_attrs->cloud_resource_id);
+        NR_ATTR_CLOUD_RESOURCE_ID, cloud_attrs->cloud_resource_id);
   }
   if (!nr_strempty(cloud_attrs->aws_operation)) {
-    nr_attributes_agent_add_string(segment->attributes,
-                                   NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
-                                   "aws.operation", cloud_attrs->aws_operation);
+    nr_attributes_agent_add_string(
+        segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+        NR_ATTR_AWS_OPERATION, cloud_attrs->aws_operation);
   }
 }

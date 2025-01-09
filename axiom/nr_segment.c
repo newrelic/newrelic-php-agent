@@ -638,9 +638,9 @@ bool nr_segment_set_message(nr_segment_t* segment,
   // Initialize the fields of the message attributes, one field per line.
   segment->typed_attributes->message = (nr_segment_message_t){
       .message_action = message->message_action,
-      .destination_name = message->destination_name ? nr_strdup(message->destination_name) : NULL,
-      .messaging_system = message->messaging_system ? nr_strdup(message->messaging_system) : NULL,
-      .server_address = message->server_address ? nr_strdup(message->server_address) : NULL,
+      .destination_name = nr_strempty(message->destination_name) ? NULL: nr_strdup(message->destination_name),
+      .messaging_system = nr_strempty(message->messaging_system) ? NULL: nr_strdup(message->messaging_system),
+      .server_address = nr_strempty(message->server_address) ? NULL: nr_strdup(message->server_address),
   };
   // clang-format on
 

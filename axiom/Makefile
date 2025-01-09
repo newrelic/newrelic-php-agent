@@ -17,6 +17,7 @@
 # Useful variables:
 #
 # AR:     The archiver used to build a static library (default: ar).
+# CC:     The C compiler to use (default: gcc).
 # CFLAGS: Flags to give the C compiler when building object files.
 #
 

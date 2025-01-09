@@ -16,24 +16,30 @@
 
 /*
  * Purpose : Set all the typed message attributes on the segment.
+ *
+ * Params  : 1. nr_segment_t* ASSUMED TO BE NON-NULL - the segment to set the
+ * attributes on
+ *           2. nr_segment_message_params_t* ASSUMED TO BE NON-NULL - the
+ * parameters set the attributes to
+ *
+ * Returns: true on success.
+ *
+ * Note: This is a function private to this file and assumes the calling
+ * function has already checked the input parameters for NULL prior to calling
+ * this function.  Calling function is assumed to check the following items for
+ * NULL: if (NULL == segment || NULL == message_params || NULL == segment->txn)
  */
 static void nr_segment_message_set_attrs(
     nr_segment_t* segment,
-    const nr_segment_message_params_t* params,
-    nrtxnopt_t options) {
+    const nr_segment_message_params_t* params) {
   nr_segment_message_t message_attributes = {0};
 
   message_attributes.message_action = params->message_action;
 
-  if (options.message_tracer_segment_parameters_enabled) {
-    message_attributes.destination_name = nr_strempty(params->destination_name)
-                                              ? NULL
-                                              : params->destination_name;
-    message_attributes.messaging_system = nr_strempty(params->messaging_system)
-                                              ? NULL
-                                              : params->messaging_system;
-    message_attributes.server_address
-        = nr_strempty(params->server_address) ? NULL : params->server_address;
+  if (segment->txn->options.message_tracer_segment_parameters_enabled) {
+    message_attributes.destination_name = params->destination_name;
+    message_attributes.messaging_system = params->messaging_system;
+    message_attributes.server_address = params->server_address;
   }
 
   nr_segment_set_message(segment, &message_attributes);
@@ -46,7 +52,7 @@ static void nr_segment_message_set_attrs(
  * Metrics created during this call
  * ----------------------------------------------------------------------------------
  * MessageBroker/all                                         Unscoped Always
- * MessageBroker/{library}/all                               coped   Always
+ * MessageBroker/{library}/all                               Scoped   Always
  *
  * Metrics created based on MessageBroker/all (in nr_txn_create_rollup_metrics)
  * ----------------------------------------------------------------------------------
@@ -56,9 +62,10 @@ static void nr_segment_message_set_attrs(
  * Segment name
  * -----------------------------------------------------------------------------------
  * MessageBroker/{library}/all Always
+ * For non-temp:
  * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
- *                                                                            non-temp
- * MessageBroker/{Library}/{DestinationType}/{Action}/Temp temp
+ * For temp:
+ * MessageBroker/{Library}/{DestinationType}/{Action}/Temp
  *
  *
  * These metrics are dictated by the agent-spec file here:
@@ -126,9 +133,9 @@ static char* nr_segment_message_create_metrics(
    * with spec.
    */
 
-  if (NR_SPAN_PRODUCER == message_params->message_action) {
+  if (NR_SPANKIND_PRODUCER == message_params->message_action) {
     action_string = "Produce";
-  } else if (NR_SPAN_CONSUMER == message_params->message_action) {
+  } else if (NR_SPANKIND_CONSUMER == message_params->message_action) {
     action_string = "Consume";
   } else {
     action_string = "<unknown>";
@@ -212,7 +219,7 @@ bool nr_segment_message_end(nr_segment_t** segment_ptr,
     nr_segment_children_deinit(&segment->children);
   }
 
-  nr_segment_message_set_attrs(segment, message_params, segment->txn->options);
+  nr_segment_message_set_attrs(segment, message_params);
 
   /*
    * We set the end time here because we need the duration, (nr_segment_end will

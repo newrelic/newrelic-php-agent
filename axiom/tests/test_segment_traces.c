@@ -93,7 +93,8 @@
 #define SPAN_EVENT_COMPARE_MESSAGE(span_event, expected_destination_name,    \
                                    expected_messaging_system,                \
                                    expected_server_address)                  \
-  tlib_pass_if_str_equal("destination.name", expected_destination_name,      \
+  tlib_pass_if_str_equal("messaging.destination.name",                       \
+                         expected_destination_name,                          \
                          nr_span_event_get_message(                          \
                              span_event, NR_SPAN_MESSAGE_DESTINATION_NAME)); \
   tlib_pass_if_str_equal("messaging.system", expected_messaging_system,      \
