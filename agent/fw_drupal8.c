@@ -383,6 +383,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     goto end;
   }
 
+  backslash_zv = nr_php_zval_alloc();
   nr_php_zval_str(backslash_zv, "\\");
 
   controller_zvp = nr_php_call(NULL, "ltrim", &retval, backslash_zv);
@@ -419,7 +420,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   // controller = nr_symfony_object_get_string(request, "_controller");
   if (nr_php_is_zval_non_empty_string(controller_zvp)) {
     nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
-    name = nr_strndup(Z_STRVAL(controller_zvp), Z_STRLEN(controller_zvp));
+    name = nr_strndup(Z_STRVAL_P(controller_zvp), Z_STRLEN_P(controller_zvp));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = nr_strdup("page_cache");
