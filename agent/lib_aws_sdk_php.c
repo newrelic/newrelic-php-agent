@@ -122,10 +122,10 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   /* Determine if we instrument this command. */
   if (nr_streq(command_name_string, "sendMessage")
       || nr_streq(command_name_string, "sendMessageBatch")) {
-    message_params.message_action = NR_SPAN_PRODUCER;
+    message_params.message_action = NR_SPANKIND_PRODUCER;
     instrumented = true;
   } else if (nr_streq(command_name_string, "receiveMessage")) {
-    message_params.message_action = NR_SPAN_CONSUMER;
+    message_params.message_action = NR_SPANKIND_CONSUMER;
     instrumented = true;
   }
 
