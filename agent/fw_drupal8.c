@@ -365,7 +365,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
         "     $routeMatch = Drupal\\Core\\Routing\\RouteMatch::createFromRequest($request);"
         "     $route = $routeCollection->get($routeMatch->getRouteName());"
-        "     $defaults = $route->getDefaults()));"
+        "     $defaults = $route->getDefaults();"
         "     if (isset($defaults['_controller'])) {"
         "         $controller = $defaults['_controller'];"
         "     }"
