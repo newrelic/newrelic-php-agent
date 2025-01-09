@@ -15,6 +15,17 @@
 
 /*
  * Purpose : Set all the typed message attributes on the segment.
+ *
+ * Params  : 1. nr_segment_t* ASSUMED TO BE NON-NULL - the segment to set the
+ * attributes on
+ *           2. nr_segment_message_params_t* ASSUMED TO BE NON-NULL - the
+ * parameters set the attributes to
+ *           3. nrtxnopt_t - the segment options, to determine whether to set
+ * attributes or not Returns: true on success.
+ *
+ * Note: This is a function private to this file and assumes the calling
+ * function has already checked the input parameters for NULL prior to calling
+ * this function.
  */
 static void nr_segment_message_set_attrs(
     nr_segment_t* segment,
