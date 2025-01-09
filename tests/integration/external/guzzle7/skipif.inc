@@ -6,8 +6,8 @@
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
 
-if (version_compare(phpversion(), '7.2.5', '<')) {
-    die("skip: PHP >= 7.2.5 required\n");
+if (version_compare(phpversion(), '8.1', '<')) {
+    die("skip: PHP >= 8.1 required\n");
 }
 
 /*

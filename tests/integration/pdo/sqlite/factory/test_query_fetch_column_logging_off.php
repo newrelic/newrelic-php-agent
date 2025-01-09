@@ -5,28 +5,32 @@
  */
 
 /*DESCRIPTION
-The agent should record Datastore metrics for the one argument form of
-PDO::query().
+The agent should record database metrics for the FETCH_COLUMN variant of
+PDO::query() when PDO::connect factory method is used to create connection
+object.
 */
 
 /*SKIPIF
-<?php require('skipif_sqlite.inc');
-if (version_compare(PHP_VERSION, "8.1", "<")) {
-  die("skip: PHP < 8.1.0 not supported\n");
-}
+<?php require(realpath (dirname ( __FILE__ )) . '/../../skipif_sqlite.inc');
+require(realpath (dirname ( __FILE__ )) . '/../../skipif_pdo_subclasses.inc');
 */
 
 /*INI
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
+newrelic.application_logging.enabled = false
+newrelic.application_logging.forwarding.enabled = false
+newrelic.application_logging.metrics.enabled = false
 */
+
+/*EXPECT_ERROR_EVENTS null*/
 
 /*EXPECT
 ok - create table
 ok - insert one
 ok - insert two
 ok - insert three
-ok - query (1-arg)
+ok - fetch column
 ok - drop table
 */
 
@@ -62,38 +66,13 @@ ok - drop table
       "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/test/select",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
 
+require_once(realpath (dirname ( __FILE__ )) . '/../../test_query_fetch_column.inc');
 
-
-
-require_once(dirname(__FILE__).'/../../include/tap.php');
-
-function test_pdo_query() {
-  $conn = new PDO('sqlite::memory:');
-  tap_equal(0, $conn->exec("CREATE TABLE test (id INT, desc VARCHAR(10));"), 'create table');
-
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (1, 'one');"), 'insert one');
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (2, 'two');"), 'insert two');
-  tap_equal(1, $conn->exec("INSERT INTO test VALUES (3, 'three');"), 'insert three');
-
-  $expected = array(
-    array('id' => 1, 'desc' => 'one'),
-    array('id' => 2, 'desc' => 'two'),
-    array('id' => 3, 'desc' => 'three')
-  );
-
-  $result = $conn->query('SELECT * FROM test;');
-  $actual = $result->fetchAll(PDO::FETCH_ASSOC);
-  $result->closeCursor();
-  tap_equal($expected, $actual, 'query (1-arg)');
-
-  tap_equal(1, $conn->exec("DROP TABLE test;"), 'drop table');
-}
-
-test_pdo_query();
+test_pdo_query(PDO::Connect('sqlite::memory:'));

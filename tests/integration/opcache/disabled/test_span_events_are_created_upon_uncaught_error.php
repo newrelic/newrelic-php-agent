@@ -13,6 +13,9 @@ when an error is generated and left to the default error handler.
 <?php
 
 require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHPs 8.4+\n");
+}
 
 */
 

@@ -14,6 +14,9 @@ class name, and lineno for closures.
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 */
 
 /*INI
@@ -94,7 +97,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 151,
+        "code.lineno": 154,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
@@ -115,7 +118,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 162,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
@@ -136,7 +139,7 @@ newrelic.code_level_metrics.enabled=true
       },
       {},
       {
-        "code.lineno": 159,
+        "code.lineno": 162,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }
