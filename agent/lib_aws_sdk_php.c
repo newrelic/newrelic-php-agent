@@ -389,9 +389,10 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
 
   if (NR_SEGMENT_CUSTOM == auto_segment->type) {
     /*
-     * It wasn't set to any of the segments that would autoclose the segment so
-     * we need to end the segment that we started in the before wrapper to
-     * handle external,datastore,message segments
+   * We need to end the segment that we started in the 'before' wrapper if it
+   * wasn't handled and ended by the handling function. Handling function would
+   * have changed the segment type from from default (`NR_SEGMENT_CUSTOM`) if it
+   * ended it.
      */
     nr_segment_discard(&auto_segment);
   }
