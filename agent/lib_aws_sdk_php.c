@@ -56,7 +56,6 @@ $result = $client->sendMessage(array(
     ),
 ));
 
-
 $result = $client->sendMessageBatch(array(
     // QueueUrl is required
     'QueueUrl' => 'string',
