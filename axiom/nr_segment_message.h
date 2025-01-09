@@ -23,7 +23,7 @@ typedef enum _nr_segment_message_destination_type_t {
 } nr_segment_message_destination_type_t;
 
 typedef struct {
-  /* All strings are null-terminated. When unset, the strings are ingored. */
+  /* All strings are null-terminated. When NULL/empty the values are ingored. */
 
   /* Only used for creating metrics. */
   char* library; /* Library; Possible values are SQS, SNS, RabbitMQ, JMS */
