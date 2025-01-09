@@ -20,22 +20,22 @@
  * attributes on
  *           2. nr_segment_message_params_t* ASSUMED TO BE NON-NULL - the
  * parameters set the attributes to
- *           3. nrtxnopt_t - the segment options, to determine whether to set
- * attributes or not Returns: true on success.
+ *
+ * Returns: true on success.
  *
  * Note: This is a function private to this file and assumes the calling
  * function has already checked the input parameters for NULL prior to calling
- * this function.
+ * this function.  Calling function is assumed to check the following items for
+ * NULL: if (NULL == segment || NULL == message_params || NULL == segment->txn)
  */
 static void nr_segment_message_set_attrs(
     nr_segment_t* segment,
-    const nr_segment_message_params_t* params,
-    nrtxnopt_t options) {
+    const nr_segment_message_params_t* params) {
   nr_segment_message_t message_attributes = {0};
 
   message_attributes.message_action = params->message_action;
 
-  if (options.message_tracer_segment_parameters_enabled) {
+  if (segment->txn->options.message_tracer_segment_parameters_enabled) {
     message_attributes.destination_name = params->destination_name;
     message_attributes.messaging_system = params->messaging_system;
     message_attributes.server_address = params->server_address;
@@ -132,9 +132,9 @@ static char* nr_segment_message_create_metrics(
    * with spec.
    */
 
-  if (NR_SPAN_PRODUCER == message_params->message_action) {
+  if (NR_SPANKIND_PRODUCER == message_params->message_action) {
     action_string = "Produce";
-  } else if (NR_SPAN_CONSUMER == message_params->message_action) {
+  } else if (NR_SPANKIND_CONSUMER == message_params->message_action) {
     action_string = "Consume";
   } else {
     action_string = "<unknown>";
@@ -214,7 +214,7 @@ bool nr_segment_message_end(nr_segment_t** segment_ptr,
     }
   }
 
-  nr_segment_message_set_attrs(segment, message_params, segment->txn->options);
+  nr_segment_message_set_attrs(segment, message_params);
 
   /*
    * We set the end time here because we need the duration, (nr_segment_end will

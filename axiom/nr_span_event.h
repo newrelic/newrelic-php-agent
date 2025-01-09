@@ -13,6 +13,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define NR_ATTR_MESSAGING_DESTINATION_NAME "messaging.destination.name"
+#define NR_ATTR_MESSAGING_SYSTEM "messaging.system"
+#define NR_ATTR_SERVER_ADDRESS "server.address"
+#define NR_ATTR_CLOUD_REGION "cloud.region"
+#define NR_ATTR_CLOUD_ACCOUNT_ID "cloud.account.id"
+#define NR_ATTR_CLOUD_RESOURCE_ID "cloud.resource_id"
+#define NR_ATTR_AWS_OPERATION "aws.operation"
+
 typedef struct _nr_span_event_t nr_span_event_t;
 
 /*
@@ -39,10 +47,10 @@ typedef enum {
  * NOT create) c) consumer when the operation type is process
  */
 typedef enum {
-  NR_SPAN_PRODUCER,
-  NR_SPAN_CLIENT,
-  NR_SPAN_CONSUMER,
-  NR_SPAN_NO_SPANKIND
+  NR_SPANKIND_PRODUCER,
+  NR_SPANKIND_CLIENT,
+  NR_SPANKIND_CONSUMER,
+  NR_SPANKIND_NO_SPANKIND
 } nr_span_spankind_t;
 
 /*
@@ -146,7 +154,7 @@ extern void nr_span_event_set_transaction_name(nr_span_event_t* event,
 extern void nr_span_event_set_category(nr_span_event_t* event,
                                        nr_span_category_t category);
 extern void nr_span_event_set_spankind(nr_span_event_t* event,
-                                       nr_span_spankind_t category);
+                                       nr_span_spankind_t spankind);
 extern void nr_span_event_set_timestamp(nr_span_event_t* event, nrtime_t time);
 extern void nr_span_event_set_duration(nr_span_event_t* event,
                                        nrtime_t duration);
