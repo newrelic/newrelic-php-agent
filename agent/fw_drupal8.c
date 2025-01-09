@@ -15,9 +15,11 @@
 #include "fw_support.h"
 #include "fw_symfony_common.h"
 #include "nr_txn.h"
+#include "php_zval.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "zend.h"
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
@@ -324,7 +326,12 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   zval* request = NULL;
-  zval* controller = NULL;
+  // zval* controller = NULL;
+  // zval service;
+  // zval* route_collection = NULL;
+  // zval* routes = NULL;
+  int result = FAILURE;
+  zval retval;
 
   (void)wraprec;
 
@@ -350,10 +357,63 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   }
   nrl_verbosedebug(NRL_TXN, "VALID DRUPAL INSTANCEOFCLASS");
 
-  controller = nr_symfony_object_get_string(request, "_controller");
-  if (nr_php_is_zval_non_empty_string(controller)) {
+  // clang-format off
+  char* fn =
+        "(function() {"
+        "   try {"
+        "     $request = \\Drupal::request();"
+        "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
+        "     $routeMatch = Drupal\\Core\\Routing\\RouteMatch::createFromRequest($request);"
+        "     $route = $routeCollection->get($routeMatch->getRouteName());"
+        "     $defaults = $route->getDefaults()));"
+        "     if (isset($defaults['_controller'])) {"
+        "         $controller = $defaults['_controller'];"
+        "     }"
+        "   } catch (Throwable $e) {}"
+        "   return $controller;"
+        "})()";
+  // clang-format on
+
+  result = zend_eval_string(fn, &retval, "Get Route Controller");
+
+  if (SUCCESS != result) {
+    nrl_verbosedebug(NRL_TXN, "FAILED TO GET ROUTE CONTROLLER");
+    goto end;
+  }
+
+#if 0
+  result = zend_eval_string("\\Drupal::service('router.route_provider')",
+                            &service, "Get Drupal router service");
+
+  if (SUCCESS != result) {
+    nrl_verbosedebug(NRL_TXN, "FAILED TO GET ROUTER SERVICE CONTAINER");
+    goto end;
+  }
+
+  if (!nr_php_is_zval_valid_object(&service)) {
+    nrl_verbosedebug(NRL_TXN, "INVALID SERVICE OBJECT");
+    goto end;
+  }
+
+  route_collection
+      = nr_php_call(&service, "getRouteCollectionForRequest", request);
+
+  if (!nr_php_is_zval_valid_object(route_collection)) {
+    nrl_verbosedebug(NRL_TXN, "INVALID ROUTE COLLECTION OBJECT");
+    goto end;
+  }
+
+  routes = nr_php_call(route_collection, "all");
+
+  if (!nr_php_is_zval_valid_array(routes)) {
+    nrl_verbosedebug(NRL_TXN, "INVALID ROUTES ARRAY");
+    goto end;
+  }
+#endif
+  // controller = nr_symfony_object_get_string(request, "_controller");
+  if (nr_php_is_zval_non_empty_string(&retval)) {
     nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
-    name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
+    name = nr_strndup(Z_STRVAL(retval), Z_STRLEN(retval));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = nr_strdup("page_cache");
@@ -377,7 +437,9 @@ end:
 
   nr_free(name);
   nr_php_zval_free(&request);
-  nr_php_zval_free(&controller);
+  // nr_php_zval_free(&controller);
+  // nr_php_zval_free(&route_collection);
+  // nr_php_zval_free(&routes);
   nrl_verbosedebug(NRL_TXN, "DRUPAL WRAPPER MEMORY FREED");
 }
 NR_PHP_WRAPPER_END
