@@ -367,7 +367,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         "     $route = $routeCollection->get($routeMatch->getRouteName());"
         "     $defaults = $route->getDefaults();"
         "     if (isset($defaults['_controller'])) {"
-        "         $controller = $defaults['_controller'];"
+        "         $controller = str_replace('::', '->', $defaults['_controller']);"
         "     }"
         "   } catch (Throwable $e) {}"
         "   return $controller;"
