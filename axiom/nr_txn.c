@@ -2582,6 +2582,8 @@ nrobj_t* nr_txn_event_intrinsics(const nrtxn_t* txn) {
       params, txn->unscoped_metrics, "WebFrontend/QueueTime", "queueDuration");
   nr_txn_add_metric_total_as_attribute(params, txn->unscoped_metrics,
                                        "External/all", "externalDuration");
+  nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
+                                       "External/all", "externalCallCount");
   nr_txn_add_metric_total_as_attribute(params, txn->unscoped_metrics,
                                        "Datastore/all", "databaseDuration");
   nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,

@@ -26,6 +26,9 @@ log_errors=0
 if (version_compare(PHP_VERSION, "8.0", "<")) {
   die("skip: PHP < 8.0.0 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 */
 
 

@@ -9,7 +9,7 @@
 
 ARG PHP_VER
 
-FROM php:${PHP_VER:-8.3}
+FROM php:${PHP_VER:-8.4}
 
 RUN docker-php-source extract
 
@@ -89,7 +89,7 @@ COPY --from=composer ["/usr/bin/composer", "/usr/bin/composer"]
 #   and 8.0 has problems with how the explanation for informational_schema
 #   work (refer to bug https://bugs.mysql.com/bug.php?id=102536) so to run
 #   the mysql tests a separate machine running mysql server 5.6 is required.
-RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
 
 # install redis extension required by test_redis:
 RUN \
@@ -142,16 +142,18 @@ ENV PHP_VER=${PHP_VER}
 ARG PS1
 ENV PS1="New Relic > "
 
-# QOL aliases
-# `rebuild` - make clean + make agent + make tests
-# `integ` - run all integration tests
-RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
-  && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
-
 ARG USER=developer
 ARG UID=501
 ARG GID=20
 RUN useradd --uid ${UID} --gid ${GID} --shell /bin/bash --create-home ${USER}
 USER ${USER}
+# QOL aliases
+# `rebuild` - make clean + make agent + make tests
+# `integ` - run all integration tests
+RUN echo 'alias integ="/usr/src/myapp/bin/integration_runner -agent /usr/src/myapp/agent/.libs/newrelic.so"' >> ~/.bashrc \
+  && echo 'alias rebuild="make -C agent clean && rm agent/Makefile && make && make tests"' >> ~/.bashrc
 WORKDIR /usr/src/myapp
+# Avoid "fatal: detected dubious ownership in repository at '/usr/src/myapp/'" error
+# when running git commands inside container with host volume mounted:
+RUN git config --global --add safe.directory /usr/src/myapp/
 CMD ["bash"]
