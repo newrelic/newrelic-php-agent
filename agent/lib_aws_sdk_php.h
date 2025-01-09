@@ -74,8 +74,9 @@ extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
 
 /*
  * Purpose : The second argument to the Aws/AwsClient::__call function should be
- * an array containing an array of argument name:value pairs. Given an argument
- * name, this will return the value of the argument.
+ * an array, the first element of which is itself an array of arguments that
+ * were passed to the called function and are in name:value pairs. Given an
+ * argument name, this will return the value of the argument.
  *
  * Params  : 1. arg_name: name of argument to extract from command arg array
  *           2. NR_EXECUTE_PROTO (execute_data, func_return_value)
