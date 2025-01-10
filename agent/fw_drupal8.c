@@ -332,8 +332,8 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   // zval* routes = NULL;
   int result = FAILURE;
   zval retval;
-  zval* controller_zvp = NULL;
-  zval* backslash_zv = NULL;
+  // zval* controller_zvp = NULL;
+  // zval* backslash_zv = NULL;
 
   (void)wraprec;
 
@@ -370,6 +370,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         "     $defaults = $route->getDefaults();"
         "     if (isset($defaults['_controller'])) {"
         "         $controller = str_replace('::', '->', $defaults['_controller']);"
+        "         $controller = ltrim($controller, '\\\\');"
         "     }"
         "   } catch (Throwable $e) {}"
         "   return $controller;"
@@ -383,10 +384,10 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     goto end;
   }
 
-  backslash_zv = nr_php_zval_alloc();
-  nr_php_zval_str(backslash_zv, "\\");
-
-  controller_zvp = nr_php_call(NULL, "ltrim", &retval, backslash_zv);
+  // backslash_zv = nr_php_zval_alloc();
+  // nr_php_zval_str(backslash_zv, "\\");
+  //
+  // controller_zvp = nr_php_call(NULL, "ltrim", &retval, backslash_zv);
 
 #if 0
   result = zend_eval_string("\\Drupal::service('router.route_provider')",
@@ -418,9 +419,9 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   }
 #endif
   // controller = nr_symfony_object_get_string(request, "_controller");
-  if (nr_php_is_zval_non_empty_string(controller_zvp)) {
+  if (nr_php_is_zval_non_empty_string(&retval)) {
     nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
-    name = nr_strndup(Z_STRVAL_P(controller_zvp), Z_STRLEN_P(controller_zvp));
+    name = nr_strndup(Z_STRVAL_P(&retval), Z_STRLEN_P(&retval));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = nr_strdup("page_cache");
