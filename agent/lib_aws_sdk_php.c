@@ -107,7 +107,6 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
                                    char* command_name_string,
                                    NR_EXECUTE_PROTO) {
   char* command_arg_value = NULL;
-  bool instrumented = false;
   nr_segment_message_params_t message_params = {
       .library = "SQS",
       .destination_type = NR_MESSAGE_DESTINATION_TYPE_QUEUE,
@@ -123,32 +122,31 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   if (nr_streq(command_name_string, "sendMessage")
       || nr_streq(command_name_string, "sendMessageBatch")) {
     message_params.message_action = NR_SPANKIND_PRODUCER;
-    instrumented = true;
   } else if (nr_streq(command_name_string, "receiveMessage")) {
     message_params.message_action = NR_SPANKIND_CONSUMER;
-    instrumented = true;
+  } else {
+    /* Nothing to do here so exit. */
+    return;
   }
 
-  if (instrumented) {
-    cloud_attrs.aws_operation = command_name_string;
+  cloud_attrs.aws_operation = command_name_string;
 
-    command_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
-        AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG, NR_EXECUTE_ORIG_ARGS);
+  command_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
+      AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG, NR_EXECUTE_ORIG_ARGS);
 
-    /*
-     *  nr_lib_aws_sdk_php_sqs_parse_queueurl checks for NULL so safe pass
-     * command_arg_value directly in.
-     */
-    nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params,
-                                          &cloud_attrs);
+  /*
+   *  nr_lib_aws_sdk_php_sqs_parse_queueurl checks for NULL so safe pass
+   * command_arg_value directly in.
+   */
+  nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params,
+                                        &cloud_attrs);
 
-    /* Add cloud attributes, if available. */
+  /* Add cloud attributes, if available. */
 
-    nr_segment_traces_add_cloud_attributes(segment, &cloud_attrs);
+  nr_segment_traces_add_cloud_attributes(segment, &cloud_attrs);
 
-    /* Now end the instrumented segment as a message segment. */
-    nr_segment_message_end(&segment, &message_params);
-  }
+  /* Now end the instrumented segment as a message segment. */
+  nr_segment_message_end(&segment, &message_params);
 
   nr_free(command_arg_value);
 
