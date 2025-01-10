@@ -267,8 +267,9 @@ static void test_span_event_spankind(void) {
   nr_span_event_t* event = nr_span_event_create();
 
   // Test : the default is NULL (spankind must be explicitly set)
-  tlib_pass_if_str_equal("The default spankind is NULL", NULL,
-                         nr_span_event_get_spankind(event));
+  tlib_pass_if_str_equal(
+      "When not explicitly set, The default spankind is NULL", NULL,
+      nr_span_event_get_spankind(event));
 
   // Test : A null event returns NULL
   tlib_pass_if_null("nr_span_event_get_spankind(NULL) returns NULL",
