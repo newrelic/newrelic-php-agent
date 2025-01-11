@@ -23,39 +23,10 @@ tlib_parallel_info_t parallel_info
 
 #define ARG_VALUE_FOR_TEST "curly_q"
 #define COMMAND_NAME_FOR_TEST "uniquelyAwesome"
+#define COMMAND_NAME_LEN_FOR_TEST sizeof(COMMAND_NAME_FOR_TEST) - 1
 #define ARG_TO_FIND_FOR_TEST AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG
 
 /* These wrappers are used so we don't have to mock up zend_execute_data. */
-
-NR_PHP_WRAPPER(expect_command_name_not_null) {
-  char* command_name_string = NULL;
-
-  (void)wraprec;
-
-  command_name_string
-      = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
-  tlib_pass_if_not_null("Expect a valid command name if valid name exists.",
-                        command_name_string);
-  tlib_pass_if_str_equal("command name for test should match",
-                         COMMAND_NAME_FOR_TEST, command_name_string);
-  nr_free(command_name_string);
-
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
-
-NR_PHP_WRAPPER(expect_command_name_null) {
-  char* command_name_string = NULL;
-
-  (void)wraprec;
-
-  command_name_string
-      = nr_lib_aws_sdk_php_get_command_name(NR_EXECUTE_ORIG_ARGS);
-  tlib_pass_if_null("Expect a null command name if no valid name exists.",
-                    command_name_string);
-  NR_PHP_WRAPPER_CALL;
-}
-NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(expect_arg_value_not_null) {
   char* command_arg_value = NULL;
@@ -201,64 +172,6 @@ static void test_nr_lib_aws_sdk_php_get_command_arg_value() {
   nr_php_zval_free(&array_arg);
 
   nr_php_zval_free(&first_arg);
-  tlib_php_request_end();
-  tlib_php_engine_destroy();
-}
-
-static void test_nr_lib_aws_sdk_php_get_command_name() {
-  zval* expr = NULL;
-  zval* command_name_arg = NULL;
-
-  /*
-   * nr_lib_aws_sdk_php_get_command_name extracts a name from the first
-   * argument, so we need only need to test with one parameter.
-   */
-  tlib_php_engine_create("");
-  tlib_php_request_start();
-
-  tlib_php_request_eval("function one_arg_valid($a) { return; }");
-  nr_php_wrap_user_function(NR_PSTR("one_arg_valid"),
-                            expect_command_name_not_null);
-  tlib_php_request_eval("function one_arg($a) { return; }");
-  nr_php_wrap_user_function(NR_PSTR("one_arg"), expect_command_name_null);
-  tlib_php_request_eval("function no_arg() { return; }");
-  nr_php_wrap_user_function(NR_PSTR("no_arg"), expect_command_name_null);
-
-  /* Valid case.  The wrapper should verify strings match. */
-
-  command_name_arg = tlib_php_request_eval_expr("'uniquelyAwesome'");
-  expr = nr_php_call(NULL, "one_arg_valid", command_name_arg);
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&command_name_arg);
-
-  /*
-   * Invalid case: no parameter.  The wrapper should see the null return value.
-   */
-  expr = nr_php_call(NULL, "no_arg");
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  nr_php_zval_free(&expr);
-
-  /* Test Invalid Cases*/
-  /*
-   * Invalid case: arg is not a string.  The wrapper should see
-   * the null return value.
-   */
-  command_name_arg = tlib_php_request_eval_expr("1");
-  expr = nr_php_call(NULL, "one_arg", command_name_arg);
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&command_name_arg);
-
-  /*
-   * Invalid case: arg is an empty string.  The wrapper should see
-   * the null return value.
-   */
-  command_name_arg = tlib_php_request_eval_expr("''");
-  expr = nr_php_call(NULL, "one_arg", command_name_arg);
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&command_name_arg);
-
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
@@ -512,7 +425,6 @@ void test_main(void* p NRUNUSED) {
   tlib_php_engine_destroy();
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   test_nr_lib_aws_sdk_php_sqs_parse_queueurl();
-  test_nr_lib_aws_sdk_php_get_command_name();
   test_nr_lib_aws_sdk_php_get_command_arg_value();
 #endif /* PHP 8.1+ */
 }
