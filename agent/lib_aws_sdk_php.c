@@ -373,6 +373,7 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
   char* real_class_and_command = NULL;
   nr_segment_t* segment = NULL;
   zend_class_entry* class_entry = NULL;
+  int klass_len = 0;
 
   class_entry = Z_OBJCE_P(nr_php_execute_scope(execute_data));
   klass = nr_php_class_entry_name(class_entry);
@@ -383,10 +384,12 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
 
     if (nr_php_is_zval_non_empty_string(command_name)) {
       command_name_string = Z_STRVAL_P(command_name);
+      klass_len = nr_php_class_entry_name_length(class_entry);
 
-      if (nr_striendswith(klass, nr_php_class_entry_name_length(class_entry),
-                          AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT,
-                          AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT_LEN)) {
+      if (klass_len == AWS_SDK_PHP_SQSCLIENT_CLASS_LEN
+          && nr_striendswith(klass, klass_len,
+                             AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT,
+                             AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT_LEN)) {
         nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
                                       Z_STRLEN_P(command_name),
                                       NR_EXECUTE_ORIG_ARGS);
