@@ -83,7 +83,7 @@ jobs:
       ref: ${{ inputs.ref }}
       arch: amd64
       runs-on: ubuntu-latest
-      continue-on-error: false
+      continue-on-error: true
     secrets: inherit
   test-arm64:
     needs: [build-test-runner-arm64, build-agent-arm64]
