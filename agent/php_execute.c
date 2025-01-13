@@ -2019,9 +2019,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   }
 
   if (segment->execute_data != execute_data) {
-    /* Discard the segment if the current segment is not for the same function
-     * as in nr_php_instrument_func_begin */
-    nr_segment_discard(&segment);
+    /* Execute data does not match the current segment - returning from
+     * uninstrumented function  - nothing to be done */
     return;
   }
 
