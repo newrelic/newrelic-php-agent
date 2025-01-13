@@ -54,9 +54,7 @@ void nr_php_observer_minit();
  *
  * Returns : Void.
  */
-void nr_php_observer_fcall_begin_tt_detail_on(zend_execute_data* execute_data);
-void nr_php_observer_fcall_begin_tt_detail_off(zend_execute_data* execute_data);
-
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data);
 /*
  * Purpose : Call the necessary functions needed to instrument a function when
  *           updating a transaction or segment for a function that has just
@@ -74,9 +72,7 @@ void nr_php_observer_fcall_begin_tt_detail_off(zend_execute_data* execute_data);
  *
  * Returns : Void.
  */
-void nr_php_observer_fcall_end_tt_detail_on(zend_execute_data* execute_data,
-                               zval* func_return_value);
-void nr_php_observer_fcall_end_tt_detail_off(zend_execute_data* execute_data,
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
                                zval* func_return_value);
 
 

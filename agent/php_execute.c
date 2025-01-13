@@ -1873,12 +1873,12 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   }
 }
 
-static void nr_php_instrument_func_begin(zend_execute_data* execute_data) {
+static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   nr_segment_t* segment = NULL;
   nruserfn_t* wraprec = NULL;
   nrtime_t txn_start_time = 0;
   int zcaught = 0;
-  zval* func_return_value = NULL;
+  NR_UNUSED_FUNC_RETURN_VALUE;
 
   if (NULL == NRPRG(txn)) {
     return;
@@ -2111,7 +2111,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   return;
 }
 
-static void nr_php_observer_fcall_begin_internal(zend_execute_data* execute_data, zend_observer_fcall_begin_handler fcall_begin_cb) {
+void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2140,15 +2140,13 @@ static void nr_php_observer_fcall_begin_internal(zend_execute_data* execute_data
   if (nrunlikely(show_executes)) {
     nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
   }
+  nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
 
-  if (NULL != fcall_begin_cb) {
-    fcall_begin_cb(execute_data);
-  }
+  return;
 }
 
-static void nr_php_observer_fcall_end_internal(zend_execute_data* execute_data,
-                               zval* func_return_value,
-                               zend_observer_fcall_end_handler fcall_end_cb) {
+void nr_php_observer_fcall_end(zend_execute_data* execute_data,
+                               zval* func_return_value) {
   /*
    * Instrument the function.
    * This and any other needed helper functions will replace:
@@ -2167,37 +2165,13 @@ static void nr_php_observer_fcall_end_internal(zend_execute_data* execute_data,
     if (nrunlikely(show_executes_return)) {
       nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
-    if (NULL != fcall_end_cb) {
-      fcall_end_cb(NR_EXECUTE_ORIG_ARGS);
-    } else {
-      /* need a way to register framework info while tt_detail is 0 */
-      if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-        nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS);
-      }
-    }
+
+    nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
   }
 
   NRPRG(php_cur_stack_depth) -= 1;
 
   return;
-}
-
-void nr_php_observer_fcall_begin_tt_detail_on(zend_execute_data* execute_data) {
-  nr_php_observer_fcall_begin_internal(execute_data, nr_php_instrument_func_begin);
-}
-
-void nr_php_observer_fcall_end_tt_detail_on(zend_execute_data* execute_data,
-                               zval* func_return_value) {
-  nr_php_observer_fcall_end_internal(execute_data, func_return_value, nr_php_instrument_func_end);
-}
-
-void nr_php_observer_fcall_begin_tt_detail_off(zend_execute_data* execute_data) {
-  nr_php_observer_fcall_begin_internal(execute_data, NULL);
-}
-
-void nr_php_observer_fcall_end_tt_detail_off(zend_execute_data* execute_data,
-                                     zval* func_return_value) {
-  nr_php_observer_fcall_end_internal(execute_data, func_return_value, NULL);
 }
 
 #endif
