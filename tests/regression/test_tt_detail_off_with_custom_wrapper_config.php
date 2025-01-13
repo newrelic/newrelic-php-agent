@@ -82,6 +82,9 @@ function custom_function_not_exceeding_tt_detail_threshold() {
   echo 'custom_function_not_exceeding_tt_detail_threshold called' . PHP_EOL;
 }
 
+// Execute another file to add wraprecs for functions listed in newrelic.transaction_tracer.custom
+require_once __DIR__ . '/tt_detail.inc';
+
 // This call will not be a span in span events
 function_exceeding_tt_detail_threshold();
 
