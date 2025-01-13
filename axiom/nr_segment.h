@@ -194,6 +194,7 @@ typedef struct _nr_segment_t {
                     wraprec lookups */
   int is_exception_handler; /* 1 if segment is associated with exception
                                handler, 0 otherwise */
+  void* execute_data;       /* The execute_data associated with this segment */
 #endif
 
 } nr_segment_t;

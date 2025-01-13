@@ -1911,6 +1911,12 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
 
+  if (!NRINI(tt_detail) && NULL == wraprec) {
+    /* No need to start a segment when function is not instrumented and
+     * transaction tracer details is disabled */
+    return;
+  }
+
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   if (nrunlikely(NULL == segment)) {
@@ -1918,6 +1924,10 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
     return;
   }
 
+  /* Associate segment with execute data to ensure that segment in
+   * nr_php_instrument_func_end is for the same function as in
+   * nr_php_instrument_func_begin */
+  segment->execute_data = execute_data;
   if (NULL == wraprec) {
     return;
   }
@@ -2005,6 +2015,13 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      * There should be no fcall_end associated with the segment root, If we are
      * here, it is most likely due to an API call to newrelic_end_transaction
      */
+    return;
+  }
+
+  if (segment->execute_data != execute_data) {
+    /* Discard the segment if the current segment is not for the same function
+     * as in nr_php_instrument_func_begin */
+    nr_segment_discard(&segment);
     return;
   }
 
