@@ -136,8 +136,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
       AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG, NR_EXECUTE_ORIG_ARGS);
 
   /*
-   *  nr_lib_aws_sdk_php_sqs_parse_queueurl checks for NULL so safe pass
-   * command_arg_value directly in.
+   * nr_lib_aws_sdk_php_sqs_parse_queueurl requires a modifiable string to populate message_params and cloud_attrs.
    */
   nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params,
                                         &cloud_attrs);
@@ -150,24 +149,15 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   nr_segment_message_end(&segment, &message_params);
 
   nr_free(command_arg_value);
-
-  /*
-   * These are the message_params params that were strduped in
-   * nr_lib_aws_sdk_php_sqs_parse_queueurl
-   */
-  nr_free(cloud_attrs.cloud_region);
-  nr_free(message_params.destination_name);
-  nr_free(cloud_attrs.cloud_account_id);
 }
 
 void nr_lib_aws_sdk_php_sqs_parse_queueurl(
-    const char* sqs_queueurl,
+    char* sqs_queueurl,
     nr_segment_message_params_t* message_params,
     nr_segment_cloud_attrs_t* cloud_attrs) {
   char* region = NULL;
   char* queue_name = NULL;
   char* account_id = NULL;
-  char queueurl[AWS_QUEUEURL_LEN_MAX];
   char* queueurl_pointer = NULL;
 
   if (NULL == sqs_queueurl || NULL == message_params) {
@@ -189,12 +179,7 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
    * regex, matching a regex, destroying a regex, this method was chosen as a
    * more performant option because it's a very limited pattern.
    */
-
-  if (NULL == nr_strlcpy(queueurl, sqs_queueurl, AWS_QUEUEURL_LEN_MAX)) {
-    /* Malformed queueurl, we can't decode this. */
-    return;
-  }
-  queueurl_pointer = queueurl;
+  queueurl_pointer = sqs_queueurl;
 
   /*
    * Find the pattern of the AWS queueurl that should immediately precede the
@@ -210,7 +195,7 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
   /*
    * Find the start of the region.  It follows the 12 chars of 'https://sqs.'
    * and continues until the next '.' It is safe to move the pointer along at
-   * this point since we allocated a sufficiently big buffer.
+   * this point since we just verified the prefix exists.
    */
   queueurl_pointer += AWS_QUEUEURL_PREFIX_LEN;
   if (nr_strempty(queueurl_pointer)) {
@@ -299,9 +284,9 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
    * SQS entity relationship requires: messaging.system, cloud.region,
    * cloud.account.id, messaging.destination.name
    */
-  message_params->destination_name = nr_strdup(queue_name);
-  cloud_attrs->cloud_account_id = nr_strdup(account_id);
-  cloud_attrs->cloud_region = nr_strdup(region);
+  message_params->destination_name = queue_name;
+  cloud_attrs->cloud_account_id = account_id;
+  cloud_attrs->cloud_region = region;
 }
 
 char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
