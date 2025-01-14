@@ -326,14 +326,13 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   zval* request = NULL;
-  // zval* controller = NULL;
-  // zval service;
-  // zval* route_collection = NULL;
-  // zval* routes = NULL;
-  int result = FAILURE;
-  zval retval;
-  // zval* controller_zvp = NULL;
-  // zval* backslash_zv = NULL;
+  // int result = FAILURE;
+  // zval retval;
+
+  // don't forget to free
+  zend_class_entry* newrelic_ce = NULL;
+  zval* newrelic_obj = NULL;
+  zval* controller = NULL;
 
   (void)wraprec;
 
@@ -359,6 +358,18 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   }
   nrl_verbosedebug(NRL_TXN, "VALID DRUPAL INSTANCEOFCLASS");
 
+  newrelic_ce = nr_php_find_class("newrelic\\Drupal8");
+  if (NULL == newrelic_ce) {
+    nrl_warning(NRL_FRAMEWORK,
+                "Failed to retrieve newrelic instrumentation class");
+    goto end;
+  }
+
+  newrelic_obj = nr_php_zval_alloc();
+  object_init_ex(newrelic_obj, newrelic_ce);
+  controller = nr_php_call(newrelic_obj, "newrelic_name_cached", request);
+
+#if 0
   // clang-format off
   char* fn =
         "(function() {"
@@ -371,9 +382,9 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         "     if (isset($defaults['_controller'])) {"
         "         $controller = str_replace('::', '->', $defaults['_controller']);"
         "         $controller = ltrim($controller, '\\\\');"
+        "         return $controller;"
         "     }"
         "   } catch (Throwable $e) {}"
-        "   return $controller;"
         "})()";
   // clang-format on
 
@@ -383,45 +394,12 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     nrl_verbosedebug(NRL_TXN, "FAILED TO GET ROUTE CONTROLLER");
     goto end;
   }
-
-  // backslash_zv = nr_php_zval_alloc();
-  // nr_php_zval_str(backslash_zv, "\\");
-  //
-  // controller_zvp = nr_php_call(NULL, "ltrim", &retval, backslash_zv);
-
-#if 0
-  result = zend_eval_string("\\Drupal::service('router.route_provider')",
-                            &service, "Get Drupal router service");
-
-  if (SUCCESS != result) {
-    nrl_verbosedebug(NRL_TXN, "FAILED TO GET ROUTER SERVICE CONTAINER");
-    goto end;
-  }
-
-  if (!nr_php_is_zval_valid_object(&service)) {
-    nrl_verbosedebug(NRL_TXN, "INVALID SERVICE OBJECT");
-    goto end;
-  }
-
-  route_collection
-      = nr_php_call(&service, "getRouteCollectionForRequest", request);
-
-  if (!nr_php_is_zval_valid_object(route_collection)) {
-    nrl_verbosedebug(NRL_TXN, "INVALID ROUTE COLLECTION OBJECT");
-    goto end;
-  }
-
-  routes = nr_php_call(route_collection, "all");
-
-  if (!nr_php_is_zval_valid_array(routes)) {
-    nrl_verbosedebug(NRL_TXN, "INVALID ROUTES ARRAY");
-    goto end;
-  }
 #endif
+
   // controller = nr_symfony_object_get_string(request, "_controller");
-  if (nr_php_is_zval_non_empty_string(&retval)) {
+  if (nr_php_is_zval_non_empty_string(controller)) {
     nrl_verbosedebug(NRL_TXN, "VALID DRUPAL CONTROLLER NAME");
-    name = nr_strndup(Z_STRVAL_P(&retval), Z_STRLEN_P(&retval));
+    name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
   } else {
     nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
     name = nr_strdup("page_cache");
@@ -445,9 +423,8 @@ end:
 
   nr_free(name);
   nr_php_zval_free(&request);
-  // nr_php_zval_free(&controller);
-  // nr_php_zval_free(&route_collection);
-  // nr_php_zval_free(&routes);
+  nr_php_zval_free(&newrelic_obj);
+  nr_php_zval_free(&controller);
   nrl_verbosedebug(NRL_TXN, "DRUPAL WRAPPER MEMORY FREED");
 }
 NR_PHP_WRAPPER_END
@@ -859,6 +836,39 @@ void nr_drupal_version() {
 }
 
 void nr_drupal8_enable(TSRMLS_D) {
+  int retval;
+
+  // clang-format off
+  retval = zend_eval_string(
+    "namespace newrelic\\Drupal8;"
+
+    "use Symfony\\Component\\HttpFoundation\\Request;"
+    "use Drupal\\Core\\Routing\\RouteMatch;"
+
+    "if (!function_exists('newrelic\\Drupal8::newrelic_name_cached')) {"
+    " function newrelic_name_cached(Request $request) {"
+    "   try {"
+    "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
+    "     $routeMatch = RouteMatch::createFromRequest($request);"
+    "     $route = $routeCollection->get($routeMatch->getRouteName());"
+    "     $defaults = $route->getDefaults();"
+    "     if (isset($defaults['_controller'])) {"
+    "       $controller = str_replace('::', '->', $defaults['_controller']);"
+    "       $controller = ltrim($controller, '\\\\');"
+    "       return $controller;"
+    "     }"
+    "   } catch (Throwable $e) {}"
+    " }"
+    "}",
+    NULL, "newrelic/Drupal8");
+  // clang-format on
+
+  if (SUCCESS != retval) {
+    nrl_warning(NRL_FRAMEWORK,
+                "%s: error injecting newrelic page cache naming code",
+                __func__);
+  }
+
   /*
    * Obtain a transation name if a page was cached.
    */
