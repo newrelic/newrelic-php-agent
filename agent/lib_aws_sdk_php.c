@@ -200,7 +200,9 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
    * Find the pattern of the AWS queueurl that should immediately precede the
    * region.
    */
-  if (0 != strncmp(queueurl_pointer, "https://sqs.", 12)) {
+  if (0
+      != strncmp(queueurl_pointer, AWS_QUEUEURL_PREFIX,
+                 AWS_QUEUEURL_PREFIX_LEN)) {
     /* Malformed queueurl, we can't decode this. */
     return;
   }
@@ -210,7 +212,7 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
    * and continues until the next '.' It is safe to move the pointer along at
    * this point since we allocated a sufficiently big buffer.
    */
-  queueurl_pointer += 12;
+  queueurl_pointer += AWS_QUEUEURL_PREFIX_LEN;
   if (nr_strempty(queueurl_pointer)) {
     /* Malformed queueurl, we can't decode this. */
     return;
@@ -238,7 +240,9 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
   }
 
   /* Move past the next pattern to find the start of the account id. */
-  if (0 != strncmp(queueurl_pointer, "amazonaws.com/", 14)) {
+  if (0
+      != strncmp(queueurl_pointer, AWS_QUEUEURL_AWS_POSTFIX,
+                 AWS_QUEUEURL_AWS_POSTFIX_LEN)) {
     /* Malformed queueurl, we can't decode this. */
     return;
   }
@@ -248,7 +252,7 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
    * pointer beyond that point should be safe and give us either more string or
    * the end of the string.
    */
-  queueurl_pointer += 14;
+  queueurl_pointer += AWS_QUEUEURL_AWS_POSTFIX_LEN;
   if (nr_strempty(queueurl_pointer)) {
     /* Malformed queueurl, we can't decode this. */
     return;
