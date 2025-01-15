@@ -105,6 +105,24 @@ static void test_nr_lib_aws_sdk_php_get_command_arg_value() {
 
   /* Test Invalid Cases*/
 
+  /*
+   * Invalid case: QueueUrl found but value was not a string.  The wrapper
+   * should see the null return value.
+   */
+  char* queueurl_not_string_arg
+      = "array("
+        "    0 => array("
+        "        'QueueUrl' => array("
+        "                      'Nope' => 'curly_q'"
+        "         )"
+        "    )"
+        ")";
+  array_arg = tlib_php_request_eval_expr(queueurl_not_string_arg);
+  expr = nr_php_call(NULL, "two_param", first_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&array_arg);
+
   /* Invalid case: only one parameter.  The wrapper should see the null return
    * value. */
   expr = nr_php_call(NULL, "one_param", first_arg);
