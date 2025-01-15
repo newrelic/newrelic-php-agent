@@ -15,6 +15,9 @@ should be created.
 <?php
 
 require('skipif.inc');
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 
 */
 

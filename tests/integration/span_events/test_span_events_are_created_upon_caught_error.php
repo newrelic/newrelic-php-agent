@@ -14,6 +14,9 @@ when an error is generated and handled.
 if (version_compare(PHP_VERSION, "7.0", "<")) {
   die("skip: CLM for PHP 5 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4+\n");
+}
 */
 
 /*INI
@@ -92,7 +95,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_ERROR",
-        "code.lineno": 136,
+        "code.lineno": 139,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -113,7 +116,7 @@ log_errors=0
       },
       {},
       {
-        "code.lineno":  130,
+        "code.lineno":  133,
         "code.filepath": "__FILE__",
         "code.function": "{closure}"
       }

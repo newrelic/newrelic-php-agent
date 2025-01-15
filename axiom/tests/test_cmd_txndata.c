@@ -1094,6 +1094,7 @@ static void test_encode_txn_event(void) {
               "\"duration\":0.98700,\"totalTime\":0.98700,\"nr.apdexPerfZone\":"
               "\"F\","
               "\"queueDuration\":3.00000,\"externalDuration\":2.00000,"
+              "\"externalCallCount\":1,"
               "\"databaseDuration\":2.00000,"
               "\"databaseCallCount\":2,"
               "\"error\":false},"
