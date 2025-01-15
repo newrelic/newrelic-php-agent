@@ -552,6 +552,10 @@ static nr_library_lookup_hashmap_t library_lookup = {
   .log2_num_buckets = 8,
 };
 
+static nr_library_lookup_hashmap_t logging_library_lookup = {
+  .log2_num_buckets = 8,
+};
+
 size_t nr_library_lookup_hashmap_hash_key(nr_library_lookup_hashmap_t* hashmap,
                                           const char* filename,
                                           const size_t filename_len) {
@@ -621,19 +625,6 @@ nr_library_table_t* nr_library_lookup_hashmap_get(nr_library_lookup_hashmap_t* h
   return NULL;
 }
 
-void nr_library_lookup_minit() {
-  library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
-  library_lookup.suffix_len = nr_library_table_min_file_to_check_len(libraries, num_libraries);
-
-  for (size_t i = 0; i < num_libraries; i++) {
-    nr_library_lookup_hashmap_set(&library_lookup, &libraries[i]);
-  }
-}
-
-void nr_library_lookup_mshutdown() {
-  nr_hashmap_destroy(&library_lookup.h);
-}
-
 // clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
@@ -667,6 +658,28 @@ static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
 
 static const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+
+void nr_library_lookup_minit() {
+  library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
+  library_lookup.suffix_len = nr_library_table_min_file_to_check_len(libraries, num_libraries);
+
+  for (size_t i = 0; i < num_libraries; i++) {
+    nr_library_lookup_hashmap_set(&library_lookup, &libraries[i]);
+  }
+
+  logging_library_lookup.h = nr_hashmap_create_buckets(1 << logging_library_lookup.log2_num_buckets, NULL);
+  logging_library_lookup.suffix_len = nr_library_table_min_file_to_check_len(logging_frameworks, num_logging_frameworks);
+
+  for (size_t i = 0; i < num_logging_frameworks; i++) {
+    nr_library_lookup_hashmap_set(&logging_library_lookup, &logging_frameworks[i]);
+  }
+
+}
+
+void nr_library_lookup_mshutdown() {
+  nr_hashmap_destroy(&library_lookup.h);
+  nr_hashmap_destroy(&logging_library_lookup.h);
+}
 
 /*
  * This const char[] provides enough white space to indent functions to
@@ -1035,7 +1048,8 @@ static void nr_execute_handle_logging_framework(const char* filename,
                                                 const size_t filename_len
                                                     TSRMLS_DC) {
   bool is_enabled = false;
-  size_t i;
+#if 0
+ size_t i;
 
   for (i = 0; i < num_logging_frameworks; i++) {
     if (nr_striendswith(STR_AND_LEN(filename),
@@ -1054,6 +1068,25 @@ static void nr_execute_handle_logging_framework(const char* filename,
           NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
     }
   }
+#else
+  char* filename_lc = nr_string_to_lowercase(filename);
+  nr_library_table_t* library = nr_library_lookup_hashmap_get(&logging_library_lookup, filename_lc, filename_len);
+  if (library) {
+      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+                library->library_name);
+
+      nr_fw_support_add_library_supportability_metric(
+          NRPRG(txn), library->library_name);
+
+      if (NRINI(logging_enabled) && NULL != library->enable) {
+        is_enabled = true;
+        library->enable(TSRMLS_C);
+      }
+      nr_fw_support_add_logging_supportability_metric(
+          NRPRG(txn), library->library_name, is_enabled);
+  }
+  nr_free(filename_lc);
+#endif
 }
 
 static void nr_execute_handle_package(const char* filename,
