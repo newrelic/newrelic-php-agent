@@ -465,12 +465,20 @@ nrframework_t nr_php_framework_from_config(const char* config_name) {
  * current framework is FW_UNSET, the callback will still be called.
  */
 
-typedef struct _nr_library_table_t {
+typedef struct _nr_library_table_t nr_library_table_t;
+typedef void (*nr_library_handler_fn_t)(nr_library_table_t*);
+
+struct _nr_library_table_t {
   const char* library_name;
+  nr_library_handler_fn_t handler;
   const char* file_to_check;
   size_t file_to_check_len;
   nr_library_enable_fn_t enable;
-} nr_library_table_t;
+};
+
+static void nr_library_cb(nr_library_table_t* library);
+static void nr_logging_library_cb(nr_library_table_t* library);
+static void nr_vuln_mgmt_package_cb(nr_library_table_t* library);
 
 /*
  * Note that all paths should be in lowercase.
@@ -478,28 +486,28 @@ typedef struct _nr_library_table_t {
 // clang-format: off
 static nr_library_table_t libraries[] = {
     /* AWS-SDK-PHP 3 */
-    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
+    {"AWS-SDK-PHP", nr_library_cb, NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
 
     /* Doctrine < 2.18 */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", nr_library_cb, NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
     /* Doctrine 2.18 reworked the directory structure */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", nr_library_cb, NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
 
-    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
-    {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
-    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
+    {"Guzzle 3", nr_library_cb, NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
+    {"Guzzle 4-5", nr_library_cb, NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
+    {"Guzzle 6", nr_library_cb, NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
 
-    {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
+    {"MongoDB", nr_library_cb, NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
      */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", nr_library_cb, NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", nr_library_cb, NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
 
-    {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
-    {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
+    {"Predis", nr_library_cb, NR_PSTR("predis/src/client.php"), nr_predis_enable},
+    {"Predis", nr_library_cb, NR_PSTR("predis/client.php"), nr_predis_enable},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -507,14 +515,22 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all. This is
      * necessary for Magento in particular, which is built on ZF1.
      */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
+    {"Zend_Http", nr_library_cb, NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    {"Laminas_Http", nr_library_cb, NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    /* Monolog - Logging for PHP */
+    {"Monolog", nr_logging_library_cb, NR_PSTR("monolog/logger.php"), nr_monolog_enable},
+    /* Consolidation/Log - Logging for PHP */
+    {"Consolidation/Log", nr_logging_library_cb, NR_PSTR("consolidation/log/src/logger.php"), NULL},
+    /* laminas-log - Logging for PHP */
+    {"laminas-log", nr_logging_library_cb, NR_PSTR("laminas-log/src/logger.php"), NULL},
+    {"Drupal", nr_vuln_mgmt_package_cb, NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
+    {"Wordpress", nr_vuln_mgmt_package_cb, NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
 // clang-format: on
 
@@ -551,7 +567,7 @@ typedef struct _nr_suffix_lookup_hashmap {
 static nr_suffix_lookup_hashmap_t library_lookup = {
   .log2_num_buckets = 8,
 };
-
+#if 0
 static nr_suffix_lookup_hashmap_t logging_library_lookup = {
   .log2_num_buckets = 8,
 };
@@ -559,6 +575,7 @@ static nr_suffix_lookup_hashmap_t logging_library_lookup = {
 static nr_suffix_lookup_hashmap_t vuln_mgmt_package_lookup = {
   .log2_num_buckets = 8,
 };
+#endif
 
 size_t nr_suffix_lookup_hashmap_hash_key(nr_suffix_lookup_hashmap_t* hashmap,
                                           const char* filename,
@@ -629,6 +646,7 @@ void* nr_suffix_lookup_hashmap_get(nr_suffix_lookup_hashmap_t* hashmap,
   return NULL;
 }
 
+#if 0
 // clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
@@ -698,6 +716,7 @@ nr_status_t nr_suffix_lookup_hashmap_add_package(nr_suffix_lookup_hashmap_t* has
   //nrl_always("hashmap->h.buckets[%zu][0].key.value=%s", hash, hashmap->h->buckets[hash]->key.value);
   return NR_SUCCESS;
 }
+#endif
 
 void nr_php_execute_minit() {
   library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
@@ -706,26 +725,10 @@ void nr_php_execute_minit() {
   for (size_t i = 0; i < num_libraries; i++) {
     nr_suffix_lookup_hashmap_add_library(&library_lookup, &libraries[i]);
   }
-
-  logging_library_lookup.h = nr_hashmap_create_buckets(1 << logging_library_lookup.log2_num_buckets, NULL);
-  logging_library_lookup.suffix_len = nr_library_table_min_file_to_check_len(logging_frameworks, num_logging_frameworks);
-
-  for (size_t i = 0; i < num_logging_frameworks; i++) {
-    nr_suffix_lookup_hashmap_add_library(&logging_library_lookup, &logging_frameworks[i]);
-  }
-
-  vuln_mgmt_package_lookup.h = nr_hashmap_create_buckets(1 << vuln_mgmt_package_lookup.log2_num_buckets, NULL);
-  vuln_mgmt_package_lookup.suffix_len = nr_vuln_mgmt_package_table_min_file_to_check_len(vuln_mgmt_packages, num_packages);
-
-  for (size_t i = 0; i < num_packages; i++) {
-    nr_suffix_lookup_hashmap_add_package(&vuln_mgmt_package_lookup, &vuln_mgmt_packages[i]);
-  }
 }
 
 void nr_php_execute_mshutdown() {
   nr_hashmap_destroy(&library_lookup.h);
-  nr_hashmap_destroy(&logging_library_lookup.h);
-  nr_hashmap_destroy(&vuln_mgmt_package_lookup.h);
 }
 
 /*
@@ -1024,7 +1027,7 @@ static nrframework_t nr_try_force_framework(
   return NR_FW_UNSET;
 }
 
-static void nr_execute_handle_library(const char* filename,
+static inline void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
 #if 0
   size_t i;
@@ -1045,14 +1048,42 @@ static void nr_execute_handle_library(const char* filename,
   }
 #else
   nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&library_lookup, filename, filename_len);
-  if (library) {
-    nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
-    nr_fw_support_add_library_supportability_metric(NRPRG(txn), library->library_name);
+  if (library && library->handler) {
+    library->handler(library);
+  }
+#endif
+}
+
+static void nr_library_cb(nr_library_table_t* library) {
+  nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn), library->library_name);
+  if (NULL != library->enable) {
+    library->enable(TSRMLS_C);
+  }
+}
+
+static void nr_logging_library_cb(nr_library_table_t* library) {
+  bool is_enabled = false;
+  nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+            library->library_name);
+
+  nr_fw_support_add_library_supportability_metric(
+      NRPRG(txn), library->library_name);
+
+  if (NRINI(logging_enabled) && NULL != library->enable) {
+    is_enabled = true;
+    library->enable(TSRMLS_C);
+  }
+  nr_fw_support_add_logging_supportability_metric(
+      NRPRG(txn), library->library_name, is_enabled);
+}
+
+static void nr_vuln_mgmt_package_cb(nr_library_table_t* library) {
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
     if (NULL != library->enable) {
       library->enable(TSRMLS_C);
     }
   }
-#endif
 }
 
 static void nr_execute_handle_autoload(const char* filename,
@@ -1089,71 +1120,71 @@ static void nr_execute_handle_autoload(const char* filename,
   nr_composer_handle_autoload(filename);
 }
 
-static void nr_execute_handle_logging_framework(const char* filename,
-                                                const size_t filename_len
-                                                    TSRMLS_DC) {
-  bool is_enabled = false;
-#if 0
- size_t i;
+// static void nr_execute_handle_logging_framework(const char* filename,
+//                                                 const size_t filename_len
+//                                                     TSRMLS_DC) {
+//   bool is_enabled = false;
+// #if 0
+//  size_t i;
 
-  for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(logging_frameworks[i].file_to_check))) {
-      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
-                logging_frameworks[i].library_name);
+//   for (i = 0; i < num_logging_frameworks; i++) {
+//     if (nr_striendswith(STR_AND_LEN(filename),
+//                         STR_AND_LEN(logging_frameworks[i].file_to_check))) {
+//       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+//                 logging_frameworks[i].library_name);
 
-      nr_fw_support_add_library_supportability_metric(
-          NRPRG(txn), logging_frameworks[i].library_name);
+//       nr_fw_support_add_library_supportability_metric(
+//           NRPRG(txn), logging_frameworks[i].library_name);
 
-      if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
-        is_enabled = true;
-        logging_frameworks[i].enable(TSRMLS_C);
-      }
-      nr_fw_support_add_logging_supportability_metric(
-          NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
-    }
-  }
-#else
-  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&logging_library_lookup, filename, filename_len);
-  if (library) {
-      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
-                library->library_name);
+//       if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
+//         is_enabled = true;
+//         logging_frameworks[i].enable(TSRMLS_C);
+//       }
+//       nr_fw_support_add_logging_supportability_metric(
+//           NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
+//     }
+//   }
+// #else
+//   nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&logging_library_lookup, filename, filename_len);
+//   if (library) {
+//       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
+//                 library->library_name);
 
-      nr_fw_support_add_library_supportability_metric(
-          NRPRG(txn), library->library_name);
+//       nr_fw_support_add_library_supportability_metric(
+//           NRPRG(txn), library->library_name);
 
-      if (NRINI(logging_enabled) && NULL != library->enable) {
-        is_enabled = true;
-        library->enable(TSRMLS_C);
-      }
-      nr_fw_support_add_logging_supportability_metric(
-          NRPRG(txn), library->library_name, is_enabled);
-  }
-#endif
-}
+//       if (NRINI(logging_enabled) && NULL != library->enable) {
+//         is_enabled = true;
+//         library->enable(TSRMLS_C);
+//       }
+//       nr_fw_support_add_logging_supportability_metric(
+//           NRPRG(txn), library->library_name, is_enabled);
+//   }
+// #endif
+// }
 
-static void nr_execute_handle_package(const char* filename,
-                                      const size_t filename_len) {
-#if 0
-  size_t i = 0;
+// static void nr_execute_handle_package(const char* filename,
+//                                       const size_t filename_len) {
+// #if 0
+//   size_t i = 0;
 
-  for (i = 0; i < num_packages; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
-      if (NULL != vuln_mgmt_packages[i].enable) {
-        vuln_mgmt_packages[i].enable();
-      }
-    }
-  }
-#else
-  nr_vuln_mgmt_table_t* vuln_mgmt_package = (nr_vuln_mgmt_table_t *) nr_suffix_lookup_hashmap_get(&vuln_mgmt_package_lookup, filename, filename_len);
-  if (vuln_mgmt_package) {
-    if (NULL != vuln_mgmt_package->enable) {
-      vuln_mgmt_package->enable(TSRMLS_C);
-    }
-  }
-#endif
-}
+//   for (i = 0; i < num_packages; i++) {
+//     if (nr_striendswith(STR_AND_LEN(filename),
+//                         STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
+//       if (NULL != vuln_mgmt_packages[i].enable) {
+//         vuln_mgmt_packages[i].enable();
+//       }
+//     }
+//   }
+// #else
+//   nr_vuln_mgmt_table_t* vuln_mgmt_package = (nr_vuln_mgmt_table_t *) nr_suffix_lookup_hashmap_get(&vuln_mgmt_package_lookup, filename, filename_len);
+//   if (vuln_mgmt_package) {
+//     if (NULL != vuln_mgmt_package->enable) {
+//       vuln_mgmt_package->enable(TSRMLS_C);
+//     }
+//   }
+// #endif
+// }
 
 #undef STR_AND_LEN
 
@@ -1182,10 +1213,10 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename_lc, filename_len TSRMLS_CC);
   nr_execute_handle_autoload(filename, filename_len);
-  nr_execute_handle_logging_framework(filename_lc, filename_len TSRMLS_CC);
-  if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_execute_handle_package(filename_lc, filename_len);
-  }
+  // nr_execute_handle_logging_framework(filename_lc, filename_len TSRMLS_CC);
+  // if (NRINI(vulnerability_management_package_detection_enabled)) {
+  //   nr_execute_handle_package(filename_lc, filename_len);
+  // }
   nr_free(filename_lc);
 }
 
