@@ -229,7 +229,7 @@ static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
    */
   nr_segment_message_params_t message_params = {0};
   nr_segment_cloud_attrs_t cloud_attrs = {0};
-  char modifiable_string[512];
+  char modifiable_string[AWS_QUEUEURL_LEN_MAX];
 
   tlib_php_engine_create("");
 
