@@ -556,6 +556,10 @@ static nr_suffix_lookup_hashmap_t logging_library_lookup = {
   .log2_num_buckets = 8,
 };
 
+static nr_suffix_lookup_hashmap_t vuln_mgmt_package_lookup = {
+  .log2_num_buckets = 8,
+};
+
 size_t nr_suffix_lookup_hashmap_hash_key(nr_suffix_lookup_hashmap_t* hashmap,
                                           const char* filename,
                                           const size_t filename_len) {
@@ -650,7 +654,7 @@ typedef struct _nr_vuln_mgmt_table_t {
 
 /* Note that all paths should be in lowercase. */
 // clang-format: off
-static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
+static nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
     {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
     {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
@@ -658,6 +662,42 @@ static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
 
 static const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+
+// find the minimum length of the file_to_check
+static size_t nr_vuln_mgmt_package_table_min_file_to_check_len(
+    const nr_vuln_mgmt_table_t* table,
+    size_t num_tables) {
+  size_t min_len = 0;
+  size_t i;
+
+  for (i = 0; i < num_tables; i++) {
+    if (0 == i) {
+      min_len = table[i].file_to_check_len;
+    } else {
+      min_len = MIN(min_len, table[i].file_to_check_len);
+    }
+  }
+
+  return min_len;
+}
+
+nr_status_t nr_suffix_lookup_hashmap_add_package(nr_suffix_lookup_hashmap_t* hashmap, nr_vuln_mgmt_table_t* library) {
+  size_t hash = -1;
+
+  if ((NULL == hashmap) || (NULL == library) ) {
+    return NR_FAILURE;
+  }
+
+  hash = nr_suffix_lookup_hashmap_hash_key(hashmap, library->file_to_check, library->file_to_check_len);
+
+  if (nr_suffix_lookup_hashmap_fetch(hashmap->h, hash, library->file_to_check, library->file_to_check_len, NULL)) {
+    return NR_FAILURE;
+  }
+
+  nr_hashmap_add_internal(hashmap->h, hash, library->file_to_check, library->file_to_check_len+1, library);
+  //nrl_always("hashmap->h.buckets[%zu][0].key.value=%s", hash, hashmap->h->buckets[hash]->key.value);
+  return NR_SUCCESS;
+}
 
 void nr_php_execute_minit() {
   library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
@@ -674,11 +714,18 @@ void nr_php_execute_minit() {
     nr_suffix_lookup_hashmap_add_library(&logging_library_lookup, &logging_frameworks[i]);
   }
 
+  vuln_mgmt_package_lookup.h = nr_hashmap_create_buckets(1 << vuln_mgmt_package_lookup.log2_num_buckets, NULL);
+  vuln_mgmt_package_lookup.suffix_len = nr_vuln_mgmt_package_table_min_file_to_check_len(vuln_mgmt_packages, num_packages);
+
+  for (size_t i = 0; i < num_packages; i++) {
+    nr_suffix_lookup_hashmap_add_package(&vuln_mgmt_package_lookup, &vuln_mgmt_packages[i]);
+  }
 }
 
 void nr_php_execute_mshutdown() {
   nr_hashmap_destroy(&library_lookup.h);
   nr_hashmap_destroy(&logging_library_lookup.h);
+  nr_hashmap_destroy(&vuln_mgmt_package_lookup.h);
 }
 
 /*
@@ -1091,6 +1138,7 @@ static void nr_execute_handle_logging_framework(const char* filename,
 
 static void nr_execute_handle_package(const char* filename,
                                       const size_t filename_len) {
+#if 0
   size_t i = 0;
 
   for (i = 0; i < num_packages; i++) {
@@ -1101,6 +1149,16 @@ static void nr_execute_handle_package(const char* filename,
       }
     }
   }
+#else
+  char* filename_lc = nr_string_to_lowercase(filename);
+  nr_vuln_mgmt_table_t* vuln_mgmt_package = (nr_vuln_mgmt_table_t *) nr_suffix_lookup_hashmap_get(&vuln_mgmt_package_lookup, filename_lc, filename_len);
+  if (vuln_mgmt_package) {
+    if (NULL != vuln_mgmt_package->enable) {
+      vuln_mgmt_package->enable(TSRMLS_C);
+    }
+  }
+  nr_free(filename_lc);
+#endif
 }
 
 #undef STR_AND_LEN
