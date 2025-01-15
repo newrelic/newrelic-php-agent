@@ -471,4 +471,25 @@ static inline bool nr_striendswith(const char* s,
   return 0 == nr_stricmp(suffix, pattern);
 }
 
+static inline bool nr_strendswith(const char* s,
+                                   const size_t slen,
+                                   const char* pattern,
+                                   const size_t pattern_len) {
+  const char* suffix;
+
+  if (slen < pattern_len) {
+    /* input shorter than pattern */
+    return false;
+  }
+
+  if (NULL == s) {
+    /* invalid input */
+    return false;
+  }
+
+  /* compare input's suffix with the pattern and return result */
+  suffix = s + (slen - pattern_len);
+  return 0 == nr_strcmp(suffix, pattern);
+}
+
 #endif /* UTIL_STRINGS_HDR */

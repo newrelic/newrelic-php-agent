@@ -576,7 +576,7 @@ int nr_library_lookup_hashmap_fetch(nr_hashmap_t* hashmap,
 
   for (bucket = hashmap->buckets[hash_key]; bucket; bucket = bucket->next) {
     //nrl_always("found bucket for filename=%s, bucket key=%s", filename, bucket->key.value);
-    if (nr_striendswith(filename, filename_len, bucket->key.value, bucket->key.length-1)) {
+    if (nr_strendswith(filename, filename_len, bucket->key.value, bucket->key.length-1)) {
       if (bucket_ptr) {
         *bucket_ptr = bucket;
       }
@@ -984,7 +984,8 @@ static void nr_execute_handle_library(const char* filename,
     }
   }
 #else
-  nr_library_table_t* library = nr_library_lookup_hashmap_get(&library_lookup, filename, filename_len);
+  char* filename_lc = nr_string_to_lowercase(filename);
+  nr_library_table_t* library = nr_library_lookup_hashmap_get(&library_lookup, filename_lc, filename_len);
   if (library) {
     nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
     nr_fw_support_add_library_supportability_metric(NRPRG(txn), library->library_name);
@@ -992,6 +993,7 @@ static void nr_execute_handle_library(const char* filename,
       library->enable(TSRMLS_C);
     }
   }
+  nr_free(filename_lc);
 #endif
 }
 
