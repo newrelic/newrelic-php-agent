@@ -66,8 +66,7 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
 
   if (NR_SUCCESS
       != nr_php_error_record_exception(NRPRG(txn), exception, priority, true,
-                                       NULL,
-                                       &NRPRG(exception_filters))) {
+                                       NULL, &NRPRG(exception_filters))) {
     nrl_verbosedebug(NRL_TXN, "Drupal: unable to record exception");
   }
 
@@ -134,12 +133,12 @@ static void nr_drupal8_add_method_callback(const zend_class_entry* ce,
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 static void nr_drupal8_add_method_callback_before_after_clean(
-                                           const zend_class_entry* ce,
-                                           const char* method,
-                                           size_t method_len,
-                                           nrspecialfn_t before_callback,
-                                           nrspecialfn_t after_callback,
-                                           nrspecialfn_t clean_callback) {
+    const zend_class_entry* ce,
+    const char* method,
+    size_t method_len,
+    nrspecialfn_t before_callback,
+    nrspecialfn_t after_callback,
+    nrspecialfn_t clean_callback) {
   zend_function* function = NULL;
 
   if (NULL == ce) {
@@ -164,13 +163,13 @@ static void nr_drupal8_add_method_callback_before_after_clean(
         nr_php_class_entry_name(ce), NRSAFELEN(method_len), method);
 
     nr_php_wrap_user_function_before_after_clean(
-                              class_method, nr_strlen(class_method),
-                              before_callback, after_callback, clean_callback);
+        class_method, nr_strlen(class_method), before_callback, after_callback,
+        clean_callback);
 
     nr_free(class_method);
   }
 }
-#endif // OAPI
+#endif  // OAPI
 
 /*
  * Purpose : Check if the given function or method is in the current call
@@ -322,12 +321,66 @@ NR_PHP_WRAPPER_END
  * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
-  const char* name = "page_cache";
+  char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+  zval* request = NULL;
+  int result = FAILURE;
+  zval retval;
 
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  request = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  if (0 == nr_php_is_zval_valid_object(request)) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get does not have a request parameter");
+
+    goto end;
+  }
+
+  if (false
+      == nr_php_object_instanceof_class(
+          request, "Symfony\\Component\\HttpFoundation\\Request")) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get parameter is a non-Request object");
+    goto end;
+  }
+
+  // clang-format off
+  char* fn =
+        "(function() {"
+        "   try {"
+        "     $request = \\Drupal::request();"
+        "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
+        "     $routeMatch = Drupal\\Core\\Routing\\RouteMatch::createFromRequest($request);"
+        "     $route = $routeCollection->get($routeMatch->getRouteName());"
+        "     $defaults = $route->getDefaults();"
+        "     if (isset($defaults['_controller'])) {"
+        "         $controller = str_replace('::', '->', $defaults['_controller']);"
+        "         $controller = ltrim($controller, '\\\\');"
+        "         return $controller;"
+        "     }"
+        "   } catch (Throwable $e) {}"
+        "})()";
+  // clang-format on
+
+  result = zend_eval_string(fn, &retval, "Get Route Controller");
+
+  if (SUCCESS != result) {
+    nrl_verbosedebug(NRL_TXN, "FAILED TO GET ROUTE CONTROLLER");
+    goto end;
+  }
+
+  if (nr_php_is_zval_non_empty_string(&retval)) {
+    name = nr_strndup(Z_STRVAL_P(&retval), Z_STRLEN_P(&retval));
+  } else {
+    nrl_verbosedebug(NRL_TXN, "Drupal 8: failed to get object controller");
+    name = nr_strdup("page_cache");
+  }
+
+end:
   NR_PHP_WRAPPER_CALL;
 
   /*
@@ -339,6 +392,9 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
                     NR_OK_TO_OVERWRITE);
   }
+
+  nr_free(name);
+  nr_php_zval_free(&request);
 }
 NR_PHP_WRAPPER_END
 
@@ -501,8 +557,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  zval* curr_hook
-      = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
+  zval* curr_hook = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
   if (UNEXPECTED(!nr_php_is_zval_non_empty_string(curr_hook))) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
@@ -515,7 +570,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
   nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
                             NRPRG(drupal_invoke_all_hook),
                             NRPRG(drupal_invoke_all_hook_len) TSRMLS_CC);
-#endif // OAPI
+#endif  // OAPI
 
 leave:
   NR_PHP_WRAPPER_CALL;
@@ -536,7 +591,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
     || defined OVERWRITE_ZEND_EXECUTE_DATA
   char* prev_hook = NULL;
   int prev_hook_len;
-#endif // not OAPI
+#endif  // not OAPI
 
   (void)wraprec;
 
@@ -547,7 +602,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     nr_php_arg_release(&hook);
-#endif // OAPI
+#endif  // OAPI
     goto leave;
   }
 
@@ -561,7 +616,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
   NRPRG(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
   NRPRG(check_cufa) = true;
-#endif // OAPI
+#endif  // OAPI
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   /* This instrumentation will fail if callback has already been wrapped
@@ -581,14 +636,14 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   if (NULL == NRPRG(drupal_invoke_all_hook)) {
     NRPRG(check_cufa) = false;
   }
-#endif // not OAPI
+#endif  // not OAPI
 
-leave: ;
+leave:;
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
   /* for OAPI, the _after callback handles this free */
   nr_php_arg_release(&hook);
-#endif // not OAPI
+#endif  // not OAPI
 }
 NR_PHP_WRAPPER_END
 
@@ -605,7 +660,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
   nr_drupal_invoke_all_hook_stacks_pop();
 }
 NR_PHP_WRAPPER_END
-#endif // OAPI
+#endif  // OAPI
 
 /*
  * Purpose : Wrap the invoke() method of the module handler instance in use.
@@ -642,10 +697,8 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_drupal8_add_method_callback_before_after_clean(
-                                 ce, NR_PSTR("invokeallwith"),
-                                 nr_drupal94_invoke_all_with,
-                                 nr_drupal94_invoke_all_with_after,
-                                 nr_drupal94_invoke_all_with_clean);
+      ce, NR_PSTR("invokeallwith"), nr_drupal94_invoke_all_with,
+      nr_drupal94_invoke_all_with_after, nr_drupal94_invoke_all_with_clean);
 #else
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
                                  nr_drupal94_invoke_all_with TSRMLS_CC);
