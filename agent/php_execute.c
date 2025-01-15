@@ -1044,8 +1044,7 @@ static void nr_execute_handle_library(const char* filename,
     }
   }
 #else
-  char* filename_lc = nr_string_to_lowercase(filename);
-  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&library_lookup, filename_lc, filename_len);
+  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&library_lookup, filename, filename_len);
   if (library) {
     nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
     nr_fw_support_add_library_supportability_metric(NRPRG(txn), library->library_name);
@@ -1053,7 +1052,6 @@ static void nr_execute_handle_library(const char* filename,
       library->enable(TSRMLS_C);
     }
   }
-  nr_free(filename_lc);
 #endif
 }
 
@@ -1116,8 +1114,7 @@ static void nr_execute_handle_logging_framework(const char* filename,
     }
   }
 #else
-  char* filename_lc = nr_string_to_lowercase(filename);
-  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&logging_library_lookup, filename_lc, filename_len);
+  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&logging_library_lookup, filename, filename_len);
   if (library) {
       nrl_debug(NRL_INSTRUMENT, "detected library=%s",
                 library->library_name);
@@ -1132,7 +1129,6 @@ static void nr_execute_handle_logging_framework(const char* filename,
       nr_fw_support_add_logging_supportability_metric(
           NRPRG(txn), library->library_name, is_enabled);
   }
-  nr_free(filename_lc);
 #endif
 }
 
@@ -1150,14 +1146,12 @@ static void nr_execute_handle_package(const char* filename,
     }
   }
 #else
-  char* filename_lc = nr_string_to_lowercase(filename);
-  nr_vuln_mgmt_table_t* vuln_mgmt_package = (nr_vuln_mgmt_table_t *) nr_suffix_lookup_hashmap_get(&vuln_mgmt_package_lookup, filename_lc, filename_len);
+  nr_vuln_mgmt_table_t* vuln_mgmt_package = (nr_vuln_mgmt_table_t *) nr_suffix_lookup_hashmap_get(&vuln_mgmt_package_lookup, filename, filename_len);
   if (vuln_mgmt_package) {
     if (NULL != vuln_mgmt_package->enable) {
       vuln_mgmt_package->enable(TSRMLS_C);
     }
   }
-  nr_free(filename_lc);
 #endif
 }
 
@@ -1174,6 +1168,7 @@ static void nr_execute_handle_package(const char* filename,
 static void nr_php_user_instrumentation_from_file(const char* filename,
                                                   const size_t filename_len
                                                       TSRMLS_DC) {
+  char* filename_lc = NULL;
   /* short circuit if filename_len is 0; a single place short circuit */
   if (0 == filename_len) {
     nrl_verbosedebug(NRL_AGENT,
@@ -1181,14 +1176,17 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
                      filename);
     return;
   }
+
+  filename_lc = nr_string_to_lowercase(filename);
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
-  nr_execute_handle_library(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_library(filename_lc, filename_len TSRMLS_CC);
   nr_execute_handle_autoload(filename, filename_len);
-  nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
+  nr_execute_handle_logging_framework(filename_lc, filename_len TSRMLS_CC);
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_execute_handle_package(filename, filename_len);
+    nr_execute_handle_package(filename_lc, filename_len);
   }
+  nr_free(filename_lc);
 }
 
 /*
