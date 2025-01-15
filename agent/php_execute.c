@@ -520,6 +520,120 @@ static nr_library_table_t libraries[] = {
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+// find the minimum length of the file_to_check
+static size_t nr_library_table_min_file_to_check_len(
+    const nr_library_table_t* table,
+    size_t num_tables) {
+  size_t min_len = 0;
+  size_t i;
+
+  for (i = 0; i < num_tables; i++) {
+    if (0 == i) {
+      min_len = table[i].file_to_check_len;
+    } else {
+      min_len = MIN(min_len, table[i].file_to_check_len);
+    }
+  }
+
+  return min_len;
+}
+
+#include "util_hash.h"
+#include "util_hashmap_private.h"
+
+typedef struct _nr_library_lookup_hashmap {
+  size_t log2_num_buckets;
+  size_t num_buckets;
+  size_t suffix_len;
+  nr_hashmap_t* h;
+} nr_library_lookup_hashmap_t;
+
+static nr_library_lookup_hashmap_t library_lookup = {
+  .log2_num_buckets = 8,
+};
+
+size_t nr_library_lookup_hashmap_hash_key(nr_library_lookup_hashmap_t* hashmap,
+                                          const char* filename,
+                                          const size_t filename_len) {
+  const char* bucket_key = filename + filename_len - hashmap->suffix_len;
+  int len = hashmap->suffix_len;
+  uint32_t hash = nr_mkhash(bucket_key, &len);
+  size_t bucket_idx = hash & ((1 << hashmap->log2_num_buckets) - 1);
+
+  // nrl_always("bucket key=%s, bucket key hash=%x, bucket idx=%zu -> key=%zu:%s, ",
+  //             bucket_key, hash, bucket_idx,
+  //             filename_len, filename);
+
+  return bucket_idx;
+}
+
+int nr_library_lookup_hashmap_fetch(nr_hashmap_t* hashmap,
+                     size_t hash_key,
+                     const char* filename,
+                     const size_t filename_len,
+                     nr_hashmap_bucket_t** bucket_ptr) {
+  nr_hashmap_bucket_t* bucket;
+
+  for (bucket = hashmap->buckets[hash_key]; bucket; bucket = bucket->next) {
+    //nrl_always("found bucket for filename=%s, bucket key=%s", filename, bucket->key.value);
+    if (nr_striendswith(filename, filename_len, bucket->key.value, bucket->key.length-1)) {
+      if (bucket_ptr) {
+        *bucket_ptr = bucket;
+      }
+      return 1;
+    }
+  }
+
+  return 0;
+}
+nr_status_t nr_library_lookup_hashmap_set(nr_library_lookup_hashmap_t* hashmap, nr_library_table_t* library) {
+  size_t hash = -1;
+
+  if ((NULL == hashmap) || (NULL == library) ) {
+    return NR_FAILURE;
+  }
+  
+  hash = nr_library_lookup_hashmap_hash_key(hashmap, library->file_to_check, library->file_to_check_len);
+
+  if (nr_library_lookup_hashmap_fetch(hashmap->h, hash, library->file_to_check, library->file_to_check_len, NULL)) {
+    return NR_FAILURE;
+  }
+
+  nr_hashmap_add_internal(hashmap->h, hash, library->file_to_check, library->file_to_check_len+1, library);
+//  nrl_always("hashmap->h.buckets[%zu][0].key.value=%s", hash, hashmap->h->buckets[hash].key.value);
+  return NR_SUCCESS;
+}
+
+nr_library_table_t* nr_library_lookup_hashmap_get(nr_library_lookup_hashmap_t* hashmap,
+                                          const char* filename,
+                                          const size_t filename_len) {
+  nr_hashmap_bucket_t* bucket = NULL;
+  size_t hash = -1;
+
+  if ((NULL == hashmap) || (NULL == hashmap->h) || (NULL == filename) || (0 == filename_len)) {
+    return NULL;
+  }
+
+  hash = nr_library_lookup_hashmap_hash_key(hashmap, filename, filename_len);
+  if (nr_library_lookup_hashmap_fetch(hashmap->h, hash, filename, filename_len, &bucket)) {
+    return bucket->value;
+  }
+  return NULL;
+}
+
+void nr_library_lookup_minit() {
+  library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
+  library_lookup.suffix_len = nr_library_table_min_file_to_check_len(libraries, num_libraries);
+
+  for (size_t i = 0; i < num_libraries; i++) {
+    nr_library_lookup_hashmap_set(&library_lookup, &libraries[i]);
+  }
+}
+
+void nr_library_lookup_mshutdown() {
+  nr_hashmap_destroy(&library_lookup.h);
+}
+
 // clang-format: off
 static nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
@@ -852,6 +966,7 @@ static nrframework_t nr_try_force_framework(
 
 static void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
+#if 0
   size_t i;
 
   for (i = 0; i < num_libraries; i++) {
@@ -868,6 +983,16 @@ static void nr_execute_handle_library(const char* filename,
       }
     }
   }
+#else
+  nr_library_table_t* library = nr_library_lookup_hashmap_get(&library_lookup, filename, filename_len);
+  if (library) {
+    nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
+    nr_fw_support_add_library_supportability_metric(NRPRG(txn), library->library_name);
+    if (NULL != library->enable) {
+      library->enable(TSRMLS_C);
+    }
+  }
+#endif
 }
 
 static void nr_execute_handle_autoload(const char* filename,

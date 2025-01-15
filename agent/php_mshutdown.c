@@ -17,6 +17,8 @@
 #include "util_logging.h"
 #include "fw_wordpress.h"
 
+extern void nr_library_lookup_mshutdown(void);
+
 #ifdef TAGS
 void zm_shutdown_newrelic(void); /* ctags landing pad only */
 #endif
@@ -41,6 +43,7 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
   nrl_debug(NRL_INIT, "MSHUTDOWN processing started");
 
   nr_wordpress_mshutdown();
+  nr_library_lookup_mshutdown();
 
   /* restore header handler */
   sapi_module.header_handler = NR_PHP_PROCESS_GLOBALS(orig_header_handler);
