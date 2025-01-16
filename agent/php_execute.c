@@ -601,7 +601,7 @@ int nr_suffix_lookup_hashmap_fetch(nr_hashmap_t* hashmap,
 
   for (bucket = hashmap->buckets[hash_key]; bucket; bucket = bucket->next) {
     //nrl_always("found bucket for filename=%s, bucket key=%s", filename, bucket->key.value);
-    if (nr_strendswith(filename, filename_len, bucket->key.value, bucket->key.length-1)) {
+    if (nr_striendswith(filename, filename_len, bucket->key.value, bucket->key.length-1)) {
       if (bucket_ptr) {
         *bucket_ptr = bucket;
       }
@@ -634,12 +634,24 @@ void* nr_suffix_lookup_hashmap_get(nr_suffix_lookup_hashmap_t* hashmap,
                                           const size_t filename_len) {
   nr_hashmap_bucket_t* bucket = NULL;
   size_t hash = -1;
+  char *filename_suffix_lc = nr_alloca(hashmap->suffix_len + 1);
 
   if ((NULL == hashmap) || (NULL == hashmap->h) || (NULL == filename) || (0 == filename_len)) {
     return NULL;
   }
 
-  hash = nr_suffix_lookup_hashmap_hash_key(hashmap, filename, filename_len);
+  if (filename_len < hashmap->suffix_len) {
+    return NULL;
+  }
+
+  // lowercase suffix of filename into filename_suffix_lc
+  for (int i = 0; i < hashmap->suffix_len; i++) {
+    filename_suffix_lc[i] = nr_tolower(filename[filename_len - hashmap->suffix_len + i]);
+  }
+  filename_suffix_lc[hashmap->suffix_len] = '\0';
+  // nrl_always("filename_suffix_lc=%s", filename_suffix_lc);
+
+  hash = nr_suffix_lookup_hashmap_hash_key(hashmap, filename_suffix_lc, hashmap->suffix_len);
   if (nr_suffix_lookup_hashmap_fetch(hashmap->h, hash, filename, filename_len, &bucket)) {
     return bucket->value;
   }
@@ -1199,7 +1211,6 @@ static void nr_execute_handle_autoload(const char* filename,
 static void nr_php_user_instrumentation_from_file(const char* filename,
                                                   const size_t filename_len
                                                       TSRMLS_DC) {
-  char* filename_lc = NULL;
   /* short circuit if filename_len is 0; a single place short circuit */
   if (0 == filename_len) {
     nrl_verbosedebug(NRL_AGENT,
@@ -1208,16 +1219,14 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
     return;
   }
 
-  filename_lc = nr_string_to_lowercase(filename);
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
-  nr_execute_handle_library(filename_lc, filename_len TSRMLS_CC);
+  nr_execute_handle_library(filename, filename_len TSRMLS_CC);
   nr_execute_handle_autoload(filename, filename_len);
   // nr_execute_handle_logging_framework(filename_lc, filename_len TSRMLS_CC);
   // if (NRINI(vulnerability_management_package_detection_enabled)) {
   //   nr_execute_handle_package(filename_lc, filename_len);
   // }
-  nr_free(filename_lc);
 }
 
 /*
