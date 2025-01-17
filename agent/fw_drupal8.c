@@ -325,8 +325,10 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
   zval* request = NULL;
 
-  zend_class_entry* newrelic_ce = NULL;
-  zval* newrelic_obj = NULL;
+  zend_function* nrfn = NULL;
+
+  // zend_class_entry* newrelic_ce = NULL;
+  // zval* newrelic_obj = NULL;
   zval* controller = NULL;
 
   (void)wraprec;
@@ -349,7 +351,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
         NRL_TXN, "Drupal 8 PageCache::get parameter is a non-Request object");
     goto end;
   }
-
+#if 0
   newrelic_ce = nr_php_find_class("newrelic\\Drupal8");
   if (NULL == newrelic_ce) {
     nrl_warning(NRL_FRAMEWORK,
@@ -359,7 +361,16 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
 
   newrelic_obj = nr_php_zval_alloc();
   object_init_ex(newrelic_obj, newrelic_ce);
-  controller = nr_php_call(newrelic_obj, "newrelic_name_cached", request);
+#endif
+  nrfn = nr_php_find_function("newrelic_name_cached");
+  if (NULL == nrfn) {
+    nrl_warning(NRL_FRAMEWORK,
+                "Failed to retrieve NR cached page naming function");
+    goto end;
+  }
+
+  controller
+      = nr_php_call(NULL, "\\newrelic\\Drupal8\\newrelic_name_cached", request);
 
   if (nr_php_is_zval_non_empty_string(controller)) {
     name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
@@ -382,7 +393,7 @@ end:
 
   nr_free(name);
   nr_php_zval_free(&request);
-  nr_php_zval_free(&newrelic_obj);
+  // nr_php_zval_free(&newrelic_obj);
   nr_php_zval_free(&controller);
 }
 NR_PHP_WRAPPER_END
@@ -795,36 +806,61 @@ void nr_drupal_version() {
 
 void nr_drupal8_enable(TSRMLS_D) {
   int retval;
+  zend_class_entry* drupal_ce = NULL;
+  zend_class_entry* symfony_ce = NULL;
+  bool inject = true;
 
-  // clang-format off
-  retval = zend_eval_string(
-    "namespace newrelic\\Drupal8;"
+  drupal_ce = nr_php_find_class("Drupal\\Core\\Routing\\RouteMatch");
 
-    "use Symfony\\Component\\HttpFoundation\\Request;"
-    "use Drupal\\Core\\Routing\\RouteMatch;"
+  if (NULL == drupal_ce) {
+    inject = false;
+    nrl_warning(NRL_FRAMEWORK, "Missing Drupal RouteMatch Class");
+  }
 
-    "if (!function_exists('newrelic\\Drupal8::newrelic_name_cached')) {"
-    " function newrelic_name_cached(Request $request) {"
-    "   try {"
-    "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
-    "     $routeMatch = RouteMatch::createFromRequest($request);"
-    "     $route = $routeCollection->get($routeMatch->getRouteName());"
-    "     $defaults = $route->getDefaults();"
-    "     if (isset($defaults['_controller'])) {"
-    "       $controller = str_replace('::', '->', $defaults['_controller']);"
-    "       $controller = ltrim($controller, '\\\\');"
-    "       return $controller;"
-    "     }"
-    "   } catch (Throwable $e) {}"
-    " }"
-    "}",
-    NULL, "newrelic/Drupal8");
-  // clang-format on
+  if (inject) {
+    symfony_ce
+        = nr_php_find_class("Symfony\\Component\\HttpFoundation\\Request");
+    if (NULL == symfony_ce) {
+      inject = false;
+      nrl_warning(NRL_FRAMEWORK, "Missing Symfony Request Class");
+    }
+  }
 
-  if (SUCCESS != retval) {
-    nrl_warning(NRL_FRAMEWORK,
-                "%s: error injecting newrelic page cache naming code",
-                __func__);
+  if (inject) {
+    // clang-format off
+    retval = zend_eval_string(
+      "namespace newrelic\\Drupal8;"
+
+      "use Symfony\\Component\\HttpFoundation\\Request;"
+      "use Drupal\\Core\\Routing\\RouteMatch;"
+
+      "if (!function_exists('newrelic\\Drupal8\\newrelic_name_cached')) {"
+      " function newrelic_name_cached(Request $request) {"
+      "   try {"
+      "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
+      "     $routeMatch = RouteMatch::createFromRequest($request);"
+      "     $route = $routeCollection->get($routeMatch->getRouteName());"
+      "     $defaults = $route->getDefaults();"
+      "     if (isset($defaults['_controller'])) {"
+      "       $controller = str_replace('::', '->', $defaults['_controller']);"
+      "       $controller = ltrim($controller, '\\\\');"
+      "       return $controller;"
+      "     }"
+      "   } catch (Throwable $e) {}"
+      " }"
+      "}",
+      NULL, "newrelic/Drupal8");
+    // clang-format on
+
+    if (SUCCESS != retval) {
+      nrl_warning(NRL_FRAMEWORK,
+                  "%s: error injecting newrelic page cache naming code",
+                  __func__);
+    }
+  } else {
+    nrl_warning(
+        NRL_FRAMEWORK,
+        "Skipped injecting page_cache naming function: Missing Classes");
   }
 
   /*
