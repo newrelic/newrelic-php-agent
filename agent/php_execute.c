@@ -523,6 +523,27 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all.
      */
     {"Laminas_Http", nr_library_cb, NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    {"Aura1", nr_library_cb, NR_PSTR("aura/framework/system.php"), NULL},
+    {"Aura2", nr_library_cb, NR_PSTR("aura/di/src/containerinterface.php"), NULL},
+    {"Aura3", nr_library_cb, NR_PSTR("aura/di/src/containerconfiginterface.php"), NULL},
+    {"Fuel", nr_library_cb, NR_PSTR("fuel/core/classes/fuel.php"), NULL},
+    {"Lithium", nr_library_cb, NR_PSTR("lithium/core/libraries.php"), NULL},
+    {"Phpbb", nr_library_cb, NR_PSTR("phpbb/request/request.php"), NULL},
+    {"Phpixie2", nr_library_cb, NR_PSTR("phpixie/core/classes/phpixie/pixie.php"), NULL},
+    {"Phpixie3", nr_library_cb, NR_PSTR("phpixie/framework.php"), NULL},
+    {"React", nr_library_cb, NR_PSTR("react/event-loop/src/loopinterface.php"), NULL},
+    {"SilverStripe", nr_library_cb, NR_PSTR("injector/silverstripeinjectioncreator.php"), NULL},
+    {"SilverStripe4", nr_library_cb, NR_PSTR("silverstripeserviceconfigurationlocator.php"), NULL},
+    {"Typo3", nr_library_cb, NR_PSTR("classes/typo3/flow/core/bootstrap.php"), NULL},
+    {"Typo3", nr_library_cb, NR_PSTR("typo3/sysext/core/classes/core/bootstrap.php"), NULL},
+    {"Moodle", nr_library_cb, NR_PSTR("moodlelib.php"), NULL},
+    {"ExpressionEngine", nr_library_cb, NR_PSTR("system/expressionengine/config/config.php"), NULL},
+    {"ExpressionEngine5", nr_library_cb, NR_PSTR("expressionengine/boot/boot.php"), NULL},
+    {"DokuWiki", nr_library_cb, NR_PSTR("doku.php"), NULL},
+    {"DokuWiki", nr_library_cb, NR_PSTR("conf/dokuwiki.php"), NULL},
+    {"SugarCRM", nr_library_cb, NR_PSTR("sugarobjects/sugarconfig.php"), NULL},
+    {"Xoops", nr_library_cb, NR_PSTR("class/xoopsload.php"), NULL},
+    {"E107", nr_library_cb, NR_PSTR("e107_handlers/e107_class.php"), NULL},
     /* Monolog - Logging for PHP */
     {"Monolog", nr_logging_library_cb, NR_PSTR("monolog/logger.php"), nr_monolog_enable},
     /* Consolidation/Log - Logging for PHP */
