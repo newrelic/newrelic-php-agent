@@ -134,7 +134,8 @@ static void test_encode_errors(void) {
           "[887788,\"txnname\",\"msg\",\"cls\",{\"stack_trace\":["
           "\"stacktrace "
           "json\"],\"agentAttributes\":{\"agent_long\":2},\"userAttributes\":{"
-          "\"user_long\":1},\"intrinsics\":{\"a\":\"b\",\"guid\":\"abcdef\"}},\"abcdef\"]"),
+          "\"user_long\":1},\"intrinsics\":{\"a\":\"b\",\"guid\":\"abcdef\"}},"
+          "\"abcdef\"]"),
       nr_flatbuffers_table_read_bytes(&tbl, ERROR_FIELD_DATA),
       nr_flatbuffers_table_read_vector_len(&tbl, ERROR_FIELD_DATA), __FILE__,
       __LINE__);
@@ -1042,6 +1043,7 @@ static void test_encode_txn_event(void) {
   nrm_add(txn.unscoped_metrics, "Datastore/all", 1 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "Datastore/all", 1 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "External/all", 2 * NR_TIME_DIVISOR);
+  nrm_add(txn.unscoped_metrics, "MessageBroker/all", 2 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "WebFrontend/QueueTime", 3 * NR_TIME_DIVISOR);
 
   txn.attributes = nr_attributes_create(0);
@@ -1093,10 +1095,13 @@ static void test_encode_txn_event(void) {
               "\"timestamp\":123.00000,"
               "\"duration\":0.98700,\"totalTime\":0.98700,\"nr.apdexPerfZone\":"
               "\"F\","
-              "\"queueDuration\":3.00000,\"externalDuration\":2.00000,"
+              "\"queueDuration\":3.00000,"
+              "\"externalDuration\":2.00000,"
               "\"externalCallCount\":1,"
               "\"databaseDuration\":2.00000,"
               "\"databaseCallCount\":2,"
+              "\"messageDuration\":2.00000,"
+              "\"messageCallCount\":1,"
               "\"error\":false},"
               "{\"user_long\":1},{\"agent_long\":2}]"),
       nr_flatbuffers_table_read_bytes(&tbl, EVENT_FIELD_DATA),

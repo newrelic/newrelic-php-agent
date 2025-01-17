@@ -113,6 +113,7 @@ OBJS := \
 	nr_segment_children.o \
 	nr_segment_datastore.o \
 	nr_segment_external.o \
+	nr_segment_message.o \
 	nr_segment_private.o \
 	nr_segment_terms.o \
 	nr_segment_traces.o \

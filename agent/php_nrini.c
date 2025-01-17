@@ -3100,6 +3100,17 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      newrelic_globals,
                      nr_enabled_disabled_dh)
 
+/*
+ * Messaging API
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.message_tracer.segment_parameters.enabled",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     message_tracer_segment_parameters_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
 PHP_INI_END() /* } */
 
 void nr_php_register_ini_entries(int module_number TSRMLS_DC) {

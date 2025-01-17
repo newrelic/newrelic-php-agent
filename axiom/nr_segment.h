@@ -34,7 +34,8 @@ typedef struct _nrtxn_t nrtxn_t;
 typedef enum _nr_segment_type_t {
   NR_SEGMENT_CUSTOM,
   NR_SEGMENT_DATASTORE,
-  NR_SEGMENT_EXTERNAL
+  NR_SEGMENT_EXTERNAL,
+  NR_SEGMENT_MESSAGE
 } nr_segment_type_t;
 
 /*
@@ -109,6 +110,48 @@ typedef struct _nr_segment_external_t {
   uint64_t status;
 } nr_segment_external_t;
 
+typedef struct _nr_segment_message_t {
+  /*
+   * Attributes needed for entity relationship building.
+   * Compare to OTEL attributes:
+   * https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/
+   * cloud.account.id, cloud.region, messaging.system and server.address are
+   * used to create relationships between APM and cloud services. It may not
+   * make sense to add these attributes unless they are used for creating one of
+   * the relationships in Entity Relationships.
+   */
+
+  nr_span_spankind_t
+      message_action;     /*The action of the message, e.g.,Produce/Consume.*/
+  char* destination_name; /*The name of the Queue, Topic, or Exchange;
+                                otherwise, Temp. Needed for SQS relationship.*/
+  char* messaging_system; /* for ex: aws_sqs. Needed for SQS relationship.*/
+  char* server_address;   /*The server domain name or IP address.  Needed for
+                             MQBROKER relationship.*/
+} nr_segment_message_t;
+
+typedef struct _nr_segment_cloud_attrs_t {
+  /*
+   * Attributes needed for entity relationship building.
+   * Compare to OTEL attributes:
+   * https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/
+   * cloud.account.id, cloud.region, messaging.system and server.address are
+   * used to create relationships between APM and cloud services. It may not
+   * make sense to add these attributes unless they are used for creating one of
+   * the relationships in Entity Relationships.
+   * These attributes aren't specific to a segment category so don't belong as
+   * typed attributes and can be added whenever they are available.
+   */
+  char* cloud_region;      /*Targeted region; ex:us-east-1*. Needed for SQS
+                              relationship.*/
+  char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
+                              relationship.*/
+  char* cloud_resource_id; /*Unique cloud provider identifier. For AWS, this is
+                              the ARN of the AWS resource being accessed.*/
+  char* aws_operation;     /*AWS specific operation name.*/
+
+} nr_segment_cloud_attrs_t;
+
 typedef struct _nr_segment_metric_t {
   char* name;
   bool scoped;
@@ -132,6 +175,7 @@ typedef struct _nr_segment_error_t {
 typedef union {
   nr_segment_datastore_t datastore;
   nr_segment_external_t external;
+  nr_segment_message_t message;
 } nr_segment_typed_attributes_t;
 
 typedef struct _nr_segment_t {
@@ -179,8 +223,8 @@ typedef struct _nr_segment_t {
   int priority; /* Used to determine which segments are preferred for span event
                    creation */
   nr_segment_typed_attributes_t* typed_attributes; /* Attributes specific to
-                                                      external or datastore
-                                                      segments. */
+                                                      external, datastore,
+                                                      or message segments. */
   nr_segment_error_t* error; /* segment error attributes */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
@@ -314,6 +358,17 @@ extern bool nr_segment_set_datastore(nr_segment_t* segment,
  */
 extern bool nr_segment_set_external(nr_segment_t* segment,
                                     const nr_segment_external_t* external);
+
+/*
+ * Purpose : Mark the segment as being a message segment.
+ *
+ * Params  : 1. The pointer to the segment.
+ *           2. The message attributes, which will be copied into the segment.
+ *
+ * Returns : true if successful, false otherwise.
+ */
+extern bool nr_segment_set_message(nr_segment_t* segment,
+                                   const nr_segment_message_t* message);
 /*
  * Purpose : Add a child to a segment.
  *

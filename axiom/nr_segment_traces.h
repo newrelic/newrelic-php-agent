@@ -124,4 +124,8 @@ bool nr_segment_traces_json_print_segments(nrbuf_t* buf,
 extern nr_segment_iter_return_t nr_segment_traces_stot_iterator_callback(
     nr_segment_t* segment,
     void* userdata);
+
+extern void nr_segment_traces_add_cloud_attributes(
+    nr_segment_t* segment,
+    const nr_segment_cloud_attrs_t* cloud_attrs);
 #endif

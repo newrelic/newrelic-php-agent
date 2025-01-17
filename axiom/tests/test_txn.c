@@ -2006,7 +2006,7 @@ static nrtxn_t* create_full_txn_and_reset(nrapp_t* app) {
     nr_segment_t* seg = nr_segment_start(txn, NULL, NULL);
     seg->start_time = 5 * NR_TIME_DIVISOR;
     seg->stop_time = 6 * NR_TIME_DIVISOR;
-    seg->type = NR_SEGMENT_DATASTORE;
+    seg->type = NR_SEGMENT_MESSAGE;
     seg->typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
     nr_segment_end(&seg);
   }
@@ -2962,6 +2962,7 @@ static void test_create_rollup_metrics(void) {
   txn.datastore_products = nr_string_pool_create();
   nrm_force_add(txn.unscoped_metrics, "Datastore/all", 4 * NR_TIME_DIVISOR);
   nrm_force_add(txn.unscoped_metrics, "External/all", 1 * NR_TIME_DIVISOR);
+  nrm_force_add(txn.unscoped_metrics, "MessageBroker/all", 1 * NR_TIME_DIVISOR);
   nrm_force_add(txn.unscoped_metrics, "Datastore/MongoDB/all",
                 2 * NR_TIME_DIVISOR);
   nrm_force_add(txn.unscoped_metrics, "Datastore/SQLite/all",
@@ -2977,6 +2978,9 @@ static void test_create_rollup_metrics(void) {
                          "{\"name\":\"External\\/"
                          "all\",\"data\":[1,1.00000,1.00000,1.00000,1.00000,1."
                          "00000],\"forced\":true},"
+                         "{\"name\":\"MessageBroker\\/"
+                         "all\",\"data\":[1,1.00000,1.00000,1.00000,1.00000,1."
+                         "00000],\"forced\":true},"
                          "{\"name\":\"Datastore\\/MongoDB\\/"
                          "all\",\"data\":[1,2.00000,2.00000,2.00000,2.00000,4."
                          "00000],\"forced\":true},"
@@ -2987,6 +2991,9 @@ static void test_create_rollup_metrics(void) {
                          "allOther\",\"data\":[1,4.00000,4.00000,4.00000,4."
                          "00000,16.00000],\"forced\":true},"
                          "{\"name\":\"External\\/"
+                         "allOther\",\"data\":[1,1.00000,1.00000,1.00000,1."
+                         "00000,1.00000],\"forced\":true},"
+                         "{\"name\":\"MessageBroker\\/"
                          "allOther\",\"data\":[1,1.00000,1.00000,1.00000,1."
                          "00000,1.00000],\"forced\":true},"
                          "{\"name\":\"Datastore\\/MongoDB\\/"
@@ -3910,6 +3917,7 @@ static void test_error_to_event(void) {
 
   nrm_add(txn.unscoped_metrics, "Datastore/all", 1 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "External/all", 2 * NR_TIME_DIVISOR);
+  nrm_add(txn.unscoped_metrics, "MessageBroker/all", 1 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "WebFrontend/QueueTime", 3 * NR_TIME_DIVISOR);
 
   event = nr_error_to_event(&txn);
@@ -3926,8 +3934,10 @@ static void test_error_to_event(void) {
                          "\"queueDuration\":3.00000,"
                          "\"externalDuration\":2.00000,"
                          "\"databaseDuration\":1.00000,"
+                         "\"messageDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
                          "\"externalCallCount\":1,"
+                         "\"messageCallCount\":1,"
                          "\"nr.transactionGuid\":\"abcd\","
                          "\"guid\":\"abcd\""
                          "},"
@@ -3951,8 +3961,10 @@ static void test_error_to_event(void) {
                          "\"queueDuration\":3.00000,"
                          "\"externalDuration\":2.00000,"
                          "\"databaseDuration\":1.00000,"
+                         "\"messageDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
                          "\"externalCallCount\":1,"
+                         "\"messageCallCount\":1,"
                          "\"nr.transactionGuid\":\"abcd\","
                          "\"guid\":\"abcd\","
                          "\"nr.referringTransactionGuid\":\"foo_guid\","
@@ -4041,6 +4053,7 @@ static void test_create_event(void) {
 
   nrm_add(txn.unscoped_metrics, "Datastore/all", 1 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "External/all", 2 * NR_TIME_DIVISOR);
+  nrm_add(txn.unscoped_metrics, "MessageBroker/all", 2 * NR_TIME_DIVISOR);
   nrm_add(txn.unscoped_metrics, "WebFrontend/QueueTime", 3 * NR_TIME_DIVISOR);
 
   event = nr_txn_to_event(&txn);
@@ -4059,6 +4072,8 @@ static void test_create_event(void) {
                          "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
+                         "\"messageDuration\":2.00000,"
+                         "\"messageCallCount\":1,"
                          "\"error\":false"
                          "},"
                          "{\"user_long\":1},"
@@ -4082,6 +4097,8 @@ static void test_create_event(void) {
                          "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
+                         "\"messageDuration\":2.00000,"
+                         "\"messageCallCount\":1,"
                          "\"error\":false"
                          "},"
                          "{\"user_long\":1},"
@@ -4108,6 +4125,8 @@ static void test_create_event(void) {
                          "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
+                         "\"messageDuration\":2.00000,"
+                         "\"messageCallCount\":1,"
                          "\"error\":false"
                          "},"
                          "{\"user_long\":1},"
@@ -4132,6 +4151,8 @@ static void test_create_event(void) {
                          "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
+                         "\"messageDuration\":2.00000,"
+                         "\"messageCallCount\":1,"
                          "\"error\":false"
                          "},"
                          "{\"user_long\":1},"
@@ -4155,6 +4176,8 @@ static void test_create_event(void) {
                          "\"externalCallCount\":1,"
                          "\"databaseDuration\":1.00000,"
                          "\"databaseCallCount\":1,"
+                         "\"messageDuration\":2.00000,"
+                         "\"messageCallCount\":1,"
                          "\"error\":false"
                          "},"
                          "{\"user_long\":1},"
@@ -8059,7 +8082,8 @@ static void test_segment_record_error(void) {
 
   /* Do not add to current segment */
   nr_txn_record_error(txn, 0.5, false /* do not add to current segment*/,
-                      "low priority message", "low priority class", "[\"A\",\"B\"]");
+                      "low priority message", "low priority class",
+                      "[\"A\",\"B\"]");
   tlib_pass_if_not_null("Txn error event created", txn->error);
   tlib_pass_if_null("Segment error NOT created", segment->error);
   tlib_pass_if_str_equal("Correct txn error.message", "low priority message",
@@ -8068,7 +8092,8 @@ static void test_segment_record_error(void) {
                          nr_error_get_klass(txn->error));
 
   /* Normal operation: txn error prioritized over previous */
-  nr_txn_record_error(txn, 1, true, "error message", "error class", "[\"A\",\"B\"]");
+  nr_txn_record_error(txn, 1, true, "error message", "error class",
+                      "[\"A\",\"B\"]");
 
   tlib_pass_if_not_null("Txn error event created", txn->error);
   tlib_pass_if_not_null("Segment error created", segment->error);
