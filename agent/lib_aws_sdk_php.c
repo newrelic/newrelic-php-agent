@@ -107,28 +107,21 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   }
 
   /* Determine if we instrument this command. */
-  if (command_name_len == AWS_SQS_SEND_MESSAGE_BATCH_COMMAND_LEN
-      && 0
-             == nr_strncmp(AWS_SQS_SEND_MESSAGE_BATCH_COMMAND,
-                           command_name_string,
-                           AWS_SQS_SEND_MESSAGE_BATCH_COMMAND_LEN)) {
+#define COMMAND_IS(CMD) \
+  (command_name_len == (sizeof(CMD) - 1) && nr_streq(CMD, command_name_string))
+
+  /* Determine if we instrument this command. */
+  if (COMMAND_IS("sendMessageBatch")) {
     message_params.message_action = NR_SPANKIND_PRODUCER;
-  } else if (command_name_len == AWS_SQS_SEND_MESSAGE_COMMAND_LEN
-             && 0
-                    == nr_strncmp(AWS_SQS_SEND_MESSAGE_COMMAND,
-                                  command_name_string,
-                                  AWS_SQS_SEND_MESSAGE_COMMAND_LEN)) {
+  } else if (COMMAND_IS("sendMessage")) {
     message_params.message_action = NR_SPANKIND_PRODUCER;
-  } else if (command_name_len == AWS_SQS_RECEIVE_MESSAGE_COMMAND_LEN
-             && 0
-                    == nr_strncmp(AWS_SQS_RECEIVE_MESSAGE_COMMAND,
-                                  command_name_string,
-                                  AWS_SQS_RECEIVE_MESSAGE_COMMAND_LEN)) {
+  } else if (COMMAND_IS("receiveMessage")) {
     message_params.message_action = NR_SPANKIND_CONSUMER;
   } else {
     /* Nothing to do here so exit. */
     return;
   }
+#undef IS_COMMAND
 
   cloud_attrs.aws_operation = command_name_string;
 
