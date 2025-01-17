@@ -358,57 +358,65 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
   int klass_len = 0;
 
   class_entry = Z_OBJCE_P(nr_php_execute_scope(execute_data));
+  if (NULL == class_entry) {
+    goto end;
+  }
+
   klass = nr_php_class_entry_name(class_entry);
 
-  if (NULL != klass) {
-    /* Get the arg command_name. */
-    command_name = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+  if (NULL == klass) {
+    goto end;
+  }
+  /* Get the arg command_name. */
+  command_name = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
 
-    if (nr_php_is_zval_non_empty_string(command_name)) {
-      command_name_string = Z_STRVAL_P(command_name);
-      klass_len = nr_php_class_entry_name_length(class_entry);
+  if (!nr_php_is_zval_non_empty_string(command_name)) {
+    goto end;
+  }
+  command_name_string = Z_STRVAL_P(command_name);
+  klass_len = nr_php_class_entry_name_length(class_entry);
 
 #define AWS_CLASS_IS(KLASS, SHORT_KLASS) \
   (klass_len == (sizeof(KLASS) - 1)      \
    && nr_striendswith(klass, klass_len, SHORT_KLASS, sizeof(SHORT_KLASS) - 1))
 
-      if AWS_CLASS_IS ("Aws\\Sqs\\SqsClient", "SqsClient") {
-        nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
-                                      Z_STRLEN_P(command_name),
-                                      NR_EXECUTE_ORIG_ARGS);
-      }
+  if AWS_CLASS_IS ("Aws\\Sqs\\SqsClient", "SqsClient") {
+    nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
+                                  Z_STRLEN_P(command_name),
+                                  NR_EXECUTE_ORIG_ARGS);
+  }
 
 #undef AWS_CLASS_IS
 
-      if (NR_SEGMENT_CUSTOM == auto_segment->type) {
-        /*
-         * We need to end the segment that we started in the 'before' wrapper if
-         * it wasn't handled and ended by the handling function. Handling
-         * function would have changed the segment type from from default
-         * (`NR_SEGMENT_CUSTOM`) if it ended it.
-         */
-        nr_segment_discard(&auto_segment);
-      }
-
-      /*
-       * Since we have klass and command_name, we can give the calling segment
-       * a more meaningful name than Aws/AwsClient::__call We can decode it to
-       * Aws/CALLING_CLASS_NAME/CALLING_CLASS_CLIENT::CALLING_CLASS_COMMAND
-       *
-       * EX: Aws\\Sqs\\SqsClient::sendMessage
-       */
-
-      segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
-      if (NULL != segment) {
-        real_class_and_command
-            = nr_formatf("Custom/%s::%s", klass, command_name_string);
-        nr_segment_set_name(segment, real_class_and_command);
-        nr_free(real_class_and_command);
-      }
-    }
-    /* Release the command_name. */
-    nr_php_arg_release(&command_name);
+  if (NR_SEGMENT_CUSTOM == auto_segment->type) {
+    /*
+     * We need to end the segment that we started in the 'before' wrapper if
+     * it wasn't handled and ended by the handling function. Handling
+     * function would have changed the segment type from from default
+     * (`NR_SEGMENT_CUSTOM`) if it ended it.
+     */
+    nr_segment_discard(&auto_segment);
   }
+
+  /*
+   * Since we have klass and command_name, we can give the calling segment
+   * a more meaningful name than Aws/AwsClient::__call We can decode it to
+   * Aws/CALLING_CLASS_NAME/CALLING_CLASS_CLIENT::CALLING_CLASS_COMMAND
+   *
+   * EX: Aws\\Sqs\\SqsClient::sendMessage
+   */
+
+  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  if (NULL != segment) {
+    real_class_and_command
+        = nr_formatf("Custom/%s::%s", klass, command_name_string);
+    nr_segment_set_name(segment, real_class_and_command);
+    nr_free(real_class_and_command);
+  }
+
+end:
+  /* Release the command_name. */
+  nr_php_arg_release(&command_name);
 }
 NR_PHP_WRAPPER_END
 
