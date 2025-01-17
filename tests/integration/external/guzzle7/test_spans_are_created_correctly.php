@@ -19,6 +19,35 @@ newrelic.transaction_tracer.threshold = 0
 newrelic.transaction_tracer.detail = 0
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
+      },
+      {},
+      {}
+    ]
+  ]
+] 
+*/
 
 /*EXPECT_SPAN_EVENTS_LIKE
 [

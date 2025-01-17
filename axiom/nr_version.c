@@ -47,8 +47,9 @@
  *   bowenite           30Sep2024 (11.2)
  *   corundum           21Oct2024 (11.3)
  *   diamond            09Dec2024 (11.4)
+ *   emerald            13Jan2025 (11.5)
  */
-#define NR_CODENAME "emerald"
+#define NR_CODENAME "fluorite"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);

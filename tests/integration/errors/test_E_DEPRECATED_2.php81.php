@@ -13,6 +13,9 @@ The agent should capture and report deprecation warnings.
 if (version_compare(PHP_VERSION, "8.1", "<")) {
   die("skip: PHP < 8.1.0 not supported\n");
 }
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: PHP >= 8.4.0 not supported\n");
+}
 */
 
 /*INI

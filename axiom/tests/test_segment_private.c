@@ -367,11 +367,23 @@ static void test_destroy_typed_attributes(void) {
    */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_EXTERNAL, NULL);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_EXTERNAL, &s.typed_attributes);
+  tlib_pass_if_null(
+      "Even with bad parameters, nr_segment_destroy_typed_attributes should "
+      "not crash and s.typed_attributes should be NULL",
+      s.typed_attributes);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE, NULL);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE,
                                       &s.typed_attributes);
+  tlib_pass_if_null(
+      "Even with bad parameters, nr_segment_destroy_typed_attributes should "
+      "not crash and s.typed_attributes should be NULL",
+      s.typed_attributes);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, NULL);
   nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, &s.typed_attributes);
+  tlib_pass_if_null(
+      "Even with bad parameters, nr_segment_destroy_typed_attributes should "
+      "not crash and s.typed_attributes should be NULL",
+      s.typed_attributes);
 
   /*
    * Test : Clean up typed attributes for a message segment
@@ -386,7 +398,10 @@ static void test_destroy_typed_attributes(void) {
    * Valgrind shall affirm that the attributes were cleaned up.
    */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_MESSAGE, &s.typed_attributes);
-
+  tlib_pass_if_null(
+      "After nr_segment_destroy_typed_attributes, s.typed_attributes should be "
+      "NULL",
+      s.typed_attributes);
   /*
    * Test : Clean up typed attributes for an external segment
    */
@@ -402,6 +417,10 @@ static void test_destroy_typed_attributes(void) {
    * Valgrind shall affirm that the attributes were cleaned up.
    */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_EXTERNAL, &s.typed_attributes);
+  tlib_pass_if_null(
+      "After nr_segment_destroy_typed_attributes, s.typed_attributes should be "
+      "NULL",
+      s.typed_attributes);
 
   /*
    * Test : Clean up typed attributes for a datastore segment
@@ -424,6 +443,10 @@ static void test_destroy_typed_attributes(void) {
    */
   nr_segment_destroy_typed_attributes(NR_SEGMENT_DATASTORE,
                                       &s.typed_attributes);
+  tlib_pass_if_null(
+      "After nr_segment_destroy_typed_attributes, s.typed_attributes should be "
+      "NULL",
+      s.typed_attributes);
 }
 
 static void test_destroy_fields(void) {
