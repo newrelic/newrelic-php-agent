@@ -153,7 +153,7 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
   char* account_id = NULL;
   char* queueurl_pointer = NULL;
 
-  if (NULL == sqs_queueurl || NULL == message_params) {
+  if (NULL == sqs_queueurl || NULL == message_params || NULL == cloud_attrs) {
     return;
   }
 
