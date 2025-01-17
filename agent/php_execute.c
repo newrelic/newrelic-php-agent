@@ -577,11 +577,13 @@ static nr_suffix_lookup_hashmap_t vuln_mgmt_package_lookup = {
 };
 #endif
 
+#define EXT_LEN 4
+
 size_t nr_suffix_lookup_hashmap_hash_key(nr_suffix_lookup_hashmap_t* hashmap,
                                           const char* filename,
                                           const size_t filename_len) {
   const char* bucket_key = filename + filename_len - hashmap->suffix_len;
-  int len = hashmap->suffix_len;
+  int len = hashmap->suffix_len - EXT_LEN;
   uint32_t hash = nr_mkhash(bucket_key, &len);
   size_t bucket_idx = hash & ((1 << hashmap->log2_num_buckets) - 1);
 
