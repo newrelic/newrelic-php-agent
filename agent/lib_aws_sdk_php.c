@@ -106,22 +106,21 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
     return;
   }
 
-  /* Determine if we instrument this command. */
-#define COMMAND_IS(CMD) \
+#define AWS_COMMAND_IS(CMD) \
   (command_name_len == (sizeof(CMD) - 1) && nr_streq(CMD, command_name_string))
 
   /* Determine if we instrument this command. */
-  if (COMMAND_IS("sendMessageBatch")) {
+  if (AWS_COMMAND_IS("sendMessageBatch")) {
     message_params.message_action = NR_SPANKIND_PRODUCER;
-  } else if (COMMAND_IS("sendMessage")) {
+  } else if (AWS_COMMAND_IS("sendMessage")) {
     message_params.message_action = NR_SPANKIND_PRODUCER;
-  } else if (COMMAND_IS("receiveMessage")) {
+  } else if (AWS_COMMAND_IS("receiveMessage")) {
     message_params.message_action = NR_SPANKIND_CONSUMER;
   } else {
     /* Nothing to do here so exit. */
     return;
   }
-#undef IS_COMMAND
+#undef IS_AWS_COMMAND
 
   cloud_attrs.aws_operation = command_name_string;
 
@@ -129,7 +128,8 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
       AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG, NR_EXECUTE_ORIG_ARGS);
 
   /*
-   * nr_lib_aws_sdk_php_sqs_parse_queueurl requires a modifiable string to populate message_params and cloud_attrs.
+   * nr_lib_aws_sdk_php_sqs_parse_queueurl requires a modifiable string to
+   * populate message_params and cloud_attrs.
    */
   nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params,
                                         &cloud_attrs);
@@ -368,14 +368,17 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
       command_name_string = Z_STRVAL_P(command_name);
       klass_len = nr_php_class_entry_name_length(class_entry);
 
-      if (klass_len == AWS_SDK_PHP_SQSCLIENT_CLASS_LEN
-          && nr_striendswith(klass, klass_len,
-                             AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT,
-                             AWS_SDK_PHP_SQSCLIENT_CLASS_SHORT_LEN)) {
+#define AWS_CLASS_IS(KLASS, SHORT_KLASS) \
+  (klass_len == (sizeof(KLASS) - 1)      \
+   && nr_striendswith(klass, klass_len, SHORT_KLASS, sizeof(SHORT_KLASS) - 1))
+
+      if AWS_CLASS_IS ("Aws\\Sqs\\SqsClient", "SqsClient") {
         nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
                                       Z_STRLEN_P(command_name),
                                       NR_EXECUTE_ORIG_ARGS);
       }
+
+#undef AWS_CLASS_IS
 
       if (NR_SEGMENT_CUSTOM == auto_segment->type) {
         /*
