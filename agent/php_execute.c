@@ -557,7 +557,10 @@ static nr_library_table_t libraries[] = {
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
+#define EXT_LEN 4
+
 // find the minimum length of the file_to_check
+#if 0
 static size_t nr_library_table_min_file_to_check_len(
     const nr_library_table_t* table,
     size_t num_tables) {
@@ -574,7 +577,92 @@ static size_t nr_library_table_min_file_to_check_len(
 
   return min_len;
 }
+#endif
 
+typedef struct _nr_suffix_trie_node_t nr_suffix_trie_node_t;
+
+struct _nr_suffix_trie_node_t {
+  nr_suffix_trie_node_t* children[256];
+  nr_suffix_trie_node_t* parent;
+  void* value;
+};
+
+static nr_suffix_trie_node_t suffix_trie;
+
+static nr_suffix_trie_node_t* nr_suffix_trie_node_create(void) {
+  nr_suffix_trie_node_t* node = nr_zalloc(sizeof(nr_suffix_trie_node_t));
+  return node;
+}
+
+static void *nr_suffix_trie_lookup(nr_suffix_trie_node_t* root,
+                                    const char* filename,
+                                    size_t filename_len) {
+  nr_suffix_trie_node_t *node = root;
+  nr_suffix_trie_node_t *parent = NULL;
+  const char *cp = filename + filename_len - (1 + EXT_LEN);
+  // nrl_always("Looking up filename=%s", filename);
+  while(node) {
+    char c = *cp;
+    if (nr_isupper(c)) {
+      c = nr_tolower(c);
+    }
+    if (!node->children[c]) {
+      // nrl_always("No match at %c", c);
+      break;
+    }
+    // nrl_always("Match at %c, current node value=%p, moving back", c, node->value);
+    parent = node;
+    node = node->children[c];
+    cp--;
+  }
+  // nrl_always("Returning value=%p", parent? parent->value : NULL);
+  return parent? parent->value : NULL;
+}
+
+static void nr_suffix_trie_add(nr_suffix_trie_node_t* root,
+                               const char* suffix,
+                               size_t suffix_len,
+                               void* value) {
+  char c;
+  c = suffix[suffix_len - 1];
+  // nrl_always("Adding suffix=%s, char=%c", suffix, c);
+  if (NULL == root->children[c]) {
+    // nrl_always("Creating new node for char=%c", c); 
+    root->children[c] = nr_suffix_trie_node_create();
+    root->children[c]->parent = root;
+  }
+  if (1 == suffix_len) {
+    nr_library_table_t* library = (nr_library_table_t*)value;
+    // nrl_always("Adding library=%s", library->file_to_check);
+    root->value = value;
+    return;
+  }
+  else {
+    nr_suffix_trie_add(root->children[c], suffix, suffix_len - 1, value);
+  }
+}
+
+static void nr_suffix_trie_add_library(nr_suffix_trie_node_t* root, nr_library_table_t* library) {
+  const char *suffix = library->file_to_check;
+  size_t suffix_len = library->file_to_check_len - EXT_LEN;
+  // char* suffix_sans_ext = nr_alloca(suffix_len + 1);
+  // nr_strxcpy(suffix_sans_ext, suffix, suffix_len);
+  // nrl_always("Adding suffix to trie=%s", suffix_sans_ext);
+  nr_suffix_trie_add(root, suffix, suffix_len, library);
+}
+
+static void nr_suffix_trie_destroy(nr_suffix_trie_node_t* root) {
+  for (int i = 0; i < 256; i++) {
+    if (root->children[i]) {
+      nr_suffix_trie_destroy(root->children[i]);
+    }
+  }
+  if (root->parent) {
+    nr_free(root);
+  }
+}
+
+#if 0
 #include "util_hash.h"
 #include "util_hashmap_private.h"
 
@@ -588,6 +676,7 @@ typedef struct _nr_suffix_lookup_hashmap {
 static nr_suffix_lookup_hashmap_t library_lookup = {
   .log2_num_buckets = 8,
 };
+#endif
 #if 0
 static nr_suffix_lookup_hashmap_t logging_library_lookup = {
   .log2_num_buckets = 8,
@@ -597,9 +686,7 @@ static nr_suffix_lookup_hashmap_t vuln_mgmt_package_lookup = {
   .log2_num_buckets = 8,
 };
 #endif
-
-#define EXT_LEN 4
-
+#if 0
 size_t nr_suffix_lookup_hashmap_hash_key(nr_suffix_lookup_hashmap_t* hashmap,
                                           const char* filename,
                                           const size_t filename_len) {
@@ -680,6 +767,7 @@ void* nr_suffix_lookup_hashmap_get(nr_suffix_lookup_hashmap_t* hashmap,
   }
   return NULL;
 }
+#endif
 
 #if 0
 // clang-format: off
@@ -754,16 +842,26 @@ nr_status_t nr_suffix_lookup_hashmap_add_package(nr_suffix_lookup_hashmap_t* has
 #endif
 
 void nr_php_execute_minit() {
+#if 0
   library_lookup.h = nr_hashmap_create_buckets(1 << library_lookup.log2_num_buckets, NULL);
   library_lookup.suffix_len = nr_library_table_min_file_to_check_len(libraries, num_libraries);
 
   for (size_t i = 0; i < num_libraries; i++) {
     nr_suffix_lookup_hashmap_add_library(&library_lookup, &libraries[i]);
   }
+#else
+  for (size_t i = 0; i < num_libraries; i++) {
+    nr_suffix_trie_add_library(&suffix_trie, &libraries[i]);
+  }
+#endif
 }
 
 void nr_php_execute_mshutdown() {
+#if 0
   nr_hashmap_destroy(&library_lookup.h);
+#else
+  nr_suffix_trie_destroy(&suffix_trie);
+#endif
 }
 
 /*
@@ -1082,9 +1180,15 @@ static inline void nr_execute_handle_library(const char* filename,
     }
   }
 #else
-  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&library_lookup, filename, filename_len);
-  if (library && library->handler) {
-    library->handler(library);
+  //nr_library_table_t* library = (nr_library_table_t *) nr_suffix_lookup_hashmap_get(&library_lookup, filename, filename_len);
+  nr_library_table_t* library = (nr_library_table_t *) nr_suffix_trie_lookup(&suffix_trie, filename, filename_len);
+  if (library){
+    if (!nr_striendswith(STR_AND_LEN(filename), NR_PSTR(".php"))) {
+      return;
+    }
+    if (library->handler) {
+      library->handler(library);
+    }
   }
 #endif
 }
