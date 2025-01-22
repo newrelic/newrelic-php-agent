@@ -120,7 +120,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
     /* Nothing to do here so exit. */
     return;
   }
-#undef IS_AWS_COMMAND
+#undef AWS_COMMAND_IS
 
   cloud_attrs.aws_operation = command_name_string;
 

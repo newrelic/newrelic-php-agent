@@ -10,7 +10,6 @@
 #include "nr_header.h"
 #include "nr_segment_message.h"
 #include "nr_segment_private.h"
-#include "util_logging.h"
 #include "util_strings.h"
 #include "util_url.h"
 
