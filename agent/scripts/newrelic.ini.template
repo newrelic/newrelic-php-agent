@@ -1158,6 +1158,15 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.framework.drupal.modules = true
 
+; Setting: newrelic.framework.drupal.page_cache_naming.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: true
+; Info   : Indicates if Drupal page cache transactions should be named based
+;          on their _controller value or assigned a default name "page_cache".
+;
+;newrelic.framework.drupal.page_cache_naming.enabled = true
+
 ; Setting: newrelic.framework.wordpress.hooks
 ; Type   : boolean
 ; Scope  : per-directory
