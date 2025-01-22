@@ -189,6 +189,7 @@ bool nr_segment_message_end(nr_segment_t** segment_ptr,
   nr_segment_t* segment;
   nrtime_t duration = 0;
   char* scoped_metric = NULL;
+  nr_segment_t* child = NULL;
 
   if (NULL == segment_ptr) {
     return false;
@@ -206,12 +207,15 @@ bool nr_segment_message_end(nr_segment_t** segment_ptr,
    * Additionally, because it makes http calls under the hood,
    * we don't want additional external calls created for this same txn.
    * Therefore, we delete all children of the message segment.
+   * By destroying the tree we are able to destroy all descendants vs just
+   * destroying the child which then reparents all it's children to the segment.
    */
   if (segment) {
     for (size_t i = 0; i < nr_segment_children_size(&segment->children); i++) {
-      nr_segment_t* child = nr_segment_children_get(&segment->children, i);
-      nr_segment_discard(&child);
+      child = nr_segment_children_get(&segment->children, i);
+      nr_segment_destroy_tree(child);
     }
+    nr_segment_children_deinit(&segment->children);
   }
 
   nr_segment_message_set_attrs(segment, message_params);
