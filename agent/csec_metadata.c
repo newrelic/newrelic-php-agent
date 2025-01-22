@@ -1,48 +1,73 @@
+/*
+ * Copyright 2024 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "csec_metadata.h"
-#include "util_strings.h"
-#include "php_hash.h"
-#include "php_api_internal.h"
 
-static void nr_csec_php_add_assoc_string_const(zval* arr,
-                                          const char* key,
-                                          const char* value) {
-  char* val = NULL;
+#include "util_memory.h"
 
-  if (NULL == arr || NULL == key || NULL == value) {
-    return;
+#include "nr_axiom.h"
+#include "nr_agent.h"
+#include "nr_app.h"
+#include "php_includes.h"
+#include "php_compat.h"
+#include "php_newrelic.h"
+
+int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t key, char** p) {
+  const char* value = NULL;
+
+  if (NULL == p) {
+    return -1;
   }
 
-  val = nr_strdup(value);
-  nr_php_add_assoc_string(arr, key, val);
-  nr_free(val);
-}
-
-#ifdef TAGS
-void zif_newrelic_get_security_metadata(void); /* ctags landing pad only */
-void newrelic_get_security_metadata(void);     /* ctags landing pad only */
-#endif
-PHP_FUNCTION(newrelic_get_security_metadata) {
-
-  NR_UNUSED_RETURN_VALUE;
-  NR_UNUSED_RETURN_VALUE_PTR;
-  NR_UNUSED_RETURN_VALUE_USED;
-  NR_UNUSED_THIS_PTR;
-  NR_UNUSED_EXECUTE_DATA;
-
-  array_init(return_value);
-
-  nr_csec_php_add_assoc_string_const(return_value, KEY_ENTITY_NAME, nr_app_get_entity_name(NRPRG(app)));
-  nr_csec_php_add_assoc_string_const(return_value, KEY_ENTITY_TYPE, nr_app_get_entity_type(NRPRG(app)));
-  nr_csec_php_add_assoc_string_const(return_value, KEY_ENTITY_GUID, nr_app_get_entity_guid(NRPRG(app)));
-  nr_csec_php_add_assoc_string_const(return_value, KEY_HOSTNAME, nr_app_get_host_name(NRPRG(app)));
-  nr_csec_php_add_assoc_string_const(return_value, KEY_LICENSE, NRPRG(license).value);
-
-  if (NRPRG(app)) {
-    nr_csec_php_add_assoc_string_const(return_value, KEY_AGENT_RUN_ID, NRPRG(app)->agent_run_id);
-    nr_csec_php_add_assoc_string_const(return_value, KEY_ACCOUNT_ID, NRPRG(app)->account_id);
-    nr_csec_php_add_assoc_string_const(return_value, KEY_PLICENSE, NRPRG(app)->plicense);
-    int high_security = NRPRG(app)->info.high_security;
-    add_assoc_long(return_value, KEY_HIGH_SECURITY, (long)high_security);
+  if (NULL == NRPRG(app)) {
+    return -2;
   }
 
+  switch (key) {
+    case NR_PHP_CSEC_METADATA_HIGH_SECURITY:
+      if (NRPRG(app)->info.high_security) {
+        value = "true";
+      } else {
+        value = "false";
+      }
+      break;
+    case NR_PHP_CSEC_METADATA_ENTITY_NAME:
+      value = nr_app_get_entity_name(NRPRG(app));
+      break;
+    case NR_PHP_CSEC_METADATA_ENTITY_TYPE:
+      value = nr_app_get_entity_type(NRPRG(app));
+      break;
+    case NR_PHP_CSEC_METADATA_ENTITY_GUID:
+      value = nr_app_get_entity_guid(NRPRG(app));
+      break;
+    case NR_PHP_CSEC_METADATA_HOST_NAME:
+      value = nr_app_get_host_name(NRPRG(app));
+      break;
+    case NR_PHP_CSEC_METADATA_AGENT_RUN_ID:
+      value = NRPRG(app)->agent_run_id;
+      break;
+    case NR_PHP_CSEC_METADATA_ACCOUNT_ID:
+      value = NRPRG(app)->account_id;
+      break;
+    case NR_PHP_CSEC_METADATA_LICENSE:
+      value = NRPRG(license).value;
+      break;
+    case NR_PHP_CSEC_METADATA_PLICENSE:
+      value = NRPRG(app)->plicense;
+      break;
+    default:
+      return -4;
+  }
+
+  if (NULL == value) {
+    return -5;
+  }
+
+  *p = nr_strdup(value);
+  if (NULL == *p) {
+    return -3;
+  }
+  return 0;
 }
