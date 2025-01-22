@@ -380,7 +380,7 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
   (klass_len == (sizeof(KLASS) - 1)      \
    && nr_striendswith(klass, klass_len, SHORT_KLASS, sizeof(SHORT_KLASS) - 1))
 
-  if AWS_CLASS_IS ("Aws\\Sqs\\SqsClient", "SqsClient") {
+  if (AWS_CLASS_IS("Aws\\Sqs\\SqsClient", "SqsClient")) {
     nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
                                   Z_STRLEN_P(command_name),
                                   NR_EXECUTE_ORIG_ARGS);
