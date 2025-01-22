@@ -25,6 +25,7 @@ tlib_parallel_info_t parallel_info
 #define COMMAND_NAME_FOR_TEST "uniquelyAwesome"
 #define COMMAND_NAME_LEN_FOR_TEST sizeof(COMMAND_NAME_FOR_TEST) - 1
 #define ARG_TO_FIND_FOR_TEST AWS_SDK_PHP_SQSCLIENT_QUEUEURL_ARG
+#define AWS_QUEUEURL_LEN_MAX 512
 
 /* These wrappers are used so we don't have to mock up zend_execute_data. */
 
