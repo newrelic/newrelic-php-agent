@@ -240,3 +240,14 @@ bool nr_segment_message_end(nr_segment_t** segment_ptr,
 
   return rv;
 }
+
+nr_segment_t* nr_segment_message_init(nr_segment_t* auto_segment) {
+  nr_segment_t* message_segment = NULL;
+  if (NULL == auto_segment) {
+    return NULL;
+  }
+  message_segment = nr_segment_start(auto_segment->txn, auto_segment, NULL);
+  /* reuse time from auto_segment started in func_begin */
+  message_segment->start_time = auto_segment->start_time;
+  return message_segment;
+}

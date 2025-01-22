@@ -41,6 +41,17 @@ typedef struct {
 } nr_segment_message_params_t;
 
 /*
+ * Purpose : Initialize a message segment from auto_segment started in
+ * func_begin.
+ *
+ * Params  : 1. nr_segment_t* - pointer to the auto_segment started in
+ * func_being.
+ *
+ * Returns: pointer to the message segment initialized or NULL.
+ */
+extern nr_segment_t* nr_segment_message_init(nr_segment_t* auto_segment);
+
+/*
  * Purpose : End a message segment and record metrics.
  *
  * Params  : 1. nr_segment_message_params_t

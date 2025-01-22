@@ -86,10 +86,11 @@ $result = $client->sendMessageBatch(array(
 
 //clang-format on
 */
-void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
+void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
                                    char* command_name_string,
                                    size_t command_name_len,
                                    NR_EXECUTE_PROTO) {
+  nr_segment_t* message_segment = NULL;
   char* command_arg_value = NULL;
   nr_segment_message_params_t message_params = {
       .library = SQS_LIBRARY_NAME,
@@ -98,7 +99,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   };
   nr_segment_cloud_attrs_t cloud_attrs = {0};
 
-  if (NULL == segment) {
+  if (NULL == auto_segment) {
     return;
   }
 
@@ -134,12 +135,11 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
   nr_lib_aws_sdk_php_sqs_parse_queueurl(command_arg_value, &message_params,
                                         &cloud_attrs);
 
+  /* Now create a message segment. */
+  message_segment = nr_segment_message_init(auto_segment);
   /* Add cloud attributes, if available. */
-
-  nr_segment_traces_add_cloud_attributes(segment, &cloud_attrs);
-
-  /* Now end the instrumented segment as a message segment. */
-  nr_segment_message_end(&segment, &message_params);
+  nr_segment_traces_add_cloud_attributes(message_segment, &cloud_attrs);
+  nr_segment_message_end(&message_segment, &message_params);
 
   nr_free(command_arg_value);
 }
@@ -332,20 +332,6 @@ char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
  * @throws \Exception
  */
 
-NR_PHP_WRAPPER(nr_aws_client_call_before) {
-  (void)wraprec;
-  nr_segment_t* segment = NULL;
-  /*
-   * Start a segment in case it needs to become an external, message, or
-   * datastore segment.
-   */
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  if (NULL != segment) {
-    segment->wraprec = auto_segment->wraprec;
-  }
-}
-NR_PHP_WRAPPER_END
-
 NR_PHP_WRAPPER(nr_aws_client_call) {
   (void)wraprec;
 
@@ -388,16 +374,6 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
 
 #undef AWS_CLASS_IS
 
-  if (NR_SEGMENT_CUSTOM == auto_segment->type) {
-    /*
-     * We need to end the segment that we started in the 'before' wrapper if
-     * it wasn't handled and ended by the handling function. Handling
-     * function would have changed the segment type from from default
-     * (`NR_SEGMENT_CUSTOM`) if it ended it.
-     */
-    nr_segment_discard(&auto_segment);
-  }
-
   /*
    * Since we have klass and command_name, we can give the calling segment
    * a more meaningful name than Aws/AwsClient::__call We can decode it to
@@ -406,11 +382,10 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
    * EX: Aws\\Sqs\\SqsClient::sendMessage
    */
 
-  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
-  if (NULL != segment) {
+  if (NULL != auto_segment) {
     real_class_and_command
         = nr_formatf("Custom/%s::%s", klass, command_name_string);
-    nr_segment_set_name(segment, real_class_and_command);
+    nr_segment_set_name(auto_segment, real_class_and_command);
     nr_free(real_class_and_command);
   }
 
@@ -569,8 +544,7 @@ void nr_aws_sdk_php_enable() {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
   /* We only support instrumentation above PHP 8.1 */
   /* Called when a service command is issued from a Client */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Aws\\AwsClient::__call"), nr_aws_client_call_before,
-      nr_aws_client_call, nr_aws_client_call);
+  nr_php_wrap_user_function(NR_PSTR("Aws\\AwsClient::__call"),
+                            nr_aws_client_call);
 #endif
 }
