@@ -92,9 +92,9 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
                                    NR_EXECUTE_PROTO) {
   char* command_arg_value = NULL;
   nr_segment_message_params_t message_params = {
-      .library = "SQS",
+      .library = SQS_LIBRARY_NAME,
       .destination_type = NR_MESSAGE_DESTINATION_TYPE_QUEUE,
-      .messaging_system = "aws_sqs",
+      .messaging_system = AWS_SQS_MESSAGING_SERVICE,
   };
   nr_segment_cloud_attrs_t cloud_attrs = {0};
 
