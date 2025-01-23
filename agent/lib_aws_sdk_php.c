@@ -133,6 +133,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
   if (NULL == segment) {
     return;
   }
+  /* re-use start time from auto_segment started in func_begin */
   segment->start_time = auto_segment->start_time;
   cloud_attrs.aws_operation = command_name_string;
 
