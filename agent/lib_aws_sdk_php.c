@@ -129,7 +129,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
    * only create the segment now, grab the parent segment start time, add our
    * special segment attributes/metrics then close the newly created segment.
    */
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = nr_segment_start(NRPRG(txn), auto_segment, NULL);
   if (NULL == segment) {
     return;
   }
