@@ -16,13 +16,13 @@ tlib_parallel_info_t parallel_info
 
 static void declare_php_amqplib_package_class(const char* ns,
                                               const char* klass,
-                                              const char* sdk_version) {
+                                              const char* package_version) {
   char* source = nr_formatf(
       "namespace %s;"
       "class %s{"
       "const VERSION = '%s';"
       "}",
-      ns, klass, sdk_version);
+      ns, klass, package_version);
 
   tlib_php_request_eval(source);
 
@@ -54,7 +54,7 @@ static void test_nr_lib_php_amqplib_handle_version(void) {
 
     declare_php_amqplib_package_class("PhpAmqpLib", "Package",
                                       library_versions[i]);
-    nr_lib_php_amqplib_handle_version();
+    nr_php_amqplib_handle_version();
 
     p = nr_php_packages_get_package(
         NRPRG(txn)->php_package_major_version_metrics_suggestions,
@@ -81,7 +81,7 @@ static void test_nr_lib_php_amqplib_handle_version(void) {
    */
   tlib_php_request_start();
 
-  nr_lib_php_amqplib_handle_version();
+  nr_php_amqplib_handle_version();
 
   p = nr_php_packages_get_package(
       NRPRG(txn)->php_package_major_version_metrics_suggestions, LIBRARY_NAME);
@@ -93,6 +93,40 @@ static void test_nr_lib_php_amqplib_handle_version(void) {
       p);
   tlib_pass_if_str_equal(
       "nr_lib_php_amqplib_handle_version when PhpAmqpLib\\Package class is not "
+      "defined - "
+      "suggested version set to PHP_PACKAGE_VERSION_UNKNOWN",
+      PHP_PACKAGE_VERSION_UNKNOWN, p->package_version);
+
+  tlib_php_request_end();
+
+  /*
+   * PhpAmqpLib\\Package class exists but VERSION does not.
+   * Should create package metric suggestion with PHP_PACKAGE_VERSION_UNKNOWN
+   * version. This case should never happen in real situations.
+   */
+  tlib_php_request_start();
+
+  char* source
+      = "namespace PhpAmqpLib;"
+        "class Package{"
+        "const SADLY_DEPRECATED = 5.4;"
+        "}";
+
+  tlib_php_request_eval(source);
+
+  nr_php_amqplib_handle_version();
+
+  p = nr_php_packages_get_package(
+      NRPRG(txn)->php_package_major_version_metrics_suggestions, LIBRARY_NAME);
+
+  tlib_pass_if_not_null(
+      "nr_lib_php_amqplib_handle_version when PhpAmqpLib\\Package class is SET "
+      "but the const VERSION does not exist - "
+      "suggestion created",
+      p);
+  tlib_pass_if_str_equal(
+      "nr_lib_php_amqplib_handle_version when PhpAmqpLib\\Package class is SET "
+      "but the const VERSION does not exist - "
       "defined - "
       "suggested version set to PHP_PACKAGE_VERSION_UNKNOWN",
       PHP_PACKAGE_VERSION_UNKNOWN, p->package_version);
