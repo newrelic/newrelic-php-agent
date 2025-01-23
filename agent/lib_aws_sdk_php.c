@@ -91,7 +91,7 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
                                    size_t command_name_len,
                                    NR_EXECUTE_PROTO) {
   char* command_arg_value = NULL;
-  nr_segment_t* segment = NULL;
+  nr_segment_t* message_segment = NULL;
 
   nr_segment_message_params_t message_params = {
       .library = SQS_LIBRARY_NAME,
@@ -129,12 +129,12 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
    * only create the segment now, grab the parent segment start time, add our
    * special segment attributes/metrics then close the newly created segment.
    */
-  segment = nr_segment_start(NRPRG(txn), auto_segment, NULL);
-  if (NULL == segment) {
+  message_segment = nr_segment_start(NRPRG(txn), auto_segment, NULL);
+  if (NULL == message_segment) {
     return;
   }
   /* re-use start time from auto_segment started in func_begin */
-  segment->start_time = auto_segment->start_time;
+  message_segment->start_time = auto_segment->start_time;
   cloud_attrs.aws_operation = command_name_string;
 
   command_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
@@ -149,10 +149,10 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
 
   /* Add cloud attributes, if available. */
 
-  nr_segment_traces_add_cloud_attributes(segment, &cloud_attrs);
+  nr_segment_traces_add_cloud_attributes(message_segment, &cloud_attrs);
 
   /* Now end the instrumented segment as a message segment. */
-  nr_segment_message_end(&segment, &message_params);
+  nr_segment_message_end(&message_segment, &message_params);
 
   nr_free(command_arg_value);
 }
