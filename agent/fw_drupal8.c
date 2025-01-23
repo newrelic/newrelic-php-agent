@@ -342,7 +342,7 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
     goto end;
   }
 
-  if (false
+  if (0
       == nr_php_object_instanceof_class(
           request, "Symfony\\Component\\HttpFoundation\\Request")) {
     nrl_verbosedebug(
