@@ -808,9 +808,7 @@ void nr_drupal8_enable(TSRMLS_D) {
     if (NULL == drupal_ce) {
       inject = false;
       nrl_warning(NRL_FRAMEWORK, "Missing Drupal RouteMatch Class");
-    }
-
-    if (inject) {
+    } else {
       symfony_ce
           = nr_php_find_class("Symfony\\Component\\HttpFoundation\\Request");
       if (NULL == symfony_ce) {
