@@ -441,6 +441,12 @@ void nr_lib_aws_sdk_php_handle_version() {
   zval retval;
   int result = FAILURE;
 
+  /*
+   * The following block initializes nr_aws_sdk_version to the empty string.
+   * If it is able to extract the version, nr_aws_sdk_version is set to that.
+   * Nothing is needed in the catch block.
+   * The final return will either return a proper version or an empty string.
+   */
   result = zend_eval_string(
       "(function() {"
       "     $nr_aws_sdk_version = '';"
