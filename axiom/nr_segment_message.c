@@ -39,6 +39,11 @@ static void nr_segment_message_set_attrs(
     message_attributes.destination_name = params->destination_name;
     message_attributes.messaging_system = params->messaging_system;
     message_attributes.server_address = params->server_address;
+    message_attributes.messaging_destination_routing_key
+        = params->messaging_destination_routing_key;
+    message_attributes.messaging_destination_publish_name
+        = params->messaging_destination_publish_name;
+    message_attributes.server_port = params->server_port;
   }
 
   nr_segment_set_message(segment, &message_attributes);

@@ -15,7 +15,12 @@
 
 #define NR_ATTR_MESSAGING_DESTINATION_NAME "messaging.destination.name"
 #define NR_ATTR_MESSAGING_SYSTEM "messaging.system"
+#define NR_ATTR_MESSAGING_DESTINATION_ROUTING_KEY \
+  "messaging.rabbitmq.destination.routing_key"
+#define NR_ATTR_MESSAGING_DESTINATION_PUBLISH_NAME \
+  "messaging.destination_publish.name"
 #define NR_ATTR_SERVER_ADDRESS "server.address"
+#define NR_ATTR_SERVER_PORT "server.port"
 #define NR_ATTR_CLOUD_REGION "cloud.region"
 #define NR_ATTR_CLOUD_ACCOUNT_ID "cloud.account.id"
 #define NR_ATTR_CLOUD_RESOURCE_ID "cloud.resource_id"
@@ -80,6 +85,9 @@ typedef enum {
   NR_SPAN_MESSAGE_DESTINATION_NAME,
   NR_SPAN_MESSAGE_MESSAGING_SYSTEM,
   NR_SPAN_MESSAGE_SERVER_ADDRESS,
+  NR_SPAN_MESSAGE_SERVER_PORT,
+  NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY,
+  NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME
 } nr_span_event_message_member_t;
 
 /*
@@ -211,7 +219,7 @@ extern void nr_span_event_set_external_status(nr_span_event_t* event,
                                               const uint64_t status);
 
 /*
- * Purpose : Set a message attribute.
+ * Purpose : Set a message attribute with a given string new_value.
  *
  * Params : 1. The target Span Event that should be changed.
  *          2. The message attribute to be set.
@@ -221,6 +229,19 @@ extern void nr_span_event_set_external_status(nr_span_event_t* event,
 extern void nr_span_event_set_message(nr_span_event_t* event,
                                       nr_span_event_message_member_t member,
                                       const char* new_value);
+
+/*
+ * Purpose : Set a message attribute with a given ulong new_value.
+ *
+ * Params : 1. The target Span Event that should be changed.
+ *          2. The message attribute to be set.
+ *          3. The ulong value that the field will be after the function has
+ *             executed.
+ */
+extern void nr_span_event_set_message_ulong(
+    nr_span_event_t* event,
+    nr_span_event_message_member_t member,
+    const uint64_t new_value);
 
 /*
  * Purpose : Set a user attribute.

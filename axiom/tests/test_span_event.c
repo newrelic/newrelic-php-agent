@@ -483,7 +483,7 @@ static void test_span_events_extern_get_and_set(void) {
   nr_span_event_destroy(&span);
 }
 
-static void test_span_event_message_string_get_and_set(void) {
+static void test_span_event_message_get_and_set(void) {
   nr_span_event_t* event = nr_span_event_create();
 
   // Test : that is does not crash when we give the setter a NULL pointer
@@ -506,35 +506,92 @@ static void test_span_event_message_string_get_and_set(void) {
   tlib_pass_if_null("invalid range sent to nr_span_event_get_message",
                     nr_span_event_get_message(event, 54321));
 
+  // Test: the ulong getter should return 0 (unset) for any string values passed
+  // in
+  nr_span_event_set_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME, "chicken");
+  tlib_pass_if_uint_equal(
+      "nr_span_event_get_message_ulong should return 0(unset) if given the "
+      "enum for a string value",
+      0,
+      nr_span_event_get_message_ulong(event, NR_SPAN_MESSAGE_DESTINATION_NAME));
+
+  // Test: the string getter should return NULL if given the enum for a
+  // non-string value
+  nr_span_event_set_message_ulong(event, NR_SPAN_MESSAGE_SERVER_PORT, 1234);
+  tlib_pass_if_null(
+      "nr_span_event_get_message should return NULL if given the enum for a "
+      "non-string value",
+      nr_span_event_get_message(event, NR_SPAN_MESSAGE_SERVER_PORT));
+
   // Test : setting the destination name back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME, "chicken");
   tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
+      "should be the destination name we set first", "chicken",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME));
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME, "oracle");
   tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
+      "should be the destination name we set second", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_DESTINATION_NAME));
 
   // Test : setting the messaging system back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM, "chicken");
   tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
+      "should be the messaging system we set first", "chicken",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM));
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM, "oracle");
   tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
+      "should be the messaging system we set second", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM));
 
   // Test : setting the server address back and forth behaves as expected
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS, "chicken");
   tlib_pass_if_str_equal(
-      "should be the component we set 1", "chicken",
+      "should be the server address we set first", "chicken",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
   nr_span_event_set_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS, "oracle");
   tlib_pass_if_str_equal(
-      "should be the component we set 2", "oracle",
+      "should be the server address we set second", "oracle",
       nr_span_event_get_message(event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
+
+  // Test : setting the destination pubishing name back and forth behaves as
+  // expected
+  nr_span_event_set_message(
+      event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME, "chicken");
+  tlib_pass_if_str_equal(
+      "should be the destination publish name we set first", "chicken",
+      nr_span_event_get_message(
+          event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME));
+  nr_span_event_set_message(
+      event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME, "oracle");
+  tlib_pass_if_str_equal(
+      "should be the destination publish name we set second", "oracle",
+      nr_span_event_get_message(
+          event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME));
+
+  // Test : setting the destination routing key back and forth behaves as
+  // expected
+  nr_span_event_set_message(
+      event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY, "chicken");
+  tlib_pass_if_str_equal(
+      "should be the destination routing key we set first", "chicken",
+      nr_span_event_get_message(
+          event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY));
+  nr_span_event_set_message(
+      event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY, "oracle");
+  tlib_pass_if_str_equal(
+      "should be the destination routing key we set second", "oracle",
+      nr_span_event_get_message(
+          event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY));
+
+  // Test : setting the server port back and forth behaves as expected
+  nr_span_event_set_message_ulong(event, NR_SPAN_MESSAGE_SERVER_PORT, 1234);
+  tlib_pass_if_ulong_equal(
+      "should be the server port we set first", 1234,
+      nr_span_event_get_message_ulong(event, NR_SPAN_MESSAGE_SERVER_PORT));
+  nr_span_event_set_message_ulong(event, NR_SPAN_MESSAGE_SERVER_PORT, 4321);
+  tlib_pass_if_ulong_equal(
+      "should be the server port we set first", 4321,
+      nr_span_event_get_message_ulong(event, NR_SPAN_MESSAGE_SERVER_PORT));
 
   nr_span_event_destroy(&event);
 }
@@ -724,7 +781,7 @@ void test_main(void* p NRUNUSED) {
   test_span_event_duration();
   test_span_event_datastore_string_get_and_set();
   test_span_events_extern_get_and_set();
-  test_span_event_message_string_get_and_set();
+  test_span_event_message_get_and_set();
   test_span_event_error();
   test_span_event_set_attribute_user();
   test_span_event_txn_parent_attributes();
