@@ -38,6 +38,20 @@ typedef struct {
   char* messaging_system; /* for ex: aws_sqs. Needed for SQS relationship.*/
   char* server_address;   /*The server domain name or IP address.  Needed for
                              MQBROKER relationship.*/
+  char*
+      messaging_destination_publish_name;  /* Otel attribute for message
+                                              consumers. (In the agent, this
+                                              means Action is Consume in the span
+                                              name). This attribute is equal to
+                                              the corresponding attribute
+                                              messaging.destination.name from the
+                                              producer. This attribute is needed
+                                              for apps using RabbitMQ and it
+                                              represents the exchange name.*/
+  char* messaging_destination_routing_key; /* The routing key for a RabbitMQ
+                                              operation.*/
+  uint64_t server_port;                    /*The server port.*/
+
 } nr_segment_message_params_t;
 
 /*

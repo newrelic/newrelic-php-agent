@@ -47,6 +47,8 @@ void nr_segment_message_destroy_fields(nr_segment_message_t* message) {
   nr_free(message->destination_name);
   nr_free(message->messaging_system);
   nr_free(message->server_address);
+  nr_free(message->messaging_destination_publish_name);
+  nr_free(message->messaging_destination_routing_key);
 }
 
 void nr_segment_destroy_typed_attributes(
