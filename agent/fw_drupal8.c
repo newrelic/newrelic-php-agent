@@ -351,7 +351,6 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
   }
 
   if (!NRINI(drupal_page_cache_naming)) {
-    name = nr_strdup("page_cache");
     goto end;
   }
 
@@ -367,8 +366,6 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
 
   if (nr_php_is_zval_non_empty_string(controller)) {
     name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
-  } else {
-    name = nr_strdup("page_cache");
   }
 
 end:
@@ -380,6 +377,9 @@ end:
    * otherwise.
    */
   if (retval_ptr && nr_php_is_zval_valid_object(*retval_ptr)) {
+    if (NULL == name) {
+      name = nr_strdup("page_cache");
+    }
     nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
                     NR_OK_TO_OVERWRITE);
   }
