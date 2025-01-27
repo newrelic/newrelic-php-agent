@@ -19,6 +19,13 @@ log_errors=0
 newrelic.code_level_metrics.enabled=false
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.4", ">=")) {
+  die("skip: newer test for PHP 8.4\n");
+}
+*/
+
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",

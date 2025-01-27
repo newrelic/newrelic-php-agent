@@ -28,6 +28,36 @@ ok - simple dt request
 /*EXPECT_RESPONSE_HEADERS
 */
 
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
 /*EXPECT_TRACED_ERRORS
 null
 */
