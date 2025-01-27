@@ -164,6 +164,7 @@ OBJS := \
 	util_system.o \
 	util_text.o \
 	util_threads.o \
+	util_trie.o \
 	util_url.o \
 	util_vector.o
 

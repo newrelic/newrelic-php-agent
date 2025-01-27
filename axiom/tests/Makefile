@@ -196,6 +196,7 @@ TESTS := \
   test_text \
   test_threads \
   test_time \
+  test_trie \
   test_txn \
   test_url \
   test_vector
