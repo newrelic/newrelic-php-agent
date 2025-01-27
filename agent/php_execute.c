@@ -465,31 +465,44 @@ nrframework_t nr_php_framework_from_config(const char* config_name) {
  * current framework is FW_UNSET, the callback will still be called.
  */
 
-typedef struct _nr_library_table_t {
+typedef struct _nr_library_table_t nr_library_table_t;
+typedef void (*nr_library_handler_fn_t)(const char*,
+                                        const size_t,
+                                        nr_library_table_t*);
+
+struct _nr_library_table_t {
   const char* library_name;
+  nr_library_handler_fn_t handler;
   const char* file_to_check;
   size_t file_to_check_len;
   nr_library_enable_fn_t enable;
-} nr_library_table_t;
+};
+
+// clang-format off
+static void nr_library_cb(const char*, const size_t, nr_library_table_t* library);
+static void nr_logging_library_cb(const char*, const size_t, nr_library_table_t* library);
+static void nr_vuln_mgmt_package_cb(const char*, const size_t, nr_library_table_t* library);
+static void nr_autoloader_cb(const char*, const size_t, nr_library_table_t* library);
+// clang-format on
 
 /*
  * Note that all paths should be in lowercase.
  */
-// clang-format: off
+// clang-format off
 static nr_library_table_t libraries[] = {
     /* AWS-SDK-PHP 3 */
-    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
+    {"AWS-SDK-PHP", nr_library_cb, NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
 
     /* Doctrine < 2.18 */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", nr_library_cb, NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
     /* Doctrine 2.18 reworked the directory structure */
-    {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
+    {"Doctrine 2", nr_library_cb, NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
 
-    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
-    {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
-    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
+    {"Guzzle 3", nr_library_cb, NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
+    {"Guzzle 4-5", nr_library_cb, NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
+    {"Guzzle 6", nr_library_cb, NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
 
-    {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
+    {"MongoDB", nr_library_cb, NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
     /* php-amqplib RabbitMQ; PHP Agent supports php-amqplib >= 3.7 */
     {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
@@ -499,11 +512,11 @@ static nr_library_table_t libraries[] = {
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
      */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", nr_library_cb, NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
+    {"PHPUnit", nr_library_cb, NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
 
-    {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
-    {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
+    {"Predis", nr_library_cb, NR_PSTR("predis/src/client.php"), nr_predis_enable},
+    {"Predis", nr_library_cb, NR_PSTR("predis/client.php"), nr_predis_enable},
 
     /*
      * Allow Zend Framework 1.x to be detected as a library as well as a
@@ -511,52 +524,33 @@ static nr_library_table_t libraries[] = {
      * with other frameworks or even without a framework at all. This is
      * necessary for Magento in particular, which is built on ZF1.
      */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
+    {"Zend_Http", nr_library_cb, NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    {"Laminas_Http", nr_library_cb, NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    /* Monolog - Logging for PHP */
+    {"Monolog", nr_logging_library_cb, NR_PSTR("monolog/logger.php"), nr_monolog_enable},
+    /* Consolidation/Log - Logging for PHP */
+    {"Consolidation/Log", nr_logging_library_cb, NR_PSTR("consolidation/log/src/logger.php"), NULL},
+    /* laminas-log - Logging for PHP */
+    {"laminas-log", nr_logging_library_cb, NR_PSTR("laminas-log/src/logger.php"), NULL},
+    /* cakephp-log - Logging for PHP */
+    {"Drupal", nr_vuln_mgmt_package_cb, NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
+    {"Wordpress", nr_vuln_mgmt_package_cb, NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
+    {"Autoloader", nr_autoloader_cb, NR_PSTR("vendor/autoload.php"), NULL}
 };
-// clang-format: on
+// clang-format on
 
 static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
-// clang-format: off
-static nr_library_table_t logging_frameworks[] = {
-    /* Monolog - Logging for PHP */
-    {"Monolog", NR_PSTR("monolog/logger.php"), nr_monolog_enable},
-    /* Consolidation/Log - Logging for PHP */
-    {"Consolidation/Log", NR_PSTR("consolidation/log/src/logger.php"), NULL},
-    /* laminas-log - Logging for PHP */
-    {"laminas-log", NR_PSTR("laminas-log/src/logger.php"), NULL},
-    /* cakephp-log - Logging for PHP */
-};
-// clang-format: on
+#include "util_trie.h"
 
-static size_t num_logging_frameworks
-    = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
-
-/* Package handling for Vulnerability Management */
-typedef struct _nr_vuln_mgmt_table_t {
-  const char* package_name;
-  const char* file_to_check;
-  size_t file_to_check_len;
-  nr_vuln_mgmt_enable_fn_t enable;
-} nr_vuln_mgmt_table_t;
-
-/* Note that all paths should be in lowercase. */
-// clang-format: off
-static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
-    {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
-};
-// clang-format: on
-
-static const size_t num_packages
-    = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
+nr_trie_t* suffix_trie;
+#define EXT_LEN 4
 
 /*
  * This const char[] provides enough white space to indent functions to
@@ -856,29 +850,21 @@ static nrframework_t nr_try_force_framework(
 
 static void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
-  size_t i;
-
-  for (i = 0; i < num_libraries; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(libraries[i].file_to_check))) {
-      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
-                libraries[i].library_name);
-
-      nr_fw_support_add_library_supportability_metric(
-          NRPRG(txn), libraries[i].library_name);
-
-      if (NULL != libraries[i].enable) {
-        libraries[i].enable(TSRMLS_C);
-      }
+  nr_library_table_t* library = (nr_library_table_t*)nr_trie_suffix_lookup(
+      suffix_trie, filename, filename_len, EXT_LEN);
+  if (library) {
+    if (!nr_striendswith(STR_AND_LEN(filename), NR_PSTR(".php"))) {
+      return;
+    }
+    if (library->handler) {
+      library->handler(filename, filename_len, library);
     }
   }
 }
 
-static void nr_execute_handle_autoload(const char* filename,
-                                       const size_t filename_len) {
-#define AUTOLOAD_MAGIC_FILE "vendor/autoload.php"
-#define AUTOLOAD_MAGIC_FILE_LEN (sizeof(AUTOLOAD_MAGIC_FILE) - 1)
-
+static void nr_autoloader_cb(const char* filename,
+                             const size_t filename_len,
+                             nr_library_table_t* library) {
   if (!NRINI(vulnerability_management_package_detection_enabled)) {
     // do nothing when vulnerability management package detection is disabled
     return;
@@ -894,55 +880,48 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
-  if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
-                       AUTOLOAD_MAGIC_FILE_LEN)) {
-    // not an autoload file
-    return;
-  }
-
   nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s",
-            filename, AUTOLOAD_MAGIC_FILE);
+            filename, library->file_to_check);
   NRPRG(txn)->composer_info.autoload_detected = true;
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
 
   nr_composer_handle_autoload(filename);
 }
 
-static void nr_execute_handle_logging_framework(const char* filename,
-                                                const size_t filename_len
-                                                    TSRMLS_DC) {
-  bool is_enabled = false;
-  size_t i;
-
-  for (i = 0; i < num_logging_frameworks; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(logging_frameworks[i].file_to_check))) {
-      nrl_debug(NRL_INSTRUMENT, "detected library=%s",
-                logging_frameworks[i].library_name);
-
-      nr_fw_support_add_library_supportability_metric(
-          NRPRG(txn), logging_frameworks[i].library_name);
-
-      if (NRINI(logging_enabled) && NULL != logging_frameworks[i].enable) {
-        is_enabled = true;
-        logging_frameworks[i].enable(TSRMLS_C);
-      }
-      nr_fw_support_add_logging_supportability_metric(
-          NRPRG(txn), logging_frameworks[i].library_name, is_enabled);
-    }
+static void nr_library_cb(const char* filename,
+                          const size_t filename_len,
+                          nr_library_table_t* library) {
+  nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn),
+                                                  library->library_name);
+  if (NULL != library->enable) {
+    library->enable(TSRMLS_C);
   }
 }
 
-static void nr_execute_handle_package(const char* filename,
-                                      const size_t filename_len) {
-  size_t i = 0;
+static void nr_logging_library_cb(const char* filename,
+                                  const size_t filename_len,
+                                  nr_library_table_t* library) {
+  bool is_enabled = false;
+  nrl_debug(NRL_INSTRUMENT, "detected library=%s", library->library_name);
 
-  for (i = 0; i < num_packages; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(vuln_mgmt_packages[i].file_to_check))) {
-      if (NULL != vuln_mgmt_packages[i].enable) {
-        vuln_mgmt_packages[i].enable();
-      }
+  nr_fw_support_add_library_supportability_metric(NRPRG(txn),
+                                                  library->library_name);
+
+  if (NRINI(logging_enabled) && NULL != library->enable) {
+    is_enabled = true;
+    library->enable(TSRMLS_C);
+  }
+  nr_fw_support_add_logging_supportability_metric(
+      NRPRG(txn), library->library_name, is_enabled);
+}
+
+static void nr_vuln_mgmt_package_cb(const char* filename,
+                                    const size_t filename_len,
+                                    nr_library_table_t* library) {
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    if (NULL != library->enable) {
+      library->enable(TSRMLS_C);
     }
   }
 }
@@ -970,11 +949,27 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
   nr_execute_handle_framework(all_frameworks, num_all_frameworks, filename,
                               filename_len TSRMLS_CC);
   nr_execute_handle_library(filename, filename_len TSRMLS_CC);
-  nr_execute_handle_autoload(filename, filename_len);
-  nr_execute_handle_logging_framework(filename, filename_len TSRMLS_CC);
-  if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_execute_handle_package(filename, filename_len);
+}
+
+static void nr_suffix_trie_add_library(nr_trie_t* root,
+                                       nr_library_table_t* library) {
+  const char* suffix = library->file_to_check;
+  size_t suffix_len = library->file_to_check_len - EXT_LEN;
+  // char* suffix_sans_ext = nr_alloca(suffix_len + 1);
+  // nr_strxcpy(suffix_sans_ext, suffix, suffix_len);
+  // nrl_always("Adding suffix to trie=%s", suffix_sans_ext);
+  nr_trie_suffix_add(root, suffix, suffix_len, false, library);
+}
+
+void nr_php_execute_minit(void) {
+  suffix_trie = nr_trie_create();
+  for (size_t i = 0; i < num_libraries; i++) {
+    nr_suffix_trie_add_library(suffix_trie, &libraries[i]);
   }
+}
+
+void nr_php_execute_mshutdown(void) {
+  nr_trie_destroy(&suffix_trie);
 }
 
 /*

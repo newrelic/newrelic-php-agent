@@ -429,6 +429,8 @@ static char* nr_php_get_php_version_number(TSRMLS_D) {
   return version;
 }
 
+extern void nr_php_execute_minit(void);
+
 #ifdef TAGS
 void zm_startup_newrelic(void); /* ctags landing pad only */
 #endif
@@ -718,6 +720,7 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_laravel_minit(TSRMLS_C);
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
+  nr_php_execute_minit();
 
   nrl_debug(NRL_INIT, "MINIT processing done");
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
