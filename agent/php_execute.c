@@ -329,8 +329,8 @@ typedef struct _nr_framework_table_t {
  *
  * Note that all paths should be in lowercase.
  */
-// clang-format: off
-static const nr_framework_table_t all_frameworks[] = {
+// clang-format off
+static nr_framework_table_t all_frameworks[] = {
     {"CakePHP", "cakephp", NR_PSTR("cakephp/src/core/functions.php"), 0,
      nr_cakephp_enable, NR_FW_CAKEPHP},
 
@@ -421,7 +421,7 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Zend2", "zend2", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend2_enable,
      NR_FW_ZEND2},
 };
-// clang-format: on
+// clang-format on
 static const int num_all_frameworks
     = sizeof(all_frameworks) / sizeof(nr_framework_table_t);
 
@@ -549,7 +549,8 @@ static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
 #include "util_trie.h"
 
-nr_trie_t* suffix_trie;
+nr_trie_t* library_trie;
+nr_trie_t* framework_trie;
 #define EXT_LEN 4
 
 /*
@@ -674,11 +675,9 @@ static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 }
 
-static nrframework_t nr_try_detect_framework(
-    const nr_framework_table_t frameworks[],
-    size_t num_frameworks,
-    const char* filename,
-    const size_t filename_len TSRMLS_DC);
+static nrframework_t nr_try_detect_framework(const char* filename,
+                                             const size_t filename_len
+                                                 TSRMLS_DC);
 static nrframework_t nr_try_force_framework(
     const nr_framework_table_t frameworks[],
     size_t num_frameworks,
@@ -747,8 +746,8 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
   if (NR_FW_UNSET == NRINI(force_framework)) {
     nrframework_t detected_framework = NR_FW_UNSET;
 
-    detected_framework = nr_try_detect_framework(
-        frameworks, num_frameworks, filename, filename_len TSRMLS_CC);
+    detected_framework
+        = nr_try_detect_framework(filename, filename_len TSRMLS_CC);
     if (NR_FW_UNSET != detected_framework) {
       NRPRG(current_framework) = detected_framework;
     }
@@ -773,41 +772,40 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
  * Call the appropriate enable function if we find the framework.
  * Return the framework found, or NR_FW_UNSET otherwise.
  */
-static nrframework_t nr_try_detect_framework(
-    const nr_framework_table_t frameworks[],
-    size_t num_frameworks,
-    const char* filename,
-    const size_t filename_len TSRMLS_DC) {
+static nrframework_t nr_try_detect_framework(const char* filename,
+                                             const size_t filename_len
+                                                 TSRMLS_DC) {
   nrframework_t detected = NR_FW_UNSET;
-  size_t i;
+  nr_framework_classification_t classification = FRAMEWORK_IS_SPECIAL;
+  const char* file_extension = NULL;
 
-  for (i = 0; i < num_frameworks; i++) {
-    if (nr_striendswith(STR_AND_LEN(filename),
-                        STR_AND_LEN(frameworks[i].file_to_check))) {
-      /*
-       * If we have a special check function and it tells us to ignore
-       * the file name because some other condition wasn't met, continue
-       * the loop.
-       */
-      if (frameworks[i].special) {
-        nr_framework_classification_t special
-            = frameworks[i].special(filename TSRMLS_CC);
-
-        if (FRAMEWORK_IS_NORMAL == special) {
-          continue;
-        }
-      }
-
-      nr_framework_log("detected framework", frameworks[i].framework_name);
-      nrl_verbosedebug(
-          NRL_FRAMEWORK, "framework '%s' detected with %s, which ends with %s",
-          frameworks[i].framework_name, filename, frameworks[i].file_to_check);
-
-      frameworks[i].enable(TSRMLS_C);
-      detected = frameworks[i].detected;
-      goto end;
-    }
+  nr_framework_table_t* framework
+      = (nr_framework_table_t*)nr_trie_suffix_lookup(framework_trie, filename,
+                                                     filename_len, EXT_LEN);
+  if (NULL == framework) {
+    goto end;
   }
+  file_extension = framework->file_to_check + framework->file_to_check_len - EXT_LEN;
+  if (!nr_striendswith(STR_AND_LEN(filename), file_extension, EXT_LEN)) {
+    goto end;
+  }
+  /*
+   * If we have a special check function and it tells us to ignore
+   * the file name because some other condition wasn't met.
+   */
+  if (framework->special) {
+    classification = framework->special(filename TSRMLS_CC);
+  }
+  // FRAMEWORK_IS_NORMAL means ignore this file
+  if (FRAMEWORK_IS_NORMAL == classification) {
+    goto end;
+  }
+  nr_framework_log("detected framework", framework->framework_name);
+  nrl_verbosedebug(
+      NRL_FRAMEWORK, "framework '%s' detected with %s, which ends with %s",
+      framework->framework_name, filename, framework->file_to_check);
+  detected = framework->detected;
+  framework->enable(TSRMLS_C);
 
 end:
   return detected;
@@ -851,9 +849,10 @@ static nrframework_t nr_try_force_framework(
 static void nr_execute_handle_library(const char* filename,
                                       const size_t filename_len TSRMLS_DC) {
   nr_library_table_t* library = (nr_library_table_t*)nr_trie_suffix_lookup(
-      suffix_trie, filename, filename_len, EXT_LEN);
+      library_trie, filename, filename_len, EXT_LEN);
   if (library) {
-    if (!nr_striendswith(STR_AND_LEN(filename), NR_PSTR(".php"))) {
+    const char* file_extension = library->file_to_check + library->file_to_check_len - EXT_LEN;
+    if (!nr_striendswith(STR_AND_LEN(filename), file_extension, EXT_LEN)) {
       return;
     }
     if (library->handler) {
@@ -961,15 +960,27 @@ static void nr_suffix_trie_add_library(nr_trie_t* root,
   nr_trie_suffix_add(root, suffix, suffix_len, false, library);
 }
 
+static void nr_suffix_trie_add_framework(nr_trie_t* root,
+                                         nr_framework_table_t* framework) {
+  const char* suffix = framework->file_to_check;
+  size_t suffix_len = framework->file_to_check_len - EXT_LEN;
+  nr_trie_suffix_add(root, suffix, suffix_len, false, framework);
+}
+
 void nr_php_execute_minit(void) {
-  suffix_trie = nr_trie_create();
+  library_trie = nr_trie_create();
   for (size_t i = 0; i < num_libraries; i++) {
-    nr_suffix_trie_add_library(suffix_trie, &libraries[i]);
+    nr_suffix_trie_add_library(library_trie, &libraries[i]);
+  }
+  framework_trie = nr_trie_create();
+  for (size_t i = 0; i < num_all_frameworks; i++) {
+    nr_suffix_trie_add_framework(framework_trie, &all_frameworks[i]);
   }
 }
 
 void nr_php_execute_mshutdown(void) {
-  nr_trie_destroy(&suffix_trie);
+  nr_trie_destroy(&library_trie);
+  nr_trie_destroy(&framework_trie);
 }
 
 /*
