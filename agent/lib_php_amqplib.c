@@ -222,6 +222,123 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * PhpAmqpLib\Channel\AMQPChannel::basic_get
+ * Direct access to a queue if no message was available in the queue, return
+ * null
+ *
+ * @param string $queue
+ * @param bool $no_ack
+ * @param int|null $ticket
+ * @throws \PhpAmqpLib\Exception\AMQPTimeoutException if the specified
+ * operation timeout was exceeded
+ * @return AMQPMessage|null
+ */
+NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
+  zval* amqp_queue = NULL;
+  zval* amqp_exchange = NULL;
+  zval* amqp_routing_key = NULL;
+  zval* amqp_connection = NULL;
+  nr_segment_t* message_segment = NULL;
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+
+  nr_segment_message_params_t message_params = {
+      .library = RABBITMQ_LIBRARY_NAME,
+      .destination_type = NR_MESSAGE_DESTINATION_TYPE_EXCHANGE,
+      .message_action = NR_SPANKIND_CONSUMER,
+      .messaging_system = RABBITMQ_MESSAGING_SYSTEM,
+  };
+
+  (void)wraprec;
+
+  amqp_queue = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
+  if (nr_php_is_zval_non_empty_string(amqp_queue)) {
+    /* For consumer, this is queue name. */
+    message_params.destination_name
+        = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_queue));
+  }
+
+  amqp_connection = nr_php_get_zval_object_property(
+      nr_php_execute_scope(execute_data), "connection");
+  /*
+   * In PHP 7.x, the following will create a strdup in
+   * message_params.server_address that needs to be freed.
+   */
+  nr_php_amqplib_get_host_and_port(amqp_connection, &message_params);
+
+  /* Compatibility with PHP 7.x */
+  NR_PHP_WRAPPER_CALL;
+
+  if (NULL == auto_segment) {
+    /*
+     * Must be checked after PHP_WRAPPER_CALL to ensure txn didn't end during
+     * the call.
+     */
+    goto end;
+  }
+  /*
+   *The retval should be an AMQPMessage. nr_php_is_zval_* ops do NULL checks
+   * as well.
+   */
+  if (nr_php_is_zval_valid_object(*retval_ptr)) {
+    /*
+     *  Get the exchange and routing key from the AMQPMessage
+     */
+    amqp_exchange = nr_php_get_zval_object_property(*retval_ptr, "exchange");
+    if (nr_php_is_zval_non_empty_string(amqp_exchange)) {
+      /* Used with consumer only; his is exchange name.  Exchange name is
+       * Default in case of empty string. */
+      message_params.messaging_destination_publish_name
+          = Z_STRVAL_P(amqp_exchange);
+    } else {
+      message_params.messaging_destination_publish_name = "Default";
+    }
+
+    amqp_routing_key
+        = nr_php_get_zval_object_property(*retval_ptr, "routingKey");
+    if (nr_php_is_zval_non_empty_string(amqp_routing_key)) {
+      message_params.messaging_destination_routing_key
+          = Z_STRVAL_P(amqp_routing_key);
+    }
+  }
+
+  /* Now create and end the instrumented segment as a message segment. */
+  /*
+   * By this point, it's been determined that this call will be instrumented so
+   * only create the message segment now, grab the parent segment start time,
+   * add our message segment attributes/metrics then close the newly created
+   * message segment.
+   */
+  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+
+  if (NULL == message_segment) {
+    goto end;
+  }
+
+  /* re-use start time from auto_segment started in func_begin */
+  message_segment->start_time = auto_segment->start_time;
+
+  nr_segment_message_end(&message_segment, &message_params);
+
+end:
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    /* PHP 8+ */
+    /* gnu compiler needed closure. */
+    ;
+#else
+  /*
+   * Because we had to strdup values to persist them beyond NR_PHP_WRAPPER_CALL,
+   * now we destroy them. There isn't a separate function to destroy all since
+   * some of the params are string literals and we don't want to strdup
+   * everything if we don't have to. RabbitMQ basic_get PHP 7.x will only strdup
+   * server_address and destination_name.
+   */
+  nr_free(message_params.server_address);
+  nr_free(message_params.destination_name);
+#endif
+}
+NR_PHP_WRAPPER_END
+
 void nr_php_amqplib_enable() {
   /*
    * Set the UNKNOWN package first, so it doesn't overwrite what we find with
@@ -239,9 +356,17 @@ void nr_php_amqplib_enable() {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_publish"), NULL,
       nr_rabbitmq_basic_publish, nr_rabbitmq_basic_publish);
+
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_get"), NULL,
+      nr_rabbitmq_basic_get, nr_rabbitmq_basic_get);
 #else
   nr_php_wrap_user_function(
       NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_publish"),
       nr_rabbitmq_basic_publish);
+
+  nr_php_wrap_user_function(
+      NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_get"),
+      nr_rabbitmq_basic_get);
 #endif
 }
