@@ -12,6 +12,7 @@
 #include "nr_segment_private.h"
 #include "util_strings.h"
 #include "util_url.h"
+#include "util_logging.h"
 
 /*
  * Purpose : Set all the typed message attributes on the segment.
@@ -171,9 +172,10 @@ static char* nr_segment_message_create_metrics(
    * messaging_destination_publish_name is only used if it exists; In all other
    * cases, we use the value from destination_string.
    */
-  final_destination_string = message_params->messaging_destination_publish_name
-                                 ? message_params->messaging_destination_publish_name
-                                 : destination_string;
+  final_destination_string
+      = nr_strempty(message_params->messaging_destination_publish_name)
+            ? destination_string
+            : message_params->messaging_destination_publish_name;
 
   /*
    * Create the scoped metric

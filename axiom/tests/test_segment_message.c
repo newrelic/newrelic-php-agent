@@ -89,6 +89,17 @@ static void test_message_segment(nr_segment_message_params_t* params,
   tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.server_address,
                          expecteds.server_address);
+  tlib_pass_if_str_equal(
+      expecteds.test_name,
+      seg->typed_attributes->message.messaging_destination_publish_name,
+      expecteds.messaging_destination_publish_name);
+  tlib_pass_if_str_equal(
+      expecteds.test_name,
+      seg->typed_attributes->message.messaging_destination_routing_key,
+      expecteds.messaging_destination_routing_key);
+  tlib_pass_if_int_equal(expecteds.test_name,
+                         seg->typed_attributes->message.server_port,
+                         expecteds.server_port);
   nr_txn_destroy(&txn);
 }
 
@@ -1006,8 +1017,9 @@ static void test_segment_messaging_destination_publishing_name(void) {
           .destination_name = "my_destination"},
       &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
-          .test_name = "messaging_destination_publish_name is NULL, attribute "
-                       "should be NULL",
+          .test_name
+          = "messaging_destination_publish_name is NULL, attribute "
+            "should be NULL, destination_name is used for metric/txn",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
           .txn_rollup_metric = "MessageBroker/all",
           .library_metric = "MessageBroker/SQS/all",
@@ -1025,8 +1037,9 @@ static void test_segment_messaging_destination_publishing_name(void) {
           .destination_name = "my_destination"},
       &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
-          .test_name = "messaging_destination_publish_name is empty string, "
-                       "attribute should be NULL",
+          .test_name
+          = "messaging_destination_publish_name is empty string, "
+            "attribute should be NULL, destination_name is used for metric/txn",
           .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
           .txn_rollup_metric = "MessageBroker/all",
           .library_metric = "MessageBroker/SQS/all",
@@ -1045,8 +1058,9 @@ static void test_segment_messaging_destination_publishing_name(void) {
       &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test valid messaging_destination_publish_name is "
-                       "non-empty string, attribute should be the string",
-          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+                       "non-empty string, attribute should be the string, "
+                       "should be used for metric/txn",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/publish_name",
           .txn_rollup_metric = "MessageBroker/all",
           .library_metric = "MessageBroker/SQS/all",
           .num_metrics = 1,
@@ -1127,8 +1141,8 @@ static void test_segment_message_parameters_enabled(void) {
   test_message_segment(
       &(nr_segment_message_params_t){
           .messaging_destination_routing_key = "key to the kingdom",
+          .messaging_destination_publish_name = "publish_name",
           .server_port = 1234,
-          .messaging_destination_publish_name = "publish name",
           .server_address = "localhost",
           .messaging_system = "my_system",
           .library = "SQS",
@@ -1142,7 +1156,7 @@ static void test_segment_message_parameters_enabled(void) {
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test true message_parameters_enabled",
-          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/publish_name",
           .txn_rollup_metric = "MessageBroker/all",
           .library_metric = "MessageBroker/SQS/all",
           .num_metrics = 1,
@@ -1154,7 +1168,7 @@ static void test_segment_message_parameters_enabled(void) {
           .server_address = "localhost",
           .messaging_destination_routing_key = "key to the kingdom",
           .server_port = 1234,
-          .messaging_destination_publish_name = "publish name",
+          .messaging_destination_publish_name = "publish_name",
           .aws_operation = "sendMessage"});
 
   /*
@@ -1165,7 +1179,6 @@ static void test_segment_message_parameters_enabled(void) {
       &(nr_segment_message_params_t){
           .messaging_destination_routing_key = "key to the kingdom",
           .server_port = 1234,
-          .messaging_destination_publish_name = "publish name",
           .server_address = "localhost",
           .messaging_system = "my_system",
           .library = "SQS",
