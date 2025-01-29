@@ -57,7 +57,8 @@ typedef struct {
 /*
  * Purpose : End a message segment and record metrics.
  *
- * Params  : 1. nr_segment_message_params_t
+ * Params  : 1. nr_segment_t** segment: Segment to apply message params to and end
+ *           2. const nr_segment_message_params_t* params: params to apply to segment
  *
  * Returns: true on success.
  */
