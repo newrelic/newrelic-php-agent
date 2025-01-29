@@ -7,6 +7,12 @@
 #ifndef LIB_PHP_AMQPLIB
 #define LIB_PHP_AMQPLIB
 
+#define RABBITMQ_LIBRARY_NAME "RabbitMQ"
+#define RABBITMQ_MESSAGING_SYSTEM "rabbitmq"
+
+#define AMQP_CONSTRUCT_PARAMS_SERVER_INDEX 0
+#define AMQP_CONSTRUCT_PARAMS_PORT_INDEX 1
+
 extern void nr_aws_php_amqplib_enable();
 extern void nr_php_amqplib_handle_version();
 
