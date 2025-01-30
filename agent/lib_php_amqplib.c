@@ -38,6 +38,34 @@
 #endif
 
 /*
+ * While the RabbitMQ tutorial for using with the dockerized RabbitMQ setup
+ * correctly and loads the PhpAmqpLib\\Channel\\AMQPChannel class in time for
+ * the agent to wrap the instrumented functions, there are AWS MQ_BROKER
+ * specific but valid scenarios where the PhpAmqpLib\\Channel\\AMQPChannel class
+ * file does not explicitly load or does not load in time, and the instrumented
+ * functions are NEVER wrapped regardless of how many times they are called in
+ * one txn.  Specifically, this centered around the very slight but impactful
+ * differences when using the PhpAmqpLib\Connection\AMQPStreamConnection which
+ * causes an explicit load of the AMQPChannel class/file and
+ * PhpAmqpLib\Connection\AMQPSSLConnection which does NOT cause an explicit load
+ * of the AMQPChannelclass/file. The following method is thus the only way to
+ * ensure the class is loaded in time for the functions to be wrapped.
+ */
+static void nr_php_amqplib_ensure_class() {
+  zval retval;
+  int result = FAILURE;
+
+  result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
+                            &retval, "Get nr_php_amqplib_class_exists");
+  /*
+   * We don't need to check anything else at this point. If this fails, there's
+   * nothing else we can do anyway.
+   */
+
+  zval_dtor(&retval);
+}
+
+/*
  * Version detection will be called directly from PhpAmqpLib\\Package::VERSION
  * nr_php_amqplib_handle_version will automatically load the class if it isn't
  * loaded yet and then evaluate the string. To avoid the VERY unlikely but not
@@ -351,6 +379,7 @@ void nr_php_amqplib_enable() {
 
   /* Extract the version for aws-sdk 3+ */
   nr_php_amqplib_handle_version();
+  nr_php_amqplib_ensure_class();
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* less than PHP8.0 */
   nr_php_wrap_user_function_before_after_clean(
