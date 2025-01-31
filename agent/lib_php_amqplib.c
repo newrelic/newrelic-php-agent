@@ -38,6 +38,21 @@
 #endif
 
 /*
+ * Managing Amazon MQ for RabbitMQ engine versions
+https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html
+RabbitMQ version	End of support on Amazon MQ
+3.13 (recommended)
+3.12	March 17, 2025
+3.11	February 17, 2025
+3.10	October 15, 2024
+3.9	September 16, 2024
+
+4.0.5
+The latest release of RabbitMQ is 4.0.5. See change log for release notes. See
+RabbitMQ support timeline to find out what release series are supported.
+
+Installing RabbitMQ
+ *
  * While the RabbitMQ tutorial for using with the dockerized RabbitMQ setup
  * correctly and loads the PhpAmqpLib\\Channel\\AMQPChannel class in time for
  * the agent to wrap the instrumented functions, there are AWS MQ_BROKER
@@ -45,11 +60,13 @@
  * file does not explicitly load or does not load in time, and the instrumented
  * functions are NEVER wrapped regardless of how many times they are called in
  * one txn.  Specifically, this centered around the very slight but impactful
- * differences when using the PhpAmqpLib\Connection\AMQPStreamConnection which
+ * differences when using managing the AWS MQ Broker connect vs
  * causes an explicit load of the AMQPChannel class/file and
  * PhpAmqpLib\Connection\AMQPSSLConnection which does NOT cause an explicit load
  * of the AMQPChannelclass/file. The following method is thus the only way to
  * ensure the class is loaded in time for the functions to be wrapped.
+ *
+
  */
 static void nr_php_amqplib_ensure_class() {
   zval retval;
@@ -132,7 +149,7 @@ static inline void nr_php_amqplib_get_host_and_port(
       amqp_port
           = nr_php_zend_hash_index_find(Z_ARRVAL_P(connect_constructor_params),
                                         AMQP_CONSTRUCT_PARAMS_PORT_INDEX);
-      if (nr_php_is_zval_valid_scalar(amqp_port)) {
+      if (IS_LONG != Z_TYPE_P((amqp_port))) {
         message_params->server_port = Z_LVAL_P(amqp_port);
       }
     }
