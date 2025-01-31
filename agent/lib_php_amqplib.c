@@ -33,8 +33,10 @@
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8.0+ */
 #define ENSURE_PERSISTENCE(x) x
+#define UNDO_PERSISTENCE(x)
 #else
 #define ENSURE_PERSISTENCE(x) nr_strdup(x)
+#define UNDO_PERSISTENCE(x) nr_free(x);
 #endif
 
 /*
@@ -247,11 +249,6 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
   }
 
 end:
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-    /* PHP 8+ */
-    /* gnu compiler needed closure. */
-    ;
-#else
   /*
    * Because we had to strdup values to persist them beyond NR_PHP_WRAPPER_CALL,
    * now we destroy them. There isn't a separate function to destroy all since
@@ -260,10 +257,9 @@ end:
    * strdup server_address, destination_name, and
    * messaging_destination_routing_key.
    */
-  nr_free(message_params.server_address);
-  nr_free(message_params.destination_name);
-  nr_free(message_params.messaging_destination_routing_key);
-#endif
+  UNDO_PERSISTENCE(message_params.server_address);
+  UNDO_PERSISTENCE(message_params.destination_name);
+  UNDO_PERSISTENCE(message_params.messaging_destination_routing_key);
 }
 NR_PHP_WRAPPER_END
 
@@ -366,11 +362,6 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
   nr_segment_message_end(&message_segment, &message_params);
 
 end:
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-    /* PHP 8+ */
-    /* gnu compiler needed closure. */
-    ;
-#else
   /*
    * Because we had to strdup values to persist them beyond NR_PHP_WRAPPER_CALL,
    * now we destroy them. There isn't a separate function to destroy all since
@@ -378,9 +369,8 @@ end:
    * everything if we don't have to. RabbitMQ basic_get PHP 7.x will only strdup
    * server_address and destination_name.
    */
-  nr_free(message_params.server_address);
-  nr_free(message_params.destination_name);
-#endif
+  UNDO_PERSISTENCE(message_params.server_address);
+  UNDO_PERSISTENCE(message_params.destination_name);
 }
 NR_PHP_WRAPPER_END
 
