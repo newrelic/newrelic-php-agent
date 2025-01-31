@@ -130,9 +130,15 @@ static nr_php_wraprec_hashmap_t* user_function_wrappers;
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
-  // store the wraprec in the op_array extension for the duration of the request for later lookup
   // for situation when wraprec is added after first execution of the function
-  ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  // store the wraprec in the op_array extension for the duration of the request for later lookup
+  // The op_array extension slot for function may not be initialized yet because it is
+  // initialized only on the first call made to the function in that request. This would
+  // mean that run_time_cache is NULL and wraprec cannot be stored yet! It will be stored
+  // on the first call to the function when observer is registered for that function.
+  if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
+    ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  }
 
 }
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
