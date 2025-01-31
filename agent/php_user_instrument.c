@@ -130,6 +130,10 @@ static nr_php_wraprec_hashmap_t* user_function_wrappers;
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
+  // store the wraprec in the op_array extension for the duration of the request for later lookup
+  // for situation when wraprec is added after first execution of the function
+  ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+
 }
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   nruserfn_t* wraprec = NULL;
@@ -291,7 +295,9 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 }
 
 static nruserfn_t* nr_php_user_wraprec_create(void) {
-  return (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
+  nruserfn_t* wr = (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
+  wr->pid = nr_getpid();
+  return wr;
 }
 
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
