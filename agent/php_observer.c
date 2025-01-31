@@ -75,6 +75,7 @@
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
+  nruserfn_t* wr;
   if (NULL == execute_data) {
     return handlers;
   }
@@ -82,6 +83,19 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
       || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
     return handlers;
   }
+
+  if (!OP_ARRAY_IS_A_FILE(NR_OP_ARRAY)) {
+    nrl_verbosedebug(NRL_AGENT, "Registering Observer API handlers for user function %s",
+            NRSAFESTR(nr_php_op_array_function_name(NR_OP_ARRAY)));
+  } else {
+    nrl_verbosedebug(NRL_AGENT, "Registering Observer API handlers for file %s",
+            NRSAFESTR(nr_php_op_array_file_name(NR_OP_ARRAY)));
+  }
+
+  wr = nr_php_get_wraprec(execute_data->func);
+  // store the wraprec in the op_array extension for the duration of the request for later lookup
+  ZEND_OP_ARRAY_EXTENSION(&execute_data->func->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;
   return handlers;

@@ -49,12 +49,10 @@ typedef struct _nrphpglobals_t {
                       * variable with the key `NEW_RELIC_LABELS`	 */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
   zend_long zend_offset;                    /* Zend extension offset */
-  zend_long
-      zend_op_array_offset; /* Zend extension op_array to modify reserved */
 #else
   int zend_offset;          /* Zend extension offset */
-  int zend_op_array_offset; /* Zend extension op_array to modify reserved */
 #endif
+  int op_array_extension_handle; /* Zend op_array extension handle to attach agent's data to function */
   int done_instrumentation;  /* Set to true if we have installed instrumentation
                                 handlers */
   nrtime_t expensive_min;    /* newrelic.special.expensive_node_min */
