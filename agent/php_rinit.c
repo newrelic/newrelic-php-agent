@@ -18,6 +18,7 @@
 #include "nr_slowsqls.h"
 #include "util_logging.h"
 #include "util_strings.h"
+#include "util_syscalls.h"
 
 static void nr_php_datastore_instance_destroy(
     nr_datastore_instance_t* instance) {
@@ -60,9 +61,9 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(drupal_http_request_depth) = 0;
 #endif
 #else
-  NRPRG(pid) = getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
+  NRPRG(pid) = nr_getpid();
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
     return SUCCESS;
