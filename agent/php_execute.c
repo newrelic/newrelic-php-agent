@@ -95,7 +95,11 @@
 
 static inline nruserfn_t* nr_php_get_wraprec_from_op_array_extension(const char* fn, zend_function* zf) {
   nruserfn_t* wraprec = (nruserfn_t*)ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
-  nrl_verbosedebug(NRL_AGENT, "%s from %s, op_array_extension=%p, wraprec=%p, wraprec->pid=%d", __func__, fn, ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)), wraprec, wraprec->pid);
+  nrl_verbosedebug(NRL_AGENT, "%s from %s, op_array_extension=%p, wraprec=%p, wraprec->pid=%d", __func__, fn, ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)), wraprec, wraprec? wraprec->pid : 0);
+  if (NULL != wraprec && NRPRG(pid) != wraprec->pid) {
+    nrl_debug(NRL_AGENT, "wraprec pid mismatch: %d != %d", wraprec->pid, NRPRG(pid));
+    return NULL;
+  }
   return wraprec;
 }
 

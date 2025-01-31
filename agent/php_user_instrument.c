@@ -296,7 +296,7 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 
 static nruserfn_t* nr_php_user_wraprec_create(void) {
   nruserfn_t* wr = (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
-  wr->pid = nr_getpid();
+  wr->pid = NRPRG(pid);
   return wr;
 }
 
