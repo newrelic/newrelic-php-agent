@@ -52,7 +52,9 @@ typedef struct _nrphpglobals_t {
 #else
   int zend_offset;          /* Zend extension offset */
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   int op_array_extension_handle; /* Zend op_array extension handle to attach agent's data to function */
+#endif
   int done_instrumentation;  /* Set to true if we have installed instrumentation
                                 handlers */
   nrtime_t expensive_min;    /* newrelic.special.expensive_node_min */

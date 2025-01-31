@@ -130,6 +130,7 @@ static nr_php_wraprec_hashmap_t* user_function_wrappers;
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   // for situation when wraprec is added after first execution of the function
   // store the wraprec in the op_array extension for the duration of the request for later lookup
   // The op_array extension slot for function may not be initialized yet because it is
@@ -139,7 +140,7 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
     ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
-
+#endif
 }
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   nruserfn_t* wraprec = NULL;
