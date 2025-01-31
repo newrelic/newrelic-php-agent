@@ -197,9 +197,13 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
     message_params.destination_name
         = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_exchange));
   } else {
-    /* For producer, this is exchange name.  Exchange name is Default in case of
-     * empty string. */
-    message_params.destination_name = ENSURE_PERSISTENCE("Default");
+    /*
+     * For producer, this is exchange name.  Exchange name is Default in case of
+     * empty string.
+     */
+    if (nr_php_is_zval_valid_string(amqp_exchange)) {
+      message_params.destination_name = ENSURE_PERSISTENCE("Default");
+    }
   }
 
   amqp_routing_key = nr_php_get_user_func_arg(3, NR_EXECUTE_ORIG_ARGS);
@@ -327,12 +331,18 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
      */
     amqp_exchange = nr_php_get_zval_object_property(*retval_ptr, "exchange");
     if (nr_php_is_zval_non_empty_string(amqp_exchange)) {
-      /* Used with consumer only; his is exchange name.  Exchange name is
+      /* Used with consumer only; this is exchange name.  Exchange name is
        * Default in case of empty string. */
       message_params.messaging_destination_publish_name
           = Z_STRVAL_P(amqp_exchange);
     } else {
-      message_params.messaging_destination_publish_name = "Default";
+      /*
+       * For consumer, this is exchange name.  Exchange name is Default in case
+       * of empty string.
+       */
+      if (nr_php_is_zval_valid_string(amqp_exchange)) {
+        message_params.messaging_destination_publish_name = "Default";
+      }
     }
 
     amqp_routing_key
@@ -373,7 +383,6 @@ end:
   UNDO_PERSISTENCE(message_params.destination_name);
 }
 NR_PHP_WRAPPER_END
-
 void nr_php_amqplib_enable() {
   /*
    * Set the UNKNOWN package first, so it doesn't overwrite what we find with
