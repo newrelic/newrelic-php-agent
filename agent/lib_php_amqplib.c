@@ -70,13 +70,9 @@
  */
 
 /*
- * Purpose : Retrieves host and port from an AMQP Connection and sets the
- * host/port values in the message_params.
+ * Purpose : Ensures the php-amqplib instrumentation gets wrapped.
  *
- * Params  : 1. PhpAmqpLib\Connection family of connections that inherit from
- * AbstractConnection
- *           2. nr_segment_message_params_t* message_params that will be
- * modified with port and host info, if available
+ * Params  : None
  *
  * Returns : None
  */
