@@ -13,7 +13,22 @@
 #define AMQP_CONSTRUCT_PARAMS_SERVER_INDEX 0
 #define AMQP_CONSTRUCT_PARAMS_PORT_INDEX 1
 
+/*
+ * Purpose : Enable the library after detection.
+ *
+ * Params  : None
+ *
+ * Returns : None
+ */
 extern void nr_aws_php_amqplib_enable();
+
+/*
+ * Purpose : Detect the version and create package and metrics.
+ *
+ * Params  : None
+ *
+ * Returns : None
+ */
 extern void nr_php_amqplib_handle_version();
 
 #endif /* LIB_PHP_AMQPLIB */
