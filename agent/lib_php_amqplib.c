@@ -8,6 +8,7 @@
  * https://github.com/php-amqplib/php-amqplib
  */
 #include "php_agent.h"
+#include "php_api_distributed_trace.h"
 #include "php_call.h"
 #include "php_hash.h"
 #include "php_wrapper.h"
@@ -16,6 +17,7 @@
 #include "util_logging.h"
 #include "lib_php_amqplib.h"
 #include "nr_segment_message.h"
+#include "nr_header.h"
 
 #define PHP_PACKAGE_NAME "php-amqplib/php-amqplib"
 
@@ -40,20 +42,17 @@
 #endif
 
 /*
- * Managing Amazon MQ for RabbitMQ engine versions
-https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html
-RabbitMQ version	End of support on Amazon MQ
-3.13 (recommended)
-3.12	March 17, 2025
-3.11	February 17, 2025
-3.10	October 15, 2024
-3.9	September 16, 2024
-
-4.0.5
-The latest release of RabbitMQ is 4.0.5. See change log for release notes. See
-RabbitMQ support timeline to find out what release series are supported.
-
-Installing RabbitMQ
+ * See here for supported Amazon MQ for RabbitMQ engine versions
+ * https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html
+ * For instance:
+ * As of Feb 2025, 3.13 (recommended)
+ *
+ * See here for latest RabbitMQ Server https://www.rabbitmq.com/docs/download
+ * For instance:
+ * As of Feb 2025, the latest release of RabbitMQ Server is 4.0.5.
+ *
+ * https://www.rabbitmq.com/tutorials/tutorial-one-php
+ * Installing RabbitMQ
  *
  * While the RabbitMQ tutorial for using with the dockerized RabbitMQ setup
  * correctly and loads the PhpAmqpLib\\Channel\\AMQPChannel class in time for
@@ -68,20 +67,31 @@ Installing RabbitMQ
  * of the AMQPChannelclass/file. The following method is thus the only way to
  * ensure the class is loaded in time for the functions to be wrapped.
  *
+ */
 
+/*
+ * Purpose : Retrieves host and port from an AMQP Connection and sets the
+ * host/port values in the message_params.
+ *
+ * Params  : 1. PhpAmqpLib\Connection family of connections that inherit from
+ * AbstractConnection
+ *           2. nr_segment_message_params_t* message_params that will be
+ * modified with port and host info, if available
+ *
+ * Returns : None
  */
 static void nr_php_amqplib_ensure_class() {
-  zval retval;
+  zval retval_dtor;
   int result = FAILURE;
 
   result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
-                            &retval, "Get nr_php_amqplib_class_exists");
+                            &retval_dtor, "Get nr_php_amqplib_class_exists");
   /*
    * We don't need to check anything else at this point. If this fails, there's
    * nothing else we can do anyway.
    */
 
-  zval_dtor(&retval);
+  zval_dtor(&retval_dtor);
 }
 
 /*
@@ -94,7 +104,7 @@ static void nr_php_amqplib_ensure_class() {
  */
 void nr_php_amqplib_handle_version() {
   char* version = NULL;
-  zval retval;
+  zval retval_dtor;
   int result = FAILURE;
 
   result = zend_eval_string(
@@ -106,12 +116,12 @@ void nr_php_amqplib_handle_version() {
       "     }"
       "     return $nr_php_amqplib_version;"
       "})();",
-      &retval, "Get nr_php_amqplib_version");
+      &retval_dtor, "Get nr_php_amqplib_version");
 
   /* See if we got a non-empty/non-null string for version. */
   if (SUCCESS == result) {
-    if (nr_php_is_zval_non_empty_string(&retval)) {
-      version = Z_STRVAL(retval);
+    if (nr_php_is_zval_non_empty_string(&retval_dtor)) {
+      version = Z_STRVAL(retval_dtor);
     }
   }
 
@@ -123,9 +133,24 @@ void nr_php_amqplib_handle_version() {
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                version);
 
-  zval_dtor(&retval);
+  zval_dtor(&retval_dtor);
 }
 
+/*
+ * Purpose : Retrieves host and port from an AMQP Connection and sets the
+ * host/port values in the message_params.
+ *
+ * Params  : 1. PhpAmqpLib\Connection family of connections that inherit from
+ * AbstractConnection
+ *           2. nr_segment_message_params_t* message_params that will be
+ * modified with port and host info, if available
+ *
+ * Returns : None
+ *
+ * See here for more information about the AbstractConnection class that all
+ * Connection classes inherit from:
+ * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Connection/AbstractConnection.php
+ */
 static inline void nr_php_amqplib_get_host_and_port(
     zval* amqp_connection,
     nr_segment_message_params_t* message_params) {
@@ -137,28 +162,332 @@ static inline void nr_php_amqplib_get_host_and_port(
     return;
   }
 
-  if (nr_php_is_zval_valid_object(amqp_connection)) {
-    connect_constructor_params
-        = nr_php_get_zval_object_property(amqp_connection, "construct_params");
-    if (nr_php_is_zval_valid_array(connect_constructor_params)) {
-      amqp_server
-          = nr_php_zend_hash_index_find(Z_ARRVAL_P(connect_constructor_params),
-                                        AMQP_CONSTRUCT_PARAMS_SERVER_INDEX);
-      if (nr_php_is_zval_non_empty_string(amqp_server)) {
-        message_params->server_address
-            = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_server));
-      }
-      amqp_port
-          = nr_php_zend_hash_index_find(Z_ARRVAL_P(connect_constructor_params),
-                                        AMQP_CONSTRUCT_PARAMS_PORT_INDEX);
-      if (IS_LONG != Z_TYPE_P((amqp_port))) {
-        message_params->server_port = Z_LVAL_P(amqp_port);
-      }
-    }
+  /* construct params are always saved to use for cloning purposes. */
+
+  if (!nr_php_is_zval_valid_object(amqp_connection)) {
+    return;
+  }
+
+  connect_constructor_params
+      = nr_php_get_zval_object_property(amqp_connection, "construct_params");
+  if (nr_php_is_zval_valid_array(connect_constructor_params)) {
+    return;
+  }
+
+  amqp_server
+      = nr_php_zend_hash_index_find(Z_ARRVAL_P(connect_constructor_params),
+                                    AMQP_CONSTRUCT_PARAMS_SERVER_INDEX);
+  if (nr_php_is_zval_non_empty_string(amqp_server)) {
+    message_params->server_address
+        = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_server));
+  }
+
+  amqp_port = nr_php_zend_hash_index_find(
+      Z_ARRVAL_P(connect_constructor_params), AMQP_CONSTRUCT_PARAMS_PORT_INDEX);
+  if (IS_LONG != Z_TYPE_P((amqp_port))) {
+    message_params->server_port = Z_LVAL_P(amqp_port);
   }
 }
 
 /*
+ * Purpose : Applies DT headers to an inbound AMQPMessage if
+ * newrelic.distributed_tracing_exclude_newrelic_header INI setting is false and
+ * if the headers don't already exist on the AMQPMessage.
+ *
+ * Params  : PhpAmqpLib\Message\AMQPMessage
+ *
+ * Returns : None
+ *
+ * Refer here for AMQPMessage:
+ * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Message/AMQPMessage.php
+ * Refer here for AMQPTable:
+ * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Wire/AMQPTable.php
+ */
+
+static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
+  zval* amqp_properties_array = NULL;
+  zval* dt_headers_zvf = NULL;
+  zval* amqp_headers_table = NULL;
+  zval* retval_set_property_zvf = NULL;
+  zval* retval_set_table_zvf = NULL;
+  zval application_headers_dtor;
+  zval key_zval_dtor;
+  zval amqp_table_retval_dtor;
+  zval* key_exists = NULL;
+  zval* amqp_table_data = NULL;
+  zend_ulong key_num = 0;
+  nr_php_string_hash_key_t* key_str = NULL;
+  zval* val = NULL;
+  int retval = FAILURE;
+
+  /*
+   * Note, this functionality can be disabled by toggling the
+   * newrelic.distributed_tracing_exclude_newrelic_header INI setting.
+   */
+
+  /*
+   * Refer here for AMQPMessage:
+   * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Message/AMQPMessage.php
+   * Refer here for AMQPTable:
+   * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Wire/AMQPTable.php
+   */
+  if (!nr_php_is_zval_valid_object(amqp_msg)) {
+    return;
+  }
+
+  amqp_properties_array
+      = nr_php_get_zval_object_property(amqp_msg, "properties");
+  if (!nr_php_is_zval_valid_array(amqp_properties_array)) {
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "AMQPMessage properties are invalid. AMQPMessage always sets "
+        "this to empty arrray by default so something is seriously wrong with "
+        "the message object. Exit.");
+    return;
+  }
+
+  /*
+   * newrelic_get_request_metadata is an internal API that will only return DT
+   * headers if newrelic.distributed_tracing_exclude_newrelic_header is false.
+   */
+  dt_headers_zvf = nr_php_call(NULL, "newrelic_get_request_metadata");
+  if (!nr_php_is_zval_valid_array(dt_headers_zvf)) {
+    nr_php_zval_free(&dt_headers_zvf);
+    return;
+  }
+
+  /*
+   * Get application+_headers string in zval form for use with nr_php_call
+   */
+  ZVAL_STRING(&application_headers_dtor, "application_headers");
+
+  /*
+   * The application_headers are stored in an encoded PhpAmqpLib\Wire\AMQPTable
+   * object
+   */
+  amqp_headers_table = nr_php_zend_hash_find(Z_ARRVAL_P(amqp_properties_array),
+                                             "application_headers");
+
+  /*
+   * If the application_headers AMQPTable object doesn't exist, we'll have to
+   * create it with an empty array.
+   */
+  if (!nr_php_is_zval_valid_object(amqp_headers_table)) {
+    retval = zend_eval_string(
+        "(function() {"
+        "     try {"
+        "          return new PhpAmqpLib\\Wire\\AMQPTable(array());"
+        "     } catch (Throwable $e) {"
+        "          return null;"
+        "     }"
+        "})();",
+        &amqp_table_retval_dtor, "newrelic.amqplib.add_empty_headers");
+
+    if (FAILURE == retval
+        || !nr_php_is_zval_valid_object(&amqp_table_retval_dtor)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "No application headers in AMQPTable, but couldn't "
+                       "create one. Exit.");
+      goto end;
+    }
+
+    /*
+     * Set the valid AMQPTable on the AMQPMessage.
+     */
+    retval_set_property_zvf = nr_php_call(
+        amqp_msg, "set", &application_headers_dtor, &amqp_table_retval_dtor);
+    if (NULL == retval_set_property_zvf) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "AMQPMessage had no application_headers AMQPTable, but "
+                       "set failed for the AMQPTable wthat was just created "
+                       "for the application headers. Unable to proceed, exit.");
+      goto end;
+    }
+    /* Should have valid AMQPTable objec on the AMQPMessage at this point. */
+    amqp_headers_table = nr_php_zend_hash_find(
+        Z_ARRVAL_P(amqp_properties_array), "application_headers");
+    if (!nr_php_is_zval_valid_object(amqp_headers_table)) {
+      nrl_info(
+          NRL_INSTRUMENT,
+          "AMQPMessage had no application_headers AMQPTable, but unable to "
+          "retrieve even after creating and setting. Unable to proceed, exit.");
+      goto end;
+    }
+  }
+
+  /*
+   * This contains the application_headers data. It is an array of
+   * key/encoded_array_val pairs.
+   */
+  amqp_table_data = nr_php_get_zval_object_property(amqp_headers_table, "data");
+
+  /*
+   * First check if it's a reference to another zval, and if so, get point to
+   * the actual zval.
+   */
+
+  if (IS_REFERENCE == Z_TYPE_P(amqp_table_data)) {
+    amqp_table_data = Z_REFVAL_P(amqp_table_data);
+  }
+  if (!nr_php_is_zval_valid_array(amqp_table_data)) {
+    /*
+     * This is a basic part of the AMQPTable, if this doesn't exist, something
+     * is seriously wrong.  Cannot proceed, exit.
+     */
+    goto end;
+  }
+
+  /*
+   * Loop through the DT Header array and set the headers in the
+   * application_header AMQPTable if they do not already exist.
+   */
+
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(dt_headers_zvf), key_num, key_str, val) {
+    (void)key_num;
+
+    if (NULL != key_str && nr_php_is_zval_valid_string(val)) {
+      key_exists
+          = nr_php_zend_hash_find(HASH_OF(amqp_table_data), ZSTR_VAL(key_str));
+      if (NULL == key_exists) {
+        /* key_str is a zend_string. It needs to be a zval to pass to
+         * nr_php_call. */
+        ZVAL_STR_COPY(&key_zval_dtor, key_str);
+        /* Key doesn't exist, so set the value in the AMQPTable. */
+        retval_set_table_zvf
+            = nr_php_call(amqp_headers_table, "set", &key_zval_dtor, val);
+
+        if (NULL == retval_set_table_zvf) {
+          nrl_verbosedebug(NRL_INSTRUMENT,
+                           "%s didn't exist in the AMQPTable, but couldn't "
+                           "set the key/val to the table.",
+                           NRSAFESTR(Z_STRVAL(key_zval_dtor)));
+        }
+        nr_php_zval_free(&retval_set_table_zvf);
+      }
+    }
+  }
+  ZEND_HASH_FOREACH_END();
+
+end:
+  nr_php_zval_free(&dt_headers_zvf);
+  nr_php_zval_free(&retval_set_property_zvf);
+  zval_ptr_dtor(&application_headers_dtor);
+  zval_ptr_dtor(&amqp_table_retval_dtor);
+  zval_ptr_dtor(&key_zval_dtor);
+}
+
+/*
+ * Purpose : Retrieve any DT headers from an inbound AMQPMessage if
+ * newrelic.distributed_tracing_exclude_newrelic_header INI setting is false
+ * and apply to txn.
+ *
+ * Params  : PhpAmqpLib\Message\AMQPMessage
+ *
+ * Returns : None
+ *
+ * Refer here for AMQPMessage:
+ * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Message/AMQPMessage.php
+ * Refer here for AMQPTable:
+ * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Wire/AMQPTable.php
+ */
+static inline void nr_php_amqplib_retrieve_dt_headers(zval* amqp_msg) {
+  zval* amqp_headers_native_data_zvf = NULL;
+  zval* amqp_properties_array = NULL;
+  zval* amqp_headers_table = NULL;
+  zval* amqp_table_data = NULL;
+  zval* dt_payload = NULL;
+  zval* traceparent = NULL;
+  zval* tracestate = NULL;
+  char* dt_payload_string = NULL;
+  char* traceparent_string = NULL;
+  char* tracestate_string = NULL;
+  zend_ulong key_num = 0;
+  nr_php_string_hash_key_t* key_str = NULL;
+  zval* val = NULL;
+  int retval = FAILURE;
+
+  /*
+   * Refer here for AMQPMessage:
+   * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Message/AMQPMessage.php
+   * Refer here for AMQPTable:
+   * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Wire/AMQPTable.php
+   */
+  if (!nr_php_is_zval_valid_object(amqp_msg)) {
+    return;
+  }
+
+  amqp_properties_array
+      = nr_php_get_zval_object_property(amqp_msg, "properties");
+  if (!nr_php_is_zval_valid_array(amqp_properties_array)) {
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "AMQPMessage properties not valid. AMQPMessage always sets "
+        "this to empty arrray by default. something seriously wrong with "
+        "the message object. Unable to proceed, Exit");
+    return;
+  }
+
+  /* PhpAmqpLib\Wire\AMQPTable object*/
+  amqp_headers_table = nr_php_zend_hash_find(Z_ARRVAL_P(amqp_properties_array),
+                                             "application_headers");
+  if (!nr_php_is_zval_valid_object(amqp_headers_table)) {
+    /* No headers here, exit. */
+    return;
+  }
+
+  /*
+   * We can't use amqp table "data" property here because while it has the
+   * correct keys, the vals are encoded arrays. We need to use getNativeData
+   * so it will decode the values for us since it formats the AMQPTable as an
+   * array of unencoded key/val pairs. */
+  amqp_headers_native_data_zvf
+      = nr_php_call(amqp_headers_table, "getNativeData");
+
+  if (!nr_php_is_zval_valid_array(amqp_headers_native_data_zvf)) {
+    nr_php_zval_free(&amqp_headers_native_data_zvf);
+    return;
+  }
+
+  dt_payload
+      = nr_php_zend_hash_find(HASH_OF(amqp_headers_native_data_zvf), NEWRELIC);
+  dt_payload_string
+      = nr_php_is_zval_valid_string(dt_payload) ? Z_STRVAL_P(dt_payload) : NULL;
+
+  traceparent = nr_php_zend_hash_find(HASH_OF(amqp_headers_native_data_zvf),
+                                      W3C_TRACEPARENT);
+  traceparent_string = nr_php_is_zval_valid_string(traceparent)
+                           ? Z_STRVAL_P(traceparent)
+                           : NULL;
+
+  tracestate = nr_php_zend_hash_find(HASH_OF(amqp_headers_native_data_zvf),
+                                     W3C_TRACESTATE);
+  tracestate_string
+      = nr_php_is_zval_valid_string(tracestate) ? Z_STRVAL_P(tracestate) : NULL;
+
+  if (NULL != dt_payload || NULL != traceparent) {
+    nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
+        dt_payload_string, traceparent_string, tracestate_string);
+
+    /*
+     * nr_php_api_accept_distributed_trace_payload_httpsafe will add the headers
+     * to the txn if there have been no other inbound/outbound headers added
+     * already.
+     */
+    nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
+                                                         "Queue");
+    nr_hashmap_destroy(&header_map);
+  }
+  nr_php_zval_free(&amqp_headers_native_data_zvf);
+
+  return;
+}
+
+/*
+ * Purpose : A wrapper to instrument the php-amqplib basic_publish.  This
+ * retrieves values to populate a message segment.  If
+ * newrelic.distributed_tracing_exclude_newrelic_header is false, it will also
+ * insert the DT headers.
+ *
  * PhpAmqpLib\Channel\AMQPChannel::basic_publish
  * Publishes a message
  *
@@ -174,6 +503,7 @@ static inline void nr_php_amqplib_get_host_and_port(
  *
  */
 NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
+  zval* amqp_msg = NULL;
   zval* amqp_exchange = NULL;
   zval* amqp_routing_key = NULL;
   zval* amqp_connection = NULL;
@@ -188,6 +518,11 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
 
   (void)wraprec;
 
+  amqp_msg = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
+  /*
+   * nr_php_amqplib_insert_dt_headers will check the validity of the object.
+   */
+  nr_php_amqplib_insert_dt_headers(amqp_msg);
   amqp_exchange = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
   if (nr_php_is_zval_non_empty_string(amqp_exchange)) {
     /*
@@ -198,8 +533,8 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
         = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_exchange));
   } else {
     /*
-     * For producer, this is exchange name.  Exchange name is Default in case of
-     * empty string.
+     * For producer, this is exchange name.  Exchange name is Default in case
+     * of empty string.
      */
     if (nr_php_is_zval_valid_string(amqp_exchange)) {
       message_params.destination_name = ENSURE_PERSISTENCE("Default");
@@ -210,7 +545,8 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
   if (nr_php_is_zval_non_empty_string(amqp_routing_key)) {
     /*
      * In PHP 7.x, the following will create a strdup in
-     * message_params.messaging_destination_routing_key that needs to be freed.
+     * message_params.messaging_destination_routing_key that needs to be
+     * freed.
      */
     message_params.messaging_destination_routing_key
         = ENSURE_PERSISTENCE(Z_STRVAL_P(amqp_routing_key));
@@ -230,10 +566,10 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
   /*
    * Now create and end the instrumented segment as a message segment.
    *
-   * By this point, it's been determined that this call will be instrumented so
-   * only create the message segment now, grab the parent segment start time,
-   * add our message segment attributes/metrics then close the newly created
-   * message segment.
+   * By this point, it's been determined that this call will be instrumented
+   * so only create the message segment now, grab the parent segment start
+   * time, add our message segment attributes/metrics then close the newly
+   * created message segment.
    */
 
   if (NULL == auto_segment) {
@@ -243,22 +579,21 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
      */
     goto end;
   }
-  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
+  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   if (NULL != message_segment) {
     /* re-use start time from auto_segment started in func_begin */
     message_segment->start_time = auto_segment->start_time;
-
     nr_segment_message_end(&message_segment, &message_params);
   }
 
 end:
   /*
-   * Because we had to strdup values to persist them beyond NR_PHP_WRAPPER_CALL,
-   * now we destroy them. There isn't a separate function to destroy all since
-   * some of the params are string literals and we don't want to strdup
-   * everything if we don't have to. RabbitMQ basic_publish PHP 7.x will only
-   * strdup server_address, destination_name, and
+   * Because we had to strdup values to persist them beyond
+   * NR_PHP_WRAPPER_CALL, now we destroy them. There isn't a separate function
+   * to destroy all since some of the params are string literals and we don't
+   * want to strdup everything if we don't have to. RabbitMQ basic_publish
+   * PHP 7.x will only strdup server_address, destination_name, and
    * messaging_destination_routing_key.
    */
   UNDO_PERSISTENCE(message_params.server_address);
@@ -268,6 +603,11 @@ end:
 NR_PHP_WRAPPER_END
 
 /*
+ * Purpose : A wrapper to instrument the php-amqplib basic_get.  This
+ * retrieves values to populate a message segment.  If
+ * newrelic.distributed_tracing_exclude_newrelic_header is false, it will also
+ * retrieve the DT headers and, if applicable, apply to the txn.
+ *
  * PhpAmqpLib\Channel\AMQPChannel::basic_get
  * Direct access to a queue if no message was available in the queue, return
  * null
@@ -337,8 +677,8 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
           = Z_STRVAL_P(amqp_exchange);
     } else {
       /*
-       * For consumer, this is exchange name.  Exchange name is Default in case
-       * of empty string.
+       * For consumer, this is exchange name.  Exchange name is Default in
+       * case of empty string.
        */
       if (nr_php_is_zval_valid_string(amqp_exchange)) {
         message_params.messaging_destination_publish_name = "Default";
@@ -353,12 +693,14 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
     }
   }
 
+  nr_php_amqplib_retrieve_dt_headers(*retval_ptr);
+
   /* Now create and end the instrumented segment as a message segment. */
   /*
-   * By this point, it's been determined that this call will be instrumented so
-   * only create the message segment now, grab the parent segment start time,
-   * add our message segment attributes/metrics then close the newly created
-   * message segment.
+   * By this point, it's been determined that this call will be instrumented
+   * so only create the message segment now, grab the parent segment start
+   * time, add our message segment attributes/metrics then close the newly
+   * created message segment.
    */
   message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
@@ -373,16 +715,17 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
 
 end:
   /*
-   * Because we had to strdup values to persist them beyond NR_PHP_WRAPPER_CALL,
-   * now we destroy them. There isn't a separate function to destroy all since
-   * some of the params are string literals and we don't want to strdup
-   * everything if we don't have to. RabbitMQ basic_get PHP 7.x will only strdup
-   * server_address and destination_name.
+   * Because we had to strdup values to persist them beyond
+   * NR_PHP_WRAPPER_CALL, now we destroy them. There isn't a separate function
+   * to destroy all since some of the params are string literals and we don't
+   * want to strdup everything if we don't have to. RabbitMQ basic_get PHP 7.x
+   * will only strdup server_address and destination_name.
    */
   UNDO_PERSISTENCE(message_params.server_address);
   UNDO_PERSISTENCE(message_params.destination_name);
 }
 NR_PHP_WRAPPER_END
+
 void nr_php_amqplib_enable() {
   /*
    * Set the UNKNOWN package first, so it doesn't overwrite what we find with
