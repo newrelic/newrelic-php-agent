@@ -77,17 +77,19 @@
  * Returns : None
  */
 static void nr_php_amqplib_ensure_class() {
-  zval retval_dtor;
+  zval retval_zpd;
   int result = FAILURE;
+//amber
+return;
 
   result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
-                            &retval_dtor, "Get nr_php_amqplib_class_exists");
+                            &retval_zpd, "Get nr_php_amqplib_class_exists");
   /*
    * We don't need to check anything else at this point. If this fails, there's
    * nothing else we can do anyway.
    */
 
-  zval_dtor(&retval_dtor);
+  zval_dtor(&retval_zpd);
 }
 
 /*
@@ -100,7 +102,7 @@ static void nr_php_amqplib_ensure_class() {
  */
 void nr_php_amqplib_handle_version() {
   char* version = NULL;
-  zval retval_dtor;
+  zval retval_zpd;
   int result = FAILURE;
 
   result = zend_eval_string(
@@ -112,12 +114,12 @@ void nr_php_amqplib_handle_version() {
       "     }"
       "     return $nr_php_amqplib_version;"
       "})();",
-      &retval_dtor, "Get nr_php_amqplib_version");
+      &retval_zpd, "Get nr_php_amqplib_version");
 
   /* See if we got a non-empty/non-null string for version. */
   if (SUCCESS == result) {
-    if (nr_php_is_zval_non_empty_string(&retval_dtor)) {
-      version = Z_STRVAL(retval_dtor);
+    if (nr_php_is_zval_non_empty_string(&retval_zpd)) {
+      version = Z_STRVAL(retval_zpd);
     }
   }
 
@@ -129,7 +131,7 @@ void nr_php_amqplib_handle_version() {
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                version);
 
-  zval_dtor(&retval_dtor);
+  zval_dtor(&retval_zpd);
 }
 
 /*
@@ -206,9 +208,9 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
   zval* amqp_headers_table = NULL;
   zval* retval_set_property_zvf = NULL;
   zval* retval_set_table_zvf = NULL;
-  zval application_headers_dtor;
-  zval key_zval_dtor;
-  zval amqp_table_retval_dtor;
+  zval application_headers_zpd;
+  zval key_zval_zpd;
+  zval amqp_table_retval_zpd;
   zval* key_exists = NULL;
   zval* amqp_table_data = NULL;
   zend_ulong key_num = 0;
@@ -255,7 +257,7 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
   /*
    * Get application+_headers string in zval form for use with nr_php_call
    */
-  ZVAL_STRING(&application_headers_dtor, "application_headers");
+  ZVAL_STRING(&application_headers_zpd, "application_headers");
 
   /*
    * The application_headers are stored in an encoded PhpAmqpLib\Wire\AMQPTable
@@ -277,10 +279,10 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
         "          return null;"
         "     }"
         "})();",
-        &amqp_table_retval_dtor, "newrelic.amqplib.add_empty_headers");
+        &amqp_table_retval_zpd, "newrelic.amqplib.add_empty_headers");
 
     if (FAILURE == retval
-        || !nr_php_is_zval_valid_object(&amqp_table_retval_dtor)) {
+        || !nr_php_is_zval_valid_object(&amqp_table_retval_zpd)) {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "No application headers in AMQPTable, but couldn't "
                        "create one. Exit.");
@@ -291,7 +293,7 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
      * Set the valid AMQPTable on the AMQPMessage.
      */
     retval_set_property_zvf = nr_php_call(
-        amqp_msg, "set", &application_headers_dtor, &amqp_table_retval_dtor);
+        amqp_msg, "set", &application_headers_zpd, &amqp_table_retval_zpd);
     if (NULL == retval_set_property_zvf) {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "AMQPMessage had no application_headers AMQPTable, but "
@@ -347,16 +349,16 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
       if (NULL == key_exists) {
         /* key_str is a zend_string. It needs to be a zval to pass to
          * nr_php_call. */
-        ZVAL_STR_COPY(&key_zval_dtor, key_str);
+        ZVAL_STR_COPY(&key_zval_zpd, key_str);
         /* Key doesn't exist, so set the value in the AMQPTable. */
         retval_set_table_zvf
-            = nr_php_call(amqp_headers_table, "set", &key_zval_dtor, val);
+            = nr_php_call(amqp_headers_table, "set", &key_zval_zpd, val);
 
         if (NULL == retval_set_table_zvf) {
           nrl_verbosedebug(NRL_INSTRUMENT,
                            "%s didn't exist in the AMQPTable, but couldn't "
                            "set the key/val to the table.",
-                           NRSAFESTR(Z_STRVAL(key_zval_dtor)));
+                           NRSAFESTR(Z_STRVAL(key_zval_zpd)));
         }
         nr_php_zval_free(&retval_set_table_zvf);
       }
@@ -367,9 +369,9 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
 end:
   nr_php_zval_free(&dt_headers_zvf);
   nr_php_zval_free(&retval_set_property_zvf);
-  zval_ptr_dtor(&application_headers_dtor);
-  zval_ptr_dtor(&amqp_table_retval_dtor);
-  zval_ptr_dtor(&key_zval_dtor);
+  zval_ptr_dtor(&application_headers_zpd);
+  zval_ptr_dtor(&amqp_table_retval_zpd);
+  zval_ptr_dtor(&key_zval_zpd);
 }
 
 /*
