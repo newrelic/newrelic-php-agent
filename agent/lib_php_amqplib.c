@@ -94,9 +94,11 @@ static void nr_php_amqplib_ensure_class() {
  * Version detection will be called pulled from PhpAmqpLib\\Package::VERSION
  * nr_php_amqplib_handle_version will automatically load the class if it isn't
  * loaded yet and then evaluate the string. To avoid the VERY unlikely but not
- * impossible fatal error if the file/class isn't loaded yet, we need to wrap
- * the call in a try/catch block and make it a lambda so that we avoid fatal
- * errors.
+ * impossible fatal error if the file/class doesn't exist, we need to wrap
+ * the call in a try/catch block and make it a lambda so that we avoid errors.
+ * This won't load the file if it doesn't exist, but by the time this is called,
+ * the existence of the php-amqplib is a known quantity so calling the following
+ * lambda will result in the PhpAmqpLib\\Package class being loaded.
  */
 void nr_php_amqplib_handle_version() {
   char* version = NULL;
