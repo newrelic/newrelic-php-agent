@@ -701,9 +701,9 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
       message_params.messaging_destination_routing_key
           = Z_STRVAL_P(amqp_routing_key);
     }
-  }
 
-  nr_php_amqplib_retrieve_dt_headers(*retval_ptr);
+    nr_php_amqplib_retrieve_dt_headers(*retval_ptr);
+  }
 
   /* Now create and end the instrumented segment as a message segment. */
   /*
