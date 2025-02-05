@@ -56,17 +56,29 @@
  *
  * While the RabbitMQ tutorial for using with the dockerized RabbitMQ setup
  * correctly and loads the PhpAmqpLib\\Channel\\AMQPChannel class in time for
- * the agent to wrap the instrumented functions, there are AWS MQ_BROKER
+ * the agent to wrap the instrumented functions, with AWS MQ_BROKER
  * specific but valid scenarios where the PhpAmqpLib\\Channel\\AMQPChannel class
- * file does not explicitly load or does not load in time, and the instrumented
+ * file does not explicitly load and the instrumented
  * functions are NEVER wrapped regardless of how many times they are called in
- * one txn.  Specifically, this centered around the very slight but impactful
- * differences when using managing the AWS MQ Broker connect vs
- * causes an explicit load of the AMQPChannel class/file and
- * PhpAmqpLib\Connection\AMQPSSLConnection which does NOT cause an explicit load
- * of the AMQPChannelclass/file. The following method is thus the only way to
- * ensure the class is loaded in time for the functions to be wrapped.
+ * one txn.
+ * Specifically, this centered around the very slight but impactful
+ * differences when using managing the AWS MQ_BROKER connect vs using the
+ * official RabbitMq Server, and this function is needed ONLY to support AWS's
+ * MQ_BROKER.
  *
+ * When connecting via SSL with rabbitmq's official server is explicitly loaded.
+ * Hoever, when connecting via SSL with an MQ_BROKER that uses RabbitMQ(using
+ * the exact same php file and with only changes in the server name for the
+ * connection), the AMQPChannel file (and therefore class), the AMQPChannel file
+ * (and therefore class) is NOT explicitly loaded.
+ *
+ * Because the very key `PhpAmqpLib/Channel/AMQPChannel.php` file never gets
+ * explicitly loaded when interacting with the AWS MQ_BROKER, the class is not
+ * automatically loaded even though it is available and can be resolved if
+ * called from within PHP.  Because of this, the instrumented functions NEVER
+ * get wrapped when connecting to the MQ_BROKER and therefore the
+ * instrumentation is never triggered.  The explicit loading of the class is
+ * needed to work with MQ_BROKER.
  */
 
 /*
