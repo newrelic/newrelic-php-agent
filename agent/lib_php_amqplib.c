@@ -89,17 +89,14 @@
  * Returns : None
  */
 static void nr_php_amqplib_ensure_class() {
-  zval retval_zpd;
   int result = FAILURE;
 
   result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
-                            &retval_zpd, "Get nr_php_amqplib_class_exists");
+                            NULL, "Get nr_php_amqplib_class_exists");
   /*
    * We don't need to check anything else at this point. If this fails, there's
    * nothing else we can do anyway.
    */
-
-  zval_dtor(&retval_zpd);
 }
 
 /*
