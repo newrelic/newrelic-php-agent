@@ -79,8 +79,6 @@
 static void nr_php_amqplib_ensure_class() {
   zval retval_zpd;
   int result = FAILURE;
-//amber
-return;
 
   result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
                             &retval_zpd, "Get nr_php_amqplib_class_exists");
@@ -93,7 +91,7 @@ return;
 }
 
 /*
- * Version detection will be called directly from PhpAmqpLib\\Package::VERSION
+ * Version detection will be called pulled from PhpAmqpLib\\Package::VERSION
  * nr_php_amqplib_handle_version will automatically load the class if it isn't
  * loaded yet and then evaluate the string. To avoid the VERY unlikely but not
  * impossible fatal error if the file/class isn't loaded yet, we need to wrap
