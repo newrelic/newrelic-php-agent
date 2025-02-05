@@ -675,7 +675,7 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
    *The retval should be an AMQPMessage. nr_php_is_zval_* ops do NULL checks
    * as well.
    */
-  if (nr_php_is_zval_valid_object(*retval_ptr)) {
+  if (NULL != retval_ptr && nr_php_is_zval_valid_object(*retval_ptr)) {
     /*
      *  Get the exchange and routing key from the AMQPMessage
      */
