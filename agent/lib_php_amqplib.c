@@ -282,11 +282,6 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
   }
 
   /*
-   * Get application+_headers string in zval form for use with nr_php_call
-   */
-  ZVAL_STRING(&application_headers_zpd, "application_headers");
-
-  /*
    * The application_headers are stored in an encoded PhpAmqpLib\Wire\AMQPTable
    * object
    */
@@ -308,18 +303,32 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
         "})();",
         &amqp_table_retval_zpd, "newrelic.amqplib.add_empty_headers");
 
-    if (FAILURE == retval
-        || !nr_php_is_zval_valid_object(&amqp_table_retval_zpd)) {
+    if (FAILURE == retval) {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "No application headers in AMQPTable, but couldn't "
                        "create one. Exit.");
       goto end;
     }
+    if (!nr_php_is_zval_valid_object(&amqp_table_retval_zpd)) {
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "No application headers in AMQPTable, but couldn't "
+                       "create one. Exit.");
+      zval_ptr_dtor(&amqp_table_retval_zpd);
+      goto end;
+    }
+    /*
+     * Get application+_headers string in zval form for use with nr_php_call
+     */
+    ZVAL_STRING(&application_headers_zpd, "application_headers");
     /*
      * Set the valid AMQPTable on the AMQPMessage.
      */
     retval_set_property_zvf = nr_php_call(
         amqp_msg, "set", &application_headers_zpd, &amqp_table_retval_zpd);
+
+    zval_ptr_dtor(&application_headers_zpd);
+    zval_ptr_dtor(&amqp_table_retval_zpd);
+
     if (NULL == retval_set_property_zvf) {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "AMQPMessage had no application_headers AMQPTable, but "
@@ -396,8 +405,6 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
 end:
   nr_php_zval_free(&dt_headers_zvf);
   nr_php_zval_free(&retval_set_property_zvf);
-  zval_ptr_dtor(&application_headers_zpd);
-  zval_ptr_dtor(&amqp_table_retval_zpd);
 }
 
 /*
