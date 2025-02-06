@@ -251,6 +251,10 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
     return;
   }
 
+  if (!NRPRG(txn)->options.distributed_tracing_enabled) {
+    return;
+  }
+
   amqp_properties_array
       = nr_php_get_zval_object_property(amqp_msg, "properties");
   if (!nr_php_is_zval_valid_array(amqp_properties_array)) {
@@ -286,9 +290,9 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
    * The application_headers are stored in an encoded PhpAmqpLib\Wire\AMQPTable
    * object
    */
+
   amqp_headers_table = nr_php_zend_hash_find(Z_ARRVAL_P(amqp_properties_array),
                                              "application_headers");
-
   /*
    * If the application_headers AMQPTable object doesn't exist, we'll have to
    * create it with an empty array.
@@ -311,7 +315,6 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
                        "create one. Exit.");
       goto end;
     }
-
     /*
      * Set the valid AMQPTable on the AMQPMessage.
      */
@@ -384,6 +387,7 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
                            NRSAFESTR(Z_STRVAL(key_zval_zpd)));
         }
         nr_php_zval_free(&retval_set_table_zvf);
+        zval_ptr_dtor(&key_zval_zpd);
       }
     }
   }
@@ -394,7 +398,6 @@ end:
   nr_php_zval_free(&retval_set_property_zvf);
   zval_ptr_dtor(&application_headers_zpd);
   zval_ptr_dtor(&amqp_table_retval_zpd);
-  zval_ptr_dtor(&key_zval_zpd);
 }
 
 /*
@@ -434,6 +437,10 @@ static inline void nr_php_amqplib_retrieve_dt_headers(zval* amqp_msg) {
    * https://github.com/php-amqplib/php-amqplib/blob/master/PhpAmqpLib/Wire/AMQPTable.php
    */
   if (!nr_php_is_zval_valid_object(amqp_msg)) {
+    return;
+  }
+
+  if (!NRPRG(txn)->options.distributed_tracing_enabled) {
     return;
   }
 
@@ -769,7 +776,7 @@ void nr_php_amqplib_enable() {
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
 
-  /* Extract the version for aws-sdk 3+ */
+  /* Extract the version */
   nr_php_amqplib_handle_version();
   nr_php_amqplib_ensure_class();
 
