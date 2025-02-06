@@ -190,7 +190,7 @@ static inline void nr_php_amqplib_get_host_and_port(
 
   amqp_port = nr_php_zend_hash_index_find(
       Z_ARRVAL_P(connect_constructor_params), AMQP_CONSTRUCT_PARAMS_PORT_INDEX);
-  if (IS_LONG == Z_TYPE_P((amqp_port))) {
+  if (nr_php_is_zval_valid_integer(amqp_port)) {
     message_params->server_port = Z_LVAL_P(amqp_port);
   }
 }
