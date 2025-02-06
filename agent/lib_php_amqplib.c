@@ -382,21 +382,21 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
       key_exists
           = nr_php_zend_hash_find(HASH_OF(amqp_table_data), ZSTR_VAL(key_str));
       if (NULL == key_exists) {
+        /* Key doesn't exist, so set the value in the AMQPTable. */
+
         /* key_str is a zend_string. It needs to be a zval to pass to
          * nr_php_call. */
         ZVAL_STR_COPY(&key_zval_zpd, key_str);
-        /* Key doesn't exist, so set the value in the AMQPTable. */
         retval_set_table_zvf
             = nr_php_call(amqp_headers_table, "set", &key_zval_zpd, val);
-
+        zval_ptr_dtor(&key_zval_zpd);
         if (NULL == retval_set_table_zvf) {
           nrl_verbosedebug(NRL_INSTRUMENT,
                            "%s didn't exist in the AMQPTable, but couldn't "
                            "set the key/val to the table.",
-                           NRSAFESTR(Z_STRVAL(key_zval_zpd)));
+                           NRSAFESTR(ZSTR_VAL(key_str)));
         }
         nr_php_zval_free(&retval_set_table_zvf);
-        zval_ptr_dtor(&key_zval_zpd);
       }
     }
   }
