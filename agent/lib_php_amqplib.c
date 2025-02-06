@@ -196,9 +196,14 @@ static inline void nr_php_amqplib_get_host_and_port(
 }
 
 /*
- * Purpose : Applies DT headers to an inbound AMQPMessage if
- * newrelic.distributed_tracing_exclude_newrelic_header INI setting is false and
- * if the headers don't already exist on the AMQPMessage.
+ * Purpose : Applies DT headers to an inbound AMQPMessage.
+ * Note:
+ * The DT header 'newrelic' will only be added if both
+ * newrelic.distributed_tracing_enabled is enabled and
+ * newrelic.distributed_tracing_exclude_newrelic_header is set to false in the
+ * INI settings. The W3C headers 'traceparent' and 'tracestate' will will only
+ * be added if newrelic.distributed_tracing_enabled is enabled in the
+ * newrelic.ini settings.
  *
  * Params  : PhpAmqpLib\Message\AMQPMessage
  *
@@ -227,8 +232,13 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
   int retval = FAILURE;
 
   /*
-   * Note, this functionality can be disabled by toggling the
-   * newrelic.distributed_tracing_exclude_newrelic_header INI setting.
+   * Note:
+   * The DT header 'newrelic' will only be added if both
+   * newrelic.distributed_tracing_enabled is enabled and
+   * newrelic.distributed_tracing_exclude_newrelic_header is set to false in the
+   * INI settings. The W3C headers 'traceparent' and 'tracestate' will will only
+   * be added if newrelic.distributed_tracing_enabled is enabled in the
+   * newrelic.ini settings.
    */
 
   /*
@@ -253,8 +263,13 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
   }
 
   /*
-   * newrelic_get_request_metadata is an internal API that will only return DT
-   * headers if newrelic.distributed_tracing_exclude_newrelic_header is false.
+   * newrelic_get_request_metadata is an internal API that will only return the
+   * DT header 'newrelic' will only be added if both
+   * newrelic.distributed_tracing_enabled is enabled and
+   * newrelic.distributed_tracing_exclude_newrelic_header is set to false in the
+   * INI settings. The W3C headers 'traceparent' and 'tracestate' will will only
+   * be returned if newrelic.distributed_tracing_enabled is enabled in the
+   * newrelic.ini settings.
    */
   dt_headers_zvf = nr_php_call(NULL, "newrelic_get_request_metadata");
   if (!nr_php_is_zval_valid_array(dt_headers_zvf)) {
@@ -490,9 +505,15 @@ static inline void nr_php_amqplib_retrieve_dt_headers(zval* amqp_msg) {
 
 /*
  * Purpose : A wrapper to instrument the php-amqplib basic_publish.  This
- * retrieves values to populate a message segment.  If
- * newrelic.distributed_tracing_exclude_newrelic_header is false, it will also
- * insert the DT headers.
+ * retrieves values to populate a message segment and insert the DT headers, if
+ * applicable.
+ *
+ * Note: The DT header 'newrelic' will only be added if both
+ * newrelic.distributed_tracing_enabled is enabled and
+ * newrelic.distributed_tracing_exclude_newrelic_header is set to false in the
+ * INI settings. The W3C headers 'traceparent' and 'tracestate' will will only
+ * be added if newrelic.distributed_tracing_enabled is enabled in the
+ * newrelic.ini settings.
  *
  * PhpAmqpLib\Channel\AMQPChannel::basic_publish
  * Publishes a message
@@ -610,8 +631,14 @@ NR_PHP_WRAPPER_END
 
 /*
  * Purpose : A wrapper to instrument the php-amqplib basic_get.  This
- * retrieves values to populate a message segment.  If
- * newrelic.distributed_tracing_exclude_newrelic_header is false, it will also
+ * retrieves values to populate a message segment.
+ * Note:
+ * The DT header 'newrelic' will only be considered if both
+ * newrelic.distributed_tracing_enabled is enabled and
+ * newrelic.distributed_tracing_exclude_newrelic_header is set to false in the
+ * INI settings. The W3C headers 'traceparent' and 'tracestate' will will only
+ * be considered if newrelic.distributed_tracing_enabled is enabled in the
+ * newrelic.ini settings. If settings are correct, it will
  * retrieve the DT headers and, if applicable, apply to the txn.
  *
  * PhpAmqpLib\Channel\AMQPChannel::basic_get
