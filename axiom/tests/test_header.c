@@ -1702,6 +1702,75 @@ static void test_account_id_from_cross_process_id(void) {
       nr_header_account_id_from_cross_process_id("10#10"));
 }
 
+static void test_nr_header_create_distributed_trace_map(void) {
+  nr_hashmap_t* header_map = NULL;
+  char* tracestate = "tracestate";
+  char* traceparent = "traceparent";
+  char* dt_payload = "newrelic";
+
+  header_map = nr_header_create_distributed_trace_map(NULL, NULL, NULL);
+  tlib_pass_if_null(
+      "NULL payload and NULL traceparent should return NULL header map",
+      header_map);
+
+  header_map = nr_header_create_distributed_trace_map(NULL, NULL, tracestate);
+  tlib_pass_if_null(
+      "NULL payload and NULL traceparent should return NULL header map",
+      header_map);
+
+  header_map = nr_header_create_distributed_trace_map(dt_payload, NULL, NULL);
+  tlib_pass_if_not_null("if valid dt_payload should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "1 header passed in so should expect headers hashmap size of 1", 1,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+
+  header_map
+      = nr_header_create_distributed_trace_map(dt_payload, traceparent, NULL);
+  tlib_pass_if_not_null("if valid dt_payload should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "2 headers passed in so should expect headers hashmap size of 2", 2,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+
+  header_map
+      = nr_header_create_distributed_trace_map(dt_payload, NULL, tracestate);
+  tlib_pass_if_not_null("if valid dt_payload should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "2 headers passed in so should expect headers hashmap size of 2", 2,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+
+  header_map = nr_header_create_distributed_trace_map(dt_payload, traceparent,
+                                                      tracestate);
+  tlib_pass_if_not_null("if valid dt_payload should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "3 headers passed in so should expect headers hashmap size of 3", 3,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+
+  header_map
+      = nr_header_create_distributed_trace_map(NULL, traceparent, tracestate);
+  tlib_pass_if_not_null("if valid traceparent should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "Two headers passed in so should expect headers hashmap size of 2", 2,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+
+  header_map = nr_header_create_distributed_trace_map(NULL, traceparent, NULL);
+  tlib_pass_if_not_null("if valid traceparent should return a header map",
+                        header_map);
+  tlib_pass_if_size_t_equal(
+      "1 header passed in so should expect headers hashmap size of 1", 1,
+      nr_hashmap_count(header_map));
+  nr_hashmap_destroy(&header_map);
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -1721,4 +1790,5 @@ void test_main(void* p NRUNUSED) {
   test_set_cat_txn();
   test_set_synthetics_txn();
   test_account_id_from_cross_process_id();
+  test_nr_header_create_distributed_trace_map();
 }
