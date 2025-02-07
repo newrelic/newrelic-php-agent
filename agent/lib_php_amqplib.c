@@ -200,11 +200,7 @@ static inline void nr_php_amqplib_get_host_and_port(
 }
 
 /*
-<<<<<<< HEAD
- * Purpose : Applies DT headers to an inbound AMQPMessage.
-=======
  * Purpose : Applies DT headers to an outbound AMQPMessage.
->>>>>>> ba45e6c624f8575435f798c92b85808924e32bfb
  * Note:
  * The DT header 'newrelic' will only be added if both
  * newrelic.distributed_tracing_enabled is enabled and
