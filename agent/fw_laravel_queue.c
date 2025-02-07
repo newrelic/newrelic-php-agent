@@ -136,7 +136,6 @@ static void nr_laravel_queue_set_cat_txn(zval* job TSRMLS_DC) {
   }
 
   if (headers.dt_payload || headers.traceparent) {
-
     nr_hashmap_t* header_map = nr_header_create_distributed_trace_map(
         headers.dt_payload, headers.traceparent, headers.tracestate);
 
@@ -225,6 +224,11 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
 
   name = nr_formatf("%s (%s:%s)", resolve_name, connection_name, queue_name);
 
+  nr_free(connection_name);
+  nr_free(resolve_name);
+  nr_free(queue_name);
+
+  /* Caller is responsible for freeing name. */
   return name;
 }
 
@@ -252,6 +256,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
 
   job = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
 
+  /* txn_name needs to be freed by the caller. */
   txn_name = nr_laravel_queue_job_txn_name(job);
 
   /*
@@ -271,6 +276,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
                     NR_OK_TO_OVERWRITE);
   }
   nr_php_arg_release(&job);
+  nr_free(txn_name);
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
@@ -317,6 +323,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
     nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
                     NR_OK_TO_OVERWRITE);
   }
+  nr_free(txn_name);
   nr_php_arg_release(&job);
   NR_PHP_WRAPPER_CALL;
 }
@@ -574,7 +581,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
      * as the first parameter.
      */
     char* connection_name = NULL;
-    char* job_name;
+    char* job_name = NULL;
     char* txn_name = NULL;
 
     connection = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
