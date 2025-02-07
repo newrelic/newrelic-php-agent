@@ -116,7 +116,7 @@ void nr_php_amqplib_handle_version() {
 
   result = zend_eval_string(
       "(function() {"
-      "     $nr_php_amqplib_version = '';"
+      "     $nr_php_amqplib_version = null;"
       "     try {"
       "          $nr_php_amqplib_version = PhpAmqpLib\\Package::VERSION;"
       "     } catch (Throwable $e) {"
@@ -126,19 +126,23 @@ void nr_php_amqplib_handle_version() {
       &retval_zpd, "Get nr_php_amqplib_version");
 
   /* See if we got a non-empty/non-null string for version. */
-  if (SUCCESS == result) {
-    if (nr_php_is_zval_non_empty_string(&retval_zpd)) {
-      version = Z_STRVAL(retval_zpd);
+  if (FAILURE == result) {
+    return;
+  }
+
+  if (nr_php_is_zval_valid_string(&retval_zpd)) {
+    version = Z_STRVAL(retval_zpd);
+  }
+
+  if (NULL != version) {
+    if (NRINI(vulnerability_management_package_detection_enabled)) {
+      /* Add php package to transaction */
+      nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
     }
-  }
 
-  if (NRINI(vulnerability_management_package_detection_enabled)) {
-    /* Add php package to transaction */
-    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                                 version);
   }
-
-  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                               version);
 
   zval_dtor(&retval_zpd);
 }
