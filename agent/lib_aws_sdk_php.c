@@ -15,9 +15,16 @@
 #include "fw_support.h"
 #include "util_logging.h"
 #include "nr_segment_message.h"
+#include "nr_segment_external.h"
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
+#define AWS_ARN_REGEX "(arn:(aws[a-zA-Z-]*)?:lambda:)?" \
+            "((?<region>[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}):)?" \
+            "((?<accountId>\\d{12}):)?" \
+            "(function:)?" \
+            "(?<functionName>[a-zA-Z0-9-\\.]+)" \
+            "(:(?<qualifier>\\$LATEST|[a-zA-Z0-9-]+))?"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
@@ -295,6 +302,167 @@ void nr_lib_aws_sdk_php_sqs_parse_queueurl(
   cloud_attrs->cloud_region = region;
 }
 
+void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
+                                      char* command_name_string,
+                                      size_t command_name_len,
+                                      NR_EXECUTE_PROTO) {
+  nr_segment_t* external_segment = NULL;
+  zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+
+  nr_segment_cloud_attrs_t cloud_attrs = {
+      .cloud_platform = "aws_lambda"
+  };
+
+  if (NULL == auto_segment) {
+    return;
+  }
+
+  if (NULL == command_name_string || 0 == command_name_len) {
+    return;
+  }
+
+  if (NULL == retval_ptr) {
+    /* Do not instrument when an exception has happened */
+    return;
+  }
+
+#define AWS_COMMAND_IS(CMD) \
+  (command_name_len == (sizeof(CMD) - 1) && nr_streq(CMD, command_name_string))
+
+  /* Determine if we instrument this command. */
+  if (AWS_COMMAND_IS("invoke")) {
+    // Command can be saved here if in the future
+    // we instrument more than 1 lambda command
+  } else {
+    return;
+  }
+#undef AWS_COMMAND_IS
+
+  /* reconstruct the ARN */
+  nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
+  if (!cloud_attrs.cloud_resource_id) {
+    /* we do not want to instrument if we cannot reconstruct the ARN */
+    return;
+  }
+
+  /*
+   * By this point, it's been determined that this call will be instrumented so
+   * only create the segment now, grab the parent segment start time, add our
+   * special segment attributes/metrics then close the newly created segment.
+   */
+  external_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  if (NULL == external_segment) {
+    return;
+  }
+  /* re-use start time from auto_segment started in func_begin */
+  external_segment->start_time = auto_segment->start_time;
+  cloud_attrs.aws_operation = command_name_string;
+
+  /* end the segment */
+  nr_segment_traces_add_cloud_attributes(external_segment, &cloud_attrs);
+  nr_segment_external_params_t external_params = {.library = "aws_sdk"};
+  zval* data = nr_php_get_zval_object_property(*retval_ptr, "data");
+  if (NULL != data && IS_ARRAY == Z_TYPE_P(data)) {
+    zval* status_code = nr_php_zend_hash_find(Z_ARRVAL_P(data), "StatusCode");
+    if (NULL != status_code && IS_LONG == Z_TYPE_P(status_code)) {
+      external_params.status = Z_LVAL_P(status_code);
+    }
+    zval* metadata = nr_php_zend_hash_find(Z_ARRVAL_P(data), "@metadata");
+    if (NULL != metadata  && IS_REFERENCE == Z_TYPE_P(metadata)
+        && IS_ARRAY == Z_TYPE_P(Z_REFVAL_P(metadata))) {
+      zval* uri = nr_php_zend_hash_find(Z_ARRVAL_P(Z_REFVAL_P(metadata)), "effectiveUri");
+      if (NULL != uri && IS_STRING == Z_TYPE_P(uri)) {
+        external_params.uri = Z_STRVAL_P(uri);
+      }
+    }
+  }
+  nr_segment_external_end(&auto_segment, &external_params);
+}
+
+void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs) {
+  zval* call_args = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
+  zval* this_obj = NR_PHP_USER_FN_THIS();
+  char* arn = NULL;
+  char* function_name = NULL;
+  char* region = NULL;
+  zval* region_zval = NULL;
+  char* qualifier = NULL;
+  zval* qualifier_zval = NULL;
+  char* accountID = NULL;
+
+  /* verify arguments */
+  if (NULL == call_args || IS_ARRAY != Z_TYPE_P(call_args)) {
+    return;
+  }
+  zval* lambda_args = nr_php_zend_hash_index_find(Z_ARRVAL_P(call_args), 0);
+  if (NULL == lambda_args || IS_ARRAY != Z_TYPE_P(lambda_args)) {
+    return;
+  }
+  zval* lambda_name = nr_php_zend_hash_find(Z_ARRVAL_P(lambda_args), "FunctionName");
+  if (NULL == lambda_name || IS_STRING != Z_TYPE_P(lambda_name)) {
+    return;
+  }
+
+  /* Compile the regex */
+  if (NULL == NRPRG(aws_arn_regex)) {
+    NRPRG(aws_arn_regex) = nr_regex_create(AWS_ARN_REGEX, 0, 0);
+  }
+
+  /* Extract all information possible from the passed lambda name via regex */
+  nr_regex_substrings_t* matches =
+      nr_regex_match_capture(NRPRG(aws_arn_regex),
+                             Z_STRVAL_P(lambda_name),
+                             Z_STRLEN_P(lambda_name));
+  function_name = nr_regex_substrings_get_named(matches, "functionName");
+  accountID = nr_regex_substrings_get_named(matches, "accountId");
+  region = nr_regex_substrings_get_named(matches, "region");
+  qualifier = nr_regex_substrings_get_named(matches, "qualifier");
+
+  /* suppliment missing information with API calls */
+  if (nr_strempty(function_name)) {
+    /*
+     * Cannot get the needed data. Function name is required in the
+     * argument, so this won't happen in normal operation
+     */
+    nr_regex_substrings_destroy(&matches);
+    return;
+  }
+  if (nr_strempty(accountID)) {
+    accountID = NRINI(aws_account_id);
+    accountID = "012345";
+  }
+  if (nr_strempty(region)) {
+    region_zval = nr_php_call(this_obj, "getRegion");
+    if (nr_php_is_zval_valid_string(region_zval)) {
+      region = Z_STRVAL_P(region_zval);
+    }
+  }
+  if (nr_strempty(qualifier)) {
+    qualifier_zval = NULL;//nr_php_call(this_obj, "getQualifier");
+    if (nr_php_is_zval_valid_string(qualifier_zval)) {
+      qualifier = Z_STRVAL_P(qualifier_zval);
+    }
+  }
+
+  if (!nr_strempty(accountID) && !nr_strempty(region)) {
+    // construct the ARN
+    if (qualifier) {
+      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s:%s",
+                       region, accountID, function_name, qualifier);
+    } else {
+      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s",
+                       region, accountID, function_name);
+    }
+
+    // Attatch the ARN
+    cloud_attrs->cloud_resource_id = arn;
+  }
+
+  nr_regex_substrings_destroy(&matches);
+  nr_php_zval_free(&region_zval);
+  nr_php_zval_free(&qualifier_zval);
+}
+
 char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
                                                NR_EXECUTE_PROTO) {
   zval* param_array = NULL;
@@ -381,6 +549,10 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
 
   if (AWS_CLASS_IS("Aws\\Sqs\\SqsClient", "SqsClient")) {
     nr_lib_aws_sdk_php_sqs_handle(auto_segment, command_name_string,
+                                  Z_STRLEN_P(command_name),
+                                  NR_EXECUTE_ORIG_ARGS);
+  } else if (AWS_CLASS_IS("Aws\\Lambda\\LambdaClient", "LambdaClient")) {
+    nr_lib_aws_sdk_php_lambda_handle(auto_segment, command_name_string,
                                   Z_STRLEN_P(command_name),
                                   NR_EXECUTE_ORIG_ARGS);
   }
@@ -566,5 +738,6 @@ void nr_aws_sdk_php_enable() {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Aws\\AwsClient::__call"), NULL, nr_aws_client_call,
       nr_aws_client_call);
+
 #endif
 }
