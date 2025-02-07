@@ -389,13 +389,13 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
         ZVAL_STR_COPY(&key_zval_zpd, key_str);
         retval_set_table_zvf
             = nr_php_call(amqp_headers_table, "set", &key_zval_zpd, val);
-        zval_ptr_dtor(&key_zval_zpd);
         if (NULL == retval_set_table_zvf) {
           nrl_verbosedebug(NRL_INSTRUMENT,
                            "%s didn't exist in the AMQPTable, but couldn't "
                            "set the key/val to the table.",
                            NRSAFESTR(ZSTR_VAL(key_str)));
         }
+        zval_ptr_dtor(&key_zval_zpd);
         nr_php_zval_free(&retval_set_table_zvf);
       }
     }
@@ -510,6 +510,7 @@ static inline void nr_php_amqplib_retrieve_dt_headers(zval* amqp_msg) {
      */
     nr_php_api_accept_distributed_trace_payload_httpsafe(NRPRG(txn), header_map,
                                                          "Queue");
+
     nr_hashmap_destroy(&header_map);
   }
   nr_php_zval_free(&amqp_headers_native_data_zvf);
@@ -543,8 +544,20 @@ static inline void nr_php_amqplib_retrieve_dt_headers(zval* amqp_msg) {
  * @throws AMQPConnectionBlockedException
  *
  */
-NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
+
+NR_PHP_WRAPPER(nr_rabbitmq_basic_publish_before) {
   zval* amqp_msg = NULL;
+  (void)wraprec;
+
+  amqp_msg = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
+  /*
+   * nr_php_amqplib_insert_dt_headers will check the validity of the object.
+   */
+  nr_php_amqplib_insert_dt_headers(amqp_msg);
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
   zval* amqp_exchange = NULL;
   zval* amqp_routing_key = NULL;
   zval* amqp_connection = NULL;
@@ -559,11 +572,15 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
 
   (void)wraprec;
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP8.0+ */
+  zval* amqp_msg = NULL;
   amqp_msg = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
   /*
    * nr_php_amqplib_insert_dt_headers will check the validity of the object.
    */
   nr_php_amqplib_insert_dt_headers(amqp_msg);
+#endif
+
   amqp_exchange = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
   if (nr_php_is_zval_non_empty_string(amqp_exchange)) {
     /*
@@ -789,8 +806,9 @@ void nr_php_amqplib_enable() {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* less than PHP8.0 */
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_publish"), NULL,
-      nr_rabbitmq_basic_publish, nr_rabbitmq_basic_publish);
+      NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_publish"),
+      nr_rabbitmq_basic_publish_before, nr_rabbitmq_basic_publish,
+      nr_rabbitmq_basic_publish);
 
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("PhpAmqpLib\\Channel\\AMQPChannel::basic_get"), NULL,
