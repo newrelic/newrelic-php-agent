@@ -126,23 +126,19 @@ void nr_php_amqplib_handle_version() {
       &retval_zpd, "Get nr_php_amqplib_version");
 
   /* See if we got a non-empty/non-null string for version. */
-  if (FAILURE == result) {
-    return;
-  }
-
-  if (nr_php_is_zval_valid_string(&retval_zpd)) {
-    version = Z_STRVAL(retval_zpd);
-  }
-
-  if (NULL != version) {
-    if (NRINI(vulnerability_management_package_detection_enabled)) {
-      /* Add php package to transaction */
-      nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+  if (SUCCESS == result) {
+    if (nr_php_is_zval_valid_string(&retval_zpd)) {
+      version = Z_STRVAL(retval_zpd);
     }
-
-    nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
-                                                 version);
   }
+
+  if (NRINI(vulnerability_management_package_detection_enabled)) {
+    /* Add php package to transaction */
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+  }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               version);
 
   zval_dtor(&retval_zpd);
 }
@@ -789,6 +785,8 @@ end:
    * want to strdup everything if we don't have to. RabbitMQ basic_get PHP 7.x
    * will only strdup server_address and destination_name.
    */
+  // amber make these peristent for all since retval of null clears the values
+  // from the cxn
   UNDO_PERSISTENCE(message_params.server_address);
   UNDO_PERSISTENCE(message_params.destination_name);
 }
