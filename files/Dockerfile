@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmcrypt-dev \
     libonig-dev \
     libpcre3 libpcre3-dev \
+# 8T protobuf code in axiom depends on libprotobuf-c library
+    libprotobuf-c-dev \
     libreadline-dev \
     libssl-dev \
     libsqlite3-dev \
@@ -52,6 +54,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     locales-all \
     netcat-openbsd \
+# needed to generate 8T protobuf code in daemon
+    protobuf-compiler \
+# needed to generate 8T protobuf code in axiom
+    protobuf-c-compiler \
     python3-yaml \
     ${PHP_USER_SPECIFIED_PACKAGES} \
     zlib1g-dev

@@ -11,17 +11,8 @@
 # It is recommended to use the VENDOR_... variables.
 #
 
-# We need to find where the project's vendored dependencies live for these
-# variables.
-ifeq (0,$(HAVE_PROTOBUF_C))
-PROTOBUF_C_PREFIX := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))../vendor)/local
-endif
-
 #
-# protobuf-c
-#
-# Note that this does not require protobuf, which is a build time dependency
-# only.
+# protobuf-c: 8T protobuf code from axiom needs protobuf-c library
 #
 PROTOBUF_C_CFLAGS := -I$(PROTOBUF_C_PREFIX)/include
 PROTOBUF_C_LDFLAGS := -L$(PROTOBUF_C_PREFIX)/lib
