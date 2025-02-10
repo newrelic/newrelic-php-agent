@@ -94,8 +94,8 @@ static void nr_php_amqplib_ensure_class() {
 
   class_entry = nr_php_find_class("phpamqplib\\channel\\amqpchannel");
   if (NULL == class_entry) {
-    result = zend_eval_string(
-        "class_exists('PhpAmqpLib\\Channel\\AMQPChannel');", NULL,
+    result = zend_eval_stringl(
+        NR_PSTR("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');"), NULL,
         "nr_php_amqplib_class_exists_channel_amqpchannel");
   }
   /*
@@ -119,15 +119,16 @@ void nr_php_amqplib_handle_version() {
   zval retval_zpd;
   int result = FAILURE;
 
-  result = zend_eval_string(
-      "(function() {"
-      "     $nr_php_amqplib_version = null;"
-      "     try {"
-      "          $nr_php_amqplib_version = PhpAmqpLib\\Package::VERSION;"
-      "     } catch (Throwable $e) {"
-      "     }"
-      "     return $nr_php_amqplib_version;"
-      "})();",
+  result = zend_eval_stringl(
+      NR_PSTR(
+          "(function() {"
+          "     $nr_php_amqplib_version = null;"
+          "     try {"
+          "          $nr_php_amqplib_version = PhpAmqpLib\\Package::VERSION;"
+          "     } catch (Throwable $e) {"
+          "     }"
+          "     return $nr_php_amqplib_version;"
+          "})();"),
       &retval_zpd, "nr_php_amqplib_get_phpamqplib_package_version");
 
   /* See if we got a non-empty/non-null string for version. */
@@ -298,14 +299,14 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
    * create it with an empty array.
    */
   if (!nr_php_is_zval_valid_object(amqp_headers_table)) {
-    retval = zend_eval_string(
-        "(function() {"
-        "     try {"
-        "          return new PhpAmqpLib\\Wire\\AMQPTable(array());"
-        "     } catch (Throwable $e) {"
-        "          return null;"
-        "     }"
-        "})();",
+    retval = zend_eval_stringl(
+        NR_PSTR("(function() {"
+                "     try {"
+                "          return new PhpAmqpLib\\Wire\\AMQPTable(array());"
+                "     } catch (Throwable $e) {"
+                "          return null;"
+                "     }"
+                "})();"),
         &amqp_table_retval_zpd, "nr_php_amqplib_create_empty_amqptable");
 
     if (FAILURE == retval) {
