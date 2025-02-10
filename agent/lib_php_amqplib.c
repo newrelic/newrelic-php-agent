@@ -91,8 +91,12 @@
 static void nr_php_amqplib_ensure_class() {
   int result = FAILURE;
 
-  result = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
-                            NULL, "Get nr_php_amqplib_class_exists");
+  class_entry = nr_php_find_class("phpamqplib\\channel\\amqpchannel");
+  if (NULL == class_entry) {
+    result
+        = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
+                           NULL, "Get nr_php_amqplib_class_exists");
+  }
   /*
    * We don't need to check anything else at this point. If this fails, there's
    * nothing else we can do anyway.
