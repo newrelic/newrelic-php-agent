@@ -331,6 +331,15 @@ static void nr_populate_message_spans(nr_span_event_t* span_event,
       segment->typed_attributes->message.messaging_system);
   nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS,
                             segment->typed_attributes->message.server_address);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY,
+      segment->typed_attributes->message.messaging_destination_routing_key);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME,
+      segment->typed_attributes->message.messaging_destination_publish_name);
+  nr_span_event_set_message_ulong(
+      span_event, NR_SPAN_MESSAGE_SERVER_PORT,
+      segment->typed_attributes->message.server_port);
 }
 
 static nr_status_t add_user_attribute_to_span_event(const char* key,
@@ -640,7 +649,10 @@ bool nr_segment_set_message(nr_segment_t* segment,
       .message_action = message->message_action,
       .destination_name = nr_strempty(message->destination_name) ? NULL: nr_strdup(message->destination_name),
       .messaging_system = nr_strempty(message->messaging_system) ? NULL: nr_strdup(message->messaging_system),
+      .messaging_destination_routing_key = nr_strempty(message->messaging_destination_routing_key) ? NULL: nr_strdup(message->messaging_destination_routing_key),
+      .messaging_destination_publish_name = nr_strempty(message->messaging_destination_publish_name) ? NULL: nr_strdup(message->messaging_destination_publish_name),
       .server_address = nr_strempty(message->server_address) ? NULL: nr_strdup(message->server_address),
+      .server_port = message->server_port,
   };
   // clang-format on
 

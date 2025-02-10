@@ -31,6 +31,9 @@ typedef struct {
   const char* cloud_resource_id;
   const char* server_address;
   const char* aws_operation;
+  char* messaging_destination_publish_name;
+  char* messaging_destination_routing_key;
+  uint64_t server_port;
 } segment_message_expecteds_t;
 
 static nr_segment_t* mock_txn_segment(void) {
@@ -86,6 +89,17 @@ static void test_message_segment(nr_segment_message_params_t* params,
   tlib_pass_if_str_equal(expecteds.test_name,
                          seg->typed_attributes->message.server_address,
                          expecteds.server_address);
+  tlib_pass_if_str_equal(
+      expecteds.test_name,
+      seg->typed_attributes->message.messaging_destination_publish_name,
+      expecteds.messaging_destination_publish_name);
+  tlib_pass_if_str_equal(
+      expecteds.test_name,
+      seg->typed_attributes->message.messaging_destination_routing_key,
+      expecteds.messaging_destination_routing_key);
+  tlib_pass_if_int_equal(expecteds.test_name,
+                         seg->typed_attributes->message.server_port,
+                         expecteds.server_port);
   nr_txn_destroy(&txn);
 }
 
@@ -927,6 +941,197 @@ static void test_segment_message_aws_operation(void) {
           .aws_operation = "sendMessage"});
 }
 
+static void test_segment_message_server_port(void) {
+  /*
+   * server port values should NOT impact the creation
+   * of metrics.
+   */
+
+  /* Test server port not set, implicitly unset */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "server port not set, implicitly unset",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .server_port = 0});
+
+  /* Test server port explicitly set to 0 (unset) */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .server_port = 0,
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "server port explicitly set to 0 (unset)",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .server_port = 0});
+
+  /* Test valid server_port */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .server_port = 1234,
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test valid aws_operation",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .server_port = 1234});
+}
+
+static void test_segment_messaging_destination_publishing_name(void) {
+  /*
+   * messaging_destination_publish_name values should NOT impact the creation
+   * of metrics.
+   */
+
+  /* Test messaging_destination_publish_name is NULL */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_publish_name = NULL,
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name
+          = "messaging_destination_publish_name is NULL, attribute "
+            "should be NULL, destination_name is used for metric/txn",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_publish_name = NULL});
+
+  /* Test destination_publishing_name is empty string */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_publish_name = "",
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name
+          = "messaging_destination_publish_name is empty string, "
+            "attribute should be NULL, destination_name is used for metric/txn",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_publish_name = NULL});
+
+  /* Test valid messaging_destination_publish_name */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_publish_name = "publish_name",
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test valid messaging_destination_publish_name is "
+                       "non-empty string, attribute should be the string, "
+                       "should be used for metric/txn",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/publish_name",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_publish_name = "publish_name"});
+}
+
+static void test_segment_messaging_destination_routing_key(void) {
+  /*
+   * messaging_destination_routing_key values should NOT impact the creation
+   * of metrics.
+   */
+
+  /* Test messaging_destination_routing_key is NULL */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_routing_key = NULL,
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "messaging_destination_routing_key is NULL, attribute "
+                       "should be NULL",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_routing_key = NULL});
+
+  /* Test messaging_destination_routing_key is empty string */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_routing_key = "",
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "messaging_destination_routing_key is empty string, "
+                       "attribute should be NULL",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_routing_key = NULL});
+
+  /* Test valid messaging_destination_routing_key */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .messaging_destination_routing_key = "key to the kingdom",
+          .library = "SQS",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_TOPIC,
+          .destination_name = "my_destination"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name = "Test valid messaging_destination_routing_key is "
+                       "non-empty string, attribute should be the string",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/SQS/all",
+          .num_metrics = 1,
+          .destination_name = "my_destination",
+          .messaging_destination_routing_key = "key to the kingdom"});
+}
+
 static void test_segment_message_parameters_enabled(void) {
   /*
    * Attributes should be set based on value of parameters_enabled.
@@ -935,6 +1140,9 @@ static void test_segment_message_parameters_enabled(void) {
   /* Test true message_parameters_enabled */
   test_message_segment(
       &(nr_segment_message_params_t){
+          .messaging_destination_routing_key = "key to the kingdom",
+          .messaging_destination_publish_name = "publish_name",
+          .server_port = 1234,
           .server_address = "localhost",
           .messaging_system = "my_system",
           .library = "SQS",
@@ -948,7 +1156,7 @@ static void test_segment_message_parameters_enabled(void) {
       true /* enable attributes */,
       (segment_message_expecteds_t){
           .test_name = "Test true message_parameters_enabled",
-          .name = "MessageBroker/SQS/Topic/Produce/Named/my_destination",
+          .name = "MessageBroker/SQS/Topic/Produce/Named/publish_name",
           .txn_rollup_metric = "MessageBroker/all",
           .library_metric = "MessageBroker/SQS/all",
           .num_metrics = 1,
@@ -958,6 +1166,9 @@ static void test_segment_message_parameters_enabled(void) {
           .messaging_system = "my_system",
           .cloud_resource_id = "my_resource_id",
           .server_address = "localhost",
+          .messaging_destination_routing_key = "key to the kingdom",
+          .server_port = 1234,
+          .messaging_destination_publish_name = "publish_name",
           .aws_operation = "sendMessage"});
 
   /*
@@ -966,6 +1177,8 @@ static void test_segment_message_parameters_enabled(void) {
    */
   test_message_segment(
       &(nr_segment_message_params_t){
+          .messaging_destination_routing_key = "key to the kingdom",
+          .server_port = 1234,
           .server_address = "localhost",
           .messaging_system = "my_system",
           .library = "SQS",
@@ -989,6 +1202,9 @@ static void test_segment_message_parameters_enabled(void) {
           .messaging_system = NULL,
           .cloud_resource_id = "my_resource_id",
           .server_address = NULL,
+          .messaging_destination_routing_key = NULL,
+          .server_port = 0,
+          .messaging_destination_publish_name = NULL,
           .aws_operation = "sendMessage"});
 }
 
@@ -1005,6 +1221,9 @@ void test_main(void* p NRUNUSED) {
   test_segment_message_messaging_system();
   test_segment_message_cloud_resource_id();
   test_segment_message_server_address();
+  test_segment_message_server_port();
+  test_segment_messaging_destination_publishing_name();
+  test_segment_messaging_destination_routing_key();
   test_segment_message_aws_operation();
   test_segment_message_parameters_enabled();
 }

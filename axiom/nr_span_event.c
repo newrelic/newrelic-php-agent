@@ -377,6 +377,42 @@ void nr_span_event_set_message(nr_span_event_t* event,
       nro_set_hash_string(event->agent_attributes, NR_ATTR_SERVER_ADDRESS,
                           new_value);
       break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY:
+      nro_set_hash_string(event->agent_attributes,
+                          NR_ATTR_MESSAGING_DESTINATION_ROUTING_KEY, new_value);
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME:
+      nro_set_hash_string(event->agent_attributes,
+                          NR_ATTR_MESSAGING_DESTINATION_PUBLISH_NAME,
+                          new_value);
+      break;
+    case NR_SPAN_MESSAGE_SERVER_PORT:
+      break;
+  }
+}
+
+void nr_span_event_set_message_ulong(nr_span_event_t* event,
+                                     nr_span_event_message_member_t member,
+                                     const uint64_t new_value) {
+  if (NULL == event || 0 == new_value) {
+    return;
+  }
+
+  switch (member) {
+    case NR_SPAN_MESSAGE_SERVER_PORT:
+      nro_set_hash_ulong(event->agent_attributes, NR_ATTR_SERVER_PORT,
+                         new_value);
+      break;
+    case NR_SPAN_MESSAGE_DESTINATION_NAME:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
+      break;
+    case NR_SPAN_MESSAGE_SERVER_ADDRESS:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME:
+      break;
   }
 }
 
@@ -535,8 +571,43 @@ const char* nr_span_event_get_message(const nr_span_event_t* event,
     case NR_SPAN_MESSAGE_SERVER_ADDRESS:
       return nro_get_hash_string(event->agent_attributes,
                                  NR_ATTR_SERVER_ADDRESS, NULL);
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY:
+      return nro_get_hash_string(event->agent_attributes,
+                                 NR_ATTR_MESSAGING_DESTINATION_ROUTING_KEY,
+                                 NULL);
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME:
+      return nro_get_hash_string(event->agent_attributes,
+                                 NR_ATTR_MESSAGING_DESTINATION_PUBLISH_NAME,
+                                 NULL);
+    case NR_SPAN_MESSAGE_SERVER_PORT:
+      break;
   }
   return NULL;
+}
+
+uint64_t nr_span_event_get_message_ulong(
+    const nr_span_event_t* event,
+    nr_span_event_message_member_t member) {
+  if (NULL == event) {
+    return 0;
+  }
+
+  switch (member) {
+    case NR_SPAN_MESSAGE_SERVER_PORT:
+      return nro_get_hash_ulong(event->agent_attributes, NR_ATTR_SERVER_PORT,
+                                NULL);
+    case NR_SPAN_MESSAGE_DESTINATION_NAME:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_SYSTEM:
+      break;
+    case NR_SPAN_MESSAGE_SERVER_ADDRESS:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY:
+      break;
+    case NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME:
+      break;
+  }
+  return 0;
 }
 
 void nr_span_event_set_attribute_user(nr_span_event_t* event,

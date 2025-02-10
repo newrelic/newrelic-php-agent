@@ -48,6 +48,9 @@ extern uint64_t nr_span_event_get_external_status(const nr_span_event_t* event);
 extern const char* nr_span_event_get_message(
     const nr_span_event_t* event,
     nr_span_event_message_member_t member);
+extern uint64_t nr_span_event_get_message_ulong(
+    const nr_span_event_t* event,
+    nr_span_event_message_member_t member);
 extern const char* nr_span_event_get_error_message(
     const nr_span_event_t* event);
 extern const char* nr_span_event_get_error_class(const nr_span_event_t* event);

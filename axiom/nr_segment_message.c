@@ -12,6 +12,7 @@
 #include "nr_segment_private.h"
 #include "util_strings.h"
 #include "util_url.h"
+#include "util_logging.h"
 
 /*
  * Purpose : Set all the typed message attributes on the segment.
@@ -39,6 +40,11 @@ static void nr_segment_message_set_attrs(
     message_attributes.destination_name = params->destination_name;
     message_attributes.messaging_system = params->messaging_system;
     message_attributes.server_address = params->server_address;
+    message_attributes.messaging_destination_routing_key
+        = params->messaging_destination_routing_key;
+    message_attributes.messaging_destination_publish_name
+        = params->messaging_destination_publish_name;
+    message_attributes.server_port = params->server_port;
   }
 
   nr_segment_set_message(segment, &message_attributes);
@@ -96,6 +102,8 @@ static char* nr_segment_message_create_metrics(
   const char* action_string = NULL;
   const char* destination_type_string = NULL;
   const char* library_string = NULL;
+  const char* final_destination_string = NULL;
+  const char* destination_string = NULL;
   char* rollup_metric = NULL;
   char* scoped_metric = NULL;
 
@@ -156,6 +164,19 @@ static char* nr_segment_message_create_metrics(
       destination_type_string = "<unknown>";
       break;
   }
+
+  destination_string = nr_strempty(message_params->destination_name)
+                           ? "<unknown>"
+                           : message_params->destination_name;
+  /*
+   * messaging_destination_publish_name is only used if it exists; In all other
+   * cases, we use the value from destination_string.
+   */
+  final_destination_string
+      = nr_strempty(message_params->messaging_destination_publish_name)
+            ? destination_string
+            : message_params->messaging_destination_publish_name;
+
   /*
    * Create the scoped metric
    * MessageBroker/{Library}/{DestinationType}/{Action}/Named/{DestinationName}
@@ -167,12 +188,9 @@ static char* nr_segment_message_create_metrics(
     scoped_metric = nr_formatf("MessageBroker/%s/%s/%s/Temp", library_string,
                                destination_type_string, action_string);
   } else {
-    scoped_metric
-        = nr_formatf("MessageBroker/%s/%s/%s/Named/%s", library_string,
-                     destination_type_string, action_string,
-                     nr_strempty(message_params->destination_name)
-                         ? "<unknown>"
-                         : message_params->destination_name);
+    scoped_metric = nr_formatf("MessageBroker/%s/%s/%s/Named/%s",
+                               library_string, destination_type_string,
+                               action_string, final_destination_string);
   }
 
   nr_segment_add_metric(segment, scoped_metric, true);

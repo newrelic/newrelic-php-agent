@@ -170,6 +170,16 @@ static void add_typed_attributes_to_buffer(nrbuf_t* buf,
                                    message->messaging_system, false);
       add_hash_key_value_to_buffer(buf, "server_address",
                                    message->server_address, false);
+      add_hash_key_value_to_buffer(buf, "messaging_destination_publish_name",
+                                   message->messaging_destination_publish_name,
+                                   false);
+      add_hash_key_value_to_buffer(buf, "messaging_destination_routing_key",
+                                   message->messaging_destination_routing_key,
+                                   false);
+      if (0 != message->server_port) {
+        add_hash_key_value_to_buffer_int(buf, "server_port",
+                                         &message->server_port);
+      }
     } break;
     case NR_SEGMENT_CUSTOM:
     default:
