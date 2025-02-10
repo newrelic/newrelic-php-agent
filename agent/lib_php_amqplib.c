@@ -90,12 +90,13 @@
  */
 static void nr_php_amqplib_ensure_class() {
   int result = FAILURE;
+  zend_class_entry* class_entry = NULL;
 
   class_entry = nr_php_find_class("phpamqplib\\channel\\amqpchannel");
   if (NULL == class_entry) {
-    result
-        = zend_eval_string("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');",
-                           NULL, "Get nr_php_amqplib_class_exists");
+    result = zend_eval_string(
+        "class_exists('PhpAmqpLib\\Channel\\AMQPChannel');", NULL,
+        "nr_php_amqplib_class_exists_channel_amqpchannel");
   }
   /*
    * We don't need to check anything else at this point. If this fails, there's
@@ -127,7 +128,7 @@ void nr_php_amqplib_handle_version() {
       "     }"
       "     return $nr_php_amqplib_version;"
       "})();",
-      &retval_zpd, "Get nr_php_amqplib_version");
+      &retval_zpd, "nr_php_amqplib_get_phpamqplib_package_version");
 
   /* See if we got a non-empty/non-null string for version. */
   if (SUCCESS == result) {
@@ -305,7 +306,7 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
         "          return null;"
         "     }"
         "})();",
-        &amqp_table_retval_zpd, "newrelic.amqplib.add_empty_headers");
+        &amqp_table_retval_zpd, "nr_php_amqplib_create_empty_amqptable");
 
     if (FAILURE == retval) {
       nrl_verbosedebug(NRL_INSTRUMENT,
