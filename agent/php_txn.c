@@ -536,6 +536,116 @@ static nrobj_t* nr_php_txn_get_labels() {
   return nr_labels_parse(NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
+static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
+                                                      const nrobj_t* value,
+                                                      void* ptr) {
+  nrobj_t* user_data = (nrobj_t*)ptr;
+
+  if (NULL == user_data) {
+    return NR_FAILURE;
+  }
+
+  nro_set_array_string(user_data, 0, key);
+
+  return NR_SUCCESS;
+}
+
+/*
+ * Purpose : Filter the labels hash to exclude any labels that are in the
+ *           newrelic.application_logging.forwarding.labels.exclude list.
+ *
+ * Params  : 1. The labels hash to filter.
+ *
+ * Returns : A new hash containing the filtered labels.
+ *           If no labels exist or all labels are excluded, then return NULL.
+ *
+ */
+
+static nrobj_t* nr_php_txn_get_log_labels(nrobj_t* labels) {
+  nrobj_t* label_keys = NULL;
+  nrobj_t* exclude_labels_list = NULL;
+  nrobj_t* exclude_labels_hash = NULL;
+  nrobj_t* log_labels = NULL;
+
+  if (NULL == labels || 0 == nro_getsize(labels)) {
+    nrl_verbosedebug(NRL_TXN, "nr_php_txn_get_log_labels(): No labels defined");
+    return NULL;
+  }
+
+  /* if logging labels are disabled then nothing to do */
+  if (0 == NRINI(log_forwarding_labels_enabled)) {
+    nrl_verbosedebug(
+        NRL_TXN, "nr_php_txn_get_log_labels(): Log forwarding labels disabled");
+    return NULL;
+  }
+
+  /* split exclude string on commas - nr_strsplit() will trim leading
+   * and trailing whitespace from each string extracted, as well as
+   * ignoring empty strings after whitespace trimming
+   */
+  exclude_labels_list
+      = nr_strsplit(NRINI(log_forwarding_labels_exclude), ",", 0);
+
+  /* convert to lowercase to support case insensitive search below
+   * will store lowercase version in a hash for more convenient lookup
+   */
+  exclude_labels_hash = nro_new(NR_OBJECT_HASH);
+  for (int i = 0; i < nro_getsize(exclude_labels_list); i++) {
+    char* label = nr_string_to_lowercase(
+        nro_get_array_string(exclude_labels_list, i + 1, NULL));
+
+    if (!nr_strempty(label)) {
+      nro_set_hash_boolean(exclude_labels_hash, label, 1);
+    }
+    nr_free(label);
+  }
+
+  /* original parsed exclude list is no longer needed */
+  nro_delete(exclude_labels_list);
+
+  /* collect label keys from existing labels */
+  label_keys = nro_new(NR_OBJECT_ARRAY);
+  nro_iteratehash(labels, nr_php_txn_collect_label_keys_iter,
+                  (void*)label_keys);
+
+  /* filter by going over the list of label keys, seeing if it exists in the
+   * exclude hash, and if it does skip it otherwise copy key/value for label
+   * to the log labels
+   */
+  log_labels = nro_new(NR_OBJECT_HASH);
+  for (int i = 0; i < nro_getsize(label_keys); i++) {
+    const char* key = nro_get_array_string(label_keys, i + 1, NULL);
+    const char* value = nro_get_hash_string(labels, key, NULL);
+    char* lower_key = nr_string_to_lowercase(key);
+    bool exclude = false;
+    nr_status_t rv;
+
+    exclude = nro_get_hash_boolean(exclude_labels_hash, lower_key, &rv);
+    if (NR_SUCCESS != rv) {
+      exclude = false;
+    }
+    if (!exclude) {
+      nro_set_hash_string(log_labels, key, value);
+    } else {
+      nrl_verbosedebug(NRL_TXN,
+                       "nr_php_txn_get_log_labels(): Excluding label %s", key);
+    }
+
+    nr_free(lower_key);
+  }
+
+  nro_delete(exclude_labels_hash);
+  nro_delete(label_keys);
+
+  /* return NULL if all labels were excluded */
+  if (0 == nro_getsize(log_labels)) {
+    nro_delete(log_labels);
+    log_labels = NULL;
+  }
+
+  return log_labels;
+}
+
 static void nr_php_txn_prepared_statement_destroy(void* sql) {
   nr_free(sql);
 }
@@ -879,6 +989,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
   info.labels = nr_php_txn_get_labels();
+  info.log_labels = nr_php_txn_get_log_labels(info.labels);
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
   info.lang = nr_strdup("php");
   info.version = nr_strdup(nr_version());
