@@ -491,6 +491,10 @@ static nr_library_table_t libraries[] = {
 
     {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
+    /* php-amqplib RabbitMQ; PHP Agent supports php-amqplib >= 3.7 */
+    {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
+     nr_php_amqplib_enable},
+    
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
