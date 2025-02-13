@@ -167,6 +167,11 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 		}
 	}
 
+	logForwardingLabels := txn.LogForwardingLabels()
+	if logForwardingLabels != nil {
+		h.LogEvents.SetLogForwardingLabels(logForwardingLabels)
+	}
+
 	if n := txn.PhpPackages(nil); n != nil {
 		h.PhpPackages.AddPhpPackagesFromData(n.Data())
 	}
