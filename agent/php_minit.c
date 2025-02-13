@@ -716,7 +716,6 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_guzzle4_minit(TSRMLS_C);
   nr_guzzle6_minit(TSRMLS_C);
   nr_laravel_minit(TSRMLS_C);
-  nr_wordpress_minit();
   nr_php_set_opcode_handlers();
 
   nrl_debug(NRL_INIT, "MINIT processing done");

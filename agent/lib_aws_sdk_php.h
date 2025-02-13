@@ -87,6 +87,11 @@ extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
 void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs);
 
 /*
+ * Purpose : Handles regex destruction during mshutdown
+ */
+void nr_aws_sdk_mshutdown(void);
+
+/*
  * Purpose : The second argument to the Aws/AwsClient::__call function should be
  * an array, the first element of which is itself an array of arguments that
  * were passed to the called function and are in name:value pairs. Given an
