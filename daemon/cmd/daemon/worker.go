@@ -124,6 +124,7 @@ func runWorker(cfg *Config) {
 	hasProgenitor := !(cfg.Foreground || cfg.WatchdogForeground)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure that the context is always cancelled when the worker exits, not only when signal is caught.
 
 	select {
 	case <-listenAndServe(ctx, cfg.BindAddr, errorChan, p, hasProgenitor):
@@ -140,7 +141,8 @@ func runWorker(cfg *Config) {
 	case caught := <-signalChan:
 		// Close the listener before sending remaining data. This ensures that the socket
 		// connection is closed as soon as possible and other processes can start listening
-		// the socket while remaining data is sent.
+		// the socket while remaining data is sent. Earlier defer cancel() will be a no-op
+		// because cancel() is called here explicitly.
 		cancel()
 		log.Infof("worker received signal %d - sending remaining data", caught)
 		p.CleanExit()

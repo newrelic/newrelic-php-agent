@@ -51,6 +51,10 @@
       tlib_pass_if_str_equal("category", "http",                             \
                              nr_span_event_get_category(evt));               \
       break;                                                                 \
+    case NR_SPAN_MESSAGE:                                                    \
+      tlib_pass_if_str_equal("category", "message",                          \
+                             nr_span_event_get_category(evt));               \
+      break;                                                                 \
     default:                                                                 \
       tlib_pass_if_true("invalid category", false, "category=%s",            \
                         nr_span_event_get_category(evt));                    \
@@ -85,6 +89,20 @@
       nr_span_event_get_external(span_event, NR_SPAN_EXTERNAL_COMPONENT));     \
   tlib_pass_if_int_equal("status", expected_status,                            \
                          nr_span_event_get_external_status(span_event));
+
+#define SPAN_EVENT_COMPARE_MESSAGE(span_event, expected_destination_name,    \
+                                   expected_messaging_system,                \
+                                   expected_server_address)                  \
+  tlib_pass_if_str_equal("messaging.destination.name",                       \
+                         expected_destination_name,                          \
+                         nr_span_event_get_message(                          \
+                             span_event, NR_SPAN_MESSAGE_DESTINATION_NAME)); \
+  tlib_pass_if_str_equal("messaging.system", expected_messaging_system,      \
+                         nr_span_event_get_message(                          \
+                             span_event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM)); \
+  tlib_pass_if_str_equal(                                                    \
+      "server.address", expected_server_address,                             \
+      nr_span_event_get_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS));
 
 static void nr_vector_span_event_dtor(void* element, void* userdata NRUNUSED) {
   nr_span_event_destroy((nr_span_event_t**)&element);
@@ -652,13 +670,15 @@ static void test_json_print_segments_invalid_typed_attributes(void) {
   nr_span_event_t* evt_root;
   nr_span_event_t* evt_a;
   nr_span_event_t* evt_b;
+  nr_span_event_t* evt_c;
 
   nrtxn_t txn = {0};
 
   // clang-format off
-  nr_segment_t root = {.txn = &txn, .start_time = 0, .stop_time = 9000};
+  nr_segment_t root = {.txn = &txn, .start_time = 0, .stop_time = 11000};
   nr_segment_t A = {.txn = &txn, .start_time = 1000, .stop_time = 6000};
   nr_segment_t B = {.txn = &txn, .start_time = 6000, .stop_time = 8000};
+  nr_segment_t C = {.txn = &txn, .start_time = 9000, .stop_time = 10000};
   // clang-format on
 
   buf = nr_buffer_create(4096, 4096);
@@ -668,20 +688,23 @@ static void test_json_print_segments_invalid_typed_attributes(void) {
   /* Mock up the transaction */
   mock_txn(&txn, &root);
   txn.abs_start_time = 1000;
-  txn.segment_count = 2;
+  txn.segment_count = 3;
 
   /* Create a collection of mock segments */
   nr_segment_children_init(&root.children);
 
   nr_segment_add_child(&root, &A);
   nr_segment_add_child(&root, &B);
+  nr_segment_add_child(&root, &C);
 
   root.name = nr_string_add(txn.trace_strings, "WebTransaction/*");
   A.name = nr_string_add(txn.trace_strings, "A");
   B.name = nr_string_add(txn.trace_strings, "B");
+  C.name = nr_string_add(txn.trace_strings, "C");
 
   A.type = NR_SEGMENT_EXTERNAL;
   B.type = NR_SEGMENT_DATASTORE;
+  C.type = NR_SEGMENT_MESSAGE;
 
   /*
    * Test : Normal operation
@@ -689,23 +712,27 @@ static void test_json_print_segments_invalid_typed_attributes(void) {
   rv = nr_segment_traces_json_print_segments(buf, span_events, NULL, NULL, &txn,
                                              &root, segment_names);
   tlib_pass_if_bool_equal("success", true, rv);
-  test_buffer_contents("datastore params", buf,
-                       "[0,9,\"`0\",{},[[1,6,"
-                       "\"`1\",{},[]],[6,8,"
-                       "\"`2\",{},[]]]]");
+  test_buffer_contents("segment attributes", buf,
+                       "[0,11,\"`0\",{},"
+                       "[[1,6,\"`1\",{},[]],"
+                       "[6,8,\"`2\",{},[]],"
+                       "[9,10,\"`3\",{},[]]]]");
 
-  tlib_pass_if_uint_equal("span event size", nr_vector_size(span_events), 3);
+  tlib_pass_if_uint_equal("span event size", nr_vector_size(span_events), 4);
 
   evt_root = (nr_span_event_t*)nr_vector_get(span_events, 0);
   evt_a = (nr_span_event_t*)nr_vector_get(span_events, 1);
   evt_b = (nr_span_event_t*)nr_vector_get(span_events, 2);
+  evt_c = (nr_span_event_t*)nr_vector_get(span_events, 3);
 
   SPAN_EVENT_COMPARE(evt_root, "WebTransaction/*", NR_SPAN_GENERIC, NULL, 1000,
-                     9000);
+                     11000);
   SPAN_EVENT_COMPARE(evt_a, "A", NR_SPAN_HTTP, evt_root, 2000, 5000);
   SPAN_EVENT_COMPARE_EXTERNAL(evt_a, NULL, NULL, NULL, 0);
   SPAN_EVENT_COMPARE(evt_b, "B", NR_SPAN_DATASTORE, evt_root, 7000, 2000);
   SPAN_EVENT_COMPARE_DATASTORE(evt_b, NULL, NULL, NULL, NULL);
+  SPAN_EVENT_COMPARE(evt_c, "C", NR_SPAN_MESSAGE, evt_root, 10000, 1000);
+  SPAN_EVENT_COMPARE_MESSAGE(evt_c, NULL, NULL, NULL);
 
   /* Clean up */
   nr_segment_children_deinit(&root.children);
@@ -713,6 +740,7 @@ static void test_json_print_segments_invalid_typed_attributes(void) {
 
   nr_segment_destroy_fields(&A);
   nr_segment_destroy_fields(&B);
+  nr_segment_destroy_fields(&C);
 
   cleanup_mock_txn(&txn);
   nr_string_pool_destroy(&segment_names);
@@ -904,7 +932,88 @@ static void test_json_print_segments_external_async_user_attrs(void) {
   nr_vector_destroy(&span_events);
 }
 
-static void test_json_print_segments_datastore_external(void) {
+static void test_json_print_segments_message_attributes(void) {
+  bool rv;
+  nrbuf_t* buf;
+  nr_vector_t* span_events;
+  nrpool_t* segment_names;
+
+  nrtxn_t txn = {0};
+
+  nr_span_event_t* evt_root;
+  nr_span_event_t* evt_a;
+
+  // clang-format off
+    nr_segment_t root = {.txn = &txn, .start_time = 0, .stop_time = 9000};
+    nr_segment_t A = {.txn = &txn, .start_time = 1000, .stop_time = 6000};
+  // clang-format on
+
+  buf = nr_buffer_create(4096, 4096);
+  span_events = nr_vector_create(9, nr_vector_span_event_dtor, NULL);
+  segment_names = nr_string_pool_create();
+
+  /* Mock up the transaction */
+  mock_txn(&txn, &root);
+  txn.abs_start_time = 1000;
+  txn.segment_count = 2;
+
+  /* Create a collection of mock segments */
+
+  /*    ------root-------
+   *     ------A------
+   */
+
+  nr_segment_children_init(&root.children);
+
+  nr_segment_add_child(&root, &A);
+
+  root.name = nr_string_add(txn.trace_strings, "WebTransaction/*");
+  A.name = nr_string_add(txn.trace_strings, "A");
+
+  A.type = NR_SEGMENT_MESSAGE;
+  A.attributes = NULL;
+  A.typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
+  A.typed_attributes->message.destination_name = nr_strdup("queue_name");
+  A.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
+  A.typed_attributes->message.server_address = nr_strdup("localhost");
+
+  /*
+   * Test : Normal operation
+   */
+  rv = nr_segment_traces_json_print_segments(buf, span_events, NULL, NULL, &txn,
+                                             &root, segment_names);
+  tlib_pass_if_bool_equal("success", true, rv);
+  test_buffer_contents("message attributes", buf,
+                       "[0,9,\"`0\",{},[[1,6,\"`1\",{"
+                       "\"destination_name\":\"queue_name\","
+                       "\"messaging_system\":\"aws_sqs\","
+                       "\"server_address\":\"localhost\""
+                       "},[]]]]");
+
+  tlib_pass_if_uint_equal("span event size", nr_vector_size(span_events), 2);
+
+  evt_root = (nr_span_event_t*)nr_vector_get(span_events, 0);
+  evt_a = (nr_span_event_t*)nr_vector_get(span_events, 1);
+
+  SPAN_EVENT_COMPARE(evt_root, "WebTransaction/*", NR_SPAN_GENERIC, NULL, 1000,
+                     9000);
+  SPAN_EVENT_COMPARE(evt_a, "A", NR_SPAN_MESSAGE, evt_root, 2000, 5000);
+  SPAN_EVENT_COMPARE_MESSAGE(evt_a, "queue_name", "aws_sqs", "localhost");
+
+  /* Clean up */
+  nr_segment_children_deinit(&root.children);
+  nr_segment_destroy_fields(&root);
+
+  nr_segment_destroy_fields(&A);
+
+  cleanup_mock_txn(&txn);
+  nr_string_pool_destroy(&segment_names);
+
+  nr_buffer_destroy(&buf);
+  nr_vector_destroy(&span_events);
+}
+
+static void test_json_print_segments_datastore_external_message(void) {
   bool rv;
   nrbuf_t* buf;
   nr_vector_t* span_events;
@@ -972,12 +1081,11 @@ static void test_json_print_segments_datastore_external(void) {
   C.typed_attributes->external.transaction_guid = nr_strdup("guid");
   C.typed_attributes->external.status = 200;
 
-  D.type = NR_SEGMENT_DATASTORE;
+  D.type = NR_SEGMENT_MESSAGE;
   D.attributes = NULL;
   D.typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
-  D.typed_attributes->datastore.sql = nr_strdup("SELECT pass");
-  D.typed_attributes->datastore.instance.host = nr_strdup("localhost");
-  D.typed_attributes->datastore.instance.database_name = nr_strdup("db");
+  D.typed_attributes->message.destination_name = nr_strdup("queue_name");
+  D.typed_attributes->message.messaging_system = nr_strdup("aws_sqs");
 
   /*
    * Test : Normal operation
@@ -999,9 +1107,8 @@ static void test_json_print_segments_datastore_external(void) {
                        "\"transaction_guid\":\"guid\","
                        "\"status\":200},[]],"
                        "[5,6,\"`4\","
-                       "{\"host\":\"localhost\","
-                       "\"database_name\":\"db\","
-                       "\"sql\":\"SELECT pass\"},[]]]]]]");
+                       "{\"destination_name\":\"queue_name\","
+                       "\"messaging_system\":\"aws_sqs\"},[]]]]]]");
 
   tlib_pass_if_uint_equal("span event size", nr_vector_size(span_events), 5);
 
@@ -1019,9 +1126,8 @@ static void test_json_print_segments_datastore_external(void) {
                                "localhost:3308");
   SPAN_EVENT_COMPARE(evt_c, "C", NR_SPAN_HTTP, evt_a, 5000, 1000);
   SPAN_EVENT_COMPARE_EXTERNAL(evt_c, "example.com", "GET", "curl", 200);
-  SPAN_EVENT_COMPARE(evt_d, "D", NR_SPAN_DATASTORE, evt_a, 6000, 1000);
-  SPAN_EVENT_COMPARE_DATASTORE(evt_d, "localhost", "db", "SELECT pass",
-                               "localhost:unknown");
+  SPAN_EVENT_COMPARE(evt_d, "D", NR_SPAN_MESSAGE, evt_a, 6000, 1000);
+  SPAN_EVENT_COMPARE_MESSAGE(evt_d, "queue_name", "aws_sqs", NULL);
 
   /* Clean up */
   nr_segment_children_deinit(&root.children);
@@ -1146,8 +1252,8 @@ static void test_json_print_segments_async_basic(void) {
    *
    * These diagrams all follow the same pattern: time is shown in seconds on
    * the first row, followed by the ROOT node, and then individual contexts
-   * with their nodes.  The "main" context indicates that no async_context will
-   * be attached to nodes in that context.
+   * with their nodes.  The "main" context indicates that no async_context
+   * will be attached to nodes in that context.
    *
    * time (s)             0    1    2    3    4    5    6    7    8    9    10
    *                           |------------------- ROOT -------------------|
@@ -1245,8 +1351,8 @@ static void test_json_print_segments_async_multi_child(void) {
 
   /*
    * Multiple children test: main context lasts the same timespan as ROOT, and
-   * spawns one child context with three nodes for part of its run time, one of
-   * which has a duplicated name.
+   * spawns one child context with three nodes for part of its run time, one
+   * of which has a duplicated name.
    *
    * time (s)             0    1    2    3    4    5    6    7    8    9    10
    *                           |------------------- ROOT -------------------|
@@ -1955,7 +2061,8 @@ static void test_json_print_segments_with_sampling_cousin_parent(void) {
   rv = nr_segment_traces_json_print_segments(buf, span_events, set, set, &txn,
                                              &root, segment_names);
   tlib_pass_if_bool_equal(
-      "Printing JSON for a sampled cousin parent tree of segments must succeed",
+      "Printing JSON for a sampled cousin parent tree of segments must "
+      "succeed",
       true, rv);
   test_buffer_contents("Cousin Parent", buf,
                        "[0,14,\"`0\",{},[[1,5,\"`1\",{},[[1,3,\"`2\",{},[]]]],["
@@ -2269,7 +2376,8 @@ static void test_json_print_segments_with_sampling_genghis_khan(void) {
   rv = nr_segment_traces_json_print_segments(buf, span_events, set, set, &txn,
                                              &root, segment_names);
   tlib_pass_if_bool_equal(
-      "Printing JSON for a genghis khan sampled tree of segments must succeed",
+      "Printing JSON for a genghis khan sampled tree of segments must "
+      "succeed",
       true, rv);
   test_buffer_contents("genghis khan", buf,
                        "[0,9,\"`0\",{},[[1,6,\"`1\",{},[]],[3,4,\"`2\",{},[]],["
@@ -2470,7 +2578,8 @@ static void test_trace_create_data_bad_parameters(void) {
                                 agent_attributes, user_attributes, intrinsics,
                                 true, false);
   tlib_pass_if_null(
-      "A transaction with more than NR_MAX_SEGMENTS segments must not succeed "
+      "A transaction with more than NR_MAX_SEGMENTS segments must not "
+      "succeed "
       "in creating "
       "a trace",
       metadata.out->trace_json);
@@ -2786,9 +2895,10 @@ void test_main(void* p NRUNUSED) {
   test_json_print_segments_hanoi();
   test_json_print_segments_three_siblings();
   test_json_print_segments_two_generations();
-  test_json_print_segments_datastore_external();
+  test_json_print_segments_datastore_external_message();
   test_json_print_segments_datastore_params();
   test_json_print_segments_external_async_user_attrs();
+  test_json_print_segments_message_attributes();
 
   test_json_print_segments_async_basic();
   test_json_print_segments_async_multi_child();

@@ -313,6 +313,35 @@ static void nr_populate_http_spans(nr_span_event_t* span_event,
                                     segment->typed_attributes->external.status);
 }
 
+static void nr_populate_message_spans(nr_span_event_t* span_event,
+                                      const nr_segment_t* segment) {
+  nr_span_event_set_category(span_event, NR_SPAN_MESSAGE);
+
+  if (nrunlikely(NULL == segment || NULL == segment->typed_attributes)) {
+    return;
+  }
+
+  nr_span_event_set_spankind(span_event,
+                             segment->typed_attributes->message.message_action);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_DESTINATION_NAME,
+      segment->typed_attributes->message.destination_name);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_MESSAGING_SYSTEM,
+      segment->typed_attributes->message.messaging_system);
+  nr_span_event_set_message(span_event, NR_SPAN_MESSAGE_SERVER_ADDRESS,
+                            segment->typed_attributes->message.server_address);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_ROUTING_KEY,
+      segment->typed_attributes->message.messaging_destination_routing_key);
+  nr_span_event_set_message(
+      span_event, NR_SPAN_MESSAGE_MESSAGING_DESTINATION_PUBLISH_NAME,
+      segment->typed_attributes->message.messaging_destination_publish_name);
+  nr_span_event_set_message_ulong(
+      span_event, NR_SPAN_MESSAGE_SERVER_PORT,
+      segment->typed_attributes->message.server_port);
+}
+
 static nr_status_t add_user_attribute_to_span_event(const char* key,
                                                     const nrobj_t* val,
                                                     void* ptr) {
@@ -431,8 +460,8 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
     nr_span_event_set_trusted_parent_id(
         event, nr_distributed_trace_inbound_get_trusted_parent_id(
                    segment->txn->distributed_trace));
-    nr_span_event_set_parent_id(event, 
-        nr_distributed_trace_inbound_get_guid(segment->txn->distributed_trace));
+    nr_span_event_set_parent_id(event, nr_distributed_trace_inbound_get_guid(
+                                           segment->txn->distributed_trace));
 
     nr_span_event_set_transaction_name(event, segment->txn->name);
 
@@ -480,6 +509,10 @@ nr_span_event_t* nr_segment_to_span_event(nr_segment_t* segment) {
 
     case NR_SEGMENT_EXTERNAL:
       nr_populate_http_spans(event, segment);
+      break;
+
+    case NR_SEGMENT_MESSAGE:
+      nr_populate_message_spans(event, segment);
       break;
 
     case NR_SEGMENT_CUSTOM:
@@ -593,6 +626,33 @@ bool nr_segment_set_external(nr_segment_t* segment,
       .library = external->library ? nr_strdup(external->library) : NULL,
       .procedure = external->procedure ? nr_strdup(external->procedure) : NULL,
       .status = external->status,
+  };
+  // clang-format on
+
+  return true;
+}
+
+bool nr_segment_set_message(nr_segment_t* segment,
+                            const nr_segment_message_t* message) {
+  if (nrunlikely((NULL == segment) || (NULL == message))) {
+    return false;
+  }
+
+  nr_segment_destroy_typed_attributes(segment->type,
+                                      &segment->typed_attributes);
+  segment->type = NR_SEGMENT_MESSAGE;
+  segment->typed_attributes = nr_zalloc(sizeof(nr_segment_typed_attributes_t));
+
+  // clang-format off
+  // Initialize the fields of the message attributes, one field per line.
+  segment->typed_attributes->message = (nr_segment_message_t){
+      .message_action = message->message_action,
+      .destination_name = nr_strempty(message->destination_name) ? NULL: nr_strdup(message->destination_name),
+      .messaging_system = nr_strempty(message->messaging_system) ? NULL: nr_strdup(message->messaging_system),
+      .messaging_destination_routing_key = nr_strempty(message->messaging_destination_routing_key) ? NULL: nr_strdup(message->messaging_destination_routing_key),
+      .messaging_destination_publish_name = nr_strempty(message->messaging_destination_publish_name) ? NULL: nr_strdup(message->messaging_destination_publish_name),
+      .server_address = nr_strempty(message->server_address) ? NULL: nr_strdup(message->server_address),
+      .server_port = message->server_port,
   };
   // clang-format on
 

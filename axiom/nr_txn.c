@@ -1221,11 +1221,15 @@ void nr_txn_create_rollup_metrics(nrtxn_t* txn) {
                          "Datastore/allOther");
     nrm_duplicate_metric(txn->unscoped_metrics, "External/all",
                          "External/allOther");
+    nrm_duplicate_metric(txn->unscoped_metrics, "MessageBroker/all",
+                         "MessageBroker/allOther");
   } else {
     nrm_duplicate_metric(txn->unscoped_metrics, "Datastore/all",
                          "Datastore/allWeb");
     nrm_duplicate_metric(txn->unscoped_metrics, "External/all",
                          "External/allWeb");
+    nrm_duplicate_metric(txn->unscoped_metrics, "MessageBroker/all",
+                         "MessageBroker/allWeb");
   }
 
   nr_string_pool_apply(
@@ -2492,11 +2496,15 @@ nr_analytics_event_t* nr_error_to_event(const nrtxn_t* txn) {
                                        "External/all", "externalDuration");
   nr_txn_add_metric_total_as_attribute(params, txn->unscoped_metrics,
                                        "Datastore/all", "databaseDuration");
+  nr_txn_add_metric_total_as_attribute(params, txn->unscoped_metrics,
+                                       "MessageBroker/all", "messageDuration");
 
   nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
                                        "Datastore/all", "databaseCallCount");
   nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
                                        "External/all", "externalCallCount");
+  nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
+                                       "MessageBroker/all", "messageCallCount");
 
   nro_set_hash_string(params, "nr.transactionGuid", nr_txn_get_guid(txn));
 
@@ -2588,6 +2596,10 @@ nrobj_t* nr_txn_event_intrinsics(const nrtxn_t* txn) {
                                        "Datastore/all", "databaseDuration");
   nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
                                        "Datastore/all", "databaseCallCount");
+  nr_txn_add_metric_total_as_attribute(params, txn->unscoped_metrics,
+                                       "MessageBroker/all", "messageDuration");
+  nr_txn_add_metric_count_as_attribute(params, txn->unscoped_metrics,
+                                       "MessageBroker/all", "messageCallCount");
 
   if (txn->options.distributed_tracing_enabled) {
     nr_txn_add_distributed_tracing_intrinsics(txn, params);

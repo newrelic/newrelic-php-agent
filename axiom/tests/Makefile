@@ -173,6 +173,7 @@ TESTS := \
   test_segment_children \
   test_segment_datastore \
   test_segment_external \
+  test_segment_message \
   test_segment_private \
   test_segment_terms \
   test_segment_traces \

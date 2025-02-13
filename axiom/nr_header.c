@@ -48,7 +48,8 @@ nr_hashmap_t* nr_header_create_distributed_trace_map(const char* nr_header,
     return NULL;
   }
 
-  header_map = nr_hashmap_create(NULL);
+  header_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_hashmap_dtor_str);
+
   if (nr_header) {
     nr_hashmap_set(header_map, NR_PSTR(NEWRELIC), nr_strdup(nr_header));
   }

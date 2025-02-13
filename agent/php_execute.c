@@ -491,6 +491,10 @@ static nr_library_table_t libraries[] = {
 
     {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
+    /* php-amqplib RabbitMQ; PHP Agent supports php-amqplib >= 3.7 */
+    {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
+     nr_php_amqplib_enable},
+    
     /*
      * The first path is for Composer installs, the second is for
      * /usr/local/bin.
@@ -1255,12 +1259,27 @@ static inline void nr_php_execute_segment_add_metric(
     bool create_metric) {
   char buf[METRIC_NAME_MAX_LEN];
 
-  nr_php_execute_metadata_metric(metadata, buf, sizeof(buf));
+/*
+   * If the name is not already set, use the metadata to get the class and
+   * function name to name the metric and the segment.
+   *
+   * If the segment name is already set, use that to name the metric.
+   */
+  if (!segment->name) {
+    nr_php_execute_metadata_metric(metadata, buf, sizeof(buf));
 
-  if (create_metric) {
-    nr_segment_add_metric(segment, buf, true);
+    if (create_metric) {
+      nr_segment_add_metric(segment, buf, true);
+    }
+    nr_segment_set_name(segment, buf);
+  } else {
+    /* Segment already named, so only create the metric with the name. */
+    if (create_metric) {
+      nr_segment_add_metric(
+          segment, nr_string_get(segment->txn->trace_strings, segment->name),
+          true);
+    }
   }
-  nr_segment_set_name(segment, buf);
 }
 
 /*

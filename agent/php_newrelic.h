@@ -596,6 +596,12 @@ nrinibool_t
 nrinibool_t
     vulnerability_management_composer_api_enabled; /* newrelic.vulnerability_management.composer_api.enabled */
 
+/*
+ * Configuration options for recording Messaging APIs
+ */
+nrinibool_t
+    message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled */
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
  * pid and user_function_wrappers are used to store user function wrappers.
