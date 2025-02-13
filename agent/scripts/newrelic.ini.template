@@ -1352,3 +1352,12 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          newrelic.span_events.attributes.include/exclude
 ;
 ;newrelic.message_tracer.segment_parameters.enabled = true
+
+; Setting: newrelic.cloud.aws.account_id
+; Type   : string
+; Scope  : per-directory
+; Default: none
+; Info   : AWS account id that is used to map entities called
+;          via the AWS SDK.
+;
+;newrelic.cloud.aws.account_id = ""
