@@ -264,8 +264,16 @@ func (rcv *Transaction) PhpPackages(obj *Event) *Event {
 	return nil
 }
 
+func (rcv *Transaction) LogForwardingLabels() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(34))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(15)
+	builder.StartObject(16)
 }
 func TransactionAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -332,6 +340,9 @@ func TransactionStartLogEventsVector(builder *flatbuffers.Builder, numElems int)
 }
 func TransactionAddPhpPackages(builder *flatbuffers.Builder, phpPackages flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(14, flatbuffers.UOffsetT(phpPackages), 0)
+}
+func TransactionAddLogForwardingLabels(builder *flatbuffers.Builder, logForwardingLabels flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(15, flatbuffers.UOffsetT(logForwardingLabels), 0)
 }
 func TransactionEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

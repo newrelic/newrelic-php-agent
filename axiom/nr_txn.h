@@ -132,6 +132,8 @@ typedef struct _nrtxnopt_t {
   size_t log_events_max_samples_stored; /* The maximum number of log events per
                                            transaction */
   bool log_metrics_enabled;             /* Whether log metrics are enabled */
+  bool log_forwarding_labels_enabled;   /* Whether labels are forwarded with log
+                                           events */
   bool message_tracer_segment_parameters_enabled; /* Determines whether to add
                                                      message attr */
 } nrtxnopt_t;
@@ -287,6 +289,8 @@ typedef struct _nrtxn_t {
   nr_analytics_events_t*
       custom_events;               /* Custom events created through the API. */
   nr_log_events_t* log_events;     /* Log events pool */
+  nrobj_t* log_forwarding_labels;  /* A hash of log labels to be added to log
+                                      events */
   nr_php_packages_t* php_packages; /* Detected php packages */
   nr_php_packages_t*
       php_package_major_version_metrics_suggestions; /* Suggested packages for
@@ -389,7 +393,8 @@ void nr_txn_enforce_security_settings(nrtxnopt_t* opts,
  */
 extern nrtxn_t* nr_txn_begin(nrapp_t* app,
                              const nrtxnopt_t* opts,
-                             const nr_attribute_config_t* attribute_config);
+                             const nr_attribute_config_t* attribute_config,
+                             const nrobj_t* log_forwarding_labels);
 
 /*
  * Purpose : End a transaction by finalizing all metrics and timers.
@@ -686,6 +691,11 @@ extern void nr_txn_record_log_event(nrtxn_t* txn,
                                     nrtime_t timestamp,
                                     nr_attributes_t* context_attributes,
                                     nrapp_t* app);
+
+/*
+ * Purpose : Check log labels forwarding configuration
+ */
+extern bool nr_txn_log_forwarding_labels_enabled(nrtxn_t* txn);
 
 /*
  * Purpose : Return the CAT trip ID for the current transaction.

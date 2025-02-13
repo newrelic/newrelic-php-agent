@@ -541,6 +541,8 @@ static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
                                                       void* ptr) {
   nrobj_t* user_data = (nrobj_t*)ptr;
 
+  (void)value;
+
   if (NULL == user_data) {
     return NR_FAILURE;
   }
@@ -561,21 +563,21 @@ static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
  *
  */
 
-static nrobj_t* nr_php_txn_get_log_labels(nrobj_t* labels) {
+static nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
   nrobj_t* label_keys = NULL;
   nrobj_t* exclude_labels_list = NULL;
   nrobj_t* exclude_labels_hash = NULL;
   nrobj_t* log_labels = NULL;
 
   if (NULL == labels || 0 == nro_getsize(labels)) {
-    nrl_verbosedebug(NRL_TXN, "nr_php_txn_get_log_labels(): No labels defined");
+    nrl_verbosedebug(NRL_TXN, "%s: No labels defined", __FUNCTION__);
     return NULL;
   }
 
   /* if logging labels are disabled then nothing to do */
   if (0 == NRINI(log_forwarding_labels_enabled)) {
-    nrl_verbosedebug(
-        NRL_TXN, "nr_php_txn_get_log_labels(): Log forwarding labels disabled");
+    nrl_verbosedebug(NRL_TXN, "%s: Log forwarding labels disabled",
+                     __FUNCTION__);
     return NULL;
   }
 
@@ -627,8 +629,7 @@ static nrobj_t* nr_php_txn_get_log_labels(nrobj_t* labels) {
     if (!exclude) {
       nro_set_hash_string(log_labels, key, value);
     } else {
-      nrl_verbosedebug(NRL_TXN,
-                       "nr_php_txn_get_log_labels(): Excluding label %s", key);
+      nrl_verbosedebug(NRL_TXN, "%s: Excluding label %s", __FUNCTION__, key);
     }
 
     nr_free(lower_key);
@@ -872,6 +873,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   nrtxnopt_t opts;
   const char* lic_to_use;
   int pfd;
+  nrobj_t* log_forwarding_labels = NULL;
   nr_attribute_config_t* attribute_config;
   nr_app_info_t info;
   bool is_cli = (0 != NR_PHP_PROCESS_GLOBALS(cli));
@@ -964,6 +966,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
+  opts.log_forwarding_labels_enabled = NRINI(log_forwarding_labels_enabled);
   opts.message_tracer_segment_parameters_enabled
       = NRINI(message_tracer_segment_parameters_enabled);
 
@@ -989,7 +992,6 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
   info.labels = nr_php_txn_get_labels();
-  info.log_labels = nr_php_txn_get_log_labels(info.labels);
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
   info.lang = nr_strdup("php");
   info.version = nr_strdup(nr_version());
@@ -1028,17 +1030,21 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       &nr_php_app_settings, NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout));
   nr_app_info_destroy_fields(&info);
 
-  if (0 == NRPRG(app)) {
+  if (NULL == NRPRG(app)) {
     nrl_debug(NRL_INIT, "unable to begin transaction: app '%.128s' is unknown",
               appnames ? appnames : "");
     return NR_FAILURE;
   }
 
   attribute_config = nr_php_create_attribute_config(TSRMLS_C);
-  NRPRG(txn) = nr_txn_begin(NRPRG(app), &opts, attribute_config);
+  log_forwarding_labels
+      = nr_php_txn_get_log_forwarding_labels(NRPRG(app)->info.labels);
+  NRPRG(txn) = nr_txn_begin(NRPRG(app), &opts, attribute_config,
+                            log_forwarding_labels);
   nrt_mutex_unlock(&(NRPRG(app)->app_lock));
 
   nr_attribute_config_destroy(&attribute_config);
+  nro_delete(log_forwarding_labels);
 
   if (0 == NRPRG(txn)) {
     nrl_debug(NRL_INIT, "no Axiom transaction this time around");

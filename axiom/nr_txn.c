@@ -35,6 +35,7 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_metrics.h"
+#include "util_object.h"
 #include "util_random.h"
 #include "util_reply.h"
 #include "util_sampling.h"
@@ -445,7 +446,8 @@ end:
 
 nrtxn_t* nr_txn_begin(nrapp_t* app,
                       const nrtxnopt_t* opts,
-                      const nr_attribute_config_t* attribute_config) {
+                      const nr_attribute_config_t* attribute_config,
+                      const nrobj_t* log_forwarding_labels) {
   nrtxn_t* nt;
   char* guid;
   nr_status_t err = 0;
@@ -541,6 +543,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
 
   nt->custom_events = nr_analytics_events_create(app->limits.custom_events);
   nt->log_events = nr_log_events_create(app->limits.log_events);
+  nt->log_forwarding_labels = nro_copy(log_forwarding_labels);
+
   nt->php_packages = nr_php_packages_create();
   nt->php_package_major_version_metrics_suggestions = nr_php_packages_create();
 
@@ -1275,6 +1279,8 @@ void nr_txn_destroy_fields(nrtxn_t* txn) {
   nr_free(txn->cat.referring_path_hash);
   nro_delete(txn->cat.alternate_path_hashes);
   nr_free(txn->cat.client_cross_process_id);
+
+  nro_delete(txn->log_forwarding_labels);
 
   nro_delete(txn->app_connect_reply);
   nr_free(txn->primary_app_name);
@@ -3367,6 +3373,14 @@ bool nr_txn_log_decorating_enabled(nrtxn_t* txn) {
   }
 
   return true;
+}
+
+bool nr_txn_log_forwarding_labels_enabled(nrtxn_t* txn) {
+  if (!nr_txn_log_forwarding_enabled(txn)) {
+    return false;
+  }
+
+  return txn->options.log_forwarding_labels_enabled;
 }
 
 #define ENSURE_LOG_LEVEL_NAME(level_name) \

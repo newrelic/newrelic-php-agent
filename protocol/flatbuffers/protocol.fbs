@@ -118,7 +118,8 @@ table Transaction {
   sampling_priority:      double;  // added in the 8.2 PHP agent release
   span_events:            [Event];
   log_events:             [Event]; // added in the 10.1 PHP agent release
-  php_packages:           Event;   // added in the ??? PHP agent release
+  php_packages:           Event;   // added in the ??? PHP agent release  <- fix agent version
+  log_forwarding_labels   Events;  // added in the ??? PHP agent release  <- rerun flatc to make sure it generates the same file - I accidentally deleted this line!
 }
 
 union MessageBody { App, AppReply, Transaction, SpanBatch }
