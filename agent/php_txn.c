@@ -777,6 +777,11 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
   nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
   nr_free(metname);
 
+  metname = nr_formatf("Supportability/Logging/Labels/PHP/%s",
+                       FMT_BOOL(nr_txn_log_forwarding_labels_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
   txn->created_logging_onetime_metrics = true;
 
 #undef FMT_BOOL
