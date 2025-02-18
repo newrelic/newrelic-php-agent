@@ -156,7 +156,7 @@ monolog3.EMERGENCY: emergency []
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__"
-        },  
+        },
         {
           "message": "emergency",
           "level": "EMERGENCY",
@@ -166,7 +166,7 @@ monolog3.EMERGENCY: emergency []
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__"
-        },        
+        },
         {
           "message": "debug",
           "level": "DEBUG",
@@ -201,7 +201,7 @@ function test_logging() {
     $stdoutHandler->setFormatter($formatter);
 
     $logger->pushHandler($stdoutHandler);
-    
+
     // insert delays between log messages to allow priority sampling
     // to resolve that later messages have higher precedence
     // since timestamps are only millisecond resolution
