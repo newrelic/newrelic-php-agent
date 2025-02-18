@@ -84,12 +84,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
-  if (!OP_ARRAY_IS_A_FILE(NR_OP_ARRAY)) {
-    nrl_verbosedebug(NRL_AGENT, "Registering Observer API handlers for user function %s",
-            NRSAFESTR(nr_php_op_array_function_name(NR_OP_ARRAY)));
-  } else {
-    nrl_verbosedebug(NRL_AGENT, "Registering Observer API handlers for file %s",
-            NRSAFESTR(nr_php_op_array_file_name(NR_OP_ARRAY)));
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
+    nr_php_show_exec("observe", execute_data, NULL);
   }
 
   wr = nr_php_get_wraprec(execute_data->func);
