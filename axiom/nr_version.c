@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is gemstones
  *
- *   goldenrod          12Dec2022 (10.4)
  *   hydrangea          18Jan2023 (10.5)
  *   impatiens          13Feb2023 (10.6)
  *   jasmine            08Mar2023 (10.7)
@@ -48,8 +47,9 @@
  *   corundum           21Oct2024 (11.3)
  *   diamond            09Dec2024 (11.4)
  *   emerald            13Jan2025 (11.5)
+ *   fluorite           18Feb2025 (11.6)
  */
-#define NR_CODENAME "fluorite"
+#define NR_CODENAME "gaspeite"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
