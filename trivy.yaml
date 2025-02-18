@@ -6,7 +6,6 @@ scan:
   scanners: 
     - vuln
     - misconfig
-  skip-dirs: vendor
 
 severities:
   - CRITICAL
