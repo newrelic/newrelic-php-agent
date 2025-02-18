@@ -107,7 +107,6 @@ static inline nruserfn_t* nr_php_get_wraprec_from_op_array_extension(const char*
 
 static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC);
 static int nr_php_show_exec_indentation(TSRMLS_D);
-static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC);
 
 /*
  * Purpose: Enable monitoring on specific functions in the framework.
@@ -606,10 +605,11 @@ static int nr_php_show_exec_indentation(TSRMLS_D) {
  * Note that this function doesn't handle internal functions, and will crash if
  * you give it one.
  */
-static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
+void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
   char argstr[NR_EXECUTE_DEBUG_STRBUFSZ];
   const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
   const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
+  const char* ctx = context ? context : "execute";
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nruserfn_t* wr = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
@@ -626,12 +626,13 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_show_execute_params(NR_EXECUTE_ORIG_ARGS, argstr TSRMLS_CC);
     nrl_verbosedebug(
         NRL_AGENT,
-        "execute: %.*s scope={%.*s} function={" NRP_FMT_UQ
+        NRP_FMT_UQ ": %.*s scope={%.*s} function={" NRP_FMT_UQ
         "}"
         " params={" NRP_FMT_UQ
         "}"
         " %.5s"
         "@ " NRP_FMT_UQ ":%d",
+        NRP_SHOW_EXEC_CONTEXT(ctx),
         nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
         NRSAFELEN(nr_php_class_entry_name_length(NR_OP_ARRAY->scope)),
         nr_php_class_entry_name(NR_OP_ARRAY->scope),
@@ -649,12 +650,13 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_show_execute_params(NR_EXECUTE_ORIG_ARGS, argstr TSRMLS_CC);
     nrl_verbosedebug(
         NRL_AGENT,
-        "execute: %.*s function={" NRP_FMT_UQ
+        NRP_FMT_UQ ": %.*s function={" NRP_FMT_UQ
         "}"
         " params={" NRP_FMT_UQ
         "}"
         " %.5s"
         "@ " NRP_FMT_UQ ":%d",
+        NRP_SHOW_EXEC_CONTEXT(ctx),
         nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
         NRP_PHP(function_name), NRP_ARGSTR(argstr),
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
@@ -667,16 +669,17 @@ static void nr_php_show_exec(NR_EXECUTE_PROTO TSRMLS_DC) {
     /*
      * file
      */
-    nrl_verbosedebug(NRL_AGENT, "execute: %.*s file={" NRP_FMT "}",
+    nrl_verbosedebug(NRL_AGENT, NRP_FMT_UQ ": %.*s file={" NRP_FMT "}",
+                     NRP_SHOW_EXEC_CONTEXT(ctx),
                      nr_php_show_exec_indentation(TSRMLS_C),
                      nr_php_indentation_spaces, NRP_FILENAME(filename));
   } else {
     /*
      * unknown
      */
-    nrl_verbosedebug(NRL_AGENT, "execute: %.*s ?",
-                     nr_php_show_exec_indentation(TSRMLS_C),
-                     nr_php_indentation_spaces);
+    nrl_verbosedebug(NRL_AGENT, NRP_FMT_UQ ": %.*s ?",
+                     NRP_SHOW_EXEC_CONTEXT(ctx),
+                     nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces);
   }
 }
 
@@ -1537,7 +1540,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
 static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
-    nr_php_show_exec(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    nr_php_show_exec("execute", NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 
   nr_php_execute_enabled(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -2175,7 +2178,7 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
   int show_executes = NR_PHP_PROCESS_GLOBALS(special_flags).show_executes;
 
   if (nrunlikely(show_executes)) {
-    nr_php_show_exec(NR_EXECUTE_ORIG_ARGS);
+    nr_php_show_exec("execute", NR_EXECUTE_ORIG_ARGS);
   }
   nr_php_instrument_func_begin(NR_EXECUTE_ORIG_ARGS);
 
