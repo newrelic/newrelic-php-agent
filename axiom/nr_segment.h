@@ -159,6 +159,8 @@ typedef struct _nr_segment_cloud_attrs_t {
                               relationship.*/
   char* cloud_account_id;  /*The cloud provider account ID. Needed for SQS
                               relationship.*/
+  char* cloud_platform;    /*The platform hosting the cloud. Needed for Lambda
+                              relationship.*/
   char* cloud_resource_id; /*Unique cloud provider identifier. For AWS, this is
                               the ARN of the AWS resource being accessed.*/
   char* aws_operation;     /*AWS specific operation name.*/

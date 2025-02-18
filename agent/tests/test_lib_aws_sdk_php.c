@@ -61,6 +61,19 @@ NR_PHP_WRAPPER(expect_arg_value_null) {
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(aws_lambda_invoke_wrapper) {
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
+  zval* expected = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
+  nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
+  (void)wraprec;
+
+  tlib_pass_if_str_equal("Expected should match reconstructed arn",
+          Z_STRVAL_P(expected),
+          cloud_attrs.cloud_resource_id);
+  NR_PHP_WRAPPER_CALL;
+}
+NR_PHP_WRAPPER_END
+
 static void test_nr_lib_aws_sdk_php_get_command_arg_value() {
   zval* expr = NULL;
   zval* first_arg = NULL;
@@ -458,6 +471,29 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
   tlib_php_request_end();
 }
 
+static void test_nr_lib_aws_sdk_php_lambda_invoke() {
+  tlib_php_engine_create("");
+  tlib_php_request_start();
+
+  tlib_php_request_eval("function lambda_invoke($a, $b) { return; }");
+  nr_php_wrap_user_function(NR_PSTR("lambda_invoke"), aws_lambda_invoke_wrapper);
+
+  char* args
+      = "array("
+        "    0 => array("
+        "        'FunctionName' => 'us-east-2:012345678901:function'"
+        "    )"
+        ")";
+  zval* array_arg = tlib_php_request_eval_expr(args);
+  char* expect = "'arn:aws:lamba:us-east-2:012345678901:function'";
+  zval* expect_arg = tlib_php_request_eval_expr(expect);
+  zval* expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   test_nr_lib_aws_sdk_php_add_supportability_service_metric();
@@ -466,6 +502,7 @@ void test_main(void* p NRUNUSED) {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   test_nr_lib_aws_sdk_php_sqs_parse_queueurl();
   test_nr_lib_aws_sdk_php_get_command_arg_value();
+  test_nr_lib_aws_sdk_php_lambda_invoke();
 #endif /* PHP 8.1+ */
 }
 #else

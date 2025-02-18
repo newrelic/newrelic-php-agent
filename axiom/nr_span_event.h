@@ -24,6 +24,7 @@
 #define NR_ATTR_CLOUD_REGION "cloud.region"
 #define NR_ATTR_CLOUD_ACCOUNT_ID "cloud.account.id"
 #define NR_ATTR_CLOUD_RESOURCE_ID "cloud.resource_id"
+#define NR_ATTR_CLOUD_PLATFORM "cloud.platform"
 #define NR_ATTR_AWS_OPERATION "aws.operation"
 
 typedef struct _nr_span_event_t nr_span_event_t;

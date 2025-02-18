@@ -658,4 +658,9 @@ extern void nr_segment_traces_add_cloud_attributes(
         segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
         NR_ATTR_AWS_OPERATION, cloud_attrs->aws_operation);
   }
+  if (!nr_strempty(cloud_attrs->cloud_platform)) {
+    nr_attributes_agent_add_string(
+        segment->attributes, NR_CLOUD_AGENT_ATTRIBUTE_DESTINATION,
+        NR_ATTR_CLOUD_PLATFORM, cloud_attrs->cloud_platform);
+  }
 }

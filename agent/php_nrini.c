@@ -3101,6 +3101,18 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      nr_enabled_disabled_dh)
 
 /*
+ * Cloud relationship settings
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.cloud.aws.account_id",
+                     "1",
+                     NR_PHP_REQUEST,
+                     nr_string_mh,
+                     aws_account_id,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+
+/*
  * Messaging API
  */
 STD_PHP_INI_ENTRY_EX("newrelic.message_tracer.segment_parameters.enabled",
