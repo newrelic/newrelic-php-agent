@@ -167,7 +167,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 		}
 	}
 
-	if n:= txn.LogForwardingLabels(nil); n != nil {
+	if n := txn.LogForwardingLabels(nil); n != nil {
 		h.LogEvents.SetLogForwardingLabels(n.Data())
 	}
 
