@@ -8,8 +8,8 @@ package newrelic
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
+	"time"
 )
 
 // LogEvents is a wrapper over AnalyticsEvents created for additional type
