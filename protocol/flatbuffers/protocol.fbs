@@ -119,7 +119,7 @@ table Transaction {
   span_events:            [Event];
   log_events:             [Event]; // added in the 10.1 PHP agent release
   php_packages:           Event;   // added in the ??? PHP agent release  <- fix agent version
-  log_forwarding_labels   Event;   // added in the ??? PHP agent release
+  log_forwarding_labels:  Event;   // added in the ??? PHP agent release
 }
 
 union MessageBody { App, AppReply, Transaction, SpanBatch }
