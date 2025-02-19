@@ -264,10 +264,15 @@ func (rcv *Transaction) PhpPackages(obj *Event) *Event {
 	return nil
 }
 
-func (rcv *Transaction) LogForwardingLabels() []byte {
+func (rcv *Transaction) LogForwardingLabels(obj *Event) *Event {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(34))
 	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+		x := rcv._tab.Indirect(o + rcv._tab.Pos)
+		if obj == nil {
+			obj = new(Event)
+		}
+		obj.Init(rcv._tab.Bytes, x)
+		return obj
 	}
 	return nil
 }
