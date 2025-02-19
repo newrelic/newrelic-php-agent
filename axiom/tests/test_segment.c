@@ -1522,7 +1522,7 @@ static void test_segment_discard_not_keep_metrics_while_running(void) {
   int metric_count;
 
   nr_memset(&opts, 0, sizeof(opts));
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   metric_count = nrm_table_size(txn->scoped_metrics);
 
@@ -1552,7 +1552,7 @@ static void test_segment_discard_keep_metrics(void) {
   nr_segment_t* E;
 
   nr_memset(&opts, 0, sizeof(opts));
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /* Build a mock tree of segments with metrics
    *
@@ -1629,7 +1629,7 @@ static void test_segment_discard_keep_metrics_while_running(void) {
   nr_segment_t* E;
 
   nr_memset(&opts, 0, sizeof(opts));
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /* Build a mock tree of segments with metrics
    *
@@ -1746,7 +1746,7 @@ static void test_segment_discard_keep_metrics_no_exclusive(void) {
    */
   opts.max_segments = 1000;
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /* Build a mock tree of segments with metrics
    *
@@ -2351,7 +2351,7 @@ static void test_segment_ensure_id(void) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.distributed_tracing_enabled = 1;
   opts.span_events_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, txn->segment_root, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
 
@@ -2548,7 +2548,7 @@ static void test_segment_to_span_event(void) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.distributed_tracing_enabled = 1;
   opts.span_events_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, txn->segment_root, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   nr_txn_set_string_attribute(txn, nr_txn_request_method, "GET");
@@ -2887,7 +2887,7 @@ static void test_segment_record_exception(void) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.distributed_tracing_enabled = 1;
   opts.span_events_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, NULL, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   txn->options.allow_raw_exception_messages = 1;
