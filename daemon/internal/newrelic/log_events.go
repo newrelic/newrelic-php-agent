@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"time"
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 // LogEvents is a wrapper over AnalyticsEvents created for additional type
@@ -41,7 +42,10 @@ func (events *LogEvents) AddEventFromData(data []byte, priority SamplingPriority
 // labels are added to the log events when the events are sent to the
 // collector.
 func (events *LogEvents) SetLogForwardingLabels(data []byte) {
-	json.Unmarshal(data, &events.LogForwardingLabels)
+	err := json.Unmarshal(data, &events.LogForwardingLabels)
+	if nil != err {
+		log.Errorf("failed to unmarshal log labels json", err)
+	}
 }
 
 // FailedHarvest is a callback invoked by the processor when an
