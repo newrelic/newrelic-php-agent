@@ -8,7 +8,6 @@ package newrelic
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 	"time"
 )
 
