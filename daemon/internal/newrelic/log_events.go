@@ -42,10 +42,7 @@ func (events *LogEvents) AddEventFromData(data []byte, priority SamplingPriority
 // labels are added to the log events when the events are sent to the
 // collector.
 func (events *LogEvents) SetLogForwardingLabels(data []byte) {
-	err := json.Unmarshal(data, &events.LogForwardingLabels)
-	if err != nil {
-		log.Warnf("Error unmarshalling log forwarding labels: %v", err)
-	}
+	json.Unmarshal(data, &events.LogForwardingLabels)
 }
 
 // FailedHarvest is a callback invoked by the processor when an
