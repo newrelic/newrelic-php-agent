@@ -208,15 +208,22 @@ static uint32_t nr_txndata_prepend_log_forwarding_labels(nr_flatbuffer_t* fb,
                                                          nrobj_t* log_labels) {
   char* json;
   nrobj_t* labels;
-  uint32_t offset;
+  uint32_t data;
 
   labels = nr_labels_connector_format(log_labels);
   json = nro_to_json(labels);
-  offset = nr_flatbuffers_prepend_string(fb, json);
   nro_delete(labels);
+
+  if (NULL == json) {
+    return 0;
+  }
+
+  data = nr_flatbuffers_prepend_string(fb, json);
   nr_free(json);
 
-  return offset;
+  nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
+  nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
+  return nr_flatbuffers_object_end(fb);
 }
 
 uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
