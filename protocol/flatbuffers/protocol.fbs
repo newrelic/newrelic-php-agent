@@ -118,7 +118,7 @@ table Transaction {
   sampling_priority:      double;  // added in the 8.2 PHP agent release
   span_events:            [Event];
   log_events:             [Event]; // added in the 10.1 PHP agent release
-  php_packages:           Event;   // added in the ??? PHP agent release  <- fix agent version
+  php_packages:           Event;   // added in the 10.17 PHP agent release
   log_forwarding_labels:  Event;   // added in the ??? PHP agent release
 }
 
