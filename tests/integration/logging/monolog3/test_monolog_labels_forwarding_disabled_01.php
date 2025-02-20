@@ -5,8 +5,15 @@
  */
 
 /*DESCRIPTION
-Test that monolog3 instrumentation uses default log level filter
-if an invalid log level is passed to config option.
+Test that Monolog3 instrumentation will NOT forward logs with labels when:
+  - logging and log forwarding are enabled
+  - label forwarding is disabled
+  - newrelic.labels set to "label1:value1;label2:value2"
+  - default value for label exclusion rule
+
+Expect:
+  - NO labels to be forwarded with the log events in the "common" attribute
+  - "Supportability/Logging/Labels/PHP/disabled" to exist and have a value of 1
 */
 
 /*SKIPIF
@@ -21,7 +28,9 @@ newrelic.application_logging.enabled = true
 newrelic.application_logging.forwarding.enabled = true
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
-newrelic.application_logging.forwarding.log_level = INVALID
+newrelic.application_logging.forwarding.log_level = DEBUG
+newrelic.application_logging.forwarding.labels.enabled = false
+newrelic.labels = "label1:value1;label2:value2"
 */
 
 /*EXPECT
@@ -43,7 +52,6 @@ monolog3.EMERGENCY: emergency []
   [
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/Forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines"},                                                   [8, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/ALERT"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/CRITICAL"},                                          [1, "??", "??", "??", "??", "??"]],
@@ -57,12 +65,12 @@ monolog3.EMERGENCY: emergency []
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/PHP/package/monolog/monolog/3/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
@@ -76,16 +84,6 @@ monolog3.EMERGENCY: emergency []
         "attributes": {}
       },
       "logs": [
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
         {
           "message": "error",
           "level": "ERROR",
@@ -105,7 +103,47 @@ monolog3.EMERGENCY: emergency []
           "entity.guid": "??",
           "entity.name": "tests/integration/logging/monolog3__FILE__",
           "hostname": "__HOST__"
-        }, 
+        },
+        {
+          "message": "notice",
+          "level": "NOTICE",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "warning",
+          "level": "WARNING",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "info",
+          "level": "INFO",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },
+        {
+          "message": "alert",
+          "level": "ALERT",
+          "timestamp": "??",
+          "trace.id": "??",
+          "span.id": "??",
+          "entity.guid": "??",
+          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "hostname": "__HOST__"
+        },  
         {
           "message": "emergency",
           "level": "EMERGENCY",
@@ -117,8 +155,8 @@ monolog3.EMERGENCY: emergency []
           "hostname": "__HOST__"
         },        
         {
-          "message": "warning",
-          "level": "WARNING",
+          "message": "debug",
+          "level": "DEBUG",
           "timestamp": "??",
           "trace.id": "??",
           "span.id": "??",

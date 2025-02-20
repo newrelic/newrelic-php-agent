@@ -49,7 +49,8 @@ monolog3.DEBUG: debug []
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]]
+    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -96,7 +97,7 @@ monolog3.DEBUG: debug []
       },
       {},
       {
-        "code.lineno": 314,
+        "code.lineno": 332,
         "code.namespace":"Monolog\\Logger",
         "code.filepath": "??",
         "code.function": "addRecord"
