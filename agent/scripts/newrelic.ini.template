@@ -1320,11 +1320,9 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Scope  : per-directory
 ; Default: ""
 ; Info   : A list of labels to NOT add as attributes to logs which are forwarded
-;          to New Relic.  This list can be separated by spaces or commas.
+;          to New Relic.  This list can be separated by commas.
 ;
 ;          Ex:
-;             newrelic.application_logging.forwarding.labels.exclude = "label1 label2"
-;           or
 ;             newrelic.application_logging.forwarding.labels.exclude = "label1, label2"
 ;
 ;newrelic.application_logging.forwarding.labels.exclude = ""
