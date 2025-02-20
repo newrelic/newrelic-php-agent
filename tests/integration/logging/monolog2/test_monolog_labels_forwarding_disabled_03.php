@@ -5,12 +5,16 @@
  */
 
 /*DESCRIPTION
-Test that Monolog2 instrumentation filters context data for mixed rules (global and logging):
-Extra Test 4: 
-   include = "A*"
-   exclude = "*, *, *"
-   input = "AA" "AB" "AC" "BB"
-   expect = "AA" "AB" "AC"
+Test that Monolog2 instrumentation will NOT forward logs with labels when:
+  - logging is disabled
+  - log forwarding is enabled
+  - label forwarding is enabled
+  - newrelic.labels set to "label1:value1;label2:value2"
+  - default value for label exclusion rule
+
+Expect:
+  - NO labels to be forwarded with the log events in the "common" attribute
+  - "Supportability/Logging/Labels/PHP/disabled" to exist and have a value of 1
 */
 
 /*SKIPIF
@@ -21,20 +25,25 @@ require('skipif.inc');
 */
 
 /*INI
-newrelic.application_logging.enabled = true
+newrelic.application_logging.enabled = false
 newrelic.application_logging.forwarding.enabled = true
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
-newrelic.application_logging.forwarding.context_data.enabled = 1
-newrelic.attributes.include = "A*"
-newrelic.application_logging.forwarding.context_data.exclude = "*, *, *"
+newrelic.application_logging.forwarding.labels.enabled = false
+newrelic.labels = "label1:value1;label2:value2"
 */
 
 /*EXPECT
-monolog2.DEBUG: AA AB AC converted {"AA":"AA value","AB":"AB value","AC":"AC value","BB":"BB value"}
+monolog2.DEBUG: debug []
+monolog2.INFO: info []
+monolog2.NOTICE: notice []
+monolog2.WARNING: warning []
+monolog2.ERROR: error []
+monolog2.CRITICAL: critical []
+monolog2.ALERT: alert []
+monolog2.EMERGENCY: emergency []
 */
-
 
 /*EXPECT_METRICS
 [
@@ -44,18 +53,15 @@ monolog2.DEBUG: AA AB AC converted {"AA":"AA value","AB":"AB value","AC":"AC val
   [
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines"},                                                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/lines/DEBUG"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/all"},                                            [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/PHP/package/monolog/monolog/2/detected"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/PHP/Monolog/disabled"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/disabled"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
@@ -63,32 +69,8 @@ monolog2.DEBUG: AA AB AC converted {"AA":"AA value","AB":"AB value","AC":"AC val
 
 
 /*EXPECT_LOG_EVENTS
-[
-    {
-      "common": {
-        "attributes": {}
-      },
-      "logs": [
-        {
-          "message": "AA AB AC converted",
-          "level": "DEBUG",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog2__FILE__",
-          "hostname": "__HOST__",
-          "timestamp": "??",
-          "attributes": {
-            "context.AC": "AC value",
-            "context.AB": "AB value",
-            "context.AA": "AA value"
-          }
-        }
-      ]
-    }
-  ]
- */
+null
+*/
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
@@ -109,9 +91,27 @@ function test_logging() {
     $stdoutHandler->setFormatter($formatter);
 
     $logger->pushHandler($stdoutHandler);
-
-    $context = array("AA" => "AA value", "AB" => "AB value", "AC" => "AC value", "BB" => "BB value");
-    $logger->debug("AA AB AC converted", $context);
+    
+    // insert delays between log messages to allow priority sampling
+    // to resolve that later messages have higher precedence
+    // since timestamps are only millisecond resolution
+    // without delays sometimes order in output will reflect
+    // all having the same timestamp.
+    $logger->debug("debug");
+    usleep(10000);
+    $logger->info("info");
+    usleep(10000);
+    $logger->notice("notice");
+    usleep(10000);
+    $logger->warning("warning");
+    usleep(10000);
+    $logger->error("error");
+    usleep(10000);
+    $logger->critical("critical");
+    usleep(10000);
+    $logger->alert("alert");
+    usleep(10000);
+    $logger->emergency("emergency");
 }
 
 test_logging();

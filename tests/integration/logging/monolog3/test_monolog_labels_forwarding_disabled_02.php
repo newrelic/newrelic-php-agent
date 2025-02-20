@@ -6,7 +6,9 @@
 
 /*DESCRIPTION
 Test that Monolog3 instrumentation will NOT forward logs with labels when:
-  - label forwarding is disabled
+  - logging is enabled
+  - log forwarding is disabled
+  - label forwarding is enabled
   - newrelic.labels set to "label1:value1;label2:value2"
   - default value for label exclusion rule
 
@@ -24,7 +26,7 @@ require('skipif.inc');
 
 /*INI
 newrelic.application_logging.enabled = true
-newrelic.application_logging.forwarding.enabled = true
+newrelic.application_logging.forwarding.enabled = false
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
@@ -65,10 +67,9 @@ monolog3.EMERGENCY: emergency []
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/PHP/package/monolog/monolog/3/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},                  [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
@@ -77,96 +78,8 @@ monolog3.EMERGENCY: emergency []
 
 
 /*EXPECT_LOG_EVENTS
-[
-    {
-      "common": {
-        "attributes": {}
-      },
-      "logs": [
-        {
-          "message": "error",
-          "level": "ERROR",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "critical",
-          "level": "CRITICAL",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "notice",
-          "level": "NOTICE",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "warning",
-          "level": "WARNING",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "info",
-          "level": "INFO",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },  
-        {
-          "message": "emergency",
-          "level": "EMERGENCY",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },        
-        {
-          "message": "debug",
-          "level": "DEBUG",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        }
-      ]
-    }
-  ]
- */
+null
+*/
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');

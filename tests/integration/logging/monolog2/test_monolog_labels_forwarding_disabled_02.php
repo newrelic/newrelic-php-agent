@@ -5,8 +5,16 @@
  */
 
 /*DESCRIPTION
-Test that monolog3 instrumentation uses default log level filter
-if an invalid log level is passed to config option.
+Test that Monolog2 instrumentation will NOT forward logs with labels when:
+  - logging is enabled
+  - log forwarding is disabled
+  - label forwarding is enabled
+  - newrelic.labels set to "label1:value1;label2:value2"
+  - default value for label exclusion rule
+
+Expect:
+  - NO labels to be forwarded with the log events in the "common" attribute
+  - "Supportability/Logging/Labels/PHP/disabled" to exist and have a value of 1
 */
 
 /*SKIPIF
@@ -18,21 +26,23 @@ require('skipif.inc');
 
 /*INI
 newrelic.application_logging.enabled = true
-newrelic.application_logging.forwarding.enabled = true
+newrelic.application_logging.forwarding.enabled = false
 newrelic.application_logging.metrics.enabled = true
 newrelic.application_logging.forwarding.max_samples_stored = 10
-newrelic.application_logging.forwarding.log_level = INVALID
+newrelic.application_logging.forwarding.log_level = DEBUG
+newrelic.application_logging.forwarding.labels.enabled = false
+newrelic.labels = "label1:value1;label2:value2"
 */
 
 /*EXPECT
-monolog3.DEBUG: debug []
-monolog3.INFO: info []
-monolog3.NOTICE: notice []
-monolog3.WARNING: warning []
-monolog3.ERROR: error []
-monolog3.CRITICAL: critical []
-monolog3.ALERT: alert []
-monolog3.EMERGENCY: emergency []
+monolog2.DEBUG: debug []
+monolog2.INFO: info []
+monolog2.NOTICE: notice []
+monolog2.WARNING: warning []
+monolog2.ERROR: error []
+monolog2.CRITICAL: critical []
+monolog2.ALERT: alert []
+monolog2.EMERGENCY: emergency []
 */
 
 /*EXPECT_METRICS
@@ -43,7 +53,6 @@ monolog3.EMERGENCY: emergency []
   [
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},            [1, "??", "??", "??", "??", "??"]],
     [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Logging/Forwarding/Dropped"},                                      [3, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines"},                                                   [8, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/ALERT"},                                             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Logging/lines/CRITICAL"},                                          [1, "??", "??", "??", "??", "??"]],
@@ -57,12 +66,11 @@ monolog3.EMERGENCY: emergency []
     [{"name": "OtherTransaction/php__FILE__"},                                    [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/PHP/package/monolog/monolog/3/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Forwarding/PHP/disabled"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
@@ -70,70 +78,12 @@ monolog3.EMERGENCY: emergency []
 
 
 /*EXPECT_LOG_EVENTS
-[
-    {
-      "common": {
-        "attributes": {}
-      },
-      "logs": [
-        {
-          "message": "alert",
-          "level": "ALERT",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "error",
-          "level": "ERROR",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },
-        {
-          "message": "critical",
-          "level": "CRITICAL",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        }, 
-        {
-          "message": "emergency",
-          "level": "EMERGENCY",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        },        
-        {
-          "message": "warning",
-          "level": "WARNING",
-          "timestamp": "??",
-          "trace.id": "??",
-          "span.id": "??",
-          "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
-          "hostname": "__HOST__"
-        }
-      ]
-    }
-  ]
- */
+null
+*/
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
-require_monolog(3);
+require_monolog(2);
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -141,7 +91,7 @@ use Monolog\Formatter\LineFormatter;
 
 
 function test_logging() {
-    $logger = new Logger('monolog3');
+    $logger = new Logger('monolog2');
 
     $logfmt = "%channel%.%level_name%: %message% %context%\n";
     $formatter = new LineFormatter($logfmt);

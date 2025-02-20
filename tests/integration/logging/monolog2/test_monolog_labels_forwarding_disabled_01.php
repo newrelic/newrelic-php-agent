@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 Test that Monolog2 instrumentation will NOT forward logs with labels when:
+  - logging and log forwarding are enabled
   - label forwarding is disabled
   - newrelic.labels set to "label1:value1;label2:value2"
   - default value for label exclusion rule
