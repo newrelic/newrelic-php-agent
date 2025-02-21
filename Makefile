@@ -227,7 +227,7 @@ bin/:
 #
 
 .PHONY: axiom
-axiom: vendor
+axiom: protobuf-c
 	$(MAKE) -C axiom
 
 #
@@ -238,15 +238,15 @@ axiom: vendor
 # TESTARGS =
 
 .PHONY: axiom-tests
-axiom-tests: vendor
+axiom-tests: protobuf-c
 	$(MAKE) -C axiom tests
 
 .PHONY: axiom-check axiom-run-tests
-axiom-check axiom-run-tests: vendor axiom/tests/cross_agent_tests
+axiom-check axiom-run-tests: protobuf-c axiom/tests/cross_agent_tests
 	$(MAKE) -C axiom run_tests
 
 .PHONY: axiom-valgrind
-axiom-valgrind: vendor axiom/tests/cross_agent_tests
+axiom-valgrind: protobuf-c axiom/tests/cross_agent_tests
 	$(MAKE) -C axiom valgrind
 
 .PHONY: tests
@@ -279,9 +279,7 @@ axiom-clean:
 daemon-protobuf: daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go
 
 daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protocol/infinite_tracing/v1.proto
-	$(MAKE) vendor # Only build vendor stuff if v1.proto has changed. Otherwise
-	               # this rule will be triggered every time the daemon is built.
-	$(VENDOR_PREFIX)/bin/protoc \
+	protoc \
 	    -I=./protocol/infinite_tracing \
 	    --go_out="paths=source_relative,plugins=grpc:daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1" \
 	    protocol/infinite_tracing/v1.proto
@@ -403,7 +401,7 @@ coverage:
 #
 
 .PHONY: clean
-clean: agent-clean axiom-clean daemon-clean package-clean coverage-clean vendor-clean
+clean: agent-clean axiom-clean daemon-clean package-clean coverage-clean
 	rm -rf releases
 	rm -f agent/newrelic.map agent/LicenseData/license_errors.txt
 
@@ -441,21 +439,14 @@ lasp-test-all:
 	$(MAKE) lasp-test SUITE_LASP=suite-random-3
 
 #
-# Vendored libraries
+# Check for protobuf-c (HAVE_PROTOBUF_C): 
+#  - axiom build needs protoc-c (protobuf-c-compiler)
+#  - agent build needs protobuf-c static library (protobuf-c-devel)
 #
-export GIT
-
-.PHONY: vendor vendor-clean
+.PHONY: protobuf-c
+protobuf-c:
 ifeq (0,$(HAVE_PROTOBUF_C))
-vendor:
-	$(MAKE) -C vendor all
-
-vendor-clean:
-	$(MAKE) -C vendor clean
-else
-vendor: ;
-
-vendor-clean: ;
+	$(error Build dependency 'protobuf-c' not found.)
 endif
 
 #
