@@ -32,6 +32,7 @@
 #include "util_buffer.h"
 #include "util_errno.h"
 #include "util_flatbuffers.h"
+#include "util_labels.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_network.h"
@@ -54,7 +55,7 @@ char* nr_txndata_error_to_json(const nrtxn_t* txn) {
                                               NR_ATTRIBUTE_DESTINATION_ERROR);
 
   // add guid to aid error linking ui
-  // make copy of txn->intrisics to not cause it to be modified for other 
+  // make copy of txn->intrisics to not cause it to be modified for other
   // potential uses during conversion to flatbuffer
   intrinsics_attributes = nro_copy(txn->intrinsics);
   nro_set_hash_string(intrinsics_attributes, "guid", nr_txn_get_guid(txn));
@@ -196,6 +197,33 @@ static uint32_t nr_txndata_prepend_log_events(nr_flatbuffer_t* fb,
   nr_vector_destroy(&events_vec);
   nr_free(offsets);
   return events;
+}
+
+/*
+ * Send the log labels to the daemon.  The format used is the same as
+ * the format used to send labels in a collector connect message and
+ * was chosen for convenience of unmarshalling in the daemon.
+ */
+static uint32_t nr_txndata_prepend_log_forwarding_labels(nr_flatbuffer_t* fb,
+                                                         nrobj_t* log_labels) {
+  char* json;
+  nrobj_t* labels;
+  uint32_t data;
+
+  labels = nr_labels_connector_format(log_labels);
+  json = nro_to_json(labels);
+  nro_delete(labels);
+
+  if (NULL == json) {
+    return 0;
+  }
+
+  data = nr_flatbuffers_prepend_string(fb, json);
+  nr_free(json);
+
+  nr_flatbuffers_object_begin(fb, EVENT_NUM_FIELDS);
+  nr_flatbuffers_object_prepend_uoffset(fb, EVENT_FIELD_DATA, data, 0);
+  return nr_flatbuffers_object_end(fb);
 }
 
 uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
@@ -605,12 +633,15 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   uint32_t span_events;
   uint32_t log_events;
   uint32_t php_packages;
+  uint32_t log_labels;
 
   txn_trace = nr_txndata_prepend_trace_to_flatbuffer(fb, txn);
   span_events = nr_txndata_prepend_span_events(fb, txn->final_data.span_events,
                                                txn->app_limits.span_events);
   log_events
       = nr_txndata_prepend_log_events(fb, txn, txn->app_limits.log_events);
+  log_labels = nr_txndata_prepend_log_forwarding_labels(
+      fb, txn->log_forwarding_labels);
   error_events = nr_txndata_prepend_error_events(fb, txn);
   custom_events = nr_txndata_prepend_custom_events(fb, txn);
   slowsqls = nr_txndata_prepend_slowsqls(fb, txn);
@@ -653,6 +684,8 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
                                         log_events, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_PHP_PACKAGES,
                                         php_packages, 0);
+  nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_LOG_LABELS,
+                                        log_labels, 0);
   return nr_flatbuffers_object_end(fb);
 }
 

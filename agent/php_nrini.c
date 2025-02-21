@@ -3078,6 +3078,22 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclu
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_forwarding_labels_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.exclude",
+                     "",
+                     NR_PHP_REQUEST,
+                     nr_string_mh,
+                     log_forwarding_labels_exclude,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 /*
  * Vulnerability Management
