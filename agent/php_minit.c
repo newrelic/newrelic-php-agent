@@ -719,11 +719,14 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
 
-  if (!NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) || !NR_PHP_PROCESS_GLOBALS(nr_security_enabled) || NR_PHP_PROCESS_GLOBALS(high_security)) {
-    nrl_info(NRL_INIT, "New Relic Security is completely disabled by one of the user provided config `newrelic.security.enabled`, `newrelic.security.agent.enabled` or `newrelic.high_security`. Not loading security capabilities.");
-    nrl_debug(NRL_INIT, "newrelic.security.agent.enabled : %s", NR_PHP_PROCESS_GLOBALS(nr_security_enabled) ? "true" : "false");
-    nrl_debug(NRL_INIT, "newrelic.security.enabled : %s", NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) ? "true" : "false");
-    nrl_debug(NRL_INIT, "newrelic.high_security : %s", NR_PHP_PROCESS_GLOBALS(high_security) ? "true" : "false");
+  if (NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled)
+      && NR_PHP_PROCESS_GLOBALS(nr_security_enabled)
+      && !NR_PHP_PROCESS_GLOBALS(high_security)) {
+    nrl_info(
+        NRL_INIT,
+        "New Relic Security is enabled by the user provided config "
+        "`newrelic.security.enabled`, `newrelic.security.agent.enabled` and "
+        "`newrelic.high_security`. Security capabilities will be loaded.");
   }
 
   nrl_debug(NRL_INIT, "MINIT processing done");
