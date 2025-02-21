@@ -96,7 +96,7 @@ monolog3.DEBUG: debug []
       },
       {},
       {
-        "code.lineno": 314,
+        "code.lineno": 332,
         "code.namespace":"Monolog\\Logger",
         "code.filepath": "??",
         "code.function": "addRecord"
