@@ -290,18 +290,20 @@ func (pkgs *PhpPackagesCollection) OverrideVersionsFile() string {
 //
 // Returns:
 //   - []PhpPackage with extracted package info, sorted by package name
+//   - []string notes to be added to the test
 //   - nil upon error processing JSON
 //
 // Notes: Currently only supports an application created with composer
-func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, error) {
+func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, []string, error) {
 
 	var err error
 
 	if nil == pkgs {
-		return nil, fmt.Errorf("GatherInstallPackages(): pkgs is nil")
+		return nil, nil, fmt.Errorf("GatherInstallPackages(): pkgs is nil")
 	}
 
 	var supported []string
+	var notes []string
 
 	// get list of packages we expected the agent to detect
 	// this can be one of 3 scenarios:
@@ -317,7 +319,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 	//  package to determine its version.
 	//
 	//  Option #1 is preferable when it available as it provides the most comprehensive view of what the agent can do.
-	//
+	//n
 	//  Option #2 is needed because some test cases do not exercise all the packages which are
 	//  installed and so the agent will not detect everything for that test case run which it could
 	//  theorectically detect if the test case used all the available packages installed.
@@ -331,12 +333,12 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 	if 0 < len(pkgs.config.supportedListFile) {
 		supported, err = LoadSupportedPackagesList(pkgs.config.path, pkgs.config.supportedListFile)
 		if nil != err {
-			return nil, err
+			return nil, nil, err
 		}
 	} else if 0 < len(pkgs.config.expectedPackages) {
 		supported = pkgs.config.expectedPackages
 	} else if !pkgs.config.expectAllDetected {
-		return nil, fmt.Errorf("Error determining expected packages - supported_packages and expected_packages are both empty " +
+		return nil, nil, fmt.Errorf("Error determining expected packages - supported_packages and expected_packages are both empty " +
 			"and expect_all is false")
 	}
 
@@ -366,6 +368,16 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 				} else {
 					version = v.Version
 				}
+
+				// Remove any additional information extracted (hashes, etc).
+				// The composer versioning standard is to not include any spaces
+				// yet sometimes this standard is broken
+				version_splits := strings.Split(version, " ")
+				if (len(version_splits) > 1) {
+					notes = append(notes, fmt.Sprintf("Used shortened package version from composer. Originally was \"%s\"", version))
+					version = version_splits[0]
+			    }
+
 				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, version})
 				//fmt.Printf("   -> %s in supported!\n", v.Name)
 			} else {
@@ -402,7 +414,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
+		return nil, nil, fmt.Errorf("ERROR - unknown method '%s'\n", splitCmd[0])
 	}
 
 	// sort by package name to aid comparision later
@@ -410,7 +422,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, erro
 		return pkgs.packages[i].Name < pkgs.packages[j].Name
 	})
 
-	return pkgs.packages, nil
+	return pkgs.packages, notes, nil
 }
 
 // convert PhpPackage to collector JSON representation
