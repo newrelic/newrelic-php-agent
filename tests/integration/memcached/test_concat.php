@@ -35,7 +35,7 @@ ok - delete
     [{"name":"Datastore/allOther"},                                   [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/all"},                              [5, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/Memcached/allOther"},                         [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/instance/Memcached/ENV[MEMCACHE_HOST]/11211"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/instance/Memcached/ENV[MEMCACHE_HOST]/11211"},[1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/operation/Memcached/delete",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
@@ -54,7 +54,8 @@ ok - delete
     [{"name":"OtherTransactionTotalTime/php__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},           [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
