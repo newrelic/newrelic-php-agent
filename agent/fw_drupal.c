@@ -484,8 +484,7 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  zval* curr_hook
-      = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
+  zval* curr_hook = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
   if (!nr_php_is_zval_non_empty_string(curr_hook)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
