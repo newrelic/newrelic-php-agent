@@ -57,7 +57,8 @@ b2
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Custom/invoke_callback",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
