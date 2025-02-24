@@ -12,17 +12,14 @@ Currently, the PHP agent has only been developed and compiled on Linux systems. 
 
 #### Operating Systems
 - Fully supported for building from source
-    - Ubuntu 16.04+
-    - CentOS/RHEL 7+
-- Supported in binary form only (may require experimentation to build)
-    - FreeBSD
+    - Debian/Ubuntu LTS
     - Alpine Linux
-    - AWS Linux 2
-    - Any Linux with Kernel >=2.6.26 and `glibc` >=2.5 (or `musl libc` >= 1.1)
+    - CentOS/RHEL 7+
 
 #### Build system dependencies
 - `build-essential` on Debian systems, `"Development Tools"` group on RHEL systems, equivalent packages on other supported systems for `make`, `cmake`, `gcc`, etc.
 - `valgrind` is extensively in the test suite
+- `protoc-c` (protobuf-c-compiler) is needed to build the agent
 
 #### Go
 
@@ -42,6 +39,7 @@ Install the [latest version of Go](https://golang.org/dl/). Typically it's insta
 - `libxslt`
 - `openssl`
 - `pcre`
+- `protobuf-c` (`libprotobuf-c-dev` on Debian systems, `protobuf-c-devel` on RHEL systems)
 - `zlib`
 
 #### Application development headers
@@ -54,6 +52,7 @@ _(most operating systems package these with `-dev` or `-devel` suffixes)_
 - `php`
 - `postgresql`
 - `sqlite`
+- `protobuf-c` (`libprotobuf-c-dev` on Debian systems, `protobuf-c-devel` on RHEL systems)
 
 
 ### PHP

@@ -195,7 +195,7 @@ nr_config.h: configure Makefile
 #
 # Build the 8T protobuf code.
 #
-v1.pb-c.c: v1.proto
+v1.pb-c.c: v1.proto protobuf-c
 	$(PROTOBUF_C_PREFIX)/bin/protoc-c --c_out=. $<
 
 #
@@ -204,6 +204,12 @@ v1.pb-c.c: v1.proto
 #
 v1.pb-c.o: v1.pb-c.c
 	$(CC) $(AXIOM_CPPFLAGS) $(CPPFLAGS) $(AXIOM_CFLAGS) $(PCRE_CFLAGS) $(VENDOR_CFLAGS) $(CFLAGS) -MMD -MP -Wno-cast-qual -c $< -o $@
+
+.PHONY: protobuf-c
+protobuf-c:
+ifeq (0,$(HAVE_PROTOBUF_C))
+	$(error Build dependency 'protobuf-c' not found.)
+endif
 
 #
 # Track the flags passed to the compiler to force a rebuild when they change.
