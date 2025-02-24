@@ -63,7 +63,8 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
     [{"name":"WebTransaction/Uri__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
