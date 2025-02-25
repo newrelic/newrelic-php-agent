@@ -762,14 +762,16 @@ void nr_drupal8_enable(TSRMLS_D) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  // clang-format off
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
-              "ner\\RouterListener::onKernelRequest"),
+      NR_PSTR("Symfony\\Component\\HttpKernel\\EventListener\\RouterListener::onKernelRequest"),
       nr_drupal8_name_the_wt_via_symfony, NULL, NULL);
+  // clang-format on
 #else
-  nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\EventListe"
-                                    "ner\\RouterListener::onKernelRequest"),
+  // clang-format off
+  nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\HttpKernel\\EventListener\\RouterListener::onKernelRequest"),
                             nr_drupal8_name_the_wt_via_symfony TSRMLS_CC);
+  // clang-format on
 #endif
 
   /*
@@ -779,9 +781,10 @@ void nr_drupal8_enable(TSRMLS_D) {
    * above, but kicks in for use cases where the RouterListener is not
    * involved.
    */
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\Controller\\ControllerResolv"
-                                    "er::getControllerFromDefinition"),
+  // clang-format off
+  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\Controller\\ControllerResolver::getControllerFromDefinition"),
                             nr_drupal8_name_the_wt TSRMLS_CC);
+  // clang-format on
 
   /*
    * ExceptionSubscribers handle Drupal errors and exceptions before
