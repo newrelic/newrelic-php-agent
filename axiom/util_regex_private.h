@@ -17,7 +17,8 @@
 #undef pcre_free
 #undef pcre_copy_substring
 #undef pcre_exec
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #include "util_regex.h"
 
