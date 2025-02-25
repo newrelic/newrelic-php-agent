@@ -66,7 +66,7 @@ endif
 # pkg-config for install location. This can be overriden by environment.
 # Agent's build system assumes that pcre's libdir is %prefix%/lib,
 # includedir is %prefix%/include.
-PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre/$$(ls /opt/nr/pcre 2>/dev/null)/lib/pkgconfig:$$PKG_CONFIG_PATH pkg-config libpcre --variable=prefix 2>/dev/null)
+PCRE_PREFIX ?= $(shell PKG_CONFIG_PATH=/opt/nr/pcre2/$$(ls /opt/nr/pcre2 2>/dev/null)/lib/pkgconfig:$$PKG_CONFIG_PATH pkg-config libpcre2-8 --variable=prefix 2>/dev/null)
 
 # By default let the agent link to whatever libpcre is available on the system
 # (most likely a shared object). However for release builds the agent needs to

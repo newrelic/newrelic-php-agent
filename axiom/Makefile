@@ -66,7 +66,7 @@ endif
 
 # OS X 10.11 (at least) does not provide pcre-config by default.
 # Check whether it exists, and if not assume a sensible default.
-PCRE_CFLAGS := $(shell pcre-config --cflags)
+PCRE_CFLAGS := $(shell $(PCRE_PREFIX)/bin/pcre2-config --cflags)
 
 #
 # Correct agent version handling.
