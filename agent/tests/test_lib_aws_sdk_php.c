@@ -81,6 +81,7 @@ NR_PHP_WRAPPER(aws_lambda_invoke_wrapper) {
             cloud_attrs.cloud_resource_id);
   }
   NR_PHP_WRAPPER_CALL;
+  nr_free(cloud_attrs.cloud_resource_id);
 }
 NR_PHP_WRAPPER_END
 

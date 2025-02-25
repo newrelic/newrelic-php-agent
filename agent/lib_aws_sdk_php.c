@@ -340,7 +340,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
 
   /* reconstruct the ARN */
   nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
-  if (!cloud_attrs.cloud_resource_id) {
+  if (NULL == cloud_attrs.cloud_resource_id) {
     /* we do not want to instrument if we cannot reconstruct the ARN */
     return;
   }
@@ -352,6 +352,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
    */
   external_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   if (NULL == external_segment) {
+    nr_free(cloud_attrs.cloud_resource_id);
     return;
   }
   /* re-use start time from auto_segment started in func_begin */
@@ -379,6 +380,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
     }
   }
   nr_segment_external_end(&auto_segment, &external_params);
+  nr_free(cloud_attrs.cloud_resource_id);
 }
 
 /* This stores the compiled regex to parse AWS ARNs. The compilation happens when
@@ -404,6 +406,7 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
   char* qualifier = NULL;
   zval* qualifier_zval = NULL;
   char* accountID = NULL;
+  bool using_account_id_ini = false;
 
   /* verify arguments */
   if (!nr_php_is_zval_valid_array(call_args)) {
@@ -439,11 +442,17 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
      * Cannot get the needed data. Function name is required in the
      * argument, so this won't happen in normal operation
      */
+    nr_free(function_name);
+    nr_free(accountID);
+    nr_free(region);
+    nr_free(qualifier);
     nr_regex_substrings_destroy(&matches);
     return;
   }
   if (nr_strempty(accountID)) {
+    nr_free(accountID);
     accountID = NRINI(aws_account_id);
+    using_account_id_ini = true;
   }
   if (nr_strempty(region)) {
     region_zval
@@ -474,6 +483,12 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
   }
 
   nr_regex_substrings_destroy(&matches);
+  nr_free(function_name);
+  if (!using_account_id_ini) {
+    nr_free(accountID);
+  }
+  nr_free(region);
+  nr_free(qualifier);
   nr_php_zval_free(&region_zval);
   nr_php_zval_free(&qualifier_zval);
 }
