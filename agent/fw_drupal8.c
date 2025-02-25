@@ -608,6 +608,13 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
 NR_PHP_WRAPPER_END
 #endif  // OAPI
 
+#define NR_FREE_HOOK_MEM \
+  nr_free(hook_str);     \
+  nr_free(class_str);    \
+  nr_free(method_str);   \
+  nr_free(module_str);   \
+  nr_free(hookpath);
+
 /*
  * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
  *
@@ -644,6 +651,7 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
           nrl_warning(NRL_FRAMEWORK,
                       "hookImplementationsMap[hook = %s]: invalid value",
                       NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+          NR_FREE_HOOK_MEM
           return false;
         }
 
@@ -655,6 +663,7 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
             nrl_warning(NRL_FRAMEWORK,
                         "hookImplementationsMap[class = %s]: invalid value",
                         NRSAFESTR(ZEND_STRING_VALUE(class_key)));
+            NR_FREE_HOOK_MEM
             return false;
           }
 
@@ -662,17 +671,14 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
                                     module_val) {
             (void)key_num;
 
-            nr_free(hook_str);
-            nr_free(class_str);
-            nr_free(method_str);
-            nr_free(module_str);
-            nr_free(hookpath);
+            NR_FREE_HOOK_MEM
 
             if ((NULL == method_key)
                 || (0 == nr_php_is_zval_valid_string(module_val))) {
               nrl_warning(NRL_FRAMEWORK,
                           "hookImplementationsMap[method = %s]: invalid value",
                           NRSAFESTR(ZEND_STRING_VALUE(method_key)));
+              NR_FREE_HOOK_MEM
               return false;
             }
 
@@ -702,19 +708,16 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     } else {
       nrl_warning(NRL_FRAMEWORK,
                   "hookImplementationsMap property not a valid array");
+      NR_FREE_HOOK_MEM
       return false;
     }
   } else {
     nrl_warning(NRL_FRAMEWORK, "NULL hookImplementationsMap object property");
+    NR_FREE_HOOK_MEM
     return false;
   }
 
-  nr_free(hook_str);
-  nr_free(class_str);
-  nr_free(method_str);
-  nr_free(module_str);
-  nr_free(hookpath);
-
+  NR_FREE_HOOK_MEM
   return true;
 }
 
