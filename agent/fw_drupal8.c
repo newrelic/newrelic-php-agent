@@ -721,6 +721,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   return true;
 }
 
+#undef NR_FREE_HOOK_MEM
+
 /*
  * Purpose : Wrap the invoke() method of the module handler instance in use.
  */
