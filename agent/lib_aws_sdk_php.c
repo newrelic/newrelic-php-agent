@@ -340,10 +340,6 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
 
   /* reconstruct the ARN */
   nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
-  if (NULL == cloud_attrs.cloud_resource_id) {
-    /* we do not want to instrument if we cannot reconstruct the ARN */
-    return;
-  }
 
   /*
    * By this point, it's been determined that this call will be instrumented so
