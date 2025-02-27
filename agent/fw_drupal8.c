@@ -622,7 +622,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   zval* class_val = NULL;
   nr_php_string_hash_key_t* method_key = NULL;
   zval* module_val = NULL;
-  zend_ulong key_num = 0;
 
   char* hookpath = NULL;
 
@@ -630,9 +629,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
       module_handler, "hookImplementationsMap");
   if (hook_implementation_map) {
     if (nr_php_is_zval_valid_array(hook_implementation_map)) {
-      ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), key_num,
-                                hook_key, hook_val) {
-        (void)key_num;
+      ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map),
+                                    hook_key, hook_val) {
         if ((NULL == hook_key) || (0 == nr_php_is_zval_valid_array(hook_val))) {
           nrl_warning(NRL_FRAMEWORK,
                       "hookImplementationsMap[hook = %s]: invalid value",
@@ -640,9 +638,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
           return false;
         }
 
-        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(hook_val), key_num, class_key,
-                                  class_val) {
-          (void)key_num;
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), class_key,
+                                      class_val) {
           if ((NULL == class_key)
               || (0 == nr_php_is_zval_valid_array(class_val))) {
             nrl_warning(NRL_FRAMEWORK,
@@ -651,10 +648,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
             return false;
           }
 
-          ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(class_val), key_num, method_key,
-                                    module_val) {
-            (void)key_num;
-
+          ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(class_val), method_key,
+                                        module_val) {
             if ((NULL == method_key)
                 || (0 == nr_php_is_zval_valid_string(module_val))) {
               nrl_warning(NRL_FRAMEWORK,
