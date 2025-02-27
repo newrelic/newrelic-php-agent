@@ -608,13 +608,6 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
 NR_PHP_WRAPPER_END
 #endif  // OAPI
 
-#define NR_FREE_HOOK_MEM \
-  nr_free(hook_str);     \
-  nr_free(class_str);    \
-  nr_free(method_str);   \
-  nr_free(module_str);   \
-  nr_free(hookpath);
-
 /*
  * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
  *
@@ -634,10 +627,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   zval* module_val = NULL;
   zend_ulong key_num = 0;
 
-  char* hook_str = NULL;
-  char* class_str = NULL;
-  char* method_str = NULL;
-  char* module_str = NULL;
   char* hookpath = NULL;
 
   hook_implementation_map = nr_php_get_zval_object_property(
@@ -651,7 +640,7 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
           nrl_warning(NRL_FRAMEWORK,
                       "hookImplementationsMap[hook = %s]: invalid value",
                       NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
-          NR_FREE_HOOK_MEM
+          nr_free(hookpath);
           return false;
         }
 
@@ -663,7 +652,7 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
             nrl_warning(NRL_FRAMEWORK,
                         "hookImplementationsMap[class = %s]: invalid value",
                         NRSAFESTR(ZEND_STRING_VALUE(class_key)));
-            NR_FREE_HOOK_MEM
+            nr_free(hookpath);
             return false;
           }
 
@@ -671,33 +660,30 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
                                     module_val) {
             (void)key_num;
 
-            NR_FREE_HOOK_MEM
-
             if ((NULL == method_key)
                 || (0 == nr_php_is_zval_valid_string(module_val))) {
               nrl_warning(NRL_FRAMEWORK,
                           "hookImplementationsMap[method = %s]: invalid value",
                           NRSAFESTR(ZEND_STRING_VALUE(method_key)));
-              NR_FREE_HOOK_MEM
+              nr_free(hookpath);
               return false;
             }
-
-            hook_str = nr_strdup(ZEND_STRING_VALUE(hook_key));
-            class_str = nr_strdup(ZEND_STRING_VALUE(class_key));
-            method_str = nr_strdup(ZEND_STRING_VALUE(method_key));
-            module_str = nr_strdup(Z_STRVAL_P(module_val));
 
             if (0
                 == nr_stricmp(ZEND_STRING_VALUE(class_key),
                               "Drupal\\Core\\Extension\\ProceduralCall")) {
-              hookpath = nr_formatf("%s", method_str);
+              hookpath = nr_formatf("%s", ZEND_STRING_VALUE(method_key));
             } else {
-              hookpath = nr_formatf("%s::%s", class_str, method_str);
+              hookpath = nr_formatf("%s::%s", ZEND_STRING_VALUE(class_key),
+                                    ZEND_STRING_VALUE(method_key));
             }
 
-            nr_php_wrap_user_function_drupal(hookpath, nr_strlen(hookpath),
-                                             module_str, nr_strlen(module_str),
-                                             hook_str, nr_strlen(hook_str));
+            nr_php_wrap_user_function_drupal(
+                hookpath, nr_strlen(hookpath), Z_STRVAL_P(module_val),
+                Z_STRLEN_P(module_val), ZEND_STRING_VALUE(hook_key),
+                ZEND_STRING_LEN(hook_key));
+
+            nr_free(hookpath);
           }
           ZEND_HASH_FOREACH_END();
         }
@@ -708,16 +694,13 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     } else {
       nrl_warning(NRL_FRAMEWORK,
                   "hookImplementationsMap property not a valid array");
-      NR_FREE_HOOK_MEM
       return false;
     }
   } else {
     nrl_warning(NRL_FRAMEWORK, "NULL hookImplementationsMap object property");
-    NR_FREE_HOOK_MEM
     return false;
   }
 
-  NR_FREE_HOOK_MEM
   return true;
 }
 
