@@ -637,7 +637,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
           nrl_warning(NRL_FRAMEWORK,
                       "hookImplementationsMap[hook = %s]: invalid value",
                       NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
-          nr_free(hookpath);
           return false;
         }
 
@@ -649,7 +648,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
             nrl_warning(NRL_FRAMEWORK,
                         "hookImplementationsMap[class = %s]: invalid value",
                         NRSAFESTR(ZEND_STRING_VALUE(class_key)));
-            nr_free(hookpath);
             return false;
           }
 
@@ -662,7 +660,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
               nrl_warning(NRL_FRAMEWORK,
                           "hookImplementationsMap[method = %s]: invalid value",
                           NRSAFESTR(ZEND_STRING_VALUE(method_key)));
-              nr_free(hookpath);
               return false;
             }
 
