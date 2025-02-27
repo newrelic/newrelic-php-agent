@@ -1308,10 +1308,10 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Type   : boolean
 ; Scope  : per-directory
 ; Default: false
-; Info   : Toggles whether the agent adds labels as attributes to log records for 
-;          sending to New Relic.  The labels can be defined by the newrelic.labels
-;          configuration value, and filtered using the 
-;          newrelic.application_logging.forwawrding.labels.exclude configuration value.
+; Info   : Toggles whether the agent adds labels as attributes to log records which
+;          are sent to New Relic.  The labels can be defined by the newrelic.labels
+;          configuration value, and filtered using the
+;          newrelic.application_logging.forwarding.labels.exclude configuration value.
 ;
 ;newrelic.application_logging.forwarding.labels.enabled = false
 
