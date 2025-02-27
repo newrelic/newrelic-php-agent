@@ -709,7 +709,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
 NR_PHP_WRAPPER(nr_drupal8_module_handler) {
   zend_class_entry* ce = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
-  bool hook_attribute_instrumentation = false;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -731,26 +730,23 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 
   ce = Z_OBJCE_P(*retval_ptr);
 
-  hook_attribute_instrumentation
-      = nr_drupal_hook_attribute_instrument(*retval_ptr);
-
-  if (!hook_attribute_instrumentation) {
-    nr_drupal8_add_method_callback(
-        ce, NR_PSTR("getimplementations"),
-        nr_drupal8_post_get_implementations TSRMLS_CC);
-    nr_drupal8_add_method_callback(ce, NR_PSTR("implementshook"),
-                                   nr_drupal8_post_implements_hook TSRMLS_CC);
-    /* Drupal 9.4 introduced a replacement method for getImplentations */
+  if (nr_drupal_hook_attribute_instrument(*retval_ptr)) {
+    NR_PHP_WRAPPER_LEAVE;
+  }
+  nr_drupal8_add_method_callback(ce, NR_PSTR("getimplementations"),
+                                 nr_drupal8_post_get_implementations TSRMLS_CC);
+  nr_drupal8_add_method_callback(ce, NR_PSTR("implementshook"),
+                                 nr_drupal8_post_implements_hook TSRMLS_CC);
+  /* Drupal 9.4 introduced a replacement method for getImplentations */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-    nr_drupal8_add_method_callback_before_after_clean(
-        ce, NR_PSTR("invokeallwith"), nr_drupal94_invoke_all_with,
-        nr_drupal94_invoke_all_with_after, nr_drupal94_invoke_all_with_clean);
+  nr_drupal8_add_method_callback_before_after_clean(
+      ce, NR_PSTR("invokeallwith"), nr_drupal94_invoke_all_with,
+      nr_drupal94_invoke_all_with_after, nr_drupal94_invoke_all_with_clean);
 #else
-    nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
-                                   nr_drupal94_invoke_all_with TSRMLS_CC);
+  nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
+                                 nr_drupal94_invoke_all_with TSRMLS_CC);
 #endif
-  }
 }
 NR_PHP_WRAPPER_END
 
