@@ -1359,6 +1359,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Default: none
 ; Info   : This setting is read by some cloud service instrumentation so the
 ;          cloud.resource_id attribute can be set in the respective spans.
+;          Do not include any "-" characters; this should be 12 characters.
 ;
 ;          AWS DynamoDB and Kinesis are services that require this value to be
 ;          able to populate the cloud.resource_id attribute. Likewise, AWS Lambda

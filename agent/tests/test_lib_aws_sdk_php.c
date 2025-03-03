@@ -68,7 +68,7 @@ NR_PHP_WRAPPER(aws_lambda_invoke_wrapper) {
    * to pass in the expected value
    */
   zval* expected = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
-  nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
+  nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
   (void)wraprec;
 
   if (nr_php_is_zval_valid_string(expected)) {
@@ -484,11 +484,13 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 static void test_nr_lib_aws_sdk_php_lambda_invoke() {
-  tlib_php_engine_create("newrelic.cloud.aws.account_id=\"test_account\"");
+  tlib_php_engine_create("");
   tlib_php_request_start();
 
   tlib_php_request_eval("function lambda_invoke($a, $b) { return; }");
   nr_php_wrap_user_function(NR_PSTR("lambda_invoke"), aws_lambda_invoke_wrapper);
+
+  NRINI(aws_account_id) = "111122223333";
 
   /* Test full-info run */
   char* args
@@ -530,13 +532,30 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
         "    )"
         ")";
   array_arg = tlib_php_request_eval_expr(args);
-  expect = "'arn:aws:lambda:us-east-2:test_account:function:my-function'";
+  expect = "'arn:aws:lambda:us-east-2:111122223333:function:my-function'";
   expect_arg = tlib_php_request_eval_expr(expect);
   expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
   tlib_pass_if_not_null("Expression should evaluate.", expr);
   nr_php_zval_free(&expr);
   nr_php_zval_free(&expect_arg);
   nr_php_zval_free(&array_arg);
+
+  /* Test failed INI extract */
+  NRINI(aws_account_id) = "";
+  args
+      = "array("
+        "    0 => array("
+        "        'FunctionName' => 'us-east-2:my-function'"
+        "    )"
+        ")";
+  array_arg = tlib_php_request_eval_expr(args);
+  expect = "NULL";
+  expect_arg = tlib_php_request_eval_expr(expect);
+  expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&array_arg);
+  NRINI(aws_account_id) = "111122223333";
 
   /* Test invalid arg 1 */
   args
@@ -546,8 +565,6 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
         "    )"
         ")";
   array_arg = tlib_php_request_eval_expr(args);
-  expect = "NULL";
-  expect_arg = tlib_php_request_eval_expr(expect);
   expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
   tlib_pass_if_not_null("Expression should evaluate.", expr);
   nr_php_zval_free(&expr);
@@ -567,6 +584,32 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
 
   /* Test invalid arg 3 */
   args = "array()";
+  array_arg = tlib_php_request_eval_expr(args);
+  expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&array_arg);
+
+  /* Test invalid arg 4 */
+  args
+      = "array("
+        "    0 => array("
+        "        'FunctionName' => ''"
+        "    )"
+        ")";
+  array_arg = tlib_php_request_eval_expr(args);
+  expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&array_arg);
+
+  /* Test invalid arg 5 */
+  args
+      = "array("
+        "    0 => array("
+        "        'FunctionName' => NULL"
+        "    )"
+        ")";
   array_arg = tlib_php_request_eval_expr(args);
   expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
   tlib_pass_if_not_null("Expression should evaluate.", expr);

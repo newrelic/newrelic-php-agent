@@ -83,8 +83,9 @@ extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
  *
  * Returns :
  *
+ * Note: The caller is responsible for freeing cloud_atters->cloud_resource_id
  */
-void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs);
+void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs);
 
 /*
  * Purpose : Handles regex destruction during mshutdown

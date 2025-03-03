@@ -19,7 +19,7 @@
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
-#define AWS_ARN_REGEX "(arn:(aws[a-zA-Z-]*)?:lambda:)?" \
+#define AWS_LAMBDA_ARN_REGEX "(arn:(aws[a-zA-Z-]*)?:lambda:)?" \
             "((?<region>[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}):)?" \
             "((?<accountId>\\d{12}):)?" \
             "(function:)?" \
@@ -331,15 +331,12 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
 
   /* Determine if we instrument this command. */
   if (AWS_COMMAND_IS("invoke")) {
-    // Command can be saved here if in the future
-    // we instrument more than 1 lambda command
+    /* reconstruct the ARN */
+    nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
   } else {
     return;
   }
 #undef AWS_COMMAND_IS
-
-  /* reconstruct the ARN */
-  nr_aws_lambda_invoke(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
 
   /*
    * By this point, it's been determined that this call will be instrumented so
@@ -367,15 +364,16 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
     zval* metadata = nr_php_zend_hash_find(Z_ARRVAL_P(data), "@metadata");
     if (NULL != metadata  && IS_REFERENCE == Z_TYPE_P(metadata)) {
       metadata = Z_REFVAL_P(metadata);
-      if (IS_ARRAY == Z_TYPE_P(metadata)) {
-        zval* uri = nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "effectiveUri");
-        if (nr_php_is_zval_valid_string(uri)) {
-          external_params.uri = Z_STRVAL_P(uri);
-        }
+    }
+    if (nr_php_is_zval_valid_array(metadata)) {
+      zval* uri = nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "effectiveUri");
+      if (nr_php_is_zval_valid_string(uri)) {
+        external_params.uri = Z_STRVAL_P(uri);
       }
     }
+    
   }
-  nr_segment_external_end(&auto_segment, &external_params);
+  nr_segment_external_end(&external_segment, &external_params);
   nr_free(cloud_attrs.cloud_resource_id);
 }
 
@@ -385,16 +383,16 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
 static nr_regex_t* aws_arn_regex;
 
 static void nr_aws_sdk_compile_regex(void) {
-  aws_arn_regex = nr_regex_create(AWS_ARN_REGEX, 0, 0);
+  aws_arn_regex = nr_regex_create(AWS_LAMBDA_ARN_REGEX, 0, 0);
 }
 
 void nr_aws_sdk_mshutdown(void) {
   nr_regex_destroy(&aws_arn_regex);
 }
 
-void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs) {
+void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs) {
   zval* call_args = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
-  zval* this_obj = NR_PHP_USER_FN_THIS();
+  zval* this_obj = getThis();//NR_PHP_USER_FN_THIS();
   char* arn = NULL;
   char* function_name = NULL;
   char* region = NULL;
@@ -450,15 +448,24 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
     using_account_id_ini = true;
   }
   if (nr_strempty(region)) {
+    zend_class_entry* base_class = NULL;
+    if (NULL != execute_data->func && NULL!= execute_data->func->common.scope) {
+       base_class = execute_data->func->common.scope;
+    }
     region_zval
-      = nr_php_get_zval_object_property(this_obj, "region");
+      = nr_php_get_zval_object_property_with_class(this_obj, base_class, "region");
     if (nr_php_is_zval_valid_string(region_zval)) {
+      /*
+       * In this case, region is likely to be NULL, but could be an empty
+       * string instead, so we must free
+       */
+      nr_free(region);
       region = Z_STRVAL_P(region_zval);
     }
   }
 
   if (!nr_strempty(accountID) && !nr_strempty(region)) {
-    // construct the ARN
+    /* construct the ARN */
     if (!nr_strempty(qualifier)) {
       arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s:%s",
                        region, accountID, function_name, qualifier);
@@ -467,7 +474,7 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
                        region, accountID, function_name);
     }
 
-    // Attatch the ARN
+    /* Attatch the ARN */
     cloud_attrs->cloud_resource_id = arn;
   }
 
@@ -476,9 +483,11 @@ void nr_aws_lambda_invoke(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attr
   if (!using_account_id_ini) {
     nr_free(accountID);
   }
-  nr_free(region);
+  /* if region_zval is a valid string, we have already freed region */
+  if (!nr_php_is_zval_valid_string(region_zval)) {
+    nr_free(region);
+  }
   nr_free(qualifier);
-  nr_php_zval_free(&region_zval);
 }
 
 char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
