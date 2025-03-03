@@ -8,6 +8,13 @@
 Verify agent does not crash when key value is not an array.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, '7.4', '<')) {
+    die("skip: PHP >= 7.4 required\n");
+}
+*/
+
 /*INI
 newrelic.framework = drupal8
 */
