@@ -429,7 +429,7 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
   region = nr_regex_substrings_get_named(matches, "region");
   qualifier = nr_regex_substrings_get_named(matches, "qualifier");
 
-  /* suppliment missing information with API calls */
+  /* supplement missing information with API calls */
   if (nr_strempty(function_name)) {
     /*
      * Cannot get the needed data. Function name is required in the
