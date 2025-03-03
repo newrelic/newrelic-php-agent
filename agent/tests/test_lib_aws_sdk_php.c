@@ -638,6 +638,8 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
   tlib_php_engine_destroy();
 }
 
+#endif /* PHP 8.1+ */
+
 static void test_nr_lib_aws_sdk_ini() {
   /* test too short */
   tlib_php_engine_create("newrelic.cloud.aws.account_id=\"12345678901\"");
@@ -655,8 +657,6 @@ static void test_nr_lib_aws_sdk_ini() {
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
-
-#endif /* PHP 8.1+ */
 
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
