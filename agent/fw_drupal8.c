@@ -605,6 +605,16 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
 NR_PHP_WRAPPER_END
 #endif  // OAPI
 
+static bool nr_validate_key_val_arr(nr_php_string_hash_key_t* key, zval* val) {
+  if (NULL == key || 0 == ZEND_STRING_LEN(key)
+      || 0 == nr_php_is_zval_valid_array(val)
+      || 0 == zend_hash_num_elements(Z_ARRVAL_P(val))) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 /*
  * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
  *
@@ -636,14 +646,14 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
 
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
                                 hook_val) {
-    if ((NULL == hook_key) || (0 == nr_php_is_zval_valid_array(hook_val))) {
+    if (nr_validate_key_val_arr(hook_key, hook_val)) {
       nrl_warning(NRL_FRAMEWORK,
                   "hookImplementationsMap[hook]: invalid key or value");
       return false;
     }
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), class_key, class_val) {
-      if ((NULL == class_key) || (0 == nr_php_is_zval_valid_array(class_val))) {
+      if (nr_validate_key_val_arr(class_key, class_val)) {
         nrl_warning(NRL_FRAMEWORK,
                     "hookImplementationsMap[class]: invalid key or value");
         return false;
@@ -651,8 +661,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
 
       ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(class_val), method_key,
                                     module_val) {
-        if ((NULL == method_key)
-            || (0 == nr_php_is_zval_valid_string(module_val))) {
+        if (NULL == method_key
+            || 0 == nr_php_is_zval_valid_string(module_val)) {
           nrl_warning(NRL_FRAMEWORK,
                       "hookImplementationsMap[method]: invalid key or value");
           return false;
