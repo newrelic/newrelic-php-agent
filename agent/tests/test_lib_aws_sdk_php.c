@@ -557,6 +557,23 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
   nr_php_zval_free(&array_arg);
   NRINI(aws_account_id) = "111122223333";
 
+  /* Test NULL INI */
+  NRINI(aws_account_id) = NULL;
+  args
+      = "array("
+        "    0 => array("
+        "        'FunctionName' => 'us-east-2:my-function'"
+        "    )"
+        ")";
+  array_arg = tlib_php_request_eval_expr(args);
+  expect = "NULL";
+  expect_arg = tlib_php_request_eval_expr(expect);
+  expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
+  tlib_pass_if_not_null("Expression should evaluate.", expr);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&array_arg);
+  NRINI(aws_account_id) = "111122223333";
+
   /* Test invalid arg 1 */
   args
       = "array("
@@ -620,6 +637,25 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
+
+static void test_nr_lib_aws_sdk_ini() {
+  /* test too short */
+  tlib_php_engine_create("newrelic.cloud.aws.account_id=\"12345678901\"");
+  tlib_php_request_start();
+  tlib_pass_if_str_equal("Expected short account id to be dropped",
+                         NULL, NRINI(aws_account_id));
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+
+  /* test too long */
+  tlib_php_engine_create("newrelic.cloud.aws.account_id=\"1234567890123\"");
+  tlib_php_request_start();
+  tlib_pass_if_str_equal("Expected short account id to be dropped",
+                         NULL, NRINI(aws_account_id));
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+}
+
 #endif /* PHP 8.1+ */
 
 void test_main(void* p NRUNUSED) {
@@ -627,6 +663,7 @@ void test_main(void* p NRUNUSED) {
   test_nr_lib_aws_sdk_php_add_supportability_service_metric();
   test_nr_lib_aws_sdk_php_handle_version();
   tlib_php_engine_destroy();
+  test_nr_lib_aws_sdk_ini();
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   test_nr_lib_aws_sdk_php_sqs_parse_queueurl();
   test_nr_lib_aws_sdk_php_get_command_arg_value();
