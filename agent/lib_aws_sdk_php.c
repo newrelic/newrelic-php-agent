@@ -474,7 +474,7 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
                        region, accountID, function_name);
     }
 
-    /* Attatch the ARN */
+    /* Attach the ARN */
     cloud_attrs->cloud_resource_id = arn;
   }
 
