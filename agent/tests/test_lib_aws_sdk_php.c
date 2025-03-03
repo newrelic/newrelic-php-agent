@@ -566,8 +566,6 @@ static void test_nr_lib_aws_sdk_php_lambda_invoke() {
         "    )"
         ")";
   array_arg = tlib_php_request_eval_expr(args);
-  expect = "NULL";
-  expect_arg = tlib_php_request_eval_expr(expect);
   expr = nr_php_call(NULL, "lambda_invoke", expect_arg, array_arg);
   tlib_pass_if_not_null("Expression should evaluate.", expr);
   nr_php_zval_free(&expr);
