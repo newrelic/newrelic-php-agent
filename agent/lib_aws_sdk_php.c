@@ -367,7 +367,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
     }
     if (nr_php_is_zval_valid_array(metadata)) {
       zval* uri = nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "effectiveUri");
-      if (nr_php_is_zval_valid_string(uri)) {
+      if (nr_php_is_zval_valid_string(uri) && !nr_strempty(Z_STRVAL_P(uri))) {
         external_params.uri = Z_STRVAL_P(uri);
       }
     }
