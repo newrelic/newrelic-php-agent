@@ -8,8 +8,9 @@ package newrelic
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 	"time"
+
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 // LogEvents is a wrapper over AnalyticsEvents created for additional type
@@ -45,6 +46,15 @@ func (events *LogEvents) SetLogForwardingLabels(data []byte) {
 	err := json.Unmarshal(data, &events.LogForwardingLabels)
 	if nil != err {
 		log.Errorf("failed to unmarshal log labels json", err)
+	}
+
+	// verify valid labels
+	for idx := range events.LogForwardingLabels {
+		if len(events.LogForwardingLabels[idx].LabelType) == 0 || len(events.LogForwardingLabels[idx].LabelValue) == 0 {
+			log.Errorf("invalid log label: %s log value: %s", events.LogForwardingLabels[idx].LabelType, events.LogForwardingLabels[idx].LabelValue)
+			events.LogForwardingLabels = nil
+			break
+		}
 	}
 }
 
