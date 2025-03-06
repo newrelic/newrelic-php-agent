@@ -362,9 +362,9 @@ void test_main(void* p NRUNUSED) {
    * We're setting up our own engine instance because we need to control the
    * attribute configuration.
    */
-  tlib_php_engine_create(
-      "newrelic.transaction_events.attributes.include=request."
-      "uri" PTSRMLS_CC);
+  // clang-format off
+  tlib_php_engine_create("newrelic.transaction_events.attributes.include=request.uri" PTSRMLS_CC);
+  // clang-format on
 
   test_handle_fpm_error();
   test_max_segments_config_values();
