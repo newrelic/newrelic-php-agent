@@ -616,23 +616,24 @@ static nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
    */
   log_labels = nro_new(NR_OBJECT_HASH);
   for (int i = 0; i < nro_getsize(label_keys); i++) {
-    const char* key = nro_get_array_string(label_keys, i + 1, NULL);
-    const char* value = nro_get_hash_string(labels, key, NULL);
-    char* lower_key = nr_string_to_lowercase(key);
-    bool exclude = false;
-    nr_status_t rv;
+    const char* key = NULL;
+    char* lower_key = NULL;
+    int exclude = false;
 
-    exclude = nro_get_hash_boolean(exclude_labels_hash, lower_key, &rv);
-    if (NR_SUCCESS != rv) {
-      exclude = false;
+    key = nro_get_array_string(label_keys, i + 1, NULL);
+    if (NULL == key) {
+      continue;
     }
-    if (!exclude) {
-      nro_set_hash_string(log_labels, key, value);
+
+    lower_key = nr_string_to_lowercase(key);
+
+    if (1 != nro_get_hash_boolean(exclude_labels_hash, lower_key, NULL)) {
+      nro_set_hash_string(log_labels, key,
+                          nro_get_hash_string(labels, key, NULL));
     } else {
       nrl_verbosedebug(NRL_TXN, "%s: Excluding label %s", __FUNCTION__,
                        NRSAFESTR(key));
     }
-
     nr_free(lower_key);
   }
 
