@@ -392,7 +392,7 @@ void nr_aws_sdk_mshutdown(void) {
 
 void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs) {
   zval* call_args = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
-  zval* this_obj = getThis();//NR_PHP_USER_FN_THIS();
+  zval* this_obj = NR_PHP_USER_FN_THIS();
   char* arn = NULL;
   char* function_name = NULL;
   char* region = NULL;
