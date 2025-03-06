@@ -543,7 +543,7 @@ static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
 
   (void)value;
 
-  if (NULL == user_data) {
+  if (NULL == key || NULL == user_data) {
     return NR_FAILURE;
   }
 
