@@ -288,6 +288,69 @@ static void test_create_agent_php_version_metrics() {
 #undef PHP_VERSION_METRIC_BASE
 #undef AGENT_VERSION_METRIC_BASE
 
+static void test_create_log_forwarding_labels(TSRMLS_D) {
+  nrobj_t* labels = NULL;
+  nrobj_t* log_labels = NULL;
+  char* json = NULL;
+
+  /* Test : Create log forwarding labels with valid key/value pairs */
+  labels = nro_new_hash();
+  nro_set_hash_string(labels, "key1", "value1");
+  nro_set_hash_string(labels, "key2", "value2");
+  nro_set_hash_string(labels, "key3", "value3");
+
+  log_labels = nr_php_txn_get_log_forwarding_labels(labels);
+
+  json = nro_to_json(labels);
+  tlib_pass_if_str_equal(
+      "valid log label creation test",
+      "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}", json);
+
+  nr_free(json);
+  nro_delete(labels);
+  nro_delete(log_labels);
+
+  /* Test : Create log forwarding labels with empty key/value pairs */
+  labels = nro_new_hash();
+  nro_set_hash_string(labels, "", "");
+  nro_set_hash_string(labels, "key", "");
+  nro_set_hash_string(labels, "", "value");
+
+  log_labels = nr_php_txn_get_log_forwarding_labels(labels);
+
+  json = nro_to_json(labels);
+  tlib_pass_if_str_equal("empty string log label creation test",
+                         "{\"key\":\"\"}", json);
+
+  nr_free(json);
+  nro_delete(labels);
+  nro_delete(log_labels);
+
+  /* Test : Create log forwarding labels with NULL key/value pairs */
+  labels = nro_new_hash();
+  nro_set_hash_string(labels, NULL, NULL);
+  nro_set_hash_string(labels, "key", NULL);
+  nro_set_hash_string(labels, NULL, "value");
+
+  log_labels = nr_php_txn_get_log_forwarding_labels(labels);
+
+  json = nro_to_json(labels);
+  tlib_pass_if_str_equal("NULL value log label creation test", "{\"key\":\"\"}",
+                         json);
+
+  nr_free(json);
+  nro_delete(labels);
+  nro_delete(log_labels);
+
+  /* Test : Create log forwarding labels NULL labels object */
+  log_labels = nr_php_txn_get_log_forwarding_labels(NULL);
+  json = nro_to_json(labels);
+  tlib_pass_if_str_equal("NULL object log label creation test", "null", json);
+
+  nr_free(json);
+  nro_delete(log_labels);
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -300,13 +363,15 @@ void test_main(void* p NRUNUSED) {
    * attribute configuration.
    */
   tlib_php_engine_create(
-      "newrelic.transaction_events.attributes.include=request.uri" PTSRMLS_CC);
+      "newrelic.transaction_events.attributes.include=request."
+      "uri" PTSRMLS_CC);
 
   test_handle_fpm_error();
   test_max_segments_config_values();
   test_create_php_version_metric();
   test_create_agent_version_metric();
   test_create_agent_php_version_metrics();
+  test_create_log_forwarding_labels();
 
   tlib_php_engine_destroy();
 }

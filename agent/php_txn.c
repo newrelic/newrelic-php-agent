@@ -563,7 +563,7 @@ static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
  *
  */
 
-static nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
+nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
   nrobj_t* label_keys = NULL;
   nrobj_t* exclude_labels_list = NULL;
   nrobj_t* exclude_labels_hash = NULL;
