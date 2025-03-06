@@ -8613,6 +8613,11 @@ static void test_txn_log_configuration(void) {
   txn->options.log_decorating_enabled = true;
   tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1, decorating=1 -> forwarding off");
   tlib_pass_if_true(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1, decorating=1 -> decorating on");
+
+  // if log forwarding is disabled then log label forwarding should be disabled
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_forwarding_labels_enabled = true;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_labels_enabled(txn), "forwarding=0, labels=1 -> off");
   // clang-format on
 }
 
