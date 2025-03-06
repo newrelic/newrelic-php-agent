@@ -5,14 +5,18 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation will NOT forward logs with labels when:
-  - default INI values are used for logging except logleve set to DEBUG
-  - newrelic.labels set to "label1:value1;label2:value2"
+Test that Monolog3 instrumentation can forward logs with labels when:
+  - label forwarding is enabled
+  - newrelic.labels set to "LaBel1:VaLue1;label2:VALUE2; LABEL3:value3"
+  - label exclusion rule set to "label1, LABEL1, label1, LaBel1"
+
+This test makes sure that the exclude rule is applied case-insensitively
+and that multiple identical (after lowercasing) exclude rules work
+correctly.
 
 Expect:
-  - NO labels to be forwarded with the log events in the "common" attribute
-    since log forwarding is disabled by default
-  - "Supportability/Logging/Labels/PHP/disabled" to exist and have a value of 1
+  - "tags.label2" and "tags.label3" to be added to common attributes for log event harvest
+  - "Supportability/Logging/Labels/PHP/enabled" to exist and have a value of 1.
 */
 
 /*SKIPIF
@@ -23,8 +27,14 @@ require('skipif.inc');
 */
 
 /*INI
+newrelic.application_logging.enabled = true
+newrelic.application_logging.forwarding.enabled = true
+newrelic.application_logging.metrics.enabled = true
+newrelic.application_logging.forwarding.max_samples_stored = 10
 newrelic.application_logging.forwarding.log_level = DEBUG
-newrelic.labels = "label1:value1;label2:value2"
+newrelic.application_logging.forwarding.labels.enabled = true
+newrelic.application_logging.forwarding.labels.exclude = "label1, LABEL1, label1, LaBel1"
+newrelic.labels = "LaBel1:VaLue1;label2:VALUE2; LABEL3:value3"
 */
 
 /*EXPECT
@@ -65,7 +75,7 @@ monolog3.EMERGENCY: emergency []
     [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Metrics/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Labels/PHP/disabled"},                      [1, "??", "??", "??", "??", "??"]]
+    [{"name": "Supportability/Logging/Labels/PHP/enabled"},                      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
@@ -75,7 +85,10 @@ monolog3.EMERGENCY: emergency []
 [
     {
       "common": {
-        "attributes": {}
+        "attributes": {
+          "tags.label2": "VALUE2",
+          "tags.LABEL3": "value3"
+        }
       },
       "logs": [
         {
@@ -161,14 +174,13 @@ monolog3.EMERGENCY: emergency []
       ]
     }
   ]
-*/
+ */
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
 require_monolog(3);
 
 use Monolog\Logger;
-use Monolog\Level;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
@@ -179,7 +191,7 @@ function test_logging() {
     $logfmt = "%channel%.%level_name%: %message% %context%\n";
     $formatter = new LineFormatter($logfmt);
 
-    $stdoutHandler = new StreamHandler('php://stdout', LOGGER::DEBUG);
+    $stdoutHandler = new StreamHandler('php://stdout', Logger::DEBUG);
     $stdoutHandler->setFormatter($formatter);
 
     $logger->pushHandler($stdoutHandler);

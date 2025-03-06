@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Test that Monolog3 instrumentation will NOT forward logs with labels when:
-  - default INI values are used for logging except logleve set to DEBUG
+Test that Monolog2 instrumentation will NOT forward logs with labels when:
+  - default INI values are used for logging except loglevel set to DEBUG
   - newrelic.labels set to "label1:value1;label2:value2"
 
 Expect:
@@ -28,14 +28,14 @@ newrelic.labels = "label1:value1;label2:value2"
 */
 
 /*EXPECT
-monolog3.DEBUG: debug []
-monolog3.INFO: info []
-monolog3.NOTICE: notice []
-monolog3.WARNING: warning []
-monolog3.ERROR: error []
-monolog3.CRITICAL: critical []
-monolog3.ALERT: alert []
-monolog3.EMERGENCY: emergency []
+monolog2.DEBUG: debug []
+monolog2.INFO: info []
+monolog2.NOTICE: notice []
+monolog2.WARNING: warning []
+monolog2.ERROR: error []
+monolog2.CRITICAL: critical []
+monolog2.ALERT: alert []
+monolog2.EMERGENCY: emergency []
 */
 
 /*EXPECT_METRICS
@@ -60,7 +60,7 @@ monolog3.EMERGENCY: emergency []
     [{"name": "OtherTransactionTotalTime"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name": "OtherTransactionTotalTime/php__FILE__"},                           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/PHP/Monolog/enabled"},                      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/PHP/package/monolog/monolog/3/detected"},           [1, "??", "??", "??", "??", "??"]],
+    [{"name": "Supportability/PHP/package/monolog/monolog/2/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/library/Monolog/detected"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/LocalDecorating/PHP/disabled"},             [1, "??", "??", "??", "??", "??"]],
     [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
@@ -85,7 +85,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
@@ -95,7 +95,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
@@ -105,7 +105,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
@@ -115,7 +115,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
@@ -125,7 +125,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },
         {
@@ -135,7 +135,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },  
         {
@@ -145,7 +145,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         },        
         {
@@ -155,7 +155,7 @@ monolog3.EMERGENCY: emergency []
           "trace.id": "??",
           "span.id": "??",
           "entity.guid": "??",
-          "entity.name": "tests/integration/logging/monolog3__FILE__",
+          "entity.name": "tests/integration/logging/monolog2__FILE__",
           "hostname": "__HOST__"
         }
       ]
@@ -165,7 +165,7 @@ monolog3.EMERGENCY: emergency []
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/monolog.php');
-require_monolog(3);
+require_monolog(2);
 
 use Monolog\Logger;
 use Monolog\Level;
@@ -174,7 +174,7 @@ use Monolog\Formatter\LineFormatter;
 
 
 function test_logging() {
-    $logger = new Logger('monolog3');
+    $logger = new Logger('monolog2');
 
     $logfmt = "%channel%.%level_name%: %message% %context%\n";
     $formatter = new LineFormatter($logfmt);
