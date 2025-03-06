@@ -629,7 +629,8 @@ static nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
     if (!exclude) {
       nro_set_hash_string(log_labels, key, value);
     } else {
-      nrl_verbosedebug(NRL_TXN, "%s: Excluding label %s", __FUNCTION__, key);
+      nrl_verbosedebug(NRL_TXN, "%s: Excluding label %s", __FUNCTION__,
+                       NRSAFESTR(key));
     }
 
     nr_free(lower_key);
