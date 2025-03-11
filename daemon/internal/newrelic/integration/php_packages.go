@@ -319,7 +319,7 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, []st
 	//  package to determine its version.
 	//
 	//  Option #1 is preferable when it available as it provides the most comprehensive view of what the agent can do.
-	//n
+	//
 	//  Option #2 is needed because some test cases do not exercise all the packages which are
 	//  installed and so the agent will not detect everything for that test case run which it could
 	//  theorectically detect if the test case used all the available packages installed.
