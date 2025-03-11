@@ -669,6 +669,9 @@ PHP_MINIT_FUNCTION(newrelic) {
   NR_ZEND_EXECUTE_HOOK = nr_php_execute;
 #else
   nr_php_observer_minit();
+  if (NR_SUCCESS != nr_php_user_instrument_wraprec_hashmap_init()) {
+    nrl_error(NRL_AGENT, "Failed to initialize user function instrumentation");
+  }
 #endif
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_internal)) {

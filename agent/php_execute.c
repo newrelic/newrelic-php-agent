@@ -611,11 +611,11 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
   const char* ctx = context ? context : "execute";
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  nruserfn_t* wr = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
-  #else
+  // #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  // nruserfn_t* wr = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
+  // #else
   nruserfn_t* wr = nr_php_get_wraprec(execute_data->func);
-  #endif
+  // #endif
 #endif
   argstr[0] = '\0';
 
@@ -1949,7 +1949,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
      */
     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
-  wraprec = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
+  wraprec = nr_php_get_wraprec(execute_data->func);
 
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 

@@ -23,6 +23,7 @@
 #include "php_observer.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "php_wrapper.h"
 #include "fw_laravel.h"
@@ -75,6 +76,7 @@
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
+  zend_string *func_name = NULL, *scope_name = NULL;
   nruserfn_t* wr;
   if (NULL == execute_data) {
     return handlers;
@@ -88,9 +90,34 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     nr_php_show_exec("observe", execute_data, NULL);
   }
 
-  wr = nr_php_get_wraprec(execute_data->func);
-  // store the wraprec in the op_array extension for the duration of the request for later lookup
-  ZEND_OP_ARRAY_EXTENSION(&execute_data->func->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  if (OP_ARRAY_IS_A_METHOD(&execute_data->func->op_array)) {
+    scope_name = execute_data->func->op_array.scope->name;
+    func_name = execute_data->func->op_array.function_name;
+#if 1
+    zend_long cn_hash = zend_hash_func(ZSTR_VAL(scope_name), ZSTR_LEN(scope_name));
+    zend_long fn_hash = zend_hash_func(ZSTR_VAL(func_name), ZSTR_LEN(func_name));
+    nrl_always("class_name=%s, class_name->h=%zu, cn_hash=%zu, function_name=%s, function_name->h=%zu, fn_hash=%zu",
+                ZSTR_VAL(scope_name), scope_name->h, cn_hash,
+                ZSTR_VAL(func_name), func_name->h, fn_hash);
+#endif
+  } else if (OP_ARRAY_IS_A_FUNCTION(&execute_data->func->op_array)){
+    func_name = execute_data->func->op_array.function_name;
+#if 1
+    zend_long fn_hash = zend_hash_func(ZSTR_VAL(func_name), ZSTR_LEN(func_name));
+    nrl_always("function_name=%s, function_name->h=%zu, fn_hash=%zu", ZSTR_VAL(func_name), func_name->h, fn_hash);
+#endif
+  }
+
+  if (!ZEND_OP_ARRAY_EXTENSION(&execute_data->func->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))) {
+    nrl_always("wraprec not installed yet");
+    wr = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
+    nrl_always("found wraprec=%p", wr);
+
+    // store the wraprec in the op_array extension for the duration of the request for later lookup
+    ZEND_OP_ARRAY_EXTENSION(&execute_data->func->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  } else {
+    nrl_always("wraprec already installed");
+  }
 
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;

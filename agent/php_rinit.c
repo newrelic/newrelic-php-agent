@@ -54,7 +54,9 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(sapi_headers) = NULL;
   NRPRG(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
+#endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRPRG(drupal_http_request_segment) = NULL;
