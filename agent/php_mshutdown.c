@@ -42,6 +42,10 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
 
   nr_wordpress_mshutdown();
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  nr_aws_sdk_mshutdown();
+#endif
+
   /* restore header handler */
   sapi_module.header_handler = NR_PHP_PROCESS_GLOBALS(orig_header_handler);
   NR_PHP_PROCESS_GLOBALS(orig_header_handler) = NULL;
