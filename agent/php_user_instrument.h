@@ -218,6 +218,8 @@ extern int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
                                            nr_segment_t* segment,
                                            NR_EXECUTE_PROTO);
 #endif
+extern nruserfn_t* nr_php_user_wraprec_create(void);
+extern void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
 /*
  * Purpose : Destroy all user instrumentation records, freeing
  *           associated memory.

@@ -175,7 +175,6 @@ void nr_php_init_user_instrumentation(void) {
  * wrapped). This happens because with new request/transaction php is loading
  * all new user code.
  */
-static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr);
 static void reset_wraprec(nruserfn_t* wraprec) {
   nruserfn_t* p = wraprec;
   nr_php_wraprec_hashmap_key_release(&p->key);
@@ -301,7 +300,7 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
   nr_php_wrap_zend_function(orig_func, wraprec TSRMLS_CC);
 }
 
-static nruserfn_t* nr_php_user_wraprec_create(void) {
+nruserfn_t* nr_php_user_wraprec_create(void) {
   nruserfn_t* wr = (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
   wr->pid = NRPRG(pid);
   return wr;
@@ -357,7 +356,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
   return wraprec;
 }
 
-static void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
+void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nruserfn_t* wraprec;
 
   if (0 == wraprec_ptr) {
