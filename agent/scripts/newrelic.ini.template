@@ -1352,3 +1352,17 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          newrelic.span_events.attributes.include/exclude
 ;
 ;newrelic.message_tracer.segment_parameters.enabled = true
+
+; Setting: newrelic.cloud.aws.account_id
+; Type   : string
+; Scope  : per-directory
+; Default: none
+; Info   : This setting is read by some cloud service instrumentation so the
+;          cloud.resource_id attribute can be set in the respective spans.
+;          Do not include any "-" characters; this should be 12 characters.
+;
+;          AWS DynamoDB and Kinesis are services that require this value to be
+;          able to populate the cloud.resource_id attribute. Likewise, AWS Lambda
+;          requires that this value when the account ID is not part of the function name.
+;
+;newrelic.cloud.aws.account_id = ""
