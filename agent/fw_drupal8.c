@@ -140,6 +140,7 @@ static void nr_drupal8_add_method_callback_before_after_clean(
     nrspecialfn_t after_callback,
     nrspecialfn_t clean_callback) {
   zend_function* function = NULL;
+  char* methodLC = NULL;
 
   if (NULL == ce) {
     nrl_verbosedebug(NRL_FRAMEWORK, "Drupal 8: got NULL class entry in %s",
@@ -147,15 +148,18 @@ static void nr_drupal8_add_method_callback_before_after_clean(
     return;
   }
 
-  function = nr_php_find_class_method(ce, method);
+  methodLC = nr_string_to_lowercase(method);
+  function = nr_php_find_class_method(ce, methodLC);
   if (NULL == function) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Drupal 8+: cannot get zend_function entry for %.*s::%.*s",
                      NRSAFELEN(nr_php_class_entry_name_length(ce)),
                      nr_php_class_entry_name(ce), NRSAFELEN(method_len),
                      method);
+    nr_free(methodLC);
     return;
   }
+  nr_free(methodLC);
 
   if (NULL == nr_php_get_wraprec(function)) {
     char* class_method = nr_formatf(
@@ -167,6 +171,8 @@ static void nr_drupal8_add_method_callback_before_after_clean(
         clean_callback);
 
     nr_free(class_method);
+  } else {
+    nrl_always("%s::%s already has wraprec", nr_php_class_entry_name(ce), method);
   }
 }
 #endif  // OAPI
@@ -640,7 +646,7 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_drupal8_add_method_callback_before_after_clean(
-      ce, NR_PSTR("invokeallwith"), nr_drupal94_invoke_all_with,
+      ce, NR_PSTR("invokeAllWith"), nr_drupal94_invoke_all_with,
       nr_drupal94_invoke_all_with_after, nr_drupal94_invoke_all_with_clean);
 #else
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),

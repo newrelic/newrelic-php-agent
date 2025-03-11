@@ -12,7 +12,7 @@
 
 #include "php_includes.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 /*
  * The hashmap key constructed from zend_function metadata
  */

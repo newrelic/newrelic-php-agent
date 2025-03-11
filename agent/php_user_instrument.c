@@ -7,6 +7,7 @@
 #include "php_globals.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_hashmap.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_wrapper.h"
 #include "lib_guzzle_common.h"
 #include "util_logging.h"
@@ -114,7 +115,32 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
   return zcaught;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
+                                             zend_function* zf) {
+  // for situation when wraprec is added after first execution of the function
+  // store the wraprec in the op_array extension for the duration of the request for later lookup
+  // The op_array extension slot for function may not be initialized yet because it is
+  // initialized only on the first call made to the function in that request. This would
+  // mean that run_time_cache is NULL and wraprec cannot be stored yet! It will be stored
+  // on the first call to the function when observer is registered for that function.
+  if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
+    ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  }
+}
+
+static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
+  nruserfn_t *wraprec = NULL;
+  
+  if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
+    wraprec = ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
+  }
+  if (NULL != wraprec && NRPRG(pid) != wraprec->pid) {
+    wraprec = NULL;
+  }
+  return wraprec;
+}
+#elif ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 /* Hashmap with pointers to wraprecs. Some, that are re-usable between requests,
  * are stored in linked list. These wraprecs are created once per interesting
  * function detection, and destroyed at module shutdown. Some, that are
@@ -130,17 +156,6 @@ static nr_php_wraprec_hashmap_t* user_function_wrappers;
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
   nr_php_wraprec_hashmap_update(user_function_wrappers, zf, wr);
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  // for situation when wraprec is added after first execution of the function
-  // store the wraprec in the op_array extension for the duration of the request for later lookup
-  // The op_array extension slot for function may not be initialized yet because it is
-  // initialized only on the first call made to the function in that request. This would
-  // mean that run_time_cache is NULL and wraprec cannot be stored yet! It will be stored
-  // on the first call to the function when observer is registered for that function.
-  if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
-    ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
-  }
-#endif
 }
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   nruserfn_t* wraprec = NULL;
@@ -306,6 +321,7 @@ nruserfn_t* nr_php_user_wraprec_create(void) {
   return wr;
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
                                                     int full_name_len) {
   int i;
@@ -355,6 +371,7 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
 
   return wraprec;
 }
+#endif
 
 void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nruserfn_t* wraprec;
@@ -377,6 +394,7 @@ void nr_php_user_wraprec_destroy(nruserfn_t** wraprec_ptr) {
   nr_realfree((void**)wraprec_ptr);
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 static int nr_php_user_wraprec_is_match(const nruserfn_t* w1,
                                         const nruserfn_t* w2) {
   if ((0 == w1) && (0 == w2)) {
@@ -393,11 +411,42 @@ static int nr_php_user_wraprec_is_match(const nruserfn_t* w1,
   }
   return 1;
 }
+#endif
+
+#if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
+static nruserfn_t* nr_transient_wraprecs = NULL; /* a singly linked list */
+#else
+static nruserfn_t* nr_wrapped_user_functions = NULL; /* a singly linked list */
+#endif
 
 static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   /* Add the wraprecord to the list. */
+#if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
+  if (wraprec->is_transient) {
+    /* Transient (unnamed) wraprecs are not added to wraprec hashmap which only stores named
+     * wraprecs. Keep track of all transient wraprecs so that they can be destroyed at the
+     * end of the request. */
+    wraprec->next = nr_transient_wraprecs;
+    nr_transient_wraprecs = wraprec;
+    return;
+  }
+#endif
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
+  if (!wraprec->is_transient) {
+    /* Non-transient wraprecs are added to both the hashmap and linked list.
+     * At request shutdown, the hashmap will free transients, but leave
+     * non-transients to be freed when the linked list is disposed of which is at
+     * module shutdown */
+    wraprec->next = nr_wrapped_user_functions;
+    nr_wrapped_user_functions = wraprec;
+    return;
+  }
+#endif
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   wraprec->next = nr_wrapped_user_functions;
   nr_wrapped_user_functions = wraprec;
+  return;
+#endif
 }
 
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
@@ -440,9 +489,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   nr_free(name);
 
   nr_php_wrap_zend_function(func, wraprec TSRMLS_CC);
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nr_php_add_custom_tracer_common(wraprec);
-#endif
 
   return wraprec;
 }
@@ -450,6 +497,7 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen) {
   nruserfn_t* wraprec;
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   nruserfn_t* p;
 
   wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
@@ -474,17 +522,15 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
     }
     p = p->next;
   }
-
+#else
+  wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen);
+#endif
   nrl_verbosedebug(
       NRL_INSTRUMENT, "adding custom for '" NRP_FMT_UQ "%.5s" NRP_FMT_UQ "'",
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
-  /* non-transient wraprecs are added to both the hashmap and linked list.
-   * At request shutdown, the hashmap will free transients, but leave
-   * non-transients to be freed when the linked list is disposed of which is at
-   * module shutdown */
   nr_php_add_custom_tracer_common(wraprec);
 
   return wraprec; /* return the new wraprec */
@@ -501,7 +547,13 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
  *
  */
 void nr_php_reset_user_instrumentation(void) {
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* No need to do anything at rshutdown:
+   *  - Observer API takes care of resetting user instrumentation for each request
+   *  - All named wraprecs ever created persist in wraprec hashmap until mshutdown
+   */
+  return;
+#elif ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   // send a metric with the number of transient wrappers
   if (NULL != user_function_wrappers) {
     nr_php_wraprec_hashmap_stats_t stats
@@ -554,7 +606,8 @@ void nr_php_remove_transient_user_instrumentation(void) {
  * Wrap all the interesting user functions with instrumentation.
  */
 void nr_php_add_user_instrumentation(TSRMLS_D) {
-  nruserfn_t* p = nr_wrapped_user_functions;
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+  nruserfn_t* p = nr_named_wraprecs;
 
   while (0 != p) {
     if ((0 == p->is_wrapped) && (0 == p->is_disabled)) {
@@ -562,6 +615,7 @@ void nr_php_add_user_instrumentation(TSRMLS_D) {
     }
     p = p->next;
   }
+#endif
 }
 
 void nr_php_add_transaction_naming_function(const char* namestr,
@@ -608,6 +662,7 @@ void nr_php_remove_exception_function(zend_function* func TSRMLS_DC) {
 }
 
 void nr_php_destroy_user_wrap_records(void) {
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   nruserfn_t* next_user_wraprec;
 
   next_user_wraprec = nr_wrapped_user_functions;
@@ -618,14 +673,11 @@ void nr_php_destroy_user_wrap_records(void) {
     nr_php_user_wraprec_destroy(&wraprec);
   }
 
-  nr_wrapped_user_functions = NULL;
+  nr_named_wraprecs = NULL;
+#else
+  nr_php_user_instrument_wraprec_hashmap_destroy();
+#endif
 }
-
-/*
- * This is a similar list, but for the dynamically added user-defined functions
- * rather than the statically defined internal/binary functions above.
- */
-nruserfn_t* nr_wrapped_user_functions = 0;
 
 void nr_php_user_function_add_declared_callback(const char* namestr,
                                                 int namestrlen,

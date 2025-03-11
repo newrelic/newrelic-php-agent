@@ -426,6 +426,9 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
     wraprec->is_method = 1;
   }
 
+  wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
+      wraprec->funcname, wraprec->classname);
+
   return wraprec;
 }
 

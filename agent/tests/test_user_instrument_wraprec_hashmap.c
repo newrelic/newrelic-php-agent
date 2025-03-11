@@ -28,6 +28,10 @@ static void test_wraprecs_hashmap() {
   scope_name = zend_string_init_fast(NR_PSTR(SCOPE_NAME));
   method_name = zend_string_init_fast(NR_PSTR(METHOD_NAME));
 
+  // user_instrument_wraprec_hashmap is initialized at minit
+  // destroy it to test agent's behavior when it is not initialized
+  nr_php_user_instrument_wraprec_hashmap_destroy();
+
   // Test invalid operations before initializing the hashmap
   wraprec = nr_php_user_instrument_wraprec_hashmap_add(NULL, 0);
   tlib_pass_if_null("adding NULL, 0-char before init", wraprec);

@@ -53,7 +53,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
 }
 #endif /* PHP < 7.4 */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 static void test_hashmap_wraprec() {
   const char* user_func1_name = "user_function_to_be_instrumented";
   zend_function* user_func1_zf;
@@ -154,7 +154,7 @@ void test_main(void* p NRUNUSED) {
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   test_op_array_wraprec(TSRMLS_C);
-#else
+#elif ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   test_hashmap_wraprec();
 #endif /* PHP >= 7.4 */
 

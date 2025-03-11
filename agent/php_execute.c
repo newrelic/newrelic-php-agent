@@ -93,18 +93,6 @@
  * conditions wherever possible.
  */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-static inline nruserfn_t* nr_php_get_wraprec_from_op_array_extension(const char* fn, zend_function* zf) {
-  nruserfn_t* wraprec = (nruserfn_t*)ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
-  nrl_verbosedebug(NRL_AGENT, "%s from %s, op_array_extension=%p, wraprec=%p, wraprec->pid=%d", __func__, fn, ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)), wraprec, wraprec? wraprec->pid : 0);
-  if (NULL != wraprec && NRPRG(pid) != wraprec->pid) {
-    nrl_debug(NRL_AGENT, "wraprec pid mismatch: %d != %d", wraprec->pid, NRPRG(pid));
-    return NULL;
-  }
-  return wraprec;
-}
-#endif
-
 static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC);
 static int nr_php_show_exec_indentation(TSRMLS_D);
 
@@ -611,11 +599,7 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
   const char* ctx = context ? context : "execute";
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  nruserfn_t* wr = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
-  #else
   nruserfn_t* wr = nr_php_get_wraprec(execute_data->func);
-  #endif
 #endif
   argstr[0] = '\0';
 
@@ -1949,7 +1933,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
      */
     nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_ORIG_ARGS);
   }
-  wraprec = nr_php_get_wraprec_from_op_array_extension(__func__, execute_data->func);
+  wraprec = nr_php_get_wraprec(execute_data->func);
 
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 

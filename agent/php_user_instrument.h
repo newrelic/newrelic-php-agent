@@ -37,7 +37,7 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
 typedef struct _nruserfn_t {
   struct _nruserfn_t* next; /* singly linked list next pointer */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   /* wraprec hashmap key */
   nr_php_wraprec_hashmap_key_t key;
 #endif
@@ -111,9 +111,10 @@ typedef struct _nruserfn_t {
   int pid; /* pid of a process that created this wraprec */
 } nruserfn_t;
 
-extern nruserfn_t* nr_wrapped_user_functions; /* a singly linked list */
-
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/* PHPs 8.0+ use ZEND_OP_ARRAY_EXTENSION to store wraprecs and Observer API to install them */
+extern nruserfn_t* nr_php_get_wraprec(zend_function* zf);
+#elif ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 
 /*
  * Purpose : Init user instrumentation. This must only be called on request
