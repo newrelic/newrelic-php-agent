@@ -373,10 +373,10 @@ func (pkgs *PhpPackagesCollection) GatherInstalledPackages() ([]PhpPackage, []st
 				// The composer versioning standard is to not include any spaces
 				// yet sometimes this standard is broken
 				version_splits := strings.Split(version, " ")
-				if (len(version_splits) > 1) {
+				if len(version_splits) > 1 {
 					notes = append(notes, fmt.Sprintf("Used shortened package version from composer. Originally was \"%s\"", version))
 					version = version_splits[0]
-			    }
+				}
 
 				pkgs.packages = append(pkgs.packages, PhpPackage{v.Name, version})
 				//fmt.Printf("   -> %s in supported!\n", v.Name)
