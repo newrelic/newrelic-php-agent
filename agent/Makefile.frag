@@ -117,6 +117,7 @@ TEST_BINARIES = \
 	tests/test_txn_private \
 	tests/test_user_instrument \
 	tests/test_user_instrument_hashmap \
+	tests/test_user_instrument_wraprec_hashmap \
 	tests/test_zval
 
 .PHONY: unit-tests
