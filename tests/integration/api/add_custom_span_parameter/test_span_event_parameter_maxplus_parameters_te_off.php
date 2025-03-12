@@ -204,7 +204,7 @@ null
         "1": 1
       },
       {
-        "code.lineno": 246,
+        "code.lineno": 247,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -232,7 +232,8 @@ null
     [{"name":"Supportability/api/add_custom_span_parameter"},       [65, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

@@ -7,18 +7,28 @@ package newrelic
 
 import (
 	"bytes"
+	"encoding/json"
 	"time"
+
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 // LogEvents is a wrapper over AnalyticsEvents created for additional type
 // safety and proper FailedHarvest behavior.
 type LogEvents struct {
 	*analyticsEvents
+	LogForwardingLabels []LogForwardingLabel
+}
+
+// define a struct to represent the format of labels as sent by agent
+type LogForwardingLabel struct {
+	LabelType  string `json:"label_type"`
+	LabelValue string `json:"label_value"`
 }
 
 // NewLogEvents returns a new Log event reservoir with capacity max.
 func NewLogEvents(max int) *LogEvents {
-	return &LogEvents{newAnalyticsEvents(max)}
+	return &LogEvents{analyticsEvents: newAnalyticsEvents(max)}
 }
 
 // AddEventFromData observes the occurrence of an Log event. If the
@@ -26,6 +36,26 @@ func NewLogEvents(max int) *LogEvents {
 // is possible the new event may be discarded.
 func (events *LogEvents) AddEventFromData(data []byte, priority SamplingPriority) {
 	events.AddEvent(AnalyticsEvent{data: data, priority: priority})
+}
+
+// AddLogForwardingLabels accepts JSON in the format used to send labels
+// to the collector. This is used to add labels to the log events.  The
+// labels are added to the log events when the events are sent to the
+// collector.
+func (events *LogEvents) SetLogForwardingLabels(data []byte) {
+	err := json.Unmarshal(data, &events.LogForwardingLabels)
+	if nil != err {
+		log.Errorf("failed to unmarshal log labels json", err)
+	}
+
+	// verify valid labels
+	for idx := range events.LogForwardingLabels {
+		if len(events.LogForwardingLabels[idx].LabelType) == 0 || len(events.LogForwardingLabels[idx].LabelValue) == 0 {
+			log.Errorf("invalid log label: %s log value: %s", events.LogForwardingLabels[idx].LabelType, events.LogForwardingLabels[idx].LabelValue)
+			events.LogForwardingLabels = nil
+			break
+		}
+	}
 }
 
 // FailedHarvest is a callback invoked by the processor when an
@@ -46,10 +76,24 @@ func (events *LogEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 	estimate := len(es) * 128
 	buf.Grow(estimate)
 	buf.WriteString(`[{` +
-		`"common": {"attributes": {}},` +
+		`"common": {"attributes": {`)
+	nwrit := 0
+	for _, value := range events.LogForwardingLabels {
+		if nwrit > 0 {
+			buf.WriteByte(',')
+		}
+		nwrit++
+		buf.WriteString(`"tags.`)
+		buf.WriteString(value.LabelType)
+		buf.WriteString(`":"`)
+		buf.WriteString(value.LabelValue)
+		buf.WriteString(`"`)
+	}
+
+	buf.WriteString(`}},` +
 		`"logs": [`)
 
-	nwrit := 0
+	nwrit = 0
 	for i := 0; i < len(es); i++ {
 		// if obviously incomplete skip
 		if len(es[i].data) < 4 {

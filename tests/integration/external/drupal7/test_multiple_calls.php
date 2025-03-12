@@ -38,7 +38,8 @@ Hello world!
     [{"name":"External/127.0.0.1/all",
       "scope":"OtherTransaction/php__FILE__"},                     [2, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/Drupal/forced"},            [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

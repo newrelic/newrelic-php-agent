@@ -76,7 +76,7 @@ ok - transaction event attribute added
         "bool": false
       },
       {
-        "code.lineno": 119,
+        "code.lineno": 120,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -105,7 +105,8 @@ ok - transaction event attribute added
     [{"name":"Supportability/api/add_custom_span_parameter"},       [2, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

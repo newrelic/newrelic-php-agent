@@ -114,7 +114,7 @@ ok - double attribute added
         "string": "span str"
       },
       {
-        "code.lineno": 157,
+        "code.lineno": 158,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -143,7 +143,8 @@ ok - double attribute added
     [{"name":"Supportability/api/add_custom_parameter"},            [5, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

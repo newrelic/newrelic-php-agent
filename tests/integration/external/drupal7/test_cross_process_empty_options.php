@@ -45,7 +45,8 @@ X-NewRelic-App-Data=??
     [{"name":"ExternalTransaction/127.0.0.1/432507#4741547/WebTransaction/Custom/tracing",
       "scope":"OtherTransaction/php__FILE__"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/Drupal/forced"},            [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

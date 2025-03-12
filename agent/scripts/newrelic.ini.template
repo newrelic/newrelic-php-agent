@@ -1242,7 +1242,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          
 ;newrelic.application_logging.forwarding.log_level = "WARNING"
 
-
 ; Setting: newrelic.application_logging.local_decorating.enabled
 ; Type   : boolean
 ; Scope  : per-directory
@@ -1304,6 +1303,34 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.application_logging.forwarding.context_data.include = ""
 ;newrelic.application_logging.forwarding.context_data.exclude = ""
+
+; Setting: newrelic.application_logging.forwarding.labels.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Toggles whether the agent adds labels as attributes to log records which
+;          are sent to New Relic.  The labels can be defined by the newrelic.labels
+;          configuration value, and filtered using the
+;          newrelic.application_logging.forwarding.labels.exclude configuration value.
+;
+;newrelic.application_logging.forwarding.labels.enabled = false
+
+; Setting: newrelic.application_logging.forwarding.labels.exclude
+; Type   : string
+; Scope  : per-directory
+; Default: ""
+; Info   : A list of labels to NOT add as attributes to logs which are forwarded
+;          to New Relic.  The values in the list must be separated by commas.
+;
+;          NOTE: The values in this list are compared to label key names in a case
+;                insensitive fashion.  So if an exclude rule for "server" is specified
+;                here then it would exclude keys like "server", "Server", "SERVER", and
+;                any other combination of lower and upper case letters that spell out "server".
+;
+;          Ex:
+;             newrelic.application_logging.forwarding.labels.exclude = "label1, label2"
+;
+;newrelic.application_logging.forwarding.labels.exclude = ""
 
 ; Setting: newrelic.code_level_metrics.enabled
 ; Type   : boolean

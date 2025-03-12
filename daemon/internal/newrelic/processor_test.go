@@ -187,6 +187,7 @@ var (
 	})
 	txnLogEventSample = AggregaterIntoFn(func(h *Harvest) {
 		h.LogEvents.AddEventFromData(sampleLogEvent, SamplingPriority(0.8))
+		h.LogEvents.SetLogForwardingLabels([]byte(`[{"label_type":"label1","label_value":"value1"}]`))
 	})
 	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
 		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
@@ -382,7 +383,7 @@ func TestProcessorHarvestLogEvents(t *testing.T) {
 
 	<-m.p.trackProgress // unblock processor after harvest
 
-	expected := `[{"common": {"attributes": {}},"logs": [log event test birthday]}]`
+	expected := `[{"common": {"attributes": {"tags.label1":"value1"}},"logs": [log event test birthday]}]`
 	if string(cp.data) != expected {
 		t.Fatalf("expected: %s \ngot: %s", expected, string(cp.data))
 	}

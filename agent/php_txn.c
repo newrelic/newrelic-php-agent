@@ -536,6 +536,119 @@ static nrobj_t* nr_php_txn_get_labels() {
   return nr_labels_parse(NR_PHP_PROCESS_GLOBALS(env_labels));
 }
 
+static nr_status_t nr_php_txn_collect_label_keys_iter(const char* key,
+                                                      const nrobj_t* value,
+                                                      void* ptr) {
+  nrobj_t* user_data = (nrobj_t*)ptr;
+
+  (void)value;
+
+  if (NULL == key || NULL == user_data) {
+    return NR_FAILURE;
+  }
+
+  nro_set_array_string(user_data, 0, key);
+
+  return NR_SUCCESS;
+}
+
+/*
+ * Purpose : Filter the labels hash to exclude any labels that are in the
+ *           newrelic.application_logging.forwarding.labels.exclude list.
+ *
+ * Params  : 1. The labels hash to filter.
+ *
+ * Returns : A new hash containing the filtered labels.
+ *           If no labels exist or all labels are excluded, then return NULL.
+ *
+ */
+
+nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels) {
+  nrobj_t* label_keys = NULL;
+  nrobj_t* exclude_labels_list = NULL;
+  nrobj_t* exclude_labels_hash = NULL;
+  nrobj_t* log_labels = NULL;
+
+  if (NULL == labels || 0 == nro_getsize(labels)) {
+    nrl_verbosedebug(NRL_TXN, "%s: No labels defined", __FUNCTION__);
+    return NULL;
+  }
+
+  /* if logging labels are disabled then nothing to do */
+  if (0 == NRINI(log_forwarding_labels_enabled)) {
+    nrl_verbosedebug(NRL_TXN, "%s: Log forwarding labels disabled",
+                     __FUNCTION__);
+    return NULL;
+  }
+
+  /* split exclude string on commas - nr_strsplit() will trim leading
+   * and trailing whitespace from each string extracted, as well as
+   * ignoring empty strings after whitespace trimming
+   */
+  exclude_labels_list
+      = nr_strsplit(NRINI(log_forwarding_labels_exclude), ",", 0);
+
+  /* convert to lowercase to support case insensitive search below
+   * will store lowercase version in a hash for more convenient lookup
+   */
+  exclude_labels_hash = nro_new(NR_OBJECT_HASH);
+  for (int i = 0; i < nro_getsize(exclude_labels_list); i++) {
+    char* label = nr_string_to_lowercase(
+        nro_get_array_string(exclude_labels_list, i + 1, NULL));
+
+    if (!nr_strempty(label)) {
+      nro_set_hash_boolean(exclude_labels_hash, label, 1);
+    }
+    nr_free(label);
+  }
+
+  /* original parsed exclude list is no longer needed */
+  nro_delete(exclude_labels_list);
+
+  /* collect label keys from existing labels */
+  label_keys = nro_new(NR_OBJECT_ARRAY);
+  nro_iteratehash(labels, nr_php_txn_collect_label_keys_iter,
+                  (void*)label_keys);
+
+  /* filter by going over the list of label keys, seeing if it exists in the
+   * exclude hash, and if it does skip it otherwise copy key/value for label
+   * to the log labels
+   */
+  log_labels = nro_new(NR_OBJECT_HASH);
+  for (int i = 0; i < nro_getsize(label_keys); i++) {
+    const char* key = NULL;
+    char* lower_key = NULL;
+    int exclude = false;
+
+    key = nro_get_array_string(label_keys, i + 1, NULL);
+    if (NULL == key) {
+      continue;
+    }
+
+    lower_key = nr_string_to_lowercase(key);
+
+    if (1 != nro_get_hash_boolean(exclude_labels_hash, lower_key, NULL)) {
+      nro_set_hash_string(log_labels, key,
+                          nro_get_hash_string(labels, key, NULL));
+    } else {
+      nrl_verbosedebug(NRL_TXN, "%s: Excluding label %s", __FUNCTION__,
+                       NRSAFESTR(key));
+    }
+    nr_free(lower_key);
+  }
+
+  nro_delete(exclude_labels_hash);
+  nro_delete(label_keys);
+
+  /* return NULL if all labels were excluded */
+  if (0 == nro_getsize(log_labels)) {
+    nro_delete(log_labels);
+    log_labels = NULL;
+  }
+
+  return log_labels;
+}
+
 static void nr_php_txn_prepared_statement_destroy(void* sql) {
   nr_free(sql);
 }
@@ -666,6 +779,11 @@ static void nr_php_txn_send_metrics_once(nrtxn_t* txn TSRMLS_DC) {
   nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
   nr_free(metname);
 
+  metname = nr_formatf("Supportability/Logging/Labels/PHP/%s",
+                       FMT_BOOL(nr_txn_log_forwarding_labels_enabled(txn)));
+  nrm_force_add(NRTXN(unscoped_metrics), metname, 0);
+  nr_free(metname);
+
   txn->created_logging_onetime_metrics = true;
 
 #undef FMT_BOOL
@@ -762,6 +880,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   nrtxnopt_t opts;
   const char* lic_to_use;
   int pfd;
+  nrobj_t* log_forwarding_labels = NULL;
   nr_attribute_config_t* attribute_config;
   nr_app_info_t info;
   bool is_cli = (0 != NR_PHP_PROCESS_GLOBALS(cli));
@@ -854,6 +973,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.log_forwarding_log_level = NRINI(log_forwarding_log_level);
   opts.log_events_max_samples_stored = NRINI(log_events_max_samples_stored);
   opts.log_metrics_enabled = NRINI(log_metrics_enabled);
+  opts.log_forwarding_labels_enabled = NRINI(log_forwarding_labels_enabled);
   opts.message_tracer_segment_parameters_enabled
       = NRINI(message_tracer_segment_parameters_enabled);
 
@@ -917,17 +1037,21 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       &nr_php_app_settings, NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout));
   nr_app_info_destroy_fields(&info);
 
-  if (0 == NRPRG(app)) {
+  if (NULL == NRPRG(app)) {
     nrl_debug(NRL_INIT, "unable to begin transaction: app '%.128s' is unknown",
               appnames ? appnames : "");
     return NR_FAILURE;
   }
 
   attribute_config = nr_php_create_attribute_config(TSRMLS_C);
-  NRPRG(txn) = nr_txn_begin(NRPRG(app), &opts, attribute_config);
+  log_forwarding_labels
+      = nr_php_txn_get_log_forwarding_labels(NRPRG(app)->info.labels);
+  NRPRG(txn) = nr_txn_begin(NRPRG(app), &opts, attribute_config,
+                            log_forwarding_labels);
   nrt_mutex_unlock(&(NRPRG(app)->app_lock));
 
   nr_attribute_config_destroy(&attribute_config);
+  nro_delete(log_forwarding_labels);
 
   if (0 == NRPRG(txn)) {
     nrl_debug(NRL_INIT, "no Axiom transaction this time around");

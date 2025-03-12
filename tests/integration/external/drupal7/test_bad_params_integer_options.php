@@ -32,7 +32,8 @@ require("skipif.inc");
     [{"name":"OtherTransactionTotalTime"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/framework/Drupal/forced"},            [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
