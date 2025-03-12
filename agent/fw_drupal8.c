@@ -171,8 +171,6 @@ static void nr_drupal8_add_method_callback_before_after_clean(
         clean_callback);
 
     nr_free(class_method);
-  } else {
-    nrl_always("%s::%s already has wraprec", nr_php_class_entry_name(ce), method);
   }
 }
 #endif  // OAPI

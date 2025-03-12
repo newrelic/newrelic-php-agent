@@ -19,6 +19,7 @@
 #include "php_internal_instrument.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "php_wrapper.h"
 #include "fw_laravel.h"
