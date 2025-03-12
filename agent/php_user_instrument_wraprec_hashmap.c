@@ -121,7 +121,7 @@ static nruserfn_t* nr_func_hashmap_lookup_internal(nr_func_hashmap_t* hashmap, n
   return NULL;
 }
 
-static nruserfn_t* nr_func_hashmap_update_internal(nr_func_hashmap_t* hashmap, nr_func_hashmap_key_t* key) {
+static nruserfn_t* nr_func_hashmap_update_internal(nr_func_hashmap_t* hashmap, nr_func_hashmap_key_t* key, bool* created) {
   size_t hash;
   nr_func_bucket_t* bucket;
   nruserfn_t* wraprec;
@@ -132,9 +132,15 @@ static nruserfn_t* nr_func_hashmap_update_internal(nr_func_hashmap_t* hashmap, n
 
   hash = nr_func_hashmap_hash_key(hashmap->log2_num_buckets, key);
   if (nr_func_hashmap_fetch_internal(hashmap, hash, key, &bucket)) {
+    if (created) {
+      *created = false;
+    }
     return bucket->wraprec;
   }
 
+  if (created) {
+    *created = true;
+  }
   return nr_func_hashmap_add_internal(hashmap, hash, key);
 }
 
@@ -388,6 +394,7 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
+  bool is_new_wraprec = false;
   nruserfn_t* wraprec = NULL;
 
 
@@ -410,24 +417,26 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
     return NULL;
   }
 
-  wraprec = nr_func_hashmap_update_internal(funcs_ht, &func_key);
+  wraprec = nr_func_hashmap_update_internal(funcs_ht, &func_key, &is_new_wraprec);
 
   if (NULL == wraprec) {
     return NULL;
   }
 
-  wraprec->funcname = nr_strndup(func_key.name, func_key.name_len);
-  wraprec->funcnamelen = func_key.name_len;
-  wraprec->funcnameLC = nr_string_to_lowercase(wraprec->funcname);
-  if (func_key.is_method) {
-    wraprec->classname = nr_strndup(scope_key.name, scope_key.name_len);
-    wraprec->classnamelen = scope_key.name_len;
-    wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
-    wraprec->is_method = 1;
-  }
+  if (is_new_wraprec) {
+    wraprec->funcname = nr_strndup(func_key.name, func_key.name_len);
+    wraprec->funcnamelen = func_key.name_len;
+    wraprec->funcnameLC = nr_string_to_lowercase(wraprec->funcname);
+    if (func_key.is_method) {
+      wraprec->classname = nr_strndup(scope_key.name, scope_key.name_len);
+      wraprec->classnamelen = scope_key.name_len;
+      wraprec->classnameLC = nr_string_to_lowercase(wraprec->classname);
+      wraprec->is_method = 1;
+    }
 
-  wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
-      wraprec->funcname, wraprec->classname);
+    wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
+        wraprec->funcname, wraprec->classname);
+  }
 
   return wraprec;
 }
