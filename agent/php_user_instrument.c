@@ -579,6 +579,15 @@ void nr_php_reset_user_instrumentation(void) {
  * Remove any transient wraprecs. This must only be called on request shutdown!
  */
 void nr_php_remove_transient_user_instrumentation(void) {
+#if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
+  nruserfn_t* p = nr_transient_wraprecs;
+  while (p) {
+    nruserfn_t* wraprec = p;
+    p = wraprec->next;
+    nr_php_user_wraprec_destroy(&wraprec);
+  }
+  nr_transient_wraprecs = NULL;
+#endif
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nruserfn_t* p = nr_wrapped_user_functions;
   nruserfn_t* prev = NULL;
