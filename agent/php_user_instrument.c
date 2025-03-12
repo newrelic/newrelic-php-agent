@@ -124,6 +124,7 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
   // initialized only on the first call made to the function in that request. This would
   // mean that run_time_cache is NULL and wraprec cannot be stored yet! It will be stored
   // on the first call to the function when observer is registered for that function.
+  zend_init_func_run_time_cache(&zf->op_array);
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
     ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
