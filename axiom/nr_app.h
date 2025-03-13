@@ -105,6 +105,7 @@ typedef struct _nrapp_t {
   char* host_name;          /* Local host name reported to the daemon */
   char* entity_name;        /* Entity name related to this application */
   char* entity_guid;        /* Entity guid related to this application */
+  char* account_id;         /* Security : Added for getting account id */
   time_t last_daemon_query; /* Used by agent: Last time we queried daemon about
                                this app */
   int failed_daemon_query_count; /* Used by agent: Number of times daemon query

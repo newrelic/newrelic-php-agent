@@ -515,6 +515,58 @@ static PHP_INI_MH(nr_high_security_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_security_enabled_mh) {
+  int val;
+
+  (void)entry;
+  (void)NEW_VALUE_LEN;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    return FAILURE;
+  }
+
+  if (val) {
+    NR_PHP_PROCESS_GLOBALS(nr_security_enabled) = true;
+  } else {
+    NR_PHP_PROCESS_GLOBALS(nr_security_enabled) = false;
+  }
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_security_agent_enabled_mh) {
+  int val;
+
+  (void)entry;
+  (void)NEW_VALUE_LEN;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    return FAILURE;
+  }
+
+  if (val) {
+    NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) = true;
+  } else {
+    NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) = false;
+  }
+
+  return SUCCESS;
+}
+
 static PHP_INI_MH(nr_preload_framework_library_detection_mh) {
   int val;
 
@@ -2034,6 +2086,18 @@ PHP_INI_ENTRY_EX("newrelic.high_security",
                  "0",
                  NR_PHP_SYSTEM,
                  nr_high_security_mh,
+                 0)
+
+PHP_INI_ENTRY_EX("newrelic.security.agent.enabled",
+                 "0",
+                 NR_PHP_SYSTEM,
+                 nr_security_agent_enabled_mh,
+                 0)
+
+PHP_INI_ENTRY_EX("newrelic.security.enabled",
+                 "0",
+                 NR_PHP_SYSTEM,
+                 nr_security_enabled_mh,
                  0)
 
 /*
