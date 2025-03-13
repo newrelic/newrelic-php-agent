@@ -7,15 +7,17 @@
 #define CSEC_METADATA_H
 
 typedef enum {
-    NR_PHP_CSEC_METADATA_HIGH_SECURITY = 1,
-    NR_PHP_CSEC_METADATA_ENTITY_NAME,
-    NR_PHP_CSEC_METADATA_ENTITY_TYPE,
-    NR_PHP_CSEC_METADATA_ENTITY_GUID,
-    NR_PHP_CSEC_METADATA_HOST_NAME,
-    NR_PHP_CSEC_METADATA_AGENT_RUN_ID,
-    NR_PHP_CSEC_METADATA_ACCOUNT_ID,
-    NR_PHP_CSEC_METADATA_LICENSE,
-    NR_PHP_CSEC_METADATA_PLICENSE
+  NR_PHP_CSEC_METADATA_HIGH_SECURITY = 1,
+  NR_PHP_CSEC_METADATA_ENTITY_NAME,
+  NR_PHP_CSEC_METADATA_ENTITY_TYPE,
+  NR_PHP_CSEC_METADATA_ENTITY_GUID,
+  NR_PHP_CSEC_METADATA_HOST_NAME,
+  NR_PHP_CSEC_METADATA_AGENT_RUN_ID,
+  NR_PHP_CSEC_METADATA_ACCOUNT_ID,
+  NR_PHP_CSEC_METADATA_LICENSE,
+  NR_PHP_CSEC_METADATA_PLICENSE,
+  NR_PHP_CSEC_METADATA_TRACE_ID,
+  NR_PHP_CSEC_METADATA_SPAN_ID
 } nr_php_csec_metadata_key_t;
 
 /*
@@ -33,7 +35,9 @@ typedef enum {
  *          -4 for invalid metadata key
  *          -5 for inability to retrieve metadata value
  */
-extern int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t k, char** value);
-typedef int (*nr_php_csec_get_metadata_t)(const nr_php_csec_metadata_key_t k, char** value);
+extern int nr_php_csec_get_metadata(const nr_php_csec_metadata_key_t k,
+                                    char** value);
+typedef int (*nr_php_csec_get_metadata_t)(const nr_php_csec_metadata_key_t k,
+                                          char** value);
 #define NR_PHP_CSEC_GET_METADATA "nr_php_csec_get_metadata"
 #endif

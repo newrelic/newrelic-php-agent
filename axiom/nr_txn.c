@@ -3267,7 +3267,6 @@ char* nr_txn_get_current_trace_id(nrtxn_t* txn) {
   if ((NULL == trace_id) || (!txn->options.distributed_tracing_enabled)) {
     return NULL;
   }
-
   return nr_strdup(trace_id);
 }
 
