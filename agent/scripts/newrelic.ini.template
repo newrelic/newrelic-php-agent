@@ -13,7 +13,6 @@
 ; If you do not use an absolute path then the file must be installed in the
 ; active configuration's extension directory.
 extension = "newrelic.so"
-extension = "newrelic_security.so"
 
 [newrelic]
 ; Setting: newrelic.enabled
