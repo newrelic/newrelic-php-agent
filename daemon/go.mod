@@ -1,6 +1,6 @@
 module github.com/newrelic/newrelic-php-agent/daemon
 
-go 1.21
+go 1.23
 toolchain go1.23.6
 
 require (
