@@ -76,21 +76,25 @@ func (events *LogEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 	estimate := len(es) * 128
 	buf.Grow(estimate)
 	buf.WriteString(`[{` +
-		`"common": {"attributes": {`)
+		`"common": {"attributes": `)
 	nwrit := 0
-	for _, value := range events.LogForwardingLabels {
-		if nwrit > 0 {
-			buf.WriteByte(',')
+	labelMap := make(map[string]string)
+	for _, label := range events.LogForwardingLabels {
+		// safegaurd against invalid labels
+		if len(label.LabelType) != 0 && len(label.LabelValue) != 0 {
+			labelMap["tags."+label.LabelType] = label.LabelValue
 		}
-		nwrit++
-		buf.WriteString(`"tags.`)
-		buf.WriteString(value.LabelType)
-		buf.WriteString(`":"`)
-		buf.WriteString(value.LabelValue)
-		buf.WriteString(`"`)
 	}
 
-	buf.WriteString(`}},` +
+	j, e := json.Marshal(labelMap)
+	if e != nil {
+		log.Errorf("failed to marshal log label: %s", e)
+		buf.WriteString("{}")
+	} else {
+		buf.Write(j)
+	}
+
+	buf.WriteString(`},` +
 		`"logs": [`)
 
 	nwrit = 0
