@@ -13,6 +13,7 @@
 #include "nr_segment_datastore.h"
 #include "nr_segment_datastore_private.h"
 
+
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
 
