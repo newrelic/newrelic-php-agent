@@ -7,6 +7,8 @@
 #ifndef LIB_AWS_SDK_PHP_HDR
 #define LIB_AWS_SDK_PHP_HDR
 
+#include "nr_segment_message.h"
+
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
 
