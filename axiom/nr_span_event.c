@@ -312,6 +312,9 @@ void nr_span_event_set_datastore(nr_span_event_t* event,
     case NR_SPAN_DATASTORE_COMPONENT:
       nro_set_hash_string(event->intrinsics, "component", new_value);
       break;
+    case NR_SPAN_DATASTORE_DB_SYSTEM:
+      nro_set_hash_string(event->agent_attributes, "db.system", new_value);
+      break;
     case NR_SPAN_DATASTORE_DB_STATEMENT:
       nro_set_hash_string(event->agent_attributes, "db.statement", new_value);
       break;
@@ -525,6 +528,8 @@ const char* nr_span_event_get_datastore(
   switch (member) {
     case NR_SPAN_DATASTORE_COMPONENT:
       return nro_get_hash_string(event->intrinsics, "component", NULL);
+    case NR_SPAN_DATASTORE_DB_SYSTEM:
+      return nro_get_hash_string(event->agent_attributes, "db.system", NULL);
     case NR_SPAN_DATASTORE_DB_STATEMENT:
       return nro_get_hash_string(event->agent_attributes, "db.statement", NULL);
     case NR_SPAN_DATASTORE_DB_INSTANCE:

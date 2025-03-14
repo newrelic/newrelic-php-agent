@@ -432,6 +432,23 @@ static void test_span_event_datastore_string_get_and_set(void) {
       "set db_statement to rabbit", "rabbit",
       nr_span_event_get_datastore(event, NR_SPAN_DATASTORE_PEER_HOSTNAME));
 
+  // Test : setting and getting db.system
+  tlib_pass_if_null(
+      "if unset, the db.system should be NULL",
+      nr_span_event_get_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM));
+  nr_span_event_set_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM, NULL);
+  tlib_pass_if_null(
+      "if passed NULL, the db.system should be NULL",
+      nr_span_event_get_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM));
+  nr_span_event_set_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM, "wombat");
+  tlib_pass_if_str_equal(
+      "set db.system to wombat", "wombat",
+      nr_span_event_get_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM));
+  nr_span_event_set_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM, "rabbit");
+  tlib_pass_if_str_equal(
+      "set db.system to rabbit", "rabbit",
+      nr_span_event_get_datastore(event, NR_SPAN_DATASTORE_DB_SYSTEM));
+
   nr_span_event_destroy(&event);
 }
 

@@ -23,6 +23,7 @@ void nr_segment_datastore_destroy_fields(nr_segment_datastore_t* datastore) {
   nr_free(datastore->input_query_json);
   nr_free(datastore->backtrace_json);
   nr_free(datastore->explain_plan_json);
+  nr_free(datastore->db_system);
   nr_free(datastore->instance.host);
   nr_free(datastore->instance.port_path_or_id);
   nr_free(datastore->instance.database_name);

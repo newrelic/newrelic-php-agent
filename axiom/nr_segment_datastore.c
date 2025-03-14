@@ -15,6 +15,7 @@
 static char* create_metrics(nr_segment_t* segment,
                             nrtime_t duration,
                             const char* product,
+                            nr_datastore_t type,
                             const char* collection,
                             const char* operation,
                             nr_segment_datastore_t* datastore,
@@ -59,12 +60,23 @@ static char* create_metrics(nr_segment_t* segment,
   }
 
   if (txn->options.database_name_reporting_enabled) {
-    nr_datastore_instance_set_database_name(&datastore->instance,
-                                            instance->database_name);
+    /*
+     * According the agent-specs Datastore-Metrics-PORTED.md:
+     * There are datastores that do not have the notion of a database name and
+     * they are exempt from collecting it. The following list recognizes
+     * datastores for which a database name is not applicable. DynamoDb is one
+     * such case and as such the db.instance attribute should not be set.
+     */
+
+    if (NR_DATASTORE_DYNAMODB != type) {
+      nr_datastore_instance_set_database_name(&datastore->instance,
+                                              instance->database_name);
+    }
   }
 
   instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
                                instance->host, instance->port_path_or_id);
+
   nr_segment_add_metric(segment, instance_metric, false);
   nr_datastore_instance_set_host(&datastore->instance, instance->host);
   nr_datastore_instance_set_port_path_or_id(&datastore->instance,
@@ -208,9 +220,9 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
    * The allWeb and allOther rollup metrics are created at the end of the
    * transaction since the background status may change.
    */
-  scoped_metric
-      = create_metrics(segment, duration, datastore_string, collection,
-                       operation, &datastore, params->instance);
+  scoped_metric = create_metrics(segment, duration, datastore_string,
+                                 params->datastore.type, collection, operation,
+                                 &datastore, params->instance);
 
   nr_segment_set_name(segment, scoped_metric);
 
@@ -256,8 +268,8 @@ bool nr_segment_datastore_end(nr_segment_t** segment_ptr,
         break;
     }
   }
-
   datastore.component = nr_strdup(datastore_string);
+  datastore.db_system = params->db_system;
 
   if (input_query) {
     nrobj_t* obj = nro_new_hash();

@@ -99,6 +99,7 @@ typedef struct _nr_segment_datastore_t {
   char* input_query_json;
   char* backtrace_json;
   char* explain_plan_json;
+  char* db_system;
   nr_datastore_instance_t instance;
 } nr_segment_datastore_t;
 
