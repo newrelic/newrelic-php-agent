@@ -27,6 +27,9 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
+extern void nr_php_execute_file(const zend_op_array* op_array,
+                                NR_EXECUTE_PROTO TSRMLS_DC);
+
 /*
  * Purpose: Log information about the execute data in a given execution
  * context - either 'execute' (zend_execute) or 'observe' (fcall_init).

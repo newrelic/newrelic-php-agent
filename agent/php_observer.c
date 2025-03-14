@@ -90,6 +90,14 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     nr_php_show_exec("observe", execute_data, NULL);
   }
 
+  if (OP_ARRAY_IS_A_FILE(NR_OP_ARRAY)) {
+    /*
+     * Let's get the framework info.
+     */
+    nr_php_execute_file(NR_OP_ARRAY, execute_data, NULL TSRMLS_CC);
+    return handlers;
+  }
+
   if (OP_ARRAY_IS_A_METHOD(&execute_data->func->op_array)) {
     scope_name = execute_data->func->op_array.scope->name;
     func_name = execute_data->func->op_array.function_name;

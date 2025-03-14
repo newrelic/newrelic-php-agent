@@ -987,7 +987,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
  */
 #define METRIC_NAME_MAX_LEN 512
 
-static void nr_php_execute_file(const zend_op_array* op_array,
+void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
   size_t filename_len = nr_php_op_array_file_name_len(op_array);
@@ -1012,7 +1012,9 @@ static void nr_php_execute_file(const zend_op_array* op_array,
     return;
   }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   nr_php_add_user_instrumentation(TSRMLS_C);
+#endif
 }
 
 /*
@@ -1910,16 +1912,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
 
   NRTXNGLOBAL(execute_count) += 1;
   txn_start_time = nr_txn_start_time(NRPRG(txn));
-  /*
-   * Handle here, but be aware the classes might not be loaded yet.
-   */
-  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
-    size_t filename_len = nr_php_op_array_file_name_len(NR_OP_ARRAY);
-    nr_execute_handle_framework(all_frameworks, num_all_frameworks,
-                                filename, filename_len TSRMLS_CC);
-    return;
-  }
+
   if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
     /*
      * For PHP 7+, call_user_func_array() is flattened into an inline by
@@ -2004,14 +1997,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
   txn_start_time = nr_txn_start_time(NRPRG(txn));
-
-  /*
-   * Let's get the framework info.
-   */
-  if (nrunlikely(OP_ARRAY_IS_A_FILE(NR_OP_ARRAY))) {
-    nr_php_execute_file(NR_OP_ARRAY, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    return;
-  }
 
   /*
    * Get the current segment and return if null.
