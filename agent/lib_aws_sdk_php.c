@@ -14,17 +14,16 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "util_logging.h"
-#include "nr_segment_message.h"
-#include "nr_segment_external.h"
 #include "lib_aws_sdk_php.h"
 
 #define PHP_PACKAGE_NAME "aws/aws-sdk-php"
-#define AWS_LAMBDA_ARN_REGEX "(arn:(aws[a-zA-Z-]*)?:lambda:)?" \
-            "((?<region>[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}):)?" \
-            "((?<accountId>\\d{12}):)?" \
-            "(function:)?" \
-            "(?<functionName>[a-zA-Z0-9-\\.]+)" \
-            "(:(?<qualifier>\\$LATEST|[a-zA-Z0-9-]+))?"
+#define AWS_LAMBDA_ARN_REGEX                                      \
+  "(arn:(aws[a-zA-Z-]*)?:lambda:)?"                               \
+  "((?<region>[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}):)?" \
+  "((?<accountId>\\d{12}):)?"                                     \
+  "(function:)?"                                                  \
+  "(?<functionName>[a-zA-Z0-9-\\.]+)"                             \
+  "(:(?<qualifier>\\$LATEST|[a-zA-Z0-9-]+))?"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
@@ -309,9 +308,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
   nr_segment_t* external_segment = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
-  nr_segment_cloud_attrs_t cloud_attrs = {
-      .cloud_platform = "aws_lambda"
-  };
+  nr_segment_cloud_attrs_t cloud_attrs = {.cloud_platform = "aws_lambda"};
 
   if (NULL == auto_segment) {
     return;
@@ -332,7 +329,8 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
   /* Determine if we instrument this command. */
   if (AWS_COMMAND_IS("invoke")) {
     /* reconstruct the ARN */
-    nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_ORIG_ARGS, &cloud_attrs);
+    nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_ORIG_ARGS,
+                                               &cloud_attrs);
   } else {
     return;
   }
@@ -362,7 +360,7 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
       external_params.status = Z_LVAL_P(status_code);
     }
     zval* metadata = nr_php_zend_hash_find(Z_ARRVAL_P(data), "@metadata");
-    if (NULL != metadata  && IS_REFERENCE == Z_TYPE_P(metadata)) {
+    if (NULL != metadata && IS_REFERENCE == Z_TYPE_P(metadata)) {
       metadata = Z_REFVAL_P(metadata);
     }
     if (nr_php_is_zval_valid_array(metadata)) {
@@ -371,14 +369,13 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
         external_params.uri = Z_STRVAL_P(uri);
       }
     }
-    
   }
   nr_segment_external_end(&external_segment, &external_params);
   nr_free(cloud_attrs.cloud_resource_id);
 }
 
-/* This stores the compiled regex to parse AWS ARNs. The compilation happens when
- * it is first needed and is destroyed in mshutdown
+/* This stores the compiled regex to parse AWS ARNs. The compilation happens
+ * when it is first needed and is destroyed in mshutdown
  */
 static nr_regex_t* aws_arn_regex;
 
@@ -390,7 +387,9 @@ void nr_aws_sdk_mshutdown(void) {
   nr_regex_destroy(&aws_arn_regex);
 }
 
-void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs) {
+void nr_aws_sdk_lambda_client_invoke_parse_args(
+    NR_EXECUTE_PROTO,
+    nr_segment_cloud_attrs_t* cloud_attrs) {
   zval* call_args = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
   zval* this_obj = NR_PHP_USER_FN_THIS();
   char* arn = NULL;
@@ -409,7 +408,8 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
   if (!nr_php_is_zval_valid_array(lambda_args)) {
     return;
   }
-  zval* lambda_name = nr_php_zend_hash_find(Z_ARRVAL_P(lambda_args), "FunctionName");
+  zval* lambda_name
+      = nr_php_zend_hash_find(Z_ARRVAL_P(lambda_args), "FunctionName");
   if (!nr_php_is_zval_non_empty_string(lambda_name)) {
     return;
   }
@@ -420,10 +420,8 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
   }
 
   /* Extract all information possible from the passed lambda name via regex */
-  nr_regex_substrings_t* matches =
-      nr_regex_match_capture(aws_arn_regex,
-                             Z_STRVAL_P(lambda_name),
-                             Z_STRLEN_P(lambda_name));
+  nr_regex_substrings_t* matches = nr_regex_match_capture(
+      aws_arn_regex, Z_STRVAL_P(lambda_name), Z_STRLEN_P(lambda_name));
   function_name = nr_regex_substrings_get_named(matches, "functionName");
   accountID = nr_regex_substrings_get_named(matches, "accountId");
   region = nr_regex_substrings_get_named(matches, "region");
@@ -449,11 +447,12 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
   }
   if (nr_strempty(region)) {
     zend_class_entry* base_class = NULL;
-    if (NULL != execute_data->func && NULL!= execute_data->func->common.scope) {
-       base_class = execute_data->func->common.scope;
+    if (NULL != execute_data->func
+        && NULL != execute_data->func->common.scope) {
+      base_class = execute_data->func->common.scope;
     }
-    region_zval
-      = nr_php_get_zval_object_property_with_class(this_obj, base_class, "region");
+    region_zval = nr_php_get_zval_object_property_with_class(
+        this_obj, base_class, "region");
     if (nr_php_is_zval_valid_string(region_zval)) {
       /*
        * In this case, region is likely to be NULL, but could be an empty
@@ -467,11 +466,11 @@ void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_clo
   if (!nr_strempty(accountID) && !nr_strempty(region)) {
     /* construct the ARN */
     if (!nr_strempty(qualifier)) {
-      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s:%s",
-                       region, accountID, function_name, qualifier);
+      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s:%s", region, accountID,
+                       function_name, qualifier);
     } else {
-      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s",
-                       region, accountID, function_name);
+      arn = nr_formatf("arn:aws:lambda:%s:%s:function:%s", region, accountID,
+                       function_name);
     }
 
     /* Attach the ARN */
@@ -517,6 +516,172 @@ char* nr_lib_aws_sdk_php_get_command_arg_value(char* command_arg_name,
 
   nr_php_arg_release(&param_array);
   return command_arg_value;
+}
+
+void nr_lib_aws_sdk_php_dynamodb_set_params(
+    nr_segment_datastore_params_t* datastore_params,
+    nr_segment_cloud_attrs_t* cloud_attrs,
+    NR_EXECUTE_PROTO) {
+  zval* endpoint_zval = NULL;
+  zval* region_zval = NULL;
+  zval* host_zval = NULL;
+  zval* port_zval = NULL;
+  zval* this_obj = NULL;
+  zend_function* func = NULL;
+  zend_class_entry* base_class = NULL;
+  char* table_name = NULL;
+  char* account_id = NULL;
+
+  if (NULL == datastore_params || NULL == cloud_attrs) {
+    return;
+  }
+
+  this_obj = NR_PHP_USER_FN_THIS();
+  func = nr_php_execute_function(NR_EXECUTE_ORIG_ARGS);
+
+  if (NULL == this_obj || NULL == func) {
+    return;
+  }
+
+  if (NULL != func->common.scope) {
+    base_class = func->common.scope;
+  }
+
+  region_zval = nr_php_get_zval_object_property_with_class(this_obj, base_class,
+                                                           "region");
+  if (nr_php_is_zval_non_empty_string(region_zval)) {
+    cloud_attrs->cloud_region = Z_STRVAL_P(region_zval);
+  }
+
+  endpoint_zval = nr_php_get_zval_object_property_with_class(
+      this_obj, base_class, "endpoint");
+  if (nr_php_is_zval_valid_object(endpoint_zval)) {
+    host_zval = nr_php_get_zval_object_property(endpoint_zval, "host");
+    if (nr_php_is_zval_non_empty_string(host_zval)) {
+      datastore_params->instance->host = Z_STRVAL_P(host_zval);
+
+      /* Only try to get a port if we have a valid host. */
+      port_zval = nr_php_get_zval_object_property(endpoint_zval, "port");
+      if (nr_php_is_zval_valid_integer(port_zval)) {
+        /* Must be freed by caller */
+        datastore_params->instance->port_path_or_id
+            = nr_formatf(NR_INT64_FMT, Z_LVAL_P(port_zval));
+      } else {
+        /* In case where host was found but port was not, spec says return
+         * unknown for port. */
+        datastore_params->instance->port_path_or_id = nr_strdup("unknown");
+      }
+    }
+  }
+
+  if (NULL == datastore_params->instance->host) {
+    /* Unable to retrieve the endpoint, go with AWS defaults. */
+    datastore_params->instance->host = AWS_SDK_PHP_DYNAMODBCLIENT_DEFAULT_HOST;
+    /* Need to strdup because the calling function will free it. */
+    datastore_params->instance->port_path_or_id
+        = nr_strdup(AWS_SDK_PHP_DYNAMODBCLIENT_DEFAULT_PORT);
+  }
+
+  table_name = nr_lib_aws_sdk_php_get_command_arg_value(
+      AWS_SDK_PHP_DYNAMODBCLIENT_TABLENAME_ARG, NR_EXECUTE_ORIG_ARGS);
+  if (!nr_strempty(table_name)) {
+    /* Must be freed by caller */
+    datastore_params->collection = table_name;
+  }
+  if (!nr_strempty(NRINI(aws_account_id))) {
+    account_id = NRINI(aws_account_id);
+  }
+
+  if (NULL != datastore_params->collection && NULL != account_id
+      && NULL != cloud_attrs->cloud_region) {
+    /* Must be freed by caller */
+    cloud_attrs->cloud_resource_id = nr_formatf(
+        "arn:aws:dynamodb:%s:%s:table/%s", cloud_attrs->cloud_region,
+        account_id, datastore_params->collection);
+  }
+}
+
+void nr_lib_aws_sdk_php_dynamodb_handle(nr_segment_t* auto_segment,
+                                        char* command_name_string,
+                                        size_t command_name_len,
+                                        NR_EXECUTE_PROTO) {
+  nr_segment_t* datastore_segment = NULL;
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
+  nr_datastore_instance_t instance = {0};
+  nr_segment_datastore_params_t datastore_params = {
+    .db_system = AWS_SDK_PHP_DYNAMODBCLIENT_DATASTORE_SYSTEM,
+    .datastore = {
+      .type = NR_DATASTORE_DYNAMODB,
+    },
+    .instance = &instance,
+    .callbacks = {
+      .backtrace = nr_php_backtrace_callback,
+    },
+  };
+  if (NULL == auto_segment) {
+    return;
+  }
+
+  if (NULL == command_name_string || 0 == command_name_len) {
+    return;
+  }
+
+#define AWS_COMMAND_IS(CMD) \
+  (command_name_len == (sizeof(CMD) - 1) && nr_streq(CMD, command_name_string))
+
+  /* Determine if we instrument this command. */
+  if (AWS_COMMAND_IS("createTable")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_CREATE_TABLE;
+  } else if (AWS_COMMAND_IS("deleteItem")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_DELETE_ITEM;
+  } else if (AWS_COMMAND_IS("deleteTable")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_DELETE_TABLE;
+  } else if (AWS_COMMAND_IS("getItem")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_GET_ITEM;
+  } else if (AWS_COMMAND_IS("putItem")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_PUT_ITEM;
+  } else if (AWS_COMMAND_IS("query")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_QUERY;
+  } else if (AWS_COMMAND_IS("scan")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_SCAN;
+  } else if (AWS_COMMAND_IS("updateItem")) {
+    datastore_params.operation = AWS_SDK_PHP_DYNAMODBCLIENT_UPDATE_ITEM;
+  } else {
+    /* Nothing to do here so exit. */
+    return;
+  }
+#undef AWS_COMMAND_IS
+
+  /*
+   * nr_lib_aws_sdk_php_dynamodb_set_params sets:
+   * the cloud_attrs->region and cloud_resource_id(needs to be freed)
+   * datastore->instance host and port_path_or_id(needs to be freed)
+   * datastore->collection (needs to be freed)
+   */
+  nr_lib_aws_sdk_php_dynamodb_set_params(&datastore_params, &cloud_attrs,
+                                         NR_EXECUTE_ORIG_ARGS);
+
+  /*
+   * By this point, the datastore params are decoded, grab the parent segment
+   * start time, add the special segment attributes/metrics then close the newly
+   * created segment.
+   */
+  datastore_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  if (NULL == datastore_segment) {
+    return;
+  }
+  /* re-use start time from auto_segment started in func_begin */
+  datastore_segment->start_time = auto_segment->start_time;
+  cloud_attrs.aws_operation = command_name_string;
+
+  /* Add cloud attributes, if available. */
+  nr_segment_traces_add_cloud_attributes(datastore_segment, &cloud_attrs);
+
+  /* Now end the instrumented segment as a message segment. */
+  nr_segment_datastore_end(&datastore_segment, &datastore_params);
+  nr_free(datastore_params.collection);
+  nr_free(cloud_attrs.cloud_resource_id);
+  nr_free(instance.port_path_or_id);
 }
 
 /*
@@ -580,8 +745,12 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
                                   NR_EXECUTE_ORIG_ARGS);
   } else if (AWS_CLASS_IS("Aws\\Lambda\\LambdaClient", "LambdaClient")) {
     nr_lib_aws_sdk_php_lambda_handle(auto_segment, command_name_string,
-                                  Z_STRLEN_P(command_name),
-                                  NR_EXECUTE_ORIG_ARGS);
+                                     Z_STRLEN_P(command_name),
+                                     NR_EXECUTE_ORIG_ARGS);
+  } else if (AWS_CLASS_IS("Aws\\DynamoDb\\DynamoDbClient", "DynamoDbClient")) {
+    nr_lib_aws_sdk_php_dynamodb_handle(auto_segment, command_name_string,
+                                       Z_STRLEN_P(command_name),
+                                       NR_EXECUTE_ORIG_ARGS);
   }
 
 #undef AWS_CLASS_IS
