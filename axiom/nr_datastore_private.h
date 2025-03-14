@@ -32,6 +32,7 @@ static const nr_datastore_mapping_t datastore_mappings[] = {
     {NR_DATASTORE_SYBASE, "Sybase", "sybase", 1},
     {NR_DATASTORE_INFORMIX, "Informix", "informix", 1},
     {NR_DATASTORE_PDO, "PDO", "pdo", 0},
+    {NR_DATASTORE_DYNAMODB, "DynamoDB", "dynamodb", 0},
     {NR_DATASTORE_MUST_BE_LAST, NULL, NULL, 0},
 };
 static size_t datastore_mappings_len

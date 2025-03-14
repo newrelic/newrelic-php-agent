@@ -262,6 +262,9 @@ static void nr_populate_datastore_spans(nr_span_event_t* span_event,
   nr_span_event_set_datastore(span_event, NR_SPAN_DATASTORE_COMPONENT,
                               component);
 
+  nr_span_event_set_datastore(span_event, NR_SPAN_DATASTORE_DB_SYSTEM,
+                              segment->typed_attributes->datastore.db_system);                            
+
   host = segment->typed_attributes->datastore.instance.host;
   nr_span_event_set_datastore(span_event, NR_SPAN_DATASTORE_PEER_HOSTNAME,
                               host);
@@ -595,6 +598,7 @@ bool nr_segment_set_datastore(nr_segment_t* segment,
       .input_query_json = datastore->input_query_json ? nr_strdup(datastore->input_query_json) : NULL,
       .backtrace_json = datastore->backtrace_json ? nr_strdup(datastore->backtrace_json) : NULL,
       .explain_plan_json = datastore->explain_plan_json ? nr_strdup(datastore->explain_plan_json) : NULL,
+      .db_system = datastore->db_system ? nr_strdup(datastore->db_system) : NULL,
   };
 
   segment->typed_attributes->datastore.instance = (nr_datastore_instance_t){
