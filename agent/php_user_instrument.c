@@ -617,7 +617,7 @@ void nr_php_remove_transient_user_instrumentation(void) {
  */
 void nr_php_add_user_instrumentation(TSRMLS_D) {
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-  nruserfn_t* p = nr_named_wraprecs;
+  nruserfn_t* p = nr_wrapped_user_functions;
 
   while (0 != p) {
     if ((0 == p->is_wrapped) && (0 == p->is_disabled)) {
@@ -683,7 +683,7 @@ void nr_php_destroy_user_wrap_records(void) {
     nr_php_user_wraprec_destroy(&wraprec);
   }
 
-  nr_named_wraprecs = NULL;
+  nr_wrapped_user_functions = NULL;
 #else
   nr_php_user_instrument_wraprec_hashmap_destroy();
 #endif
