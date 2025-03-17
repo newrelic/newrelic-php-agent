@@ -177,8 +177,9 @@ nr_status_t module_invoke_all_parse_module_and_hook_from_strings(
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: module len is %d; ; "
                      "hook='%.*s'; module_hook='%.*s'",
-                     __func__, (int)module_len, NRSAFELEN(hook_len), NRSAFESTR(hook),
-                     NRSAFELEN(module_hook_len), NRSAFESTR(module_hook));
+                     __func__, (int)module_len, NRSAFELEN(hook_len),
+                     NRSAFESTR(hook), NRSAFELEN(module_hook_len),
+                     NRSAFESTR(module_hook));
 
     return NR_FAILURE;
   }

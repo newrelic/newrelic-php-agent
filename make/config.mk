@@ -59,10 +59,6 @@ ifneq ($(findstring environment,$(origin PROTOBUF_C_PREFIX)), )
   ifeq ($(HAVE_PROTOBUF_C), 0)
     $(error User provided 'protobuf-c' installation is not valid!)
   endif
-else
-  ifeq ($(HAVE_PROTOBUF_C), 0)
-    $(info 'protobuf-c' installation not found, falling back to building from vendor subdir.)
-  endif
 endif
 
 

@@ -86,3 +86,16 @@ extern void nr_php_txn_php_package_create_major_metric(void* value,
  * Params  : 1. The current transaction.
  */
 extern void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn);
+
+/*
+ * Purpose : Filter the labels hash to exclude any labels that are in the
+ *           newrelic.application_logging.forwarding.labels.exclude list.
+ *
+ * Params  : 1. The labels hash to filter.
+ *
+ * Returns : A new hash containing the filtered labels.
+ *           If no labels exist or all labels are excluded, then return NULL.
+ *
+ */
+
+extern nrobj_t* nr_php_txn_get_log_forwarding_labels(nrobj_t* labels);

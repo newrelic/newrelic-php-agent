@@ -42,9 +42,9 @@ newrelic.application_logging.metrics.enabled = false
     [{"name":"Datastore/statement/SQLite/search_/create"},            [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/search_/drop"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/search_/insert"},            [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/SQLite/search_tmp_*\/create"},       [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/SQLite/search_tmp_*\/drop"},         [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/SQLite/search_tmp_*\/insert"},       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/create"},      [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/drop"},        [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Datastore/statement/SQLite/search_tmp_*\/insert"},      [2, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/search_tmp_/create"},        [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/search_tmp_/drop"},          [1, "??", "??", "??", "??", "??"]],
     [{"name":"Datastore/statement/SQLite/search_tmp_/insert"},        [1, "??", "??", "??", "??", "??"]],
@@ -73,7 +73,8 @@ newrelic.application_logging.metrics.enabled = false
       "scope":"OtherTransaction/Action/unknown"},                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},       [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/disabled"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

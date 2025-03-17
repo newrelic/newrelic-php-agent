@@ -37,19 +37,20 @@ g: string2
   "?? start time",
   "?? stop time",
   [
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name": "DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/f"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/g"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Framework/WordPress/Hook/h"},                          [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransaction/all"},                                [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransactionTotalTime"},                           [1, "??", "??", "??", "??", "??"]],
-    [{"name": "OtherTransactionTotalTime/php__FILE__"},               [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},       [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/Logging/Metrics/PHP/enabled"},          [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
-    [{"name": "Supportability/framework/WordPress/forced"},           [1, "??", "??", "??", "??", "??"]]
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"},       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/WordPress/Hook/f"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/WordPress/Hook/g"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/WordPress/Hook/h"},                                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/all"},                                       [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransaction/php__FILE__"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime"},                                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"OtherTransactionTotalTime/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},              [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                 [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/framework/WordPress/forced"},                  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},                 [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

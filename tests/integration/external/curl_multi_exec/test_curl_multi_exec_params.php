@@ -41,7 +41,8 @@ die("warn: this test fails on musl platform");
     [{"name":"Supportability/TraceContext/Create/Success"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all",
       "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},           [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

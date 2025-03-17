@@ -40,7 +40,8 @@ newrelic.cross_application_tracer.enabled = false
     [{"name":"TransportDuration/Mobile/111111/2827902/HTTP/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},   [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

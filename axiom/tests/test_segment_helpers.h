@@ -246,7 +246,7 @@ static NRUNUSED nrtxn_t* new_txn(int background) {
       .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
   };
 
-  txn = nr_txn_begin(&app, &nr_txn_test_options, 0);
+  txn = nr_txn_begin(&app, &nr_txn_test_options, NULL, NULL);
   if (0 == txn) {
     return txn;
   }

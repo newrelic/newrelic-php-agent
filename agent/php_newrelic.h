@@ -328,7 +328,6 @@ bool wordpress_core;                   /* set based on
 nrinistr_t
     wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
                                     */
-
 nrinibool_t
     analytics_events_enabled; /* DEPRECATED newrelic.analytics_events.enabled */
 nrinibool_t
@@ -383,6 +382,11 @@ nrinibool_t
 nrinibool_t
     database_name_reporting_enabled; /* newrelic.datastore_tracer.database_name_reporting.enabled
                                       */
+/*
+ * Cloud relationship settings
+ */
+nrinistr_t
+    aws_account_id; /* newrelic.cloud.aws.account_id */
 
 /*
  * Deprecated settings that control request parameter capture.
@@ -464,6 +468,7 @@ nr_stack_t wordpress_tag_states; /* stack of bools indicating
 bool check_cufa; /* Whether we need to check cufa because we are
                     instrumenting hooks, or whether we can skip cufa */
 char* wordpress_tag;                    /* The current WordPress tag */
+
 #endif //OAPI
 
 nr_matcher_t* wordpress_plugin_matcher; /* Matcher for plugin filenames */
@@ -481,6 +486,8 @@ int php_cur_stack_depth; /* Total current depth of PHP stack, measured in PHP
 
 nrphpcufafn_t
     cufa_callback; /* The current call_user_func_array callback, if any */
+
+nr_regex_t* aws_arn_regex; /* The compiled regex to search for ARNs */
 /*
  * We instrument database connection constructors and store the instance
  * information in a hash keyed by a string containing the connection resource
@@ -580,6 +587,12 @@ nrinibool_t
 nriniuint_t
     log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
                                */
+nrinibool_t
+    log_forwarding_labels_enabled; /* newrelic.application_logging.forwarding.labels.enabled */
+
+nrinistr_t
+    log_forwarding_labels_exclude; /* newrelic.application_logging.forwarding.labels.exclude */
+
 
 /*
  * Configuration option to toggle code level metrics collection.

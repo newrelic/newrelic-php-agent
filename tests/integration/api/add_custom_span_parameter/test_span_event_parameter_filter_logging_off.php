@@ -79,7 +79,7 @@ ok - double attribute added
         "double": 1.50000
       },
       {
-        "code.lineno": 121,
+        "code.lineno": 122,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -105,9 +105,10 @@ ok - double attribute added
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/add_custom_tracer"},               [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/api/add_custom_span_parameter"},       [4, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},      [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},  [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/Forwarding/PHP/disabled"},     [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Metrics/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},         [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */

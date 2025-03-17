@@ -196,6 +196,9 @@ nr_config.h: configure Makefile
 # Build the 8T protobuf code.
 #
 v1.pb-c.c: v1.proto
+ifeq (0,$(HAVE_PROTOBUF_C))
+	$(error Build dependency 'protobuf-c' not found.)
+endif
 	$(PROTOBUF_C_PREFIX)/bin/protoc-c --c_out=. $<
 
 #

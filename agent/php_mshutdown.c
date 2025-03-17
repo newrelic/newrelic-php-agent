@@ -16,6 +16,7 @@
 #include "nr_agent.h"
 #include "util_logging.h"
 #include "fw_wordpress.h"
+#include "lib_aws_sdk_php.h"
 
 #ifdef TAGS
 void zm_shutdown_newrelic(void); /* ctags landing pad only */
@@ -41,6 +42,10 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
   nrl_debug(NRL_INIT, "MSHUTDOWN processing started");
 
   nr_wordpress_mshutdown();
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
+  nr_aws_sdk_mshutdown();
+#endif
 
   /* restore header handler */
   sapi_module.header_handler = NR_PHP_PROCESS_GLOBALS(orig_header_handler);

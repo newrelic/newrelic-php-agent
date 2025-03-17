@@ -7,6 +7,8 @@
 #ifndef LIB_AWS_SDK_PHP_HDR
 #define LIB_AWS_SDK_PHP_HDR
 
+#include "nr_segment_message.h"
+
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
 
@@ -73,6 +75,24 @@ extern void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* segment,
                                           char* command_name_string,
                                           size_t command_name_len,
                                           NR_EXECUTE_PROTO);
+
+/*
+ * Purpose : Handle when a LambdaClient::invoke command happens
+ *
+ * Params  : 1. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
+ *           2. cloud_attrs : the cloud attributes pointer to be
+ *              populated with the ARN
+ *
+ * Returns :
+ *
+ * Note: The caller is responsible for freeing cloud_attrs->cloud_resource_id
+ */
+void nr_aws_sdk_lambda_client_invoke_parse_args(NR_EXECUTE_PROTO, nr_segment_cloud_attrs_t* cloud_attrs);
+
+/*
+ * Purpose : Handles regex destruction during mshutdown
+ */
+void nr_aws_sdk_mshutdown(void);
 
 /*
  * Purpose : The second argument to the Aws/AwsClient::__call function should be

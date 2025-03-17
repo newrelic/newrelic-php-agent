@@ -1212,6 +1212,33 @@ static PHP_INI_MH(nr_string_mh) {
   return FAILURE;
 }
 
+static PHP_INI_MH(nr_aws_account_id_mh) {
+  nrinistr_t* p;
+  const int AWS_ACCOUNT_ID_SIZE = 12;
+
+#ifndef ZTS
+  char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
+
+  p = (nrinistr_t*)(base + (size_t)mh_arg1);
+
+  (void)entry;
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  if (NEW_VALUE_LEN == AWS_ACCOUNT_ID_SIZE) {
+    p->value = NEW_VALUE;
+    p->where = stage;
+    return SUCCESS;
+  }
+
+  return FAILURE;
+}
+
 static PHP_INI_MH(nr_boolean_mh) {
   nrinibool_t* p;
   int val = 0;
@@ -3078,6 +3105,22 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclu
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.enabled",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     log_forwarding_labels_enabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.exclude",
+                     "",
+                     NR_PHP_REQUEST,
+                     nr_string_mh,
+                     log_forwarding_labels_exclude,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 /*
  * Vulnerability Management
@@ -3099,6 +3142,18 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
+
+/*
+ * Cloud relationship settings
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.cloud.aws.account_id",
+                     "",
+                     NR_PHP_REQUEST,
+                     nr_aws_account_id_mh,
+                     aws_account_id,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
 
 /*
  * Messaging API

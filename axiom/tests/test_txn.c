@@ -1604,7 +1604,7 @@ static void test_default_trace_id(void) {
   app.state = NR_APP_OK;
   nr_memset(&opts, 0, sizeof(opts));
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   txnid = nr_txn_get_guid(txn);
 
   tlib_fail_if_null("txnid", txnid);
@@ -1625,7 +1625,7 @@ static void test_root_segment_priority(void) {
   app.state = NR_APP_OK;
   nr_memset(&opts, 0, sizeof(opts));
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   tlib_fail_if_null("txn", txn);
   tlib_fail_if_null("root segment", txn->segment_root);
@@ -1651,21 +1651,21 @@ static void test_begin_bad_params(void) {
   app.state = NR_APP_OK;
   nr_memset(&opts, 0, sizeof(opts));
 
-  txn = nr_txn_begin(0, 0, config);
+  txn = nr_txn_begin(0, 0, config, NULL);
   tlib_pass_if_true("null params", 0 == txn, "txn=%p", txn);
 
-  txn = nr_txn_begin(0, &opts, config);
+  txn = nr_txn_begin(0, &opts, config, NULL);
   tlib_pass_if_true("null app", 0 == txn, "txn=%p", txn);
 
   app.state = NR_APP_INVALID;
-  txn = nr_txn_begin(&app, &opts, config);
+  txn = nr_txn_begin(&app, &opts, config, NULL);
   tlib_pass_if_true("invalid app", 0 == txn, "txn=%p", txn);
   app.state = NR_APP_OK;
 
-  txn = nr_txn_begin(&app, NULL, config);
+  txn = nr_txn_begin(&app, NULL, config, NULL);
   tlib_pass_if_true("NULL options", 0 == txn, "txn=%p", txn);
 
-  txn = nr_txn_begin(&app, &opts, config);
+  txn = nr_txn_begin(&app, &opts, config, NULL);
   tlib_pass_if_true("tests valid", 0 != txn, "txn=%p", txn);
 
   nr_txn_destroy(&txn);
@@ -1755,7 +1755,7 @@ static void test_begin(void) {
   correct.cross_process_enabled = 22;
   correct.max_segments = 0;
 
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("options provided", rv, &correct);
   json = nr_attributes_debug_json(rv->attributes);
   tlib_pass_if_str_equal("display host attribute created", json,
@@ -1772,7 +1772,7 @@ static void test_begin(void) {
   correct.tt_threshold = 12;
   correct.tt_is_apdex_f = 0;
 
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("tt is not apdex_f", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1783,7 +1783,7 @@ static void test_begin(void) {
   correct.tt_enabled = 0;
   correct.ep_enabled = 0;
   correct.tt_slowsql = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off traces", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1792,7 +1792,7 @@ static void test_begin(void) {
    */
   nro_set_hash_boolean(app->connect_reply, "collect_errors", 0);
   correct.err_enabled = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off errors", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1801,7 +1801,7 @@ static void test_begin(void) {
    */
   nro_set_hash_boolean(app->connect_reply, "collect_analytics_events", 0);
   correct.analytics_events_enabled = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off analytics events", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1810,7 +1810,7 @@ static void test_begin(void) {
    */
   nro_set_hash_boolean(app->connect_reply, "collect_custom_events", 0);
   correct.custom_events_enabled = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off custom events", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1819,7 +1819,7 @@ static void test_begin(void) {
    */
   nro_set_hash_boolean(app->connect_reply, "collect_error_events", 0);
   correct.error_events_enabled = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off error events", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1828,7 +1828,7 @@ static void test_begin(void) {
    */
   nro_set_hash_boolean(app->connect_reply, "collect_span_events", 0);
   correct.span_events_enabled = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("app turns off span events", rv, &correct);
   nr_txn_destroy(&rv);
 
@@ -1836,7 +1836,7 @@ static void test_begin(void) {
    * Test : High security off
    */
   app->info.high_security = 0;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   tlib_pass_if_int_equal("high security off", 0, rv->high_security);
   nr_txn_destroy(&rv);
 
@@ -1844,7 +1844,7 @@ static void test_begin(void) {
    * Test : High Security On
    */
   app->info.high_security = 1;
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   tlib_pass_if_int_equal("app local high security copied to txn", 1,
                          rv->high_security);
   nr_txn_destroy(&rv);
@@ -1853,7 +1853,7 @@ static void test_begin(void) {
   /*
    * Test : CPU usage populated on create
    */
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   /*
    * It is tempting to think that the process has already
    * incurred some user and system time at the start.
@@ -1873,7 +1873,7 @@ static void test_begin(void) {
   /*
    * Test : App name is populated in the new transaction.
    */
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   tlib_pass_if_str_equal("primary_app_name", "App Name", rv->primary_app_name);
   nr_txn_destroy(&rv);
 
@@ -1883,7 +1883,7 @@ static void test_begin(void) {
   nro_set_hash_string(app->connect_reply, "trusted_account_key", "1");
   nro_set_hash_string(app->connect_reply, "primary_application_id", "2");
   nro_set_hash_string(app->connect_reply, "account_id", "3");
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   tlib_pass_if_str_equal(
       "connect response", "1",
       nr_distributed_trace_get_trusted_key(rv->distributed_trace));
@@ -1904,7 +1904,7 @@ static void test_begin(void) {
       .error_events = 0,
       .span_events = 0,
   };
-  rv = nr_txn_begin(app, opts, attribute_config);
+  rv = nr_txn_begin(app, opts, attribute_config, NULL);
   tlib_pass_if_int_equal("analytics_events_enabled", 0,
                          rv->options.analytics_events_enabled);
   tlib_pass_if_int_equal("custom_events_enabled", 0,
@@ -1954,7 +1954,7 @@ static nrtxn_t* create_full_txn_and_reset(nrapp_t* app) {
   /*
    * Create the Transaction
    */
-  txn = nr_txn_begin(app, &nr_txn_test_options, 0);
+  txn = nr_txn_begin(app, &nr_txn_test_options, 0, NULL);
   tlib_pass_if_not_null("nr_txn_begin succeeds", txn);
   if (0 == txn) {
     return txn;
@@ -3730,7 +3730,7 @@ static nrtxn_t* test_namer_with_app_and_expressions_and_return_txn(
   nr_memset(&simple_test_app, 0, sizeof(simple_test_app));
   simple_test_app.state = NR_APP_OK;
 
-  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL, NULL);
   tlib_pass_if_not_null("nr_txn_begin succeeds", txn);
 
   nr_txn_add_match_files(txn, test_pattern);
@@ -3766,7 +3766,7 @@ static void test_namer(void) {
   nr_txn_match_file(NULL, NULL);
   nr_txn_add_file_naming_pattern(NULL, "");
 
-  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL, NULL);
   nr_txn_add_file_naming_pattern(txn, NULL);
   nr_txn_add_file_naming_pattern(txn, "");
 
@@ -3827,7 +3827,7 @@ static void test_namer(void) {
   tlib_pass_if_str_equal("Match freezes transaction", "pkg/.", txn->path);
   nr_txn_destroy(&txn);
 
-  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(&simple_test_app, &nr_txn_test_options, NULL, NULL);
 
   txn->status.recording = 0;
   nr_txn_add_match_files(txn, "pattern");
@@ -4362,7 +4362,7 @@ static void test_txn_cat_map_cross_agent_testcase_fn(nrapp_t* app,
   nr_free(app->entity_name);
   app->entity_name = nr_strdup(appname);
 
-  txn = nr_txn_begin(app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(app, &nr_txn_test_options, NULL, NULL);
   test_pass_if_true_file_line("tests valid", NULL != txn, file, line, "txn=%p",
                               txn);
   if (NULL == txn) {
@@ -4646,7 +4646,7 @@ static void test_txn_dt_cross_agent_testcase(nrapp_t* app,
                       trusted_account_key);
   nro_set_hash_string(app->connect_reply, "account_id", account_id);
 
-  txn = nr_txn_begin(app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(app, &nr_txn_test_options, NULL, NULL);
   tlib_pass_if_not_null(testname, txn);
 
   if (NULL == txn) {
@@ -4908,7 +4908,7 @@ static void test_txn_trace_context_cross_agent_testcase(nrapp_t* app,
                       trusted_account_key);
   nro_set_hash_string(app->connect_reply, "account_id", account_id);
 
-  txn = nr_txn_begin(app, &nr_txn_test_options, NULL);
+  txn = nr_txn_begin(app, &nr_txn_test_options, NULL, NULL);
   tlib_pass_if_not_null(testname, txn);
 
   if (NULL == txn) {
@@ -5497,7 +5497,7 @@ static void test_custom_parameters_segment(void) {
   /*
    * Setup and start txn and custom segment.
    */
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   txn->options.span_events_enabled = true;
   txn->options.distributed_tracing_enabled = true;
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
@@ -7475,7 +7475,7 @@ static void test_force_current_segment(void) {
   /*
    * Setup and start txn.
    */
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * segment_1 is the current segment in the default context.
@@ -7573,7 +7573,7 @@ static void test_get_current_trace_id(void) {
   nr_memset(&opts, 0, sizeof(opts));
   app.state = NR_APP_OK;
   opts.distributed_tracing_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * Test : Bad parameters
@@ -7613,7 +7613,7 @@ static void test_get_current_trace_id(void) {
   app.state = NR_APP_OK;
   opts.distributed_tracing_enabled = 1;
   opts.distributed_tracing_pad_trace_id = true;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   /*
    * Test : trace id  != txn_id with trace_id padding enabled
    */
@@ -7643,7 +7643,7 @@ static void test_get_current_span_id(void) {
   nr_memset(&opts, 0, sizeof(opts));
   app.state = NR_APP_OK;
   opts.distributed_tracing_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, txn->segment_root, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   nr_txn_set_current_segment(txn, segment);
@@ -7696,7 +7696,7 @@ static void test_finalize_parent_stacks(void) {
   nr_memset(&app, 0, sizeof(app));
   nr_memset(&opts, 0, sizeof(opts));
   app.state = NR_APP_OK;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * Don't crash on a NULL stack
@@ -7751,7 +7751,7 @@ static void test_max_segments_no_limit(void) {
 
   p->txns_app = &app;
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * A segment heap must not be initialized.
@@ -7808,7 +7808,7 @@ static void test_max_segments_count_tree(void) {
 
   p->txns_app = &app;
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * A segment heap must be initialized.
@@ -7858,7 +7858,7 @@ static void test_max_segments(void) {
 
   p->txns_app = &app;
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * A segment heap must be initialized.
@@ -7937,7 +7937,7 @@ static void test_allocated_segment_count(void) {
   /*
    * Initial state.
    */
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   tlib_pass_if_size_t_equal("1 on initialized txn", 1,
                             nr_txn_allocated_segment_count(txn));
 
@@ -7981,7 +7981,7 @@ static void test_allocate_segment(void) {
    */
   tlib_pass_if_null("NULL segment on NULL txn", nr_txn_allocate_segment(NULL));
 
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   /*
    * Allocate an uninitialized segment.
@@ -8016,7 +8016,7 @@ static void test_span_queue(void) {
   /*
    * Test : Trace observer host with a zero batch size.
    */
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   tlib_pass_if_null(
       "an app with a trace observer and a zero batch size should not create a "
       "span queue",
@@ -8027,7 +8027,7 @@ static void test_span_queue(void) {
    * Test : Trace observer host with a non-zero batch size.
    */
   opts.span_queue_batch_size = 1000;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
 
   tlib_pass_if_not_null(
       "an app with a trace observer and a non-zero batch size should create a "
@@ -8069,7 +8069,7 @@ static void test_segment_record_error(void) {
   nr_memset(&opts, 0, sizeof(opts));
   opts.distributed_tracing_enabled = 1;
   opts.span_events_enabled = 1;
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, NULL, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   txn->options.allow_raw_exception_messages = 1;
@@ -8188,7 +8188,7 @@ static nrtxn_t* new_txn_for_record_log_event_test(char* entity_name) {
   opts.distributed_tracing_enabled = 1; /* for linking meta data */
 
   /* Start txn and segment */
-  txn = nr_txn_begin(&app, &opts, NULL);
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, txn->segment_root, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
   nr_txn_set_current_segment(txn, segment);
@@ -8613,6 +8613,11 @@ static void test_txn_log_configuration(void) {
   txn->options.log_decorating_enabled = true;
   tlib_pass_if_false(__func__, nr_txn_log_forwarding_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1, decorating=1 -> forwarding off");
   tlib_pass_if_true(__func__, nr_txn_log_decorating_enabled(txn), "global=1, high_security=1, forwarding=1, samples=1, decorating=1 -> decorating on");
+
+  // if log forwarding is disabled then log label forwarding should be disabled
+  txn->options.log_forwarding_enabled = false;
+  txn->options.log_forwarding_labels_enabled = true;
+  tlib_pass_if_false(__func__, nr_txn_log_forwarding_labels_enabled(txn), "forwarding=0, labels=1 -> off");
   // clang-format on
 }
 

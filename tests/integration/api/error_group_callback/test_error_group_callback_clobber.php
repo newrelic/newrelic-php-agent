@@ -44,7 +44,8 @@ stack => \[" in alpha called at .*test_error_group_callback_clobber.php \(.*\)"\
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/notice_error"},                            [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/api/set_error_group_callback"},                [2, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]]
+    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},        [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/Logging/Labels/PHP/disabled"},                 [1, "??", "??", "??", "??", "??"]]
   ]
 ]
 */
