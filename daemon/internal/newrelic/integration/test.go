@@ -641,6 +641,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 
 	if nil != t.phpPackagesConfig {
 		var err error
+		var notes []string
 
 		expectNullPkgs = "null" == string(t.phpPackagesConfig)
 		if expectNullPkgs {
@@ -652,10 +653,15 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				return
 			}
 
-			expectedPackages, err = expectedPkgsCollection.GatherInstalledPackages()
+			expectedPackages, notes, err = expectedPkgsCollection.GatherInstalledPackages()
 			if nil != err {
 				t.Fatal(err)
 				return
+			}
+			if nil != notes {
+				for _, note := range notes {
+					t.AddNote(note)
+				}
 			}
 
 			// Determine if we expect an exact match between expected and actual packages
