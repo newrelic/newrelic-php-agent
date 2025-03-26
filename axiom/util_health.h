@@ -30,8 +30,10 @@ typedef enum _nrhealth_t {
 } nrhealth_t;
 
 extern char* nrh_strip_scheme_prefix(char* uri);
-extern nr_status_t nrh_set_health_location(char* uri);
-extern nr_status_t nrh_set_health_file(char* filename);
+extern char* nrh_get_health_location(char* uri);
+extern char* nrh_get_health_filepath(char* filedir);
+extern char* nrh_get_health_filename(void);
+extern nr_status_t nrh_set_health_filename(void);
 extern void nrh_close_health_file(void);
 extern nr_status_t nrh_set_start_time(void);
 extern long long nrh_get_start_time_ns(void);

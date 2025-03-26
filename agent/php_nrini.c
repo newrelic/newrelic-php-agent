@@ -543,8 +543,6 @@ static PHP_INI_MH(nr_agent_control_enabled_mh) {
 }
 
 static PHP_INI_MH(nr_agent_control_location_mh) {
-  nr_status_t rv;
-
   (void)entry;
   (void)mh_arg1;
   (void)mh_arg2;
@@ -563,9 +561,10 @@ static PHP_INI_MH(nr_agent_control_location_mh) {
     return FAILURE;
   }
 
-  rv = nrh_set_health_location(NEW_VALUE);
+  NR_PHP_PROCESS_GLOBALS(agent_control_health_location)
+      = nrh_get_health_location(NEW_VALUE);
 
-  if (NR_FAILURE == rv) {
+  if (NULL == NR_PHP_PROCESS_GLOBALS(agent_control_health_location)) {
     nrl_warning(NRL_INIT,
                 "failed to set health file location for provided uri '%s'",
                 NEW_VALUE);

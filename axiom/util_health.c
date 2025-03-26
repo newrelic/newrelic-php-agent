@@ -46,6 +46,7 @@ static nrh_status_codes_t health_statuses[NRH_MAX_STATUS] = {
 static int healthfile_fd = -1;
 static struct timespec start_time = {0, 0};
 static nrhealth_t last_error_code = NRH_HEALTHY;
+static char health_filename[] = "health-bc21b5891f5e44fc9272caef924611a8.yml";
 
 static char* nrh_get_uuid(void) {
   // TODO: UUID generation logic
@@ -78,85 +79,71 @@ char* nrh_strip_scheme_prefix(char* uri) {
   return filedir;
 }
 
-nr_status_t nrh_set_health_location(char* uri) {
-  char* filedir = NULL;
-  struct stat statbuf;
-
-  nr_free(NR_PHP_PROCESS_GLOBALS(agent_control_health_location));
-
-  if (NULL == uri || 0 == uri[0]) {
-    return NR_FAILURE;
-  }
-
-  filedir = nrh_strip_scheme_prefix(uri);
-
-  if (NULL == filedir) {
-    return NR_FAILURE;
-  }
-
-  if (0 != nr_stat(filedir, &statbuf)) {
-    nr_free(filedir);
-    return NR_FAILURE;
-  }
-
-  if (0 == S_ISDIR(statbuf.st_mode)) {
-    nr_free(filedir);
-    return NR_FAILURE;
-  }
-
-  NR_PHP_PROCESS_GLOBALS(agent_control_health_location) = nr_strdup(filedir);
-
-  nr_free(filedir);
-  return NR_SUCCESS;
+char* nrh_get_health_filename(void) {
+  return health_filename;
 }
 
-nr_status_t nrh_set_health_file(char* uri) {
+nr_status_t nrh_set_health_filename(void) {
   char* uuid = NULL;
-  char* filedir = NULL;
-  char* filepath = NULL;
-  struct stat statbuf;
-
-  if (NULL == uri || 0 == uri[0]) {
-    nrl_warning(NRL_AGENT, "%s: uri is NULL", __func__);
-    goto fail;
-  }
-
-  filedir = nrh_strip_scheme_prefix(uri);
-
-  if (NULL == filedir) {
-    nrl_warning(NRL_AGENT, "%s: filedir is NULL", __func__);
-    goto fail;
-  }
-
-  if (0 != nr_stat(filedir, &statbuf)) {
-    nrl_warning(NRL_AGENT, "%s: filedir %s innacessible", __func__, filedir);
-    goto fail;
-  }
-
-  if (0 == S_ISDIR(statbuf.st_mode)) {
-    nrl_warning(NRL_AGENT, "%s: filedir %s is not a directory", __func__,
-                filedir);
-    goto fail;
-  }
+  char* fname = NULL;
 
   uuid = nrh_get_uuid();
 
-  filepath = nr_formatf("%s/health-%s.yml", filedir, uuid);
+  if (NULL == uuid) {
+    return NR_FAILURE;
+  }
 
-  healthfile_fd = nr_open(filepath, O_WRONLY | O_APPEND | O_CREAT, 0666);
+  fname = nr_formatf("health-%s.yml", uuid);
+
+  if (nr_strlen(fname) != nr_strlen(health_filename)) {
+    nr_free(uuid);
+    return NR_FAILURE;
+  }
+
+  nr_strcpy(&health_filename[0], fname);
 
   nr_free(uuid);
-  nr_free(filepath);
-  nr_free(filedir);
-
+  nr_free(fname);
   return NR_SUCCESS;
+}
 
-fail:
-  nr_free(uuid);
-  nr_free(filepath);
-  nr_free(filedir);
+char* nrh_get_health_location(char* uri) {
+  char* filedir = NULL;
+  struct stat statbuf;
 
-  return NR_FAILURE;
+  if (NULL == uri || 0 == uri[0]) {
+    return NULL;
+  }
+
+  filedir = nrh_strip_scheme_prefix(uri);
+
+  if (NULL == filedir) {
+    return NULL;
+  }
+
+  if (0 != nr_stat(filedir, &statbuf)) {
+    nr_free(filedir);
+    return NULL;
+  }
+
+  if (0 == S_ISDIR(statbuf.st_mode)) {
+    nr_free(filedir);
+    return NULL;
+  }
+
+  return filedir;
+}
+
+char* nrh_get_health_filepath(char* filedir) {
+  char* filepath = NULL;
+
+  if (NULL == filedir) {
+    return NULL;
+  }
+
+  filepath = nr_formatf("%s/%s", filedir, health_filename);
+
+  return filepath;
 }
 
 void nrh_close_health_file(void) {
