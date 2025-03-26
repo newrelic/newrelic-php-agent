@@ -319,6 +319,25 @@ static void nr_php_check_high_security_log_forwarding(TSRMLS_D) {
   }
 }
 
+/*
+ * Check the INI values for 'agent_control_enabled' and
+ * `agent_control_health_location`, log a warning and set agent_control_enabled
+ * to 'false' on an invalid configuration state .
+ */
+static void nr_php_check_agent_control_health_file() {
+  if (NR_PHP_PROCESS_GLOBALS(agent_control_enabled)
+      && nr_strempty(NR_PHP_PROCESS_GLOBALS(agent_control_health_location))) {
+    nrl_warning(NRL_INIT,
+                "NR Control support will be DISABLED because a valid health "
+                "file location is not set. Please check "
+                "newrelic.agent_control.health.delivery_location in the agent "
+                "configuration file or the "
+                "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION environment "
+                "variable.");
+    NR_PHP_PROCESS_GLOBALS(agent_control_enabled) = 0;
+  }
+}
+
 static char* nr_php_get_agent_specific_info(void) {
   const char* php_version;
   const char* zend_type;
@@ -650,6 +669,8 @@ PHP_MINIT_FUNCTION(newrelic) {
 
   nr_php_check_logging_config(TSRMLS_C);
   nr_php_check_high_security_log_forwarding(TSRMLS_C);
+
+  nr_php_check_agent_control_health_file();
 
   /*
    * Save the original PHP hooks and then apply our own hooks. The agent is
