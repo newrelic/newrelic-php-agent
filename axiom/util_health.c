@@ -13,7 +13,6 @@
 #include <time.h>
 
 #include "util_health.h"
-#include "php_globals.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_syscalls.h"
