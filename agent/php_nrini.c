@@ -15,6 +15,7 @@
 #include "nr_version.h"
 #include "nr_log_level.h"
 #include "util_buffer.h"
+#include "util_health.h"
 #include "util_json.h"
 #include "util_logging.h"
 #include "util_memory.h"
@@ -510,6 +511,90 @@ static PHP_INI_MH(nr_high_security_mh) {
     NR_PHP_PROCESS_GLOBALS(high_security) = 1;
   } else {
     NR_PHP_PROCESS_GLOBALS(high_security) = 0;
+  }
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_agent_control_enabled_mh) {
+  int val;
+
+  (void)entry;
+  (void)NEW_VALUE_LEN;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    return FAILURE;
+  }
+
+  if (val) {
+    NR_PHP_PROCESS_GLOBALS(agent_control_enabled) = 1;
+  } else {
+    NR_PHP_PROCESS_GLOBALS(agent_control_enabled) = 0;
+  }
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_agent_control_location_mh) {
+  nr_status_t rv;
+
+  (void)entry;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  nr_free(NR_PHP_PROCESS_GLOBALS(agent_control_health_location));
+
+  if (0 == NEW_VALUE_LEN) {
+    return SUCCESS;
+  }
+
+  if (7 >= NEW_VALUE_LEN) {
+    // missing or malformed 'file://' prefix
+    return FAILURE;
+  }
+
+  rv = nrh_set_health_location(NEW_VALUE);
+
+  if (NR_FAILURE == rv) {
+    nrl_warning(NRL_INIT,
+                "failed to set health file location for provided uri '%s'",
+                NEW_VALUE);
+    return FAILURE;
+  }
+
+  return SUCCESS;
+}
+
+static PHP_INI_MH(nr_agent_control_frequency_mh) {
+  nrtime_t val;
+
+  (void)entry;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  if (0 != NEW_VALUE_LEN) {
+    val = nr_parse_time_from_config(NEW_VALUE);
+    if (val < 1) {
+      val = 1;
+    } else if (val > 300) {
+      val = 300;
+    }
+    NR_PHP_PROCESS_GLOBALS(agent_control_frequency) = val;
+  } else {
+    NR_PHP_PROCESS_GLOBALS(agent_control_frequency) = 5;
   }
 
   return SUCCESS;
@@ -2169,6 +2254,25 @@ PHP_INI_ENTRY_EX("newrelic.daemon.utilization.detect_kubernetes",
                  NR_PHP_SYSTEM,
                  NR_PHP_UTILIZATION_MH_NAME(kubernetes),
                  nr_enabled_disabled_dh)
+
+PHP_INI_ENTRY_EX("newrelic.agent_control.enabled",
+                 "0",
+                 NR_PHP_SYSTEM,
+                 nr_agent_control_enabled_mh,
+                 0)
+
+PHP_INI_ENTRY_EX("newrelic.agent_control.health.delivery_location",
+                 "file:///newrelic/apm/health",
+                 NR_PHP_SYSTEM,
+                 nr_agent_control_location_mh,
+                 0)
+
+PHP_INI_ENTRY_EX("newrelic.agent_control.health.frequency",
+                 "5s",
+                 NR_PHP_SYSTEM,
+                 nr_agent_control_frequency_mh,
+                 0)
+
 /*
  * This daemon flag is for internal development use only.  It should not be
  * documented to customers.
