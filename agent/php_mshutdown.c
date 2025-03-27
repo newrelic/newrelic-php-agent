@@ -16,6 +16,7 @@
 #include "nr_agent.h"
 #include "util_logging.h"
 #include "fw_wordpress.h"
+#include "lib_aws_sdk_php.h"
 
 #ifdef TAGS
 void zm_shutdown_newrelic(void); /* ctags landing pad only */

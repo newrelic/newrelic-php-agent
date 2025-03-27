@@ -27,6 +27,8 @@ var (
 		LogForwardingLabelsTestCase{name: "Invalid keys", labels: `[{"label_tipe":"type1","label_valyue":"value1"}]`, expected: `{}`},
 		LogForwardingLabelsTestCase{name: "Space in value", labels: `[{"label_type":"type1","label_value":"value 1"}]`, expected: `{"tags.type1":"value 1"}`},
 		LogForwardingLabelsTestCase{name: "Space in key", labels: `[{"label_type":"type 1","label_value":"value1"}]`, expected: `{"tags.type 1":"value1"}`},
+		LogForwardingLabelsTestCase{name: "Empty value", labels: `[{"label_type":"type1","label_value":""}]`, expected: `{}`},
+		LogForwardingLabelsTestCase{name: "Empty key", labels: `[{"label_type":"","label_value":"value1"}]`, expected: `{}`},
 	}
 )
 
