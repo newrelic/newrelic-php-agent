@@ -545,35 +545,34 @@ void nr_lib_aws_sdk_php_dynamodb_set_params(
 
   if (NULL != func->common.scope) {
     base_class = func->common.scope;
-  }
 
-  region_zval = nr_php_get_zval_object_property_with_class(this_obj, base_class,
-                                                           "region");
-  if (nr_php_is_zval_non_empty_string(region_zval)) {
-    cloud_attrs->cloud_region = Z_STRVAL_P(region_zval);
-  }
+    region_zval = nr_php_get_zval_object_property_with_class(
+        this_obj, base_class, "region");
+    if (nr_php_is_zval_non_empty_string(region_zval)) {
+      cloud_attrs->cloud_region = Z_STRVAL_P(region_zval);
+    }
 
-  endpoint_zval = nr_php_get_zval_object_property_with_class(
-      this_obj, base_class, "endpoint");
-  if (nr_php_is_zval_valid_object(endpoint_zval)) {
-    host_zval = nr_php_get_zval_object_property(endpoint_zval, "host");
-    if (nr_php_is_zval_non_empty_string(host_zval)) {
-      datastore_params->instance->host = Z_STRVAL_P(host_zval);
+    endpoint_zval = nr_php_get_zval_object_property_with_class(
+        this_obj, base_class, "endpoint");
+    if (nr_php_is_zval_valid_object(endpoint_zval)) {
+      host_zval = nr_php_get_zval_object_property(endpoint_zval, "host");
+      if (nr_php_is_zval_non_empty_string(host_zval)) {
+        datastore_params->instance->host = Z_STRVAL_P(host_zval);
 
-      /* Only try to get a port if we have a valid host. */
-      port_zval = nr_php_get_zval_object_property(endpoint_zval, "port");
-      if (nr_php_is_zval_valid_integer(port_zval)) {
-        /* Must be freed by caller */
-        datastore_params->instance->port_path_or_id
-            = nr_formatf(NR_INT64_FMT, Z_LVAL_P(port_zval));
-      } else {
-        /* In case where host was found but port was not, spec says return
-         * unknown for port. */
-        datastore_params->instance->port_path_or_id = nr_strdup("unknown");
+        /* Only try to get a port if we have a valid host. */
+        port_zval = nr_php_get_zval_object_property(endpoint_zval, "port");
+        if (nr_php_is_zval_valid_integer(port_zval)) {
+          /* Must be freed by caller */
+          datastore_params->instance->port_path_or_id
+              = nr_formatf(NR_INT64_FMT, Z_LVAL_P(port_zval));
+        } else {
+          /* In case where host was found but port was not, spec says return
+           * unknown for port. */
+          datastore_params->instance->port_path_or_id = nr_strdup("unknown");
+        }
       }
     }
   }
-
   if (NULL == datastore_params->instance->host) {
     /* Unable to retrieve the endpoint, go with AWS defaults. */
     datastore_params->instance->host = AWS_SDK_PHP_DYNAMODBCLIENT_DEFAULT_HOST;
