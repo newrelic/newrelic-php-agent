@@ -62,7 +62,7 @@ NR_PHP_WRAPPER(expect_arg_value_null) {
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(aws_dynamodb_set_params_wrapper) {
-  // (void)wraprec;
+  (void)wraprec;
   nr_segment_cloud_attrs_t cloud_attrs = {0};
   nr_datastore_instance_t instance = {0};
   nr_segment_datastore_params_t datastore_params = {0};
