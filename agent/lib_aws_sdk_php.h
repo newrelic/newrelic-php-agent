@@ -154,17 +154,21 @@ extern void nr_lib_aws_sdk_php_dynamodb_handle(nr_segment_t* segment,
 
 /*
  * Purpose : Populate DynamoDbClient datastore_params and cloud_attrs.  This
- will extract region and host/port and set the value in the appropriate struct.
-             Note: A host/port other than the AWS DynamoDb default is very
- uncommon and used only for development environments
+ *           will extract region and host/port and set the value in the
+ *           appropriate struct.
+ *
+ *           Note: A host/port other than the AWS DynamoDb default is very
+ *           uncommon and used only for development environments
  *
  * Params  : 1. datastore_params : datastore params to modify
  *           2. cloud_attrs : cloud attributes to modify
  *           3. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
  * Returns :
  * Note: caller is responsible for freeing the cloud_attrs->cloud_resource_id
- and datastore_params->collection and datastore_params.instance.port_path_or_id
+ *       and datastore_params->collection and
+ *       datastore_params.instance.port_path_or_id
  */
+
 extern void nr_lib_aws_sdk_php_dynamodb_set_params(
     nr_segment_datastore_params_t* datastore_params,
     nr_segment_cloud_attrs_t* cloud_attrs,
