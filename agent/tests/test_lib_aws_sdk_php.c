@@ -77,7 +77,7 @@ NR_PHP_WRAPPER(aws_dynamodb_set_params_wrapper) {
    * argument 1 is is used to pass in the test name
    */
 
-  test_name = nr_php_get_user_func_arg(3, NR_EXECUTE_ORIG_ARGS);
+  test_name = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
 
   /*
    * argument 3 is is used to pass in the expected value
