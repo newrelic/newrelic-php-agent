@@ -555,27 +555,28 @@ static void test_nr_lib_aws_sdk_php_handle_version(void) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 static void setup_inherited_classes() {
-  tlib_php_request_eval(
-      "class endpoint_class{"
-      "public ?string $host;"
-      "public ?int $port;"
-      "function __construct(?int $port = null, ?string $host = null) {"
-      "$this->host = $host;"
-      "$this->port = $port;"
-      "}"
+  // clang-format off
+  const char* classes =
+      "class endpoint_class {"
+        "public ?string $host;"
+        "public ?int $port;"
+        "function __construct(?int $port = null, ?string $host = null) {"
+          "$this->host = $host;"
+          "$this->port = $port;"
+        "}"
       "}"
       "class base_class {"
-      "private ?string $region;"
-      "private ?endpoint_class $endpoint;"
-      "function base_func($command, $args, $expects) {return;}"
-      "function __construct(?string $region = null, ?int $port = null, ?string "
-      "$host = null) {"
-      "$this->region = $region;"
-      "$this->endpoint = new endpoint_class($port, $host);"
+        "private ?string $region;"
+        "private ?endpoint_class $endpoint;"
+        "function base_func($command, $args, $expects) {return;}"
+        "function __construct(?string $region = null, ?int $port = null, ?string $host = null) {"
+          "$this->region = $region;"
+          "$this->endpoint = new endpoint_class($port, $host);"
+        "}"
       "}"
-      "}"
-      "class top_class extends base_class {"
-      "}");
+      "class top_class extends base_class {}";
+  // clang-format on
+  tlib_php_request_eval(classes);
 }
 static void test_nr_lib_aws_sdk_php_dynamodb_set_params() {
   zval* obj = NULL;
