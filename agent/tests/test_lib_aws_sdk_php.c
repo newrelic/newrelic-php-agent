@@ -109,7 +109,7 @@ NR_PHP_WRAPPER(aws_dynamodb_set_params_wrapper) {
   if (nr_php_is_zval_valid_string(test_name)) {
     test_name_string = Z_STRVAL_P(test_name);
   } else {
-    test_name_string = "Parmas should match expected.";
+    test_name_string = "Params should match expected.";
   }
 
   tlib_pass_if_str_equal(test_name_string, expected_string, result_string);
