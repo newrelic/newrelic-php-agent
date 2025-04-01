@@ -24,9 +24,9 @@ static void test_wraprecs_hashmap() {
   nruserfn_t *wraprec, *found_wraprec;
   zend_string *func_name, *scope_name, *method_name;
 
-  func_name = zend_string_init_fast(NR_PSTR(FUNCTION_NAME));
-  scope_name = zend_string_init_fast(NR_PSTR(SCOPE_NAME));
-  method_name = zend_string_init_fast(NR_PSTR(METHOD_NAME));
+  func_name = zend_string_init(NR_PSTR(FUNCTION_NAME), 0);
+  scope_name = zend_string_init(NR_PSTR(SCOPE_NAME), 0);
+  method_name = zend_string_init(NR_PSTR(METHOD_NAME), 0);
 
   // user_instrument_wraprec_hashmap is initialized at minit
   // destroy it to test agent's behavior when it is not initialized
