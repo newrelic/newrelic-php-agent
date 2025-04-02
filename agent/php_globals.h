@@ -76,9 +76,6 @@ typedef struct _nrphpglobals_t {
   int preload_framework_library_detection; /* Enables preloading framework and
                                               library detection */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
-  int agent_control_enabled;
-  char* agent_control_health_location; /* URI for the NR Control health file */
-  nrtime_t agent_control_frequency;
 
   /* Original PHP callback pointer contents */
   nrphperrfn_t orig_error_cb;
@@ -87,6 +84,11 @@ typedef struct _nrphpglobals_t {
 
   /* Original PHP SAPI header callback */
   nrphphdrfn_t orig_header_handler;
+
+  /* NR Control configuration settings */
+  int agent_control_enabled;
+  char* agent_control_health_location;
+  nrtime_t agent_control_frequency;
 
   struct {
     uint8_t no_sql_parsing;
