@@ -29,6 +29,7 @@
 #include "nr_app.h"
 #include "nr_banner.h"
 #include "nr_daemon_spawn.h"
+#include "util_health.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_signals.h"
@@ -739,6 +740,10 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_laravel_minit(TSRMLS_C);
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
+
+  if (NR_PHP_PROCESS_GLOBALS(agent_control_enabled)) {
+    nrh_set_start_time();
+  }
 
   nrl_debug(NRL_INIT, "MINIT processing done");
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
