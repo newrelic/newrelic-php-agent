@@ -63,6 +63,7 @@ test_guid
 test_hash
 test_hashmap
 test_header
+test_health
 test_helgrind
 test_json
 test_labels
