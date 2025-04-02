@@ -146,6 +146,7 @@ TESTS := \
   test_hash \
   test_hashmap \
   test_header \
+  test_health \
   test_json \
   test_labels \
   test_log_event \
