@@ -492,6 +492,18 @@ PHP_MINIT_FUNCTION(newrelic) {
    */
   nr_php_generate_internal_wrap_records();
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* 
+   * The user function wraprec hashmap must be initialized before INI processing
+   * because INI processing adds wraprecs:
+   *  - newrelic.webtransaction.name.functions
+   *  - newrelic.transaction_tracer.custom
+  */
+  if (NR_SUCCESS != nr_php_user_instrument_wraprec_hashmap_init()) {
+    nrl_error(NRL_AGENT, "Failed to initialize user function instrumentation");
+  }
+#endif
+
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
@@ -670,9 +682,6 @@ PHP_MINIT_FUNCTION(newrelic) {
   NR_ZEND_EXECUTE_HOOK = nr_php_execute;
 #else
   nr_php_observer_minit();
-  if (NR_SUCCESS != nr_php_user_instrument_wraprec_hashmap_init()) {
-    nrl_error(NRL_AGENT, "Failed to initialize user function instrumentation");
-  }
 #endif
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_internal)) {

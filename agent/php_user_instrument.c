@@ -13,6 +13,7 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "util_syscalls.h"
 
 /*
  * The mechanism of zend_try .. zend_catch .. zend_end_try
@@ -318,7 +319,9 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 
 nruserfn_t* nr_php_user_wraprec_create(void) {
   nruserfn_t* wr = (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
-  wr->pid = NRPRG(pid);
+  /* NRPRG(pid) is set in rinit but it's sometimes needed before rinit,
+  *  i.e. when wraprec is added via INI */
+  wr->pid = (0 != NRPRG(pid) ? NRPRG(pid) : nr_getpid());
   return wr;
 }
 
