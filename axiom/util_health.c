@@ -42,7 +42,6 @@ static nrh_status_codes_t health_statuses[NRH_MAX_STATUS] = {
 };
 // clang-format on
 
-static int healthfile_fd = -1;
 static struct timespec start_time = {0, 0};
 static nrhealth_t last_error_code = NRH_HEALTHY;
 static char health_filename[] = "health-bc21b5891f5e44fc9272caef924611a8.yml";
@@ -145,15 +144,6 @@ char* nrh_get_health_filepath(char* filedir) {
   return filepath;
 }
 
-void nrh_close_health_file(void) {
-  if (-1 == healthfile_fd) {
-    return;
-  }
-
-  nr_close(healthfile_fd);
-  healthfile_fd = -1;
-}
-
 nr_status_t nrh_set_start_time(void) {
   clock_gettime(CLOCK_REALTIME, &start_time);
 
@@ -176,10 +166,6 @@ long long nrh_get_current_time_ns(void) {
   return (long long)(ts.tv_sec * BILLION + ts.tv_nsec);
 }
 
-int nrh_get_healthfile_fd(void) {
-  return healthfile_fd;
-}
-
 nr_status_t nrh_set_last_error(nrhealth_t status) {
   if (status < NRH_HEALTHY || status >= NRH_MAX_STATUS) {
     return NR_FAILURE;
@@ -198,32 +184,32 @@ nrhealth_t nrh_get_last_error(void) {
   return last_error_code;
 }
 
-#ifndef HEALTH_STATUS_LINE
-#define HEALTH_STATUS_LINE(field, value)                        \
-  nr_write(healthfile_fd, nr_formatf("%s: %s\n", field, value), \
-           nr_strlen(nr_formatf("%s: %s\n", field, value)));
-
-nr_status_t nrh_write_health(void) {
+nr_status_t nrh_write_health(char* uri) {
   nrhealth_t status = last_error_code;
+  FILE* fp = NULL;
+  char* filepath = NULL;
 
-  if (-1 == healthfile_fd) {
-    // healthfile not initialized
+  if (NULL == uri) {
+    // invalid uri
     return NR_FAILURE;
   }
 
-  HEALTH_STATUS_LINE("healthy", NRH_HEALTHY == status ? "true" : "false");
+  filepath = nrh_get_health_filepath(uri);
 
-  HEALTH_STATUS_LINE("status", health_statuses[status].description);
+  fp = fopen(filepath, "w");
+  if (NULL == fp) {
+    // unable to open healthfile
+    return NR_FAILURE;
+  }
 
-  HEALTH_STATUS_LINE("last_error_code", health_statuses[status].code);
+  fprintf(fp, "healthy: %s\n", NRH_HEALTHY == status ? "true" : "false");
+  fprintf(fp, "status: %s\n", health_statuses[status].description);
+  fprintf(fp, "last_error_code: %s\n", health_statuses[status].code);
+  fprintf(fp, "status_time_unix_nano: %lld\n", nrh_get_current_time_ns());
+  fprintf(fp, "status_time_unix_nano: %lld\n", nrh_get_start_time_ns());
 
-  HEALTH_STATUS_LINE("status_time_unix_nano",
-                     nr_formatf("%lld", nrh_get_current_time_ns()));
-
-  HEALTH_STATUS_LINE("start_time_unix_nano",
-                     nr_formatf("%lld", nrh_get_start_time_ns()));
+  fclose(fp);
+  nr_free(filepath);
 
   return NR_SUCCESS;
 }
-#undef HEALTH_STATUS_LINE
-#endif

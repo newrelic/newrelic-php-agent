@@ -34,13 +34,11 @@ extern char* nrh_get_health_location(char* uri);
 extern char* nrh_get_health_filepath(char* filedir);
 extern char* nrh_get_health_filename(void);
 extern nr_status_t nrh_set_health_filename(void);
-extern void nrh_close_health_file(void);
 extern nr_status_t nrh_set_start_time(void);
 extern long long nrh_get_start_time_ns(void);
 extern long long nrh_get_current_time_ns(void);
-extern int nrh_get_healthfile_fd(void);
 extern nr_status_t nrh_set_last_error(nrhealth_t code);
 extern nrhealth_t nrh_get_last_error(void);
-extern nr_status_t nrh_write_health(void);
+extern nr_status_t nrh_write_health(char* uri);
 
 #endif /* UTIL_HEALTH_HDR */
