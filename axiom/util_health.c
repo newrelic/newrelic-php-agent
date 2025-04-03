@@ -19,6 +19,7 @@
 #include "util_logging.h"
 
 #define BILLION (1000000000L)
+#define UUID_LEN 32  // 128 bits, 32 hex characters
 
 typedef struct _nrh_status_codes_t {
   const char* code;
@@ -44,11 +45,16 @@ static nrh_status_codes_t health_statuses[NRH_MAX_STATUS] = {
 
 static struct timespec start_time = {0, 0};
 static nrhealth_t last_error_code = NRH_HEALTHY;
-static char health_filename[] = "health-bc21b5891f5e44fc9272caef924611a8.yml";
+static char health_uuid[] = "bc21b5891f5e44fc9272caef924611a8";
 
-static char* nrh_get_uuid(void) {
-  // TODO: UUID generation logic
-  return nr_strdup("bc21b5891f5e44fc9272caef924611a8");
+nr_status_t nrh_set_uuid(char* uuid) {
+  if (UUID_LEN != nr_strlen(uuid)) {
+    return NR_FAILURE;
+  }
+
+  nr_strlcpy(&health_uuid[0], uuid, UUID_LEN + 1);
+
+  return NR_SUCCESS;
 }
 
 char* nrh_strip_scheme_prefix(char* uri) {
@@ -78,31 +84,7 @@ char* nrh_strip_scheme_prefix(char* uri) {
 }
 
 char* nrh_get_health_filename(void) {
-  return health_filename;
-}
-
-nr_status_t nrh_set_health_filename(void) {
-  char* uuid = NULL;
-  char* fname = NULL;
-
-  uuid = nrh_get_uuid();
-
-  if (NULL == uuid) {
-    return NR_FAILURE;
-  }
-
-  fname = nr_formatf("health-%s.yml", uuid);
-
-  if (nr_strlen(fname) != nr_strlen(health_filename)) {
-    nr_free(uuid);
-    return NR_FAILURE;
-  }
-
-  nr_strcpy(&health_filename[0], fname);
-
-  nr_free(uuid);
-  nr_free(fname);
-  return NR_SUCCESS;
+  return nr_formatf("health-%s.yml", health_uuid);
 }
 
 char* nrh_get_health_location(char* uri) {
@@ -134,12 +116,18 @@ char* nrh_get_health_location(char* uri) {
 
 char* nrh_get_health_filepath(char* filedir) {
   char* filepath = NULL;
+  char* filename = NULL;
 
   if (NULL == filedir) {
     return NULL;
   }
 
-  filepath = nr_formatf("%s/%s", filedir, health_filename);
+  filename = nrh_get_health_filename();
+  if (NULL == filename) {
+    return NULL;
+  }
+
+  filepath = nr_formatf("%s/%s", filedir, filename);
 
   return filepath;
 }

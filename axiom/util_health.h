@@ -29,16 +29,22 @@ typedef enum _nrhealth_t {
   NRH_MAX_STATUS
 } nrhealth_t;
 
+/* utility */
 extern char* nrh_strip_scheme_prefix(char* uri);
+extern nr_status_t nrh_write_health(char* uri);
+extern char* nrh_generate_uuid(void);
+
+/* getters */
 extern char* nrh_get_health_location(char* uri);
 extern char* nrh_get_health_filepath(char* filedir);
 extern char* nrh_get_health_filename(void);
-extern nr_status_t nrh_set_health_filename(void);
-extern nr_status_t nrh_set_start_time(void);
 extern long long nrh_get_start_time_ns(void);
 extern long long nrh_get_current_time_ns(void);
-extern nr_status_t nrh_set_last_error(nrhealth_t code);
 extern nrhealth_t nrh_get_last_error(void);
-extern nr_status_t nrh_write_health(char* uri);
+
+/* setters */
+extern nr_status_t nrh_set_start_time(void);
+extern nr_status_t nrh_set_last_error(nrhealth_t code);
+extern nr_status_t nrh_set_uuid(char* uuid);
 
 #endif /* UTIL_HEALTH_HDR */

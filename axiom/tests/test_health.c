@@ -23,13 +23,19 @@ static void test_health(void) {
   nrh_set_start_time();
 
   nr_unlink("health-bc21b5891f5e44fc9272caef924611a8.yml");
+  nr_unlink("health-ffffffffffffffffffffffffffffffff.yml");
 
   location = nrh_get_health_location("/should/not/exist");
   tlib_pass_if_true("initialization to bad path fails", NULL == location,
                     "location=%s", NULL == location ? "NULL" : location);
   nr_free(location);
 
-  nrh_set_health_filename();
+  rv = nrh_set_uuid("bc21b5891f5e44fc9272caef924611a");
+  tlib_pass_if_true("set uuid with invalid length uuid fails", NR_FAILURE == rv,
+                    "rv=%d", (int)rv);
+
+  rv = nrh_set_uuid("ffffffffffffffffffffffffffffffff");
+  tlib_pass_if_true("set uuid succeeds", NR_SUCCESS == rv, "rv=%d", (int)rv);
 
   location = nrh_get_health_location("file://./");
   tlib_pass_if_true("initialization to good path succeeds", NULL != location,
@@ -41,7 +47,7 @@ static void test_health(void) {
   tlib_pass_if_true("health file write succeeds", NR_SUCCESS == rv, "rv=%d",
                     (int)rv);
 
-  tlib_pass_if_exists("./health-bc21b5891f5e44fc9272caef924611a8.yml");
+  tlib_pass_if_exists("./health-ffffffffffffffffffffffffffffffff.yml");
 
   rv = nrh_set_last_error(NRH_MISSING_APPNAME);
 
