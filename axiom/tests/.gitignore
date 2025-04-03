@@ -35,6 +35,9 @@ clang_header.h
 # vi/ex scripts
 *.ex
 
+# test file generation
+health-*.yml
+
 # Test binaries
 test_agent
 test_analytics_events
