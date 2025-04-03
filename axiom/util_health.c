@@ -129,6 +129,7 @@ char* nrh_get_health_filepath(char* filedir) {
 
   filepath = nr_formatf("%s/%s", filedir, filename);
 
+  nr_free(filename);
   return filepath;
 }
 
