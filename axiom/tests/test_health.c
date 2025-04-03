@@ -61,6 +61,9 @@ static void test_health(void) {
   tlib_pass_if_true("write_health succeeds", NR_SUCCESS == rv, "rv=%d",
                     (int)rv);
 
+  nr_unlink("health-bc21b5891f5e44fc9272caef924611a8.yml");
+  nr_unlink("health-ffffffffffffffffffffffffffffffff.yml");
+
   nr_free(location);
 }
 
