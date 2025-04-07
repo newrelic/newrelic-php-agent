@@ -666,18 +666,17 @@ void nr_lib_aws_sdk_php_dynamodb_handle(nr_segment_t* auto_segment,
    * created segment.
    */
   datastore_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-  if (NULL == datastore_segment) {
-    return;
+  if (NULL != datastore_segment) {
+    /* re-use start time from auto_segment started in func_begin */
+    datastore_segment->start_time = auto_segment->start_time;
+    cloud_attrs.aws_operation = command_name_string;
+
+    /* Add cloud attributes, if available. */
+    nr_segment_traces_add_cloud_attributes(datastore_segment, &cloud_attrs);
+
+    /* Now end the instrumented segment as a message segment. */
+    nr_segment_datastore_end(&datastore_segment, &datastore_params);
   }
-  /* re-use start time from auto_segment started in func_begin */
-  datastore_segment->start_time = auto_segment->start_time;
-  cloud_attrs.aws_operation = command_name_string;
-
-  /* Add cloud attributes, if available. */
-  nr_segment_traces_add_cloud_attributes(datastore_segment, &cloud_attrs);
-
-  /* Now end the instrumented segment as a message segment. */
-  nr_segment_datastore_end(&datastore_segment, &datastore_params);
   nr_free(datastore_params.collection);
   nr_free(cloud_attrs.cloud_resource_id);
   nr_free(instance.port_path_or_id);
