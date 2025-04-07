@@ -96,7 +96,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_ERROR",
-        "code.lineno": 111,
+        "code.lineno": 112,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
