@@ -72,6 +72,7 @@ log_errors=0
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],
@@ -93,7 +94,7 @@ log_errors=0
       {
         "error.message": "foo",
         "error.class": "E_USER_WARNING",
-        "code.lineno": 137,
+        "code.lineno": 138,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -114,7 +115,7 @@ log_errors=0
       },
       {},
       {
-        "code.lineno":  131,
+        "code.lineno":  132,
         "code.filepath": "__FILE__",
         "code.function": "{closure:__FILE__:??}"
       }

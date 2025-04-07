@@ -118,6 +118,7 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.hostname": "__HOST__",
+      "server.address": "__HOST__",
       "peer.address": "__HOST__:ENV[MYSQL_SOCKET]",
       "db.instance": "ENV[MYSQL_DB]",
       "db.statement": "CREATE TABLE ENV[DATASTORE_COLLECTION] (id INT, description VARCHAR(?));"
@@ -142,6 +143,7 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.hostname": "__HOST__",
+      "server.address": "__HOST__",
       "peer.address": "__HOST__:ENV[MYSQL_SOCKET]",
       "db.instance": "ENV[MYSQL_DB]",
       "db.statement": "DROP TABLE ENV[DATASTORE_COLLECTION];"

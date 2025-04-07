@@ -74,6 +74,7 @@ log_errors=0
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],

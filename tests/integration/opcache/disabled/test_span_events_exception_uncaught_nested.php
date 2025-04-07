@@ -110,6 +110,7 @@ opcache.jit=function
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],

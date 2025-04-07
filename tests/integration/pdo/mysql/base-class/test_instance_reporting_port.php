@@ -143,6 +143,7 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.hostname": "ENV[MYSQL_HOST]",
+      "server.address": "ENV[MYSQL_HOST]",
       "peer.address": "ENV[MYSQL_HOST]:ENV[MYSQL_PORT]",
       "db.instance": "ENV[MYSQL_DB]",
       "db.statement": "DROP TABLE ENV[DATASTORE_COLLECTION];"

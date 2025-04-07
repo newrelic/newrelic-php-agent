@@ -74,6 +74,7 @@ log_errors=0
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],
@@ -95,7 +96,7 @@ log_errors=0
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 111,
+        "code.lineno": 112,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }

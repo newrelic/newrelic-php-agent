@@ -70,6 +70,7 @@ log_errors=0
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],
@@ -89,7 +90,7 @@ log_errors=0
       },
       {},
       {
-        "code.lineno": 101,
+        "code.lineno": 102,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }

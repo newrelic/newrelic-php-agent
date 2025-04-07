@@ -322,7 +322,13 @@ void nr_span_event_set_datastore(nr_span_event_t* event,
       nro_set_hash_string(event->agent_attributes, "peer.address", new_value);
       break;
     case NR_SPAN_DATASTORE_PEER_HOSTNAME:
+      /*
+       * Both peer.hostname and server.address are expected to have the same
+       * value. server.address is used to create the entity relationship map
+       * and peer.hostname is maintained for backwards consistency.
+       */
       nro_set_hash_string(event->agent_attributes, "peer.hostname", new_value);
+      nro_set_hash_string(event->agent_attributes, "server.address", new_value);
       break;
   }
   return;

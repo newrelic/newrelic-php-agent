@@ -104,6 +104,7 @@ log_errors=0
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ],
@@ -125,7 +126,7 @@ log_errors=0
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 187,
+        "code.lineno": 188,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -148,7 +149,7 @@ log_errors=0
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 193,
+        "code.lineno": 194,
         "code.filepath": "__FILE__",
         "code.function": "b"
       }
@@ -171,7 +172,7 @@ log_errors=0
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
         "error.class": "RuntimeException",
-        "code.lineno": 199,
+        "code.lineno": 200,
         "code.filepath": "__FILE__",
         "code.function": "c"
       }

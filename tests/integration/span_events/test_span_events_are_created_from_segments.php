@@ -64,7 +64,7 @@ newrelic.cross_application_tracer.enabled = false
       },
       {},
       {
-        "code.lineno": 99,
+        "code.lineno": 100,
         "code.filepath": "__FILE__",
         "code.function": "a"
       }
@@ -89,6 +89,7 @@ newrelic.cross_application_tracer.enabled = false
       {
         "db.instance": "unknown",
         "peer.hostname": "unknown",
+        "server.address": "unknown",
         "peer.address": "unknown:unknown"
       }
     ]

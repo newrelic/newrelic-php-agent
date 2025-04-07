@@ -119,6 +119,7 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.hostname": "ENV[PG_HOST]",
+      "server.address": "ENV[PG_HOST]",
       "peer.address": "ENV[PG_HOST]:ENV[PG_PORT]",
       "db.instance": "postgres",
       "db.statement": "CREATE TABLE ENV[DATASTORE_COLLECTION] (id INT, description VARCHAR(?));"
@@ -143,6 +144,7 @@ Supportability/TxnData/SlowSQL, 1
     {},
     {
       "peer.hostname": "ENV[PG_HOST]",
+      "server.address": "ENV[PG_HOST]",
       "peer.address": "ENV[PG_HOST]:ENV[PG_PORT]",
       "db.instance": "postgres",
       "db.statement": "DROP TABLE ENV[DATASTORE_COLLECTION];"
