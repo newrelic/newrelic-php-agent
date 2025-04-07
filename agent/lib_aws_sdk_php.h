@@ -164,9 +164,10 @@ extern void nr_lib_aws_sdk_php_dynamodb_handle(nr_segment_t* segment,
  *           2. cloud_attrs : cloud attributes to modify
  *           3. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
  * Returns :
- * Note: caller is responsible for freeing the cloud_attrs->cloud_resource_id
- *       and datastore_params->collection and
- *       datastore_params.instance.port_path_or_id
+ * Note: caller is responsible for freeing:
+ *       - cloud_attrs->cloud_resource_id
+ *       - datastore_params->collection
+ *       - datastore_params.instance.port_path_or_id
  */
 
 extern void nr_lib_aws_sdk_php_dynamodb_set_params(
