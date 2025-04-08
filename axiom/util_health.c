@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include "util_health.h"
+#include "nr_uuid.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_syscalls.h"
@@ -48,13 +49,31 @@ static nrhealth_t last_error_code = NRH_HEALTHY;
 static char health_uuid[] = "bc21b5891f5e44fc9272caef924611a8";
 
 nr_status_t nrh_set_uuid(char* uuid) {
+  char* rand_uuid = NULL;
+  if (NULL == uuid) {
+    // no uuid supplied, auto-generate instead
+    rand_uuid = nr_uuid_create(-1);
+    uuid = rand_uuid;
+  }
+
   if (UUID_LEN != nr_strlen(uuid)) {
     return NR_FAILURE;
   }
 
   nr_strlcpy(&health_uuid[0], uuid, UUID_LEN + 1);
 
+  nr_free(rand_uuid);
   return NR_SUCCESS;
+}
+
+char* nrh_get_uuid(void) {
+  if (UUID_LEN != nr_strlen(health_uuid)) {
+    // handle edge case that uuid is not currently set
+    // or is set improperly
+    return NULL;
+  }
+
+  return nr_strdup(health_uuid);
 }
 
 char* nrh_strip_scheme_prefix(char* uri) {
