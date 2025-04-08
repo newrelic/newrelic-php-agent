@@ -199,6 +199,7 @@ TESTS := \
   test_time \
   test_txn \
   test_url \
+  test_uuid \
   test_vector
 
 #
