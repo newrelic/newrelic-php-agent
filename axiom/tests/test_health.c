@@ -14,11 +14,14 @@
 #include "util_memory.h"
 
 #include "tlib_main.h"
+#include "util_strings.h"
 #include "util_syscalls.h"
 
 static void test_health(void) {
   nr_status_t rv;
   char* location = NULL;
+  char* rand_uuid = NULL;
+  char* rand_healthfile = NULL;
 
   nrh_set_start_time();
 
@@ -29,42 +32,60 @@ static void test_health(void) {
   tlib_pass_if_true("initialization to bad path fails", NULL == location,
                     "location=%s", NULL == location ? "NULL" : location);
   nr_free(location);
-
   rv = nrh_set_uuid("bc21b5891f5e44fc9272caef924611a");
   tlib_pass_if_true("set uuid with invalid length uuid fails", NR_FAILURE == rv,
                     "rv=%d", (int)rv);
 
-  rv = nrh_set_uuid("ffffffffffffffffffffffffffffffff");
-  tlib_pass_if_true("set uuid succeeds", NR_SUCCESS == rv, "rv=%d", (int)rv);
-
   location = nrh_get_health_location("file://./");
   tlib_pass_if_true("initialization to good path succeeds", NULL != location,
                     "location=%s", NULL == location ? "NULL" : location);
-
-  rv = nrh_set_last_error(NRH_MISSING_LICENSE);
-
+  rv = nrh_set_last_error(NRH_INVALID_LICENSE);
   rv = nrh_write_health(location);
   tlib_pass_if_true("health file write succeeds", NR_SUCCESS == rv, "rv=%d",
                     (int)rv);
+  tlib_pass_if_exists("./health-bc21b5891f5e44fc9272caef924611a8.yml");
 
+  rv = nrh_set_uuid("ffffffffffffffffffffffffffffffff");
+  tlib_pass_if_true("set uuid succeeds", NR_SUCCESS == rv, "rv=%d", (int)rv);
+  rv = nrh_set_last_error(NRH_MISSING_LICENSE);
+  rv = nrh_write_health(location);
+  tlib_pass_if_true("health file write succeeds", NR_SUCCESS == rv, "rv=%d",
+                    (int)rv);
   tlib_pass_if_exists("./health-ffffffffffffffffffffffffffffffff.yml");
 
   rv = nrh_set_last_error(NRH_MISSING_APPNAME);
-
   rv = nrh_write_health(location);
   tlib_pass_if_true("write_health succeeds", NR_SUCCESS == rv, "rv=%d",
                     (int)rv);
 
   rv = nrh_set_last_error(NRH_HEALTHY);
-
   rv = nrh_write_health(location);
   tlib_pass_if_true("write_health succeeds", NR_SUCCESS == rv, "rv=%d",
                     (int)rv);
 
+  rv = nrh_set_uuid(NULL);
+  tlib_pass_if_true("set random uuid succeeds", NR_SUCCESS == rv, "rv=%d",
+                    (int)rv);
+  rand_uuid = nrh_get_uuid();
+  tlib_pass_if_not_null("get uuid succeeds", rand_uuid);
+  tlib_pass_if_true(
+      "manual uuid successfully replaced by random uuid",
+      0 != nr_strcmp("ffffffffffffffffffffffffffffffff", rand_uuid), "rand=%s",
+      rand_uuid);
+  rv = nrh_set_last_error(NRH_CONNECTION_FAILED);
+  rv = nrh_write_health(location);
+
+  rand_healthfile = nrh_get_health_filename();
+  tlib_pass_if_not_null("get health filename succeeds", rand_healthfile);
+  tlib_pass_if_exists(rand_healthfile);
+
   nr_unlink("health-bc21b5891f5e44fc9272caef924611a8.yml");
   nr_unlink("health-ffffffffffffffffffffffffffffffff.yml");
+  nr_unlink(rand_healthfile);
 
   nr_free(location);
+  nr_free(rand_uuid);
+  nr_free(rand_healthfile);
 }
 
 tlib_parallel_info_t parallel_info
