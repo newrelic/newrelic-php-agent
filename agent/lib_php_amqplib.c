@@ -365,7 +365,7 @@ static inline void nr_php_amqplib_insert_dt_headers(zval* amqp_msg) {
    * the actual zval.
    */
 
-  if (IS_REFERENCE == Z_TYPE_P(amqp_table_data)) {
+  if (NULL != amqp_table_data && IS_REFERENCE == Z_TYPE_P(amqp_table_data)) {
     amqp_table_data = Z_REFVAL_P(amqp_table_data);
   }
   if (!nr_php_is_zval_valid_array(amqp_table_data)) {
