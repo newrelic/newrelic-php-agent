@@ -12,6 +12,8 @@
 #include "nr_txn.h"
 #include "util_logging.h"
 
+#define PHP_PACKAGE_NAME "magento/magento2-base"
+
 /*
  * Magento 2 adds (depending on how you count)
  * either three or four completely separate routing paths in the Community
@@ -540,7 +542,10 @@ void nr_magento2_enable(TSRMLS_D) {
       nr_magento2_ui_controller_execute TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), "magento",
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
                            PHP_PACKAGE_VERSION_UNKNOWN);
   }
+
+  nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
+                                               PHP_PACKAGE_VERSION_UNKNOWN);
 }
