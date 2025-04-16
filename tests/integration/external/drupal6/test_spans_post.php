@@ -62,11 +62,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
         "parentId": "??"
        },
        {},
-       {
-        "code.lineno": "??",
-        "code.filepath": "??",
-        "code.function": "drupal_http_request"
-       }
+       {}
     ],
     [
       {

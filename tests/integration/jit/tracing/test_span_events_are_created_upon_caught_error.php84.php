@@ -137,10 +137,7 @@ zend_extension=opcache.so
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_WARNING",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "E_USER_WARNING"
       }
     ],
     [
@@ -158,11 +155,7 @@ zend_extension=opcache.so
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ]
   ]
 ]

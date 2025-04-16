@@ -15,10 +15,6 @@ newrelic.transaction_tracer.detail = 0
 /*SKIPIF
 <?php
 require("skipif.inc");
-
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
 */
 
 /*EXPECT_SPAN_EVENTS
@@ -62,11 +58,7 @@ if (version_compare(PHP_VERSION, "7.0", "<")) {
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "??",
-        "code.function": "drupal_http_request"
-      }
+      {}
     ],
     [
       {

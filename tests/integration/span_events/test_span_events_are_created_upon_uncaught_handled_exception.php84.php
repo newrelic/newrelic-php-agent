@@ -124,10 +124,7 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "a"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -145,11 +142,7 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "{closure:__FILE__:??}"
-      }
+      {}
     ]
   ]
 ]
