@@ -10,13 +10,6 @@ attribute with the same name as the currently executing span event, the value
 from the span MUST be kept.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -113,11 +106,7 @@ ok - double attribute added
         "int": 1,
         "string": "span str"
       },
-      {
-        "code.lineno": 158,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
-      }
+      {}
     ]
   ]
 ]

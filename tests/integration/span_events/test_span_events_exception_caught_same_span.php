@@ -8,13 +8,6 @@
 Test that a caught exception is correctly handled in the same span.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -67,11 +60,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": 122,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
-      }
+      {}
     ],
     [
       {
@@ -88,11 +77,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": 107,
-        "code.filepath": "__FILE__",
-        "code.function": "fraction"
-      }
+      {}
     ]
   ]
 ]
