@@ -97,12 +97,10 @@ func tapOutput(tests []*integration.Test) {
 				}
 			}
 		default:
-			fmt.Printf(Good("pass - "))
-			fmt.Printf("%s", name)
+			fmt.Println(Good("pass - "), Good(name));
 			if test.Duration > 0 {
-				fmt.Printf(" # time=%vs", test.Duration.Seconds())
+				fmt.Printf(" # time=%vs\n", test.Duration.Seconds())
 			}
-			fmt.Printf("\n")
 		}
 		if 0 < len(test.Notes) {
 			fmt.Println("Note(s) associated with test:")
