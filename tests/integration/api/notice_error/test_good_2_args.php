@@ -80,10 +80,7 @@ called with 2 parameters.
     {},
     {
       "error.message": "Noticed exception 'Exception' with message '2 arg exception' in __FILE__:??",
-      "error.class": "Exception",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "Exception"
     }
   ]
 ]

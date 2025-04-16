@@ -7,13 +7,6 @@
 Tests newrelic_set_user_attributes() on a happy, nested path.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -69,12 +62,8 @@ null
         "product": "a_product",
         "account": "a_account",
         "user": "a_user"
-      },      
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      },
+      {}
     ],
     [
       {
@@ -94,12 +83,8 @@ null
         "product": "b_product",
         "account": "b_account",
         "user": "b_user"
-      },      
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      },
+      {}
     ],
     [
       {
@@ -116,11 +101,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -137,11 +118,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -158,11 +135,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ]
   ]
 ]

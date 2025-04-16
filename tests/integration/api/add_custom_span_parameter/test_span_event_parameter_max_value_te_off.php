@@ -12,13 +12,6 @@ should be dropped.  If the dropped attribute was a custom attribute, then a
 warning message should be logged and the API function should return failure.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -85,11 +78,7 @@ null
         "int": 7,
         "string": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234"
       },
-      {
-        "code.lineno": 129,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
-      }
+      {}
     ]
   ]
 ]

@@ -11,9 +11,6 @@ when an error is generated and handled.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
 if (version_compare(PHP_VERSION, "8.4", ">=")) {
   die("skip: newer test for PHP 8.4+\n");
 }
@@ -94,10 +91,7 @@ log_errors=0
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
-        "code.lineno": 139,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
+        "error.class": "E_USER_ERROR"
       }
     ],
     [
@@ -115,11 +109,7 @@ log_errors=0
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno":  133,
-        "code.filepath": "__FILE__",
-        "code.function": "{closure}"
-      }
+      {}
     ]
   ]
 ]

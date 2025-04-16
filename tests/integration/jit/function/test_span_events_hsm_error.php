@@ -112,10 +112,7 @@ zend_extension=opcache.so
       {},
       {
         "error.message": "Message removed by New Relic high_security setting",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ]
   ]

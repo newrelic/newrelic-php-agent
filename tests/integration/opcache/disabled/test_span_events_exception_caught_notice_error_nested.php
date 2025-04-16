@@ -100,11 +100,7 @@ opcache.jit=function
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -123,10 +119,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "Exception"
       }
     ],
     [
@@ -146,10 +139,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -167,10 +157,7 @@ opcache.jit=function
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"}
+      {}
     ],
     [
       {
@@ -189,10 +176,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ]
   ]

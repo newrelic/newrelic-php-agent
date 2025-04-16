@@ -7,13 +7,6 @@
 Tests newrelic_add_span_parameter() on a nested, happy path.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -71,11 +64,7 @@ null
         "int": 7,
         "string": "a_str"
       },
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -97,11 +86,7 @@ null
         "int": 7,
         "string": "b_str"
       },
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -118,11 +103,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -139,11 +120,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -160,11 +137,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ]
   ]
 ]

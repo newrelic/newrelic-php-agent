@@ -69,11 +69,7 @@ opcache.jit=function
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {

@@ -130,10 +130,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -153,10 +150,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -176,10 +170,7 @@ opcache.jit=function
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'oops' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ]
   ]

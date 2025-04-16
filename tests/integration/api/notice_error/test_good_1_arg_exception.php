@@ -80,10 +80,7 @@ called with 1 argument which is an exception.
     {},
     {
       "error.message": "Noticed exception 'Exception' with message '1 arg exception' in __FILE__:??",
-      "error.class": "Exception",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "Exception"
     }
   ]
 ]

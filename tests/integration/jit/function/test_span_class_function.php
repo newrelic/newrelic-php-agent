@@ -74,11 +74,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -95,11 +91,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -116,11 +108,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -137,12 +125,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "Classname",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -159,12 +142,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "Classname",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -181,12 +159,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "Classname",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -203,12 +176,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "Classname",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -225,12 +193,7 @@ zend_extension=opcache.so
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.namespace": "Classname",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ]
   ]
 ]

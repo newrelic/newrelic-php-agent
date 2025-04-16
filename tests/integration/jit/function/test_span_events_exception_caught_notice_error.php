@@ -104,11 +104,7 @@ zend_extension=opcache.so
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -127,10 +123,7 @@ zend_extension=opcache.so
       {},
       {
         "error.message": "Noticed exception 'Exception' with message 'Notice me' in __FILE__:??",
-        "error.class": "Exception",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "Exception"
       }
     ]
   ]
