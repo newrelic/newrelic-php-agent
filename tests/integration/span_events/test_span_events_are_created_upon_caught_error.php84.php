@@ -92,10 +92,7 @@ log_errors=0
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_WARNING",
-        "code.lineno": 137,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
+        "error.class": "E_USER_WARNING"
       }
     ],
     [
@@ -113,11 +110,7 @@ log_errors=0
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno":  131,
-        "code.filepath": "__FILE__",
-        "code.function": "{closure:__FILE__:??}"
-      }
+      {}
     ]
   ]
 ]
