@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"time"
 
@@ -112,7 +113,7 @@ func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 }
 
 func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
-	if len(tx.Path) == 0 {
+	if len(tx.handler.Path) == 0 {
 		return nil, []byte("skip: executable not specified"), nil
 	}
 
@@ -128,15 +129,15 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 	cmd.Args = append(cmd.Args, "--xml=yes")
 	cmd.Args = append(cmd.Args, "--xml-socket="+valgrindLn.Addr().String())
 	cmd.Args = append(cmd.Args, "--")
-	cmd.Args = append(cmd.Args, tx.Path)
-	if len(tx.Args) > 0 {
-		cmd.Args = append(cmd.Args, tx.Args...)
+	cmd.Args = append(cmd.Args, tx.handler.Path)
+	if len(tx.handler.Args) > 0 {
+		cmd.Args = append(cmd.Args, tx.handler.Args...)
 	}
 
 	log.Debugf("command: %v", cmd)
 
-	tx.Path = cmd.Path
-	tx.Args = cmd.Args
+	tx.handler.Path = cmd.Path
+	tx.handler.Args = cmd.Args
 
 	ch := make(chan resultOrError, 1)
 	go func() {

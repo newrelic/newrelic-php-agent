@@ -81,6 +81,7 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 // See: https://tools.ietf.org/html/rfc3875
 func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx *Context) (Tx, error) {
 	var err error
+	var txn Tx
 
 	req := &http.Request{
 		Method:     env["REQUEST_METHOD"],
@@ -118,6 +119,25 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 			Valgrind: ctx.Valgrind,
 			Timeout:  ctx.Timeout,
 		}
+		tx.handler.Env = append(tx.handler.Env,
+			"SCRIPT_FILENAME="+scriptFile,
+			"SCRIPT_NAME=/"+filepath.Base(src.Name()),
+			"REDIRECT_STATUS=200")
+		tx.handler.Env = append(tx.handler.Env, flatten(env)...)
+
+		// If the environment includes a REQUEST_URI and doesn't include an explicit
+		// PATH_INFO, we'll set it here to avoid problems with Go's CGI package
+		// attempting to guess what the PATH_INFO should be.
+		if ruri, ok := env["REQUEST_URI"]; ok {
+			if _, ok := env["PATH_INFO"]; !ok {
+				tx.handler.Env = append(tx.handler.Env, "PATH_INFO="+ruri)
+			}
+		}
+
+		if !src.IsFile() {
+			return withTempFile(tx, src.Name(), src.Bytes()), nil
+		}
+		txn = tx
 	} else {
 		tx := &CGI{
 			request: req,
@@ -127,27 +147,28 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				Args: phpArgs(nil, "", false, settings),
 			},
 		}
-	}
+		tx.handler.Env = append(tx.handler.Env,
+			"SCRIPT_FILENAME="+scriptFile,
+			"SCRIPT_NAME=/"+filepath.Base(src.Name()),
+			"REDIRECT_STATUS=200")
+		tx.handler.Env = append(tx.handler.Env, flatten(env)...)
 
-	tx.handler.Env = append(tx.handler.Env,
-		"SCRIPT_FILENAME="+scriptFile,
-		"SCRIPT_NAME=/"+filepath.Base(src.Name()),
-		"REDIRECT_STATUS=200")
-	tx.handler.Env = append(tx.handler.Env, flatten(env)...)
-
-	// If the environment includes a REQUEST_URI and doesn't include an explicit
-	// PATH_INFO, we'll set it here to avoid problems with Go's CGI package
-	// attempting to guess what the PATH_INFO should be.
-	if ruri, ok := env["REQUEST_URI"]; ok {
-		if _, ok := env["PATH_INFO"]; !ok {
-			tx.handler.Env = append(tx.handler.Env, "PATH_INFO="+ruri)
+		// If the environment includes a REQUEST_URI and doesn't include an explicit
+		// PATH_INFO, we'll set it here to avoid problems with Go's CGI package
+		// attempting to guess what the PATH_INFO should be.
+		if ruri, ok := env["REQUEST_URI"]; ok {
+			if _, ok := env["PATH_INFO"]; !ok {
+				tx.handler.Env = append(tx.handler.Env, "PATH_INFO="+ruri)
+			}
 		}
+
+		if !src.IsFile() {
+			return withTempFile(tx, src.Name(), src.Bytes()), nil
+		}
+		txn = tx
 	}
 
-	if !src.IsFile() {
-		return withTempFile(tx, src.Name(), src.Bytes()), nil
-	}
-	return tx, nil
+	return txn, nil
 }
 
 // phpArgs builds the command line for a PHP process.
