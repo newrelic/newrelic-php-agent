@@ -105,13 +105,28 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 		return nil, fmt.Errorf("unable to create cgi request: %v", err)
 	}
 
-	tx := &CGI{
-		request: req,
-		handler: &cgi.Handler{
-			Path: ctx.CGI,
-			Dir:  src.Dir(),
-			Args: phpArgs(nil, "", false, settings),
-		},
+	if ctx.Valgrind != "" {
+		tx := &ValgrindCGI{
+			CGI: CGI{
+				request: req,
+				handler: &cgi.Handler{
+					Path: ctx.CGI,
+					Dir:  src.Dir(),
+					Args: phpArgs(nil, "", false, settings),
+				},
+			},
+			Valgrind: ctx.Valgrind,
+			Timeout:  ctx.Timeout,
+		}
+	} else {
+		tx := &CGI{
+			request: req,
+			handler: &cgi.Handler{
+				Path: ctx.CGI,
+				Dir:  src.Dir(),
+				Args: phpArgs(nil, "", false, settings),
+			},
+		}
 	}
 
 	tx.handler.Env = append(tx.handler.Env,
