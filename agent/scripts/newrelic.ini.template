@@ -637,7 +637,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          encounter a failure with framework autodetection.
 ;
 ;          Must be one of the following values:
-;          cakephp, codeigniter, drupal, drupal8, joomla, kohana, laravel,
+;          cakephp, codeigniter, drupal, drupal8, joomla, laravel,
 ;          magento, magento2, mediawiki, slim, symfony2, symfony4,
 ;          wordpress, yii, yii2, zend, zend2, no_framework
 ;
