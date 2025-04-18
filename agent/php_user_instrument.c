@@ -453,6 +453,19 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
 #endif
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static inline bool nr_php_user_instrument_wraprec_exists(zend_function* func) {
+  zend_string *func_name = func->op_array.function_name;
+  zend_string *scope_name = NULL;
+
+  if (OP_ARRAY_IS_A_METHOD(&func->op_array)) {
+    scope_name = func->op_array.scope->name;
+  }
+
+  return nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name) != NULL;
+}
+#endif
+
 #define NR_PHP_UNKNOWN_FUNCTION_NAME "{unknown}"
 nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   char* name = NULL;
@@ -468,6 +481,16 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
     name = nr_php_function_debug_name(func);
   }
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  if (nr_php_user_instrument_wraprec_exists(func)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "can't add custom wrapper for callable - custom already exists for name '%s'",
+                     name);
+    nr_free(name);
+    return NULL;
+  }
+#endif
 
   /*
    * nr_php_op_array_get_wraprec does basic sanity checks on the stored

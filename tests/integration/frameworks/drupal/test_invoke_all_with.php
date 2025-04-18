@@ -40,9 +40,8 @@ b2
     [{"name":"Framework/Drupal/Hook/hook_1"},                         [2, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_2"},                         [2, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Hook/hook_3"},                         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Hook/hook_4"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Framework/Drupal/Module/module_a"},                     [2, "??", "??", "??", "??", "??"]],
-    [{"name":"Framework/Drupal/Module/module_b"},                     [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Framework/Drupal/Module/module_b"},                     [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
@@ -127,14 +126,14 @@ $handler->invokeAllWith("hook_3", [$invoker, "invoke"]);
 
 // test callable array callback; function already special instrumented
 $page_cache = new Drupal\page_cache\StackMiddleware\PageCache;
+/* This invokeAllWith will not cause hook_4 and module_b to be instrumented
+ * because the function used as callback is already custom instrumented. */
 $handler->invokeallwith("hook_4", [$page_cache, "get"]);
 
-/* At this point, module_b_hook_4 should NOT be instrumented */
-
 // test string callback; function already instrumented
-// This will reuse the existing wraprec and successfully
-// add instrumentation because the "before" callback is unset
 $func_name = "invoke_callback_instrumented";
+/* This invokeAllWith will not cause hook_4 and module_b to be instrumented
+ * because the function used as callback is already custom instrumented. */
 $handler->invokeallwith("hook_4", $func_name);
 
 // test non-transiently wrapping an already transiently instrumented function
