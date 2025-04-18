@@ -22,6 +22,7 @@ typedef struct _nr_segment_datastore_params_t {
                        extracted from the SQL for SQL segments. */
   char* operation;  /* The null-terminated operation; if NULL, this will be
                        extracted from the SQL for SQL segments. */
+  char* db_system;  /* Database management system (DBMS) product being used.*/
   nr_datastore_instance_t*
       instance; /* Any instance information that was collected. */
 
