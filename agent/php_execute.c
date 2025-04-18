@@ -354,9 +354,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
-    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
-
     /* See below: Zend, the legacy project of Laminas, which shares much
        of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
