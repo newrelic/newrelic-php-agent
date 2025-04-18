@@ -736,6 +736,13 @@ PHP_MINIT_FUNCTION(newrelic) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(dummy);
   NR_PHP_PROCESS_GLOBALS(op_array_extension_handle) = zend_get_op_array_extension_handle("newrelic");
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO /* PHP 8.4+ */
+  /* When observer API is used by an extension, both handles (for user
+   * and internal functions) must be initialized, even when one of them
+   * is not used (as in our case). Observer API was changed in PHP 8.4.
+   * For more details see: https://github.com/php/php-src/pull/14252 */
+  (void) zend_get_internal_function_extension_handle("newrelic");
+#endif
 #else
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(&dummy);
 #endif
