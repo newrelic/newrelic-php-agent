@@ -11,6 +11,7 @@ Autoloader and Composer libraries must not be present.
 */
 
 /*INI
+newrelic.vulnerability_management.composer_api.enabled = false
 */
 
 /*EXPECT_METRICS_DONT_EXIST

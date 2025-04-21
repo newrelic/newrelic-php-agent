@@ -12,6 +12,7 @@ package supportability metrics and package harvest must not be present.
 */
 
 /*INI
+newrelic.vulnerability_management.composer_api.enabled = false
 */
 
 /*EXPECT_PHP_PACKAGES null*/
