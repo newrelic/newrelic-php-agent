@@ -49,8 +49,9 @@
  *   emerald            13Jan2025 (11.5)
  *   fluorite           18Feb2025 (11.6)
  *   gaspeite           19Mar2025 (11.7)
+ *   hiddenite          21Apr2025 (11.8)
  */
-#define NR_CODENAME "hiddenite"
+#define NR_CODENAME "indicolite"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
