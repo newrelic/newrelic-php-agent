@@ -44,6 +44,8 @@ X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found traci
     [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/PHP/package/guzzlehttp/guzzle/7/detected"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 6/detected"}, [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/library/Autoloader/detected"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Composer/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
