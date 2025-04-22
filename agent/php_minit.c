@@ -719,6 +719,13 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
 
+  if (!NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) || !NR_PHP_PROCESS_GLOBALS(nr_security_enabled) || NR_PHP_PROCESS_GLOBALS(high_security)) {
+    nrl_info(NRL_INIT, "New Relic Security is completely disabled by one of the user provided config `newrelic.security.enabled`, `newrelic.security.agent.enabled` or `newrelic.high_security`. Not loading security capabilities.");
+    nrl_debug(NRL_INIT, "newrelic.security.agent.enabled : %s", NR_PHP_PROCESS_GLOBALS(nr_security_enabled) ? "true" : "false");
+    nrl_debug(NRL_INIT, "newrelic.security.enabled : %s", NR_PHP_PROCESS_GLOBALS(nr_security_agent_enabled) ? "true" : "false");
+    nrl_debug(NRL_INIT, "newrelic.high_security : %s", NR_PHP_PROCESS_GLOBALS(high_security) ? "true" : "false");
+  }
+
   nrl_debug(NRL_INIT, "MINIT processing done");
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(dummy);
