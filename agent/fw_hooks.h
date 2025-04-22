@@ -30,7 +30,6 @@ extern void nr_mediawiki_enable(TSRMLS_D);
 extern void nr_symfony1_enable(TSRMLS_D);
 extern void nr_symfony2_enable(TSRMLS_D);
 extern void nr_symfony4_enable(TSRMLS_D);
-extern void nr_silex_enable(TSRMLS_D);
 extern void nr_slim_enable(TSRMLS_D);
 extern void nr_wordpress_enable(TSRMLS_D);
 extern void nr_yii1_enable(TSRMLS_D);

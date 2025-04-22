@@ -386,9 +386,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,
      NR_FW_MEDIAWIKI},
 
-    {"Silex", "silex", NR_PSTR("silex/application.php"), 0, nr_silex_enable,
-     NR_FW_SILEX},
-
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 3.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
