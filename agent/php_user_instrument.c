@@ -712,6 +712,9 @@ void nr_php_user_function_add_declared_callback(const char* namestr,
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 nruserfn_t* nr_php_get_wraprec(zend_function* zf) {
+  if (nrunlikely(NULL == zf)) {
+    return NULL;
+  }
   return nr_php_wraprec_lookup_get(zf);
 }
 #else
