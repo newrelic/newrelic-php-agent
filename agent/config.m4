@@ -225,7 +225,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   fw_drupal.c fw_drupal_common.c fw_joomla.c fw_kohana.c \
   fw_laminas3.c fw_laravel.c fw_laravel_queue.c fw_lumen.c \
   fw_magento1.c fw_magento2.c fw_magento_common.c fw_mediawiki.c \
-  fw_silex.c fw_slim.c fw_support.c fw_symfony4.c fw_symfony2.c \
+  fw_slim.c fw_support.c fw_symfony4.c fw_symfony2.c \
   fw_symfony.c fw_symfony_common.c fw_wordpress.c fw_yii.c \
   fw_zend2.c fw_zend.c"
   LIBRARIES="lib_aws_sdk_php.c lib_monolog.c lib_doctrine2.c lib_guzzle3.c \
