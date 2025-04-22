@@ -316,6 +316,9 @@ nrinibool_t browser_monitoring_debug; /* newrelic.browser_monitoring.debug */
 nrinistr_t browser_monitoring_loader; /* newrelic.browser_monitoring.loader */
 
 nrinibool_t drupal_modules;  /* newrelic.framework.drupal.modules */
+nrinibool_t
+    drupal_page_cache_naming; /* newrelic.framework.drupal.page_cache_naming.enabled
+                               */
 nrinibool_t wordpress_hooks; /* newrelic.framework.wordpress.hooks */
 nrinistr_t
     wordpress_hooks_options; /* newrelic.framework.wordpress.hooks.options */

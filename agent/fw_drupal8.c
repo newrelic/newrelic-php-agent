@@ -312,6 +312,58 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt) {
 }
 NR_PHP_WRAPPER_END
 
+static nr_status_t nr_inject_drupal_cache_naming() {
+  int retval = FAILURE;
+  zend_class_entry* drupal_ce = NULL;
+  zend_class_entry* symfony_ce = NULL;
+
+  drupal_ce = nr_php_find_class("Drupal\\Core\\Routing\\RouteMatch");
+  if (NULL == drupal_ce) {
+    nrl_warning(NRL_FRAMEWORK, "Missing Drupal RouteMatch Class");
+    return NR_FAILURE;
+  }
+
+  symfony_ce = nr_php_find_class("Symfony\\Component\\HttpFoundation\\Request");
+  if (NULL == symfony_ce) {
+    nrl_warning(NRL_FRAMEWORK, "Missing Symfony Request Class");
+    return NR_FAILURE;
+  }
+
+  // clang-format off
+  retval = zend_eval_string(
+    "namespace newrelic\\Drupal8;"
+
+    "use Symfony\\Component\\HttpFoundation\\Request;"
+    "use Drupal\\Core\\Routing\\RouteMatch;"
+
+    "if (!function_exists('newrelic\\Drupal8\\newrelic_name_cached')) {"
+    " function newrelic_name_cached(Request $request) {"
+    "   try {"
+    "     $routeCollection = \\Drupal::service('router.route_provider')->getRouteCollectionForRequest($request);"
+    "     $routeMatch = RouteMatch::createFromRequest($request);"
+    "     $route = $routeCollection->get($routeMatch->getRouteName());"
+    "     $defaults = $route->getDefaults();"
+    "     if (isset($defaults['_controller'])) {"
+    "       $controller = str_replace('::', '->', $defaults['_controller']);"
+    "       $controller = ltrim($controller, '\\\\');"
+    "       return $controller;"
+    "     }"
+    "   } catch (Throwable $e) {}"
+    " }"
+    "}",
+    NULL, "newrelic/Drupal8");
+  // clang-format on
+
+  if (SUCCESS != retval) {
+    nrl_warning(NRL_FRAMEWORK,
+                "%s: error injecting newrelic page cache naming code",
+                __func__);
+    return NR_FAILURE;
+  }
+
+  return NR_SUCCESS;
+}
+
 /*
  * txn naming scheme:
  * In this case, `nr_txn_set_path` is called after `NR_PHP_WRAPPER_CALL` with
@@ -321,12 +373,67 @@ NR_PHP_WRAPPER_END
  * function call of this type gets to name the txn.
  */
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
-  const char* name = "page_cache";
+  char* name = NULL;
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
+  zval* request = NULL;
+  zval* controller = NULL;
 
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
+
+  request = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
+
+  if (0 == nr_php_is_zval_valid_object(request)) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get does not have a request parameter");
+
+    goto end;
+  }
+
+  if (0
+      == nr_php_object_instanceof_class(
+          request, "Symfony\\Component\\HttpFoundation\\Request")) {
+    nrl_verbosedebug(
+        NRL_TXN, "Drupal 8 PageCache::get parameter is a non-Request object");
+    goto end;
+  }
+
+  if (!NRINI(drupal_page_cache_naming)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "Skipping PageCache naming due to INI setting");
+    goto end;
+  }
+
+  if (NULL == nr_php_find_function("newrelic_name_cached")) {
+    nrl_debug(NRL_FRAMEWORK,
+              "Failed to retrieve NR cached page naming function, attempting "
+              "to re-inject");
+
+    // Re-attempt injection of the naming function in case we were too early in
+    // enable
+    if (NR_FAILURE == nr_inject_drupal_cache_naming()) {
+      nrl_warning(NRL_FRAMEWORK,
+                  "%s: Failed to re-inject drupal cache naming function",
+                  __FUNCTION__);
+      goto end;
+    }
+
+    if (NULL == nr_php_find_function("newrelic_name_cached")) {
+      nrl_warning(NRL_FRAMEWORK,
+                  "Failed to retrieve NR cached page naming function");
+      goto end;
+    }
+  }
+
+  controller
+      = nr_php_call(NULL, "\\newrelic\\Drupal8\\newrelic_name_cached", request);
+
+  if (nr_php_is_zval_non_empty_string(controller)) {
+    name = nr_strndup(Z_STRVAL_P(controller), Z_STRLEN_P(controller));
+  }
+
+end:
   NR_PHP_WRAPPER_CALL;
 
   /*
@@ -335,9 +442,18 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_cached) {
    * otherwise.
    */
   if (retval_ptr && nr_php_is_zval_valid_object(*retval_ptr)) {
+    if (NULL == name) {
+      nrl_debug(NRL_FRAMEWORK,
+                "Unable to find cached name, defaulting to 'page_cache'");
+      name = nr_strdup("page_cache");
+    }
     nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
                     NR_OK_TO_OVERWRITE);
   }
+
+  nr_free(name);
+  nr_php_zval_free(&request);
+  nr_php_zval_free(&controller);
 }
 NR_PHP_WRAPPER_END
 
@@ -748,6 +864,10 @@ void nr_drupal_version() {
 }
 
 void nr_drupal8_enable(TSRMLS_D) {
+  if (NRINI(drupal_page_cache_naming)) {
+    nr_inject_drupal_cache_naming();
+  }
+
   /*
    * Obtain a transation name if a page was cached.
    */
