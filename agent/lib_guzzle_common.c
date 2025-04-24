@@ -231,33 +231,6 @@ char* nr_guzzle_response_get_header(const char* header,
     if (Z_STRLEN_P(retval) > 0) {
       value = nr_strndup(Z_STRVAL_P(retval), Z_STRLEN_P(retval));
     }
-  } else if (nr_php_object_instanceof_class(
-                 retval, "Guzzle\\Http\\Message\\Header" TSRMLS_CC)) {
-    /*
-     * Guzzle 3 returns an object that we can cast to a string, so let's do
-     * that. We'll call __toString() directly rather than going through PHP's
-     * convert_to_string() function, as that will generate a notice if the
-     * cast fails for some reason.
-     */
-    zval* zv_str = nr_php_call(retval, "__toString");
-
-    if (nr_php_is_zval_non_empty_string(zv_str)) {
-      value = nr_strndup(Z_STRVAL_P(zv_str), Z_STRLEN_P(zv_str));
-    } else if (NULL != zv_str) {
-      nrl_verbosedebug(
-          NRL_INSTRUMENT,
-          "Guzzle: Header::__toString() returned a non-string of type %d",
-          Z_TYPE_P(zv_str));
-    } else {
-      /*
-       * We should never get NULL as the retval from nr_php_call, but handle it
-       * just in case...
-       */
-      nrl_verbosedebug(NRL_INSTRUMENT,
-                       "Guzzle: Header::__toString() returned a NULL retval");
-    }
-
-    nr_php_zval_free(&zv_str);
   } else {
     nrl_verbosedebug(
         NRL_INSTRUMENT,
