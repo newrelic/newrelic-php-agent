@@ -119,6 +119,22 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
                                              zend_function* zf) {
+  // The function cache slots are not available if the function is a trampoline
+  if (zf->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(zf);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
+                       __func__, name);
+      nr_free(name);
+    }
+
+    /*
+     * Prevent future wrap attempts for performance and to prevent spamming the
+     * logs with this message.
+     */
+    wr->is_disabled = 1;
+    return;
+  }
   // for situation when wraprec is added after first execution of the function
   // store the wraprec in the op_array extension for the duration of the request for later lookup
   // The op_array extension slot for function may not be initialized yet because it is
@@ -133,7 +149,18 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
 
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   nruserfn_t *wraprec = NULL;
-  
+
+  // The function cache slots are not available if the function is a trampoline
+  if (zf->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(zf);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
+                       __func__, name);
+      nr_free(name);
+    }
+    return NULL;
+  }
+
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
     wraprec = ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
   }

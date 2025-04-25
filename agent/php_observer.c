@@ -98,6 +98,17 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
+  // The function cache slots are not available if the function is a trampoline
+  if (execute_data->func->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(execute_data->func);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
+                       __func__, name);
+      nr_free(name);
+    }
+    return handlers;
+  }
+
   if (OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY)) {
     scope_name = execute_data->func->op_array.scope->name;
     func_name = execute_data->func->op_array.function_name;
