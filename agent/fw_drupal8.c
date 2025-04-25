@@ -150,16 +150,15 @@ static void nr_drupal8_add_method_callback_before_after_clean(
 
   methodLC = nr_string_to_lowercase(method);
   function = nr_php_find_class_method(ce, methodLC);
+  nr_free(methodLC);
   if (NULL == function) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "Drupal 8+: cannot get zend_function entry for %.*s::%.*s",
                      NRSAFELEN(nr_php_class_entry_name_length(ce)),
                      nr_php_class_entry_name(ce), NRSAFELEN(method_len),
                      method);
-    nr_free(methodLC);
     return;
   }
-  nr_free(methodLC);
 
   if (NULL == nr_php_get_wraprec(function)) {
     char* class_method = nr_formatf(
