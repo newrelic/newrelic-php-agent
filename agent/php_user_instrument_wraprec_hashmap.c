@@ -387,6 +387,9 @@ nr_status_t nr_php_user_instrument_wraprec_hashmap_init(void) {
   if (NULL == global_funcs_ht) {
     global_funcs_ht = nr_func_hashmap_create_internal(0);
   }
+  if (NULL == scope_ht || NULL == global_funcs_ht) {
+    return NR_FAILURE;
+  }
   return NR_SUCCESS;
 }
 
