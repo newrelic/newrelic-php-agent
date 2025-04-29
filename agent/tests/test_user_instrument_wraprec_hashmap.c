@@ -32,14 +32,6 @@ static void test_wraprecs_hashmap() {
   // destroy it to test agent's behavior when it is not initialized
   nr_php_user_instrument_wraprec_hashmap_destroy();
 
-  // Test invalid operations before initializing the hashmap
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NULL, 0);
-  tlib_pass_if_null("adding NULL, 0-char before init", wraprec);
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NULL, sizeof(FUNCTION_NAME) - 1);
-  tlib_pass_if_null("adding NULL before init", wraprec);
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(FUNCTION_NAME, 0);
-  tlib_pass_if_null("adding 0-char before init", wraprec);
-
   // Test valid operations before initializing the hashmap
   wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(FUNCTION_NAME));
   tlib_pass_if_null("adding valid function before init", wraprec);
@@ -49,14 +41,6 @@ static void test_wraprecs_hashmap() {
   // Initialize the hashmap
   init_status = nr_php_user_instrument_wraprec_hashmap_init();
   tlib_pass_if_int_equal("wraprec hashmap init", NR_SUCCESS, init_status);
-
-  // Test invalid operations after initializing the hashmap
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NULL, 0);
-  tlib_pass_if_null("adding NULL, 0-char after init", wraprec);
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NULL, sizeof(FUNCTION_NAME) - 1);
-  tlib_pass_if_null("adding NULL after init", wraprec);
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(FUNCTION_NAME, 0);
-  tlib_pass_if_null("adding 0-char after init", wraprec);
 
   // Test valid operations after initializing the hashmap
   wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(FUNCTION_NAME));

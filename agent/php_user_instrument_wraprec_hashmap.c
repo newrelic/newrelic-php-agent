@@ -401,9 +401,6 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
   if (NULL == scope_ht || NULL == global_funcs_ht) {
     return NULL;
   }
-  if (NULL == namestr || 0 == namestrlen) {
-    return NULL;
-  }
 
   nr_php_user_instrument_wraprec_hashmap_name2keys(&func_key, &scope_key, namestr, namestrlen);
 

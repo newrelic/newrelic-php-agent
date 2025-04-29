@@ -362,13 +362,6 @@ static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
   int klass_len;
   nruserfn_t* wraprec;
 
-  if (0 == full_name) {
-    return 0;
-  }
-  if (full_name_len <= 0) {
-    return 0;
-  }
-
   name = full_name;
   name_len = full_name_len;
   klass = 0;
@@ -525,21 +518,35 @@ nruserfn_t* nr_php_add_custom_tracer_callable(zend_function* func TSRMLS_DC) {
   return wraprec;
 }
 
+static inline bool nr_php_user_instrument_is_name_valid(const char* namestr,
+                                                        ssize_t namestrlen) {
+  if (NULL == namestr || namestrlen <= 0) {
+    return false;
+  }
+
+  if (':' == namestr[namestrlen - 1]) {
+    return false;
+  }
+
+  return true;
+}
+
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen) {
   nruserfn_t* wraprec;
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-  nruserfn_t* p;
 
+  if (!nr_php_user_instrument_is_name_valid(namestr, namestrlen)) {
+    return NULL;
+  }
+
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   wraprec = nr_php_user_wraprec_create_named(namestr, namestrlen);
   if (0 == wraprec) {
     return 0;
   }
 
   /* Make sure that we are not duplicating an existing wraprecord */
-  p = nr_wrapped_user_functions;
-
-  while (0 != p) {
+  for (nruserfn_t* p = nr_wrapped_user_functions; 0 != p; p = p->next) {
     if (nr_php_user_wraprec_is_match(p, wraprec)) {
       nrl_verbosedebug(
           NRL_INSTRUMENT,
@@ -551,7 +558,6 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       nr_php_wrap_user_function_internal(p TSRMLS_CC);
       return p; /* return the wraprec we are duplicating */
     }
-    p = p->next;
   }
 #else
   wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen);

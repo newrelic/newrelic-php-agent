@@ -145,6 +145,28 @@ static void test_hashmap_wraprec() {
 }
 #endif /* PHP >= 7.4 */
 
+static void test_add_custom_tracer_named() {
+  nruserfn_t* wr = NULL;
+  tlib_php_request_start();
+
+  wr = nr_php_add_custom_tracer_named(NULL, 10);
+  tlib_pass_if_null("add_custom_tracer_named with NULL name", wr);
+
+  wr = nr_php_add_custom_tracer_named("function_name", 0);
+  tlib_pass_if_null("add_custom_tracer_named with length == 0", wr);
+
+  wr = nr_php_add_custom_tracer_named("function_name", -1);
+  tlib_pass_if_null("add_custom_tracer_named with length < 0", wr);
+
+  wr = nr_php_add_custom_tracer_named(NR_PSTR("scope_name::"));
+  tlib_pass_if_null("add_custom_tracer_named with name ending with :", wr);
+
+  wr = nr_php_add_custom_tracer_named(NR_PSTR("scope_name::function_name"));
+  tlib_pass_if_not_null("add_custom_tracer_named with valid name", wr);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
 #if defined(ZTS) && !defined(PHP7)
   void*** tsrm_ls = NULL;
@@ -157,6 +179,8 @@ void test_main(void* p NRUNUSED) {
 #elif ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   test_hashmap_wraprec();
 #endif /* PHP >= 7.4 */
+
+  test_add_custom_tracer_named();
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
