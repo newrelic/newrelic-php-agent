@@ -393,6 +393,12 @@ nr_status_t nr_php_user_instrument_wraprec_hashmap_init(void) {
   return NR_SUCCESS;
 }
 
+/* This function expects namestr and namestrlen to be validated with
+ * nr_php_user_instrument_is_name_valid() before being passed in.
+ * Specifically, it requires that:
+ * - namestrlen be greater than 0
+ * - namestr must not be NULL and must not end with `:` (colon) . */
+
 nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};

@@ -353,6 +353,13 @@ nruserfn_t* nr_php_user_wraprec_create(void) {
 }
 
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
+
+/* This function expects full_name and full_name_len to be validated with
+ * nr_php_user_instrument_is_name_valid() before being passed in.
+ * Specifically, it requires that:
+ * - full_name_len be greater than 0
+ * - full_name must not be NULL and must not end with `:` (colon) . */
+
 static nruserfn_t* nr_php_user_wraprec_create_named(const char* full_name,
                                                     int full_name_len) {
   int i;
