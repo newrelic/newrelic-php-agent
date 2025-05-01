@@ -146,7 +146,9 @@ static nruserfn_t* nr_func_hashmap_update_internal(nr_func_hashmap_t* hashmap, n
 
 static void nr_func_hashmap_destroy_bucket_internal(nr_func_bucket_t** bucket_ptr) {
   nr_func_bucket_t* bucket = *bucket_ptr;
-  nr_free(bucket->key->name);
+  if (NULL != bucket->key) {
+    nr_free(bucket->key->name);
+  }
   nr_free(bucket->key);
   nr_php_user_wraprec_destroy(&bucket->wraprec);
   nr_realfree((void**)bucket_ptr);
@@ -307,7 +309,9 @@ static nr_func_hashmap_t* nr_scope_hashmap_update_internal(nr_scope_hashmap_t* h
 
 static void nr_scope_hashmap_destroy_bucket_internal(nr_scope_bucket_t** bucket_ptr) {
   nr_scope_bucket_t* bucket = *bucket_ptr;
-  nr_free(bucket->key->name);
+  if (NULL != bucket->key) {
+    nr_free(bucket->key->name);
+  }
   nr_free(bucket->key);
   nr_func_hashmap_destroy_internal(&bucket->scoped_funcs_ht);
   nr_realfree((void**)bucket_ptr);
