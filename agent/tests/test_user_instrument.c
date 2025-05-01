@@ -155,6 +155,10 @@ static void test_add_custom_tracer_named() {
   wr = nr_php_add_custom_tracer_named("function_name", 0);
   tlib_pass_if_null("add_custom_tracer_named with length == 0", wr);
 
+  // nr_php_add_custom_tracer_named's second argument is of size_t type,
+  // which is **unsigned**!!! However, under the hood, it calls a function
+  // that converts it to an int! So this is testing that no unwanted
+  // side effects will happen when this silent type conversion takes place.
   wr = nr_php_add_custom_tracer_named("function_name", -1);
   tlib_pass_if_null("add_custom_tracer_named with length < 0", wr);
 
