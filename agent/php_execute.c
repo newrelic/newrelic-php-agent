@@ -598,9 +598,6 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
   const char* function_name = nr_php_op_array_function_name(NR_OP_ARRAY);
   const char* ctx = context ? context : "execute";
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
-  nruserfn_t* wr = nr_php_get_wraprec(execute_data->func);
-#endif
   argstr[0] = '\0';
 
   if (NR_OP_ARRAY->scope) {
@@ -624,7 +621,7 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        wr ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->function_name) {
@@ -646,7 +643,7 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
-        wr ? " *" : "",
+        nr_php_get_wraprec(execute_data->func) ? " *" : "",
 #endif
         NRP_FILENAME(filename), NR_OP_ARRAY->line_start);
   } else if (NR_OP_ARRAY->filename) {
