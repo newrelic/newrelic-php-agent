@@ -446,6 +446,8 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
 
     wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
         wraprec->funcname, wraprec->classname);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for '%s'", namestr);
   }
 
   return wraprec;
