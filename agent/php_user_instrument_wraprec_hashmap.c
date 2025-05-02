@@ -33,7 +33,7 @@ typedef struct _nr_func_hashmap {
 } nr_func_hashmap_t;
 
 static nr_func_hashmap_t* nr_func_hashmap_create_internal(size_t log2_num_buckets) {
-  nr_func_hashmap_t* hashmap;
+  nr_func_hashmap_t* hashmap = NULL;
 
   if (0 == log2_num_buckets) {
     /*
@@ -68,8 +68,7 @@ static bool nr_func_hashmap_key_equals(nr_func_hashmap_key_t* a, nr_func_hashmap
 }
 
 static bool nr_func_hashmap_fetch_internal(nr_func_hashmap_t* hashmap, size_t hash, nr_func_hashmap_key_t* key, nr_func_bucket_t** bucket_ptr) {
-  nr_func_bucket_t* bucket;
-  for (bucket = hashmap->buckets[hash]; bucket; bucket = bucket->next) {
+  for (nr_func_bucket_t* bucket = hashmap->buckets[hash]; bucket; bucket = bucket->next) {
     if (nr_func_hashmap_key_equals(bucket->key, key)) {
       if (bucket_ptr) {
         *bucket_ptr = bucket;
@@ -83,9 +82,8 @@ static bool nr_func_hashmap_fetch_internal(nr_func_hashmap_t* hashmap, size_t ha
 static nruserfn_t* nr_func_hashmap_add_internal(nr_func_hashmap_t* hashmap,
                              size_t hash_key,
                              nr_func_hashmap_key_t* key) {
-  nr_func_bucket_t* bucket;
+  nr_func_bucket_t* bucket = (nr_func_bucket_t*)nr_malloc(sizeof(nr_func_bucket_t));
 
-  bucket = (nr_func_bucket_t*)nr_malloc(sizeof(nr_func_bucket_t));
   bucket->prev = NULL;
   bucket->next = hashmap->buckets[hash_key];
   bucket->key = (nr_func_hashmap_key_t*)nr_malloc(sizeof(nr_func_hashmap_key_t));
@@ -107,7 +105,7 @@ static nruserfn_t* nr_func_hashmap_add_internal(nr_func_hashmap_t* hashmap,
 
 static nruserfn_t* nr_func_hashmap_lookup_internal(nr_func_hashmap_t* hashmap, nr_func_hashmap_key_t* key) {
   size_t hash;
-  nr_func_bucket_t* bucket;
+  nr_func_bucket_t* bucket = NULL;
 
   if (nrunlikely((NULL == hashmap) || (NULL == key))) {
     return NULL;
@@ -123,8 +121,8 @@ static nruserfn_t* nr_func_hashmap_lookup_internal(nr_func_hashmap_t* hashmap, n
 
 static nruserfn_t* nr_func_hashmap_update_internal(nr_func_hashmap_t* hashmap, nr_func_hashmap_key_t* key, bool* created) {
   size_t hash;
-  nr_func_bucket_t* bucket;
-  nruserfn_t* wraprec;
+  nr_func_bucket_t* bucket = NULL;
+  nruserfn_t* wraprec = NULL;
 
   if (nrunlikely((NULL == hashmap) || (NULL == key))) {
     return NULL;
@@ -156,7 +154,7 @@ static void nr_func_hashmap_destroy_bucket_internal(nr_func_bucket_t** bucket_pt
 
 static void nr_func_hashmap_destroy_internal(nr_func_hashmap_t** hashmap_ptr) {
   size_t count;
-  nr_func_hashmap_t* hashmap;
+  nr_func_hashmap_t* hashmap = NULL;
   size_t i;
 
   if ((NULL == hashmap_ptr) || (NULL == *hashmap_ptr)) {
@@ -204,7 +202,7 @@ typedef struct _nr_scope_hashmap {
 } nr_scope_hashmap_t;
 
 static nr_scope_hashmap_t* nr_scope_hashmap_create_internal(size_t log2_num_buckets) {
-  nr_scope_hashmap_t* hashmap;
+  nr_scope_hashmap_t* hashmap = NULL;
 
   if (0 == log2_num_buckets) {
     /*
@@ -239,8 +237,8 @@ static bool nr_scope_hashmap_key_equals(nr_scope_hashmap_key_t* a, nr_scope_hash
 }
 
 static bool nr_scope_hashmap_fetch_internal(nr_scope_hashmap_t* hashmap, size_t hash, nr_scope_hashmap_key_t* key, nr_scope_bucket_t** bucket_ptr) {
-  nr_scope_bucket_t* bucket;
-  for (bucket = hashmap->buckets[hash]; bucket; bucket = bucket->next) {
+
+  for (nr_scope_bucket_t* bucket = hashmap->buckets[hash]; bucket; bucket = bucket->next) {
     if (nr_scope_hashmap_key_equals(bucket->key, key)) {
       if (bucket_ptr) {
         *bucket_ptr = bucket;
@@ -254,9 +252,7 @@ static bool nr_scope_hashmap_fetch_internal(nr_scope_hashmap_t* hashmap, size_t 
 static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hashmap,
                              size_t hash_key,
                              nr_scope_hashmap_key_t* key) {
-  nr_scope_bucket_t* bucket;
-
-  bucket = (nr_scope_bucket_t*)nr_malloc(sizeof(nr_scope_bucket_t));
+  nr_scope_bucket_t* bucket = (nr_scope_bucket_t*)nr_malloc(sizeof(nr_scope_bucket_t));
   bucket->prev = NULL;
   bucket->next = hashmap->buckets[hash_key];
   bucket->key = (nr_scope_hashmap_key_t*)nr_malloc(sizeof(nr_scope_hashmap_key_t));
@@ -277,7 +273,7 @@ static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hash
 
 static nr_func_hashmap_t* nr_scope_hashmap_lookup_internal(nr_scope_hashmap_t* hashmap, nr_scope_hashmap_key_t* key) {
   size_t hash;
-  nr_scope_bucket_t* bucket;
+  nr_scope_bucket_t* bucket = NULL;
 
   if (nrunlikely((NULL == hashmap) || (NULL == key))) {
     return NULL;
@@ -293,7 +289,7 @@ static nr_func_hashmap_t* nr_scope_hashmap_lookup_internal(nr_scope_hashmap_t* h
 
 static nr_func_hashmap_t* nr_scope_hashmap_update_internal(nr_scope_hashmap_t* hashmap, nr_scope_hashmap_key_t* key) {
   size_t hash;
-  nr_scope_bucket_t* bucket;
+  nr_scope_bucket_t* bucket = NULL;
 
   if (nrunlikely((NULL == hashmap) || (NULL == key))) {
     return NULL;
@@ -319,7 +315,7 @@ static void nr_scope_hashmap_destroy_bucket_internal(nr_scope_bucket_t** bucket_
 
 static void nr_scope_hashmap_destroy_internal(nr_scope_hashmap_t** hashmap_ptr) {
   size_t count;
-  nr_scope_hashmap_t* hashmap;
+  nr_scope_hashmap_t* hashmap = NULL;
   size_t i;
 
   if ((NULL == hashmap_ptr) || (NULL == *hashmap_ptr)) {
