@@ -455,8 +455,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_slab_t* segment_slab;
 
   nrl_always("Creating a seg fault");
-  guid = NULL;
-  nrl_always("guid = %s", guid);
+  *(int*)0 = 0;
   if (NULL == app) {
     return 0;
   }
