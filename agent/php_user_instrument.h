@@ -14,6 +14,7 @@
 #include "php_user_instrument_hashmap_key.h"
 
 struct _nruserfn_t;
+#define NR_USERFN_T_MAGIC 0x6e72757372666e74ULL /* "nrusrfnt" */
 
 /*
  * This is an unused structure that is used to ensure that a bare return won't
@@ -35,6 +36,7 @@ typedef void (*nruserfn_declared_t)(TSRMLS_D);
  * and so the strings must be discarded in nr_php_user_wraprec_destroy;
  */
 typedef struct _nruserfn_t {
+  uint64_t magic; /* memory marker */
   struct _nruserfn_t* next; /* singly linked list next pointer */
 
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
@@ -108,7 +110,6 @@ typedef struct _nruserfn_t {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   char* wordpress_plugin_theme;
 #endif
-  int pid; /* pid of a process that created this wraprec */
 } nruserfn_t;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO

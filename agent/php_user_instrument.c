@@ -164,7 +164,13 @@ static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
     wraprec = ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
   }
-  if (NULL != wraprec && NRPRG(pid) != wraprec->pid) {
+  if (NULL != wraprec && wraprec->magic != NR_USERFN_T_MAGIC) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(zf);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - wraprec for {%s} is invalid",
+                       __func__, name);
+      nr_free(name);
+    }
     wraprec = NULL;
   }
   return wraprec;
@@ -346,9 +352,7 @@ static void nr_php_wrap_user_function_internal(nruserfn_t* wraprec TSRMLS_DC) {
 
 nruserfn_t* nr_php_user_wraprec_create(void) {
   nruserfn_t* wr = (nruserfn_t*)nr_zalloc(sizeof(nruserfn_t));
-  /* NRPRG(pid) is set in rinit but it's sometimes needed before rinit,
-  *  i.e. when wraprec is added via INI */
-  wr->pid = (0 != NRPRG(pid) ? NRPRG(pid) : nr_getpid());
+  wr->magic = NR_USERFN_T_MAGIC;
   return wr;
 }
 
