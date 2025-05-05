@@ -85,6 +85,7 @@ class ExampleAttribute
     public function __construct(public string $info) {}
     public function getInfo(): string
     {
+        time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
         return $this->info;
     }
 }
