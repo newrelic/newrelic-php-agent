@@ -1369,6 +1369,16 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.vulnerability_management.composer_api.enabled = true
 
+; Setting: newrelic.vulnerability_management.composer_api.per_process_detection
+; Type   : boolean
+; Scope  : system
+; Default: true
+; Info   : Controls the frequency at which Composer API samples the runtime environment
+;          for package data. When set to `true`, sampling will only occur once per process.
+;          If false, Composer will sample the environment every request.
+;
+;newrelic.vulnerability_management.composer_api.per_process_detection = true
+
 ; Setting: newrelic.message_tracer.segment_parameters.enabled
 ; Type   : boolean
 ; Scope  : per-directory
