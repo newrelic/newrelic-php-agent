@@ -101,7 +101,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       char* name = nr_php_function_debug_name(execute_data->func);
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
-                       __func__, name);
+                       __func__, NRSAFESTR(name));
       nr_free(name);
     }
     return handlers;

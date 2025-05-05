@@ -124,7 +124,7 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       char* name = nr_php_function_debug_name(zf);
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
-                       __func__, name);
+                       __func__, NRSAFESTR(name));
       nr_free(name);
     }
 
@@ -155,7 +155,7 @@ static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       char* name = nr_php_function_debug_name(zf);
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
-                       __func__, name);
+                       __func__, NRSAFESTR(name));
       nr_free(name);
     }
     return NULL;
@@ -168,7 +168,7 @@ static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       char* name = nr_php_function_debug_name(zf);
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - wraprec for {%s} is invalid",
-                       __func__, name);
+                       __func__, NRSAFESTR(name));
       nr_free(name);
     }
     wraprec = NULL;
