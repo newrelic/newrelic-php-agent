@@ -7,6 +7,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "nr_txn.h"
+#include "php_globals.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_syscalls.h"
@@ -136,6 +137,13 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                      __func__);
     return;
   }
+
+  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
+    // set the per-process flag to true to avoid re-running composer api
+    // detection when the per-process detection is enabled.
+    NR_PHP_PROCESS_GLOBALS(composer_packages_detected) = 1;
+  }
+
   if (IS_ARRAY == Z_TYPE(retval)) {
     zend_string* package_name = NULL;
     zval* package_version = NULL;
