@@ -20,7 +20,6 @@ tlib_parallel_info_t parallel_info
 #define FUNCTION_NAME "global_function"
 
 static void test_wraprecs_hashmap() {
-  nr_status_t init_status;
   nruserfn_t *wraprec, *found_wraprec;
   zend_string *func_name, *scope_name, *method_name;
 
@@ -39,8 +38,7 @@ static void test_wraprecs_hashmap() {
   tlib_pass_if_null("adding valid method before init", wraprec);
 
   // Initialize the hashmap
-  init_status = nr_php_user_instrument_wraprec_hashmap_init();
-  tlib_pass_if_int_equal("wraprec hashmap init", NR_SUCCESS, init_status);
+  nr_php_user_instrument_wraprec_hashmap_init();
 
   // Test valid operations after initializing the hashmap
   wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(FUNCTION_NAME));

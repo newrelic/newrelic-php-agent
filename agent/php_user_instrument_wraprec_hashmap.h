@@ -10,7 +10,7 @@
 
 // clang-format off
 
-extern nr_status_t nr_php_user_instrument_wraprec_hashmap_init(void);
+extern void nr_php_user_instrument_wraprec_hashmap_init(void);
 extern nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen);
 extern nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, zend_string *scope_name);
 extern void nr_php_user_instrument_wraprec_hashmap_destroy(void);

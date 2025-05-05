@@ -499,12 +499,7 @@ PHP_MINIT_FUNCTION(newrelic) {
    *  - newrelic.webtransaction.name.functions
    *  - newrelic.transaction_tracer.custom
   */
-  if (NR_SUCCESS != nr_php_user_instrument_wraprec_hashmap_init()) {
-    nrl_error(NRL_AGENT,
-              "%s: Failed to initialize user function instrumentation and user "
-              "functions will not be instrumented.",
-              __func__);
-  }
+  nr_php_user_instrument_wraprec_hashmap_init();
 #endif
 
   nr_php_register_ini_entries(module_number TSRMLS_CC);

@@ -380,17 +380,13 @@ static void nr_php_user_instrument_wraprec_hashmap_name2keys(
   func->name_hash = zend_hash_func(func->name, func->name_len);
 }
 
-nr_status_t nr_php_user_instrument_wraprec_hashmap_init(void) {
+void nr_php_user_instrument_wraprec_hashmap_init(void) {
   if (NULL == scope_ht) {
     scope_ht = nr_scope_hashmap_create_internal(0);
   }
   if (NULL == global_funcs_ht) {
     global_funcs_ht = nr_func_hashmap_create_internal(0);
   }
-  if (NULL == scope_ht || NULL == global_funcs_ht) {
-    return NR_FAILURE;
-  }
-  return NR_SUCCESS;
 }
 
 /* This function expects namestr and namestrlen to be validated with
