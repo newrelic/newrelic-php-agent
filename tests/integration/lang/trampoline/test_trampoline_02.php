@@ -8,6 +8,13 @@
 Test that trampoline functions not blow up.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, '8.0', '<')) {
+  die("skip: custom instrumenting methods of anonymous classes is not available for PHP versions < 8.0");
+}
+*/
+
 /*INI
 newrelic.code_level_metrics.enabled = true
 */
