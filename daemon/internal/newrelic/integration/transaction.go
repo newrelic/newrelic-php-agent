@@ -118,7 +118,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				},
 			},
 			Valgrind: ctx.Valgrind,
-			Timeout:  60*time.Second,
+			Timeout:  0*time.Second,
 		}
 		tx.handler.Env = append(tx.handler.Env,
 			"SCRIPT_FILENAME="+scriptFile,
