@@ -27,6 +27,21 @@
 #define OP_ARRAY_IS_METHOD(OP, FNAME) \
   (0 == nr_strcmp(nr_php_op_array_function_name(OP), (FNAME)))
 
+extern void nr_php_execute_file(const zend_op_array* op_array,
+                                NR_EXECUTE_PROTO TSRMLS_DC);
+
+/*
+ * Purpose: Log information about the execute data in a given execution
+ * context - either 'execute' (zend_execute) or 'observe' (fcall_init).
+ * Only first 8 characters of the context are printed.
+ *
+ * Caveat: This function doesn't handle internal functions, and will crash if
+ * you give it one.
+ */
+extern void nr_php_show_exec(const char*, NR_EXECUTE_PROTO TSRMLS_DC);
+/* Limit length of execution context printed in the log file to 8 characters */
+#define NRP_SHOW_EXEC_CONTEXT(C) 8, NRSAFESTR(C)
+
 /*
  * Purpose: Look through the PHP symbol table for special names or symbols
  * that provide additional hints that a specific framework has been loaded.

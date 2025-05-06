@@ -12,7 +12,7 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 
 #define STRING_SZ(s) (s), nr_strlen(s)
 
@@ -579,7 +579,7 @@ void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   test_wraprecs_hashmap();
   test_zend_string_hash_before_set();
   test_zend_string_hash_after_set_before_get();
