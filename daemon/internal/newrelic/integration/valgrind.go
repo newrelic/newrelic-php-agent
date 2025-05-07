@@ -128,8 +128,6 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
 	cmd.Args = append(cmd.Args, "--xml=yes")
 	cmd.Args = append(cmd.Args, "--xml-socket="+valgrindLn.Addr().String())
-	cmd.Args = append(cmd.Args, "--child-silent-after-fork=yes")
-	cmd.Args = append(cmd.Args, "--trace-children=yes")
 	cmd.Args = append(cmd.Args, "--")
 	cmd.Args = append(cmd.Args, tx.handler.Path)
 	if len(tx.handler.Args) > 0 {
@@ -140,7 +138,9 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 
 	// Replace the handler with valgrind
 	tx.handler.Path = cmd.Path
-	tx.handler.Args = cmd.Args
+	tx.handler.Args = cmd.Args[1:] // The first Arg is the Path.
+								   // ServeHTTP will re-add Path
+								   // to the front of Args
 
 	ch := make(chan resultOrError, 1)
 	go func() {
