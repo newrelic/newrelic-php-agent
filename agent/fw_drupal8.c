@@ -608,6 +608,95 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_clean) {
 NR_PHP_WRAPPER_END
 #endif  // OAPI
 
+static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
+                                      zval* val) {
+  if (NULL == key || 0 == ZEND_STRING_LEN(key)
+      || 0 == nr_php_is_zval_valid_array(val)
+      || 0 == zend_hash_num_elements(Z_ARRVAL_P(val))) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/*
+ * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
+ *
+ * Params: 1. A zval pointer to the moduleHandler instance in use by Drupal.
+ *
+ * Return: bool
+ *
+ */
+static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
+  zval* hook_implementation_map = NULL;
+
+  nr_php_string_hash_key_t* hook_key = NULL;
+  zval* hook_val = NULL;
+  nr_php_string_hash_key_t* class_key = NULL;
+  zval* class_val = NULL;
+  nr_php_string_hash_key_t* method_key = NULL;
+  zval* module_val = NULL;
+
+  char* hookpath = NULL;
+
+  hook_implementation_map = nr_php_get_zval_object_property(
+      module_handler, "hookImplementationsMap");
+
+  if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "hookImplementationsMap property not a valid array");
+    return false;
+  }
+
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
+                                hook_val) {
+    if (nr_is_invalid_key_val_arr(hook_key, hook_val)) {
+      nrl_warning(NRL_FRAMEWORK,
+                  "hookImplementationsMap[hook]: invalid key or value");
+      return false;
+    }
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), class_key, class_val) {
+      if (nr_is_invalid_key_val_arr(class_key, class_val)) {
+        nrl_warning(NRL_FRAMEWORK,
+                    "hookImplementationsMap[class]: invalid key or value");
+        return false;
+      }
+
+      ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(class_val), method_key,
+                                    module_val) {
+        if (NULL == method_key
+            || 0 == nr_php_is_zval_valid_string(module_val)) {
+          nrl_warning(NRL_FRAMEWORK,
+                      "hookImplementationsMap[method]: invalid key or value");
+          return false;
+        }
+
+        if (nr_striendswith(
+                ZEND_STRING_VALUE(class_key), ZEND_STRING_LEN(class_key),
+                NR_PSTR("Drupal\\Core\\Extension\\ProceduralCall"))) {
+          hookpath = nr_formatf("%s", ZEND_STRING_VALUE(method_key));
+        } else {
+          hookpath = nr_formatf("%s::%s", ZEND_STRING_VALUE(class_key),
+                                ZEND_STRING_VALUE(method_key));
+        }
+
+        nr_php_wrap_user_function_drupal(
+            hookpath, nr_strlen(hookpath), Z_STRVAL_P(module_val),
+            Z_STRLEN_P(module_val), ZEND_STRING_VALUE(hook_key),
+            ZEND_STRING_LEN(hook_key));
+
+        nr_free(hookpath);
+      }
+      ZEND_HASH_FOREACH_END();
+    }
+    ZEND_HASH_FOREACH_END();
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return true;
+}
+
 /*
  * Purpose : Wrap the invoke() method of the module handler instance in use.
  */
@@ -635,6 +724,9 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 
   ce = Z_OBJCE_P(*retval_ptr);
 
+  if (nr_drupal_hook_attribute_instrument(*retval_ptr)) {
+    NR_PHP_WRAPPER_LEAVE;
+  }
   nr_drupal8_add_method_callback(ce, NR_PSTR("getimplementations"),
                                  nr_drupal8_post_get_implementations TSRMLS_CC);
   nr_drupal8_add_method_callback(ce, NR_PSTR("implementshook"),
