@@ -642,8 +642,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
       module_handler, "hookImplementationsMap");
 
   if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-    nrl_warning(NRL_FRAMEWORK,
-                "hookImplementationsMap property not a valid array");
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "hookImplementationsMap property not a valid array");
     return false;
   }
 
