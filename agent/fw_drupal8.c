@@ -736,7 +736,7 @@ NR_PHP_WRAPPER(nr_drupal8_module_handler) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_drupal8_add_method_callback_before_after_clean(
-      ce, NR_PSTR("invokeallwith"), nr_drupal94_invoke_all_with,
+      ce, NR_PSTR("invokeAllWith"), nr_drupal94_invoke_all_with,
       nr_drupal94_invoke_all_with_after, nr_drupal94_invoke_all_with_clean);
 #else
   nr_drupal8_add_method_callback(ce, NR_PSTR("invokeallwith"),
