@@ -343,18 +343,17 @@ static void nr_scope_hashmap_destroy_internal(nr_scope_hashmap_t** hashmap_ptr) 
 nr_func_hashmap_t* global_funcs_ht = NULL;
 nr_scope_hashmap_t* scope_ht = NULL;
 
+/* This function expects full_name and full_name_len to be validated with
+ * nr_php_user_instrument_is_name_valid() before being passed in.
+ * Specifically, it requires that:
+ * - full_name_len be greater than 0
+ * - full_name must not be NULL and must not end with `:` (colon) . */
+
 static void nr_php_user_instrument_wraprec_hashmap_name2keys(
   nr_func_hashmap_key_t* func,
   nr_scope_hashmap_key_t* scope,
   const char* full_name,
   int full_name_len) {
-
-  if (nrunlikely(NULL == full_name)) {
-    return;
-  }
-  if (nrunlikely(full_name_len <= 0)) {
-    return;
-  }
 
   func->name = full_name;
   func->name_len = full_name_len;
