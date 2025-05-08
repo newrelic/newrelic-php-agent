@@ -615,13 +615,13 @@ nrinibool_t
 nrinibool_t
     message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled */
 
-uint64_t pid;
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
  * pid and user_function_wrappers are used to store user function wrappers.
  * Storing this on a request level (as opposed to storing it on transaction
  * level) is more robust when using multiple transactions in one request.
  */
+uint64_t pid;
 nr_vector_t* user_function_wrappers;
 #endif
 
