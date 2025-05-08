@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that trampoline functions not blow up.
+Test that trampoline functions do not blow up.
 */
 
 /*INI
