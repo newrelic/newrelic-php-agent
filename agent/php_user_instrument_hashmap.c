@@ -6,7 +6,7 @@
 #include "php_agent.h"
 #include "php_user_instrument_hashmap.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 
 typedef struct _nr_wraprecs_bucket {
   struct _nr_wraprecs_bucket* prev;

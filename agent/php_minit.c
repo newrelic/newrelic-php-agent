@@ -19,6 +19,7 @@
 #include "php_internal_instrument.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "php_wrapper.h"
 #include "fw_laravel.h"
@@ -491,6 +492,16 @@ PHP_MINIT_FUNCTION(newrelic) {
    */
   nr_php_generate_internal_wrap_records();
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* 
+   * The user function wraprec hashmap must be initialized before INI processing
+   * because INI processing adds wraprecs:
+   *  - newrelic.webtransaction.name.functions
+   *  - newrelic.transaction_tracer.custom
+  */
+  nr_php_user_instrument_wraprec_hashmap_init();
+#endif
+
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
@@ -720,8 +731,16 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_set_opcode_handlers();
 
   nrl_debug(NRL_INIT, "MINIT processing done");
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 7.4+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(dummy);
+  NR_PHP_PROCESS_GLOBALS(op_array_extension_handle) = zend_get_op_array_extension_handle("newrelic");
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO /* PHP 8.4+ */
+  /* When observer API is used by an extension, both handles (for user
+   * and internal functions) must be initialized, even when one of them
+   * is not used (as in our case). Observer API was changed in PHP 8.4.
+   * For more details see: https://github.com/php/php-src/pull/14252 */
+  (void) zend_get_internal_function_extension_handle("newrelic");
+#endif
 #else
   NR_PHP_PROCESS_GLOBALS(zend_offset) = zend_get_resource_handle(&dummy);
 #endif
