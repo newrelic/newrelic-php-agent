@@ -41,8 +41,8 @@ func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 	// valgrind reports to their tests in the same way we use the appname
 	// to link the transaction data. Failing that, perhaps we could use
 	// the valgrind process's pid instead.
-	valgrindMu.Lock()
-	defer valgrindMu.Unlock()
+	//valgrindMu.Lock()
+	//defer valgrindMu.Unlock()
 
 	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
 	cmd.Args = append(cmd.Args, "--xml=yes")
@@ -122,11 +122,12 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 	// valgrind reports to their tests in the same way we use the appname
 	// to link the transaction data. Failing that, perhaps we could use
 	// the valgrind process's pid instead.
-	valgrindMu.Lock()
-	defer valgrindMu.Unlock()
+	//valgrindMu.Lock()
+	//defer valgrindMu.Unlock()
 
 	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
 	cmd.Args = append(cmd.Args, "--xml=yes")
+	//cmd.Args = append(cmd.Args, "--child-silent-after-fork=no")
 	cmd.Args = append(cmd.Args, "--xml-socket="+valgrindLn.Addr().String())
 	cmd.Args = append(cmd.Args, "--")
 	cmd.Args = append(cmd.Args, tx.handler.Path)
