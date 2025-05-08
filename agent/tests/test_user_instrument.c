@@ -165,8 +165,17 @@ static void test_add_custom_tracer_named() {
   wr = nr_php_add_custom_tracer_named(NR_PSTR("scope_name::"));
   tlib_pass_if_null("add_custom_tracer_named with name ending with :", wr);
 
+  wr = nr_php_add_custom_tracer_named(NR_PSTR("function_name"));
+  tlib_pass_if_not_null(
+      "add_custom_tracer_named with valid name "
+      "(unscoped global function)",
+      wr);
+
   wr = nr_php_add_custom_tracer_named(NR_PSTR("scope_name::function_name"));
-  tlib_pass_if_not_null("add_custom_tracer_named with valid name", wr);
+  tlib_pass_if_not_null(
+      "add_custom_tracer_named with valid name "
+      "(scoped method)",
+      wr);
 
   tlib_php_request_end();
 }
