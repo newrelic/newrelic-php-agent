@@ -49,7 +49,7 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 
 	args := phpArgs(nil, filepath.Base(src.Name()), false, settings)
 
-	if ctx.Valgrind != "" {
+	if ctx.Valgrind != "" && settings["newrelic.appname"] != "skipif" {
 		txn = &ValgrindCLI{
 			CLI: CLI{
 				Path: ctx.PHP,
