@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
@@ -57,7 +58,7 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 				Args: args,
 			},
 			Valgrind: ctx.Valgrind,
-			Timeout:  ctx.Timeout,
+			Timeout:  60*time.Second,
 		}
 	} else {
 		txn = &CLI{
@@ -117,7 +118,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				},
 			},
 			Valgrind: ctx.Valgrind,
-			Timeout:  ctx.Timeout,
+			Timeout:  60*time.Second,
 		}
 		tx.handler.Env = append(tx.handler.Env,
 			"SCRIPT_FILENAME="+scriptFile,
