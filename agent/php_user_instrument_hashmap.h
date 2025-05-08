@@ -13,7 +13,7 @@
 #include "php_includes.h"
 #include "php_user_instrument.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
 /*
  * The opaque hashmap type.
  */

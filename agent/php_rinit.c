@@ -18,6 +18,7 @@
 #include "nr_slowsqls.h"
 #include "util_logging.h"
 #include "util_strings.h"
+#include "util_syscalls.h"
 
 static void nr_php_datastore_instance_destroy(
     nr_datastore_instance_t* instance) {
@@ -53,14 +54,16 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(sapi_headers) = NULL;
   NRPRG(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
+#if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
+#endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRPRG(drupal_http_request_segment) = NULL;
   NRPRG(drupal_http_request_depth) = 0;
 #endif
 #else
-  NRPRG(pid) = getpid();
+  NRPRG(pid) = nr_getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
 

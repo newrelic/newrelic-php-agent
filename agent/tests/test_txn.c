@@ -50,7 +50,14 @@ static void test_handle_fpm_error(TSRMLS_D) {
 
   nr_txn_set_path(NULL, NRPRG(txn), "foo", NR_PATH_TYPE_URI,
                   NR_NOT_OK_TO_OVERWRITE);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8+ */
+  // file execution no longer increments execute_count on PHPs 8.0+
+  // only user function calls do increment execute_count:
+  tlib_php_request_eval("function f() {$a = 1 + 1;}\n"
+                        "f(); // create a PHP call frame" TSRMLS_CC);
+#else
   tlib_php_request_eval("$a = 1 + 1; // create a PHP call frame" TSRMLS_CC);
+#endif
   nr_php_txn_handle_fpm_error(NRPRG(txn) TSRMLS_CC);
   tlib_pass_if_str_equal("transaction path should be unchanged", "foo",
                          NRTXN(path));

@@ -82,29 +82,6 @@
  */
 
 /*
- * Purpose : Ensures the php-amqplib instrumentation gets wrapped.
- *
- * Params  : None
- *
- * Returns : None
- */
-static void nr_php_amqplib_ensure_class() {
-  int result = FAILURE;
-  zend_class_entry* class_entry = NULL;
-
-  class_entry = nr_php_find_class("phpamqplib\\channel\\amqpchannel");
-  if (NULL == class_entry) {
-    result = zend_eval_stringl(
-        NR_PSTR("class_exists('PhpAmqpLib\\Channel\\AMQPChannel');"), NULL,
-        "nr_php_amqplib_class_exists_channel_amqpchannel");
-  }
-  /*
-   * We don't need to check anything else at this point. If this fails, there's
-   * nothing else we can do anyway.
-   */
-}
-
-/*
  * Version information will be pulled from PhpAmqpLib\\Package::VERSION
  * nr_php_amqplib_handle_version will automatically load the class if it isn't
  * loaded yet and then evaluate the string. To avoid the VERY unlikely but not
@@ -810,7 +787,6 @@ void nr_php_amqplib_enable() {
 
   /* Extract the version */
   nr_php_amqplib_handle_version();
-  nr_php_amqplib_ensure_class();
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* less than PHP8.0 */
   nr_php_wrap_user_function_before_after_clean(

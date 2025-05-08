@@ -1232,10 +1232,10 @@ void nr_laravel_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Console\\Application::doRun"),
+      NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
       nr_laravel_console_application_dorun, NULL, NULL);
 #else
-  nr_php_wrap_user_function(NR_PSTR("Illuminate\\Console\\Application::doRun"),
+  nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
 #endif
   /*
