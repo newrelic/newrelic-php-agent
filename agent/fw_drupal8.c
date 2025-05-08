@@ -673,8 +673,9 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
         }
 
         if (0
-            == nr_stricmp(ZEND_STRING_VALUE(class_key),
-                          "Drupal\\Core\\Extension\\ProceduralCall")) {
+            == nr_striendswith(
+                ZEND_STRING_VALUE(class_key), ZEND_STRING_LEN(class_key),
+                NR_PSTR("Drupal\\Core\\Extension\\ProceduralCall"))) {
           hookpath = nr_formatf("%s", ZEND_STRING_VALUE(method_key));
         } else {
           hookpath = nr_formatf("%s::%s", ZEND_STRING_VALUE(class_key),
