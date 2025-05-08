@@ -7,13 +7,6 @@
 Tests newrelic_add_custom_parameter() on a nested path that includes a caught exception.  Any txn custom parameters get rolled up, so the parameters for `a` should get rolled up to the error event.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -105,11 +98,7 @@ newrelic.cross_application_tracer.enabled = false
         "int": 7,
         "string": "a_str"
       },
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -128,10 +117,7 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -151,10 +137,7 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ],
     [
@@ -172,11 +155,7 @@ newrelic.cross_application_tracer.enabled = false
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -195,10 +174,7 @@ newrelic.cross_application_tracer.enabled = false
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ]
   ]

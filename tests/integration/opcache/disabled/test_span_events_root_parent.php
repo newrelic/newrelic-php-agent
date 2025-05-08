@@ -68,11 +68,7 @@ opcache.jit=tracing
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -89,11 +85,7 @@ opcache.jit=tracing
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -110,11 +102,7 @@ opcache.jit=tracing
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ]
   ]
 ]

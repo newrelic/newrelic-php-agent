@@ -1335,7 +1335,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Setting: newrelic.code_level_metrics.enabled
 ; Type   : boolean
 ; Scope  : per-directory
-; Default: true
+; Default: false
 ; Info   : Toggles whether the agent provides function name, function
 ;          filepath, function namespace, and function lineno as
 ;          attributes on reported spans
@@ -1349,7 +1349,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;              entirely
 ;           c) lower the value for newrelic.span_events.max_samples_stored
 ;
-;newrelic.code_level_metrics.enabled = true
+;newrelic.code_level_metrics.enabled = false
 
 ; Setting: newrelic.vulnerability_management.package_detection.enabled
 ; Type   : boolean
