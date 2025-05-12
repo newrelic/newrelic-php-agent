@@ -394,7 +394,7 @@ void nr_php_user_instrument_wraprec_hashmap_init(void) {
  * - namestrlen be greater than 0
  * - namestr must not be NULL and must not end with `:` (colon) . */
 
-nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
+nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen, bool *is_new_wraprec_ptr) {
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
@@ -437,8 +437,10 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
 
     wraprec->supportability_metric = nr_txn_create_fn_supportability_metric(
         wraprec->funcname, wraprec->classname);
-  } else {
-    nrl_verbosedebug(NRL_INSTRUMENT, "reusing custom wrapper for '%s'", namestr);
+  }
+
+  if (NULL != is_new_wraprec_ptr) {
+    *is_new_wraprec_ptr = is_new_wraprec;
   }
 
   return wraprec;

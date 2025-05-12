@@ -545,6 +545,7 @@ static inline bool nr_php_user_instrument_is_name_valid(const char* namestr,
 nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
                                            size_t namestrlen) {
   nruserfn_t* wraprec;
+  bool is_new_wraprec = true;
 
   if (!nr_php_user_instrument_is_name_valid(namestr, namestrlen)) {
     return NULL;
@@ -571,10 +572,11 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
     }
   }
 #else
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen);
+  wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen, &is_new_wraprec);
 #endif
   nrl_verbosedebug(
-      NRL_INSTRUMENT, "adding custom for '" NRP_FMT_UQ "%.5s" NRP_FMT_UQ "'",
+      NRL_INSTRUMENT, "%s custom for '" NRP_FMT_UQ "%.5s" NRP_FMT_UQ "'",
+      is_new_wraprec ? "adding" : "reusing",
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
 
