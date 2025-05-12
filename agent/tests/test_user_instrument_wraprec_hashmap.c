@@ -20,8 +20,8 @@ tlib_parallel_info_t parallel_info
 #define FUNCTION_NAME "global_function"
 
 static void test_wraprecs_hashmap() {
-  nruserfn_t *wraprec, *found_wraprec;
-  zend_string *func_name, *scope_name, *method_name;
+  nruserfn_t *wraprec, *another_method_wraprec, *yet_another_method_wraprec, *found_wraprec;
+  zend_string *func_name, *scope_name, *method_name, *scope, *method;
   bool is_new_wraprec = false;
   bool *is_new_wraprec_tests[] = {NULL, &is_new_wraprec};
 
@@ -103,6 +103,43 @@ static void test_wraprecs_hashmap() {
 
     found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(method_name, NULL);
     tlib_pass_if_null("getting scoped method without scope", found_wraprec);
+
+    another_method_wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(SCOPE_NAME "::anotherMethod"),
+                                                                        is_new_wraprec_ptr);
+    tlib_pass_if_not_null("adding another scoped method", another_method_wraprec);
+    if (NULL != is_new_wraprec_ptr) {
+      tlib_pass_if_true("adding another scoped method", *is_new_wraprec_ptr,
+                        "expected true for is_new_wraprec");
+    }
+    scope = zend_string_init_fast(NR_PSTR(SCOPE_NAME));
+    method = zend_string_init_fast(NR_PSTR("anotherMethod"));
+    found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(method, scope);
+    tlib_pass_if_ptr_equal("getting another scoped method", another_method_wraprec, found_wraprec);
+
+    another_method_wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(SCOPE_NAME "::anotherMethod"),
+                                                                        is_new_wraprec_ptr);
+    tlib_pass_if_not_null("adding another scoped method one more time", another_method_wraprec);
+    if (NULL != is_new_wraprec_ptr) {
+      tlib_pass_if_false("adding another scoped method one more time", *is_new_wraprec_ptr,
+                         "expected false for is_new_wraprec");
+    }
+    tlib_pass_if_ptr_equal("getting another scoped method one more time", another_method_wraprec, found_wraprec);
+    zend_string_free(method);
+    zend_string_free(scope);
+
+    yet_another_method_wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(SCOPE_NAME "::anotherMethodStill"),
+                                                                            is_new_wraprec_ptr);
+    tlib_pass_if_not_null("adding yet another scoped method", yet_another_method_wraprec);
+    if (NULL != is_new_wraprec_ptr) {
+      tlib_pass_if_true("adding yet another scoped method", *is_new_wraprec_ptr,
+                        "expected true for is_new_wraprec");
+    }
+    scope = zend_string_init_fast(NR_PSTR(SCOPE_NAME));
+    method = zend_string_init_fast(NR_PSTR("anotherMethodStill"));
+    found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(method, scope);
+    tlib_pass_if_ptr_equal("getting another scoped method", yet_another_method_wraprec, found_wraprec);
+    zend_string_free(method);
+    zend_string_free(scope);
 
     nr_php_user_instrument_wraprec_hashmap_destroy();
   }
