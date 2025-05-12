@@ -570,13 +570,13 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
       return p; /* return the wraprec we are duplicating */
     }
   }
-#else
-  wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen);
-#endif
   nrl_verbosedebug(
       NRL_INSTRUMENT, "adding custom for '" NRP_FMT_UQ "%.5s" NRP_FMT_UQ "'",
       NRP_PHP(wraprec->classname),
       (0 == wraprec->classname) ? "" : "::", NRP_PHP(wraprec->funcname));
+#else
+  wraprec = nr_php_user_instrument_wraprec_hashmap_add(namestr, namestrlen);
+#endif
 
   nr_php_wrap_user_function_internal(wraprec TSRMLS_CC);
   nr_php_add_custom_tracer_common(wraprec);
