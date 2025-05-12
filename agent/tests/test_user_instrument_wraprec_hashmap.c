@@ -57,6 +57,13 @@ static void test_wraprecs_hashmap() {
   found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(func_name, NULL);
   tlib_pass_if_ptr_equal("getting valid global function", wraprec, found_wraprec);
 
+  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(FUNCTION_NAME),
+                                                       &is_new_wraprec);
+  tlib_pass_if_not_null("adding valid global function one more time", wraprec);
+  tlib_pass_if_false("adding valid global function one more time", is_new_wraprec,
+                    "expected false for is_new_wraprec");
+  tlib_pass_if_ptr_equal("getting valid global function one more time", wraprec, found_wraprec);
+
   found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
   tlib_pass_if_null("getting global function with scope", found_wraprec);
 
@@ -68,6 +75,13 @@ static void test_wraprecs_hashmap() {
 
   found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(method_name, scope_name);
   tlib_pass_if_ptr_equal("getting scoped method", wraprec, found_wraprec);
+
+  wraprec = nr_php_user_instrument_wraprec_hashmap_add(NR_PSTR(SCOPED_METHOD_NAME),
+                                                       &is_new_wraprec);
+  tlib_pass_if_not_null("adding valid scoped method one more time", wraprec);
+  tlib_pass_if_false("adding valid scoped method one more time", is_new_wraprec,
+                    "expected false for is_new_wraprec");
+  tlib_pass_if_ptr_equal("getting valid scoped method one more time", wraprec, found_wraprec);
 
   found_wraprec = nr_php_user_instrument_wraprec_hashmap_get(NULL, scope_name);
   tlib_pass_if_null("getting scoped method without method name", found_wraprec);
