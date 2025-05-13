@@ -18,7 +18,7 @@
 /*
  * Laminas is a rebranding of Zend, but the logic remains the same,
  * it is simply a name change and corresponds directly to Zend 3.x.
- * Compare to `fw_zend2.c`
+ * Compare to `fw_zend3.c`
  *
  * How Laminas nee Zend Routing Works
  * =====================

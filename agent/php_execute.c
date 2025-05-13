@@ -399,11 +399,10 @@ static const nr_framework_table_t all_frameworks[] = {
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
-    {"Zend", "zend", NR_PSTR("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
-    {"Zend2", "zend2", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend2_enable,
-     NR_FW_ZEND2},
-    {"Zend2", "zend2", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend2_enable,
-     NR_FW_ZEND2},
+    {"Zend3", "zend3", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend3_enable,
+     NR_FW_ZEND3},
+    {"Zend3", "zend3", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend3_enable,
+     NR_FW_ZEND3},
 };
 // clang-format: on
 static const int num_all_frameworks
