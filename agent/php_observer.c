@@ -23,6 +23,7 @@
 #include "php_observer.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "php_wrapper.h"
 #include "fw_laravel.h"
@@ -82,6 +83,38 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
       || (ZEND_INTERNAL_FUNCTION == execute_data->func->type)) {
     return handlers;
   }
+
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
+    nr_php_show_exec("observe", execute_data, NULL);
+  }
+
+  if (OP_ARRAY_IS_A_FILE(NR_OP_ARRAY)) {
+    /*
+     * Let's get the framework info.
+     */
+    nr_php_execute_file(NR_OP_ARRAY, execute_data, NULL TSRMLS_CC);
+    return handlers;
+  }
+
+  // The function cache slots are not available if the function is a trampoline
+  if (execute_data->func->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(execute_data->func);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
+                       __func__, NRSAFESTR(name));
+      nr_free(name);
+    }
+    return handlers;
+  }
+
+  if (!ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))) {
+    zend_string* func_name = NR_OP_ARRAY->function_name;
+    zend_string* scope_name = OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY)? NR_OP_ARRAY->scope->name : NULL;
+    nruserfn_t* wr = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
+    // store the wraprec in the op_array extension for the duration of the request for later lookup
+    ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  }
+
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;
   return handlers;

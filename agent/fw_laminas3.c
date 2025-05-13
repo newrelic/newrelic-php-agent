@@ -155,7 +155,7 @@ void nr_laminas3_enable(TSRMLS_D) {
    */
 
   nr_php_wrap_user_function(
-      NR_PSTR("Laminas\\Router\\HTTP\\RouteMatch::setMatchedRouteName"),
+      NR_PSTR("Laminas\\Router\\Http\\RouteMatch::setMatchedRouteName"),
       nr_laminas3_name_the_wt TSRMLS_CC);
   nr_php_wrap_user_function(
       NR_PSTR("Laminas\\Router\\RouteMatch::setMatchedRouteName"),
