@@ -8,13 +8,6 @@
 Test that attributes only a maximum of 64 custom attributes are added to span events.  Custom span attributes take precedence on the span before transaction events are added even with transaction_events disabled.
 .*/
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -237,11 +230,7 @@ null
         "36": 36,
         "35": 35
       },
-      {
-        "code.lineno": 282,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
-      }
+      {}
     ]
   ]
 ]

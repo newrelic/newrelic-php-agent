@@ -101,10 +101,7 @@ used as a callback handler for set_error_handler().
     {},
     {
       "error.message": "5 arg error",
-      "error.class": "NoticedError",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "NoticedError"
     }
   ]
 ]

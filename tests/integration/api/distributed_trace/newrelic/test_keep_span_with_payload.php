@@ -9,13 +9,6 @@ Test that a distributed tracing guid is created from the right segment and that
 the segment is kept when sampling the segment tree.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
@@ -69,11 +62,7 @@ newrelic.special.expensive_node_min = 0
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": 90,
-        "code.filepath": "__FILE__",
-        "code.function": "child"
-      }
+      {}
     ]
   ]
 ]

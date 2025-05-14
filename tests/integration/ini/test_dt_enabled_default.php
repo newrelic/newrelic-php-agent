@@ -10,13 +10,6 @@ that span events are sent when span events are enabled and no other
 configuration is given.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled = 1
@@ -63,11 +56,7 @@ newrelic.span_events_enabled = 1
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": 81,
-        "code.filepath": "__FILE__",
-        "code.function": "main"
-      }
+      {}
     ]
   ]
 ]

@@ -81,10 +81,7 @@ called with 4 parameters.
     {},
     {
       "error.message": "4 arg error",
-      "error.class": "NoticedError",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "NoticedError"
     }
   ]
 ]

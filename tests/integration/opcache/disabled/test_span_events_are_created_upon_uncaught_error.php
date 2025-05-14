@@ -100,10 +100,7 @@ opcache.jit=function
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "E_USER_ERROR"
       }
     ]
   ]
