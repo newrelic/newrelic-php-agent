@@ -1393,3 +1393,28 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          requires that this value when the account ID is not part of the function name.
 ;
 ;newrelic.cloud.aws.account_id = ""
+
+; Setting: newrelic.agent_control.enabled
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : Boolean value that denotes if agent control functionality should be enabled.
+;
+;newrelic.agent_control.enabled = false
+
+; Setting: newrelic.agent_control.health.delivery_location
+; Type   : string
+; Scope  : per-directory
+; Default: file:///newrelic/apm/health
+; Info   : String URI that specifies the fully qualified directory path for the
+;          health file(s) to be written to.
+;
+;newrelic.agent_control.health.delivery_location = "file:///newrelic/apm/health"
+
+; Setting: newrelic.agent_control.health.frequency
+; Type   : time specification string (in seconds, only)
+; Scope  : per-directory
+; Info   : Integer that specifies the interval, in seconds, of how often the health
+;          file will be written.
+;
+;newrelic.agent_control.health.frequency = 5s
