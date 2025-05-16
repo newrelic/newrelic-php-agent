@@ -41,6 +41,11 @@ func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 	// valgrind reports to their tests in the same way we use the appname
 	// to link the transaction data. Failing that, perhaps we could use
 	// the valgrind process's pid instead.
+	//
+	// We prevent concurrent invocations by disallowing valgrind when
+	// the threads argument is greater than 1. Previously, we used the
+	// commented out locks below. This was changed to allow subprocesses
+	// (i.e. curl) to run without deadlocking.
 	//valgrindMu.Lock()
 	//defer valgrindMu.Unlock()
 
@@ -122,12 +127,16 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 	// valgrind reports to their tests in the same way we use the appname
 	// to link the transaction data. Failing that, perhaps we could use
 	// the valgrind process's pid instead.
+	//
+	// We prevent concurrent invocations by disallowing valgrind when
+	// the threads argument is greater than 1. Previously, we used the
+	// commented out locks below. This was changed to allow subprocesses
+	// (i.e. curl) to run without deadlocking.
 	//valgrindMu.Lock()
 	//defer valgrindMu.Unlock()
 
 	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
 	cmd.Args = append(cmd.Args, "--xml=yes")
-	//cmd.Args = append(cmd.Args, "--child-silent-after-fork=no")
 	cmd.Args = append(cmd.Args, "--xml-socket="+valgrindLn.Addr().String())
 	cmd.Args = append(cmd.Args, "--")
 	cmd.Args = append(cmd.Args, tx.handler.Path)
