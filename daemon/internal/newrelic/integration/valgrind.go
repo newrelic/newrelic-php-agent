@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"time"
 
@@ -24,6 +25,12 @@ type ValgrindCLI struct {
 	Timeout  time.Duration
 }
 
+type ValgrindCGI struct {
+	CGI
+	Valgrind string
+	Timeout  time.Duration
+}
+
 func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 	if len(tx.Path) == 0 {
 		return nil, []byte("skip: executable not specified"), nil
@@ -34,8 +41,8 @@ func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 	// valgrind reports to their tests in the same way we use the appname
 	// to link the transaction data. Failing that, perhaps we could use
 	// the valgrind process's pid instead.
-	valgrindMu.Lock()
-	defer valgrindMu.Unlock()
+	//valgrindMu.Lock()
+	//defer valgrindMu.Unlock()
 
 	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
 	cmd.Args = append(cmd.Args, "--xml=yes")
@@ -105,6 +112,82 @@ func (tx *ValgrindCLI) Execute() (http.Header, []byte, error) {
 	return nil, output, err
 }
 
+func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
+	if len(tx.handler.Path) == 0 {
+		return nil, []byte("skip: executable not specified"), nil
+	}
+
+	// For now, we don't have a mechanism to handle concurrent invocations
+	// of Valgrind. In the future, we could use the appname to connect
+	// valgrind reports to their tests in the same way we use the appname
+	// to link the transaction data. Failing that, perhaps we could use
+	// the valgrind process's pid instead.
+	//valgrindMu.Lock()
+	//defer valgrindMu.Unlock()
+
+	cmd := valgrind.Memcheck(tx.Valgrind, "--quiet")
+	cmd.Args = append(cmd.Args, "--xml=yes")
+	//cmd.Args = append(cmd.Args, "--child-silent-after-fork=no")
+	cmd.Args = append(cmd.Args, "--xml-socket="+valgrindLn.Addr().String())
+	cmd.Args = append(cmd.Args, "--")
+	cmd.Args = append(cmd.Args, tx.handler.Path)
+	if len(tx.handler.Args) > 0 {
+		cmd.Args = append(cmd.Args, tx.handler.Args...)
+	}
+
+	log.Debugf("command: %v", cmd)
+
+	// Replace the handler with valgrind
+	tx.handler.Path = cmd.Path
+	tx.handler.Args = cmd.Args[1:] // The first Arg is the Path.
+								   // ServeHTTP will re-add Path
+								   // to the front of Args
+
+	ch := make(chan resultOrError, 1)
+	go func() {
+		var result resultOrError
+		result.R, result.E = acceptOneReport(tx.Timeout)
+		ch <- result
+	}()
+
+	resp := httptest.NewRecorder()
+	tx.handler.ServeHTTP(resp, tx.request)
+
+	vgOutput := <-ch
+
+	// Append the output from Valgrind to the test output.
+	//
+	// TODO: Eventually we want to report valgrind output separately, so we can
+	// treat valgrind errors similarly to failed test expectations.  i.e. We'd
+	// like to add them to Test.Failures. After all, each test has an implicit
+	// expectation that it will not exhibit memory bugs!
+	//
+	// TODO: Once the former is in place, we should be able to parse the memory
+	// leak reports produced by the Zend Memory Manager from the test output and
+	// report them the same way as valgrind errors.
+	output := resp.Body.Bytes()
+	if vgOutput.R != nil && len(vgOutput.R.Errors) > 0 {
+		// Safe to ignore the error here, Report.MarshalText() never fails.
+		data, _ := vgOutput.R.MarshalText()
+		output = append(output, '\n')
+		output = append(output, data...)
+	}
+
+
+	// Ensure a non-nil error is returned when valgrind detects errors.
+	// Otherwise, the test could be marked as passing if it does not have
+	// any expectations on the test output. This sucks.
+	//
+	// TODO: Remove this when valgrind errors can be treated as failed test
+	// expectations.
+	err := vgOutput.E
+	if err == nil && vgOutput.R != nil && len(vgOutput.R.Errors) > 0 {
+		err = fmt.Errorf("detected %d memory errors", len(vgOutput.R.Errors))
+	}
+
+	return resp.HeaderMap, output, err
+
+}
 // resultOrError is a poor man's sum type.
 type resultOrError struct {
 	R *valgrind.Report
