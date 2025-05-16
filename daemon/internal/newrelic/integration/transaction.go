@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
