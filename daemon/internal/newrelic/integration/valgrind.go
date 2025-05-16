@@ -148,9 +148,10 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 
 	// Replace the handler with valgrind
 	tx.handler.Path = cmd.Path
-	tx.handler.Args = cmd.Args[1:] // The first Arg is the Path.
-								   // ServeHTTP will re-add Path
-								   // to the front of Args
+	// The first Arg is the Path.
+	// ServeHTTP will re-add Path
+	// to the front of Args
+	tx.handler.Args = cmd.Args[1:]
 
 	ch := make(chan resultOrError, 1)
 	go func() {
@@ -182,7 +183,6 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 		output = append(output, data...)
 	}
 
-
 	// Ensure a non-nil error is returned when valgrind detects errors.
 	// Otherwise, the test could be marked as passing if it does not have
 	// any expectations on the test output. This sucks.
@@ -197,6 +197,7 @@ func (tx *ValgrindCGI) Execute() (http.Header, []byte, error) {
 	return resp.HeaderMap, output, err
 
 }
+
 // resultOrError is a poor man's sum type.
 type resultOrError struct {
 	R *valgrind.Report
