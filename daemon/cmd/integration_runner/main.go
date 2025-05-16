@@ -345,7 +345,7 @@ func main() {
 	ctx = integration.NewContext(*flagPHP, *flagCGI)
 	ctx.Valgrind = *flagValgrind
 	if (ctx.Valgrind != "" && *flagWorkers != 1) {
-		fmt.Fprintf(os.Stderr, "cannot run valgrind on multiple workers\n", err)
+		fmt.Fprintf(os.Stderr, "cannot run valgrind on multiple workers\n")
 		os.Exit(1)
 	}
 	ctx.Timeout = *flagTimeout
