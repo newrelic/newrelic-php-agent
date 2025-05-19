@@ -155,7 +155,6 @@ typedef enum {
   NR_FW_DRUPAL, /* Drupal 6/7 */
   NR_FW_DRUPAL8,
   NR_FW_JOOMLA,
-  NR_FW_KOHANA,
   NR_FW_LARAVEL,
   NR_FW_LUMEN,
   NR_FW_MAGENTO1,
