@@ -315,7 +315,7 @@ jobs:
           path: php-agent/agent/modules/newrelic.so
 
   integration-tests-amd64:
-    needs: [daemon-unit-tests, agent-unit-test]
+    needs: [daemon-unit-tests-amd64, agent-unit-test-amd64]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -432,7 +432,7 @@ jobs:
           make test-services-stop
 
   integration-tests-arm64:
-    needs: [daemon-unit-tests, agent-unit-test]
+    needs: [daemon-unit-tests-arm64, agent-unit-test-arm64]
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
