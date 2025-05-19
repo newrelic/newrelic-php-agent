@@ -20,7 +20,6 @@ extern void nr_drupal_enable(TSRMLS_D);
 
 extern void nr_drupal8_enable(TSRMLS_D);
 extern void nr_joomla_enable(TSRMLS_D);
-extern void nr_kohana_enable(TSRMLS_D);
 extern void nr_laminas3_enable(TSRMLS_D);
 extern void nr_laravel_enable(TSRMLS_D);
 extern void nr_lumen_enable(TSRMLS_D);
