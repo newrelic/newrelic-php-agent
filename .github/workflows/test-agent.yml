@@ -255,7 +255,8 @@ jobs:
         platform: [gnu, musl]
         arch: [arm64]
         php: ['8.0', '8.1', '8.2', '8.3', '8.4']
-        codecov: 0
+        include:
+          - codecov: 0
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -439,7 +440,6 @@ jobs:
         platform: [gnu, musl]
         arch: [arm64]
         php: ['8.0', '8.1', '8.2', '8.3', '8.4']
-        codecov: 0
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v4
