@@ -387,15 +387,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
-    {"Symfony", "symfony1", NR_PSTR("sfcontext.class.php"), 0, nr_symfony1_enable,
-     NR_FW_SYMFONY1},
-    {"Symfony", "symfony1", NR_PSTR("sfconfig.class.php"), 0, nr_symfony1_enable,
-     NR_FW_SYMFONY1},
-    {"Symfony2", "symfony2", NR_PSTR("bootstrap.php.cache"), 0, nr_symfony2_enable,
-     NR_FW_SYMFONY2}, /* also Symfony 3 */
-    {"Symfony2", "symfony2",
-     NR_PSTR("symfony/bundle/frameworkbundle/frameworkbundle.php"), 0,
-     nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony4", "symfony4", NR_PSTR("http-kernel/httpkernel.php"), 0,
      nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5/6/7 */
 

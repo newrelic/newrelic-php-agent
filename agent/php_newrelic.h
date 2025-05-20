@@ -161,8 +161,6 @@ typedef enum {
   NR_FW_MAGENTO2,
   NR_FW_MEDIAWIKI,
   NR_FW_SLIM,
-  NR_FW_SYMFONY1,
-  NR_FW_SYMFONY2,
   NR_FW_SYMFONY4,
   NR_FW_WORDPRESS,
   NR_FW_YII1,
@@ -447,10 +445,6 @@ size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 nr_segment_t* drupal_http_request_segment;
 #endif
-int symfony1_in_dispatch; /* Whether we are currently within a
-                             sfFrontWebController::dispatch() frame */
-int symfony1_in_error404; /* Whether we are currently within a
-                             sfError404Exception::printStackTrace() frame */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA
