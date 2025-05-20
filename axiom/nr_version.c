@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is gemstones
  *
- *   hydrangea          18Jan2023 (10.5)
  *   impatiens          13Feb2023 (10.6)
  *   jasmine            08Mar2023 (10.7)
  *   kalmia             27Mar2023 (10.8)
@@ -50,8 +49,9 @@
  *   fluorite           18Feb2025 (11.6)
  *   gaspeite           19Mar2025 (11.7)
  *   hiddenite          21Apr2025 (11.8)
+ *   indicolite         13May2025 (11.9)
  */
-#define NR_CODENAME "indicolite"
+#define NR_CODENAME "jade"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
