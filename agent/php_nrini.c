@@ -551,6 +551,11 @@ static PHP_INI_MH(nr_composer_per_process_detection_mh) {
   val = nr_bool_from_str(NEW_VALUE);
 
   if (-1 == val) {
+    nrl_warning(NRL_INIT,
+                "The value %d is not valid for the "
+                "newrelic.vulnerability_management.composer_api.per_process_"
+                "detection setting, using default value instead.",
+                val);
     return FAILURE;
   }
 
