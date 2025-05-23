@@ -165,8 +165,7 @@ typedef enum {
   NR_FW_WORDPRESS,
   NR_FW_YII1,
   NR_FW_YII2,
-  NR_FW_ZEND,
-  NR_FW_ZEND2,
+  NR_FW_ZEND3,
   NR_FW_LAMINAS3,
   NR_FW_NONE, /* Must be immediately before NR_FW_MUST_BE_LAST */
   NR_FW_MUST_BE_LAST
