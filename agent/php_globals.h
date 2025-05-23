@@ -75,6 +75,12 @@ typedef struct _nrphpglobals_t {
   int apache_threaded; /* 1 if a threaded MPM is in use, 0 otherwise */
   int preload_framework_library_detection; /* Enables preloading framework and
                                               library detection */
+  int composer_api_per_process_detection;  /* Enables per-process VM package
+                                              detection when Composer API is also
+                                              enabled */
+  int composer_packages_detected; /* Flag to indicate that Composer package
+                                    detection has run. Used in conjunction with
+                                    composer_api_per_process_detection. */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
 
   /* Original PHP callback pointer contents */

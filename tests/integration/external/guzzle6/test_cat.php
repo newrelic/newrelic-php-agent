@@ -54,6 +54,8 @@ X-NewRelic-App-Data=??
     [{"name":"Supportability/PHP/package/guzzlehttp/guzzle/6/detected"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/library/Autoloader/detected"},         [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Composer/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],

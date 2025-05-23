@@ -75,6 +75,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"WebTransactionTotalTime/Uri__FILE__"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/library/Autoloader/detected"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allWeb"}, [1, "??", "??", "??", "??", "??"]],
