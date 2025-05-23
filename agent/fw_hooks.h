@@ -31,8 +31,7 @@ extern void nr_slim_enable(TSRMLS_D);
 extern void nr_wordpress_enable(TSRMLS_D);
 extern void nr_yii1_enable(TSRMLS_D);
 extern void nr_yii2_enable(TSRMLS_D);
-extern void nr_zend_enable(TSRMLS_D);
-extern void nr_fw_zend2_enable(TSRMLS_D);
+extern void nr_fw_zend3_enable(TSRMLS_D);
 
 /* Libraries. */
 extern void nr_aws_sdk_php_enable();
