@@ -228,7 +228,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   fw_magento1.c fw_magento2.c fw_magento_common.c fw_mediawiki.c \
   fw_slim.c fw_support.c fw_symfony4.c \
   fw_symfony_common.c fw_wordpress.c fw_yii.c \
-  fw_zend2.c fw_zend.c"
+  fw_zend3.c"
   LIBRARIES="lib_aws_sdk_php.c lib_monolog.c lib_doctrine2.c \
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
   lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c \

@@ -639,7 +639,7 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          Must be one of the following values:
 ;          cakephp, codeigniter, drupal, drupal8, joomla, laravel,
 ;          magento, magento2, mediawiki, slim, symfony4,
-;          wordpress, yii, yii2, zend, zend2, no_framework
+;          wordpress, yii, yii2, zend3, no_framework
 ;
 ;          Note that "drupal" covers only Drupal 6 and 7.
 ;
