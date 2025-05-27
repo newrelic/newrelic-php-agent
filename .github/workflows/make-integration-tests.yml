@@ -81,7 +81,7 @@ jobs:
         run: |
           docker exec \
           -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so ${{ inputs.arch != 'arm64' && inputs.use-valgrind && '-valgrind /usr/bin/valgrind' }}" \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so ${{ inputs.use-valgrind && '-valgrind /usr/bin/valgrind' }}" \
           -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
           -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
           -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \
