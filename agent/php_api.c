@@ -586,16 +586,13 @@ static nrobj_t* nr_php_api_zval_to_attribute_obj(const zval* z TSRMLS_DC) {
     case IS_DOUBLE:
       return nro_new_double(Z_DVAL_P(z));
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_TRUE:
       return nro_new_boolean(1);
 
     case IS_FALSE:
       return nro_new_boolean(0);
-#else
-    case IS_BOOL:
-      return nro_new_boolean(Z_BVAL_P(z));
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
     case IS_STRING:
       if (!nr_php_is_zval_valid_string(z)) {
@@ -705,7 +702,7 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
       key = nr_strdup(tmp);
       break;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_TRUE:
       key = nr_strdup("True");
       break;
@@ -713,11 +710,7 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
     case IS_FALSE:
       key = nr_strdup("False");
       break;
-#else
-    case IS_BOOL:
-      key = nr_strdup(Z_BVAL_P(zzkey) ? "True" : "False");
-      break;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
     case IS_ARRAY:
       key = nr_strdup("(Array)");
@@ -925,19 +918,9 @@ PHP_FUNCTION(newrelic_get_browser_timing_header) {
   /*
    * Required to silence warnings about PHP's prototypes.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   RETVAL_STRING(timingScript);
-#else
-#if defined(__clang__) || (__GNUC__ > 4) \
-    || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 5))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-  RETVAL_STRING(timingScript, 1);
-#pragma GCC diagnostic pop
-#else
-  RETVAL_STRING(timingScript, 1);
-#endif
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   nr_free(timingScript);
 }
@@ -984,19 +967,9 @@ PHP_FUNCTION(newrelic_get_browser_timing_footer) {
   /*
    * Required to silence warnings about PHP's prototypes.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   RETVAL_STRING(buf);
-#else
-#if defined(__clang__) || (__GNUC__ > 4) \
-    || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 5))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-  RETVAL_STRING(buf, 1);
-#pragma GCC diagnostic pop
-#else
-  RETVAL_STRING(buf, 1);
-#endif
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   nr_free(buf);
 }
