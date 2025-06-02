@@ -64,11 +64,9 @@ static void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
     return;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   server = &PG(http_globals)[TRACK_VARS_SERVER];
-#else
-  server = PG(http_globals)[TRACK_VARS_SERVER];
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   if (nr_php_is_zval_valid_array(server)) {
     if ((NR_PHP_PROCESS_GLOBALS(special_flags).enable_path_translated)
@@ -89,17 +87,12 @@ static void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
                                                "SCRIPT_NAME"))) {
       whence = "WT_IS_FILENAME & SCRIPT_NAME";
 /* uri has a zval with the name of the script */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     } else if (CG(active_op_array)) {
       whence = "WT_IS_FILENAME & op_array";
       suri = nr_php_op_array_file_name(CG(active_op_array));
 /* suri has a char* to the name of the script */
-#else
-    } else if (EG(active_op_array)) {
-      whence = "WT_IS_FILENAME & op_array";
-      suri = nr_php_op_array_file_name(EG(active_op_array));
-/* suri has a char* to the name of the script */
-#endif /* PHP7 */
+#endif /* PHP7+ */
     }
 
     if ((NULL == uri) && (NULL == suri)) {
@@ -213,7 +206,7 @@ static int nr_php_capture_request_parameter(zval* element,
       nr_double_to_str(datastr, sizeof(datastr), Z_DVAL_P(element));
       break;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_TRUE:
       nr_strcpy(datastr, "true");
       break;
@@ -221,21 +214,17 @@ static int nr_php_capture_request_parameter(zval* element,
     case IS_FALSE:
       nr_strcpy(datastr, "false");
       break;
-#else
-    case IS_BOOL:
-      nr_strcpy(datastr, Z_BVAL_P(element) ? "true" : "false");
-      break;
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
     case IS_STRING: {
       nr_string_len_t len;
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
       if (NULL == Z_STR_P(element)) {
         nr_strcpy(datastr, "[invalid string]");
         break;
       }
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
       len = Z_STRLEN_P(element) < NR_MAX_STRLEN ? Z_STRLEN_P(element)
                                                 : NR_MAX_STRLEN - 1;
