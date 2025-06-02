@@ -280,11 +280,9 @@ PHP_FUNCTION(newrelic_exception_handler) {
    * that we can use to do this, rather than having to replicate that logic
    * ourselves.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zend_exception_error(Z_OBJ_P(exception), E_ERROR TSRMLS_CC);
-#else
-  zend_exception_error(exception, E_ERROR TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 /* PHP Fatal errors: E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR |
@@ -347,11 +345,9 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
    * handler installed and this function is called, we'll handle that case
    * anyway in case another extension is trying to do the same thing.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   has_user_exception_handler = (IS_UNDEF != Z_TYPE(EG(user_exception_handler)));
-#else
-  has_user_exception_handler = (NULL != EG(user_exception_handler));
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
   if (has_user_exception_handler) {
     nrl_verbosedebug(NRL_ERROR,
@@ -365,23 +361,17 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
      * user_exception_handlers stack. We don't need to copy it: ownership of
      * the pointer simply passes from executor_globals to the stack.
      */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     zend_stack_push(&EG(user_exception_handlers), &EG(user_exception_handler));
-#else
-    zend_ptr_stack_push(&EG(user_exception_handlers),
-                        EG(user_exception_handler));
-#endif /* PHP7 */
+#endif /* PHP7+ */
   }
 
   /*
    * Actually allocate and set the user_exception_handler zval. PHP itself
    * will destroy this at the end of the request.
    */
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   nr_php_zval_str(&EG(user_exception_handler), "newrelic_exception_handler");
-#else
-  ALLOC_INIT_ZVAL(EG(user_exception_handler));
-  nr_php_zval_str(EG(user_exception_handler), "newrelic_exception_handler");
 #endif
 }
 
@@ -840,9 +830,7 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
 }
 
 int nr_php_error_zval_is_exception(zval* zv TSRMLS_DC) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return nr_php_object_instanceof_class(zv, "Throwable" TSRMLS_CC);
-#else
-  return nr_php_object_instanceof_class(zv, "Exception" TSRMLS_CC);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
