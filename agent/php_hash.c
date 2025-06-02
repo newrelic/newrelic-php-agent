@@ -5,7 +5,7 @@
 #include "php_agent.h"
 #include "php_hash.h"
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 static int nr_php_zend_hash_ptr_apply_wrapper(zval* value,
                                               int num_args,
                                               va_list args,
@@ -24,26 +24,7 @@ static int nr_php_zend_hash_ptr_apply_wrapper(zval* value,
 
   return (apply_func)(Z_PTR_P(value), arg, hash_key TSRMLS_CC);
 }
-#else
-static int nr_php_zend_hash_ptr_apply_wrapper(void* value TSRMLS_DC,
-                                              int num_args,
-                                              va_list args,
-                                              zend_hash_key* hash_key) {
-  nr_php_ptr_apply_t apply_func;
-  void* arg;
-
-  (void)num_args;
-
-  apply_func = (nr_php_ptr_apply_t)va_arg(args, nr_php_ptr_apply_t);
-  arg = (void*)va_arg(args, void*);
-
-  if (NULL == value) {
-    return ZEND_HASH_APPLY_KEEP;
-  }
-
-  return (apply_func)(value, arg, hash_key TSRMLS_CC);
-}
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
 void nr_php_zend_hash_ptr_apply(HashTable* ht,
                                 nr_php_ptr_apply_t apply_func,
@@ -53,7 +34,7 @@ void nr_php_zend_hash_ptr_apply(HashTable* ht,
       apply_func, arg);
 }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 static int nr_php_zend_hash_zval_apply_wrapper(zval* value,
                                                int num_args,
                                                va_list args,
@@ -68,28 +49,7 @@ static int nr_php_zend_hash_zval_apply_wrapper(zval* value,
 
   return (apply_func)(value, arg, hash_key TSRMLS_CC);
 }
-#else
-static int nr_php_zend_hash_zval_apply_wrapper(zval** value TSRMLS_DC,
-                                               int num_args,
-                                               va_list args,
-                                               zend_hash_key* hash_key) {
-  nr_php_zval_apply_t apply_func;
-  void* arg;
-
-  (void)num_args;
-
-  apply_func = (nr_php_zval_apply_t)va_arg(args, nr_php_zval_apply_t);
-  arg = (void*)va_arg(args, void*);
-
-  if ((NULL == value) || (NULL == *value)) {
-    return ZEND_HASH_APPLY_KEEP;
-  }
-
-  (void)num_args;
-
-  return (apply_func)(*value, arg, hash_key TSRMLS_CC);
-}
-#endif /* PHP7 */
+#endif /* PHP7+ */
 
 void nr_php_zend_hash_zval_apply(HashTable* ht,
                                  nr_php_zval_apply_t apply_func,
@@ -104,7 +64,7 @@ int nr_php_zend_hash_del(HashTable* ht, const char* key) {
     return 0;
   }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   int retval;
   zend_string* zs = zend_string_init(key, nr_strlen(key), 0);
 
@@ -112,9 +72,7 @@ int nr_php_zend_hash_del(HashTable* ht, const char* key) {
   zend_string_free(zs);
 
   return (SUCCESS == retval);
-#else
-  return (SUCCESS == zend_hash_del(ht, key, nr_strlen(key) + 1));
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 int nr_php_zend_hash_exists(const HashTable* ht, const char* key) {
@@ -124,14 +82,12 @@ int nr_php_zend_hash_exists(const HashTable* ht, const char* key) {
  * lookups!
  */
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return zend_hash_str_exists(ht, key, nr_strlen(key));
-#else
-  return zend_hash_exists(ht, key, nr_strlen(key) + 1);
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 zval* nr_php_zend_hash_find(const HashTable* ht, const char* key) {
   if ((NULL == ht) || (NULL == key) || ('\0' == key[0])) {
     return NULL;
