@@ -78,7 +78,7 @@ static void test_callable(TSRMLS_D) {
   nr_php_zval_free(&callable);
   nr_php_zval_free(&retval);
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   callable = tlib_php_request_eval_expr(
       "new class { function __invoke() { return 42; } }" TSRMLS_CC);
   retval = nr_php_call_callable(callable);
@@ -150,7 +150,7 @@ static void test_callable(TSRMLS_D) {
   nr_php_zval_free(&callable);
   nr_php_zval_free(&retval);
 
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   callable = tlib_php_request_eval_expr(
       "new class { function __invoke($n) { return square($n); } }" TSRMLS_CC);
   retval = nr_php_call_callable(callable, param);

@@ -27,7 +27,7 @@ static void invoke_cufa(TSRMLS_D) {
 }
 
 static void test_get_topmost_user_op_array(TSRMLS_D) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   /*
    * First, we'll test this with call_user_func_array() inlining.
    */
@@ -43,11 +43,7 @@ static void test_get_topmost_user_op_array(TSRMLS_D) {
   CG(compiler_options) |= ZEND_COMPILE_NO_BUILTINS;
   invoke_cufa(TSRMLS_C);
   tlib_php_request_end();
-#else
-  tlib_php_request_start();
-  invoke_cufa(TSRMLS_C);
-  tlib_php_request_end();
-#endif /* PHP7 */
+#endif /* PHP7+ */
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};

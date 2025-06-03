@@ -302,7 +302,7 @@ static void test_disable_persistence(TSRMLS_D) {
       "array(PDO::ATTR_PERSISTENT => false)" TSRMLS_CC);
 
   for (i = 0; bad_options[i]; i++) {
-#ifdef PHP7
+#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     if (IS_UNDEF == Z_TYPE_P(bad_options[i])) {
       continue;
     }
