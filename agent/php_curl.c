@@ -205,7 +205,7 @@ static inline void nr_php_curl_copy_header_value(zval* dest, zval* element) {
    * Copy the header into the destination array, being careful to increment the
    * refcount on the element to avoid double frees.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   if (Z_REFCOUNTED_P(element)) {
     Z_ADDREF_P(element);
   }
