@@ -279,7 +279,7 @@ static nr_status_t nr_strtoi(int* val_p, const char* str, int base) {
   return NR_SUCCESS;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #define PHP_INI_ENTRY_NAME(ie) (ie)->name->val
 #define PHP_INI_ENTRY_NAME_LEN(ie) (ie)->name->len + 1
 #define PHP_INI_ENTRY_ORIG_VALUE(ie) (ie)->orig_value->val
@@ -410,10 +410,10 @@ static PHP_INI_DISP(nr_framework_dh) {
  * Now begin the modify handlers. Firstly, we shall define some compatibility
  * macros.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #define NEW_VALUE new_value->val
 #define NEW_VALUE_LEN new_value->len
-#endif /* PHP7 */
+#endif /* PHP 7.2+ */
 
 /*
  * On PHP 5, the arguments to the modify handlers are:
@@ -3479,7 +3479,7 @@ nrobj_t* nr_php_app_settings(void) {
 }
 
 int nr_php_ini_setting_is_set_by_user(const char* name) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   int found;
   zend_string* zs;
 
@@ -3492,5 +3492,5 @@ int nr_php_ini_setting_is_set_by_user(const char* name) {
   zend_string_free(zs);
 
   return found;
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 }
