@@ -14,7 +14,7 @@
 #include "util_syscalls.h"
 #include "util_logging.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #include "zend_generators.h"
 #endif
 
@@ -185,7 +185,7 @@ typedef struct _nr_php_frame_info_t {
   int decl_line;         /* starting line number of the declaration site */
 } nr_php_frame_info_t;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 static int nr_php_is_include_or_eval(zend_execute_data* ex) {
   zend_execute_data* prev;
 
@@ -334,7 +334,7 @@ static void nr_php_frame_info(nr_php_frame_info_t* info,
     }
   }
 }
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
 /*
 Output format:
@@ -355,7 +355,7 @@ void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC) {
   ex = EG(current_execute_data);
 
   while (ex) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     ex = zend_generator_check_placeholder_frame(ex);
 #endif
 
