@@ -227,7 +227,7 @@ zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
                                   zend_fcall_info_cache fcc,
                                   zend_uint param_count,
                                   zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   zend_uint i;
 
   if ((NULL != params) && (param_count > 0)) {
@@ -246,7 +246,7 @@ zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
 
   nr_free(fci.params);
   return fci.retval;
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 }
 
 void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
@@ -256,9 +256,9 @@ void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
   const zend_function* caller = NULL;
 
   if (prev_execute_data) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     caller = prev_execute_data->func;
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
   } else {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
