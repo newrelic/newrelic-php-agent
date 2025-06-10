@@ -118,9 +118,9 @@ extern int nr_php_pdo_rebind_apply_parameter(struct pdo_bound_param_data* param,
  */
 static inline pdo_dbh_t* nr_php_pdo_get_database_object_internal(
     zval* dbh TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return Z_PDO_DBH_P(dbh);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 }
 
 /*
@@ -136,9 +136,9 @@ static inline pdo_dbh_t* nr_php_pdo_get_database_object_internal(
  */
 static inline pdo_stmt_t* nr_php_pdo_get_statement_object_internal(
     zval* stmt TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return Z_PDO_STMT_P(stmt);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 }
 
 /*
