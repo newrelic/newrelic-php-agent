@@ -159,13 +159,13 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
   }
   retval = nr_php_call_fcall_info(fci, fcc);
   ZVAL_ZVAL(return_value, retval, 0, 1);
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   /*
    * Calling ZVAL_ZVAL with dtor set to true in PHP 7 won't free the
    * surrounding wrapper.
    */
   efree(retval);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
   /*
    * Bail early if an error occurred earlier and we're not instrumenting the
