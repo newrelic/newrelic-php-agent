@@ -586,13 +586,13 @@ static nrobj_t* nr_php_api_zval_to_attribute_obj(const zval* z TSRMLS_DC) {
     case IS_DOUBLE:
       return nro_new_double(Z_DVAL_P(z));
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     case IS_TRUE:
       return nro_new_boolean(1);
 
     case IS_FALSE:
       return nro_new_boolean(0);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
     case IS_STRING:
       if (!nr_php_is_zval_valid_string(z)) {
@@ -702,7 +702,7 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
       key = nr_strdup(tmp);
       break;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     case IS_TRUE:
       key = nr_strdup("True");
       break;
@@ -710,7 +710,7 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
     case IS_FALSE:
       key = nr_strdup("False");
       break;
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
     case IS_ARRAY:
       key = nr_strdup("(Array)");
@@ -918,9 +918,9 @@ PHP_FUNCTION(newrelic_get_browser_timing_header) {
   /*
    * Required to silence warnings about PHP's prototypes.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   RETVAL_STRING(timingScript);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
   nr_free(timingScript);
 }
@@ -967,9 +967,9 @@ PHP_FUNCTION(newrelic_get_browser_timing_footer) {
   /*
    * Required to silence warnings about PHP's prototypes.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   RETVAL_STRING(buf);
-#endif /* PHP7+ */
+#endif /* PHP 7.2+ */
 
   nr_free(buf);
 }
