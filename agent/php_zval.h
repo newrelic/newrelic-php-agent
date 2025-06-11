@@ -82,11 +82,9 @@ inline static zval* nr_php_zval_alloc(void) {
  */
 inline static void nr_php_zval_free(zval** zv) {
   if ((NULL != zv) && (NULL != *zv)) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     zval_ptr_dtor(*zv);
     efree(*zv);
     *zv = NULL;
-#endif
   }
 }
 
@@ -113,11 +111,9 @@ static inline int nr_php_is_zval_valid_bool(const zval* z) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if ((IS_TRUE == Z_TYPE_P(z)) || (IS_FALSE == Z_TYPE_P(z))) {
     return 1;
   }
-#endif /* PHP7+ */
 
   return 0;
 }
@@ -127,11 +123,9 @@ static inline int nr_php_is_zval_valid_resource(const zval* z) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == Z_RES_P(z)) {
     return 0;
   }
-#endif /* PHP7+ */
 
   return 1;
 }
@@ -149,11 +143,9 @@ static inline int nr_php_is_zval_valid_string(const zval* z) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == Z_STR_P(z)) {
     return 0;
   }
-#endif /* PHP7+ */
 
   return 1;
 }
@@ -179,7 +171,6 @@ static inline int nr_php_is_zval_valid_object(const zval* z) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   /*
    * It's possible in PHP 7 to have a zval with type IS_OBJECT but a NULL
    * zend_object pointer.
@@ -187,7 +178,6 @@ static inline int nr_php_is_zval_valid_object(const zval* z) {
   if (NULL == Z_OBJ_P(z)) {
     return 0;
   }
-#endif /* PHP7+ */
 
   return 1;
 }
@@ -230,10 +220,8 @@ static inline int nr_php_is_zval_valid_scalar(const zval* z) {
   }
 
   switch (Z_TYPE_P(z)) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_TRUE:
     case IS_FALSE:
-#endif
     case IS_LONG:
     case IS_DOUBLE:
       return 1;
@@ -319,9 +307,7 @@ static inline long nr_php_zval_object_id(const zval* zv) {
 static inline void nr_php_zval_str_len(zval* zv,
                                        const char* str,
                                        nr_string_len_t len) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   ZVAL_STRINGL(zv, str, len);
-#endif /* PHP7+ */
 }
 
 static inline void nr_php_zval_str(zval* zv, const char* str) {
