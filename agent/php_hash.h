@@ -29,9 +29,7 @@ nr_php_zend_hash_key_is_string(const zend_hash_key* hash_key) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return (NULL != hash_key->key);
-#endif /* PHP 7.2+ */
 }
 
 static inline int NRPURE
@@ -54,9 +52,7 @@ nr_php_zend_hash_key_string_len(const zend_hash_key* hash_key) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return hash_key->key ? hash_key->key->len : 0;
-#endif
 }
 
 static inline const char* NRPURE
@@ -65,9 +61,7 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return hash_key->key ? hash_key->key->val : NULL;
-#endif
 }
 
 /*
@@ -78,7 +72,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
  *           Strings will always be duplicated, since that's non-optional in
  *           PHP 7 anyway.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #define nr_php_add_assoc_string(ht, key, str) \
   add_assoc_string((ht), (key), (str))
 
@@ -89,7 +82,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
 
 #define nr_php_add_next_index_stringl(ht, str, strlen) \
   add_next_index_stringl((ht), (str), (strlen))
-#endif /* PHP 7.2+ */
 
 /*
  * Purpose : Wrap add_assoc_zval to ensure consistent ownership behaviour.
@@ -146,13 +138,11 @@ static inline int nr_php_add_assoc_zval(zval* arr,
 static inline int nr_php_add_index_zval(zval* arr,
                                         zend_ulong index,
                                         zval* value) {
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   zval copy;
 
   ZVAL_DUP(&copy, value);
 
   return add_index_zval(arr, index, &copy);
-#endif /* PHP 7.2+ */
 }
 
 typedef int (*nr_php_ptr_apply_t)(void* value,
