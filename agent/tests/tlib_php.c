@@ -600,9 +600,7 @@ tlib_php_internal_function_handler_t tlib_php_replace_internal_function(
     zend_class_entry* ce = NULL;
     char* lcclass = nr_string_to_lowercase(klass);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     ce = (zend_class_entry*)nr_php_zend_hash_find_ptr(CG(class_table), lcclass);
-#endif /* PHP7+ */
 
     nr_free(lcclass);
     if (NULL == ce) {
@@ -663,7 +661,6 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
       nr_php_zval_str(zv, "");
       break;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     case IS_UNDEF:
       ZVAL_UNDEF(zv);
       break;
@@ -725,7 +722,6 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
         ZVAL_NEW_REF(zv, &refval);
       }
       break;
-#endif /* PHP7+ */
 
     default:
       nr_php_zval_free(&zv);
@@ -735,12 +731,10 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
   return zv;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 static const zend_uchar default_zval_types[] = {
     IS_UNDEF,  IS_NULL,  IS_FALSE,  IS_TRUE,     IS_LONG,      IS_DOUBLE,
     IS_STRING, IS_ARRAY, IS_OBJECT, IS_RESOURCE, IS_REFERENCE,
 };
-#endif
 
 zval** tlib_php_zvals_of_all_types(TSRMLS_D) {
   zval** arr;
@@ -809,9 +803,7 @@ char* tlib_php_zval_dump(zval* zv TSRMLS_DC) {
   }
 
   tlib_php_request_eval("ob_start();" TSRMLS_CC);
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   php_var_dump(zv, 0);
-#endif
   result = tlib_php_request_eval_expr("ob_get_clean()" TSRMLS_CC);
   if (nr_php_is_zval_valid_string(result)) {
     dump = nr_strndup(Z_STRVAL_P(result), Z_STRLEN_P(result));
