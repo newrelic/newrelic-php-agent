@@ -209,15 +209,12 @@ nruserfn_t* nr_php_wrap_generic_callable(zval* callable,
 }
 
 inline static void release_zval(zval** ppzv) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   nr_php_zval_free(ppzv);
-#endif /* PHP7+ */
 }
 
 zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* arg;
   NR_UNUSED_FUNC_RETURN_VALUE;
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   {
     zval* orig;
 
@@ -229,7 +226,6 @@ zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
       ZVAL_DUP(arg, orig);
     }
   }
-#endif /* PHP7+ */
 
   return arg;
 }
@@ -343,10 +339,8 @@ zval* nr_php_scope_get(NR_EXECUTE_PROTO TSRMLS_DC) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   this_copy = nr_php_zval_alloc();
   ZVAL_DUP(this_copy, this_obj);
-#endif
 
   return this_copy;
 }
@@ -356,11 +350,9 @@ void nr_php_scope_release(zval** ppzv) {
 }
 
 zval** nr_php_get_return_value_ptr(TSRMLS_D) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == EG(current_execute_data)) {
     return NULL;
   }
 
   return &EG(current_execute_data)->return_value;
-#endif /* PHP7+ */
 }
