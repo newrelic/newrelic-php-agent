@@ -280,9 +280,7 @@ PHP_FUNCTION(newrelic_exception_handler) {
    * that we can use to do this, rather than having to replicate that logic
    * ourselves.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   zend_exception_error(Z_OBJ_P(exception), E_ERROR TSRMLS_CC);
-#endif /* PHP 7.2+ */
 }
 
 /* PHP Fatal errors: E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR |
@@ -345,9 +343,7 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
    * handler installed and this function is called, we'll handle that case
    * anyway in case another extension is trying to do the same thing.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   has_user_exception_handler = (IS_UNDEF != Z_TYPE(EG(user_exception_handler)));
-#endif /* PHP 7.2+ */
 
   if (has_user_exception_handler) {
     nrl_verbosedebug(NRL_ERROR,
@@ -361,18 +357,14 @@ void nr_php_error_install_exception_handler(TSRMLS_D) {
      * user_exception_handlers stack. We don't need to copy it: ownership of
      * the pointer simply passes from executor_globals to the stack.
      */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     zend_stack_push(&EG(user_exception_handlers), &EG(user_exception_handler));
-#endif /* PHP 7.2+ */
   }
 
   /*
    * Actually allocate and set the user_exception_handler zval. PHP itself
    * will destroy this at the end of the request.
    */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   nr_php_zval_str(&EG(user_exception_handler), "newrelic_exception_handler");
-#endif
 }
 
 /*
@@ -830,7 +822,5 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
 }
 
 int nr_php_error_zval_is_exception(zval* zv TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return nr_php_object_instanceof_class(zv, "Throwable" TSRMLS_CC);
-#endif /* PHP 7.2+ */
 }
