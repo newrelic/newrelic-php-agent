@@ -61,7 +61,6 @@ nr_status_t nr_php_explain_add_value_to_row(const zval* zv, nrobj_t* row) {
       nro_set_array_none(row, 0);
       break;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     case IS_TRUE:
       nro_set_array_boolean(row, 0, 1);
       break;
@@ -69,7 +68,6 @@ nr_status_t nr_php_explain_add_value_to_row(const zval* zv, nrobj_t* row) {
     case IS_FALSE:
       nro_set_array_boolean(row, 0, 0);
       break;
-#endif
 
     default:
       nrl_verbosedebug(NRL_SQL, "%s: unknown zval type %d", __func__,
