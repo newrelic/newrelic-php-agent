@@ -5,7 +5,6 @@
 #include "php_agent.h"
 #include "php_hash.h"
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 static int nr_php_zend_hash_ptr_apply_wrapper(zval* value,
                                               int num_args,
                                               va_list args,
@@ -24,7 +23,6 @@ static int nr_php_zend_hash_ptr_apply_wrapper(zval* value,
 
   return (apply_func)(Z_PTR_P(value), arg, hash_key TSRMLS_CC);
 }
-#endif /* PHP 7.2+ */
 
 void nr_php_zend_hash_ptr_apply(HashTable* ht,
                                 nr_php_ptr_apply_t apply_func,
@@ -34,7 +32,6 @@ void nr_php_zend_hash_ptr_apply(HashTable* ht,
       apply_func, arg);
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 static int nr_php_zend_hash_zval_apply_wrapper(zval* value,
                                                int num_args,
                                                va_list args,
@@ -49,7 +46,6 @@ static int nr_php_zend_hash_zval_apply_wrapper(zval* value,
 
   return (apply_func)(value, arg, hash_key TSRMLS_CC);
 }
-#endif /* PHP 7.2+ */
 
 void nr_php_zend_hash_zval_apply(HashTable* ht,
                                  nr_php_zval_apply_t apply_func,
@@ -64,7 +60,6 @@ int nr_php_zend_hash_del(HashTable* ht, const char* key) {
     return 0;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   int retval;
   zend_string* zs = zend_string_init(key, nr_strlen(key), 0);
 
@@ -72,7 +67,6 @@ int nr_php_zend_hash_del(HashTable* ht, const char* key) {
   zend_string_free(zs);
 
   return (SUCCESS == retval);
-#endif /* PHP 7.2+ */
 }
 
 int nr_php_zend_hash_exists(const HashTable* ht, const char* key) {
@@ -82,12 +76,9 @@ int nr_php_zend_hash_exists(const HashTable* ht, const char* key) {
  * lookups!
  */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   return zend_hash_str_exists(ht, key, nr_strlen(key));
-#endif /* PHP 7.2+ */
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 zval* nr_php_zend_hash_find(const HashTable* ht, const char* key) {
   if ((NULL == ht) || (NULL == key) || ('\0' == key[0])) {
     return NULL;
@@ -111,49 +102,3 @@ zval* nr_php_zend_hash_index_find(const HashTable* ht, zend_ulong index) {
 
   return zend_hash_index_find(ht, index);
 }
-#else  /* Not PHP7 */
-void* nr_php_zend_hash_find_ptr(const HashTable* ht, const char* key) {
-  void* data = NULL;
-  int keylen;
-  int rv;
-
-  if ((0 == ht) || (0 == key)) {
-    return NULL;
-  }
-
-  keylen = nr_strlen(key);
-  if (keylen <= 0) {
-    return NULL;
-  }
-  keylen += 1; /* Lookup length requires null terminator */
-
-  rv = zend_hash_find(ht, key, keylen, &data);
-  if (SUCCESS != rv) {
-    return NULL;
-  }
-
-  return data;
-}
-
-zval* nr_php_zend_hash_find(const HashTable* ht, const char* key) {
-  zval** zv_pp = (zval**)nr_php_zend_hash_find_ptr(ht, key);
-
-  if (NULL == zv_pp) {
-    return NULL;
-  }
-
-  return *zv_pp;
-}
-
-zval* nr_php_zend_hash_index_find(const HashTable* ht, zend_ulong index) {
-  void* data = NULL;
-  int rv;
-
-  rv = zend_hash_index_find(ht, index, &data);
-  if ((SUCCESS != rv) || (NULL == data)) {
-    return NULL;
-  }
-
-  return *((zval**)data);
-}
-#endif /* PHP7 */
