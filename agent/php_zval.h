@@ -311,9 +311,7 @@ static inline void nr_php_zval_str_len(zval* zv,
 }
 
 static inline void nr_php_zval_str(zval* zv, const char* str) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   nr_php_zval_str_len(zv, str, nr_strlen(str));
-#endif /* PHP7+ */
 }
 
 #if defined(__clang__) || (__GNUC__ > 4) \
