@@ -15,7 +15,6 @@
 #include "util_strings.h"
 
 zend_op_array* nr_codeigniter_get_topmost_user_op_array(TSRMLS_D) {
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
   zend_execute_data* ed = NULL;
 
   for (ed = EG(current_execute_data); ed; ed = ed->prev_execute_data) {
@@ -27,7 +26,6 @@ zend_op_array* nr_codeigniter_get_topmost_user_op_array(TSRMLS_D) {
   }
 
   return NULL;
-#endif /* PHP7+ */
 }
 
 /*
