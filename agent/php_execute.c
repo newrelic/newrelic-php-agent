@@ -904,6 +904,13 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
+  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)
+      && NR_PHP_PROCESS_GLOBALS(composer_packages_detected)) {
+    // do nothing if per-process detection is enabled and the flag to track
+    // detection is true
+    return;
+  }
+
   if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
                        AUTOLOAD_MAGIC_FILE_LEN)) {
     // not an autoload file

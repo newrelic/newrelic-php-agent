@@ -537,6 +537,33 @@ static PHP_INI_MH(nr_preload_framework_library_detection_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_composer_per_process_detection_mh) {
+  int val;
+
+  (void)entry;
+  (void)NEW_VALUE_LEN;
+  (void)mh_arg1;
+  (void)mh_arg2;
+  (void)mh_arg3;
+  (void)stage;
+  NR_UNUSED_TSRMLS;
+
+  val = nr_bool_from_str(NEW_VALUE);
+
+  if (-1 == val) {
+    nrl_warning(NRL_INIT,
+                "The value \"%s\" is not valid for the "
+                "newrelic.vulnerability_management.composer_api.per_process_"
+                "detection setting, using default value instead.",
+                NEW_VALUE);
+    return FAILURE;
+  }
+
+  NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection) = val ? 1 : 0;
+
+  return SUCCESS;
+}
+
 static PHP_INI_MH(nr_loglevel_mh) {
   nr_status_t rv;
 
@@ -2056,6 +2083,17 @@ PHP_INI_ENTRY_EX("newrelic.preload_framework_library_detection",
                  0)
 
 /*
+ * Enables per-process Composer API package detection and reporting. Depends on
+ * newrelic.vulnerability_management.composer_api.enabled.
+ */
+PHP_INI_ENTRY_EX(
+    "newrelic.vulnerability_management.composer_api.per_process_detection",
+    "1",
+    NR_PHP_SYSTEM,
+    nr_composer_per_process_detection_mh,
+    0)
+
+/*
  * Daemon
  */
 PHP_INI_ENTRY_EX("newrelic.daemon.auditlog",
@@ -3135,7 +3173,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enable
                      nr_enabled_disabled_dh)
 
 STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
-                     "0",
+                     "1",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      vulnerability_management_composer_api_enabled,
