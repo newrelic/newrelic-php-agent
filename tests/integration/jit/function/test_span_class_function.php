@@ -244,6 +244,7 @@ newrelic_add_custom_tracer('main');
 newrelic_add_custom_tracer('Classname::functionName');
 function main()
 {
+  time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
   echo 'Hello';
 }
 main();
