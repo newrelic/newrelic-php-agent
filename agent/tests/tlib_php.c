@@ -175,9 +175,6 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
   fake_daemon_fd = nr_dup(1);
   nr_set_daemon_fd(fake_daemon_fd);
 
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
   sapi_module_struct tlib_module;
 
   /*
@@ -208,9 +205,9 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
 #endif /* PHP version */
 #endif /* ZTS */
 
-#if defined(PHP7) && defined(ZEND_SIGNALS)
+#if defined(ZEND_SIGNALS)
   zend_signal_startup();
-#endif /* PHP7 && ZEND_SIGNALS */
+#endif /* ZEND_SIGNALS */
 
   /*
    * This currently creates real files for the agent log and output that are
