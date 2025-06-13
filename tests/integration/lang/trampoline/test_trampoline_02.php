@@ -77,6 +77,7 @@ Custom/class@anonymous::execute, 2
 $anon = new class() {
   function execute()
   {
+    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
     new ReflectionClass('Wrapper');
   }
 };
@@ -84,6 +85,7 @@ $anon = new class() {
 $anon2 = new class() {
   function execute()
   {
+    time_nanosleep(0, 50000); // force non-zero duration for the segment not to be dropped.
     new ReflectionClass('Wrapper');
   }
 };
