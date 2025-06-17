@@ -40,7 +40,7 @@
 /*
  * The default maximum number of span events in a transaction.
  */
-#define NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED 2000
+#define NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED 0
 
 /*
  * The absolute maximum number of span events in a transaction.
