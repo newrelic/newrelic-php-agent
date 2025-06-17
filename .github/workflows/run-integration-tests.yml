@@ -26,7 +26,11 @@ on:
         options: 
         - ubuntu-22.04-arm
         - ubuntu-24.04-arm
-
+      use-valgrind:
+        description: 'Use valgrind?'
+        required: true
+        default: false
+        type: boolean
 jobs:
   build-test-runner-amd64:
     uses: ./.github/workflows/make-for-platform-on-arch.yml
@@ -78,6 +82,7 @@ jobs:
     with:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
+      use-valgrind: ${{ inputs.use-valgrind }}
       arch: amd64
       runs-on: ubuntu-latest
       continue-on-error: false
@@ -88,6 +93,7 @@ jobs:
     with:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
+      use-valgrind: ${{ inputs.use-valgrind }}
       arch: arm64
       runs-on: ${{inputs.runner-type}}
       continue-on-error: true
