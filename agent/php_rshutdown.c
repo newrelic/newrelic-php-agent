@@ -49,6 +49,8 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
+  nr_pdo_rshutdown();
+  nr_mysqli_rshutdown();
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
 
