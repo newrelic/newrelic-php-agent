@@ -227,7 +227,6 @@ zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
                                   zend_fcall_info_cache fcc,
                                   zend_uint param_count,
                                   zval* params[] TSRMLS_DC) {
-#ifdef PHP7
   zend_uint i;
 
   if ((NULL != params) && (param_count > 0)) {
@@ -246,30 +245,6 @@ zval* nr_php_call_fcall_info_zval(zend_fcall_info fci,
 
   nr_free(fci.params);
   return fci.retval;
-#else
-  zend_uint i;
-  zval* retval = NULL;
-
-  if ((NULL != params) && (param_count > 0)) {
-    fci.param_count = (uint32_t)param_count;
-    fci.params = (zval***)nr_calloc(param_count, sizeof(zval**));
-    for (i = 0; i < param_count; i++) {
-      fci.params[i] = &params[i];
-    }
-  }
-
-  /*
-   * We don't need to allocate retval; the Zend Engine will do that for us when
-   * the function returns a value.
-   */
-  fci.retval_ptr_ptr = &retval;
-  if (SUCCESS != zend_call_function(&fci, &fcc TSRMLS_CC)) {
-    nr_php_zval_free(&retval);
-  }
-
-  nr_free(fci.params);
-  return retval;
-#endif /* PHP7 */
 }
 
 void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
@@ -279,11 +254,7 @@ void nr_php_call_user_func_array_handler(nrphpcufafn_t handler,
   const zend_function* caller = NULL;
 
   if (prev_execute_data) {
-#ifdef PHP7
     caller = prev_execute_data->func;
-#else
-    caller = prev_execute_data->function_state.function;
-#endif /* PHP7 */
   } else {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
