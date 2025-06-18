@@ -279,21 +279,12 @@ static nr_status_t nr_strtoi(int* val_p, const char* str, int base) {
   return NR_SUCCESS;
 }
 
-#ifdef PHP7
 #define PHP_INI_ENTRY_NAME(ie) (ie)->name->val
 #define PHP_INI_ENTRY_NAME_LEN(ie) (ie)->name->len + 1
 #define PHP_INI_ENTRY_ORIG_VALUE(ie) (ie)->orig_value->val
 #define PHP_INI_ENTRY_ORIG_VALUE_LEN(ie) (ie)->orig_value->len
 #define PHP_INI_ENTRY_VALUE(ie) (ie)->value->val
 #define PHP_INI_ENTRY_VALUE_LEN(ie) (ie)->value->len
-#else
-#define PHP_INI_ENTRY_NAME(ie) (ie)->name
-#define PHP_INI_ENTRY_NAME_LEN(ie) (ie)->name_length
-#define PHP_INI_ENTRY_ORIG_VALUE(ie) (ie)->orig_value
-#define PHP_INI_ENTRY_ORIG_VALUE_LEN(ie) (ie)->orig_value_length
-#define PHP_INI_ENTRY_VALUE(ie) (ie)->value
-#define PHP_INI_ENTRY_VALUE_LEN(ie) (ie)->value_length
-#endif
 
 /*
  * Next we declare some custom display functions for producing more neatly
@@ -417,13 +408,8 @@ static PHP_INI_DISP(nr_framework_dh) {
  * Now begin the modify handlers. Firstly, we shall define some compatibility
  * macros.
  */
-#ifdef PHP7
 #define NEW_VALUE new_value->val
 #define NEW_VALUE_LEN new_value->len
-#else
-#define NEW_VALUE new_value
-#define NEW_VALUE_LEN new_value_length
-#endif /* PHP7 */
 
 /*
  * On PHP 5, the arguments to the modify handlers are:
@@ -3527,7 +3513,6 @@ nrobj_t* nr_php_app_settings(void) {
 }
 
 int nr_php_ini_setting_is_set_by_user(const char* name) {
-#ifdef PHP7
   int found;
   zend_string* zs;
 
@@ -3540,24 +3525,4 @@ int nr_php_ini_setting_is_set_by_user(const char* name) {
   zend_string_free(zs);
 
   return found;
-#else
-  int zend_rv;
-  uint name_length;
-  zval default_value;
-
-  if (0 == name) {
-    return 0;
-  }
-
-  name_length = nr_strlen(name) + 1;
-
-  nr_memset(&default_value, 0, sizeof(default_value));
-
-  zend_rv = zend_get_configuration_directive(name, name_length, &default_value);
-  if (SUCCESS == zend_rv) {
-    return 1;
-  } else {
-    return 0;
-  }
-#endif /* PHP7 */
 }
