@@ -350,9 +350,7 @@ void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC) {
   ex = EG(current_execute_data);
 
   while (ex) {
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
     ex = zend_generator_check_placeholder_frame(ex);
-#endif
 
     nr_php_frame_info(&frame, ex TSRMLS_CC);
 
