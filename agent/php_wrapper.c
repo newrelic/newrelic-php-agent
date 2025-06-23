@@ -215,7 +215,6 @@ inline static void release_zval(zval** ppzv) {
 zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* arg;
   NR_UNUSED_FUNC_RETURN_VALUE;
-  {
     zval* orig;
 
     arg = NULL;
@@ -225,7 +224,6 @@ zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
       arg = nr_php_zval_alloc();
       ZVAL_DUP(arg, orig);
     }
-  }
 
   return arg;
 }
