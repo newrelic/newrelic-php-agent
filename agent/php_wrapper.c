@@ -215,15 +215,15 @@ inline static void release_zval(zval** ppzv) {
 zval* nr_php_arg_get(ssize_t index, NR_EXECUTE_PROTO TSRMLS_DC) {
   zval* arg;
   NR_UNUSED_FUNC_RETURN_VALUE;
-    zval* orig;
+  zval* orig;
 
-    arg = NULL;
-    orig = nr_php_get_user_func_arg((zend_uint)index, NR_EXECUTE_ORIG_ARGS);
+  arg = NULL;
+  orig = nr_php_get_user_func_arg((zend_uint)index, NR_EXECUTE_ORIG_ARGS);
 
-    if (orig) {
-      arg = nr_php_zval_alloc();
-      ZVAL_DUP(arg, orig);
-    }
+  if (orig) {
+    arg = nr_php_zval_alloc();
+    ZVAL_DUP(arg, orig);
+  }
 
   return arg;
 }
