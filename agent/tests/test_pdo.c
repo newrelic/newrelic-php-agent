@@ -302,11 +302,9 @@ static void test_disable_persistence(TSRMLS_D) {
       "array(PDO::ATTR_PERSISTENT => false)" TSRMLS_CC);
 
   for (i = 0; bad_options[i]; i++) {
-#ifdef PHP7
     if (IS_UNDEF == Z_TYPE_P(bad_options[i])) {
       continue;
     }
-#endif
 
     input = nr_php_zval_alloc();
 
