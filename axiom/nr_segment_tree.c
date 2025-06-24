@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "util_logging.h"
+
 #include "nr_segment_traces.h"
 #include "nr_segment_tree.h"
 
@@ -43,6 +45,13 @@ nrtxnfinal_t nr_segment_tree_finalise(nrtxn_t* txn,
   should_save_spans = (span_limit > 0) && nr_txn_should_create_span_events(txn)
                       && NULL == txn->span_queue;
   should_sample_spans = txn->segment_count > span_limit;
+
+  nrl_verbosedebug(NRL_AGENT,
+                   "nr_segment_tree_finalise: "
+                   "should_save_trace=%d, should_sample_trace=%d, "
+                   "should_save_spans=%d, should_sample_spans=%d",
+                   should_save_trace, should_sample_trace, should_save_spans,
+                   should_sample_spans);
 
   if (should_save_spans && should_sample_spans) {
     first_pass_metadata.span_heap = nr_segment_heap_create(
