@@ -891,8 +891,23 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
+  /* 
+  *  There is a possibility of the txn being NULL if nr_php_end_txn has been called. 
+  *  Verify txn is not null before dereferencing and continuing on.
+  */  
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+  
   if (NRPRG(txn)->composer_info.autoload_detected) {
     // autoload already handled
+    return;
+  }
+
+  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)
+      && NR_PHP_PROCESS_GLOBALS(composer_packages_detected)) {
+    // do nothing if per-process detection is enabled and the flag to track
+    // detection is true
     return;
   }
 

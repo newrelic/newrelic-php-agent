@@ -21,15 +21,16 @@ on:
       runner-type:
         description: 'Type of a runner to use for integration tests on arm64'
         required: true
-        default: 'ubuntu-20.04-4core' 
+        default: 'ubuntu-24.04-arm'
         type: choice
         options: 
-        - ubuntu-20.04-4core
-        - ubuntu-20.04-8core
-        - ubuntu-20.04-16core
-        - ubuntu-22.04-4core
-        - ubuntu-latest
-
+        - ubuntu-22.04-arm
+        - ubuntu-24.04-arm
+      use-valgrind:
+        description: 'Use valgrind?'
+        required: true
+        default: false
+        type: boolean
 jobs:
   build-test-runner-amd64:
     uses: ./.github/workflows/make-for-platform-on-arch.yml
@@ -55,7 +56,7 @@ jobs:
       artifact-name: integration_runner
       artifact-pattern: bin/integration_runner
       arch: arm64
-      runs-on: ubuntu-latest
+      runs-on: ${{inputs.runner-type}}
     secrets: inherit
 
   build-agent-amd64:
@@ -72,7 +73,7 @@ jobs:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
       arch: arm64
-      runs-on: ubuntu-latest
+      runs-on: ${{inputs.runner-type}}
     secrets: inherit
 
   test-amd64:
@@ -81,6 +82,7 @@ jobs:
     with:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
+      use-valgrind: ${{ inputs.use-valgrind }}
       arch: amd64
       runs-on: ubuntu-latest
       continue-on-error: false
@@ -91,6 +93,7 @@ jobs:
     with:
       origin: ${{ inputs.origin }}
       ref: ${{ inputs.ref }}
+      use-valgrind: ${{ inputs.use-valgrind }}
       arch: arm64
       runs-on: ${{inputs.runner-type}}
       continue-on-error: true
