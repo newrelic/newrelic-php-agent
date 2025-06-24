@@ -44,6 +44,12 @@ nrtxnfinal_t nr_segment_tree_finalise(nrtxn_t* txn,
 
   should_save_spans = (span_limit > 0) && nr_txn_should_create_span_events(txn)
                       && NULL == txn->span_queue;
+
+  nrl_verbosedebug(
+      NRL_AGENT,
+      "span_limit=%zu, nr_txn_should_create_span_events=%d, txn->span_queue=%p",
+      span_limit, nr_txn_should_create_span_events(txn), txn->span_queue);
+
   should_sample_spans = txn->segment_count > span_limit;
 
   nrl_verbosedebug(NRL_AGENT,

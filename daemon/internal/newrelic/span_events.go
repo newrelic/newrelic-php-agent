@@ -5,6 +5,8 @@
 
 package newrelic
 
+import "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
+
 // SpanEvents is a wrapper over AnalyticsEvents created for additional type
 // safety and proper FailedHarvest behavior.
 type SpanEvents struct {
@@ -21,6 +23,7 @@ func NewSpanEvents(max int) *SpanEvents {
 // is possible the new event may be discarded.
 func (events *SpanEvents) AddEventFromData(data []byte, priority SamplingPriority) {
 	events.AddEvent(AnalyticsEvent{data: data, priority: priority})
+	log.Debugf("Added span event, total = %d", events.analyticsEvents.NumSeen())
 }
 
 // FailedHarvest is a callback invoked by the processor when an

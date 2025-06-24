@@ -2744,6 +2744,15 @@ bool nr_txn_should_create_span_events(const nrtxn_t* txn) {
   if (nrunlikely(NULL == txn)) {
     return false;
   }
+
+  nrl_verbosedebug(NRL_AGENT,
+                   "txn_span_queue: %p, nr_distributed_trace_is_sampled: %d, "
+                   "distributed_tracing_enabled: %d, span_events_enabled: %d",
+                   txn->span_queue,
+                   nr_distributed_trace_is_sampled(txn->distributed_trace),
+                   txn->options.distributed_tracing_enabled,
+                   txn->options.span_events_enabled);
+
   return (txn->span_queue
           || nr_distributed_trace_is_sampled(txn->distributed_trace))
          && txn->options.distributed_tracing_enabled
