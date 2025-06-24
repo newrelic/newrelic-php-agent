@@ -243,6 +243,8 @@ uint32_t nr_txndata_prepend_span_events(nr_flatbuffer_t* fb,
     event_count = span_event_limit;
   }
 
+  nrl_verbosedebug("sending %d span events to daemon", (int)event_count);
+
   offsets = (uint32_t*)nr_calloc(event_count, sizeof(uint32_t));
 
   /* Using a buffer here means we can write the encoded span events into it,
