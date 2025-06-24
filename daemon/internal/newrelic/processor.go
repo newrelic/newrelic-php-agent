@@ -1019,6 +1019,8 @@ func (p *Processor) CleanExit() {
 	p.txnDataChannel = nil
 	p.appInfoChannel = nil
 
+	log.Debugf("CleanExit(): cleaning up processor, harvesting all applications")
+
 	// Harvest all remaining data
 	for id, ah := range p.harvests {
 		p.doHarvest(ProcessorHarvest{

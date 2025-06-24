@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/limits"
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 type AggregaterInto interface {
@@ -158,6 +159,11 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	if h.Metrics.numDropped > 0 {
 		h.Metrics.AddCount("Supportability/MetricsDropped", "", float64(h.Metrics.numDropped), Forced)
 	}
+
+	log.Debugf("createFinalMetrics: span events seen = %d, span events sent = %d",
+		h.SpanEvents.analyticsEvents.NumSeen(),
+		h.SpanEvents.analyticsEvents.NumSaved())
+	log.Debugf("createFinalMetrics: span events len = %d", Len(h.SpanEvents.analyticsEvents.events))
 
 	// Span Events Supportability Metrics
 	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", h.SpanEvents.analyticsEvents.NumSeen(), Forced)
