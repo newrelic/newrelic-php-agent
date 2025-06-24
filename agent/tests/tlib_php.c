@@ -111,17 +111,9 @@ static zend_string* ZEND_FASTCALL
 tlib_php_new_interned_string(zend_string* str) {
   return str;
 }
-#elif defined PHP7
+#else
 static zend_string* tlib_php_new_interned_string(zend_string* str) {
   return str;
-}
-#elif ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-static const char* tlib_php_new_interned_string(const char* key,
-                                                int len NRUNUSED,
-                                                int free_src NRUNUSED
-                                                    TSRMLS_DC) {
-  NR_UNUSED_TSRMLS;
-  return key;
 }
 #endif
 
@@ -194,14 +186,10 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   php_tsrm_startup();
   ZEND_TSRMLS_CACHE_UPDATE();
-#elif defined PHP7
+#else
   tsrm_startup(1, 1, 0, NULL);
   ts_resource(0);
   ZEND_TSRMLS_CACHE_UPDATE();
-#else
-  tsrm_startup(1, 1, 0, NULL);
-  tsrm_ls = ts_resource(0);
-  *ptsrm_ls = tsrm_ls;
 #endif /* PHP version */
 #endif /* ZTS */
 
