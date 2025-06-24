@@ -163,7 +163,6 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	log.Debugf("createFinalMetrics: span events seen = %d, span events sent = %d",
 		h.SpanEvents.analyticsEvents.NumSeen(),
 		h.SpanEvents.analyticsEvents.NumSaved())
-	log.Debugf("createFinalMetrics: span events len = %d", Len(h.SpanEvents.analyticsEvents.events))
 
 	// Span Events Supportability Metrics
 	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", h.SpanEvents.analyticsEvents.NumSeen(), Forced)
