@@ -419,8 +419,6 @@ static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
 }
 #endif /* PHP 8.1+ */
 
-#if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO
-
 static void declare_aws_sdk_class(const char* ns,
                                   const char* klass,
                                   const char* sdk_version) {
@@ -1119,6 +1117,3 @@ void test_main(void* p NRUNUSED) {
   test_nr_lib_aws_sdk_php_dynamodb_set_params();
 #endif /* PHP 8.1+ */
 }
-#else
-void test_main(void* p NRUNUSED) {}
-#endif

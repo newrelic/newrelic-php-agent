@@ -562,8 +562,6 @@ static void test_default_address() {
 #endif
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-
 static void test_nr_php_zend_function_lineno() {
   zend_function func = {0};
 
@@ -589,8 +587,6 @@ static void test_nr_php_zend_function_lineno() {
                               nr_php_zend_function_lineno(&func));
 }
 
-#endif /* PHP 7+ */
-
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
@@ -611,11 +607,7 @@ void test_main(void* p NRUNUSED) {
    * Tests that require state and will handle their own request startup and
    * shutdown.
    */
-
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   test_nr_php_zend_function_lineno();
-#endif /* PHP 7+ */
-
   test_function_debug_name(TSRMLS_C);
   test_get_zval_object_property(TSRMLS_C);
   test_get_zval_object_property_with_class(TSRMLS_C);

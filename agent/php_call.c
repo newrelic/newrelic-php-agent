@@ -14,7 +14,7 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_object* object = NULL;
   zend_string* method_name = NULL;
@@ -160,43 +160,26 @@ zval* nr_php_call_user_func_catch(zval* object_ptr,
    * a zend_object.
    */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
-  {
-    zend_object* exception_obj = EG(exception);
+  zend_object* exception_obj = EG(exception);
 
-    retval
-        = nr_php_call_user_func(object_ptr, function_name, param_count, params);
+  retval
+      = nr_php_call_user_func(object_ptr, function_name, param_count, params);
 
-    if ((NULL != EG(exception)) && (EG(exception) != exception_obj)) {
-      zval* exception_zv = nr_php_zval_alloc();
+  if ((NULL != EG(exception)) && (EG(exception) != exception_obj)) {
+    zval* exception_zv = nr_php_zval_alloc();
 
-      /*
-       * Wrap EG(exception) in a zval for API consistency with PHP 5, ensuring
-       * that we increment the refcount so that the caller's subsequent
-       * nr_php_zval_free() call does the right thing.
-       */
+    /*
+     * Wrap EG(exception) in a zval for API consistency with PHP 5, ensuring
+     * that we increment the refcount so that the caller's subsequent
+     * nr_php_zval_free() call does the right thing.
+     */
 
-      ZVAL_OBJ(exception_zv, EG(exception));
-      Z_ADDREF_P(exception_zv);
+    ZVAL_OBJ(exception_zv, EG(exception));
+    Z_ADDREF_P(exception_zv);
 
-      *exception = exception_zv;
-      zend_clear_exception();
-    }
+    *exception = exception_zv;
+    zend_clear_exception();
   }
-#else
-  {
-    zval* exception_zv = EG(exception);
-
-    retval = nr_php_call_user_func(object_ptr, function_name, param_count,
-                                   params TSRMLS_CC);
-
-    if ((NULL != EG(exception)) && (EG(exception) != exception_zv)) {
-      Z_ADDREF_P(EG(exception));
-      *exception = EG(exception);
-      zend_clear_exception(TSRMLS_C);
-    }
-  }
-#endif /* PHP7+ */
 
   return retval;
 }

@@ -96,7 +96,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
 static inline int nr_php_add_assoc_zval(zval* arr,
                                         const char* key,
                                         zval* value) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zval copy;
 
   ZVAL_DUP(&copy, value);
@@ -107,22 +106,6 @@ static inline int nr_php_add_assoc_zval(zval* arr,
 #else
   return add_assoc_zval(arr, key, &copy);
 #endif /* PHP8 */
-#else  /* Less than PHP7 */
-  zval* copy;
-
-  ALLOC_ZVAL(copy);
-  INIT_PZVAL(copy);
-
-  /*
-   * When we drop support for PHP 5.3, we can just use ZVAL_COPY_VALUE here.
-   */
-  copy->value = value->value;
-  Z_TYPE_P(copy) = Z_TYPE_P(value);
-
-  zval_copy_ctor(copy);
-
-  return add_assoc_zval(arr, key, copy);
-#endif /* PHP7 */
 }
 
 /*

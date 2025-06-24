@@ -478,13 +478,11 @@ nr_status_t nr_php_file_get_contents_recurse_with_context(
   nr_php_zval_free(&context);
   if (rval) {
     ZVAL_ZVAL(return_value, rval, 0, 1);
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     /*
      * Calling ZVAL_ZVAL with dtor set to true in PHP 7 won't free the
      * surrounding wrapper.
      */
     efree(rval);
-#endif /* PHP7 */
   } else {
     ZVAL_FALSE(return_value);
   }

@@ -60,13 +60,8 @@
 inline static zval* nr_php_zval_alloc(void) {
   zval* zv = NULL;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zv = (zval*)emalloc(sizeof(zval));
   ZVAL_UNDEF(zv);
-#else
-  MAKE_STD_ZVAL(zv);
-  ZVAL_NULL(zv);
-#endif
 
   return zv;
 }
@@ -268,11 +263,7 @@ static inline long nr_php_zval_resource_id(const zval* zv) {
   if (!nr_php_is_zval_valid_resource(zv)) {
     return 0;
   }
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return Z_RES_P(zv)->handle;
-#else
-  return Z_LVAL_P(zv);
-#endif /* PHP7 */
 }
 
 /*
@@ -329,11 +320,7 @@ static inline void nr_php_zval_bool(zval* zv, int b) {
  *           that function will then set the value).
  */
 static inline void nr_php_zval_prepare_out_arg(zval* zv) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   ZVAL_NEW_REF(zv, &EG(uninitialized_zval));
-#else
-  ZVAL_NULL(zv);
-#endif
 }
 
 /* }}} */
@@ -349,7 +336,6 @@ static inline void nr_php_zval_prepare_out_arg(zval* zv) {
  * Note that you will need to use nr_php_zval_real_value() (below) if you don't
  * want to do this in place.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define nr_php_zval_unwrap(zv) ZVAL_DEREF(zv)
 
 /*
@@ -370,17 +356,6 @@ static inline zval* nr_php_zval_real_value(zval* zv) {
   }
   return zv;
 }
-#else
-#define nr_php_zval_unwrap(zv) (void)(zv)
-
-static inline zval* nr_php_zval_real_value(zval* zv) {
-  /*
-   * As PHP 5 doesn't have a concept of typed reference zvals, this function
-   * should just return the input value.
-   */
-  return zv;
-}
-#endif /* PHP7 */
 
 /* }}} */
 

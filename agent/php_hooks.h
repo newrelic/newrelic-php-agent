@@ -61,16 +61,7 @@ extern void nr_php_error_cb(int type,
     ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
 #endif /* PHP >= 8.1 */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 extern void nr_php_execute_internal(zend_execute_data* execute_data,
                                     zval* return_value);
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-extern void nr_php_execute_internal(zend_execute_data* execute_data,
-                                    zend_fcall_info* fci,
-                                    int return_value_used TSRMLS_DC);
-#else
-extern void nr_php_execute_internal(zend_execute_data* execute_data,
-                                    int return_value_used TSRMLS_DC);
-#endif
 
 #endif /* PHP_HOOKS_HDR */

@@ -11,9 +11,9 @@
 /*
  * If we are using OAPI, we do not want to modify any opcodes
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO \
     && !(ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-         && !defined OVERWRITE_ZEND_EXECUTE_DATA) /* PHP 7.0+ and not OAPI */
+         && !defined OVERWRITE_ZEND_EXECUTE_DATA) /* PHP 7.2+ and not OAPI */
 
 /*
  * An entry in the previous_opcode_handlers table.
