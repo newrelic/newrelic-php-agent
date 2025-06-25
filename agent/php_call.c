@@ -14,7 +14,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO /* PHP 7.2+ */
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_object* object = NULL;
   zend_string* method_name = NULL;
@@ -98,43 +97,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   nr_php_zval_free(&retval);
   return NULL;
-#else /* PHP < 7 */
-  int zend_result;
-  zval* fname = NULL;
-  int no_separation = 0;
-  HashTable* symbol_table = NULL;
-  zval*** param_ptrs = NULL;
-  zval* retval = NULL;
-
-  if ((NULL == function_name) || (function_name[0] == '\0')) {
-    return NULL;
-  }
-
-  if ((NULL != params) && (param_count > 0)) {
-    zend_uint i;
-
-    param_ptrs = (zval***)nr_calloc(param_count, sizeof(zval**));
-    for (i = 0; i < param_count; i++) {
-      param_ptrs[i] = &params[i];
-    }
-  }
-
-  fname = nr_php_zval_alloc();
-  nr_php_zval_str(fname, function_name);
-  zend_result = call_user_function_ex(EG(function_table), &object_ptr, fname,
-                                      &retval, param_count, param_ptrs,
-                                      no_separation, symbol_table TSRMLS_CC);
-  nr_php_zval_free(&fname);
-
-  nr_free(param_ptrs);
-
-  if (SUCCESS == zend_result) {
-    return retval;
-  }
-
-  nr_php_zval_free(&retval);
-  return NULL;
-#endif
 }
 
 zval* nr_php_call_user_func_catch(zval* object_ptr,
