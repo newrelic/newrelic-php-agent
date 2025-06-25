@@ -107,9 +107,6 @@ static void test_create_datastore_instance(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("" PTSRMLS_CC);

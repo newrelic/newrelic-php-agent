@@ -592,9 +592,6 @@ static void test_nr_php_zend_function_lineno() {
 #endif /* PHP 7+ */
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   tlib_php_engine_create("" PTSRMLS_CC);
 

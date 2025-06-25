@@ -361,9 +361,6 @@ static void test_create_log_forwarding_labels(TSRMLS_D) {
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   /*
    * We're setting up our own engine instance because we need to control the

@@ -141,11 +141,7 @@ extern zend_module_entry newrelic_module_entry;
 /*
  * Convenience macro to handle unused TSRM parameters.
  */
-#if ZTS && !defined(PHP7) && !defined(PHP8)
-#define NR_UNUSED_TSRMLS (void)tsrm_ls;
-#else
 #define NR_UNUSED_TSRMLS
-#endif
 
 typedef enum {
   NR_FW_UNSET = 0,
