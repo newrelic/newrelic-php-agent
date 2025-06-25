@@ -365,9 +365,6 @@ static void test_strip_persistent_prefix(void) {
 }
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("mysqli.default_socket=" DEFAULT_SOCKET PTSRMLS_CC);

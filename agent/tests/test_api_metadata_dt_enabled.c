@@ -88,9 +88,6 @@ static void test_get_trace_metadata_when_dt_enabled(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
 
     tlib_php_engine_create("newrelic.distributed_tracing_enabled = true\n" PTSRMLS_CC);

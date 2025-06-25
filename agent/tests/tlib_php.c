@@ -111,17 +111,9 @@ static zend_string* ZEND_FASTCALL
 tlib_php_new_interned_string(zend_string* str) {
   return str;
 }
-#elif defined PHP7
+#else
 static zend_string* tlib_php_new_interned_string(zend_string* str) {
   return str;
-}
-#elif ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-static const char* tlib_php_new_interned_string(const char* key,
-                                                int len NRUNUSED,
-                                                int free_src NRUNUSED
-                                                    TSRMLS_DC) {
-  NR_UNUSED_TSRMLS;
-  return key;
 }
 #endif
 
@@ -175,9 +167,6 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
   fake_daemon_fd = nr_dup(1);
   nr_set_daemon_fd(fake_daemon_fd);
 
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
   sapi_module_struct tlib_module;
 
   /*
@@ -197,20 +186,16 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   php_tsrm_startup();
   ZEND_TSRMLS_CACHE_UPDATE();
-#elif defined PHP7
+#else
   tsrm_startup(1, 1, 0, NULL);
   ts_resource(0);
   ZEND_TSRMLS_CACHE_UPDATE();
-#else
-  tsrm_startup(1, 1, 0, NULL);
-  tsrm_ls = ts_resource(0);
-  *ptsrm_ls = tsrm_ls;
 #endif /* PHP version */
 #endif /* ZTS */
 
-#if defined(PHP7) && defined(ZEND_SIGNALS)
+#if defined(ZEND_SIGNALS)
   zend_signal_startup();
-#endif /* PHP7 && ZEND_SIGNALS */
+#endif /* ZEND_SIGNALS */
 
   /*
    * This currently creates real files for the agent log and output that are
