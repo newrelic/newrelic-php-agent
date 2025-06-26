@@ -38,12 +38,7 @@
  */
 
 int nr_php_output_has_content(int flags) {
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   return !(flags & PHP_OUTPUT_HANDLER_CLEAN);
-#else
-  (void)flags;
-  return 1;
-#endif /* PHP >= 5.4 */
 }
 
 void nr_php_output_install_handler(const char* name,
@@ -63,32 +58,12 @@ void nr_php_output_install_handler(const char* name,
    * On PHP 5.3, php_ob_set_internal_handler doesn't check for duplicate
    * handlers, so we check with php_ob_handler_used.
    */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-  {
-    int flags = PHP_OUTPUT_HANDLER_STDFLAGS;
-    size_t chunk_size = 40960;
-    int name_len = nr_strlen(name);
+  int flags = PHP_OUTPUT_HANDLER_STDFLAGS;
+  size_t chunk_size = 40960;
+  int name_len = nr_strlen(name);
 
-    php_output_start_internal(name, name_len, handler, chunk_size,
-                              flags TSRMLS_CC);
-  }
-#else /* PHP < 5.4 */
-  /* Everything else before it */
-  {
-    zend_bool erase = 1;
-    uint buffer_size = 40960;
-    char name_duplicate[256];
-
-    /* Copy the name onto the stack to avoid const warnings. */
-    name_duplicate[0] = '\0';
-    snprintf(name_duplicate, sizeof(name_duplicate), "%s", name);
-
-    if (!php_ob_handler_used(name_duplicate TSRMLS_CC)) {
-      php_ob_set_internal_handler(handler, buffer_size, name_duplicate,
-                                  erase TSRMLS_CC);
-    }
-  }
-#endif
+  php_output_start_internal(name, name_len, handler, chunk_size,
+                            flags TSRMLS_CC);
 }
 
 int nr_php_output_is_end(int flags) {

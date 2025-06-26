@@ -150,12 +150,7 @@ zval* nr_php_backtrace(TSRMLS_D) {
 
   trace = nr_php_zval_alloc();
 
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   zend_fetch_debug_backtrace(trace, skip_last, options, limit TSRMLS_CC);
-#else /* PHP < 5.4 */
-  zend_fetch_debug_backtrace(trace, skip_last, options TSRMLS_CC);
-  (void)limit;
-#endif
 
   return trace;
 }

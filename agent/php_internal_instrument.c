@@ -1231,11 +1231,9 @@ NR_INNER_WRAPPER(mysqli_stmt_bind_param) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     argv[i] = nr_php_get_user_func_arg(i + 1, EG(current_execute_data),
                                        NULL TSRMLS_CC);
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
+#else
     argv[i]
         = nr_php_get_user_func_arg(i + 1, EG(current_execute_data) TSRMLS_CC);
-#else /* PHP < 5.5 */
-    argv[i] = nr_php_get_user_func_arg(i + 1, EG(active_op_array) TSRMLS_CC);
 #endif
   }
 

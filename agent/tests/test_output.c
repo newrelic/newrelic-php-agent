@@ -26,7 +26,6 @@ tlib_parallel_info_t parallel_info
   } while (0)
 
 static void test_output_flags(void) {
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   test_output_flag_func("has content", nr_php_output_has_content, 1,
                         PHP_OUTPUT_HANDLER_WRITE);
   test_output_flag_func("has content", nr_php_output_has_content, 1,
@@ -62,31 +61,6 @@ static void test_output_flags(void) {
   test_output_flag_func("is start", nr_php_output_is_start, 0,
                         PHP_OUTPUT_HANDLER_FINAL);
   test_output_flag_func("is start", nr_php_output_is_start, 1, INT_MAX);
-#else  /* PHP < 5.4 */
-  test_output_flag_func("has content", nr_php_output_has_content, 1,
-                        PHP_OUTPUT_HANDLER_START);
-  test_output_flag_func("has content", nr_php_output_has_content, 1,
-                        PHP_OUTPUT_HANDLER_CONT);
-  test_output_flag_func("has content", nr_php_output_has_content, 1,
-                        PHP_OUTPUT_HANDLER_END);
-  test_output_flag_func("has content", nr_php_output_has_content, 1, INT_MAX);
-
-  test_output_flag_func("is end", nr_php_output_is_end, 0,
-                        PHP_OUTPUT_HANDLER_START);
-  test_output_flag_func("is end", nr_php_output_is_end, 0,
-                        PHP_OUTPUT_HANDLER_CONT);
-  test_output_flag_func("is end", nr_php_output_is_end, 1,
-                        PHP_OUTPUT_HANDLER_END);
-  test_output_flag_func("is end", nr_php_output_is_end, 1, INT_MAX);
-
-  test_output_flag_func("is start", nr_php_output_is_start, 1,
-                        PHP_OUTPUT_HANDLER_START);
-  test_output_flag_func("is start", nr_php_output_is_start, 0,
-                        PHP_OUTPUT_HANDLER_CONT);
-  test_output_flag_func("is start", nr_php_output_is_start, 0,
-                        PHP_OUTPUT_HANDLER_END);
-  test_output_flag_func("is start", nr_php_output_is_start, 1, INT_MAX);
-#endif /* PHP >= 5.4 */
 }
 
 /*
