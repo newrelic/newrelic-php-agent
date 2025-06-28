@@ -54,10 +54,17 @@ zval* nr_php_api_datastore_validate(const HashTable* params) {
         return NULL;
       } else if (datastore_validators[i].default_value) {
         char* default_value
-            = nr_alloca(sizeof(datastore_validators[i].default_value));
+            = malloc(sizeof(datastore_validators[i].default_value));
 
-        nr_strcpy(default_value, datastore_validators[i].default_value);
-        nr_php_add_assoc_string(validated_params, key, default_value);
+        if (default_value) {
+            nr_strcpy(default_value, datastore_validators[i].default_value);
+            nr_php_add_assoc_string(validated_params, key, default_value);
+            free(default_value);
+        } else {
+            zend_error(E_WARNING, "Memory allocation failed for default_value");
+            nr_php_zval_free(&validated_params);
+            return NULL;
+        }
       }
     } else {
       zval* copy = nr_php_zval_alloc();
