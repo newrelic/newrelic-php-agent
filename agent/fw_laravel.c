@@ -1098,12 +1098,13 @@ NR_PHP_WRAPPER(nr_laravel_routes_get_route_for_methods) {
    * route then we don't need to do any extra work.
    */
   route = NR_GET_RETURN_VALUE_PTR;
-  NR_PHP_WRAPPER_CALL;
 
   /* If the method did not return a route, then end gracefully. */
   if (NULL == route || !nr_php_is_zval_valid_object(*route)) {
     goto end;
   }
+
+  NR_PHP_WRAPPER_CALL;
 
   /* Grab the first argument, which should be a request. */
   arg_request = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);

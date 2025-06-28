@@ -780,10 +780,14 @@ NR_PHP_WRAPPER(nr_laravel_queue_queue_createpayload) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
+  if (NULL == retval_ptr) {
+    goto end;
+  }
+
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
   NR_PHP_WRAPPER_CALL;
 
-  if ((NULL == retval_ptr) || !nr_php_is_zval_non_empty_string(*retval_ptr)) {
+  if (!nr_php_is_zval_non_empty_string(*retval_ptr)) {
     goto end;
   }
 

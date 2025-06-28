@@ -167,11 +167,14 @@ NR_PHP_WRAPPER(nr_mediawiki_getaction) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_MEDIAWIKI);
 
   return_value = NR_GET_RETURN_VALUE_PTR;
+  if (NULL == return_value) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: return value is null", __func__);
+    goto leave;
+  }
 
   NR_PHP_WRAPPER_CALL;
 
-  if ((NULL == return_value)
-      || (0 == nr_php_is_zval_non_empty_string(*return_value))) {
+  if (0 == nr_php_is_zval_non_empty_string(*return_value)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: return value is invalid", __func__);
     goto leave;
   }

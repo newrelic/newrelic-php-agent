@@ -864,9 +864,13 @@ NR_PHP_WRAPPER(nr_create_aws_service_metric) {
   zval** ret_val_ptr = NULL;
   ret_val_ptr = NR_GET_RETURN_VALUE_PTR;
 
+  if (NULL == ret_val_ptr) {
+    return;
+  }
+
   NR_PHP_WRAPPER_CALL;
 
-  if (NULL != ret_val_ptr && nr_php_is_zval_valid_array(*ret_val_ptr)) {
+  if (nr_php_is_zval_valid_array(*ret_val_ptr)) {
     /* obtain ret_val_ptr[0] which contains the service name */
     zval* service_name
         = nr_php_zend_hash_index_find(Z_ARRVAL_P(*ret_val_ptr), 0);

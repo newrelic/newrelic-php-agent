@@ -71,9 +71,11 @@ NR_PHP_WRAPPER(nr_slim2_route_dispatch) {
    * Route::dispatch returns true if it handled the request; otherwise, false.
    */
 
-  if (txn_name && retval_ptr && nr_php_is_zval_true(*retval_ptr)) {
-    nr_txn_set_path("Slim", NRPRG(txn), txn_name, NR_PATH_TYPE_ACTION,
-                    NR_OK_TO_OVERWRITE);
+  if (txn_name && retval_ptr) {
+    if (nr_php_is_zval_true(*retval_ptr)) {
+      nr_txn_set_path("Slim", NRPRG(txn), txn_name, NR_PATH_TYPE_ACTION,
+                      NR_OK_TO_OVERWRITE);
+    }
   }
 
   nr_free(txn_name);

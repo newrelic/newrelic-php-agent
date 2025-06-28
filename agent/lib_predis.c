@@ -606,14 +606,17 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
   zval** retval_ptr = NR_GET_RETURN_VALUE_PTR;
 
+  if (NULL == retval_ptr) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: error retrieving return value pointer", __func__);
+    return;
+  }
+
   (void)wraprec;
 
   NR_PHP_WRAPPER_CALL;
 
-  if (NULL == retval_ptr) {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: error retrieving return value pointer", __func__);
-  } else if (!nr_predis_is_node_connection(*retval_ptr TSRMLS_CC)) {
+  if (!nr_predis_is_node_connection(*retval_ptr TSRMLS_CC)) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s: got an unexpected value that is not a "
                      "NodeConnectionInterface",

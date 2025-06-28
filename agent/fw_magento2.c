@@ -156,9 +156,11 @@ NR_PHP_WRAPPER(nr_magento2_pagecache_kernel_load) {
    * Magento\Framework\App\Response\Http if there is a cache hit and false
    * otherwise.
    */
-  if (response && nr_php_is_zval_valid_object(*response)) {
-    nr_txn_set_path("Magento", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
-                    NR_OK_TO_OVERWRITE);
+  if (response) {
+    if (nr_php_is_zval_valid_object(*response)) {
+      nr_txn_set_path("Magento", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
+                      NR_OK_TO_OVERWRITE);
+    }
   }
 }
 NR_PHP_WRAPPER_END

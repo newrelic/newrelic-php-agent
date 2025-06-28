@@ -276,41 +276,43 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt) {
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL8);
   NR_PHP_WRAPPER_CALL;
 
-  if (retval_ptr && *retval_ptr) {
-    zval* retval = *retval_ptr;
+  if (retval_ptr) {
+    if (*retval_ptr) {
+      zval* retval = *retval_ptr;
 
-    /*
-     * Note that the name returned from nr_php_callable_to_string may be
-     * suboptimal for anonymous functions, closures and generators. It doesn't
-     * appear that Drupal 8 has a way to define any of those as controllers at
-     * present, but should this be added, it may cause MGI. We would likely
-     * want to change from using the generated class name to using a name
-     * synthesised from the definition file and line of the callable.
-     */
-    char* name = nr_php_callable_to_string(retval TSRMLS_CC);
-
-    /*
-     * Drupal 8 has a concept of title callbacks, which are controllers
-     * attached to other controllers that return the page title. We don't want
-     * to consider these for the purposes of transaction naming.
-     */
-    if ((NULL != name)
-        && (0
-            == nr_drupal8_is_function_in_call_stack(
-                "getTitle",
-                "Drupal\\Core\\Controller\\TitleResolver" TSRMLS_CC))) {
       /*
-       * This is marked as OK to overwrite because we generally want the last
-       * controller. Drupal 8 will often start by invoking a very general
-       * controller, such as
-       * Drupal\Core\Controller\HtmlPageController->content, before delegating
-       * control to the real controller.
+       * Note that the name returned from nr_php_callable_to_string may be
+       * suboptimal for anonymous functions, closures and generators. It doesn't
+       * appear that Drupal 8 has a way to define any of those as controllers at
+       * present, but should this be added, it may cause MGI. We would likely
+       * want to change from using the generated class name to using a name
+       * synthesised from the definition file and line of the callable.
        */
-      nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
-                      NR_NOT_OK_TO_OVERWRITE);
-    }
+      char* name = nr_php_callable_to_string(retval TSRMLS_CC);
 
-    nr_free(name);
+      /*
+       * Drupal 8 has a concept of title callbacks, which are controllers
+       * attached to other controllers that return the page title. We don't want
+       * to consider these for the purposes of transaction naming.
+       */
+      if ((NULL != name)
+          && (0
+              == nr_drupal8_is_function_in_call_stack(
+                  "getTitle",
+                  "Drupal\\Core\\Controller\\TitleResolver" TSRMLS_CC))) {
+        /*
+         * This is marked as OK to overwrite because we generally want the last
+         * controller. Drupal 8 will often start by invoking a very general
+         * controller, such as
+         * Drupal\Core\Controller\HtmlPageController->content, before delegating
+         * control to the real controller.
+         */
+        nr_txn_set_path("Drupal8", NRPRG(txn), name, NR_PATH_TYPE_ACTION,
+                        NR_NOT_OK_TO_OVERWRITE);
+      }
+
+      nr_free(name);
+    }
   }
 }
 NR_PHP_WRAPPER_END

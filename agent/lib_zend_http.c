@@ -399,6 +399,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: unable to obtain return value from request",
                      library_name);
+    return;
   }
 
   if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
