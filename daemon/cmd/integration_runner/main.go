@@ -362,15 +362,8 @@ func main() {
 		ctx.Settings["newrelic.loglevel"] = *flagLoglevel
 	}
 
-	if false == *flagOpcacheOff {
-		// PHP Modules common to all tests
-		ctx.Settings["zend_extension"] = "opcache.so"
-
-		// PHP INI values common to all tests
-		// These settings can be overwritten by adding new values to the INI block
-		ctx.Settings["opcache.enable"] = "1"
-		ctx.Settings["opcache.enable_cli"] = "1"
-	}
+	ctx.OPCacheModuleLoaded = integration.GetOPCacheModuleLoaded(*flagPHP, *flagCGI)
+	ctx.UseOPCache = !*flagOpcacheOff
 
 	// If the user provided a custom agent extension, use it.
 	if len(*flagAgent) > 0 {

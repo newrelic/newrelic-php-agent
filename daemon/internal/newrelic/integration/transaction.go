@@ -46,9 +46,22 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 	// Note: file path must be relative to the working directory.
 	var txn Tx
 
-	args := phpArgs(nil, filepath.Base(src.Name()), false, settings)
+	// Make a copy of settings to avoid mutating the original map
+	phpSettings := make(map[string]string, len(settings))
+	for k, v := range settings {
+		phpSettings[k] = v
+	}
+	if ctx.UseOPCache {
+		if !ctx.OPCacheModuleLoaded[ctx.PHP] {
+			phpSettings["zend_extension"] = "opcache.so"
+		}
+		phpSettings["opcache.enable"] = "1"
+		phpSettings["opcache.enable_cli"] = "1"
+	}
 
-	if ctx.Valgrind != "" && settings["newrelic.appname"] != "skipif" {
+	args := phpArgs(nil, filepath.Base(src.Name()), false, phpSettings)
+
+	if ctx.Valgrind != "" && phpSettings["newrelic.appname"] != "skipif" {
 		txn = &ValgrindCLI{
 			CLI: CLI{
 				Path: ctx.PHP,
@@ -106,6 +119,19 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 		return nil, fmt.Errorf("unable to create cgi request: %v", err)
 	}
 
+	// Make a copy of settings to avoid mutating the original map
+	cgiSettings := make(map[string]string, len(settings))
+	for k, v := range settings {
+		cgiSettings[k] = v
+	}
+	if ctx.UseOPCache {
+		if !ctx.OPCacheModuleLoaded[ctx.CGI] {
+			cgiSettings["zend_extension"] = "opcache.so"
+		}
+		cgiSettings["opcache.enable"] = "1"
+		cgiSettings["opcache.enable_cli"] = "1"
+	}
+
 	if ctx.Valgrind != "" {
 		tx := &ValgrindCGI{
 			CGI: CGI{
@@ -113,7 +139,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				handler: &cgi.Handler{
 					Path: ctx.CGI,
 					Dir:  src.Dir(),
-					Args: phpArgs(nil, "", false, settings),
+					Args: phpArgs(nil, "", false, cgiSettings),
 				},
 			},
 			Valgrind: ctx.Valgrind,
@@ -144,7 +170,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 			handler: &cgi.Handler{
 				Path: ctx.CGI,
 				Dir:  src.Dir(),
-				Args: phpArgs(nil, "", false, settings),
+				Args: phpArgs(nil, "", false, cgiSettings),
 			},
 		}
 		tx.handler.Env = append(tx.handler.Env,
