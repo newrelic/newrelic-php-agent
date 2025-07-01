@@ -77,7 +77,7 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 		}
 		if setOPCacheEnableCLI {
 			phpSettings["opcache.enable_cli"] = "0"
-		}	
+		}
 	}
 
 	args := phpArgs(nil, filepath.Base(src.Name()), false, phpSettings)
@@ -171,7 +171,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 		}
 		if setOPCacheEnableCLI {
 			cgiSettings["opcache.enable_cli"] = "0"
-		}	
+		}
 	}
 
 	if ctx.Valgrind != "" {

@@ -53,7 +53,7 @@ func GetOPCacheModuleLoaded(php, cgi string) map[string]bool {
 	result := make(map[string]bool)
 
 	result[php] = IsOPcacheLoaded(php)
-	result[cgi] = IsOPcacheLoaded(cgi)	
+	result[cgi] = IsOPcacheLoaded(cgi)
 
 	fmt.Printf("OPcache default loaded status: %+v\n", result)
 
