@@ -214,7 +214,28 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 		}
 	}
 
-	settings = merge(settings, t.PhpModules)
+	// Make a copy of t.PhpModules and remove any entries containing "opcache.so"
+	// if opcache.so is loaded by default
+	// 
+	// three cases:
+	// 1. C test - no opcache.so needed as PHP is not going to be run
+	// 2. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	// 3. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	phpModulesCopy := make(map[string]string)
+	if (!t.IsC()) {
+		if (t.IsWeb() && ctx.OPCacheModuleLoaded[ctx.CGI]) ||
+			(ctx.OPCacheModuleLoaded[ctx.PHP]) {
+			for k, v := range t.PhpModules {
+				if !strings.Contains(v, "opcache.so") {
+					phpModulesCopy[k] = v
+				}
+			}
+		}
+	} else {
+		fmt.Printf("ERROR - UNEXPECTED - Running C test: %s\n", t.Path)
+		os.Exit(1)
+	}
+	settings = merge(settings, phpModulesCopy)
 
 	if t.IsC() {
 		return CTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)

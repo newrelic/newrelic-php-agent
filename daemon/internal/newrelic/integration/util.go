@@ -55,7 +55,7 @@ func GetOPCacheModuleLoaded(php, cgi string) map[string]bool {
 	result[php] = IsOPcacheLoaded(php)
 	result[cgi] = IsOPcacheLoaded(cgi)	
 
-	fmt.Printf("OPcache loaded status: %+v\n", result)
+	fmt.Printf("OPcache default loading status: %+v\n", result)
 
 	return result
 }

@@ -48,15 +48,36 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 
 	// Make a copy of settings to avoid mutating the original map
 	phpSettings := make(map[string]string, len(settings))
+	setOPCacheEnable := true
+	setOPCacheEnableCLI := true
 	for k, v := range settings {
 		phpSettings[k] = v
+
+		// see if settings affect opcache config
+		// if so then we will not set config below
+		if k == "opcache.enable" {
+			setOPCacheEnable = false
+		} else if k == "opcache.enable_cli" {
+			setOPCacheEnableCLI = false
+		}
 	}
 	if ctx.UseOPCache {
-		if !ctx.OPCacheModuleLoaded[ctx.PHP] {
+		if !ctx.OPCacheModuleLoaded[ctx.CGI] {
 			phpSettings["zend_extension"] = "opcache.so"
 		}
-		phpSettings["opcache.enable"] = "1"
-		phpSettings["opcache.enable_cli"] = "1"
+		if setOPCacheEnable {
+			phpSettings["opcache.enable"] = "1"
+		}
+		if setOPCacheEnableCLI {
+			phpSettings["opcache.enable_cli"] = "1"
+		}
+	} else {
+		if setOPCacheEnable {
+			phpSettings["opcache.enable"] = "0"
+		}
+		if setOPCacheEnableCLI {
+			phpSettings["opcache.enable_cli"] = "0"
+		}	
 	}
 
 	args := phpArgs(nil, filepath.Base(src.Name()), false, phpSettings)
@@ -121,15 +142,36 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 
 	// Make a copy of settings to avoid mutating the original map
 	cgiSettings := make(map[string]string, len(settings))
+	setOPCacheEnable := true
+	setOPCacheEnableCLI := true
 	for k, v := range settings {
 		cgiSettings[k] = v
+
+		// see if settings affect opcache config
+		// if so then we will not set config below
+		if k == "opcache.enable" {
+			setOPCacheEnable = false
+		} else if k == "opcache.enable_cli" {
+			setOPCacheEnableCLI = false
+		}
 	}
 	if ctx.UseOPCache {
 		if !ctx.OPCacheModuleLoaded[ctx.CGI] {
 			cgiSettings["zend_extension"] = "opcache.so"
 		}
-		cgiSettings["opcache.enable"] = "1"
-		cgiSettings["opcache.enable_cli"] = "1"
+		if setOPCacheEnable {
+			cgiSettings["opcache.enable"] = "1"
+		}
+		if setOPCacheEnableCLI {
+			cgiSettings["opcache.enable_cli"] = "1"
+		}
+	} else {
+		if setOPCacheEnable {
+			cgiSettings["opcache.enable"] = "0"
+		}
+		if setOPCacheEnableCLI {
+			cgiSettings["opcache.enable_cli"] = "0"
+		}	
 	}
 
 	if ctx.Valgrind != "" {
