@@ -92,7 +92,7 @@ function run_test() {
 run_test();
 
 newrelic_ignore_transaction(true);
-newrelic_start_transaction();
+newrelic_start_transaction(ini_get("newrelic.appname"));
 
 run_test();
 

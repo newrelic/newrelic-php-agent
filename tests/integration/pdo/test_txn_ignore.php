@@ -95,7 +95,7 @@ function test_prepared_statement() {
 test_prepared_statement();
 
 newrelic_end_transaction(true);
-newrelic_start_transaction();
+newrelic_start_transaction(ini_get("newrelic.appname"));
 
 test_prepared_statement();
 
