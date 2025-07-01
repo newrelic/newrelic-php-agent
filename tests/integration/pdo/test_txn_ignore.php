@@ -25,6 +25,7 @@ newrelic.transaction_tracer.record_sql = "obfuscated"
 
 /*EXPECT
 ok - execute prepared statement with a param
+ok - execute prepared statement with a param
 */
 
 /*EXPECT_SLOW_SQLS
