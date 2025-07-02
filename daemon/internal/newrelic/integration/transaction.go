@@ -46,43 +46,9 @@ func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error
 	// Note: file path must be relative to the working directory.
 	var txn Tx
 
-	// Make a copy of settings to avoid mutating the original map
-	phpSettings := make(map[string]string, len(settings))
-	setOPCacheEnable := true
-	setOPCacheEnableCLI := true
-	for k, v := range settings {
-		phpSettings[k] = v
+	args := phpArgs(nil, filepath.Base(src.Name()), false, settings)
 
-		// see if settings affect opcache config
-		// if so then we will not set config below
-		if k == "opcache.enable" {
-			setOPCacheEnable = false
-		} else if k == "opcache.enable_cli" {
-			setOPCacheEnableCLI = false
-		}
-	}
-	if ctx.UseOPCache {
-		if !ctx.OPCacheModuleLoaded[ctx.CGI] {
-			phpSettings["zend_extension"] = "opcache.so"
-		}
-		if setOPCacheEnable {
-			phpSettings["opcache.enable"] = "1"
-		}
-		if setOPCacheEnableCLI {
-			phpSettings["opcache.enable_cli"] = "1"
-		}
-	} else {
-		if setOPCacheEnable {
-			phpSettings["opcache.enable"] = "0"
-		}
-		if setOPCacheEnableCLI {
-			phpSettings["opcache.enable_cli"] = "0"
-		}
-	}
-
-	args := phpArgs(nil, filepath.Base(src.Name()), false, phpSettings)
-
-	if ctx.Valgrind != "" && phpSettings["newrelic.appname"] != "skipif" {
+	if ctx.Valgrind != "" && settings["newrelic.appname"] != "skipif" {
 		txn = &ValgrindCLI{
 			CLI: CLI{
 				Path: ctx.PHP,
@@ -140,40 +106,6 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 		return nil, fmt.Errorf("unable to create cgi request: %v", err)
 	}
 
-	// Make a copy of settings to avoid mutating the original map
-	cgiSettings := make(map[string]string, len(settings))
-	setOPCacheEnable := true
-	setOPCacheEnableCLI := true
-	for k, v := range settings {
-		cgiSettings[k] = v
-
-		// see if settings affect opcache config
-		// if so then we will not set config below
-		if k == "opcache.enable" {
-			setOPCacheEnable = false
-		} else if k == "opcache.enable_cli" {
-			setOPCacheEnableCLI = false
-		}
-	}
-	if ctx.UseOPCache {
-		if !ctx.OPCacheModuleLoaded[ctx.CGI] {
-			cgiSettings["zend_extension"] = "opcache.so"
-		}
-		if setOPCacheEnable {
-			cgiSettings["opcache.enable"] = "1"
-		}
-		if setOPCacheEnableCLI {
-			cgiSettings["opcache.enable_cli"] = "1"
-		}
-	} else {
-		if setOPCacheEnable {
-			cgiSettings["opcache.enable"] = "0"
-		}
-		if setOPCacheEnableCLI {
-			cgiSettings["opcache.enable_cli"] = "0"
-		}
-	}
-
 	if ctx.Valgrind != "" {
 		tx := &ValgrindCGI{
 			CGI: CGI{
@@ -181,7 +113,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				handler: &cgi.Handler{
 					Path: ctx.CGI,
 					Dir:  src.Dir(),
-					Args: phpArgs(nil, "", false, cgiSettings),
+					Args: phpArgs(nil, "", false, settings),
 				},
 			},
 			Valgrind: ctx.Valgrind,
@@ -212,7 +144,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 			handler: &cgi.Handler{
 				Path: ctx.CGI,
 				Dir:  src.Dir(),
-				Args: phpArgs(nil, "", false, cgiSettings),
+				Args: phpArgs(nil, "", false, settings),
 			},
 		}
 		tx.handler.Env = append(tx.handler.Env,
