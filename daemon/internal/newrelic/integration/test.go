@@ -266,10 +266,9 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 	// Make a copy of t.PhpModules and remove any entries containing "opcache.so"
 	// if opcache.so is loaded by default
 	//
-	// three cases:
-	// 1. C test - no opcache.so needed as PHP is not going to be run
-	// 2. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
-	// 3. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	// two cases:
+	// 1. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	// 2. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
 	phpModulesCopy := make(map[string]string)
 	if (t.IsWeb() && ctx.OPCacheModuleLoaded[ctx.CGI]) ||
 		(ctx.OPCacheModuleLoaded[ctx.PHP]) {
