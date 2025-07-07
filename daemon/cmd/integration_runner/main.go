@@ -453,8 +453,14 @@ func main() {
 	if numFailed > 0 {
 		os.Exit(1)
 	}
-	if *flagWarnIsFail && numWarned > 0 {
-		os.Exit(2)
+
+	if numWarned > 0 {
+		if *flagWarnIsFail {
+			fmt.Println("WARNING: some tests were warned, but are treated as failures because --warnisfail is true")
+			os.Exit(2)
+		} else {
+			fmt.Printf("WARNING: some tests were warned, but are not treated as failures because --warnisfail is false\n")
+		}
 	}
 }
 
@@ -541,6 +547,12 @@ func runTest(t *integration.Test) {
 		if skipRE.Match(body) {
 			reason := string(bytes.TrimSpace(head(body)))
 			t.Skip(reason)
+			return
+		}
+
+		if warnRE.Match(body) && *flagWarnIsFail {
+			reason := string(bytes.TrimSpace(head(body)))
+			t.Warn(reason)
 			return
 		}
 	}
