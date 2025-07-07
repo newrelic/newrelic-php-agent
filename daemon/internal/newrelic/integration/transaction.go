@@ -47,7 +47,7 @@ func flatten(x map[string]string) []string {
 // env is the environment variables to pass to the PHP process
 // settings is the PHP settings to apply to the process
 // ctx is the context containing configuration options
-func fixupSettings(php_executable string, env, settings map[string]string, ctx *Context) map[string]string{
+func fixupSettings(php_executable string, env, settings map[string]string, ctx *Context) map[string]string {
 
 	// Make a copy of settings to avoid mutating the original map
 	// Need to adjust settings to opcache
@@ -84,7 +84,7 @@ func fixupSettings(php_executable string, env, settings map[string]string, ctx *
 			phpSettings["opcache.enable_cli"] = "0"
 		}
 	}
-	
+
 	return phpSettings
 }
 
