@@ -201,6 +201,25 @@ func merge(a, b map[string]string) map[string]string {
 	return merged
 }
 
+// checks the context to see if opcache is loaded by default
+// and then handles the PHP modules requests to make sure
+// we don't load opcache.so if it is already loaded by default
+func (t *Test) HandlePHPModules(php_executable string, ctx *Context) map[string]string {
+	// two cases:
+	// 1. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	// 2. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	phpModulesCopy := make(map[string]string)
+	if ctx.OPCacheModuleLoaded[php_executable] {
+		for k, v := range t.PhpModules {
+			if !strings.Contains(v, "opcache.so") {
+				phpModulesCopy[k] = v
+			}
+		}
+	}
+
+	return phpModulesCopy
+}
+
 func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 
 	// we don't support running C tests - assert this so we can
@@ -222,68 +241,22 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 		}
 	}
 
-	// Make a copy of settings to avoid mutating the original map
-	// Need to adjust settings to opcache
-	phpSettings := make(map[string]string, len(settings))
-	setOPCacheEnable := true
-	setOPCacheEnableCLI := true
 	var php_executable string
 	if t.IsWeb() {
 		php_executable = ctx.CGI
-	} else {
+	} else if t.IsPHP() {
 		php_executable = ctx.PHP
-	}
-	for k, v := range settings {
-		phpSettings[k] = v
-
-		// see if settings affect opcache config
-		// if so then we will not set config below
-		if k == "opcache.enable" {
-			setOPCacheEnable = false
-		} else if k == "opcache.enable_cli" {
-			setOPCacheEnableCLI = false
-		}
-	}
-	if ctx.UseOPCache {
-		if !ctx.OPCacheModuleLoaded[php_executable] {
-			phpSettings["zend_extension"] = "opcache.so"
-		}
-		if setOPCacheEnable {
-			phpSettings["opcache.enable"] = "1"
-		}
-		if setOPCacheEnableCLI {
-			phpSettings["opcache.enable_cli"] = "1"
-		}
 	} else {
-		if setOPCacheEnable {
-			phpSettings["opcache.enable"] = "0"
-		}
-		if setOPCacheEnableCLI {
-			phpSettings["opcache.enable_cli"] = "0"
-		}
+		return nil, fmt.Errorf("unknown test type for %s", t.Path)
 	}
 
-	// Make a copy of t.PhpModules and remove any entries containing "opcache.so"
-	// if opcache.so is loaded by default
-	//
-	// two cases:
-	// 1. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
-	// 2. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
-	phpModulesCopy := make(map[string]string)
-	if ctx.OPCacheModuleLoaded[php_executable] {
-		for k, v := range t.PhpModules {
-			if !strings.Contains(v, "opcache.so") {
-				phpModulesCopy[k] = v
-			}
-		}
-	}
-
-	phpSettings = merge(phpSettings, phpModulesCopy)
+	phpModulesCopy := t.HandlePHPModules(php_executable, ctx)
+	settings = merge(settings, phpModulesCopy)
 
 	if t.IsWeb() {
-		return CgiTx(ScriptFile(t.Path), t.Env, phpSettings, headers, ctx)
+		return CgiTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
-	return PhpTx(ScriptFile(t.Path), t.Env, phpSettings, ctx)
+	return PhpTx(ScriptFile(t.Path), t.Env, settings, ctx)
 }
 
 func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
@@ -301,6 +274,10 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		name: strings.TrimSuffix(t.Path, ext) + ".skipif",
 		data: t.rawSkipIf,
 	}
+
+	// handle the PHPMODULES directive
+	phpModulesCopy := t.HandlePHPModules(ctx.PHP, ctx)
+	settings = merge(settings, phpModulesCopy)
 
 	return PhpTx(src, t.Env, settings, ctx)
 }
