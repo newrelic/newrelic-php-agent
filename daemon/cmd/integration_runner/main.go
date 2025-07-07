@@ -51,6 +51,7 @@ var (
 	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
 	flagWarnIsFail      = flag.Bool("warnisfail", false, "warn result is treated as a fail")
 	flagOpcacheOff      = flag.Bool("opcacheoff", false, "run without opcache. Some tests are intended to fail when run this way")
+	flagDebug           = flag.Bool("debug", false, "enable debug logging for integration_runner")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -527,6 +528,10 @@ func runTest(t *integration.Test) {
 	if skipIf != nil {
 		_, body, err := skipIf.Execute()
 
+		if *flagDebug {
+			fmt.Printf("SkipIf output:\n%s\n", body)
+		}
+
 		if err != nil {
 			t.Output = body
 			t.Fatal(fmt.Errorf("error executing skipif: %v", err))
@@ -555,6 +560,10 @@ func runTest(t *integration.Test) {
 		t.Duration = time.Since(start)
 	} else {
 		t.Duration = 0
+	}
+
+	if *flagDebug {
+		fmt.Printf("Test output:\n%s\n", body)
 	}
 
 	// Always save the test output. If an error occurred it may contain
