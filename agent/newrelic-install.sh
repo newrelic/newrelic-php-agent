@@ -577,6 +577,16 @@ add_to_path /opt/php-8.2/bin
 add_to_path /opt/php-8.3/bin
 add_to_path /opt/php-8.4/bin
 
+add_to_path /usr/local/lsws/lsphp72/bin
+add_to_path /usr/local/lsws/lsphp73/bin
+add_to_path /usr/local/lsws/lsphp74/bin
+add_to_path /usr/local/lsws/lsphp80/bin
+add_to_path /usr/local/lsws/lsphp81/bin
+add_to_path /usr/local/lsws/lsphp82/bin
+add_to_path /usr/local/lsws/lsphp83/bin
+add_to_path /usr/local/lsws/lsphp84/bin
+
+
 if [ -n "${NR_INSTALL_PATH}" ]; then
   oIFS="${IFS}"
   IFS=$PATH_SEPARATOR
