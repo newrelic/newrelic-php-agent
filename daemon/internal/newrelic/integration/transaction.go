@@ -41,12 +41,61 @@ func flatten(x map[string]string) []string {
 	return s
 }
 
+// fixup settings to handle opcache module loading gracefully
+//
+// php_executable is the name to the PHP executable
+// env is the environment variables to pass to the PHP process
+// settings is the PHP settings to apply to the process
+// ctx is the context containing configuration options
+func fixupSettings(php_executable string, env, settings map[string]string, ctx *Context) map[string]string{
+
+	// Make a copy of settings to avoid mutating the original map
+	// Need to adjust settings to opcache
+	phpSettings := make(map[string]string, len(settings))
+	setOPCacheEnable := true
+	setOPCacheEnableCLI := true
+
+	for k, v := range settings {
+		phpSettings[k] = v
+
+		// see if settings affect opcache config
+		// if so then we will not set config below
+		if k == "opcache.enable" {
+			setOPCacheEnable = false
+		} else if k == "opcache.enable_cli" {
+			setOPCacheEnableCLI = false
+		}
+	}
+	if ctx.UseOPCache {
+		if !ctx.OPCacheModuleLoaded[php_executable] {
+			phpSettings["zend_extension"] = "opcache.so"
+		}
+		if setOPCacheEnable {
+			phpSettings["opcache.enable"] = "1"
+		}
+		if setOPCacheEnableCLI {
+			phpSettings["opcache.enable_cli"] = "1"
+		}
+	} else {
+		if setOPCacheEnable {
+			phpSettings["opcache.enable"] = "0"
+		}
+		if setOPCacheEnableCLI {
+			phpSettings["opcache.enable_cli"] = "0"
+		}
+	}
+	
+	return phpSettings
+}
+
 // PhpTx constructs non-Web transactions to be executed by PHP.
 func PhpTx(src Script, env, settings map[string]string, ctx *Context) (Tx, error) {
 	// Note: file path must be relative to the working directory.
 	var txn Tx
 
-	args := phpArgs(nil, filepath.Base(src.Name()), false, settings)
+	newSettings := fixupSettings(ctx.PHP, env, settings, ctx)
+
+	args := phpArgs(nil, filepath.Base(src.Name()), false, newSettings)
 
 	if ctx.Valgrind != "" && settings["newrelic.appname"] != "skipif" {
 		txn = &ValgrindCLI{
@@ -83,6 +132,8 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 	var err error
 	var txn Tx
 
+	newSettings := fixupSettings(ctx.CGI, env, settings, ctx)
+
 	req := &http.Request{
 		Method:     env["REQUEST_METHOD"],
 		RequestURI: "/" + filepath.Base(src.Name()) + "?" + env["QUERY_STRING"],
@@ -113,7 +164,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 				handler: &cgi.Handler{
 					Path: ctx.CGI,
 					Dir:  src.Dir(),
-					Args: phpArgs(nil, "", false, settings),
+					Args: phpArgs(nil, "", false, newSettings),
 				},
 			},
 			Valgrind: ctx.Valgrind,
@@ -144,7 +195,7 @@ func CgiTx(src Script, env, settings map[string]string, headers http.Header, ctx
 			handler: &cgi.Handler{
 				Path: ctx.CGI,
 				Dir:  src.Dir(),
-				Args: phpArgs(nil, "", false, settings),
+				Args: phpArgs(nil, "", false, newSettings),
 			},
 		}
 		tx.handler.Env = append(tx.handler.Env,
