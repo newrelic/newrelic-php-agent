@@ -13,7 +13,7 @@ import (
 )
 
 func GetPHPVersion() string {
-	cmd := exec.Command("php", "-r", "echo PHP_VERSION;")
+	cmd := exec.Command("php", "-d", "newrelic.daemon.dont_launch=3", "-r", "echo PHP_VERSION;")
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -25,7 +25,7 @@ func GetPHPVersion() string {
 }
 
 func GetAgentVersion(agent_extension string) string {
-	cmd := exec.Command("php", "-d", "extension="+agent_extension, "-r", "echo phpversion('newrelic');")
+	cmd := exec.Command("php", "-d", "newrelic.daemon.dont_launch=3", "-d", "extension="+agent_extension, "-r", "echo phpversion('newrelic');")
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -36,7 +36,7 @@ func GetAgentVersion(agent_extension string) string {
 
 func IsOPcacheLoaded(php_executable string) bool {
 	fmt.Printf("Checking if OPcache is loaded using %s\n", php_executable)
-	cmd := exec.Command(php_executable, "-m")
+	cmd := exec.Command(php_executable, "-d", "newrelic.daemon.dont_launch=3", "-m")
 
 	output, err := cmd.Output()
 
