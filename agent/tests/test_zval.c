@@ -101,10 +101,7 @@ static void test_is_zval_valid_callable(TSRMLS_D) {
   test_valid_callable("'ReflectionFunction::export'" TSRMLS_CC);
 #endif
   test_valid_callable("function () {}" TSRMLS_CC);
-
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   test_valid_callable("new class { function __invoke() {} }" TSRMLS_CC);
-#endif /* PHP 7.0+ */
 
   tlib_php_request_end();
 }

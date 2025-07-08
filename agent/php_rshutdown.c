@@ -80,7 +80,6 @@ int nr_php_post_deactivate(void) {
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing started");
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   /*
    * PHP 7 has a singleton trampoline op array that is used for the life of an
    * executor (which, in non-ZTS mode, is the life of the process). We need to
@@ -91,7 +90,6 @@ int nr_php_post_deactivate(void) {
    */
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   EG(trampoline).op_array.reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = NULL;
-#endif /* PHP7 */
 #endif
   /*
    * End the txn before we clean up all the globals it might need.
