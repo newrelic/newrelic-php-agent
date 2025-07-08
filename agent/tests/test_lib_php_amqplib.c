@@ -12,8 +12,6 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
-#if ZEND_MODULE_API_NO > ZEND_7_1_X_API_NO
-
 static void declare_php_amqplib_package_class(const char* ns,
                                               const char* klass,
                                               const char* package_version) {
@@ -139,6 +137,3 @@ void test_main(void* p NRUNUSED) {
   test_nr_lib_php_amqplib_handle_version();
   tlib_php_engine_destroy();
 }
-#else
-void test_main(void* p NRUNUSED) {}
-#endif

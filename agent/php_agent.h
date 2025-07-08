@@ -363,7 +363,7 @@ static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
     return NULL;
   }
   return func_return_value;
-#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
+#else
   NR_UNUSED_FUNC_RETURN_VALUE;
   if (NULL == execute_data) {
     /*
@@ -374,12 +374,6 @@ static inline zval* nr_php_get_return_value(NR_EXECUTE_PROTO TSRMLS_DC) {
   }
 
   return execute_data->return_value;
-#else
-  zval** return_value_ptr_ptr = EG(return_value_ptr_ptr);
-
-  NR_UNUSED_SPECIALFN;
-
-  return return_value_ptr_ptr ? *return_value_ptr_ptr : NULL;
 #endif /* PHP7+ */
 }
 
@@ -424,14 +418,7 @@ static inline zend_function* nr_php_execute_function(
   }
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return execute_data->func;
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-  return execute_data->function_state.function;
-#else
-  return op_array_arg->prototype ? op_array_arg->prototype
-                                 : (zend_function*)op_array_arg;
-#endif /* PHP7+ */
 }
 
 static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
@@ -454,11 +441,8 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
   }
   return NULL;
 
-#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
-  return &execute_data->This;
 #else
-  return execute_data->object;
+  return &execute_data->This;
 #endif
 }
 
@@ -662,74 +646,42 @@ extern const char* nr_php_function_filename(zend_function* func);
 static inline zend_class_entry* nr_php_zend_register_internal_class_ex(
     zend_class_entry* ce,
     zend_class_entry* parent_ce TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return zend_register_internal_class_ex(ce, parent_ce);
-#else
-  return zend_register_internal_class_ex(ce, parent_ce, NULL TSRMLS_CC);
-#endif /* PHP7+ */
 }
 
 static inline char* nr_php_zend_ini_string(char* name,
                                            nr_string_len_t name_len,
                                            int orig) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return zend_ini_string(name, name_len, orig);
-#else
-  return zend_ini_string(name, name_len + 1, orig);
-#endif /* PHP7+ */
 }
 
 static inline const char* NRPURE
 nr_php_class_entry_name(const zend_class_entry* ce) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (ce->name && ce->name->len) ? ce->name->val : NULL;
-#else
-  return ce->name;
-#endif
 }
 
 static inline nr_string_len_t NRPURE
 nr_php_class_entry_name_length(const zend_class_entry* ce) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return ce->name ? ce->name->len : 0;
-#else
-  return NRSAFELEN(ce->name_length);
-#endif
 }
 
 static inline const char* NRPURE
 nr_php_function_name(const zend_function* func) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (func->common.function_name && func->common.function_name->len)
              ? func->common.function_name->val
              : NULL;
-#else
-  return func->common.function_name;
-#endif
 }
 
 static inline nr_string_len_t NRPURE
 nr_php_function_name_length(const zend_function* func) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return func->common.function_name ? func->common.function_name->len : 0;
-#else
-  /*
-   * No NRSAFELEN macro here as nr_strlen can't return a negative value anyway
-   * (it simply casts the size_t returned by strlen() to an int.
-   */
-  return nr_strlen(func->common.function_name);
-#endif
 }
 
 static inline const char* NRPURE
 nr_php_op_array_file_name(const zend_op_array* op_array) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (op_array->filename && op_array->filename->len)
              ? op_array->filename->val
              : NULL;
-#else
-  return op_array->filename;
-#endif
 }
 
 static inline nr_string_len_t NRPURE
@@ -739,26 +691,16 @@ nr_php_op_array_file_name_len(const zend_op_array* op_array) {
 
 static inline const char* NRPURE
 nr_php_op_array_function_name(const zend_op_array* op_array) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (op_array->function_name && op_array->function_name->len)
              ? op_array->function_name->val
              : NULL;
-#else
-  return op_array->function_name;
-#endif
 }
 
 static inline const char* NRPURE
 nr_php_op_array_scope_name(const zend_op_array* op_array) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
     return op_array->scope->name->val;
   }
-#else
-  if (op_array->scope) {
-    return op_array->scope->name;
-  }
-#endif
 
   return NULL;
 }
@@ -770,31 +712,20 @@ nr_php_function_filename_len(zend_function* func) {
 
 static inline const char* NRPURE
 nr_php_ini_entry_name(const zend_ini_entry* entry) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return (entry->name && entry->name->len) ? entry->name->val : NULL;
-#else
-  return entry->name;
-#endif
 }
 static inline nr_string_len_t NRPURE
 nr_php_ini_entry_name_length(const zend_ini_entry* entry) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return entry->name ? entry->name->len : 0;
-#else
-  return NRSAFELEN(entry->name_length - 1);
-#endif
 }
 
 #define NR_PHP_INTERNAL_FN_THIS() getThis()
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 #define NR_PHP_USER_FN_THIS() nr_php_execute_scope(execute_data)
-#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO /* PHP 7.0 - 7.4 */
-#define NR_PHP_USER_FN_THIS() getThis()
 #else
-#define NR_PHP_USER_FN_THIS() EG(This)
-#endif /* PHP 7.0+ */
+#define NR_PHP_USER_FN_THIS() getThis()
+#endif /* PHP 7.2+ */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
 /* PHP 8 expects zend_object not zval */
@@ -866,8 +797,6 @@ extern bool nr_php_function_is_static_method(const zend_function* func);
  */
 extern zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
-
 #define NR_NOT_ZEND_USER_FUNC(x) \
   (x && (!x->func || !ZEND_USER_CODE(x->func->type)))
 
@@ -885,7 +814,5 @@ static inline uint32_t nr_php_zend_function_lineno(const zend_function* func) {
   }
   return 0;
 }
-
-#endif /* PHP 7+ */
 
 #endif /* PHP_AGENT_HDR */

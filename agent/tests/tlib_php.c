@@ -83,22 +83,14 @@ static char* tlib_php_create_output_filename(const char* ext) {
  * A replacement unbuffered write callback to capture any script output for
  * further examination.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 static size_t tlib_php_engine_ub_write(const char* str, size_t len)
-#else
-static int tlib_php_engine_ub_write(const char* str, uint len TSRMLS_DC)
-#endif /* PHP >= 7.0 */
 {
   NR_UNUSED_TSRMLS;
 
   assert(NULL != out);
   fwrite(str, (size_t)len, 1, out);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   return len;
-#else
-  return NRSAFELEN(len);
-#endif /* PHP >= 7.0 */
 }
 
 /*

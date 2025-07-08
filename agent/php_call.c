@@ -14,7 +14,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
                             const char* function_name,
                             zend_uint param_count,
                             zval* params[] TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #if ZEND_MODULE_API_NO >= ZEND_8_2_X_API_NO
   zend_object* object = NULL;
   zend_string* method_name = NULL;
@@ -98,43 +97,6 @@ zval* nr_php_call_user_func(zval* object_ptr,
   }
   nr_php_zval_free(&retval);
   return NULL;
-#else /* PHP < 7 */
-  int zend_result;
-  zval* fname = NULL;
-  int no_separation = 0;
-  HashTable* symbol_table = NULL;
-  zval*** param_ptrs = NULL;
-  zval* retval = NULL;
-
-  if ((NULL == function_name) || (function_name[0] == '\0')) {
-    return NULL;
-  }
-
-  if ((NULL != params) && (param_count > 0)) {
-    zend_uint i;
-
-    param_ptrs = (zval***)nr_calloc(param_count, sizeof(zval**));
-    for (i = 0; i < param_count; i++) {
-      param_ptrs[i] = &params[i];
-    }
-  }
-
-  fname = nr_php_zval_alloc();
-  nr_php_zval_str(fname, function_name);
-  zend_result = call_user_function_ex(EG(function_table), &object_ptr, fname,
-                                      &retval, param_count, param_ptrs,
-                                      no_separation, symbol_table TSRMLS_CC);
-  nr_php_zval_free(&fname);
-
-  nr_free(param_ptrs);
-
-  if (SUCCESS == zend_result) {
-    return retval;
-  }
-
-  nr_php_zval_free(&retval);
-  return NULL;
-#endif
 }
 
 zval* nr_php_call_user_func_catch(zval* object_ptr,
@@ -160,43 +122,26 @@ zval* nr_php_call_user_func_catch(zval* object_ptr,
    * a zend_object.
    */
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
-  {
-    zend_object* exception_obj = EG(exception);
+  zend_object* exception_obj = EG(exception);
 
-    retval
-        = nr_php_call_user_func(object_ptr, function_name, param_count, params);
+  retval
+      = nr_php_call_user_func(object_ptr, function_name, param_count, params);
 
-    if ((NULL != EG(exception)) && (EG(exception) != exception_obj)) {
-      zval* exception_zv = nr_php_zval_alloc();
+  if ((NULL != EG(exception)) && (EG(exception) != exception_obj)) {
+    zval* exception_zv = nr_php_zval_alloc();
 
-      /*
-       * Wrap EG(exception) in a zval for API consistency with PHP 5, ensuring
-       * that we increment the refcount so that the caller's subsequent
-       * nr_php_zval_free() call does the right thing.
-       */
+    /*
+     * Wrap EG(exception) in a zval for API consistency with PHP 5, ensuring
+     * that we increment the refcount so that the caller's subsequent
+     * nr_php_zval_free() call does the right thing.
+     */
 
-      ZVAL_OBJ(exception_zv, EG(exception));
-      Z_ADDREF_P(exception_zv);
+    ZVAL_OBJ(exception_zv, EG(exception));
+    Z_ADDREF_P(exception_zv);
 
-      *exception = exception_zv;
-      zend_clear_exception();
-    }
+    *exception = exception_zv;
+    zend_clear_exception();
   }
-#else
-  {
-    zval* exception_zv = EG(exception);
-
-    retval = nr_php_call_user_func(object_ptr, function_name, param_count,
-                                   params TSRMLS_CC);
-
-    if ((NULL != EG(exception)) && (EG(exception) != exception_zv)) {
-      Z_ADDREF_P(EG(exception));
-      *exception = EG(exception);
-      zend_clear_exception(TSRMLS_C);
-    }
-  }
-#endif /* PHP7+ */
 
   return retval;
 }

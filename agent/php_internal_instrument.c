@@ -3021,11 +3021,7 @@ static inline int nr_php_should_instrument_exception_handler(
 NR_INNER_WRAPPER(exception_common) {
   zval* exception_handler = NULL;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   exception_handler = &EG(user_exception_handler);
-#else
-  exception_handler = EG(user_exception_handler);
-#endif
 
   /*
    * Remove instrumentation from the current exception handler, if any.
@@ -3043,11 +3039,7 @@ NR_INNER_WRAPPER(exception_common) {
    */
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   exception_handler = &EG(user_exception_handler);
-#else
-  exception_handler = EG(user_exception_handler);
-#endif
 
   /*
    * Add instrumentation to the new exception handler, if any.
@@ -3057,11 +3049,7 @@ NR_INNER_WRAPPER(exception_common) {
 
     func = nr_php_zval_to_function(exception_handler TSRMLS_CC);
     nr_php_add_exception_function(func TSRMLS_CC);
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   } else if (IS_UNDEF == Z_TYPE_P(exception_handler)) {
-#else
-  } else if (NULL == exception_handler) {
-#endif /* PHP7+ */
     nr_php_error_install_exception_handler(TSRMLS_C);
   }
 }
@@ -3443,13 +3431,8 @@ void nr_php_generate_internal_wrap_records(void) {
                       0)
   NR_INTERNAL_WRAPREC("mysqli_commit", mysqli_commit, mysqli_commit, 0, 0)
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   NR_INTERNAL_WRAPREC("mysqli::__construct", mysqliC_construct,
                       mysqli_construct, 0, 0)
-#else
-  NR_INTERNAL_WRAPREC("mysqli::mysqli", mysqliC_construct, mysqli_construct, 0,
-                      0)
-#endif /* PHP7+ */
 
   NR_INTERNAL_WRAPREC("mysqli::multi_query", mysqliC_multi_query,
                       mysqli_general_query, 0, 0)

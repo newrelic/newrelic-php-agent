@@ -68,8 +68,7 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_UNUSED_FUNC_RETURN_VALUE (void)func_return_value
 /* NR_ZEND_EXECUTE_HOOK to be removed in future ticket */
 #define NR_ZEND_EXECUTE_HOOK zend_execute_ex
-
-#elif ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ and overwrite hook*/
+#else
 #define NR_SPECIALFNPTR_PROTO                              \
   struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
       zend_execute_data *execute_data
@@ -83,36 +82,6 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_UNUSED_SPECIALFN (void)execute_data
 #define NR_UNUSED_FUNC_RETURN_VALUE
 #define NR_ZEND_EXECUTE_HOOK zend_execute_ex
-
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-#define NR_SPECIALFNPTR_PROTO                              \
-  struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
-      zend_execute_data *execute_data
-#define NR_SPECIALFNPTR_ORIG_ARGS wraprec, auto_segment, execute_data
-#define NR_SPECIALFN_PROTO nruserfn_t *wraprec, zend_execute_data *execute_data
-#define NR_OP_ARRAY (execute_data->op_array)
-#define NR_EXECUTE_PROTO zend_execute_data* execute_data
-#define NR_EXECUTE_PROTO_OVERWRITE zend_execute_data* execute_data
-#define NR_EXECUTE_ORIG_ARGS_OVERWRITE execute_data
-#define NR_EXECUTE_ORIG_ARGS execute_data
-#define NR_UNUSED_SPECIALFN (void)execute_data
-#define NR_UNUSED_FUNC_RETURN_VALUE
-#define NR_ZEND_EXECUTE_HOOK zend_execute_ex
-
-#else /* PHP < 5.5 */
-#define NR_SPECIALFNPTR_PROTO                              \
-  struct _nruserfn_t *wraprec, nr_segment_t *auto_segment, \
-      zend_op_array *op_array_arg
-#define NR_SPECIALFNPTR_ORIG_ARGS wraprec, auto_segment, op_array_arg
-#define NR_SPECIALFN_PROTO nruserfn_t *wraprec, zend_op_array *op_array_arg
-#define NR_OP_ARRAY (op_array_arg)
-#define NR_EXECUTE_PROTO zend_op_array* op_array_arg
-#define NR_EXECUTE_PROTO_OVERWRITE zend_op_array* op_array_arg
-#define NR_EXECUTE_ORIG_ARGS_OVERWRITE op_array_arg
-#define NR_EXECUTE_ORIG_ARGS op_array_arg
-#define NR_UNUSED_SPECIALFN (void)op_array_arg
-#define NR_UNUSED_FUNC_RETURN_VALUE
-#define NR_ZEND_EXECUTE_HOOK zend_execute
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
@@ -122,21 +91,12 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_GET_RETURN_VALUE_PTR nr_php_get_return_value_ptr(TSRMLS_C)
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 #define NR_UNUSED_EXECUTE_DATA (void)execute_data;
 #define NR_UNUSED_HT
 #define NR_UNUSED_RETURN_VALUE (void)return_value;
 #define NR_UNUSED_RETURN_VALUE_PTR
 #define NR_UNUSED_RETURN_VALUE_USED
 #define NR_UNUSED_THIS_PTR
-#else
-#define NR_UNUSED_EXECUTE_DATA
-#define NR_UNUSED_HT (void)ht;
-#define NR_UNUSED_RETURN_VALUE (void)return_value;
-#define NR_UNUSED_RETURN_VALUE_PTR (void)return_value_ptr;
-#define NR_UNUSED_RETURN_VALUE_USED (void)return_value_used;
-#define NR_UNUSED_THIS_PTR (void)this_ptr;
-#endif /* PHP7+ */
 
 /*
  * Convenience macro to handle unused TSRM parameters.
@@ -256,20 +216,9 @@ typedef int (*nrphphdrfn_t)(sapi_header_struct* sapi_header,
                             sapi_header_op_enum op,
                             sapi_headers_struct* sapi_headers TSRMLS_DC);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
 typedef void (*nr_php_execute_internal_function_t)(
     zend_execute_data* execute_data,
     zval* return_value);
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-typedef void (*nr_php_execute_internal_function_t)(
-    zend_execute_data* execute_data,
-    zend_fcall_info* fci,
-    int return_value_used TSRMLS_DC);
-#else
-typedef void (*nr_php_execute_internal_function_t)(
-    zend_execute_data* execute_data,
-    int return_value_used TSRMLS_DC);
-#endif
 
 typedef struct _nr_php_ini_attribute_config_t {
   nrinibool_t enabled;

@@ -84,14 +84,10 @@ typedef nr_framework_classification_t (*nr_framework_special_fn_t)(
  * Therefore we have to be more selective in our approach.
  */
 typedef struct {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   zend_string* scope;
   zend_string* function;
   zend_string* filepath;
   uint32_t function_lineno;
-#else
-  zend_op_array* op_array;
-#endif /* PHP7 */
 } nr_php_execute_metadata_t;
 
 extern nrframework_t nr_php_framework_from_config(const char* config_name);
