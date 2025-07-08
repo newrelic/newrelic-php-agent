@@ -258,22 +258,16 @@ zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
       = EG(current_execute_data); /* via zend engine global data structure */
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_FUNC_RETURN_VALUE;
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-  {
-    /*
-     * ptra is argument passed in to us, it might be NULL if the caller doesn't
-     * have that info.
-     */
-    zend_execute_data* ptra = execute_data;
-    if (NULL != ptra) {
-      return ptra;
-    } else {
-      return ptrg;
-    }
+  /*
+   * ptra is argument passed in to us, it might be NULL if the caller doesn't
+   * have that info.
+   */
+  zend_execute_data* ptra = execute_data;
+  if (NULL != ptra) {
+    return ptra;
+  } else {
+    return ptrg;
   }
-#else /* PHP < 5.5 */
-  return ptrg;
-#endif
 }
 
 /*
@@ -314,15 +308,11 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_TSRMLS;
 
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   ced = execute_data;
 
   if (NULL == ced) {
     ced = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
-#else /* PHP < 5.5 */
-  ced = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-#endif
 
   for (i = 0; i < offset; i++) {
     if (NULL == ced) {

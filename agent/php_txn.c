@@ -247,11 +247,7 @@ static int nr_php_capture_request_parameter(zval* element,
  * IS_CONSTANT_AST. For the purposes of this function, it can be
  * considered the same thing.
  */
-#if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
     case IS_CONSTANT_AST:
-#else
-    case IS_CONSTANT_ARRAY:
-#endif /* PHP >= 5.6 */
       nr_strcpy(datastr, "[constants]");
       break;
 

@@ -408,15 +408,9 @@ static inline zend_function* nr_php_execute_function(
   NR_UNUSED_TSRMLS;
   NR_UNUSED_FUNC_RETURN_VALUE;
 
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   if (NULL == execute_data) {
     return NULL;
   }
-#else
-  if (NULL == op_array_arg) {
-    return NULL;
-  }
-#endif
 
   return execute_data->func;
 }

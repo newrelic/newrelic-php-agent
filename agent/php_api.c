@@ -627,17 +627,10 @@ static nrobj_t* nr_php_api_zval_to_attribute_obj(const zval* z TSRMLS_DC) {
       return NULL;
 #endif /* PHP < 7.3 */
 
-#if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
     case IS_CONSTANT_AST:
       nr_php_api_error(NR_PHP_API_INVALID_ATTRIBUTE_FMT,
                        get_active_function_name(TSRMLS_C), "constant AST");
       return NULL;
-#else
-    case IS_CONSTANT_ARRAY:
-      nr_php_api_error(NR_PHP_API_INVALID_ATTRIBUTE_FMT,
-                       get_active_function_name(TSRMLS_C), "constant array");
-      return NULL;
-#endif /* PHP >= 5.6 */
 
     default:
       nr_php_api_error(NR_PHP_API_INVALID_ATTRIBUTE_FMT,
@@ -736,15 +729,9 @@ PHP_FUNCTION(newrelic_add_custom_parameter) {
       break;
 #endif /* PHP < 7.3 */
 
-#if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
     case IS_CONSTANT_AST:
       key = nr_strdup("(Constant AST)"); /* NOTTESTED */
       break;
-#else
-    case IS_CONSTANT_ARRAY:
-      key = nr_strdup("(Constant array)"); /* NOTTESTED */
-      break;
-#endif /* PHP >= 5.6 */
 
     default:
       key = nr_strdup("(?)"); /* NOTTESTED */

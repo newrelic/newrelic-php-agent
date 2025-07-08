@@ -15,7 +15,6 @@ tlib_parallel_info_t parallel_info
 /*
  * The mongodb extension requires PHP 5.4.
  */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
 
 static char* system_host_name;
 
@@ -204,9 +203,3 @@ void test_main(void* p NRUNUSED) {
 
   nr_free(system_host_name);
 }
-
-#else
-
-void test_main(void* p NRUNUSED) {}
-
-#endif /* PHP >= 5.4 */
