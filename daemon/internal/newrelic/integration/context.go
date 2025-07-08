@@ -12,12 +12,14 @@ import (
 )
 
 type Context struct {
-	PHP      string            // path to the PHP CLI executable
-	CGI      string            // path to the PHP CGI executable
-	Valgrind string            // path to the Valgrind executable, or empty if disabled
-	Env      map[string]string // environment variables to pass to each test
-	Settings map[string]string // settings to pass to each test
-	Timeout  time.Duration     // maximum test duration
+	PHP                 string            // path to the PHP CLI executable
+	CGI                 string            // path to the PHP CGI executable
+	Valgrind            string            // path to the Valgrind executable, or empty if disabled
+	Env                 map[string]string // environment variables to pass to each test
+	Settings            map[string]string // settings to pass to each test
+	Timeout             time.Duration     // maximum test duration
+	OPCacheModuleLoaded map[string]bool   // map of PHP and CGI to OPcache default loaded status
+	UseOPCache          bool              // whether to use OPcache in tests
 }
 
 func NewContext(php, cgi string) *Context {

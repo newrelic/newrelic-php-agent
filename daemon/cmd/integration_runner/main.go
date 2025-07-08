@@ -51,6 +51,7 @@ var (
 	flagMaxCustomEvents = flag.Int("max_custom_events", 30000, "value for newrelic.custom_events.max_samples_stored")
 	flagWarnIsFail      = flag.Bool("warnisfail", false, "warn result is treated as a fail")
 	flagOpcacheOff      = flag.Bool("opcacheoff", false, "run without opcache. Some tests are intended to fail when run this way")
+	flagDebug           = flag.Bool("debug", false, "enable debug logging for integration_runner")
 
 	// externalPort is the port on which we start a server to handle
 	// external calls.
@@ -362,15 +363,8 @@ func main() {
 		ctx.Settings["newrelic.loglevel"] = *flagLoglevel
 	}
 
-	if false == *flagOpcacheOff {
-		// PHP Modules common to all tests
-		ctx.Settings["zend_extension"] = "opcache.so"
-
-		// PHP INI values common to all tests
-		// These settings can be overwritten by adding new values to the INI block
-		ctx.Settings["opcache.enable"] = "1"
-		ctx.Settings["opcache.enable_cli"] = "1"
-	}
+	ctx.OPCacheModuleLoaded = integration.GetOPCacheModuleLoaded(*flagPHP, *flagCGI)
+	ctx.UseOPCache = !*flagOpcacheOff
 
 	// If the user provided a custom agent extension, use it.
 	if len(*flagAgent) > 0 {
@@ -459,8 +453,14 @@ func main() {
 	if numFailed > 0 {
 		os.Exit(1)
 	}
-	if *flagWarnIsFail && numWarned > 0 {
-		os.Exit(2)
+
+	if numWarned > 0 {
+		if *flagWarnIsFail {
+			fmt.Println("WARNING: some tests were warned, but are treated as failures because --warnisfail is true")
+			os.Exit(2)
+		} else {
+			fmt.Printf("WARNING: some tests were warned, but are not treated as failures because --warnisfail is false\n")
+		}
 	}
 }
 
@@ -534,6 +534,10 @@ func runTest(t *integration.Test) {
 	if skipIf != nil {
 		_, body, err := skipIf.Execute()
 
+		if *flagDebug {
+			fmt.Printf("SkipIf output:\n%s\n", body)
+		}
+
 		if err != nil {
 			t.Output = body
 			t.Fatal(fmt.Errorf("error executing skipif: %v", err))
@@ -543,6 +547,12 @@ func runTest(t *integration.Test) {
 		if skipRE.Match(body) {
 			reason := string(bytes.TrimSpace(head(body)))
 			t.Skip(reason)
+			return
+		}
+
+		if warnRE.Match(body) && *flagWarnIsFail {
+			reason := string(bytes.TrimSpace(head(body)))
+			t.Warn(reason)
 			return
 		}
 	}
@@ -562,6 +572,10 @@ func runTest(t *integration.Test) {
 		t.Duration = time.Since(start)
 	} else {
 		t.Duration = 0
+	}
+
+	if *flagDebug {
+		fmt.Printf("Test output:\n%s\n", body)
 	}
 
 	// Always save the test output. If an error occurred it may contain
