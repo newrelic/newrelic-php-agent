@@ -490,13 +490,8 @@ leave:
  *
  */
 NR_PHP_WRAPPER(nr_laravel5_exception_render) {
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   const char* class_name = NULL;
   const char* ignored = NULL;
-#else
-  char* class_name = NULL;
-  char* ignored = NULL;
-#endif /* PHP >= 5.4 */
 
   char* name = NULL;
 

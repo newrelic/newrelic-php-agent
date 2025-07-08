@@ -122,17 +122,6 @@ static zend_string* ZEND_FASTCALL tlib_php_init_interned_string(const char* str,
 }
 #endif /* PHP >= 7.3 */
 
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_7_2_X_API_NO
-static void tlib_php_interned_strings_restore(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-
-static void tlib_php_interned_strings_snapshot(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-#endif /* PHP >= 5.4 && PHP < 7.2 */
-
 /* }}} */
 
 static nr_status_t stub_cmd_appinfo_tx(int daemon_fd, nrapp_t* app);
@@ -287,18 +276,6 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
     return NR_FAILURE;
   }
 #endif
-
-  /*
-   * As noted above, we now replace the interned string callbacks on PHP
-   * 5.4-7.1, inclusive. The effect of these replacements is to disable
-   * interned strings.
-   */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_7_2_X_API_NO
-  zend_new_interned_string = tlib_php_new_interned_string;
-  zend_interned_strings_restore = tlib_php_interned_strings_restore;
-  zend_interned_strings_snapshot = tlib_php_interned_strings_snapshot;
-#endif /* PHP >= 5.4 && PHP < 7.2 */
 
   /*
    * Register the resource type we use to fake resources. We are module 0

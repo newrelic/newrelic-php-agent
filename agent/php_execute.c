@@ -1634,18 +1634,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
    * implementing it.
    */
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
     nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
-#else
-    /*
-     * We're passing the same pointer twice. This is inefficient. However, no
-     * user is ever likely to be affected, since this is a code path handling
-     * a special flag, and it makes the nr_php_show_exec_internal() API cleaner
-     * for modern versions of PHP without needing to have another function
-     * conditionally compiled.
-     */
-    nr_php_show_exec_internal((zend_op_array*)func, func TSRMLS_CC);
-#endif /* PHP >= 5.5 */
   }
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   CALL_ORIGINAL;

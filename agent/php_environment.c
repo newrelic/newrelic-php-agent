@@ -185,7 +185,6 @@ static void call_phpinfo(TSRMLS_D) {
   sapi_module.phpinfo_as_text = save_sapi_flag;
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
 /*
  * PHP's output system was rewritten in PHP 5.4. Among the many new
  * capabilities, internal output handlers can register an opaque pointer that
@@ -274,34 +273,6 @@ static void nr_php_gather_php_information(nrobj_t* env TSRMLS_DC) {
 end:
   nr_buffer_destroy(&buf);
 }
-#else
-static void nr_php_gather_php_information(nrobj_t* env TSRMLS_DC) {
-  zval* output_handler = NULL;
-  long chunk_size = 0;
-  zend_bool erase = 1;
-  zval* tmp_obj = NULL;
-
-  if (FAILURE
-      == php_start_ob_buffer(output_handler, chunk_size, erase TSRMLS_CC)) {
-    /* don't call phpinfo() if we can't buffer because otherwise we're
-     * going to dump into the user's page.
-     */
-    return;
-  }
-
-  call_phpinfo(TSRMLS_C);
-
-  tmp_obj = nr_php_zval_alloc();
-
-  php_ob_get_buffer(tmp_obj TSRMLS_CC);
-  php_end_ob_buffer(0, 0 TSRMLS_CC);
-
-  nr_php_parse_rocket_assignment_list(Z_STRVAL_P(tmp_obj), Z_STRLEN_P(tmp_obj),
-                                      env);
-
-  nr_php_zval_free(&tmp_obj);
-}
-#endif /* PHP >= 5.4 */
 
 static void nr_php_gather_machine_information(nrobj_t* env) {
   const char* dyno_value = NULL;
