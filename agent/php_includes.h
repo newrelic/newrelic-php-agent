@@ -41,12 +41,6 @@
  * Zend Engine API numbers.
  * Find these numbers at: php-src/Zend/zend_modules.h
  */
-#define ZEND_5_3_X_API_NO 20090626
-#define ZEND_5_4_X_API_NO 20100525
-#define ZEND_5_5_X_API_NO 20121212
-#define ZEND_5_6_X_API_NO 20131226
-#define ZEND_7_0_X_API_NO 20151012
-#define ZEND_7_1_X_API_NO 20160303
 #define ZEND_7_2_X_API_NO 20170718
 #define ZEND_7_3_X_API_NO 20180731
 #define ZEND_7_4_X_API_NO 20190902
@@ -60,11 +54,7 @@
 #include "Zend/zend_observer.h"
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_5_6_X_API_NO
 #include "Zend/zend_virtual_cwd.h"
-#else /* PHP < 5.6 */
-#include "tsrm_virtual_cwd.h"
-#endif
 
 #if defined(ZTS)
 #include "TSRM.h"

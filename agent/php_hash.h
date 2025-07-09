@@ -29,11 +29,7 @@ nr_php_zend_hash_key_is_string(const zend_hash_key* hash_key) {
     return 0;
   }
 
-#ifdef PHP7
   return (NULL != hash_key->key);
-#else
-  return ((NULL != hash_key->arKey) && (0 != hash_key->nKeyLength));
-#endif /* PHP7 */
 }
 
 static inline int NRPURE
@@ -56,11 +52,7 @@ nr_php_zend_hash_key_string_len(const zend_hash_key* hash_key) {
     return 0;
   }
 
-#ifdef PHP7
   return hash_key->key ? hash_key->key->len : 0;
-#else
-  return (nr_string_len_t)NRSAFELEN(hash_key->nKeyLength);
-#endif
 }
 
 static inline const char* NRPURE
@@ -69,11 +61,7 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
     return NULL;
   }
 
-#ifdef PHP7
   return hash_key->key ? hash_key->key->val : NULL;
-#else
-  return hash_key->arKey;
-#endif
 }
 
 /*
@@ -84,7 +72,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
  *           Strings will always be duplicated, since that's non-optional in
  *           PHP 7 anyway.
  */
-#ifdef PHP7
 #define nr_php_add_assoc_string(ht, key, str) \
   add_assoc_string((ht), (key), (str))
 
@@ -95,19 +82,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
 
 #define nr_php_add_next_index_stringl(ht, str, strlen) \
   add_next_index_stringl((ht), (str), (strlen))
-#else
-#define nr_php_add_assoc_string(ht, key, str) \
-  add_assoc_string((ht), (key), (str), 1)
-
-#define nr_php_add_assoc_stringl(ht, key, str, strlen) \
-  add_assoc_stringl((ht), (key), (str), (strlen), 1)
-
-#define nr_php_add_next_index_string(ht, str) \
-  add_next_index_string((ht), (str), 1)
-
-#define nr_php_add_next_index_stringl(ht, str, strlen) \
-  add_next_index_stringl((ht), (str), (strlen), 1)
-#endif /* PHP7 */
 
 /*
  * Purpose : Wrap add_assoc_zval to ensure consistent ownership behaviour.
@@ -122,7 +96,6 @@ nr_php_zend_hash_key_string_value(const zend_hash_key* hash_key) {
 static inline int nr_php_add_assoc_zval(zval* arr,
                                         const char* key,
                                         zval* value) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zval copy;
 
   ZVAL_DUP(&copy, value);
@@ -133,22 +106,6 @@ static inline int nr_php_add_assoc_zval(zval* arr,
 #else
   return add_assoc_zval(arr, key, &copy);
 #endif /* PHP8 */
-#else  /* Less than PHP7 */
-  zval* copy;
-
-  ALLOC_ZVAL(copy);
-  INIT_PZVAL(copy);
-
-  /*
-   * When we drop support for PHP 5.3, we can just use ZVAL_COPY_VALUE here.
-   */
-  copy->value = value->value;
-  Z_TYPE_P(copy) = Z_TYPE_P(value);
-
-  zval_copy_ctor(copy);
-
-  return add_assoc_zval(arr, key, copy);
-#endif /* PHP7 */
 }
 
 /*
@@ -164,28 +121,11 @@ static inline int nr_php_add_assoc_zval(zval* arr,
 static inline int nr_php_add_index_zval(zval* arr,
                                         zend_ulong index,
                                         zval* value) {
-#ifdef PHP7
   zval copy;
 
   ZVAL_DUP(&copy, value);
 
   return add_index_zval(arr, index, &copy);
-#else
-  zval* copy;
-
-  ALLOC_ZVAL(copy);
-  INIT_PZVAL(copy);
-
-  /*
-   * When we drop support for PHP 5.3, we can just use ZVAL_COPY_VALUE here.
-   */
-  copy->value = value->value;
-  Z_TYPE_P(copy) = Z_TYPE_P(value);
-
-  zval_copy_ctor(copy);
-
-  return add_index_zval(arr, index, copy);
-#endif /* PHP7 */
 }
 
 typedef int (*nr_php_ptr_apply_t)(void* value,

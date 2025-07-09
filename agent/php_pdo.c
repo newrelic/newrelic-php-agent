@@ -130,11 +130,7 @@ int nr_php_pdo_rebind_apply_parameter(struct pdo_bound_param_data* param,
   zval* type = nr_php_zval_alloc();
   zval* retval = NULL;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   value = &param->parameter;
-#else
-  value = param->parameter;
-#endif /* PHP 7.0+ */
 
   if (nr_php_zend_hash_key_is_string(hash_key)) {
     /*

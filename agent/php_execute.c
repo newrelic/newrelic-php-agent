@@ -155,12 +155,10 @@ int nr_format_zval_for_debug(zval* arg,
         break;
       }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_STR_P(arg)) {
         safe_append("invalid string", 14);
         break;
       }
-#endif
 
       str = Z_STRVAL_P(arg);
       len = Z_STRLEN_P(arg);
@@ -199,7 +197,6 @@ int nr_format_zval_for_debug(zval* arg,
       safe_append(tmp, len);
       break;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
     case IS_TRUE:
       safe_append("true", 4);
       break;
@@ -207,15 +204,6 @@ int nr_format_zval_for_debug(zval* arg,
     case IS_FALSE:
       safe_append("false", 5);
       break;
-#else
-    case IS_BOOL:
-      if (0 == Z_BVAL_P(arg)) {
-        safe_append("false", 5);
-      } else {
-        safe_append("true", 4);
-      }
-      break;
-#endif /* PHP7 */
 
     case IS_DOUBLE:
       /*
@@ -227,12 +215,10 @@ int nr_format_zval_for_debug(zval* arg,
       break;
 
     case IS_OBJECT:
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
       if (NULL == Z_OBJ_P(arg)) {
         safe_append("invalid object", 14);
         break;
       }
-#endif /* PHP7 */
 
       ce = Z_OBJCE_P(arg);
       len = snprintf(tmp, sizeof(tmp) - 1,
@@ -353,9 +339,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
-    {"Kohana", "kohana", NR_PSTR("kohana/core.php"), 0, nr_kohana_enable, NR_FW_KOHANA},
-
     /* See below: Zend, the legacy project of Laminas, which shares much
        of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
@@ -385,23 +368,11 @@ static const nr_framework_table_t all_frameworks[] = {
     {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,
      NR_FW_MEDIAWIKI},
 
-    {"Silex", "silex", NR_PSTR("silex/application.php"), 0, nr_silex_enable,
-     NR_FW_SILEX},
-
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 3.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
-    {"Symfony", "symfony1", NR_PSTR("sfcontext.class.php"), 0, nr_symfony1_enable,
-     NR_FW_SYMFONY1},
-    {"Symfony", "symfony1", NR_PSTR("sfconfig.class.php"), 0, nr_symfony1_enable,
-     NR_FW_SYMFONY1},
-    {"Symfony2", "symfony2", NR_PSTR("bootstrap.php.cache"), 0, nr_symfony2_enable,
-     NR_FW_SYMFONY2}, /* also Symfony 3 */
-    {"Symfony2", "symfony2",
-     NR_PSTR("symfony/bundle/frameworkbundle/frameworkbundle.php"), 0,
-     nr_symfony2_enable, NR_FW_SYMFONY2}, /* also Symfony 3 */
     {"Symfony4", "symfony4", NR_PSTR("http-kernel/httpkernel.php"), 0,
      nr_symfony4_enable, NR_FW_SYMFONY4}, /* also Symfony 5/6/7 */
 
@@ -414,11 +385,12 @@ static const nr_framework_table_t all_frameworks[] = {
 
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
-    {"Zend", "zend", NR_PSTR("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
-    {"Zend2", "zend2", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend2_enable,
-     NR_FW_ZEND2},
-    {"Zend2", "zend2", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend2_enable,
-     NR_FW_ZEND2},
+    // treating zend2 as zend3 for backwards compatibility
+    {"Zend3", "zend2", NULL, 0, 0, nr_fw_zend3_enable, NR_FW_ZEND3}, 
+    {"Zend3", "zend3", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend3_enable,
+     NR_FW_ZEND3},
+    {"Zend3", "zend3", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend3_enable,
+     NR_FW_ZEND3},
 };
 // clang-format: on
 static const int num_all_frameworks
@@ -484,7 +456,6 @@ static nr_library_table_t libraries[] = {
     /* Doctrine 2.18 reworked the directory structure */
     {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
 
-    {"Guzzle 3", NR_PSTR("guzzle/http/client.php"), nr_guzzle3_enable},
     {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
     {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
 
@@ -1041,7 +1012,6 @@ void nr_php_execute_file(const zend_op_array* op_array,
  */
 static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
                                          zend_op_array* op_array) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   if (op_array->scope && op_array->scope->name && op_array->scope->name->len) {
     metadata->scope = op_array->scope->name;
     zend_string_addref(metadata->scope);
@@ -1067,13 +1037,8 @@ static void nr_php_execute_metadata_init(nr_php_execute_metadata_t* metadata,
   }
 
   metadata->function_lineno = op_array->line_start;
-
-#else
-  metadata->op_array = op_array;
-#endif /* PHP7 */
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
 /*
  * Purpose : If code level metrics are enabled, use the metadata to create agent
  * attributes in the segment with code level metrics.
@@ -1212,7 +1177,6 @@ static inline void nr_php_execute_segment_add_code_level_metrics(
                                "code.lineno", metadata->function_lineno);
 }
 
-#endif
 /*
  * Purpose : Create a metric name from the given metadata.
  *
@@ -1231,13 +1195,8 @@ static void nr_php_execute_metadata_metric(
   const char* function_name;
   const char* scope_name;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   scope_name = metadata->scope ? ZSTR_VAL(metadata->scope) : NULL;
   function_name = metadata->function ? ZSTR_VAL(metadata->function) : NULL;
-#else
-  scope_name = nr_php_op_array_scope_name(metadata->op_array);
-  function_name = nr_php_op_array_function_name(metadata->op_array);
-#endif /* PHP7 */
 
   snprintf(buf, len, "Custom/%s%s%s", scope_name ? scope_name : "",
            scope_name ? "::" : "", function_name ? function_name : "<unknown>");
@@ -1250,7 +1209,6 @@ static void nr_php_execute_metadata_metric(
  */
 static inline void nr_php_execute_metadata_release(
     nr_php_execute_metadata_t* metadata) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 
   if (NULL != metadata->scope) {
     zend_string_release(metadata->scope);
@@ -1266,10 +1224,6 @@ static inline void nr_php_execute_metadata_release(
     zend_string_release(metadata->filepath);
     metadata->filepath = NULL;
   }
-
-#else
-  metadata->op_array = NULL;
-#endif /* PHP7 */
 }
 
 static inline void nr_php_execute_segment_add_metric(
@@ -1347,11 +1301,9 @@ static inline void nr_php_execute_segment_end(
      * Check if code level metrics are enabled in the ini.
      * If they aren't, exit and don't create any CLM.
      */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP >= PHP7 */
     if (NRINI(code_level_metrics_enabled)) {
       nr_php_execute_segment_add_code_level_metrics(s, metadata);
     }
-#endif
 
     nr_segment_end(&s);
   } else {
@@ -1485,7 +1437,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
         zval* exception_zval = NULL;
         nr_status_t status;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
         /*
          * On PHP 7, EG(exception) is stored as a zend_object, and is only
          * wrapped in a zval when it actually needs to be.
@@ -1494,12 +1445,6 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
 
         ZVAL_OBJ(&exception, EG(exception));
         exception_zval = &exception;
-#else
-        /*
-         * On PHP 5, the exception is just a regular old zval.
-         */
-        exception_zval = EG(exception);
-#endif /* PHP7 */
 
         status = nr_php_error_record_exception_segment(
             NRPRG(txn), exception_zval, &NRPRG(exception_filters) TSRMLS_CC);
@@ -1651,28 +1596,11 @@ static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
       NRP_PHP(name ? name : "?"), NRP_ARGSTR(argstr));
 }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 #define CALL_ORIGINAL \
   (NR_PHP_PROCESS_GLOBALS(orig_execute_internal)(execute_data, return_value))
 
 void nr_php_execute_internal(zend_execute_data* execute_data,
                              zval* return_value NRUNUSED)
-#elif ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-#define CALL_ORIGINAL                                               \
-  (NR_PHP_PROCESS_GLOBALS(orig_execute_internal)(execute_data, fci, \
-                                                 return_value_used TSRMLS_CC))
-
-void nr_php_execute_internal(zend_execute_data* execute_data,
-                             zend_fcall_info* fci,
-                             int return_value_used TSRMLS_DC)
-#else
-#define CALL_ORIGINAL                                          \
-  (NR_PHP_PROCESS_GLOBALS(orig_execute_internal)(execute_data, \
-                                                 return_value_used TSRMLS_CC))
-
-void nr_php_execute_internal(zend_execute_data* execute_data,
-                             int return_value_used TSRMLS_DC)
-#endif
 {
   nrtime_t duration = 0;
   zend_function* func = NULL;
@@ -1689,11 +1617,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
     return;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP7+ */
   func = execute_data->func;
-#else
-  func = execute_data->function_state.function;
-#endif /* PHP7 */
 
   if (nrunlikely(NULL == func)) {
     nrl_verbosedebug(NRL_AGENT, "%s: NULL func", __func__);
@@ -1710,18 +1634,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
    * implementing it.
    */
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
     nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
-#else
-    /*
-     * We're passing the same pointer twice. This is inefficient. However, no
-     * user is ever likely to be affected, since this is a code path handling
-     * a special flag, and it makes the nr_php_show_exec_internal() API cleaner
-     * for modern versions of PHP without needing to have another function
-     * conditionally compiled.
-     */
-    nr_php_show_exec_internal((zend_op_array*)func, func TSRMLS_CC);
-#endif /* PHP >= 5.5 */
   }
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
   CALL_ORIGINAL;

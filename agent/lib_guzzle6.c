@@ -65,7 +65,6 @@
  * support on older versions and will instead provide simple stubs for the two
  * exported functions to avoid linking errors.
  */
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
 
 /* {{{ newrelic\Guzzle6\RequestHandler class definition and methods */
 
@@ -525,22 +524,3 @@ void nr_guzzle6_minit(TSRMLS_D) {
   zend_declare_property_null(nr_guzzle6_requesthandler_ce, NR_PSTR("request"),
                              ZEND_ACC_PRIVATE TSRMLS_CC);
 }
-
-#else /* PHP < 5.5 */
-
-NR_PHP_WRAPPER_START(nr_guzzle6_client_construct) {
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_TSRMLS;
-}
-NR_PHP_WRAPPER_END
-
-void nr_guzzle6_enable(TSRMLS_D) {
-  NR_UNUSED_TSRMLS
-}
-
-void nr_guzzle6_minit(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-
-#endif /* 5.5.x */

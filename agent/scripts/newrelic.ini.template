@@ -637,12 +637,11 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          encounter a failure with framework autodetection.
 ;
 ;          Must be one of the following values:
-;          cakephp, codeigniter, drupal, drupal8, joomla, kohana, laravel,
-;          magento, magento2, mediawiki, slim, symfony2, symfony4,
-;          wordpress, yii, yii2, zend, zend2, no_framework
+;          cakephp, codeigniter, drupal, drupal8, joomla, laravel,
+;          magento, magento2, mediawiki, slim, symfony4,
+;          wordpress, yii, yii2, zend3, no_framework
 ;
-;          Note that "drupal" covers only Drupal 6 and 7 and "symfony2"
-;          now only supports Symfony 3.x.
+;          Note that "drupal" covers only Drupal 6 and 7.
 ;
 ;newrelic.framework = ""
 

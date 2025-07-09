@@ -197,11 +197,7 @@ static int nr_drupal8_is_function_in_call_stack(const char* function,
   trace = nr_php_zval_alloc();
 
   /* Grab the actual backtrace. */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   zend_fetch_debug_backtrace(trace, 0, 1, 0 TSRMLS_CC);
-#else /* PHP < 5.4 */
-  zend_fetch_debug_backtrace(trace, 0, 1 TSRMLS_CC);
-#endif
 
   if (!nr_php_is_zval_valid_array(trace)) {
     nrl_error(NRL_TXN, "%s: trace should never not be an array", __func__);

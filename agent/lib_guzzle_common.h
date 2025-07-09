@@ -4,7 +4,7 @@
  *
  * This file contains functions common to all supported Guzzle versions.
  *
- * We support Guzzle 3 (LIB_GUZZLE3) and Guzzle 4 (LIB_GUZZLE4) within the
+ * We support Guzzle 4 (LIB_GUZZLE4) within the
  * agent. Some aspects of these frameworks are the same (mostly object
  * tracking), while the implementation details differ significantly.
  */

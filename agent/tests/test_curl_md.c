@@ -456,9 +456,6 @@ static void test_curl_multi_md_initialized(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   tlib_php_engine_create("" PTSRMLS_CC);
 

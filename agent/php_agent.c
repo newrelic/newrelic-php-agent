@@ -20,7 +20,6 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
     zval* object,
     zend_class_entry* ce,
     const char* cname TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   /*
    * Although the below notes still apply in principle, PHP 7 additionally broke
    * the API for zend_read_property by adding an rv parameter, which is used to
@@ -41,25 +40,6 @@ static zval* nr_php_get_zval_object_property_with_class_internal(
   if (&EG(uninitialized_zval) != data) {
     return data;
   }
-#else
-  /*
-   * This attempts to read uninitialized (or non existing) properties always
-   * return uninitialized_zval_ptr, even in the case where we read a property
-   * during pre-hook time on a constructor.
-   */
-  zend_bool silent = 1; /* forces BP_VAR_IS semantics */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-  zval* data = zend_read_property(ce, object, cname, nr_strlen(cname),
-                                  silent TSRMLS_CC);
-#else
-  zval* data = zend_read_property(ce, object, (char*)nr_remove_const(cname),
-                                  nr_strlen(cname), silent TSRMLS_CC);
-#endif /* PHP >= 5.4 */
-
-  if (EG(uninitialized_zval_ptr) != data) {
-    return data;
-  }
-#endif /* PHP7+ */
 
   return NULL;
 }
@@ -149,32 +129,12 @@ int nr_php_object_has_method(zval* object, const char* lcname TSRMLS_DC) {
       return 0;
     } else {
       void* func;
-
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
       zend_string* name_str = zend_string_init(vname, namelen, 0);
 
       func = (void*)Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object), name_str,
                                                    NULL TSRMLS_CC);
 
       zend_string_release(name_str);
-#elif ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-      /*
-       * This can leak if the object has a __call() method, as in that situation
-       * only, zend_std_get_method() will indirectly allocate a new
-       * zend_function in zend_get_user_call_function().
-       *
-       * We can't easily detect this, and the zend_function() is allocated via
-       * emalloc(), so we're just going to let this slide and let the Zend
-       * Engine clean it up at RSHUTDOWN. Note that this needs to be suppressed
-       * in Valgrind, though.
-       */
-      func = (void*)Z_OBJ_HT_P(object)->get_method(
-          &object, vname, namelen,
-          NULL TSRMLS_CC); /* nr_php_object_has_method */
-#else /* PHP < 5.4 */
-      func = (void*)Z_OBJ_HT_P(object)->get_method(
-          &object, vname, namelen TSRMLS_CC); /* nr_php_object_has_method */
-#endif
 
       if (NULL == func) {
         return 0;
@@ -214,23 +174,11 @@ zend_function* nr_php_find_function(const char* name TSRMLS_DC) {
  * whereas PHP 7 only uses a single level of indirection.
  */
 zend_class_entry* nr_php_find_class(const char* name TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == name) {
     return NULL;
   }
 
   return (zend_class_entry*)nr_php_zend_hash_find_ptr(EG(class_table), name);
-#else
-  zend_class_entry** ce_ptr = 0;
-
-  if (0 == name) {
-    return 0;
-  }
-
-  ce_ptr = (zend_class_entry**)nr_php_zend_hash_find_ptr(EG(class_table), name);
-
-  return ce_ptr ? *ce_ptr : NULL;
-#endif /* PHP7+ */
 }
 
 zend_function* nr_php_find_class_method(const zend_class_entry* klass,
@@ -286,15 +234,9 @@ zend_function* nr_php_zval_to_function(zval* zv TSRMLS_DC) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (zend_is_callable_ex(zv, NULL, 0, NULL, &fcc, NULL)) {
     return fcc.function_handler;
   }
-#else
-  if (zend_is_callable_ex(zv, NULL, 0, NULL, NULL, &fcc, NULL TSRMLS_CC)) {
-    return fcc.function_handler;
-  }
-#endif /* PHP7+ */
 
   return NULL;
 }
@@ -316,137 +258,17 @@ zend_execute_data* nr_get_zend_execute_data(NR_EXECUTE_PROTO TSRMLS_DC) {
       = EG(current_execute_data); /* via zend engine global data structure */
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_FUNC_RETURN_VALUE;
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-  {
-    /*
-     * ptra is argument passed in to us, it might be NULL if the caller doesn't
-     * have that info.
-     */
-    zend_execute_data* ptra = execute_data;
-    if (NULL != ptra) {
-      return ptra;
-    } else {
-      return ptrg;
-    }
+  /*
+   * ptra is argument passed in to us, it might be NULL if the caller doesn't
+   * have that info.
+   */
+  zend_execute_data* ptra = execute_data;
+  if (NULL != ptra) {
+    return ptra;
+  } else {
+    return ptrg;
   }
-#else /* PHP < 5.5 */
-  return ptrg;
-#endif
 }
-
-/*
- * Purpose : Return a pointer to the arguments for the true frame that is
- *           legitimate_frame_delta frames down from the top.
- *
- * Params  : 1. The number of true frames to walk down.  0 means "top of stack".
- *              The PHP5.5 half-formed stack top frame (with a null arguments
- *              block) is ignored.
- *
- *           2. The execution context supplied by the zend engine; this changes
- *              from PHP5.4 to PHP5.5, hence the use of macros.
- *
- * See this web page discussion migrating from 5.4 to 5.5 (July 22, 2013)
- *   http://www.php.net/manual/en/migration55.internals.php
- *
- * If the arguments pointer is null, it represents either a half-formed frame
- * (or the base of the call stack). Go up one frame, and use the arguments
- * vector from there. The two functions appear to be identical.
- *
- * For PHP 5.4 (and presumably earlier), this additional stack frame isn't
- * there.
- *
- * See the picture near line 1525 of PHP 5.5.3 zend_execute.c
- */
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO && !defined(PHP7) \
-    && !defined(PHP8) /* PHP 5.5 and 5.6 */
-static void** nr_php_get_php55_stack_arguments(int legitimate_frame_delta,
-                                               NR_EXECUTE_PROTO TSRMLS_DC) {
-  zend_execute_data* ex;
-  void** arguments;
-  int i;
-
-  ex = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  arguments = ex->function_state.arguments;
-  if (NULL == arguments) {
-    ex = ex->prev_execute_data; /* discard top partially formed frame */
-  }
-
-  if (NULL == ex) {
-    return NULL;
-  }
-
-  arguments = ex->function_state.arguments;
-  if (NULL == arguments) {
-    return NULL; /* PHP stack appears to be be malformed */
-  }
-
-  for (i = 0; i < legitimate_frame_delta; i++) {
-    ex = ex->prev_execute_data;
-    if (NULL == ex) {
-      return NULL; /* No caller; we're at the bottom of the stack */
-    }
-    arguments = ex->function_state.arguments;
-    if (NULL == arguments) {
-      return NULL; /* PHP stack appears to be be malformed */
-    }
-  }
-
-  return arguments;
-}
-#endif
-
-#if !defined(PHP7) && !defined(PHP8) /* PHP 5.5 and 5.6 */
-/*
- * Use detailed zend specific knowledge of the interpreter stack
- * to read the argument vector.
- * Here, the 'h' suffix means "hackery".
- */
-static zval* nr_php_get_user_func_arg_via_h(int requested_arg_index,
-                                            int* arg_count_p,
-                                            NR_EXECUTE_PROTO TSRMLS_DC) {
-  void** p = 0;
-  zval** argp = 0;
-  zval* arg = 0;
-
-  NR_UNUSED_SPECIALFN;
-
-  if (NULL == arg_count_p) {
-    return NULL;
-  }
-  *arg_count_p = -1;
-  if (NULL == nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
-    return NULL;
-  }
-
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
-  p = nr_php_get_php55_stack_arguments(0, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (NULL == p) {
-    return NULL;
-  }
-  *arg_count_p = (int)(zend_uintptr_t)*p;
-#else
-  p = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC)
-          ->function_state.arguments;
-  if (NULL == p) {
-    return NULL;
-  }
-  *arg_count_p = (int)(zend_uintptr_t)*p;
-#endif /* PHP >= 5.5 */
-
-  if (requested_arg_index > *arg_count_p) {
-    return NULL;
-  }
-
-  argp = ((zval**)p) - *arg_count_p + requested_arg_index - 1;
-  if (NULL == argp) {
-    return NULL;
-  }
-
-  arg = *argp;
-  return arg;
-}
-#endif /* !PHP7 && !PHP8*/
 
 /*
  * NOTICE: requested_arg_index is a 1-based value, not a 0-based value!
@@ -462,7 +284,6 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   (void)arg_count_via_h;
 
   if (requested_arg_index > ZEND_CALL_NUM_ARGS(execute_data)) {
@@ -470,33 +291,13 @@ zval* nr_php_get_user_func_arg(size_t requested_arg_index,
   }
 
   arg_via_h = ZEND_CALL_ARG(execute_data, requested_arg_index);
-#else
-  arg_via_h = nr_php_get_user_func_arg_via_h(
-      requested_arg_index, &arg_count_via_h, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-#endif /* PHP7+ */
 
   return arg_via_h;
 }
 
 size_t nr_php_get_user_func_arg_count(NR_EXECUTE_PROTO TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   NR_UNUSED_FUNC_RETURN_VALUE;
   return (size_t)ZEND_CALL_NUM_ARGS(execute_data);
-#else
-  int arg_count_via_h = -1;
-
-  if (NULL
-      == nr_php_get_user_func_arg_via_h(1, &arg_count_via_h,
-                                        NR_EXECUTE_ORIG_ARGS TSRMLS_CC)) {
-    return 0;
-  } else if (arg_count_via_h < 0) {
-    nrl_verbosedebug(NRL_AGENT, "%s: unexpected argument count %d", __func__,
-                     arg_count_via_h);
-    return 0;
-  }
-
-  return (size_t)arg_count_via_h;
-#endif /* PHP7+ */
 }
 
 zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
@@ -507,15 +308,11 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
   NR_UNUSED_SPECIALFN;
   NR_UNUSED_TSRMLS;
 
-#if ZEND_MODULE_API_NO >= ZEND_5_5_X_API_NO
   ced = execute_data;
 
   if (NULL == ced) {
     ced = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
-#else /* PHP < 5.5 */
-  ced = nr_get_zend_execute_data(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-#endif
 
   for (i = 0; i < offset; i++) {
     if (NULL == ced) {
@@ -525,30 +322,18 @@ zend_execute_data* nr_php_get_caller_execute_data(NR_EXECUTE_PROTO,
     ced = ced->prev_execute_data;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if ((NULL == ced) || (NULL == ced->opline)) {
     return NULL;
   }
-#else
-  if ((NULL == ced) || (NULL == ced->op_array)) {
-    return NULL;
-  }
-#endif /* PHP7+ */
 
   if ((ZEND_DO_FCALL != ced->opline->opcode)
       && (ZEND_DO_FCALL_BY_NAME != ced->opline->opcode)) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   if (NULL == ced->func) {
     return NULL;
   }
-#else
-  if (0 == ced->function_state.function) {
-    return NULL;
-  }
-#endif /* PHP7+ */
 
   return ced;
 }
@@ -562,17 +347,12 @@ const zend_function* nr_php_get_caller(NR_EXECUTE_PROTO,
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   return ped->func;
-#else
-  return ped->function_state.function;
-#endif /* PHP7+ */
 }
 
 zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC) {
   HashTable* table;
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   table = zend_rebuild_symbol_table();
 
   /*
@@ -586,10 +366,6 @@ zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC) {
    * https://nikic.github.io/2015/06/19/Internal-value-representation-in-PHP-7-part-2.html#indirect-zvals
    */
   return nr_php_zval_direct(nr_php_zend_hash_find(table, name));
-#else
-  table = EG(active_symbol_table);
-  return nr_php_zend_hash_find(table, name);
-#endif /* PHP7+ */
 }
 
 int nr_php_silence_errors(TSRMLS_D) {
@@ -605,7 +381,6 @@ void nr_php_restore_errors(int error_reporting TSRMLS_DC) {
 }
 
 zval* nr_php_get_constant(const char* name TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zval* constant;
   zval* copy = NULL;
   zend_string* name_str;
@@ -629,31 +404,9 @@ zval* nr_php_get_constant(const char* name TSRMLS_DC) {
   ZVAL_DUP(copy, constant);
 
   return copy;
-#else
-  nr_string_len_t len;
-  int rv;
-  zval* constant = NULL;
-
-  if (NULL == name) {
-    return NULL;
-  }
-
-  len = nr_strlen(name);
-  constant = nr_php_zval_alloc();
-
-  /* zend_get_constant returns 0 and 1 (not SUCCESS or FAILURE) */
-  rv = zend_get_constant(name, len, constant TSRMLS_CC);
-  if (0 == rv) {
-    nr_php_zval_free(&constant);
-    return NULL;
-  }
-
-  return constant;
-#endif /* PHP7+ */
 }
 
 zval* nr_php_get_class_constant(const zend_class_entry* ce, const char* name) {
-#if ZEND_MODULE_API_NO >= ZEND_7_1_X_API_NO
   zend_class_constant* constant = NULL;
   zval* copy = NULL;
 
@@ -669,29 +422,6 @@ zval* nr_php_get_class_constant(const zend_class_entry* ce, const char* name) {
   }
 
   return copy;
-#else
-  zval* constant = NULL;
-  zval* copy = NULL;
-
-  if (NULL == ce) {
-    return NULL;
-  }
-
-  constant = nr_php_zend_hash_find(&(ce->constants_table), name);
-
-  if (constant) {
-    copy = nr_php_zval_alloc();
-
-    /*
-     * PHP 7.0 usually returns an IS_REF. We need to unwrap to ensure that we
-     * duplicate the concrete value, otherwise the caller will end up freeing a
-     * value that it doesn't own, and bad things will happen.
-     */
-    ZVAL_DUP(copy, nr_php_zval_real_value(constant));
-  }
-
-  return copy;
-#endif
 }
 
 char* nr_php_get_object_constant(zval* app, const char* name) {
@@ -763,7 +493,6 @@ int nr_php_is_zval_named_constant(const zval* zv, const char* name TSRMLS_DC) {
 }
 
 int nr_php_zend_is_auto_global(const char* name, size_t name_len TSRMLS_DC) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   zend_bool rv;
   zend_string* zs = zend_string_init(name, name_len, 0);
 
@@ -771,9 +500,6 @@ int nr_php_zend_is_auto_global(const char* name, size_t name_len TSRMLS_DC) {
 
   zend_string_free(zs);
   return rv;
-#else
-  return (int)zend_is_auto_global(name, (int)name_len TSRMLS_CC);
-#endif /* PHP7+ */
 }
 
 const char* nr_php_use_license(const char* api_license TSRMLS_DC) {
@@ -801,11 +527,7 @@ char* nr_php_get_server_global(const char* name TSRMLS_DC) {
     return NULL;
   }
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
   global = &(PG(http_globals)[TRACK_VARS_SERVER]);
-#else
-  global = PG(http_globals)[TRACK_VARS_SERVER];
-#endif
 
   if (!nr_php_is_zval_valid_array(global)) {
     return NULL;
@@ -1128,11 +850,7 @@ char* nr_php_function_debug_name(const zend_function* func) {
 
   if ((ZEND_USER_FUNCTION == func->type)
       && (func->common.fn_flags & ZEND_ACC_CLOSURE)) {
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO /* PHP 7.0+ */
     const char* filename = ZSTR_VAL(func->op_array.filename);
-#else
-    const char* filename = func->op_array.filename;
-#endif /* PHP7+ */
     char* orig_name = name;
 
     name = nr_formatf("%s declared at %s:%d", orig_name, NRSAFESTR(filename),
