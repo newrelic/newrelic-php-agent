@@ -666,17 +666,16 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
 
       ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(class_val), method_key,
                                     module_val) {
-        if (NULL == method_key
-            || 0 == nr_php_is_zval_valid_string(module_val)) {
-          if (NULL != method_key) {
-            nrl_warning(
-                NRL_FRAMEWORK,
-                "hookImplementationsMap[method]: invalid value for key '%s'",
-                NRSAFESTR(ZEND_STRING_VALUE(method_key)));
-          } else {
-            nrl_warning(NRL_FRAMEWORK,
-                        "hookImplementationsMap[method]: invalid key");
-          }
+        if (NULL == method_key) {
+          nrl_warning(NRL_FRAMEWORK,
+                      "hookImplementationsMap[method]: invalid key");
+          return false;
+        }
+        if (0 == nr_php_is_zval_valid_string(module_val)) {
+          nrl_warning(
+              NRL_FRAMEWORK,
+              "hookImplementationsMap[method]: invalid value for key '%s'",
+              NRSAFESTR(ZEND_STRING_VALUE(method_key)));
           return false;
         }
 
