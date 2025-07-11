@@ -651,8 +651,15 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
                                 hook_val) {
     if (nr_is_invalid_key_val_arr(hook_key, hook_val)) {
-      nrl_warning(NRL_FRAMEWORK,
-                  "hookImplementationsMap[hook]: invalid key or value");
+      if (hook_key == null) {
+        nrl_warning(NRL_FRAMEWORK,
+                    "hookImplementationsMap[hook]: key is null");
+      } else {
+        invalid_value_message = nr_formatf();
+        nrl_warning(NRL_FRAMEWORK,
+                   "hookImplementationsMap[hook]: %s key has invalid value",
+                   ZEND_STRING_VALUE(hook_key));
+      }
       return false;
     }
 
