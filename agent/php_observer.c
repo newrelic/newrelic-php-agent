@@ -84,6 +84,10 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
+  if (0 == nr_php_recording()) {
+    return handlers;
+  }
+
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
     nr_php_show_exec("observe", execute_data, NULL);
   }
