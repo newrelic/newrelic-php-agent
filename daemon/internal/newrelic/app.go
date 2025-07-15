@@ -362,7 +362,7 @@ func (app *App) Inactive(threshold time.Duration) bool {
 //
 // convert the array of 'new' packages into a byte array representing
 // the expected data that should match input, minus the duplicates.
-func (app *App) filterPhpPackages(data []byte) []byte {
+func (app *App) filterPhpPackages(data []JSONString) []byte {
 	if data == nil {
 		return nil
 	}
@@ -371,25 +371,27 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 	var newPkgs []PhpPackagesKey
 	var x []interface{}
 
-	err := json.Unmarshal(data, &x)
-	if nil != err {
-		log.Errorf("failed to unmarshal php package json: %s", err)
-		return nil
-	}
-
-	for _, pkgJson := range x {
-		pkg, _ := pkgJson.([]interface{})
-		if len(pkg) != 3 {
-			log.Errorf("invalid php package json structure: %+v", pkg)
+	for i := 0; i < len(data); i++ {
+		err := json.Unmarshal(data[i], &x)
+		if nil != err {
+			log.Errorf("failed to unmarshal php package json: %s", err)
 			return nil
 		}
-		name, ok := pkg[0].(string)
-		version, ok := pkg[1].(string)
-		pkgKey = PhpPackagesKey{name, version}
-		_, ok = app.PhpPackages[pkgKey]
-		if !ok {
-			app.PhpPackages[pkgKey] = struct{}{}
-			newPkgs = append(newPkgs, pkgKey)
+
+		for _, pkgJson := range x {
+			pkg, _ := pkgJson.([]interface{})
+			if len(pkg) != 3 {
+				log.Errorf("invalid php package json structure: %+v", pkg)
+				return nil
+			}
+			name, ok := pkg[0].(string)
+			version, ok := pkg[1].(string)
+			pkgKey = PhpPackagesKey{name, version}
+			_, ok = app.PhpPackages[pkgKey]
+			if !ok {
+				app.PhpPackages[pkgKey] = struct{}{}
+				newPkgs = append(newPkgs, pkgKey)
+			}
 		}
 	}
 
