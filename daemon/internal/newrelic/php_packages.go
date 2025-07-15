@@ -21,7 +21,7 @@ type PhpPackagesKey struct {
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
 	numSeen int
-	data    JSONString
+	data    []JSONString
 }
 
 // NumSeen returns the total number PHP packages payloads stored.
@@ -48,13 +48,13 @@ func (packages *PhpPackages) SetPhpPackages(data []byte) error {
 		return fmt.Errorf("packages is nil!")
 	}
 	if nil != packages.data {
-		log.Debugf("SetPhpPackages - data field was not nil |^%s| - overwriting data", packages.data)
+		log.Debugf("SetPhpPackages - data field was not nil |^%+v| - appending data", packages.data)
 	}
 	if nil == data {
 		return fmt.Errorf("data is nil!")
 	}
 	packages.numSeen = 1
-	packages.data = data
+	packages.data = append(packages.data, data)
 
 	return nil
 }
@@ -77,8 +77,10 @@ func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
 	buf.Grow(estimate)
 	buf.WriteByte('[')
 	buf.WriteString("\"Jars\",")
-	if 0 < packages.numSeen {
-		buf.Write(packages.data)
+	for i := 0; i < len(packages.data); i++ {
+		if 0 < packages.numSeen {
+			buf.Write(packages.data[i])
+		}
 	}
 	buf.WriteByte(']')
 

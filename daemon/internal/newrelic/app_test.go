@@ -618,13 +618,13 @@ func TestFilterPhpPackages(t *testing.T) {
 	app := App{
 		PhpPackages: make(map[PhpPackagesKey]struct{}),
 	}
-	var nilData []byte = nil
-	emptyData := []byte(`[[{}]]`)
-	validData := []byte(`[["drupal","6.0",{}]]`)
-	moreValidData := []byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)
-	duplicateData := []byte(`[["drupal","6.0",{}]]`)
-	versionData := []byte(`[["drupal","9.0",{}]]`)
-	invalidData := []byte(`[[["1","2","3"],["4","5"]{}]]`)
+	var nilData []JSONString = nil
+	emptyData := []JSONString{([]byte(`[[{}]]`))}
+	validData := []JSONString{[]byte(`[["drupal","6.0",{}]]`)}
+	moreValidData := []JSONString{[]byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)}
+	duplicateData := []JSONString{[]byte(`[["drupal","6.0",{}]]`)}
+	versionData := []JSONString{[]byte(`[["drupal","9.0",{}]]`)}
+	invalidData := []JSONString{[]byte(`[[["1","2","3"],["4","5"]{}]]`)}
 
 	filteredData := app.filterPhpPackages(nilData)
 	if filteredData != nil {
@@ -661,6 +661,6 @@ func TestFilterPhpPackages(t *testing.T) {
 
 	filteredData = app.filterPhpPackages(invalidData)
 	if filteredData != nil {
-		t.Errorf("expected 'nil', go [%v]", filteredData)
+		t.Errorf("expected 'nil', got [%v]", filteredData)
 	}
 }
