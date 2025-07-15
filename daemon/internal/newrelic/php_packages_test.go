@@ -48,8 +48,8 @@ func TestSetPhpPackages(t *testing.T) {
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	if string(validData) != string(pkg.data) {
-		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data))
+	if string(validData) != string(pkg.data[0]) {
+		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data[0]))
 	}
 }
 
@@ -78,8 +78,8 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	if string(validData) != string(pkg.data) {
-		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data))
+	if string(validData) != string(pkg.data[0]) {
+		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data[0]))
 	}
 }
 
