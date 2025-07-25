@@ -20,8 +20,9 @@ type PhpPackagesKey struct {
 
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
-	numSeen int
-	data    []JSONString
+	numSeen      int
+	data         []JSONString
+	filteredData []byte
 }
 
 // NumSeen returns the total number PHP packages payloads stored.
@@ -34,8 +35,9 @@ func (packages *PhpPackages) NumSaved() float64 {
 // newPhpPackages returns a new PhpPackages struct.
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
-		numSeen: 0,
-		data:    nil,
+		numSeen:      0,
+		data:         nil,
+		filteredData: nil,
 	}
 
 	return p
@@ -77,10 +79,8 @@ func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
 	buf.Grow(estimate)
 	buf.WriteByte('[')
 	buf.WriteString("\"Jars\",")
-	for i := 0; i < len(packages.data); i++ {
-		if 0 < packages.numSeen {
-			buf.Write(packages.data[i])
-		}
+	if 0 < packages.numSeen {
+		buf.Write(packages.filteredData)
 	}
 	buf.WriteByte(']')
 
@@ -96,7 +96,7 @@ func (packages *PhpPackages) FailedHarvest(newHarvest *Harvest) {
 
 // Empty returns true if the collection is empty.
 func (packages *PhpPackages) Empty() bool {
-	return nil == packages || nil == packages.data || 0 == packages.numSeen
+	return nil == packages || nil == packages.data || 0 == packages.numSeen || nil == packages.filteredData
 }
 
 // Data marshals the collection to JSON according to the schema expected
