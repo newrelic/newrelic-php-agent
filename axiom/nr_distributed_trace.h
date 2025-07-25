@@ -409,4 +409,22 @@ bool nr_distributed_trace_accept_inbound_w3c_payload(
     const char* transport_type,
     const char** error);
 
+/*
+ * Purpose : Handle upstream w3c sampled flag according to settings
+ *
+ * Params : 1. The distributed trace object
+ *          2. Setting for if the upstream trace is sampled
+ *          3. Setting for if the upstream trace is not sampled
+ *
+ * Notes : The setting objects should follow this specification:
+ *         1 = always keep
+ *         0 = ignore upstream sampled flag
+ *         -1 = always toss
+ */
+void nr_distributed_trace_handle_inbound_w3c_sampled_flag(
+    nr_distributed_trace_t* dt,
+    const nrobj_t* trace_headers,
+    int remote_parent_sampled,
+    int remote_parent_not_sampled);
+
 #endif /* NR_DISTRIBUTED_TRACE_HDR */

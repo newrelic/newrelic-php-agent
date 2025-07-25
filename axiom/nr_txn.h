@@ -100,6 +100,18 @@ typedef struct _nrtxnopt_t {
                                                        headers in favor of only
                                                        W3C trace context headers
                                                      */
+  int dt_sampler_parent_sampled; /* how to sample spans when non-
+                                    New Relic upstream did sample.
+                                    1 - always keep
+                                    0 - use default sampling
+                                    -1 - always toss
+                                  */
+  int dt_sampler_parent_not_sampled; /* how to sample spans when non-
+                                        New Relic upstream didn't sample.
+                                        1 - always keep
+                                        0 - use default sampling
+                                        -1 - always toss
+                                      */
   int span_events_enabled; /* Whether span events are enabled */
   size_t
       span_events_max_samples_stored; /* The maximum number of span events per
