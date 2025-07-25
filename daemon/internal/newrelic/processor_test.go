@@ -293,40 +293,41 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestDefaultData,
+		Blocking:   true,
 	}
 
 	// collect php packages
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp_pkgs := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_pkgs := <-m.clientParams
 
 	// collect metrics
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp_metrics := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_metrics := <-m.clientParams
 
 	// collect usage metrics
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp_usage := <-m.clientParams
+	m.clientReturn <- ClientReturn{nil, nil, 202}
+	cp_usage := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
 
 	// check pkgs and metric data - it appears these can
 	// come in different orders so check both
-	// toTestPkgs := `["Jars",[["package","1.2.3",{}]]]`
-	// if toTestPkgs != string(cp_pkgs.data) {
-	// 	if toTestPkgs != string(cp_metrics.data) {
-	// 		t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
-	// 	}
-	// }
-	//
-	// time1 := strings.Split(string(cp_usage.data), ",")[1]
-	// time2 := strings.Split(string(cp_usage.data), ",")[2]
-	// usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-	// 	`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1286,0,0,0,0]],` +
-	// 	`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
-	// 	`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,33,0,0,0,0]]]]`
-	// if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
-	// 	t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
-	// }
+	toTestPkgs := `["Jars",[["package","1.2.3",{}]]]`
+	if toTestPkgs != string(cp_pkgs.data) {
+		if toTestPkgs != string(cp_metrics.data) {
+			t.Fatalf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
+		}
+	}
+
+	time1 := strings.Split(string(cp_usage.data), ",")[1]
+	time2 := strings.Split(string(cp_usage.data), ",")[2]
+	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
+		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1286,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,33,0,0,0,0]]]]`
+	if got, _ := OrderScrubMetrics(cp_usage.data, nil); string(got) != usageMetrics {
+		t.Fatalf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
+	}
 	m.QuitTestProcessor()
 }
 
