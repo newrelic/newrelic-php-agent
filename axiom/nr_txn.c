@@ -2972,6 +2972,14 @@ static bool nr_txn_accept_w3c_trace_context_headers(
   nr_distributed_trace_accept_inbound_w3c_payload(
       txn->distributed_trace, trace_headers, transport_type, &error_metrics);
 
+  /* Depending on the user's INI settings, we may or may not want to
+   * consider the traceparent's sampled field */
+  nr_distributed_trace_handle_inbound_w3c_sampled_flag(
+      txn->distributed_trace,
+      trace_headers,
+      txn->options.dt_sampler_parent_sampled,
+      txn->options.dt_sampler_parent_not_sampled);
+
   if (error_metrics) {
     nr_txn_force_single_count(txn, error_metrics);
   }

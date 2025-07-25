@@ -942,6 +942,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
+  opts.dt_sampler_parent_sampled
+      = NRPRG(dt_sampler_parent_sampled);
+  opts.dt_sampler_parent_not_sampled
+      = NRPRG(dt_sampler_parent_not_sampled);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
