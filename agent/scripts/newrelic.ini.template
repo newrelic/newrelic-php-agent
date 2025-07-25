@@ -911,6 +911,36 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.distributed_tracing_exclude_newrelic_header = false
 
+; Setting: newrelic.distributed_tracing.sampler.remote_parent_sampled
+; Type   : string
+; Scope  : per-directory
+; Default: "default"
+; Info   : This option defines how the agent should handle sampling spans when
+;          their parent span from an upstream entity was sampled. For example,
+;          setting remote_parent_sampled: always_on means the agent will sample
+;          anything if the upstream entity sampled the parent.
+;          The possible values are:
+;          - "default": Use New Relic's standard sampling rules.
+;          - "always_on": Always sample spans whose upstream parent was not sampled.
+;          - "always_off": Always skip sampling spans whose upstream parent was not sampled.
+;
+;newrelic.distributed_tracing.sampler.remote_parent_sampled = "default"
+
+; Setting: newrelic.distributed_tracing.sampler.remote_parent_not_sampled
+; Type   : string
+; Scope  : per-directory
+; Default: "default"
+; Info   : This option defines how the agent should handle sampling spans when
+;          their parent span from an upstream entity was not sampled. For example,
+;          setting remote_parent_not_sampled: always_off means the agent will not
+;          try to sample anything if the upstream entity did not sample the parent.
+;          The possible values are:
+;          - "default": Use New Relic's standard sampling rules.
+;          - "always_on": Always sample spans whose upstream parent was not sampled.
+;          - "always_off": Always skip sampling spans whose upstream parent was not sampled.
+;
+;newrelic.distributed_tracing.sampler.remote_parent_sampled = "default"
+
 ; Setting: newrelic.span_events_enabled
 ; Type   : boolean
 ; Scope  : per-directory

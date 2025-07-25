@@ -491,6 +491,19 @@ nrinibool_t span_events_enabled; /* newrelic.span_events_enabled */
 nriniuint_t
     span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
                                      */
+
+nrinistr_t dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled */
+nrinistr_t
+    dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled */
+/* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
+ * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
+ * 0 = "default"
+ * 1 = "always_on"
+ * -1 = "always_off"
+ */
+int dt_sampler_parent_sampled;
+int dt_sampler_parent_not_sampled;
+
 nrinistr_t
     trace_observer_host; /* newrelic.infinite_tracing.trace_observer.host */
 nriniuint_t
