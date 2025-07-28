@@ -43,7 +43,7 @@ func TestSetPhpPackages(t *testing.T) {
 		t.Fatalf("Expected error 'data is nil!', got '%s'", err.Error())
 	}
 
-	//valid pkgs, valid data
+	// valid pkgs, valid data
 	err = pkg.SetPhpPackages(validData)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
@@ -73,7 +73,7 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 		t.Fatalf("Expected error 'data is nil!', got '%s'", err.Error())
 	}
 
-	//valid pkgs, valid data
+	// valid pkgs, valid data
 	err = pkg.AddPhpPackagesFromData(validData)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
@@ -85,6 +85,9 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 
 func TestCollectorJSON(t *testing.T) {
 	// create nil pkgs for testing passing a nil receiver
+	info := AppInfo{}
+	app := NewApp(&info)
+
 	var nilpkg *PhpPackages
 	id := AgentRunID(`12345`)
 
@@ -111,13 +114,14 @@ func TestCollectorJSON(t *testing.T) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
-	pkg.SetPhpPackages([]byte(`["package", "1.2.3",{}]`))
+	pkg.SetPhpPackages([]byte(`[["package", "1.2.3",{}]]`))
 
+	pkg.filteredData = app.filterPhpPackages(pkg.data)
 	json, err = pkg.CollectorJSON(id)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	expectedJSON = `["Jars",["package", "1.2.3",{}]]`
+	expectedJSON = `["Jars",[["package","1.2.3",{}]]]`
 	if expectedJSON != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
