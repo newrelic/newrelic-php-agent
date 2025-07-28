@@ -22,7 +22,7 @@ type PhpPackagesKey struct {
 type PhpPackages struct {
 	numSeen      int
 	data         []JSONString
-	filteredData []byte
+	filteredData JSONString
 }
 
 // NumSeen returns the total number PHP packages payloads stored.
