@@ -45,7 +45,6 @@ func NewPhpPackages() *PhpPackages {
 
 // SetPhpPackages sets the observed package list.
 func (packages *PhpPackages) SetPhpPackages(data []byte) error {
-
 	if nil == packages {
 		return fmt.Errorf("packages is nil!")
 	}
@@ -96,7 +95,7 @@ func (packages *PhpPackages) FailedHarvest(newHarvest *Harvest) {
 
 // Empty returns true if the collection is empty.
 func (packages *PhpPackages) Empty() bool {
-	return nil == packages || nil == packages.data || 0 == packages.numSeen || nil == packages.filteredData
+	return nil == packages || nil == packages.data || 0 == packages.numSeen
 }
 
 // Data marshals the collection to JSON according to the schema expected
