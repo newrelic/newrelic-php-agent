@@ -114,14 +114,15 @@ func TestCollectorJSON(t *testing.T) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
-	pkg.SetPhpPackages([]byte(`[["package", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
 
-	pkg.filteredData = app.filterPhpPackages(pkg.data)
+	pkg.FilterData(app.PhpPackages)
 	json, err = pkg.CollectorJSON(id)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	expectedJSON = `["Jars",[["package","1.2.3",{}]]]`
+	expectedJSON = `["Jars",[["package_a","1.2.3",{}],["package_b","1.2.3",{}]]]`
 	if expectedJSON != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
@@ -165,5 +166,32 @@ func TestPackagesEmpty(t *testing.T) {
 	empty = pkg.Empty()
 	if true == empty {
 		t.Fatalf("Expected 'false' got '%t'", empty)
+	}
+}
+
+func comparePkgs(expect, actual *PhpPackagesKey) bool {
+	if expect == nil || actual == nil {
+		return false
+	}
+
+	if expect.Name != actual.Name || expect.Version != actual.Version {
+		return false
+	}
+	return true
+}
+
+func TestFilterPackageData(t *testing.T) {
+	info := AppInfo{}
+	app := NewApp(&info)
+	pkg := NewPhpPackages()
+	expect_a := PhpPackagesKey{"package_a", "1.2.3"}
+
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+
+	pkg.FilterData(app.PhpPackages)
+	if !comparePkgs(&expect_a, &pkg.filteredPkgs[0]) {
+		t.Fatalf("Expected '%+v', got '%+v'", expect_a, pkg.filteredPkgs[0])
 	}
 }

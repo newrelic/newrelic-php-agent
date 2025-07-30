@@ -7,6 +7,7 @@ package newrelic
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -22,7 +23,7 @@ type PhpPackagesKey struct {
 type PhpPackages struct {
 	numSeen      int
 	data         []JSONString
-	filteredData JSONString
+	filteredPkgs []PhpPackagesKey
 }
 
 // NumSeen returns the total number PHP packages payloads stored.
@@ -37,10 +38,59 @@ func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
 		numSeen:      0,
 		data:         nil,
-		filteredData: nil,
+		filteredPkgs: nil,
 	}
 
 	return p
+}
+
+// filter seen php packages data to avoid sending duplicates
+//
+// the `App` structure contains a map of PHP Packages the reporting
+// application has encountered.
+//
+// the map of packages should persist for the duration of the
+// current connection
+//
+// the JSON format received from the agent is:
+//
+//	[["package_name","version",{}],...]
+//
+// for each entry, assign the package name and version to the `PhpPackagesKey`
+// struct and use the key to verify data does not exist in the map. If the
+// key does not exist, add it to the map and the slice of filteredPkgs to be
+// sent in the current harvest.
+func (packages *PhpPackages) FilterData(pkgHistory map[PhpPackagesKey]struct{}) {
+	if packages.data == nil {
+		return
+	}
+
+	var pkgKey PhpPackagesKey
+	var x []interface{}
+
+	for i := 0; i < len(packages.data); i++ {
+		err := json.Unmarshal(packages.data[i], &x)
+		if err != nil {
+			log.Errorf("failed to unmarshal php package json: %s", err)
+			return
+		}
+
+		for _, pkgJson := range x {
+			pkg, _ := pkgJson.([]interface{})
+			if len(pkg) != 3 {
+				log.Errorf("invalid php package json structure: %+v", pkg)
+				return
+			}
+			name, ok := pkg[0].(string)
+			version, ok := pkg[1].(string)
+			pkgKey = PhpPackagesKey{name, version}
+			_, ok = pkgHistory[pkgKey]
+			if !ok {
+				pkgHistory[pkgKey] = struct{}{}
+				packages.filteredPkgs = append(packages.filteredPkgs, pkgKey)
+			}
+		}
+	}
 }
 
 // SetPhpPackages sets the observed package list.
@@ -72,14 +122,27 @@ func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
 		return []byte(`["Jars",[]]`), nil
 	}
 
-	buf := &bytes.Buffer{}
+	var buf bytes.Buffer
 
 	estimate := 512
 	buf.Grow(estimate)
 	buf.WriteByte('[')
-	buf.WriteString("\"Jars\",")
-	if 0 < packages.numSeen {
-		buf.Write(packages.filteredData)
+	buf.WriteString(`"Jars",`)
+	if len(packages.filteredPkgs) > 0 {
+		buf.WriteByte('[')
+		for _, pkg := range packages.filteredPkgs {
+			buf.WriteString(`["`)
+			buf.WriteString(pkg.Name)
+			buf.WriteString(`","`)
+			buf.WriteString(pkg.Version)
+			buf.WriteString(`",{}],`)
+		}
+
+		// swap last ',' character with ']'
+		buf.Truncate(buf.Len() - 1)
+		buf.WriteByte(']')
+	} else {
+		buf.WriteString("[]")
 	}
 	buf.WriteByte(']')
 
