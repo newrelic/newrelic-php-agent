@@ -117,7 +117,7 @@ func TestCollectorJSON(t *testing.T) {
 	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
 	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
 
-	pkg.FilterData(app.PhpPackages)
+	pkg.Filter(app.PhpPackages)
 	json, err = pkg.CollectorJSON(id)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
@@ -190,7 +190,7 @@ func TestFilterPackageData(t *testing.T) {
 	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
 	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
 
-	pkg.FilterData(app.PhpPackages)
+	pkg.Filter(app.PhpPackages)
 	if !comparePkgs(&expect_a, &pkg.filteredPkgs[0]) {
 		t.Fatalf("Expected '%+v', got '%+v'", expect_a, pkg.filteredPkgs[0])
 	}

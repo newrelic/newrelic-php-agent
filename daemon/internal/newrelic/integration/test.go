@@ -734,7 +734,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 
 	// we don't currently test multiple requests that could result in needing to track package history
 	// or filter packages. An empty map here will allow all packages to be reported unfiltered.
-	harvest.PhpPackages.FilterData(make(map[newrelic.PhpPackagesKey]struct{}))
+	harvest.PhpPackages.Filter(make(map[newrelic.PhpPackagesKey]struct{}))
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
 	if nil != err {
 		t.Fatal(err)
