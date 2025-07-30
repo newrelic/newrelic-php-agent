@@ -326,7 +326,6 @@ func (p *Processor) considerConnect(app *App) {
 	go func() {
 		p.connectAttemptChannel <- ConnectApplication(args)
 	}()
-
 }
 
 func (p *Processor) processAppInfo(m AppInfoMessage) {
@@ -362,8 +361,8 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	key := m.Info.Key()
 	app = p.apps[key]
 	if nil != app {
-		//set LastActivity so we treat an AppInfo request for
-		//a known app as activity.
+		// set LastActivity so we treat an AppInfo request for
+		// a known app as activity.
 		app.LastActivity = time.Now()
 		return
 	}
@@ -384,7 +383,6 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 		log.Infof("approaching app limit of %d, current number of apps is %d",
 			limits.AppLimit, limits.AppLimitNotifyHigh)
 	}
-
 }
 
 func processConnectMessages(reply collector.RPMResponse) {
@@ -475,7 +473,6 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 }
 
 func processLogEventLimits(app *App) {
-
 	if nil == app {
 		log.Warnf("processLogEventLimits() called with *App == nil")
 		return
@@ -674,7 +671,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestAll == HarvestAll {
 		ah.Harvest = NewHarvest(time.Now(), ah.App.connectReply.EventHarvestConfig.EventConfigs)
 		// filter already seen php packages
-		harvest.PhpPackages.filteredData = ah.App.filterPhpPackages(harvest.PhpPackages.data)
+		harvest.PhpPackages.FilterData(ah.App.PhpPackages)
 		if args.blocking {
 			// Invoked primarily by CleanExit
 			harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, du_chan)
@@ -700,7 +697,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
 		phpPackages := harvest.PhpPackages
-		phpPackages.filteredData = ah.App.filterPhpPackages(harvest.PhpPackages.data)
+		phpPackages.FilterData(ah.App.PhpPackages)
 
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
