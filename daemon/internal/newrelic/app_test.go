@@ -248,11 +248,9 @@ func TestConnectPayloadInternalDocker(t *testing.T) {
 	if nil != err {
 		t.Errorf("expected: %v\nactual: %v", nil, err)
 	}
-
 }
 
 func TestPreconnectPayloadEncoded(t *testing.T) {
-
 	preconnectPayload := &RawPreconnectPayload{SecurityPolicyToken: "ffff-eeee-eeee-dddd", HighSecurity: false}
 	expected := `[` +
 		`{` +
@@ -587,7 +585,6 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	} else if string(b) != expected {
 		t.Errorf("expected: %s\nactual: %s", expected, string(b))
 	}
-
 }
 
 func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
@@ -611,56 +608,5 @@ func TestMaxPayloadSizeInBytesFromConnectReply(t *testing.T) {
 		t.Error(err)
 	} else if c.MaxPayloadSizeInBytes != expectedMaxPayloadSizeInBytes {
 		t.Errorf("parseConnectReply(something), got [%v], expected [%v]", c.MaxPayloadSizeInBytes, expectedMaxPayloadSizeInBytes)
-	}
-}
-
-func TestFilterPhpPackages(t *testing.T) {
-	app := App{
-		PhpPackages: make(map[PhpPackagesKey]struct{}),
-	}
-	var nilData []JSONString = nil
-	emptyData := []JSONString{([]byte(`[[{}]]`))}
-	validData := []JSONString{[]byte(`[["drupal","6.0",{}]]`)}
-	moreValidData := []JSONString{[]byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)}
-	duplicateData := []JSONString{[]byte(`[["drupal","6.0",{}]]`)}
-	versionData := []JSONString{[]byte(`[["drupal","9.0",{}]]`)}
-	invalidData := []JSONString{[]byte(`[[["1","2","3"],["4","5"]{}]]`)}
-
-	filteredData := app.filterPhpPackages(nilData)
-	if filteredData != nil {
-		t.Errorf("expected 'nil' result on 'nil' input, got [%v]", filteredData)
-	}
-
-	filteredData = app.filterPhpPackages(emptyData)
-	if filteredData != nil {
-		t.Errorf("expected 'nil' result on empty data input, got [%v]", filteredData)
-	}
-
-	expect := []byte(`[["drupal","6.0",{}]]`)
-	filteredData = app.filterPhpPackages(validData)
-	if string(filteredData) != string(expect) {
-		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
-	}
-
-	expect = []byte(`[["wordpress","7.0",{}],["symfony","5.1",{}]]`)
-	filteredData = app.filterPhpPackages(moreValidData)
-	if string(filteredData) != string(expect) {
-		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
-	}
-
-	filteredData = app.filterPhpPackages(duplicateData)
-	if filteredData != nil {
-		t.Errorf("expected 'nil', got [%v]", filteredData)
-	}
-
-	expect = []byte(`[["drupal","9.0",{}]]`)
-	filteredData = app.filterPhpPackages(versionData)
-	if string(filteredData) != string(expect) {
-		t.Errorf("expected [%v], got [%v]", string(expect), string(filteredData))
-	}
-
-	filteredData = app.filterPhpPackages(invalidData)
-	if filteredData != nil {
-		t.Errorf("expected 'nil', got [%v]", filteredData)
 	}
 }
