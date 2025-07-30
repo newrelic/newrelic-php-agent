@@ -60,7 +60,7 @@ func NewPhpPackages() *PhpPackages {
 // struct and use the key to verify data does not exist in the map. If the
 // key does not exist, add it to the map and the slice of filteredPkgs to be
 // sent in the current harvest.
-func (packages *PhpPackages) FilterData(pkgHistory map[PhpPackagesKey]struct{}) {
+func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
 	if packages.data == nil {
 		return
 	}
