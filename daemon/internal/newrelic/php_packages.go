@@ -10,8 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 type PhpPackagesKey struct {
@@ -22,7 +20,7 @@ type PhpPackagesKey struct {
 // phpPackages represents all detected packages reported by an agent.
 type PhpPackages struct {
 	numSeen      int
-	data         []JSONString
+	data         []PhpPackagesKey
 	filteredPkgs []PhpPackagesKey
 }
 
@@ -65,54 +63,53 @@ func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
 		return
 	}
 
-	var pkgKey PhpPackagesKey
-	var x []interface{}
-
-	for i := 0; i < len(packages.data); i++ {
-		err := json.Unmarshal(packages.data[i], &x)
-		if err != nil {
-			log.Errorf("failed to unmarshal php package json: %s", err)
-			return
-		}
-
-		for _, pkgJson := range x {
-			pkg, _ := pkgJson.([]interface{})
-			if len(pkg) != 3 {
-				log.Errorf("invalid php package json structure: %+v", pkg)
-				return
-			}
-			name, ok := pkg[0].(string)
-			version, ok := pkg[1].(string)
-			pkgKey = PhpPackagesKey{name, version}
-			_, ok = pkgHistory[pkgKey]
-			if !ok {
-				pkgHistory[pkgKey] = struct{}{}
-				packages.filteredPkgs = append(packages.filteredPkgs, pkgKey)
-			}
+	for _, pkgKey := range packages.data {
+		_, ok := pkgHistory[pkgKey]
+		if !ok {
+			pkgHistory[pkgKey] = struct{}{}
+			packages.filteredPkgs = append(packages.filteredPkgs, pkgKey)
 		}
 	}
-}
-
-// SetPhpPackages sets the observed package list.
-func (packages *PhpPackages) SetPhpPackages(data []byte) error {
-	if nil == packages {
-		return fmt.Errorf("packages is nil!")
-	}
-	if nil != packages.data {
-		log.Debugf("SetPhpPackages - data field was not nil |^%+v| - appending data", packages.data)
-	}
-	if nil == data {
-		return fmt.Errorf("data is nil!")
-	}
-	packages.numSeen = 1
-	packages.data = append(packages.data, data)
-
-	return nil
 }
 
 // AddPhpPackagesFromData observes the PHP packages info from the agent.
 func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
-	return packages.SetPhpPackages(data)
+	if packages == nil {
+		return fmt.Errorf("packages is nil!")
+	}
+	if data == nil || !(len(data) > 0) {
+		return fmt.Errorf("data is nil!")
+	}
+
+	var x []interface{}
+
+	err := json.Unmarshal(data, &x)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal php package json: %s", err.Error())
+	}
+
+	for _, pkgJson := range x {
+		pkg, _ := pkgJson.([]interface{})
+		if len(pkg) != 3 {
+			return fmt.Errorf("invalid php package json structure: %+v", pkg)
+		}
+
+		name, ok := pkg[0].(string)
+		if !ok || len(name) == 0 {
+			return fmt.Errorf("unable to parse package name")
+		}
+
+		version, ok := pkg[1].(string)
+		if !ok || len(version) == 0 {
+			return fmt.Errorf("unable to parse package version")
+		}
+
+		packages.data = append(packages.data, PhpPackagesKey{name, version})
+	}
+
+	packages.numSeen = 1
+
+	return nil
 }
 
 // CollectorJSON marshals events to JSON according to the schema expected
