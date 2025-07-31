@@ -19,9 +19,11 @@ import (
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/utilization"
 )
 
-var ErrPayloadTooLarge = errors.New("payload too large")
-var ErrUnauthorized = errors.New("unauthorized")
-var ErrUnsupportedMedia = errors.New("unsupported media")
+var (
+	ErrPayloadTooLarge  = errors.New("payload too large")
+	ErrUnauthorized     = errors.New("unauthorized")
+	ErrUnsupportedMedia = errors.New("unsupported media")
+)
 
 type rpmException struct {
 	Message   string `json:"message"`
@@ -293,7 +295,6 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestDefaultData,
-		Blocking:   true,
 	}
 
 	// collect php packages
@@ -459,7 +460,7 @@ func TestUsageHarvest(t *testing.T) {
 	//   of harvests. So we extract the time from what we receive
 	time1 := strings.Split(string(cp1.data), ",")[1]
 	time2 := strings.Split(string(cp1.data), ",")[2]
-	var expectedJSON1 = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON1 := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
@@ -479,7 +480,7 @@ func TestUsageHarvest(t *testing.T) {
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 	time1 = strings.Split(string(cp2.data), ",")[1]
 	time2 = strings.Split(string(cp2.data), ",")[2]
-	var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON2 := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[1,1253,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
 
@@ -535,7 +536,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	time1 := strings.Split(string(cp.data), ",")[1]
 	time2 := strings.Split(string(cp.data), ",")[2]
 	// The data usage channel only holds 25 points until dropping data
-	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
 
@@ -595,7 +596,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 	//   of harvests. So we extract the time from what we receive
 	time1 := strings.Split(string(cp1.data), ",")[1]
 	time2 := strings.Split(string(cp1.data), ",")[2]
-	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
 		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
@@ -618,7 +619,7 @@ func TestSupportabilityHarvest(t *testing.T) {
 	time1 = strings.Split(string(cp2.data), ",")[1]
 	time2 = strings.Split(string(cp2.data), ",")[2]
 	// includes usage of the first data usage metrics sent
-	var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON2 := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1584,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[2,1584,0,0,0,0]]]]`
 
@@ -948,7 +949,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	// usage metrics comparison
 	time1 := strings.Split(string(cp3.data), ",")[1]
 	time2 := strings.Split(string(cp3.data), ",")[2]
-	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
+	expectedJSON := `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[6,289520,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1259,0,0,0,0]]]]`
@@ -1484,7 +1485,6 @@ func TestShouldConnect(t *testing.T) {
 // Be aware the agentLimit will be scaled down by 12 (60/5) before being compared to the
 // collectorLimit.
 func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLimit uint64, collectorLimit uint64, testName string) {
-
 	// setup non-zero agent limits for log events
 	// NOTE: This limit is based on a 60 second harvest period!
 	//       So the actual value used to compare to the collector
@@ -1565,7 +1565,6 @@ func runMockedCollectorHarvestLimitTest(t *testing.T, eventType string, agentLim
 }
 
 func TestConnectNegotiateLogEventLimits(t *testing.T) {
-
 	// these tests exist for the log events (TestConnectNegotiateLogEventsLimit()) because at some point
 	// the collector would return the default limit (833) if 0 was passed as the log limit.  These tests
 	// exercise logic in the daemon to enforce the smaller agent value
@@ -1574,11 +1573,9 @@ func TestConnectNegotiateLogEventLimits(t *testing.T) {
 	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 100, "agent log limit equal to collector")
 	runMockedCollectorHarvestLimitTest(t, "log_event_data", 0, 100, "agent log limit == 0, collector != 0")
 	runMockedCollectorHarvestLimitTest(t, "log_event_data", 100*12, 0, "agent log limit != 0, collector == 0")
-
 }
 
 func TestConnectNegotiateCustomEventLimits(t *testing.T) {
-
 	runMockedCollectorHarvestLimitTest(t, "custom_event_data", 110*12, 100, "agent custom limit larger than collector")
 	runMockedCollectorHarvestLimitTest(t, "custom_event_data", 100*12, 100, "agent custom limit equal to collector")
 }
@@ -1601,7 +1598,6 @@ func TestProcessLogEventLimit(t *testing.T) {
 }
 
 func TestMissingAgentAndCollectorHarvestLimit(t *testing.T) {
-
 	// tests missing agent and collector harvest limits will not crash daemon
 	// and results in empty final harvest values
 	appInfo := sampleAppInfo
