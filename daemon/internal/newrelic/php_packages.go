@@ -17,7 +17,10 @@ type PhpPackagesKey struct {
 	Version string
 }
 
-// phpPackages represents all detected packages reported by an agent.
+// PhpPackages represents all detected packages reported by an agent
+// for a harvest cycle, as well as the filtered list of packages not
+// yet seen by the daemon for the lifecycle of the current process to
+// be reported to the backend.
 type PhpPackages struct {
 	numSeen      int
 	data         []PhpPackagesKey
