@@ -29,7 +29,8 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 	oooPkgData := []byte(`[[{},"package_a","1.2.3"]]`)
 	emptyPkgData := []byte(`[[]]`)
 	invalidFmt := []byte(`["package_a","1.2.3",{}]`)
-	emptyStr := []byte(`[["","1.2.3",{}]]`)
+	emptyStr := []byte(``)
+	emptyNameStr := []byte(`[["","1.2.3",{}]]`)
 	missingElem := []byte(`[["package_a", "1.2.3"]]`)
 	excessElem := []byte(`[["package_a", "1.2.3", "x.y.z", {}]]`)
 
@@ -45,43 +46,49 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 
 	// nil data
 	err = pkgs.AddPhpPackagesFromData(nil)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'data is nil!', got nil")
+	}
+
+	// empty string data
+	err = pkgs.AddPhpPackagesFromData(emptyStr)
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'data is nil!', got nil")
 	}
 
 	// out-of-order data
 	err = pkgs.AddPhpPackagesFromData(oooPkgData)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'unable to parse package name', got nil")
 	}
 
 	// empty json array
 	err = pkgs.AddPhpPackagesFromData(emptyPkgData)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
 	}
 
 	// invalid json array
 	err = pkgs.AddPhpPackagesFromData(invalidFmt)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
 	}
 
 	// empty field value
-	err = pkgs.AddPhpPackagesFromData(emptyStr)
-	if err == nil {
+	err = pkgs.AddPhpPackagesFromData(emptyNameStr)
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
 	}
 
 	// missing field value
 	err = pkgs.AddPhpPackagesFromData(missingElem)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
 	}
 
 	// too many values
 	err = pkgs.AddPhpPackagesFromData(excessElem)
-	if err == nil {
+	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
 	}
 
