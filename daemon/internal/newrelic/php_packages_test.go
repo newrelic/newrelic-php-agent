@@ -1,6 +1,7 @@
 package newrelic
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -37,6 +38,8 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 	err := nilpkg.AddPhpPackagesFromData(validPkgData)
 	if err == nil {
 		t.Fatalf("Expected error 'packages is nil!', got nil")
+	} else if !strings.Contains(err.Error(), "packages is nil") {
+		t.Fatalf("Expected error 'packages is nil!', got '%+v'", err.Error())
 	}
 
 	pkgs := NewPhpPackages()
@@ -48,48 +51,64 @@ func TestAddPhpPackagesFromData(t *testing.T) {
 	err = pkgs.AddPhpPackagesFromData(nil)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'data is nil!', got nil")
+	} else if !strings.Contains(err.Error(), "data is nil") {
+		t.Fatalf("Expected error 'data is nil!', got '%+v'", err.Error())
 	}
 
 	// empty string data
 	err = pkgs.AddPhpPackagesFromData(emptyStr)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'data is nil!', got nil")
+	} else if !strings.Contains(err.Error(), "data is nil") {
+		t.Fatalf("Expected error 'data is nil!', got '%+v'", err.Error())
 	}
 
 	// out-of-order data
 	err = pkgs.AddPhpPackagesFromData(oooPkgData)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'unable to parse package name', got nil")
+	} else if !strings.Contains(err.Error(), "unable to parse package name") {
+		t.Fatalf("Expected error 'unable to parse package name', got '%+v'", err.Error())
 	}
 
 	// empty json array
 	err = pkgs.AddPhpPackagesFromData(emptyPkgData)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
 	}
 
 	// invalid json array
 	err = pkgs.AddPhpPackagesFromData(invalidFmt)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
 	}
 
 	// empty field value
 	err = pkgs.AddPhpPackagesFromData(emptyNameStr)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "unable to parse package name") {
+		t.Fatalf("Expected error 'unable to parse package name', got '%+v'", err.Error())
 	}
 
 	// missing field value
 	err = pkgs.AddPhpPackagesFromData(missingElem)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
 	}
 
 	// too many values
 	err = pkgs.AddPhpPackagesFromData(excessElem)
 	if err == nil || len(pkgs.data) != 0 {
 		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
 	}
 
 	// valid pkgs, valid data
