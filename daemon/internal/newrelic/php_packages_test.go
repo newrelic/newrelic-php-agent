@@ -307,4 +307,9 @@ func TestFilterPackageData(t *testing.T) {
 	if pkg.filteredPkgs != nil {
 		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
 	}
+
+	// Verify the map contains the expected number of packages
+	if len(app.PhpPackages) != 3 {
+		t.Fatalf("Invalid number of packages recorded- Expected 3, got %d", len(app.PhpPackages))
+	}
 }
