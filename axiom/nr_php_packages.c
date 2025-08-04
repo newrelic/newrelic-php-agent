@@ -117,7 +117,9 @@ static void clone_callback(void* value,
   if (NULL == orig_pkg) {
     return;
   }
-  nr_php_package_t* new_pkg = nr_php_package_create_with_source(
+  nr_php_package_t* new_pkg = NULL;
+  
+  new_pkg = nr_php_package_create_with_source(
       orig_pkg->package_name, orig_pkg->package_version,
       orig_pkg->source_priority);
   nr_php_packages_add_package(dest, new_pkg);
