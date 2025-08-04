@@ -173,7 +173,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
     } else {
       nrl_verbosedebug(
           NRL_INSTRUMENT, "%s - cloned %zu composer packages", __func__,
-          nr_php_packages_size(NR_PHP_PROCESS_GLOBALS(composer_php_packages)));
+          nr_php_packages_count(NR_PHP_PROCESS_GLOBALS(composer_php_packages)));
     }
 
   } else {
