@@ -519,7 +519,7 @@ void nr_monolog_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Monolog\\Logger::addRecord"),
                             nr_monolog_logger_addrecord TSRMLS_CC);
 
-  if (NRINI(vulnerability_management_package_detection_enabled)) {
+  if (0 && NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, "1.2.3");
     //                           PHP_PACKAGE_VERSION_UNKNOWN);
   }
