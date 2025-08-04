@@ -41,6 +41,7 @@ static void nr_php_per_process_globals_dispose(void) {
   nro_delete(nr_php_per_process_globals.metadata);
   nr_free(nr_php_per_process_globals.env_labels);
   nr_free(nr_php_per_process_globals.apache_add);
+  nr_php_packages_destroy(&nr_php_per_process_globals.composer_php_packages);
   nr_free(nr_php_per_process_globals.docker_id);
 
   nr_memset(&nr_php_per_process_globals, 0, sizeof(nr_php_per_process_globals));

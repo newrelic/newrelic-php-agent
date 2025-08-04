@@ -162,6 +162,20 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
       }
     }
     ZEND_HASH_FOREACH_END();
+
+    /* MSF - cache this value */
+    nr_php_packages_destroy(&NR_PHP_PROCESS_GLOBALS(composer_php_packages));
+    NR_PHP_PROCESS_GLOBALS(composer_php_packages)
+        = nr_php_packages_clone(NRPRG(txn)->php_packages);
+    if (NULL == NR_PHP_PROCESS_GLOBALS(composer_php_packages)) {
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - unable to clone composer packages",
+                       __func__);
+    } else {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT, "%s - cloned %zu composer packages", __func__,
+          nr_php_packages_size(NR_PHP_PROCESS_GLOBALS(composer_php_packages)));
+    }
+
   } else {
     char strbuf[80];
     nr_format_zval_for_debug(&retval, strbuf, 0, sizeof(strbuf) - 1, 0);

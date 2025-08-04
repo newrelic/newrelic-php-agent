@@ -93,6 +93,35 @@ nr_php_packages_t* nr_php_packages_create() {
   return h;
 }
 
+static void clone_callback(void* value,
+                           const char* key,
+                           size_t key_len,
+                           void* userdata) {
+  nr_php_packages_t* dest = (nr_php_packages_t*)userdata;
+  nr_php_package_t* orig_pkg = (nr_php_package_t*)value;
+  nr_php_package_t* new_pkg = nr_php_package_create_with_source(
+      orig_pkg->package_name, orig_pkg->package_version,
+      orig_pkg->source_priority);
+  nr_php_packages_add_package(dest, new_pkg);
+}
+
+nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs) {
+  nr_php_packages_t* h = NULL;
+
+  if (NULL == pkgs) {
+    return NULL;
+  }
+
+  h = nr_php_packages_create();
+  if (NULL == h) {
+    return NULL;
+  }
+
+  nr_hashmap_apply(pkgs->data, clone_callback, h);
+
+  return h;
+}
+
 nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
                                               nr_php_package_t* p) {
   nr_php_package_t* package;

@@ -119,6 +119,14 @@ static inline void nr_php_packages_destroy(nr_php_packages_t** h) {
   }
 }
 
+/* Purpose : Clone a collection of php packages
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *
+ * Returns : A new nr_php_packages_t that is a copy of the original
+ */
+nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs);
+
 /*
  * Purpose : Count how many elements are inside of the collection
  *
@@ -151,70 +159,71 @@ static inline int nr_php_packages_has_package(nr_php_packages_t* h,
   return 0;
 }
 
-/*
- * Purpose : Retrieve a pointer to php package from the collection
- *
- * Params  : 1. A pointer to nr_php_packages_t
- *           2. The name of the package to retrieve
- *
- * Returns : Returns pointer to php package if the package exists or NULL
- */
-static inline nr_php_package_t* nr_php_packages_get_package(
-    nr_php_packages_t* php_packages,
-    const char* package_name) {
-  if (NULL == package_name) {
+  /*
+   * Purpose : Retrieve a pointer to php package from the collection
+   *
+   * Params  : 1. A pointer to nr_php_packages_t
+   *           2. The name of the package to retrieve
+   *
+   * Returns : Returns pointer to php package if the package exists or NULL
+   */
+  static inline nr_php_package_t* nr_php_packages_get_package(
+      nr_php_packages_t* php_packages,
+      const char* package_name) {
+    if (NULL == package_name) {
+      return NULL;
+    }
+
+    if (nrlikely(NULL != php_packages && NULL != php_packages->data)) {
+      return (nr_php_package_t*)nr_hashmap_get(php_packages->data, package_name,
+                                               nr_strlen(package_name));
+    }
     return NULL;
   }
 
-  if (nrlikely(NULL != php_packages && NULL != php_packages->data)) {
-    return (nr_php_package_t*)nr_hashmap_get(php_packages->data, package_name, nr_strlen(package_name));
-  }
-  return NULL;
-}
+  /*
+   * Purpose : Iterate over packages calling callback function
+   *
+   * Params  : 1. A pointer to nr_php_packages_t
+   *           2. Callback function (nr_php_packages_iter_t)
+   *           3. Pointer to user data (can be NULL)
+   *
+   * Returns : Nothing
+   */
+  void nr_php_packages_iterate(nr_php_packages_t* packages,
+                               nr_php_packages_iter_t callback,
+                               void* userdata);
 
-/*
- * Purpose : Iterate over packages calling callback function
- *
- * Params  : 1. A pointer to nr_php_packages_t
- *           2. Callback function (nr_php_packages_iter_t)
- *           3. Pointer to user data (can be NULL)
- *
- * Returns : Nothing
- */
-void nr_php_packages_iterate(nr_php_packages_t* packages,
-                             nr_php_packages_iter_t callback,
-                             void* userdata);
+  /*
+   * Purpose : Converts a package to a json
+   *
+   * Params  : 1. A pointer to the package
+   *
+   * Returns : An allocated string containing the JSON representation of the
+   *           package. Caller takes ownership of this string.
+   */
+  extern char* nr_php_package_to_json(nr_php_package_t* package);
 
-/*
- * Purpose : Converts a package to a json
- *
- * Params  : 1. A pointer to the package
- *
- * Returns : An allocated string containing the JSON representation of the
- *           package. Caller takes ownership of this string.
- */
-extern char* nr_php_package_to_json(nr_php_package_t* package);
+  /*
+   * Purpose : Iterates through all of the php packages in the collection and
+   * adds them to a buffer in JSON format.
+   *
+   * Params  : 1. A pointer to nr_php_packages_t
+   *           2. The buffer to append too
+   *
+   * Returns : Returns true on success
+   */
+  extern bool nr_php_packages_to_json_buffer(nr_php_packages_t* hashmap,
+                                             nrbuf_t* buf);
 
-/*
- * Purpose : Iterates through all of the php packages in the collection and adds
- *           them to a buffer in JSON format.
- *
- * Params  : 1. A pointer to nr_php_packages_t
- *           2. The buffer to append too
- *
- * Returns : Returns true on success
- */
-extern bool nr_php_packages_to_json_buffer(nr_php_packages_t* hashmap,
-                                           nrbuf_t* buf);
-
-/*
- * Purpose : Returns all of the packages in the collection as a JSON
- *
- * Params  : 1. A pointer to nr_php_packages_t
- *
- * Returns : An allocated string containing the JSON representation of the
- *           packages collection. Caller takes ownership of this string.
- */
-extern char* nr_php_packages_to_json(nr_php_packages_t* h);
+  /*
+   * Purpose : Returns all of the packages in the collection as a JSON
+   *
+   * Params  : 1. A pointer to nr_php_packages_t
+   *
+   * Returns : An allocated string containing the JSON representation of the
+   *           packages collection. Caller takes ownership of this string.
+   */
+  extern char* nr_php_packages_to_json(nr_php_packages_t* h);
 
 #endif /* nr_php_packages_HDR */

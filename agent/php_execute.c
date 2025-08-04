@@ -879,6 +879,11 @@ static void nr_execute_handle_autoload(const char* filename,
       && NR_PHP_PROCESS_GLOBALS(composer_packages_detected)) {
     // do nothing if per-process detection is enabled and the flag to track
     // detection is true
+
+    /* MSF use values from cache */
+    NR_PHP_PROCESS_GLOBALS(composer_php_packages)
+        = nr_php_packages_clone(NRPRG(txn)->php_packages);
+
     return;
   }
 
