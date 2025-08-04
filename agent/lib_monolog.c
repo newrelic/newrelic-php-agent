@@ -520,8 +520,7 @@ void nr_monolog_enable(TSRMLS_D) {
                             nr_monolog_logger_addrecord TSRMLS_CC);
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
-    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
-                           "1.2.3"
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, "1.2.3");
     //                           PHP_PACKAGE_VERSION_UNKNOWN);
   }
 
