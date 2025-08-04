@@ -881,12 +881,16 @@ static void nr_execute_handle_autoload(const char* filename,
     // detection is true
 
     /* MSF use values from cache */
+    /* doing it here seems to get called multiple times! */
+
+#if 0
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "composer packages already detected, using cached values");
     nr_php_packages_destroy(&NRPRG(txn)->php_packages);
     NRPRG(txn)->php_packages
         = nr_php_packages_clone(NR_PHP_PROCESS_GLOBALS(composer_php_packages));
     nrl_verbosedebug(NRL_FRAMEWORK, "composer packages cloned from cache");
+#endif
     return;
   }
 

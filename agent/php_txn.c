@@ -1151,6 +1151,16 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
+  /* MSF store cached composer packages if present */
+  if (NR_PHP_PROCESS_GLOBALS(composer_packages_detected)) {
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "composer packages already detected, using cached values");
+    nr_php_packages_destroy(&NRPRG(txn)->php_packages);
+    NRPRG(txn)->php_packages
+        = nr_php_packages_clone(NR_PHP_PROCESS_GLOBALS(composer_php_packages));
+    nrl_verbosedebug(NRL_FRAMEWORK, "composer packages cloned from cache");
+  }
+
   return NR_SUCCESS;
 }
 
