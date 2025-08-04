@@ -129,6 +129,7 @@ static void clone_callback(void* value,
 
 nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs) {
   nr_php_packages_t* h = NULL;
+  char* tmp;
 
   if (NULL == pkgs) {
     return NULL;
@@ -140,6 +141,14 @@ nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs) {
   }
 
   nr_hashmap_apply(pkgs->data, clone_callback, h);
+
+  tmp = nr_php_packages_to_json(pkgs);
+  nrl_verbosedebug(NRL_INSTRUMENT, "Orig PHP packages: %s", tmp ? tmp : "NULL");
+  nr_free(tmp);
+  tmp = nr_php_packages_to_json(h);
+  nrl_verbosedebug(NRL_INSTRUMENT, "Cloned PHP packages: %s",
+                   tmp ? tmp : "NULL");
+  nr_free(tmp);
 
   return h;
 }
