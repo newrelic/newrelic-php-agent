@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 type PhpPackagesKey struct {
@@ -66,13 +68,20 @@ func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
 		return
 	}
 
+	log.Debugf("pkgHistory contents before filtering: %+v\n", pkgHistory)
+	log.Debugf("pkgHistory contents before filtering: %+v\n", packages.data)
+
 	for _, pkgKey := range packages.data {
 		_, ok := pkgHistory[pkgKey]
 		if !ok {
+			log.Debugf("adding new package to pkgHistory: %+v\n", pkgKey)
 			pkgHistory[pkgKey] = struct{}{}
 			packages.filteredPkgs = append(packages.filteredPkgs, pkgKey)
+		} else {
+			log.Debugf("package already seen, skipping: %+v\n", pkgKey)
 		}
 	}
+	log.Debugf("filtered contents after filtering: %+v\n", packages.filteredPkgs)
 }
 
 // AddPhpPackagesFromData observes the PHP packages info from the agent.
