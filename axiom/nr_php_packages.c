@@ -97,7 +97,11 @@ static void clone_callback(void* value,
                            const char* key,
                            size_t key_len,
                            void* userdata) {
-  (void)key_len;  // Unused parameter
+  nr_php_packages_t* dest = NULL;
+  nr_php_package_t* orig_pkg = NULL;
+  nr_php_package_t* new_pkg = NULL;
+  
+  (void) key_len;  // Unused parameter
   (void)key;      // Unused parameter
 
   if (NULL == value || NULL == userdata) {
@@ -112,13 +116,11 @@ static void clone_callback(void* value,
   // userdata is a pointer to nr_php_packages_t
   // value is a pointer to nr_php_package_t
   // we will clone the package and add it to the destination hashmap
-  nr_php_packages_t* dest = (nr_php_packages_t*)userdata;
-  nr_php_package_t* orig_pkg = (nr_php_package_t*)value;
+  dest = (nr_php_packages_t*)userdata;
+  orig_pkg = (nr_php_package_t*)value;
   if (NULL == orig_pkg) {
     return;
   }
-  nr_php_package_t* new_pkg = NULL;
-  
   new_pkg = nr_php_package_create_with_source(
       orig_pkg->package_name, orig_pkg->package_version,
       orig_pkg->source_priority);
