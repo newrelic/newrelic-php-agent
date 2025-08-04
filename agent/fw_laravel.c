@@ -956,7 +956,8 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
-    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
+    nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,
+                           "10.48.29");  // version);
   }
 
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
