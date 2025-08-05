@@ -37,14 +37,14 @@ static inline const char* nr_php_package_source_priority_to_string(const nr_php_
 }
 
 void nr_php_packages_set_known(nr_php_packages_t* pkgs,
-                               nr_hashmap_t* known) { /* should be CONST */
-  if (NULL == pkgs || NULL == known) {
+                               nr_php_packages_t* known) { /* should be CONST */
+  if (NULL == pkgs || NULL == known || NULL == known->data) {
     return;
   }
 
   nrl_verbosedebug(NRL_INSTRUMENT, "Setting known PHP packages to %p", known);
 
-  pkgs->known_packages = known;
+  pkgs->known_packages = known->data;
 }
 
 nr_php_package_t* nr_php_package_create_with_source(
