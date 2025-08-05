@@ -605,14 +605,23 @@ NR_PHP_WRAPPER_END
 #endif  // OAPI
 
 static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
-                                      zval* val) {
-  if (NULL == key || 0 == ZEND_STRING_LEN(key)
-      || 0 == nr_php_is_zval_valid_array(val)
-      || 0 == zend_hash_num_elements(Z_ARRVAL_P(val))) {
+                                      zval* val,
+                                      const char* key_ident) {
+  if (NULL == key || 0 == ZEND_STRING_LEN(key)) {
+    nrl_warning(NRL_FRAMEWORK, "hookImplementationsMap[%s]: invalid key",
+                key_ident);
     return true;
-  } else {
-    return false;
   }
+
+  if (0 == nr_php_is_zval_valid_array(val)
+      || 0 == zend_hash_num_elements(Z_ARRVAL_P(val))) {
+    nrl_warning(NRL_FRAMEWORK,
+                "hookImplementationsMap[%s]: invalid value for key '%s'",
+                key_ident, NRSAFESTR(ZEND_STRING_VALUE(key)));
+    return true;
+  }
+
+  return false;
 }
 
 /*
@@ -646,25 +655,27 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
 
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
                                 hook_val) {
-    if (nr_is_invalid_key_val_arr(hook_key, hook_val)) {
-      nrl_warning(NRL_FRAMEWORK,
-                  "hookImplementationsMap[hook]: invalid key or value");
+    if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
       return false;
     }
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), class_key, class_val) {
-      if (nr_is_invalid_key_val_arr(class_key, class_val)) {
-        nrl_warning(NRL_FRAMEWORK,
-                    "hookImplementationsMap[class]: invalid key or value");
+      if (nr_is_invalid_key_val_arr(class_key, class_val, "class")) {
         return false;
       }
 
       ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(class_val), method_key,
                                     module_val) {
-        if (NULL == method_key
-            || 0 == nr_php_is_zval_valid_string(module_val)) {
+        if (NULL == method_key) {
           nrl_warning(NRL_FRAMEWORK,
-                      "hookImplementationsMap[method]: invalid key or value");
+                      "hookImplementationsMap[method]: invalid key");
+          return false;
+        }
+        if (0 == nr_php_is_zval_valid_string(module_val)) {
+          nrl_warning(
+              NRL_FRAMEWORK,
+              "hookImplementationsMap[method]: invalid value for key '%s'",
+              NRSAFESTR(ZEND_STRING_VALUE(method_key)));
           return false;
         }
 
