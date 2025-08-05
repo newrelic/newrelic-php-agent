@@ -70,6 +70,14 @@ extern nr_php_package_t* nr_php_package_create_with_source(
 extern nr_php_package_t* nr_php_package_create(const char* name,
                                                const char* version);
 
+/* Purpose : Clone a collection of php packages
+ *
+ * Params  : 1. A pointer to nr_php_packages_t
+ *
+ * Returns : A new nr_php_packages_t that is a copy of the original
+ */
+nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs);
+
 /*
  * Purpose : Destroy/free php package
  *
