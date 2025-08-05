@@ -37,7 +37,7 @@ static inline const char* nr_php_package_source_priority_to_string(const nr_php_
 }
 
 void nr_php_packages_set_known(nr_php_packages_t* pkgs,
-                               const nr_hashmap_t* known) {
+                               nr_hashmap_t* known) { /* should be CONST */
   if (NULL == pkgs || NULL == known) {
     return;
   }
