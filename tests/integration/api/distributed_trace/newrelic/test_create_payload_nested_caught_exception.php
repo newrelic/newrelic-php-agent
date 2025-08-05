@@ -8,13 +8,6 @@ Tests newrelic_create_distributed_trace_payload() on a caught exception, nested 
 We can ensure the payloads were associated with the correct segment by using the INI settings to limit the spans it saves to only those with payloads or exceptions (and the root).
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "8.0", "<")) {
-  die("skip: PHP < 8.0.0 not supported\n");
-}
-*/
-
 /*INI
 error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 newrelic.distributed_tracing_enabled = true
@@ -72,11 +65,7 @@ null
         "parentId": "??"
       },
       {}, 
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -93,11 +82,7 @@ null
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
-      }
+      {}
     ],
     [
       {
@@ -116,10 +101,7 @@ null
       {},
       {
         "error.message": "Uncaught exception 'RuntimeException' with message 'Division by zero' in __FILE__:??",
-        "error.class": "RuntimeException",
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "??"
+        "error.class": "RuntimeException"
       }
     ]
   ]

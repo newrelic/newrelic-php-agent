@@ -8,13 +8,6 @@
 Span events must be sent when distributed tracing and span events are enabled.
 */
 
-/*SKIPIF
-<?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
-*/
-
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
@@ -62,11 +55,7 @@ newrelic.cross_application_tracer.enabled = false
         "timestamp": "??"
       },
       {},
-      {
-        "code.lineno": 80,
-        "code.filepath": "__FILE__",
-        "code.function": "main"
-      }
+      {}
     ]
   ]
 ]
