@@ -28,7 +28,8 @@ typedef struct _nr_php_package_t {
 
 typedef struct _nr_php_packages_t {
   nr_hashmap_t* data;
-  const nr_hashmap_t* known_packages;
+  nr_hashmap_t* known_packages;
+  /* SHOULD BE CONST !!!*/
 } nr_php_packages_t;
 
 typedef void(nr_php_packages_iter_t)(void* value,
