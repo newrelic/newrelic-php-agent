@@ -38,7 +38,7 @@ typedef void(nr_php_packages_iter_t)(void* value,
                                      void* user_data);
 
 void nr_php_packages_set_known(nr_php_packages_t* pkgs,
-                               const nr_hashmap_t* known);
+                               nr_hashmap_t* known); /* should be CONST! */
 
 /*
  * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
