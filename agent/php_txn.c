@@ -1162,6 +1162,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
         = nr_php_packages_clone(NR_PHP_PROCESS_GLOBALS(composer_php_packages));
     nrl_verbosedebug(NRL_FRAMEWORK, "composer packages cloned from cache");
 #else
+    nrl_verbosedebug(NRL_INSTRUMENT, "passing known PHP packages = %p",
+                     NR_PHP_PROCESS_GLOBALS(composer_php_packages));
     nr_php_packages_set_known(NRPRG(txn)->php_packages,
                               NR_PHP_PROCESS_GLOBALS(composer_php_packages));
 #endif
