@@ -1156,10 +1156,15 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       && (NULL != NR_PHP_PROCESS_GLOBALS(composer_php_packages))) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "composer packages already detected, using cached values");
+#if 0
     nr_php_packages_destroy(&NRPRG(txn)->php_packages);
     NRPRG(txn)->php_packages
         = nr_php_packages_clone(NR_PHP_PROCESS_GLOBALS(composer_php_packages));
     nrl_verbosedebug(NRL_FRAMEWORK, "composer packages cloned from cache");
+#else
+    nr_php_packages_set_known(NRPRG(txn)->php_packages,
+                              NR_PHP_PROCESS_GLOBALS(composer_php_packages));
+#endif
   }
 
   return NR_SUCCESS;

@@ -36,6 +36,15 @@ static inline const char* nr_php_package_source_priority_to_string(const nr_php_
   }
 }
 
+void nr_php_packages_set_known(nr_php_packages_t* pkgs,
+                               const nr_hashmap_t* known) {
+  if (NULL == pkgs || NULL == known) {
+    return;
+  }
+
+  pkgs->known_packages = known;
+}
+
 nr_php_package_t* nr_php_package_create_with_source(
     const char* name,
     const char* version,
@@ -151,6 +160,20 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
   }
 
   if (NULL == p || NULL == p->package_name || NULL == p->package_version) {
+    return NULL;
+  }
+
+  // if package is in known packages then ignore
+
+  package = (nr_php_package_t*)nr_hashmap_get(
+      h->known_packages, p->package_name, nr_strlen(p->package_name));
+  if (NULL != package) {
+    if (package->source_priority <= p->source_priority
+        && 0 != nr_strcmp(package->package_version, p->package_version)) {
+      nr_free(package->package_version);
+      package->package_version = nr_strdup(p->package_version);
+    }
+    nr_php_package_destroy(p);
     return NULL;
   }
 

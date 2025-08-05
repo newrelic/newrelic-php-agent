@@ -28,12 +28,16 @@ typedef struct _nr_php_package_t {
 
 typedef struct _nr_php_packages_t {
   nr_hashmap_t* data;
+  const nr_hashmap_t* known_packages;
 } nr_php_packages_t;
 
 typedef void(nr_php_packages_iter_t)(void* value,
                                      const char* name,
                                      size_t name_len,
                                      void* user_data);
+
+void nr_php_packages_set_known(nr_php_packages_t* pkgs,
+                               const nr_hashmap_t* known);
 
 /*
  * Purpose : Create a new php package with desired source priority. If the name is null, then no package will
