@@ -42,6 +42,8 @@ void nr_php_packages_set_known(nr_php_packages_t* pkgs,
     return;
   }
 
+  nrl_verbosedebug(NRL_INSTRUMENT, "Setting known PHP packages to %p", known);
+
   pkgs->known_packages = known;
 }
 
@@ -164,6 +166,14 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
   }
 
   // if package is in known packages then ignore
+
+  if (h->known_packages) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "add package -> known PHP packages = %p",
+                     h->known_packages);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "add package -> known PHP packages = NULL");
+  }
 
   package = (nr_php_package_t*)nr_hashmap_get(
       h->known_packages, p->package_name, nr_strlen(p->package_name));
