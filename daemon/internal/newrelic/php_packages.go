@@ -27,14 +27,14 @@ type PhpPackages struct {
 	filteredPkgs []PhpPackagesKey
 }
 
-// NumSeen returns the total number PHP packages payloads stored.
+// NumSaved returns the total number PHP packages payloads stored.
 // Should always be 0 or 1.  The agent reports all the PHP
 // packages as a single JSON string.
 func (packages *PhpPackages) NumSaved() float64 {
 	return float64(packages.numSeen)
 }
 
-// newPhpPackages returns a new PhpPackages struct.
+// NewPhpPackages returns a new PhpPackages struct.
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
 		numSeen:      0,
@@ -45,7 +45,7 @@ func NewPhpPackages() *PhpPackages {
 	return p
 }
 
-// filter seen php packages data to avoid sending duplicates
+// Filter seen php packages data to avoid sending duplicates
 //
 // the `App` structure contains a map of PHP Packages the reporting
 // application has encountered.
@@ -78,21 +78,21 @@ func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
 // AddPhpPackagesFromData observes the PHP packages info from the agent.
 func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
 	if packages == nil {
-		return fmt.Errorf("packages is nil!")
+		return fmt.Errorf("packages is nil")
 	}
-	if data == nil || !(len(data) > 0) {
-		return fmt.Errorf("data is nil!")
+	if len(data) == 0 {
+		return fmt.Errorf("data is nil")
 	}
 
-	var x []interface{}
+	var x []any
 
 	err := json.Unmarshal(data, &x)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal php package json: %s", err.Error())
 	}
 
-	for _, pkgJson := range x {
-		pkg, _ := pkgJson.([]interface{})
+	for _, pkgJSON := range x {
+		pkg, _ := pkgJSON.([]any)
 		if len(pkg) != 3 {
 			return fmt.Errorf("invalid php package json structure: %+v", pkg)
 		}
