@@ -2074,7 +2074,7 @@ PHP_INI_ENTRY_EX("newrelic.preload_framework_library_detection",
  */
 PHP_INI_ENTRY_EX(
     "newrelic.vulnerability_management.composer_api.per_process_detection",
-    "1",
+    "0",
     NR_PHP_SYSTEM,
     nr_composer_per_process_detection_mh,
     0)
