@@ -69,7 +69,7 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
   return NR_SUCCESS;
 }
 
-static void nr_execute_handle_autoload_composer_get_packages_information(
+static bool nr_execute_handle_autoload_composer_get_packages_information(
     const char* vendor_path) {
   zval retval;  // This is used as a return value for zend_eval_string.
                 // It will only be set if the result of the eval is SUCCESS.
@@ -79,13 +79,13 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
     // do nothing when collecting package information for vulnerability
     // management is disabled
-    return;
+    return false;
   }
 
   // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_composer_api_enabled))) {
     // do nothing when use of composer to collect package info is disabled
-    return;
+    return false;
   }
 
   // clang-format off
@@ -124,7 +124,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
               "%s - unable to initialize Composer runtime API - package info "
               "unavailable",
               __func__);
-    return;
+    return false;
   }
 
   nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available",
@@ -135,13 +135,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   if (SUCCESS != result) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed",
                      __func__);
-    return;
-  }
-
-  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
-    // set the per-process flag to true to avoid re-running composer api
-    // detection when the per-process detection is enabled.
-    NR_PHP_PROCESS_GLOBALS(composer_packages_detected) = 1;
+    return false;
   }
 
   if (IS_ARRAY == Z_TYPE(retval)) {
@@ -170,6 +164,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
                      __func__, NRP_ARGSTR(strbuf));
   }
   zval_dtor(&retval);
+  return true;
 }
 
 static char* nr_execute_handle_autoload_composer_get_vendor_path(
@@ -274,7 +269,9 @@ void nr_composer_handle_autoload(const char* filename) {
   NRPRG(txn)->composer_info.composer_detected = true;
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
 
-  nr_execute_handle_autoload_composer_get_packages_information(vendor_path);
+  NRTXN(composer_info.packages_detected)
+      = nr_execute_handle_autoload_composer_get_packages_information(
+          vendor_path);
 leave:
   nr_free(vendor_path);
 }
