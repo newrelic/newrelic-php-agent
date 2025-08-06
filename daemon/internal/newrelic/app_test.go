@@ -248,9 +248,11 @@ func TestConnectPayloadInternalDocker(t *testing.T) {
 	if nil != err {
 		t.Errorf("expected: %v\nactual: %v", nil, err)
 	}
+
 }
 
 func TestPreconnectPayloadEncoded(t *testing.T) {
+
 	preconnectPayload := &RawPreconnectPayload{SecurityPolicyToken: "ffff-eeee-eeee-dddd", HighSecurity: false}
 	expected := `[` +
 		`{` +
@@ -585,6 +587,7 @@ func TestConnectPayloadEncoded(t *testing.T) {
 	} else if string(b) != expected {
 		t.Errorf("expected: %s\nactual: %s", expected, string(b))
 	}
+
 }
 
 func TestMaxPayloadSizeInBytesFromDefault(t *testing.T) {
