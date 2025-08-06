@@ -203,6 +203,7 @@ func EncodePayload(payload interface{}) ([]byte, error) {
 }
 
 func (info *AppInfo) ConnectPayloadInternal(pid int, util *utilization.Data) *RawConnectPayload {
+
 	data := &RawConnectPayload{
 		Pid:             pid,
 		Language:        info.AgentLanguage,
