@@ -101,6 +101,9 @@ nr_php_packages_t* nr_php_packages_create() {
     nr_free(h);
     return NULL;
   }
+
+  h->known_packages = NULL;
+
   return h;
 }
 static void clone_callback(void* value,
