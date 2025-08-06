@@ -221,6 +221,7 @@ func (t *Test) HandlePHPModules(php_executable string, ctx *Context) map[string]
 }
 
 func (t *Test) MakeRun(ctx *Context) (Tx, error) {
+
 	// we don't support running C tests - assert this so we can
 	// troubleshoot if we try to run a C test
 	if t.IsC() {
@@ -834,20 +835,22 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	}
 }
 
-var MetricScrubRegexps = []*regexp.Regexp{
-	regexp.MustCompile(`CPU/User Time`),
-	regexp.MustCompile(`CPU/User/Utilization`),
-	regexp.MustCompile(`Memory/Physical`),
-	regexp.MustCompile(`Supportability/execute/user/call_count`),
-	regexp.MustCompile(`Supportability/execute/allocated_segment_count`),
-	regexp.MustCompile(`Memory/RSS`),
-	regexp.MustCompile(`^Supportability\/Locale`),
-	regexp.MustCompile(`^Supportability\/InstrumentedFunction`),
-	regexp.MustCompile(`^Supportability\/TxnData\/.*`),
-	regexp.MustCompile(`^Supportability/C/NewrelicVersion/.*`),
-	regexp.MustCompile(`^Supportability/PHP/Version/.*`),
-	regexp.MustCompile(`^Supportability/PHP/AgentVersion/.*`),
-}
+var (
+	MetricScrubRegexps = []*regexp.Regexp{
+		regexp.MustCompile(`CPU/User Time`),
+		regexp.MustCompile(`CPU/User/Utilization`),
+		regexp.MustCompile(`Memory/Physical`),
+		regexp.MustCompile(`Supportability/execute/user/call_count`),
+		regexp.MustCompile(`Supportability/execute/allocated_segment_count`),
+		regexp.MustCompile(`Memory/RSS`),
+		regexp.MustCompile(`^Supportability\/Locale`),
+		regexp.MustCompile(`^Supportability\/InstrumentedFunction`),
+		regexp.MustCompile(`^Supportability\/TxnData\/.*`),
+		regexp.MustCompile(`^Supportability/C/NewrelicVersion/.*`),
+		regexp.MustCompile(`^Supportability/PHP/Version/.*`),
+		regexp.MustCompile(`^Supportability/PHP/AgentVersion/.*`),
+	}
+)
 
 func (t *Test) Compare(harvest *newrelic.Harvest) {
 	if nil != t.expect {
