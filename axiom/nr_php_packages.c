@@ -157,6 +157,35 @@ nr_php_packages_t* nr_php_packages_clone(nr_php_packages_t* pkgs) {
   return h;
 }
 
+static inline bool nr_php_packages_is_known_package(nr_php_packages_t* pkgs,
+                                                    nr_php_package_t* p) {
+  nr_php_package_t* known = NULL;
+
+  if (NULL == pkgs || NULL == pkgs->known_packages || NULL == p) {
+    return false;
+  }
+
+  known = (nr_php_package_t*)nr_hashmap_get(
+      pkgs->known_packages, p->package_name, nr_strlen(p->package_name));
+
+  if (NULL == known) {
+    // do not ignore - package is not known yet
+    return false;
+  }
+
+  if (known->source_priority > p->source_priority) {
+    // ignore - package is known and has a lower priority
+    return true;
+  }
+
+  if (0 == nr_strcmp(known->package_version, p->package_version)) {
+    // ignore - package is known and has the same version
+    return true;
+  }
+
+  return false;
+}
+
 nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
                                               nr_php_package_t* p) {
   nr_php_package_t* package;
@@ -169,23 +198,7 @@ nr_php_package_t* nr_php_packages_add_package(nr_php_packages_t* h,
   }
 
   // if package is in known packages then ignore
-
-  if (h->known_packages) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "add package -> known PHP packages = %p",
-                     h->known_packages);
-  } else {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "add package -> known PHP packages = NULL");
-  }
-
-  package = (nr_php_package_t*)nr_hashmap_get(
-      h->known_packages, p->package_name, nr_strlen(p->package_name));
-  if (NULL != package) {
-    if (package->source_priority <= p->source_priority
-        && 0 != nr_strcmp(package->package_version, p->package_version)) {
-      nr_free(package->package_version);
-      package->package_version = nr_strdup(p->package_version);
-    }
+  if (nr_php_packages_is_known_package(h, p)) {
     nr_php_package_destroy(p);
     return NULL;
   }
