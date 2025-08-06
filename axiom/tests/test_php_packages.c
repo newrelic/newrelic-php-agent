@@ -53,6 +53,75 @@ static void test_php_adding_packages_to_hashmap(void) {
   tlib_pass_if_null("PHP packages hashmap destroyed", hm);
 }
 
+static void test_adding_to_hashmap_with_known_packages(void) {
+  nr_php_package_t* package1;
+  nr_php_package_t* package2;
+  nr_php_package_t* package3;
+  nr_php_packages_t* hm = nr_php_packages_create();
+  nr_php_packages_t* cached_packages;
+  int count;
+
+  // Test: create multiple new packages and add to hashmap
+  package1 = nr_php_package_create("Package One", "10.1.0");
+  package2 = nr_php_package_create("Package Two", "11.2.0");
+  package3 = nr_php_package_create("Package Three", "12.3.0");
+  /* Should not crash: */
+
+  nr_php_packages_add_package(NULL, package1);
+  nr_php_packages_add_package(hm, NULL);
+  nr_php_packages_add_package(hm, package1);
+  nr_php_packages_add_package(hm, package2);
+  nr_php_packages_add_package(hm, package3);
+
+  count = nr_php_packages_count(hm);
+
+  tlib_pass_if_int_equal("package count", 3, count);
+
+  // Cache packages
+  cached_packages = nr_php_packages_clone(hm);
+
+  nr_php_packages_destroy(&hm);
+  tlib_pass_if_null("Transaction packages destroyed", hm);
+
+  tlib_pass_if_not_null("Packages cache created", cached_packages);
+  tlib_pass_if_int_equal("Packages cache count", 3,
+                         nr_php_packages_count(cached_packages));
+
+  hm = nr_php_packages_create();
+  tlib_pass_if_not_null("Transaction packages created", hm);
+
+  nr_php_packages_set_known(hm, cached_packages);
+  tlib_pass_if_ptr_equal("Known packages set",
+                         hm->known_packages, cached_packages->data);
+
+  // Adding packages to hashmap that are already in the cache should not change
+  // the count of packages in the hashmap
+  package1 = nr_php_package_create("Package One", "10.1.0");
+  package2 = nr_php_package_create("Package Two", "11.2.0");
+  package3 = nr_php_package_create("Package Three", "12.3.0");
+  nr_php_packages_add_package(hm, package1);
+  nr_php_packages_add_package(hm, package2);
+  nr_php_packages_add_package(hm, package3);
+
+  count = nr_php_packages_count(hm);
+
+  tlib_pass_if_int_equal("package count", 0, count);
+
+  // Adding packages to hashmap that are not in the cache should change
+  // the count of packages in the hashmap
+  package1 = nr_php_package_create("Uncached package", "12.3.0");
+  nr_php_packages_add_package(hm, package1);
+  count = nr_php_packages_count(hm);
+
+  tlib_pass_if_int_equal("package count", 1, count);
+
+  nr_php_packages_destroy(&hm);
+  tlib_pass_if_null("Transaction packages destroyed", hm);
+
+  nr_php_packages_destroy(&cached_packages);
+  tlib_pass_if_null("Cached packages hashmap destroyed", cached_packages);
+}
+
 static void test_php_package_to_json(void) {
   char* json;
   nr_php_package_t* package1;
@@ -375,6 +444,7 @@ tlib_parallel_info_t parallel_info
 void test_main(void* p NRUNUSED) {
   test_php_package_create_destroy();
   test_php_adding_packages_to_hashmap();
+  test_adding_to_hashmap_with_known_packages();
   test_php_package_to_json();
   test_php_packages_to_json_buffer();
   test_php_packages_to_json();
