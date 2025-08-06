@@ -219,9 +219,9 @@ func TestFilterPackageData(t *testing.T) {
 	info := AppInfo{}
 	app := NewApp(&info)
 	pkg := NewPhpPackages()
-	expect_a := PhpPackagesKey{"package_a", "1.2.3"}
-	expect_b := PhpPackagesKey{"package_b", "1.2.3"}
-	expect_c := PhpPackagesKey{"package_c", "1.2.3"}
+	expectA := PhpPackagesKey{"package_a", "1.2.3"}
+	expectB := PhpPackagesKey{"package_b", "1.2.3"}
+	expectC := PhpPackagesKey{"package_c", "1.2.3"}
 
 	// Test nil package data
 	pkg.Filter(app.PhpPackages)
@@ -275,16 +275,16 @@ func TestFilterPackageData(t *testing.T) {
 	// Test single valid package
 	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
 	pkg.Filter(app.PhpPackages)
-	if !comparePkgs(&expect_a, &pkg.filteredPkgs[0]) || len(pkg.filteredPkgs) != 1 {
-		t.Fatalf("Expected '%+v', got '%+v'", expect_a, pkg.filteredPkgs[0])
+	if !comparePkgs(&expectA, &pkg.filteredPkgs[0]) || len(pkg.filteredPkgs) != 1 {
+		t.Fatalf("Expected '%+v', got '%+v'", expectA, pkg.filteredPkgs[0])
 	}
 
 	// Test multiple valid packages
 	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
 	pkg.AddPhpPackagesFromData([]byte(`[["package_c", "1.2.3",{}]]`))
 	pkg.Filter(app.PhpPackages)
-	if !comparePkgs(&expect_b, &pkg.filteredPkgs[1]) || !comparePkgs(&expect_c, &pkg.filteredPkgs[2]) || len(pkg.filteredPkgs) != 3 {
-		t.Fatalf("Expected '%+v', '%+v', got '%+v', '%+v'", expect_b, expect_c, pkg.filteredPkgs[1], pkg.filteredPkgs[2])
+	if !comparePkgs(&expectB, &pkg.filteredPkgs[1]) || !comparePkgs(&expectC, &pkg.filteredPkgs[2]) || len(pkg.filteredPkgs) != 3 {
+		t.Fatalf("Expected '%+v', '%+v', got '%+v', '%+v'", expectB, expectC, pkg.filteredPkgs[1], pkg.filteredPkgs[2])
 	}
 
 	// Test duplicate package data in same harvest
