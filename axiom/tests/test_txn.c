@@ -8668,8 +8668,7 @@ static void test_nr_txn_add_php_package(void) {
 
   txn = new_txn(0);
   // simulate composer api was successfully used
-  txn->composer_info.api_call_result
-      = NR_COMPOSER_API_CALL_RESULT_PACKAGES_COLLECTED;
+  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
   p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
   tlib_pass_if_null(
       "legacy package information not added to transaction after composer api "
@@ -8744,8 +8743,7 @@ static void test_nr_txn_add_php_package_from_source(void) {
 
   txn = new_txn(0);
   // simulate composer api was successfully used
-  txn->composer_info.api_call_result
-      = NR_COMPOSER_API_CALL_RESULT_PACKAGES_COLLECTED;
+  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
   p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
                                           NR_PHP_PACKAGE_SOURCE_LEGACY);
   tlib_pass_if_null(
