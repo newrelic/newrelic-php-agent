@@ -78,10 +78,6 @@ typedef struct _nrphpglobals_t {
   int composer_api_per_process_detection;  /* Enables per-process VM package
                                               detection when Composer API is also
                                               enabled */
-  int composer_api_per_process_called; /* Flag to indicate that Composer API was
-                                    called by current process to detect packages
-                                    and succeeded. Used in conjunction with
-                                    composer_api_per_process_detection. */
   int composer_packages_detected;      /* Flag to indicate that Composer API was
                                          called to detect packages and succeeded. */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
