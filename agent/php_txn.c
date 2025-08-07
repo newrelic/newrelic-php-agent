@@ -1151,8 +1151,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
-  NRTXN(composer_info.packages_detected)
-      = NR_PHP_PROCESS_GLOBALS(composer_packages_detected);
+  NRTXN(composer_info.api_call_result)
+      = NR_PHP_PROCESS_GLOBALS(composer_api_call_result);
 
   return NR_SUCCESS;
 }
@@ -1343,8 +1343,8 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       if (NR_FAILURE == ret) {
         nrl_debug(NRL_TXN, "failed to send txn");
       }
-      NR_PHP_PROCESS_GLOBALS(composer_packages_detected)
-          = NRTXN(composer_info.packages_detected);
+      NR_PHP_PROCESS_GLOBALS(composer_api_call_result)
+          = NRTXN(composer_info.api_call_result);
     }
   }
 

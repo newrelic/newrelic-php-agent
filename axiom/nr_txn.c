@@ -3540,7 +3540,8 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
   }
 
   if (NR_PHP_PACKAGE_SOURCE_LEGACY == source
-      && txn->composer_info.packages_detected) {
+      && NR_COMPOSER_API_CALL_RESULT_PACKAGES_COLLECTED
+             == txn->composer_info.api_call_result) {
     // don't add packages from legacy source if packages have been detected
     // using composer runtime api
     return NULL;
