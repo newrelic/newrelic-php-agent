@@ -1346,9 +1346,11 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
         // set the per-process flag to true to avoid re-running composer api
         // detection when the per-process detection is enabled.
-        NR_PHP_PROCESS_GLOBALS(composer_packages_detected)
+        NR_PHP_PROCESS_GLOBALS(composer_api_per_process_called)
             = NRTXN(composer_info.packages_detected);
       }
+      NR_PHP_PROCESS_GLOBALS(composer_packages_detected)
+          = NRTXN(composer_info.packages_detected);
     }
   }
 
