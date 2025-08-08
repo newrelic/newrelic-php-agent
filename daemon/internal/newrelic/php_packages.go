@@ -27,9 +27,9 @@ type PhpPackages struct {
 	filteredPkgs []PhpPackagesKey
 }
 
-// NumSaved returns the total number PHP packages payloads stored.
-// Should always be 0 or 1.  The agent reports all the PHP
-// packages as a single JSON string.
+// NumSaved returns whether PHP packages payloads are stored by
+// the daemon for the current harvest. Should always be 0 or 1.
+// The agent reports all the PHP packages as a single JSON string.
 func (packages *PhpPackages) NumSaved() float64 {
 	return float64(packages.numSeen)
 }
