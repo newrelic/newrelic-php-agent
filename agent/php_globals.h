@@ -66,6 +66,8 @@ typedef struct _nrphpglobals_t {
   int instrument_internal; /* newrelic.transaction_tracer.internal_functions_enabled
                             */
   int high_security;       /* newrelic.high_security */
+  bool nr_security_agent_enabled; /* newrelic.security.agent.enabled */
+  bool nr_security_enabled;     /* newrelic.security.enabled */
 
   int apache_major;    /* Apache major version */
   int apache_minor;    /* Apache minor version */

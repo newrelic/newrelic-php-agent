@@ -221,7 +221,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   php_rinit.c php_rshutdown.c php_samplers.c php_stack.c \
   php_stacked_segment.c php_txn.c php_user_instrument.c \
   php_user_instrument_wraprec_hashmap.c \
-  php_user_instrument_hashmap.c php_vm.c php_wrapper.c"
+  php_user_instrument_hashmap.c php_vm.c php_wrapper.c csec_metadata.c"
   FRAMEWORKS="fw_cakephp.c fw_codeigniter.c fw_drupal8.c \
   fw_drupal.c fw_drupal_common.c fw_joomla.c fw_kohana.c \
   fw_laminas3.c fw_laravel.c fw_laravel_queue.c fw_lumen.c \
