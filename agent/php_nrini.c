@@ -2074,7 +2074,7 @@ PHP_INI_ENTRY_EX("newrelic.preload_framework_library_detection",
  */
 PHP_INI_ENTRY_EX(
     "newrelic.vulnerability_management.composer_api.per_process_detection",
-    "1",
+    "0",
     NR_PHP_SYSTEM,
     nr_composer_per_process_detection_mh,
     0)
@@ -3105,30 +3105,33 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.enabled",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     log_context_data_attributes.enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.include",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.include,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclude",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.exclude,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.enabled",
+    "0",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    log_context_data_attributes.enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.include",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.include,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.exclude",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.exclude,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.enabled",
                      "0",
                      NR_PHP_REQUEST,
@@ -3149,14 +3152,15 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.exclude",
 /*
  * Vulnerability Management
  */
-STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enabled",
-                     "1",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     vulnerability_management_package_detection_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.vulnerability_management.package_detection.enabled",
+    "1",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    vulnerability_management_package_detection_enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
 
 STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      "1",
