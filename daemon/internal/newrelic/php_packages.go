@@ -23,7 +23,7 @@ type PhpPackagesKey struct {
 // process to be reported to the backend.
 type PhpPackages struct {
 	numSeen      int
-	data         []PhpPackagesKey
+	data         map[PhpPackagesKey]struct{}
 	filteredPkgs []PhpPackagesKey
 }
 
@@ -38,7 +38,7 @@ func (packages *PhpPackages) NumSaved() float64 {
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
 		numSeen:      0,
-		data:         nil,
+		data:         make(map[PhpPackagesKey]struct{}),
 		filteredPkgs: nil,
 	}
 
@@ -62,11 +62,11 @@ func NewPhpPackages() *PhpPackages {
 // key does not exist, add it to the map and the slice of filteredPkgs to be
 // sent in the current harvest.
 func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
-	if packages == nil || packages.data == nil {
+	if packages == nil || len(packages.data) == 0 {
 		return
 	}
 
-	for _, pkgKey := range packages.data {
+	for pkgKey := range packages.data {
 		_, ok := pkgHistory[pkgKey]
 		if !ok {
 			pkgHistory[pkgKey] = struct{}{}
@@ -107,7 +107,11 @@ func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
 			return fmt.Errorf("unable to parse package version")
 		}
 
-		packages.data = append(packages.data, PhpPackagesKey{name, version})
+		pkgKey := PhpPackagesKey{name, version}
+		_, ok = packages.data[pkgKey]
+		if !ok {
+			packages.data[pkgKey] = struct{}{}
+		}
 	}
 
 	packages.numSeen = 1
@@ -158,7 +162,7 @@ func (packages *PhpPackages) FailedHarvest(newHarvest *Harvest) {
 
 // Empty returns true if the collection is empty.
 func (packages *PhpPackages) Empty() bool {
-	return nil == packages || nil == packages.data || 0 == packages.numSeen
+	return nil == packages || len(packages.data) == 0 || 0 == packages.numSeen
 }
 
 // Data marshals the collection to JSON according to the schema expected

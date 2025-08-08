@@ -18,7 +18,7 @@ func TestNewPhpPackages(t *testing.T) {
 	if 0 != pkg.NumSaved() {
 		t.Fatalf("Expected 0, got %f", pkg.NumSaved())
 	}
-	if nil != pkg.data {
+	if len(pkg.data) != 0 {
 		t.Fatalf("Expected nil, got %v", pkg.data)
 	}
 }
