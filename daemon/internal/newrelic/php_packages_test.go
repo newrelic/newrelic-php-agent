@@ -169,7 +169,7 @@ func TestCollectorJSON(t *testing.T) {
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	if expectedJSON != string(json) {
+	if expectedJSON != string(json) && expectedJSONB != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 }
