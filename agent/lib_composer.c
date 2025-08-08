@@ -69,23 +69,25 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
   return NR_SUCCESS;
 }
 
-static void nr_execute_handle_autoload_composer_get_packages_information(
+static nr_composer_api_status_t
+nr_execute_handle_autoload_composer_get_packages_information(
     const char* vendor_path) {
   zval retval;  // This is used as a return value for zend_eval_string.
                 // It will only be set if the result of the eval is SUCCESS.
   int result = FAILURE;
+  nr_composer_api_status_t api_status = NR_COMPOSER_API_STATUS_UNSET;
 
   // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_package_detection_enabled))) {
     // do nothing when collecting package information for vulnerability
     // management is disabled
-    return;
+    return NR_COMPOSER_API_STATUS_INVALID_USE;
   }
 
   // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(!NRINI(vulnerability_management_composer_api_enabled))) {
     // do nothing when use of composer to collect package info is disabled
-    return;
+    return NR_COMPOSER_API_STATUS_INVALID_USE;
   }
 
   // clang-format off
@@ -124,7 +126,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
               "%s - unable to initialize Composer runtime API - package info "
               "unavailable",
               __func__);
-    return;
+    return NR_COMPOSER_API_STATUS_INIT_FAILURE;
   }
 
   nrl_verbosedebug(NRL_INSTRUMENT, "%s - Composer runtime API available",
@@ -135,13 +137,7 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
   if (SUCCESS != result) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s - composer_getallrawdata.php failed",
                      __func__);
-    return;
-  }
-
-  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
-    // set the per-process flag to true to avoid re-running composer api
-    // detection when the per-process detection is enabled.
-    NR_PHP_PROCESS_GLOBALS(composer_packages_detected) = 1;
+    return NR_COMPOSER_API_STATUS_CALL_FAILURE;
   }
 
   if (IS_ARRAY == Z_TYPE(retval)) {
@@ -162,14 +158,17 @@ static void nr_execute_handle_autoload_composer_get_packages_information(
       }
     }
     ZEND_HASH_FOREACH_END();
+    api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
   } else {
     char strbuf[80];
     nr_format_zval_for_debug(&retval, strbuf, 0, sizeof(strbuf) - 1, 0);
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "%s - installed packages is: " NRP_FMT ", not an array",
                      __func__, NRP_ARGSTR(strbuf));
+    api_status = NR_COMPOSER_API_STATUS_INVALID_RESULT;
   }
   zval_dtor(&retval);
+  return api_status;
 }
 
 static char* nr_execute_handle_autoload_composer_get_vendor_path(
@@ -274,7 +273,9 @@ void nr_composer_handle_autoload(const char* filename) {
   NRPRG(txn)->composer_info.composer_detected = true;
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
 
-  nr_execute_handle_autoload_composer_get_packages_information(vendor_path);
+  NRTXN(composer_info.api_status)
+      = nr_execute_handle_autoload_composer_get_packages_information(
+          vendor_path);
 leave:
   nr_free(vendor_path);
 }

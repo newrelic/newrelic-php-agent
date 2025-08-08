@@ -3539,6 +3539,14 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
     return NULL;
   }
 
+  if (NR_PHP_PACKAGE_SOURCE_LEGACY == source
+      && NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED
+             == txn->composer_info.api_status) {
+    // don't add packages from legacy source if packages have been detected
+    // using composer runtime api
+    return NULL;
+  }
+
   p = nr_php_package_create_with_source(package_name, package_version, source);
   return nr_php_packages_add_package(txn->php_packages, p);
 }

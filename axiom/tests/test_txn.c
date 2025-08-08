@@ -8665,6 +8665,16 @@ static void test_nr_txn_add_php_package(void) {
   tlib_pass_if_ptr_equal(
       "same package name, different version, add returns same pointer", p1, p2);
   nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  // simulate composer api was successfully used
+  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+  tlib_pass_if_null(
+      "legacy package information not added to transaction after composer api "
+      "was called successfully",
+      p1);
+  nr_txn_destroy(&txn);
 }
 
 static void test_nr_txn_add_php_package_from_source(void) {
@@ -8729,6 +8739,29 @@ static void test_nr_txn_add_php_package_from_source(void) {
   tlib_pass_if_str_equal("composer version used", package_version2,
                          p2->package_version);
 
+  nr_txn_destroy(&txn);
+
+  txn = new_txn(0);
+  // simulate composer api was successfully used
+  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                          NR_PHP_PACKAGE_SOURCE_LEGACY);
+  tlib_pass_if_null(
+      "legacy package information not added to transaction after composer api "
+      "was called successfully",
+      p1);
+  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                          NR_PHP_PACKAGE_SOURCE_SUGGESTION);
+  tlib_pass_if_not_null(
+      "suggestion package information added to transaction even after composer "
+      "api was called successfully",
+      p1);
+  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
+  tlib_pass_if_not_null(
+      "composer package information added to transaction even after composer "
+      "api was called successfully",
+      p1);
   nr_txn_destroy(&txn);
 }
 
