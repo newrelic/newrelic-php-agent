@@ -61,7 +61,6 @@ nr_status_t nr_php_explain_add_value_to_row(const zval* zv, nrobj_t* row) {
       nro_set_array_none(row, 0);
       break;
 
-#ifdef PHP7
     case IS_TRUE:
       nro_set_array_boolean(row, 0, 1);
       break;
@@ -69,11 +68,6 @@ nr_status_t nr_php_explain_add_value_to_row(const zval* zv, nrobj_t* row) {
     case IS_FALSE:
       nro_set_array_boolean(row, 0, 0);
       break;
-#else
-    case IS_BOOL:
-      nro_set_array_boolean(row, 0, Z_BVAL_P(zv));
-      break;
-#endif
 
     default:
       nrl_verbosedebug(NRL_SQL, "%s: unknown zval type %d", __func__,

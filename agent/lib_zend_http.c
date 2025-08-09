@@ -441,15 +441,13 @@ leave:
 NR_PHP_WRAPPER_END
 
 void nr_zend_http_enable(TSRMLS_D) {
-  if ((NR_FW_ZEND != NRPRG(current_framework))
-      && (NR_FW_LAMINAS3 != NRPRG(current_framework))) {
+  if (NR_FW_LAMINAS3 != NRPRG(current_framework)) {
     nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_Z),
                               nr_zend_http_client_request TSRMLS_CC);
   }
 }
 
 void nr_laminas_http_enable(TSRMLS_D) {
-  if ((NR_FW_ZEND != NRPRG(current_framework))) {
     /*
      * Redefine zend to laminas.
      */
@@ -461,5 +459,4 @@ void nr_laminas_http_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_L),
                               nr_zend_http_client_request TSRMLS_CC);
-  }
 }

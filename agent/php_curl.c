@@ -205,13 +205,9 @@ static inline void nr_php_curl_copy_header_value(zval* dest, zval* element) {
    * Copy the header into the destination array, being careful to increment the
    * refcount on the element to avoid double frees.
    */
-#ifdef PHP7
   if (Z_REFCOUNTED_P(element)) {
     Z_ADDREF_P(element);
   }
-#else
-  Z_ADDREF_P(element);
-#endif
   add_next_index_zval(dest, element);
 }
 

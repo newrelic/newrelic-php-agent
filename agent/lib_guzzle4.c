@@ -41,7 +41,6 @@
  * we just won't build the Guzzle 4 support on older versions and will instead
  * provide simple stubs for the two exported functions to avoid linking errors.
  */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
 
 /* {{{ Convenience functions for Guzzle interface checks */
 
@@ -572,31 +571,3 @@ void nr_guzzle4_rshutdown(TSRMLS_D) {
   nr_php_remove_interface_from_class(nr_guzzle4_subscriber_ce,
                                      iface_ce TSRMLS_CC);
 }
-
-#else /* PHP >= 5.4.0 */
-
-/*
- * Stub implementations of the exported functions from this module for
- * PHP < 5.4.
- */
-
-NR_PHP_WRAPPER_START(nr_guzzle4_client_construct) {
-  (void)wraprec;
-  NR_UNUSED_SPECIALFN;
-  NR_UNUSED_TSRMLS;
-}
-NR_PHP_WRAPPER_END
-
-void nr_guzzle4_enable(TSRMLS_D) {
-  NR_UNUSED_TSRMLS
-}
-
-void nr_guzzle4_minit(TSRMLS_D) {
-  NR_UNUSED_TSRMLS
-}
-
-void nr_guzzle4_rshutdown(TSRMLS_D) {
-  NR_UNUSED_TSRMLS
-}
-
-#endif /* PHP >= 5.4.0 */

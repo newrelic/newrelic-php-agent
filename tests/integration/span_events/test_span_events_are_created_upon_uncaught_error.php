@@ -11,9 +11,6 @@ when an error is generated and left to the default error handler.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "7.0", "<")) {
-  die("skip: CLM for PHP 5 not supported\n");
-}
 if (version_compare(PHP_VERSION, "8.4", ">=")) {
   die("skip: newer test for PHP 8.4\n");
 }
@@ -94,10 +91,7 @@ log_errors=0
       {},
       {
         "error.message": "foo",
-        "error.class": "E_USER_ERROR",
-        "code.lineno": 111,
-        "code.filepath": "__FILE__",
-        "code.function": "a"
+        "error.class": "E_USER_ERROR"
       }
     ]
   ]

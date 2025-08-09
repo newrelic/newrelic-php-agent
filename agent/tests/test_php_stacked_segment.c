@@ -117,9 +117,6 @@ static void test_unwind(TSRMLS_D) {
   tlib_php_request_end();
 }
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
   tlib_php_engine_create("" PTSRMLS_CC);
   test_start_end_discard(TSRMLS_C);
   test_unwind(TSRMLS_C);

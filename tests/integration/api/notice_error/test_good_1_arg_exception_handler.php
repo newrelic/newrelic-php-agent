@@ -101,10 +101,7 @@ used as a callback handler for set_exception_handler().
     {},
     {
       "error.message": "Uncaught exception 'Exception' with message '1 arg exception' in __FILE__:??",
-      "error.class": "Exception",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "Exception"
     }
   ]
 ]

@@ -201,7 +201,34 @@ func merge(a, b map[string]string) map[string]string {
 	return merged
 }
 
+// checks the context to see if opcache is loaded by default
+// and then handles the PHP modules requests to make sure
+// we don't load opcache.so if it is already loaded by default
+func (t *Test) HandlePHPModules(php_executable string, ctx *Context) map[string]string {
+	// two cases:
+	// 1. Web test and php-cgi has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	// 2. PHP test and php has opcache.so loaded by default - remove any PHPMODULE spec for opcache.so
+	phpModulesCopy := make(map[string]string)
+	if ctx.OPCacheModuleLoaded[php_executable] {
+		for k, v := range t.PhpModules {
+			if !strings.Contains(v, "opcache.so") {
+				phpModulesCopy[k] = v
+			}
+		}
+	}
+
+	return phpModulesCopy
+}
+
 func (t *Test) MakeRun(ctx *Context) (Tx, error) {
+
+	// we don't support running C tests - assert this so we can
+	// troubleshoot if we try to run a C test
+	if t.IsC() {
+		fmt.Printf("ERROR - UNEXPECTED - Running C test: %s\n", t.Path)
+		os.Exit(1)
+	}
+
 	t.Env = merge(ctx.Env, t.Env)
 	settings := merge(ctx.Settings, t.Settings)
 	settings["newrelic.appname"] = t.Name
@@ -214,11 +241,18 @@ func (t *Test) MakeRun(ctx *Context) (Tx, error) {
 		}
 	}
 
-	settings = merge(settings, t.PhpModules)
-
-	if t.IsC() {
-		return CTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
+	var php_executable string
+	if t.IsWeb() {
+		php_executable = ctx.CGI
+	} else if t.IsPHP() {
+		php_executable = ctx.PHP
+	} else {
+		return nil, fmt.Errorf("unknown test type for %s", t.Path)
 	}
+
+	phpModulesCopy := t.HandlePHPModules(php_executable, ctx)
+	settings = merge(settings, phpModulesCopy)
+
 	if t.IsWeb() {
 		return CgiTx(ScriptFile(t.Path), t.Env, settings, headers, ctx)
 	}
@@ -240,6 +274,10 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 		name: strings.TrimSuffix(t.Path, ext) + ".skipif",
 		data: t.rawSkipIf,
 	}
+
+	// handle the PHPMODULES directive
+	phpModulesCopy := t.HandlePHPModules(ctx.PHP, ctx)
+	settings = merge(settings, phpModulesCopy)
 
 	return PhpTx(src, t.Env, settings, ctx)
 }

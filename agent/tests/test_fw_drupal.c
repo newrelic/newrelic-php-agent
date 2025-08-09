@@ -370,10 +370,6 @@ static void test_drupal_http_request_drupal_6(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
   tlib_php_engine_create("" PTSRMLS_CC);
   test_module_name();
   test_drupal_headers_add(TSRMLS_C);

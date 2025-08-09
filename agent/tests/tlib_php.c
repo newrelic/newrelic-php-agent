@@ -83,22 +83,14 @@ static char* tlib_php_create_output_filename(const char* ext) {
  * A replacement unbuffered write callback to capture any script output for
  * further examination.
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
 static size_t tlib_php_engine_ub_write(const char* str, size_t len)
-#else
-static int tlib_php_engine_ub_write(const char* str, uint len TSRMLS_DC)
-#endif /* PHP >= 7.0 */
 {
   NR_UNUSED_TSRMLS;
 
   assert(NULL != out);
   fwrite(str, (size_t)len, 1, out);
 
-#if ZEND_MODULE_API_NO >= ZEND_7_0_X_API_NO
   return len;
-#else
-  return NRSAFELEN(len);
-#endif /* PHP >= 7.0 */
 }
 
 /*
@@ -111,17 +103,9 @@ static zend_string* ZEND_FASTCALL
 tlib_php_new_interned_string(zend_string* str) {
   return str;
 }
-#elif defined PHP7
+#else
 static zend_string* tlib_php_new_interned_string(zend_string* str) {
   return str;
-}
-#elif ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
-static const char* tlib_php_new_interned_string(const char* key,
-                                                int len NRUNUSED,
-                                                int free_src NRUNUSED
-                                                    TSRMLS_DC) {
-  NR_UNUSED_TSRMLS;
-  return key;
 }
 #endif
 
@@ -137,17 +121,6 @@ static zend_string* ZEND_FASTCALL tlib_php_init_interned_string(const char* str,
   return zend_string_init(str, size, permanent);
 }
 #endif /* PHP >= 7.3 */
-
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_7_2_X_API_NO
-static void tlib_php_interned_strings_restore(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-
-static void tlib_php_interned_strings_snapshot(TSRMLS_D) {
-  NR_UNUSED_TSRMLS;
-}
-#endif /* PHP >= 5.4 && PHP < 7.2 */
 
 /* }}} */
 
@@ -175,9 +148,6 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
   fake_daemon_fd = nr_dup(1);
   nr_set_daemon_fd(fake_daemon_fd);
 
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
   sapi_module_struct tlib_module;
 
   /*
@@ -197,20 +167,16 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   php_tsrm_startup();
   ZEND_TSRMLS_CACHE_UPDATE();
-#elif defined PHP7
+#else
   tsrm_startup(1, 1, 0, NULL);
   ts_resource(0);
   ZEND_TSRMLS_CACHE_UPDATE();
-#else
-  tsrm_startup(1, 1, 0, NULL);
-  tsrm_ls = ts_resource(0);
-  *ptsrm_ls = tsrm_ls;
 #endif /* PHP version */
 #endif /* ZTS */
 
-#if defined(PHP7) && defined(ZEND_SIGNALS)
+#if defined(ZEND_SIGNALS)
   zend_signal_startup();
-#endif /* PHP7 && ZEND_SIGNALS */
+#endif /* ZEND_SIGNALS */
 
   /*
    * This currently creates real files for the agent log and output that are
@@ -310,18 +276,6 @@ nr_status_t tlib_php_engine_create(const char* extra_ini PTSRMLS_DC) {
     return NR_FAILURE;
   }
 #endif
-
-  /*
-   * As noted above, we now replace the interned string callbacks on PHP
-   * 5.4-7.1, inclusive. The effect of these replacements is to disable
-   * interned strings.
-   */
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO \
-    && ZEND_MODULE_API_NO < ZEND_7_2_X_API_NO
-  zend_new_interned_string = tlib_php_new_interned_string;
-  zend_interned_strings_restore = tlib_php_interned_strings_restore;
-  zend_interned_strings_snapshot = tlib_php_interned_strings_snapshot;
-#endif /* PHP >= 5.4 && PHP < 7.2 */
 
   /*
    * Register the resource type we use to fake resources. We are module 0
@@ -600,16 +554,7 @@ tlib_php_internal_function_handler_t tlib_php_replace_internal_function(
     zend_class_entry* ce = NULL;
     char* lcclass = nr_string_to_lowercase(klass);
 
-#ifdef PHP7
     ce = (zend_class_entry*)nr_php_zend_hash_find_ptr(CG(class_table), lcclass);
-#else
-    zend_class_entry** ce_ptr
-        = nr_php_zend_hash_find_ptr(CG(class_table), lcclass);
-
-    if (ce_ptr) {
-      ce = *ce_ptr;
-    }
-#endif /* PHP7 */
 
     nr_free(lcclass);
     if (NULL == ce) {
@@ -670,7 +615,6 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
       nr_php_zval_str(zv, "");
       break;
 
-#ifdef PHP7
     case IS_UNDEF:
       ZVAL_UNDEF(zv);
       break;
@@ -732,15 +676,6 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
         ZVAL_NEW_REF(zv, &refval);
       }
       break;
-#else
-    case IS_BOOL:
-      ZVAL_BOOL(zv, 0);
-      break;
-
-    case IS_RESOURCE:
-      ZEND_REGISTER_RESOURCE(zv, NULL, le_tlib);
-      break;
-#endif /* PHP7 */
 
     default:
       nr_php_zval_free(&zv);
@@ -750,17 +685,10 @@ zval* tlib_php_zval_create_default(zend_uchar type TSRMLS_DC) {
   return zv;
 }
 
-#ifdef PHP7
 static const zend_uchar default_zval_types[] = {
     IS_UNDEF,  IS_NULL,  IS_FALSE,  IS_TRUE,     IS_LONG,      IS_DOUBLE,
     IS_STRING, IS_ARRAY, IS_OBJECT, IS_RESOURCE, IS_REFERENCE,
 };
-#else
-static const zend_uchar default_zval_types[] = {
-    IS_NULL,  IS_LONG,   IS_DOUBLE, IS_BOOL,
-    IS_ARRAY, IS_OBJECT, IS_STRING, IS_RESOURCE,
-};
-#endif
 
 zval** tlib_php_zvals_of_all_types(TSRMLS_D) {
   zval** arr;
@@ -829,11 +757,7 @@ char* tlib_php_zval_dump(zval* zv TSRMLS_DC) {
   }
 
   tlib_php_request_eval("ob_start();" TSRMLS_CC);
-#ifdef PHP7
   php_var_dump(zv, 0);
-#else
-  php_var_dump(&zv, 0 TSRMLS_CC);
-#endif
   result = tlib_php_request_eval_expr("ob_get_clean()" TSRMLS_CC);
   if (nr_php_is_zval_valid_string(result)) {
     dump = nr_strndup(Z_STRVAL_P(result), Z_STRLEN_P(result));

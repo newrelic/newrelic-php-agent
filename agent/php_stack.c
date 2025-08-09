@@ -13,10 +13,7 @@
 #include "util_strings.h"
 #include "util_syscalls.h"
 #include "util_logging.h"
-
-#ifdef PHP7
 #include "zend_generators.h"
-#endif
 
 static int nr_php_stack_iterator(zval* frame,
                                  nrobj_t* arr,
@@ -153,12 +150,7 @@ zval* nr_php_backtrace(TSRMLS_D) {
 
   trace = nr_php_zval_alloc();
 
-#if ZEND_MODULE_API_NO >= ZEND_5_4_X_API_NO
   zend_fetch_debug_backtrace(trace, skip_last, options, limit TSRMLS_CC);
-#else /* PHP < 5.4 */
-  zend_fetch_debug_backtrace(trace, skip_last, options TSRMLS_CC);
-  (void)limit;
-#endif
 
   return trace;
 }
@@ -184,8 +176,6 @@ typedef struct _nr_php_frame_info_t {
   const char* decl_file; /* file name of the declaration site */
   int decl_line;         /* starting line number of the declaration site */
 } nr_php_frame_info_t;
-
-#ifdef PHP7
 
 static int nr_php_is_include_or_eval(zend_execute_data* ex) {
   zend_execute_data* prev;
@@ -336,106 +326,6 @@ static void nr_php_frame_info(nr_php_frame_info_t* info,
   }
 }
 
-#else /* PHP7 */
-
-static void nr_php_frame_info(nr_php_frame_info_t* info,
-                              zend_execute_data* ex TSRMLS_DC) {
-  zend_function* func;
-
-  info->class_name = "";
-  info->call_type = "";
-  info->func_name = "";
-  info->file = "";
-  info->line = 0;
-  info->decl_file = "";
-  info->decl_line = 0;
-
-  if (NULL == ex) {
-    return;
-  }
-
-  info->func_name = "unknown";
-  func = ex->function_state.function;
-
-  if (NULL == func) {
-    return;
-  }
-
-  if (ex->op_array && ex->opline) {
-    info->file = ex->op_array->filename;
-    info->line = ex->opline->lineno;
-  }
-
-  /*
-   * For closures, gather the file and line where the closure was declared
-   * in addition to the file and line of the call site.
-   */
-  if ((ZEND_USER_FUNCTION == func->type)
-      && (func->common.fn_flags & ZEND_ACC_CLOSURE)) {
-    info->decl_file = func->op_array.filename;
-    info->decl_line = func->op_array.line_start;
-  }
-
-  if (func->common.function_name) {
-    info->func_name = func->common.function_name;
-
-    if (ex->object) {
-      info->call_type = "->";
-
-      /*
-       * Ignore the scope for closures, it's redundant given the file and
-       * line where the closure was declared.
-       */
-      if (0 == (func->common.fn_flags & ZEND_ACC_CLOSURE)) {
-        if (func->common.scope) {
-          info->class_name = func->common.scope->name;
-        } else {
-          /*
-           * A method was invoked, but the runtime did not set the scope?
-           * It's unclear how/when this can happen, but the Zend Engine handles
-           * this case, so handle it here too.
-           */
-          if (Z_OBJCE_P(ex->object) && Z_OBJCE_P(ex->object)->name) {
-            info->class_name = Z_OBJCE_P(ex->object)->name;
-          } else {
-            info->class_name = "???";
-          }
-        }
-      }
-    } else if (func->common.scope) {
-      info->call_type = "::";
-      info->class_name = func->common.scope->name;
-    }
-
-    return;
-  }
-
-  if (ex->opline && ex->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
-    switch (ex->opline->extended_value) {
-      case ZEND_EVAL:
-        info->func_name = "eval";
-        break;
-      case ZEND_INCLUDE:
-        info->func_name = "include";
-        break;
-      case ZEND_REQUIRE:
-        info->func_name = "require";
-        break;
-      case ZEND_INCLUDE_ONCE:
-        info->func_name = "include_once";
-        break;
-      case ZEND_REQUIRE_ONCE:
-        info->func_name = "require_once";
-        break;
-      default:
-        info->func_name = "ZEND_INCLUDE_OR_EVAL";
-        break;
-    }
-  }
-}
-
-#endif /* PHP7 */
-
 /*
 Output format:
 
@@ -455,9 +345,7 @@ void nr_php_backtrace_fd(int fd, int limit TSRMLS_DC) {
   ex = EG(current_execute_data);
 
   while (ex) {
-#ifdef PHP7
     ex = zend_generator_check_placeholder_frame(ex);
-#endif
 
     nr_php_frame_info(&frame, ex TSRMLS_CC);
 

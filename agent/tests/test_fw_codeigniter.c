@@ -27,7 +27,6 @@ static void invoke_cufa(TSRMLS_D) {
 }
 
 static void test_get_topmost_user_op_array(TSRMLS_D) {
-#ifdef PHP7
   /*
    * First, we'll test this with call_user_func_array() inlining.
    */
@@ -43,19 +42,11 @@ static void test_get_topmost_user_op_array(TSRMLS_D) {
   CG(compiler_options) |= ZEND_COMPILE_NO_BUILTINS;
   invoke_cufa(TSRMLS_C);
   tlib_php_request_end();
-#else
-  tlib_php_request_start();
-  invoke_cufa(TSRMLS_C);
-  tlib_php_request_end();
-#endif /* PHP7 */
 }
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
-#if defined(ZTS) && !defined(PHP7)
-  void*** tsrm_ls = NULL;
-#endif /* ZTS && !PHP7 */
 
   tlib_php_engine_create("" PTSRMLS_CC);
   test_get_topmost_user_op_array(TSRMLS_C);

@@ -60,11 +60,7 @@ No alarms and no surprises.
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "my_custom_function"
-      }
+      {}
     ],
     [
       {
@@ -81,17 +77,14 @@ No alarms and no surprises.
         "parentId": "??"
       },
       {},
-      {
-        "code.lineno": "??",
-        "code.filepath": "__FILE__",
-        "code.function": "my_custom_function"
-      }
+      {}
     ]
   ]
 ]
 */
 
-function my_custom_function() {
+function my_custom_function()
+{
   error_reporting(error_reporting()); // prevent from optimizing this function away
   time_nanosleep(0, 100 * 1000); // 100 microseconds should be enough (= 2 x newrelic.special.expensive_node_min)
   echo 'my_custom_function called' . PHP_EOL;

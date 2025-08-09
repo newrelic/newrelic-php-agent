@@ -81,10 +81,7 @@ called with 1 argument which is a string.
     {},
     {
       "error.message": "Exception 1 arg string",
-      "error.class": "NoticedError",
-      "code.lineno": "??",
-      "code.filepath": "__FILE__",
-      "code.function": "a"
+      "error.class": "NoticedError"
     }
   ]
 ]

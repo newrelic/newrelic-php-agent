@@ -6,12 +6,14 @@
 package integration
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
 func GetPHPVersion() string {
-	cmd := exec.Command("php", "-r", "echo PHP_VERSION;")
+	cmd := exec.Command("php", "-d", "newrelic.daemon.dont_launch=3", "-r", "echo PHP_VERSION;")
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -23,11 +25,37 @@ func GetPHPVersion() string {
 }
 
 func GetAgentVersion(agent_extension string) string {
-	cmd := exec.Command("php", "-d", "extension="+agent_extension, "-r", "echo phpversion('newrelic');")
+	cmd := exec.Command("php", "-d", "newrelic.daemon.dont_launch=3", "-d", "extension="+agent_extension, "-r", "echo phpversion('newrelic');")
 
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("Failed to get agent version: %v", err).Error()
 	}
 	return string(output)
+}
+
+func IsOPcacheLoaded(php_executable string) bool {
+	fmt.Printf("Checking if OPcache is loaded using %s\n", php_executable)
+	cmd := exec.Command(php_executable, "-d", "newrelic.daemon.dont_launch=3", "-m")
+
+	output, err := cmd.Output()
+
+	if err != nil {
+		fmt.Printf("Failed to check if OPcache is loaded: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Check if "Zend OPcache" is in the output
+	return bytes.Contains(output, []byte("Zend OPcache"))
+}
+
+func GetOPCacheModuleLoaded(php, cgi string) map[string]bool {
+	result := make(map[string]bool)
+
+	result[php] = IsOPcacheLoaded(php)
+	result[cgi] = IsOPcacheLoaded(cgi)
+
+	fmt.Printf("OPcache default loaded status: %+v\n", result)
+
+	return result
 }

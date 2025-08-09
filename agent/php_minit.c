@@ -456,7 +456,7 @@ PHP_MINIT_FUNCTION(newrelic) {
       = nr_php_check_for_upgrade_license_key();
   NR_PHP_PROCESS_GLOBALS(high_security) = 0;
   NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection) = 1;
-  NR_PHP_PROCESS_GLOBALS(composer_packages_detected) = 0;
+  NR_PHP_PROCESS_GLOBALS(composer_api_status) = NR_COMPOSER_API_STATUS_UNSET;
   nr_php_populate_apache_process_globals();
   nr_php_api_distributed_trace_register_userland_class(TSRMLS_C);
   /*
