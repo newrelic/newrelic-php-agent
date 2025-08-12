@@ -7,10 +7,9 @@ package newrelic
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 type PhpPackagesKey struct {
@@ -18,50 +17,106 @@ type PhpPackagesKey struct {
 	Version string
 }
 
-// phpPackages represents all detected packages reported by an agent.
+// PhpPackages represents all detected packages reported by an agent
+// for a harvest cycle, as well as the filtered list of packages not
+// yet seen by the daemon for the lifecycle of the current daemon
+// process to be reported to the backend.
 type PhpPackages struct {
-	numSeen int
-	data    JSONString
+	numSeen      int
+	data         map[PhpPackagesKey]struct{}
+	filteredPkgs []PhpPackagesKey
 }
 
-// NumSeen returns the total number PHP packages payloads stored.
-// Should always be 0 or 1.  The agent reports all the PHP
-// packages as a single JSON string.
+// NumSaved returns whether PHP packages payloads are stored by
+// the daemon for the current harvest. Should always be 0 or 1.
+// The agent reports all the PHP packages as a single JSON string.
 func (packages *PhpPackages) NumSaved() float64 {
 	return float64(packages.numSeen)
 }
 
-// newPhpPackages returns a new PhpPackages struct.
+// NewPhpPackages returns a new PhpPackages struct.
 func NewPhpPackages() *PhpPackages {
 	p := &PhpPackages{
-		numSeen: 0,
-		data:    nil,
+		numSeen:      0,
+		data:         make(map[PhpPackagesKey]struct{}),
+		filteredPkgs: nil,
 	}
 
 	return p
 }
 
-// SetPhpPackages sets the observed package list.
-func (packages *PhpPackages) SetPhpPackages(data []byte) error {
+// Filter seen php packages data to avoid sending duplicates
+//
+// the `App` structure contains a map of PHP Packages the reporting
+// application has encountered.
+//
+// the map of packages should persist for the duration of the
+// current connection
+//
+// the JSON format received from the agent is:
+//
+//	[["package_name","version",{}],...]
+//
+// for each entry, assign the package name and version to the `PhpPackagesKey`
+// struct and use the key to verify data does not exist in the map. If the
+// key does not exist, add it to the map and the slice of filteredPkgs to be
+// sent in the current harvest.
+func (packages *PhpPackages) Filter(pkgHistory map[PhpPackagesKey]struct{}) {
+	if packages == nil || len(packages.data) == 0 {
+		return
+	}
 
-	if nil == packages {
-		return fmt.Errorf("packages is nil!")
+	for pkgKey := range packages.data {
+		_, ok := pkgHistory[pkgKey]
+		if !ok {
+			pkgHistory[pkgKey] = struct{}{}
+			packages.filteredPkgs = append(packages.filteredPkgs, pkgKey)
+		}
 	}
-	if nil != packages.data {
-		log.Debugf("SetPhpPackages - data field was not nil |^%s| - overwriting data", packages.data)
-	}
-	if nil == data {
-		return fmt.Errorf("data is nil!")
-	}
-	packages.numSeen = 1
-	packages.data = data
-
-	return nil
 }
 
 // AddPhpPackagesFromData observes the PHP packages info from the agent.
 func (packages *PhpPackages) AddPhpPackagesFromData(data []byte) error {
-	return packages.SetPhpPackages(data)
+	if packages == nil {
+		return fmt.Errorf("packages is nil")
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("data is nil")
+	}
+
+	var x []any
+
+	err := json.Unmarshal(data, &x)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal php package json: %s", err.Error())
+	}
+
+	for _, pkgJSON := range x {
+		pkg, _ := pkgJSON.([]any)
+		if len(pkg) != 3 {
+			return fmt.Errorf("invalid php package json structure: %+v", pkg)
+		}
+
+		name, ok := pkg[0].(string)
+		if !ok || len(name) == 0 {
+			return fmt.Errorf("unable to parse package name")
+		}
+
+		version, ok := pkg[1].(string)
+		if !ok || len(version) == 0 {
+			return fmt.Errorf("unable to parse package version")
+		}
+
+		pkgKey := PhpPackagesKey{name, version}
+		_, ok = packages.data[pkgKey]
+		if !ok {
+			packages.data[pkgKey] = struct{}{}
+		}
+	}
+
+	packages.numSeen = 1
+
+	return nil
 }
 
 // CollectorJSON marshals events to JSON according to the schema expected
@@ -71,14 +126,27 @@ func (packages *PhpPackages) CollectorJSON(id AgentRunID) ([]byte, error) {
 		return []byte(`["Jars",[]]`), nil
 	}
 
-	buf := &bytes.Buffer{}
+	var buf bytes.Buffer
 
 	estimate := 512
 	buf.Grow(estimate)
 	buf.WriteByte('[')
-	buf.WriteString("\"Jars\",")
-	if 0 < packages.numSeen {
-		buf.Write(packages.data)
+	buf.WriteString(`"Jars",`)
+	if len(packages.filteredPkgs) > 0 {
+		buf.WriteByte('[')
+		for _, pkg := range packages.filteredPkgs {
+			buf.WriteString(`["`)
+			buf.WriteString(pkg.Name)
+			buf.WriteString(`","`)
+			buf.WriteString(pkg.Version)
+			buf.WriteString(`",{}],`)
+		}
+
+		// swap last ',' character with ']'
+		buf.Truncate(buf.Len() - 1)
+		buf.WriteByte(']')
+	} else {
+		buf.WriteString("[]")
 	}
 	buf.WriteByte(']')
 
@@ -94,7 +162,7 @@ func (packages *PhpPackages) FailedHarvest(newHarvest *Harvest) {
 
 // Empty returns true if the collection is empty.
 func (packages *PhpPackages) Empty() bool {
-	return nil == packages || nil == packages.data || 0 == packages.numSeen
+	return nil == packages || len(packages.data) == 0 || 0 == packages.numSeen
 }
 
 // Data marshals the collection to JSON according to the schema expected

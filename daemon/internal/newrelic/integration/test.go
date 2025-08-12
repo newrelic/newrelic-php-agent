@@ -733,6 +733,9 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		}
 	}
 
+	// we don't currently test multiple requests that could result in needing to track package history
+	// or filter packages. An empty map here will allow all packages to be reported unfiltered.
+	harvest.PhpPackages.Filter(make(map[newrelic.PhpPackagesKey]struct{}))
 	audit, err := newrelic.IntegrationData(harvest.PhpPackages, newrelic.AgentRunID("?? agent run id"), time.Now())
 	if nil != err {
 		t.Fatal(err)
@@ -763,24 +766,14 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 				len(expectedPackages), len(actualPackages), expectedPackages, actualPackages))
 			return
 		}
-		for i, _ := range expectedPackages {
+		for i := range expectedPackages {
 			var matchingIdx int = -1
 			for j, pkg := range actualPackages {
-				//fmt.Printf("Comparing %s to %s\n", pkg.Name, expectedPackages[i].Name)
 				if pkg.Name == expectedPackages[i].Name {
-					//fmt.Printf("Match - index = %d\n", j)
 					matchingIdx = j
 					break
 				}
 			}
-
-			//fmt.Printf("MatchingIdx: %d\n", matchingIdx)
-			//fmt.Printf("expectedPatckages[%d]: %+v\n", i, expectedPackages[i])
-			// if -1 != matchingIdx {
-			// 	fmt.Printf("actualPackages[%d]: %+v\n", matchingIdx, actualPackages[matchingIdx])
-			// } else {
-			// 	fmt.Printf("no match in actualPackages!\n")
-			// }
 
 			if -1 != matchingIdx {
 				testPackageNameOnly := false
@@ -823,7 +816,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 		}
 
 		// create notes for all packages in the actual list not in the expected list
-		for ii, _ := range actualPackages {
+		for ii := range actualPackages {
 			var found bool = false
 			for _, pkg := range expectedPackages {
 				if pkg.Name == actualPackages[ii].Name {

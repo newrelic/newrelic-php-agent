@@ -18,73 +18,111 @@ func TestNewPhpPackages(t *testing.T) {
 	if 0 != pkg.NumSaved() {
 		t.Fatalf("Expected 0, got %f", pkg.NumSaved())
 	}
-	if nil != pkg.data {
+	if len(pkg.data) != 0 {
 		t.Fatalf("Expected nil, got %v", pkg.data)
-	}
-}
-
-func TestSetPhpPackages(t *testing.T) {
-	// create nil pkgs for testing passing a nil receiver
-	var nilpkg *PhpPackages
-	validData := []byte("hello")
-
-	err := nilpkg.SetPhpPackages(validData)
-	if !strings.Contains(err.Error(), "packages is nil") {
-		t.Fatalf("Expected error 'packages is nil!', got '%s'", err.Error())
-	}
-
-	// test with valid pkgs, invalid data
-	pkg := NewPhpPackages()
-	if nil == pkg {
-		t.Fatal("Expected not nil")
-	}
-	err = pkg.SetPhpPackages(nil)
-	if !strings.Contains(err.Error(), "data is nil") {
-		t.Fatalf("Expected error 'data is nil!', got '%s'", err.Error())
-	}
-
-	//valid pkgs, valid data
-	err = pkg.SetPhpPackages(validData)
-	if nil != err {
-		t.Fatalf("Expected nil error, got %s", err.Error())
-	}
-	if string(validData) != string(pkg.data) {
-		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data))
 	}
 }
 
 func TestAddPhpPackagesFromData(t *testing.T) {
 	// create nil pkgs for testing passing a nil receiver
 	var nilpkg *PhpPackages
-	validData := []byte("hello")
+	validPkgData := []byte(`[["package_a","1.2.3",{}]]`)
+	oooPkgData := []byte(`[[{},"package_a","1.2.3"]]`)
+	emptyPkgData := []byte(`[[]]`)
+	invalidFmt := []byte(`["package_a","1.2.3",{}]`)
+	emptyStr := []byte(``)
+	emptyNameStr := []byte(`[["","1.2.3",{}]]`)
+	missingElem := []byte(`[["package_a", "1.2.3"]]`)
+	excessElem := []byte(`[["package_a", "1.2.3", "x.y.z", {}]]`)
 
-	err := nilpkg.AddPhpPackagesFromData(validData)
-	if !strings.Contains(err.Error(), "packages is nil") {
-		t.Fatalf("Expected error 'packages is nil!', got '%s'", err.Error())
+	err := nilpkg.AddPhpPackagesFromData(validPkgData)
+	if err == nil {
+		t.Fatalf("Expected error 'packages is nil', got nil")
+	} else if !strings.Contains(err.Error(), "packages is nil") {
+		t.Fatalf("Expected error 'packages is nil', got '%+v'", err.Error())
 	}
 
-	// test with valid pkgs, invalid data
-	pkg := NewPhpPackages()
-	if nil == pkg {
+	pkgs := NewPhpPackages()
+	if nil == pkgs {
 		t.Fatal("Expected not nil")
 	}
-	err = pkg.AddPhpPackagesFromData(nil)
-	if !strings.Contains(err.Error(), "data is nil") {
-		t.Fatalf("Expected error 'data is nil!', got '%s'", err.Error())
+
+	// nil data
+	err = pkgs.AddPhpPackagesFromData(nil)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'data is nil', got nil")
+	} else if !strings.Contains(err.Error(), "data is nil") {
+		t.Fatalf("Expected error 'data is nil', got '%+v'", err.Error())
 	}
 
-	//valid pkgs, valid data
-	err = pkg.AddPhpPackagesFromData(validData)
-	if nil != err {
-		t.Fatalf("Expected nil error, got %s", err.Error())
+	// empty string data
+	err = pkgs.AddPhpPackagesFromData(emptyStr)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'data is nil', got nil")
+	} else if !strings.Contains(err.Error(), "data is nil") {
+		t.Fatalf("Expected error 'data is nil', got '%+v'", err.Error())
 	}
-	if string(validData) != string(pkg.data) {
-		t.Fatalf("Expected '%s', got '%s'", string(validData), string(pkg.data))
+
+	// out-of-order data
+	err = pkgs.AddPhpPackagesFromData(oooPkgData)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'unable to parse package name', got nil")
+	} else if !strings.Contains(err.Error(), "unable to parse package name") {
+		t.Fatalf("Expected error 'unable to parse package name', got '%+v'", err.Error())
+	}
+
+	// empty json array
+	err = pkgs.AddPhpPackagesFromData(emptyPkgData)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
+	}
+
+	// invalid json array
+	err = pkgs.AddPhpPackagesFromData(invalidFmt)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
+	}
+
+	// empty field value
+	err = pkgs.AddPhpPackagesFromData(emptyNameStr)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "unable to parse package name") {
+		t.Fatalf("Expected error 'unable to parse package name', got '%+v'", err.Error())
+	}
+
+	// missing field value
+	err = pkgs.AddPhpPackagesFromData(missingElem)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
+	}
+
+	// too many values
+	err = pkgs.AddPhpPackagesFromData(excessElem)
+	if err == nil || len(pkgs.data) != 0 {
+		t.Fatalf("Expected error 'invalid php package json structure', got nil")
+	} else if !strings.Contains(err.Error(), "invalid php package json structure") {
+		t.Fatalf("Expected error 'invalid php package json structure', got '%+v'", err.Error())
+	}
+
+	// valid pkgs, valid data
+	err = pkgs.AddPhpPackagesFromData(validPkgData)
+	if err != nil {
+		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
 }
 
 func TestCollectorJSON(t *testing.T) {
 	// create nil pkgs for testing passing a nil receiver
+	info := AppInfo{}
+	app := NewApp(&info)
+
 	var nilpkg *PhpPackages
 	id := AgentRunID(`12345`)
 
@@ -111,14 +149,17 @@ func TestCollectorJSON(t *testing.T) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
-	pkg.SetPhpPackages([]byte(`["package", "1.2.3",{}]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
 
+	pkg.Filter(app.PhpPackages)
 	json, err = pkg.CollectorJSON(id)
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	expectedJSON = `["Jars",["package", "1.2.3",{}]]`
-	if expectedJSON != string(json) {
+	expectedJSON = `["Jars",[["package_a","1.2.3",{}],["package_b","1.2.3",{}]]]`
+	expectedJSONB := `["Jars",[["package_b","1.2.3",{}],["package_a","1.2.3",{}]]]`
+	if expectedJSON != string(json) && expectedJSONB != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 
@@ -128,7 +169,7 @@ func TestCollectorJSON(t *testing.T) {
 	if nil != err {
 		t.Fatalf("Expected nil error, got %s", err.Error())
 	}
-	if expectedJSON != string(json) {
+	if expectedJSON != string(json) && expectedJSONB != string(json) {
 		t.Fatalf("Expected '%s', got '%s'", expectedJSON, string(json))
 	}
 }
@@ -153,13 +194,126 @@ func TestPackagesEmpty(t *testing.T) {
 	}
 
 	// test with data
-	validData := []byte("hello")
-	err := pkg.SetPhpPackages(validData)
+	validData := []byte(`[["package","version",{}]]`)
+	err := pkg.AddPhpPackagesFromData(validData)
 	if nil != err {
 		t.Fatal("Expected not nil")
 	}
 	empty = pkg.Empty()
 	if true == empty {
 		t.Fatalf("Expected 'false' got '%t'", empty)
+	}
+}
+
+func comparePkgs(expect *PhpPackagesKey, actual []PhpPackagesKey) bool {
+	if expect == nil || len(actual) == 0 {
+		return false
+	}
+
+	for _, key := range actual {
+		if expect.Name == key.Name && expect.Version == key.Version {
+			return true
+		}
+
+	}
+	return false
+}
+
+func TestFilterPackageData(t *testing.T) {
+	info := AppInfo{}
+	app := NewApp(&info)
+	pkg := NewPhpPackages()
+	expectA := PhpPackagesKey{"package_a", "1.2.3"}
+	expectB := PhpPackagesKey{"package_b", "1.2.3"}
+	expectC := PhpPackagesKey{"package_c", "1.2.3"}
+
+	// Test nil package data
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Test empty package data
+	pkg.AddPhpPackagesFromData([]byte(`[[]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Test invalid payload
+	pkg.AddPhpPackagesFromData([]byte(`["invalid","x",{}]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Test invalid number of elements
+	// too few
+	pkg.AddPhpPackagesFromData([]byte(`[["package", "x.y.z"]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// wrong order
+	pkg.AddPhpPackagesFromData([]byte(`[[{}, "package", "x.y.z"]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// wrong order
+	pkg.AddPhpPackagesFromData([]byte(`[["package", {}, "x.y.z"]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// too many
+	pkg.AddPhpPackagesFromData([]byte(`[["package", "x.y.z", "u.v.w", {}]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Test single valid package
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.Filter(app.PhpPackages)
+	if !comparePkgs(&expectA, pkg.filteredPkgs) || len(pkg.filteredPkgs) != 1 {
+		t.Fatalf("Expected '%+v', got '%+v'", expectA, pkg.filteredPkgs[0])
+	}
+
+	// Test multiple valid packages
+	pkg.AddPhpPackagesFromData([]byte(`[["package_b", "1.2.3",{}]]`))
+	pkg.AddPhpPackagesFromData([]byte(`[["package_c", "1.2.3",{}]]`))
+	pkg.Filter(app.PhpPackages)
+	if !comparePkgs(&expectB, pkg.filteredPkgs) || !comparePkgs(&expectC, pkg.filteredPkgs) {
+		t.Fatalf("Expected '%+v', '%+v', got '%+v', '%+v'", expectB, expectC, pkg.filteredPkgs[1], pkg.filteredPkgs[2])
+	}
+
+	// Test duplicate package data in same harvest
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.Filter(app.PhpPackages)
+	if len(pkg.filteredPkgs) != 3 {
+		t.Fatalf("Expected len == 3, got '%+v'", len(pkg.filteredPkgs))
+	}
+
+	// Test package reset after harvest
+	pkg = NewPhpPackages()
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Test duplicate package data not sent after harvest
+	pkg.AddPhpPackagesFromData([]byte(`[["package_a", "1.2.3",{}]]`))
+	pkg.Filter(app.PhpPackages)
+	if pkg.filteredPkgs != nil {
+		t.Fatalf("Expected nil, got '%+v'", pkg.filteredPkgs)
+	}
+
+	// Verify the map contains the expected number of packages
+	if len(app.PhpPackages) != 3 {
+		t.Fatalf("Invalid number of packages recorded- Expected 3, got %d", len(app.PhpPackages))
 	}
 }
