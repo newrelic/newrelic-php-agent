@@ -6299,6 +6299,206 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
   nrm_table_destroy(&txn.unscoped_metrics);
 }
 
+static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
+  nrtxn_t txn = {0};
+  nr_hashmap_t* headers;
+  bool rv = true;
+  nrtime_t payload_timestamp_ms = 1529445826000;
+  nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
+  nrtime_t delta_timestamp_us = nr_time_duration(
+      (payload_timestamp_ms * NR_TIME_DIVISOR_MS), txn_timestamp_us);
+
+  tlib_fail_if_int64_t_equal("Zero duration", 0, delta_timestamp_us);
+
+  nr_memset(&txn, 0, sizeof(nrtxn_t));
+  txn.app_connect_reply = nro_new_hash();
+  txn.unscoped_metrics = nrm_table_create(0);
+  nro_set_hash_string(txn.app_connect_reply, "trusted_account_key", "123");
+  // default value for padding can be used for this test, because other
+  // test (test_distributed_trace_create_trace_parent_header) already
+  // covers using trace_id of different lengths when w3c header is created.
+  txn.options.distributed_tracing_pad_trace_id = false;
+  txn.options.distributed_tracing_enabled = true;
+
+#define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET    \
+  txn.distributed_trace->inbound.set = 0;   \
+  nrm_table_destroy(&txn.unscoped_metrics); \
+  txn.unscoped_metrics = nrm_table_create(0);
+
+  headers = nr_hashmap_create(NULL);
+
+  /*
+   * Test : DT traceparent sampled flag INI settings
+   */
+  // 1: upstream not sampled, agent discard
+  txn.options.dt_sampler_parent_not_sampled = -1;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_false("Sampled should be set to false",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  // 2: upstream not sampled, agent keep
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 1;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_true("Sampled should be set to true",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_double_equal("Priority should be set to max", 2.0,
+                            txn.distributed_trace->priority);
+
+  // 3: upstream not sampled, agent default (keep)
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_true("Sampled should be set to true",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  // 4: upstream not sampled, agent default (toss)
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_false("Sampled should be set to false",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  // 5: upstream sampled, agent discard
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = -1;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_false("Sampled should be set to false",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  // 6: upstream sampled, agent keep
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = 1;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_true("Sampled should be set to true",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_double_equal("Priority should be set to max", 2.0,
+                            txn.distributed_trace->priority);
+
+  // 7: upstream sampled, agent default (keep)
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_true("Sampled should be set to true",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  // 8: upstream sampled, agent default (toss)
+  TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
+  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = 0;
+  nr_distributed_trace_destroy(&txn.distributed_trace);
+  txn.distributed_trace = nr_distributed_trace_create();
+  nr_hashmap_update(headers, NR_PSTR("traceparent"),
+                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
+  nr_hashmap_update(headers, NR_PSTR("tracestate"),
+                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
+                    "1529445826000");
+  rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
+  tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
+                    (int)rv);
+  tlib_pass_if_false("Sampled should be set to false",
+                    txn.distributed_trace->sampled, "sampled flag = %d",
+                    (int)txn.distributed_trace->sampled);
+  tlib_pass_if_true("Priority should not be overwritten",
+                    2.0 != txn.distributed_trace->priority,
+                    "priority is 2.0");
+
+  nr_txn_destroy_fields(&txn);
+  nr_hashmap_destroy(&headers);
+}
+
 static void test_txn_accept_distributed_trace_payload_w3c(void) {
   nrtxn_t txn = {0};
   nr_hashmap_t* headers;
@@ -8912,6 +9112,7 @@ void test_main(void* p NRUNUSED) {
   test_create_w3c_traceparent_header();
   test_create_w3c_tracestate_header();
   test_txn_accept_distributed_trace_payload_w3c();
+  test_txn_accept_distributed_trace_payload_w3c_sample_flags();
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
