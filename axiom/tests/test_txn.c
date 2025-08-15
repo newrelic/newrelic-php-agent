@@ -6303,6 +6303,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   nrtxn_t txn = {0};
   nr_hashmap_t* headers;
   bool rv = true;
+  char* TRACEPARENT_SAMPLED = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01";
+  char* TRACEPARENT_NOT_SAMPLED = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00";
+  char* TRACESTATE_SAMPLED = "123@nr=0-2-account-app-span-transaction-1-1.1273-1529445826000";
+  char* TRACESTATE_NOT_SAMPLED = "123@nr=0-2-account-app-span-transaction-0-1.1273-1529445826000";
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
@@ -6320,10 +6324,12 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   txn.options.distributed_tracing_pad_trace_id = false;
   txn.options.distributed_tracing_enabled = true;
 
-#define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET    \
-  txn.distributed_trace->inbound.set = 0;   \
-  nrm_table_destroy(&txn.unscoped_metrics); \
-  txn.unscoped_metrics = nrm_table_create(0);
+#define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET         \
+  txn.distributed_trace->inbound.set = 0;        \
+  nrm_table_destroy(&txn.unscoped_metrics);      \
+  txn.unscoped_metrics = nrm_table_create(0);    \
+  txn.options.dt_sampler_parent_not_sampled = 0; \
+  txn.options.dt_sampler_parent_sampled = 0;
 
   headers = nr_hashmap_create(NULL);
 
@@ -6332,14 +6338,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
    */
   // 1: upstream not sampled, agent discard
   txn.options.dt_sampler_parent_not_sampled = -1;
-  txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6353,14 +6355,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   // 2: upstream not sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
   txn.options.dt_sampler_parent_not_sampled = 1;
-  txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_NOT_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6373,14 +6371,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   // 3: upstream not sampled, agent default (keep)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
   txn.options.dt_sampler_parent_not_sampled = 0;
-  txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6394,14 +6388,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   // 4: upstream not sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
   txn.options.dt_sampler_parent_not_sampled = 0;
-  txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_NOT_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6414,15 +6404,11 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 5: upstream sampled, agent discard
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
   txn.options.dt_sampler_parent_sampled = -1;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6435,15 +6421,11 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 6: upstream sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
   txn.options.dt_sampler_parent_sampled = 1;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_NOT_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6455,15 +6437,11 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 7: upstream sampled, agent default (keep)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
   txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-1-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6476,15 +6454,11 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 8: upstream sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
   txn.options.dt_sampler_parent_sampled = 0;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
-  nr_hashmap_update(headers, NR_PSTR("traceparent"),
-                    "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01");
-  nr_hashmap_update(headers, NR_PSTR("tracestate"),
-                    "123@nr=0-2-account-app-span-transaction-0-1.1273-"
-                    "1529445826000");
+  nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
+  nr_hashmap_update(headers, NR_PSTR("tracestate"), TRACESTATE_NOT_SAMPLED);
   rv = nr_txn_accept_distributed_trace_payload(&txn, headers, "HTTP");
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
@@ -6497,6 +6471,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   nr_txn_destroy_fields(&txn);
   nr_hashmap_destroy(&headers);
+#undef TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
 }
 
 static void test_txn_accept_distributed_trace_payload_w3c(void) {
@@ -6980,6 +6955,7 @@ static void test_txn_accept_distributed_trace_payload_w3c(void) {
 
   nr_txn_destroy_fields(&txn);
   nr_hashmap_destroy(&headers);
+#undef TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
 }
 
 static void test_txn_accept_distributed_trace_payload_w3c_and_nr(void) {

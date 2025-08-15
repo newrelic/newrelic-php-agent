@@ -5,8 +5,8 @@
  */
 
 /*DESCRIPTION
-Tests the Supportability metric "Supportability/DistributedTrace/AcceptPayload/Success"
-when the payload is correct.
+Tests that remote_parent_not_sampled = 'always_off' works. Upstream New Relic
+tracestate is set to be the opposite of the desired result.
  */
 
 /*INI
