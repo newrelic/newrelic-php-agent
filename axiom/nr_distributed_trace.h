@@ -413,8 +413,9 @@ bool nr_distributed_trace_accept_inbound_w3c_payload(
  * Purpose : Handle upstream w3c sampled flag according to settings
  *
  * Params : 1. The distributed trace object
- *          2. Setting for if the upstream trace is sampled
- *          3. Setting for if the upstream trace is not sampled
+ *          2. W3C trace headers objet
+ *          3. Setting for if the upstream trace is sampled
+ *          4. Setting for if the upstream trace is not sampled
  *
  * Notes : The setting objects should follow this specification:
  *         1 = always keep
