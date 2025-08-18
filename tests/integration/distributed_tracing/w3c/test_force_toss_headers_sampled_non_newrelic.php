@@ -5,8 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should include web transaction attributes in error traces, error
-events, analytic events and span events.
+Tests that remote_parent_not_sampled = 'always_off' works.
 */
 
 /*INI
