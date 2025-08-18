@@ -1316,7 +1316,7 @@ void nr_distributed_trace_handle_inbound_w3c_sampled_flag(
     if (nrunlikely(NR_SUCCESS != parse_err)) {
       return;
     }
-    if (sampled) {
+    if (sampled & 0x01) {
       if (0 != remote_parent_sampled) {
         if (1 == remote_parent_sampled) {
           dt->sampled = true;
