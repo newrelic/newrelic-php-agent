@@ -1306,13 +1306,13 @@ void nr_distributed_trace_handle_inbound_w3c_sampled_flag(
         int remote_parent_not_sampled) {
   const nrobj_t* traceparent = NULL;
   int sampled = 0;
-  nr_status_t* parse_err = 0;
+  nr_status_t parse_err = NR_FAILURE;
   if (0 != remote_parent_sampled || 0 != remote_parent_not_sampled) {
-    traceparent = nro_get_hash_value(trace_headers, "traceparent", parse_err);
+    traceparent = nro_get_hash_value(trace_headers, "traceparent", &parse_err);
     if (nrunlikely(NULL == traceparent || NR_SUCCESS != parse_err)) {
       return;
     }
-    sampled = nro_get_hash_int(traceparent, "trace_flags", parse_err);
+    sampled = nro_get_hash_int(traceparent, "trace_flags", &parse_err);
     if (nrunlikely(NR_SUCCESS != parse_err)) {
       return;
     }
