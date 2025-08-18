@@ -71,5 +71,20 @@ CONTENT_LENGTH=348
 ]
 */
 
+/*EXPECT_REGEX
+ok - insert function succeeded
+[0-9a-f]+-[0-9a-f]+-[0-9a-f]+-01
+[0-9a-f]+@nr=0-0-[0-9a-f]+-[0-9a-f]+-[0-9a-e]+-[0-9a-f]+-1-2.000000-[0-9a-f]+
+*/
+
+require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
+
 header('Content-Type: text/html');
 header('Content-Length: 41');
+
+$headers = array('Accept-Language' => 'en-US,en;q=0.5');
+tap_assert(newrelic_insert_distributed_trace_headers($headers), 'insert function succeeded');
+print($headers['traceparent']);
+print("\n");
+print($headers['tracestate']);
+print("\n");
