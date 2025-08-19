@@ -7,6 +7,7 @@
 /*DESCRIPTION
 Tests that remote_parent_not_sampled = 'always_off' works. Upstream New Relic
 tracestate is set to be the opposite of the desired result.
+Spans should not be sampled and downstream headers should indicate as such.
  */
 
 /*INI
@@ -17,9 +18,16 @@ newrelic.distributed_tracing.sampler.remote_parent_not_sampled = 'always_off'
 
 /*EXPECT_SPAN_EVENTS
 null
+ */
+
+/*EXPECT
+ok - insert function succeeded
+ok - traceparent sampled flag ok
+ok - tracestate sampled flag ok
+ok - tracestate priority ok
 */
 
-
+require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 
 
 $payload = array(
@@ -28,3 +36,12 @@ $payload = array(
 );
 
 newrelic_accept_distributed_trace_headers($payload);
+
+$outbound_headers = array('Accept-Language' => 'en-US,en;q=0.5');
+tap_assert(newrelic_insert_distributed_trace_headers($outbound_headers), 'insert function succeeded');
+$traceparent = explode('-', $outbound_headers['traceparent']);
+$tracestate = explode('-', explode('=', $outbound_headers['tracestate'])[1]);
+
+tap_equal($traceparent[3], '00', 'traceparent sampled flag ok');
+tap_equal($tracestate[6], '0', 'tracestate sampled flag ok');
+tap_not_equal($tracestate[7], '2.000000', 'tracestate priority ok');

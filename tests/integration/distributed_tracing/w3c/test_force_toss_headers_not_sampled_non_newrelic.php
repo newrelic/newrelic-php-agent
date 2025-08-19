@@ -6,6 +6,7 @@
 
 /*DESCRIPTION
 Tests that remote_parent_not_sampled = 'always_off' works.
+Spans should not be sampled and downstream headers should indicate as such.
 */
 
 /*INI
@@ -14,17 +15,16 @@ newrelic.distributed_tracing.sampler.remote_parent_not_sampled = 'always_off'
 */
 
 /*HEADERS
-X-Request-Start=1368811467146000
-Content-Type=text/html
-Accept=text/plain
-User-Agent=Mozilla/5.0
-Referer=http://user:pass@example.com/foo?q=bar#fragment
 traceparent=00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00
 */
 
 /*ENVIRONMENT
 REQUEST_METHOD=POST
 CONTENT_LENGTH=348
+*/
+
+/*EXPECT_SPAN_EVENTS
+null
 */
 
 /*EXPECT
@@ -35,9 +35,6 @@ ok - tracestate priority ok
 */
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
-
-header('Content-Type: text/html');
-header('Content-Length: 41');
 
 $outbound_headers = array('Accept-Language' => 'en-US,en;q=0.5');
 tap_assert(newrelic_insert_distributed_trace_headers($outbound_headers), 'insert function succeeded');
