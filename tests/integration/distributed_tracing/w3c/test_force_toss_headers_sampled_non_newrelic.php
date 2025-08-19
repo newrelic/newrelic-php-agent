@@ -27,9 +27,23 @@ REQUEST_METHOD=POST
 CONTENT_LENGTH=348
 */
 
-/*EXPECT_SPAN_EVENTS
-null
+/*EXPECT
+ok - insert function succeeded
+ok - traceparent sampled flag ok
+ok - tracestate sampled flag ok
+ok - tracestate priority ok
 */
+
+require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
 
 header('Content-Type: text/html');
 header('Content-Length: 41');
+
+$outbound_headers = array('Accept-Language' => 'en-US,en;q=0.5');
+tap_assert(newrelic_insert_distributed_trace_headers($outbound_headers), 'insert function succeeded');
+$traceparent = explode('-', $outbound_headers['traceparent']);
+$tracestate = explode('-', explode('=', $outbound_headers['tracestate'])[1]);
+
+tap_equal($traceparent[3], '00', 'traceparent sampled flag ok');
+tap_equal($tracestate[6], '0', 'tracestate sampled flag ok');
+tap_not_equal($tracestate[7], '2.000000', 'tracestate priority ok');
