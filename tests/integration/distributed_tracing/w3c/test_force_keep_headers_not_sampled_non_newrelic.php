@@ -44,7 +44,7 @@ CONTENT_LENGTH=348
         "priority": 2.00000,
         "sampled": true,
         "nr.entryPoint": true,
-        "parentId": "??",
+        "parentId": "7d3efb1b173fecfa",
         "transaction.name": "WebTransaction\/Uri__FILE__"
       },
       {},
