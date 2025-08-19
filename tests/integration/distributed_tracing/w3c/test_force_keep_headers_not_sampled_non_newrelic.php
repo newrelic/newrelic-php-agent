@@ -36,7 +36,7 @@ CONTENT_LENGTH=348
         "category": "generic",
         "type": "Span",
         "guid": "??",
-        "traceId": "??",
+        "traceId": "87b1c9a429205b25e5b687d890d4821f",
         "transactionId": "??",
         "name": "WebTransaction\/Uri__FILE__",
         "timestamp": "??",
