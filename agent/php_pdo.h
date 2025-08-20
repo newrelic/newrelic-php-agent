@@ -165,5 +165,5 @@ extern void nr_php_pdo_free_data_sources(struct pdo_data_src_parser* parsed,
  * Purpose : Frees reference incremented, transaction global zvals
  *           that must be cleaned up prior to postdeactivate
  */
-extern void nr_pdo_rshutdown();
+extern void nr_php_pdo_rshutdown();
 #endif

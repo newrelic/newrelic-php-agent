@@ -639,7 +639,7 @@ zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC) {
   return result;
 }
 
-void nr_pdo_rshutdown() {
+void nr_php_pdo_rshutdown() {
   /*
    * This frees pdo metadata stored in the transaction.
    *
