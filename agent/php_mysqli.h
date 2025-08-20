@@ -167,6 +167,6 @@ extern void nr_php_mysqli_remove_datastore_instance(
  * Purpose : Frees reference incremented, transaction global zvals
  *           that must be cleaned up prior to postdeactivate
  */
-extern void nr_mysqli_rshutdown();
+extern void nr_php_mysqli_rshutdown();
 
 #endif /* PHP_MYSQLI_HDR */

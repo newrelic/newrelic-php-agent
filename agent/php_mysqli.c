@@ -689,7 +689,7 @@ const char* nr_php_mysqli_strip_persistent_prefix(const char* host) {
   return host;
 }
 
-void nr_mysqli_rshutdown() {
+void nr_php_mysqli_rshutdown() {
   /*
    * This frees mysqli metadata stored in the transaction.
    *
