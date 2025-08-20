@@ -12,6 +12,8 @@
 #include "php_globals.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
+#include "php_mysqli.h"
+#include "php_pdo.h"
 #include "util_logging.h"
 #include "lib_guzzle4.h"
 
@@ -49,6 +51,8 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
+  nr_php_pdo_rshutdown();
+  nr_php_mysqli_rshutdown();
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
 
