@@ -432,6 +432,22 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;newrelic.error_collector.ignore_user_exception_handler = false
 
+; Setting: newrelic.error_collector.ignore_framework_error_exception_handler
+; Type   : boolean
+; Scope  : per-directory
+; Default: false
+; Info   : If enabled, the New Relic error collector will ignore any errors or
+;          exceptions that are handled by a framework error or exception
+;          handler.
+;
+;          This is useful if you only want to see exceptions that are re-
+;          thrown by the framework or if you are inserting your own
+;          handling logic into the exception handling stack that will
+;          filter errors/exceptions and manually call the New Relic API
+;          when instrumentation is desired.
+;
+;newrelic.error_collector.ignore_framework_error_exception_handler = false
+
 ; Setting: newrelic.error_collector.ignore_exceptions
 ; Type:    string
 ; Scope:   per-directory
