@@ -103,16 +103,10 @@ typedef struct _nrtxnopt_t {
   nr_upstream_parent_sampling_control_t
     dt_sampler_parent_sampled; /* how to sample spans when non-
                                   New Relic upstream did sample.
-                                  1 - always keep
-                                  0 - use default sampling
-                                  -1 - always toss
                                 */
   nr_upstream_parent_sampling_control_t
     dt_sampler_parent_not_sampled; /* how to sample spans when non-
                                       New Relic upstream didn't sample.
-                                      1 - always keep
-                                      0 - use default sampling
-                                      -1 - always toss
                                     */
   int span_events_enabled; /* Whether span events are enabled */
   size_t
