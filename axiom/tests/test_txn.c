@@ -6328,8 +6328,8 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   txn.distributed_trace->inbound.set = 0;        \
   nrm_table_destroy(&txn.unscoped_metrics);      \
   txn.unscoped_metrics = nrm_table_create(0);    \
-  txn.options.dt_sampler_parent_not_sampled = 0; \
-  txn.options.dt_sampler_parent_sampled = 0;
+  txn.options.dt_sampler_parent_not_sampled = DEFAULT; \
+  txn.options.dt_sampler_parent_sampled = DEFAULT;
 
   headers = nr_hashmap_create(NULL);
 
@@ -6337,7 +6337,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
    * Test : DT traceparent sampled flag INI settings
    */
   // 1: upstream not sampled, agent discard
-  txn.options.dt_sampler_parent_not_sampled = -1;
+  txn.options.dt_sampler_parent_not_sampled = ALWAYS_DROP;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
@@ -6354,7 +6354,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 2: upstream not sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 1;
+  txn.options.dt_sampler_parent_not_sampled = ALWAYS_KEEP;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
@@ -6370,7 +6370,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 3: upstream not sampled, agent default (keep)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_not_sampled = DEFAULT;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
@@ -6387,7 +6387,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 4: upstream not sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_not_sampled = 0;
+  txn.options.dt_sampler_parent_not_sampled = DEFAULT;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_NOT_SAMPLED);
@@ -6404,7 +6404,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 5: upstream sampled, agent discard
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_sampled = -1;
+  txn.options.dt_sampler_parent_sampled = ALWAYS_DROP;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
@@ -6421,7 +6421,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 6: upstream sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_sampled = 1;
+  txn.options.dt_sampler_parent_sampled = ALWAYS_KEEP;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
@@ -6437,7 +6437,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 7: upstream sampled, agent default (keep)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = DEFAULT;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);
@@ -6454,7 +6454,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
 
   // 8: upstream sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
-  txn.options.dt_sampler_parent_sampled = 0;
+  txn.options.dt_sampler_parent_sampled = DEFAULT;
   nr_distributed_trace_destroy(&txn.distributed_trace);
   txn.distributed_trace = nr_distributed_trace_create();
   nr_hashmap_update(headers, NR_PSTR("traceparent"), TRACEPARENT_SAMPLED);

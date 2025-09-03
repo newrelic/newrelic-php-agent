@@ -1989,21 +1989,21 @@ static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
 
   if (0 == nr_strcmp(NEW_VALUE, "default")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = 0;
+      NRPRG(dt_sampler_parent_sampled) = DEFAULT;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = 0;
+      NRPRG(dt_sampler_parent_not_sampled) = DEFAULT;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_on")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = 1;
+      NRPRG(dt_sampler_parent_sampled) = ALWAYS_KEEP;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = 1;
+      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_off")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = -1;
+      NRPRG(dt_sampler_parent_sampled) = ALWAYS_DROP;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = -1;
+      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
     }
   } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
