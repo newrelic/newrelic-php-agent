@@ -14,16 +14,15 @@ require("skipif.inc");
 */
 
 /*INI
-newrelic.datastore_tracer.database_name_reporting.enabled = 0
-newrelic.datastore_tracer.instance_reporting.enabled = 0
 error_reporting = E_ALL & ~E_DEPRECATED
 newrelic.transaction_tracer.explain_enabled = true
 newrelic.transaction_tracer.explain_threshold = 0
-newrelic.transaction_tracer.record_sql = "obfuscated"
+newrelic.transaction_tracer.record_sql = obfuscated
 */
 
 /*EXPECT
-key=TABLE_NAME value=STATISTICS
+STATISTICS
+STATISTICS
 */
 
 /*EXPECT_SLOW_SQLS
@@ -32,7 +31,7 @@ key=TABLE_NAME value=STATISTICS
     [
       "OtherTransaction/php__FILE__",
       "<unknown>",
-      "?? SQL id",
+      "?? SQL ID",
       "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?",
       "Datastore/statement/MySQL/tables/select",
       1,
@@ -69,8 +68,53 @@ key=TABLE_NAME value=STATISTICS
           ]
         ],
         "backtrace": [
-          " in mysqli_query called at __FILE__ (??)",
-          " in test_mysqli_query called at __FILE__ (??)"
+          " in mysqli_stmt_execute called at __FILE__ (??)",
+          " in test_prepare called at __FILE__ (??)"
+        ]
+      }
+    ],
+    [
+      "OtherTransaction/php__FILE__",
+      "<unknown>",
+      "?? SQL ID",
+      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=? AND ? = ?",
+      "Datastore/statement/MySQL/tables/select",
+      1,
+      "?? total time",
+      "?? min time",
+      "?? max time",
+      {
+        "explain_plan": [
+          [
+            "id",
+            "select_type",
+            "table",
+            "type",
+            "possible_keys",
+            "key",
+            "key_len",
+            "ref",
+            "rows",
+            "Extra"
+          ],
+          [
+            [
+              1,
+              "SIMPLE",
+              "tables",
+              "ALL",
+              null,
+              "TABLE_NAME",
+              null,
+              null,
+              null,
+              "Using where; Skip_open_table; Scanned 1 database"
+            ]
+          ]
+        ],
+        "backtrace": [
+          " in mysqli_stmt_execute called at __FILE__ (??)",
+          " in test_prepare called at __FILE__ (??)"
         ]
       }
     ]
@@ -82,42 +126,67 @@ key=TABLE_NAME value=STATISTICS
 null
 */
 
-require_once(realpath (dirname ( __FILE__ )) . '/mysqli.inc');
+require_once(realpath (dirname ( __FILE__ )) . '/../../include/config.php');
 
-function test_mysqli_query($link)
+error_reporting(E_ALL);
+
+// The bind_param warning is suppressed, so it is visible only when using a
+// custom error handler.
+set_error_handler(function ($errno, $errstr) {
+  try {
+    throw new Exception($errstr);
+  } catch (Exception $e) {
+    echo (string)$e;
+  }
+
+  return false;
+});
+
+function test_prepare($link, $query, $types = null, $params = null)
 {
-  $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'";
-
-  $result = mysqli_query($link, $query);
-
-  if (FALSE === $result) {
-    echo mysqli_error($link);
+  $stmt = mysqli_prepare($link, $query);
+  if (FALSE === $stmt) {
+    echo mysqli_error($link) . "\n";
     return;
   }
 
-  while ($row = mysqli_fetch_assoc($result)) {
-    foreach ($row as $key => $value) {
-      printf("key=${key} value=${value}\n");
+  if ($types && $params) {
+    $args = array($stmt, $types);
+    foreach ($params as $param) {
+      $args[] = &$param;
     }
+    call_user_func_array('mysqli_stmt_bind_param', $args);
   }
 
-  mysqli_free_result($result);
+  if (FALSE === mysqli_stmt_execute($stmt)) {
+    echo mysqli_stmt_error($stmt) . "\n";
+    return;
+  }
+
+  if (FALSE === mysqli_stmt_bind_result($stmt, $value)) {
+    echo mysqli_stmt_error($stmt) . "\n";
+    return;
+  }
+
+  while (mysqli_stmt_fetch($stmt)) {
+    echo $value . "\n";
+  }
+
+  mysqli_stmt_close($stmt);
 }
 
-$link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
+$link = new mysqli($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
 if (mysqli_connect_errno()) {
   echo mysqli_connect_error() . "\n";
   exit(1);
 }
 
-test_mysqli_query($link);
+test_prepare($link, "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS' AND ? = ?", 'ii', array(1, 1));
 
-/* restart transaction, potentially leaking txn globals */
 newrelic_end_transaction(true);
-newrelic_start_transaction();
+newrelic_start_transaction(ini_get("newrelic.appname"));
 
+test_prepare($link, "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name='STATISTICS'");
 
-test_mysqli_query($link);
 mysqli_close($link);
-
 newrelic_end_transaction();
