@@ -898,14 +898,16 @@ void nr_drupal8_enable(TSRMLS_D) {
   /*
    * Log exceptions without further handling.
    */
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\ExceptionLoggingSubscriber::onException"),
-                            nr_drupal_exception);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
+    nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\ExceptionLoggingSubscriber::onException"),
+                              nr_drupal_exception);
 
-  /*
-   * Last-chance handler for exceptions: the final exception subscriber.
-   */
-  nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\FinalExceptionSubscriber::onException"),
-                            nr_drupal_exception);
+    /*
+     * Last-chance handler for exceptions: the final exception subscriber.
+     */
+    nr_php_wrap_user_function(NR_PSTR("Drupal\\Core\\EventSubscriber\\FinalExceptionSubscriber::onException"),
+                              nr_drupal_exception);
+  }
   // clang-format on
 
   /*

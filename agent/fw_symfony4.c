@@ -250,19 +250,21 @@ void nr_symfony4_enable(TSRMLS_D) {
    * nr_txn_record_error and pass the exception message. Now we get errors in
    * the error analytics page.
    */
-  nr_php_wrap_user_function(
-      NR_PSTR("Symfony\\Component\\HttpKernel\\"
-              "EventListener\\ExceptionListener::onKernelException"),
-      nr_symfony4_exception TSRMLS_CC);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
+    nr_php_wrap_user_function(
+        NR_PSTR("Symfony\\Component\\HttpKernel\\"
+                "EventListener\\ExceptionListener::onKernelException"),
+        nr_symfony4_exception TSRMLS_CC);
 
-  /*
-   * In Symfony 5 listener that catch errors was changed to ErrorListener,
-   * we try to hook into it
-   */
-  nr_php_wrap_user_function(
-      NR_PSTR("Symfony\\Component\\HttpKernel\\"
-              "EventListener\\ErrorListener::onKernelException"),
-      nr_symfony4_exception TSRMLS_CC);
+    /*
+     * In Symfony 5 listener that catch errors was changed to ErrorListener,
+     * we try to hook into it
+     */
+    nr_php_wrap_user_function(
+        NR_PSTR("Symfony\\Component\\HttpKernel\\"
+                "EventListener\\ErrorListener::onKernelException"),
+        nr_symfony4_exception TSRMLS_CC);
+  }
 
   /*
    * Listen for Symfony commands so we can name those appropriately.
