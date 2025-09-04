@@ -111,17 +111,11 @@ if (mysqli_connect_errno()) {
 }
 
 test_mysqli_query($link);
-mysqli_close($link);
 
 /* restart transaction, potentially leaking txn globals */
 newrelic_end_transaction(true);
 newrelic_start_transaction();
 
-$link = mysqli_connect($MYSQL_HOST, $MYSQL_USER, $MYSQL_PASSWD, $MYSQL_DB, $MYSQL_PORT, $MYSQL_SOCKET);
-if (mysqli_connect_errno()) {
-  echo mysqli_connect_error() . "\n";
-  exit(1);
-}
 
 test_mysqli_query($link);
 mysqli_close($link);
