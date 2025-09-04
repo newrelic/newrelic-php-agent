@@ -32,51 +32,6 @@ STATISTICS
       "OtherTransaction/php__FILE__",
       "<unknown>",
       "?? SQL ID",
-      "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?",
-      "Datastore/statement/MySQL/tables/select",
-      1,
-      "?? total time",
-      "?? min time",
-      "?? max time",
-      {
-        "explain_plan": [
-          [
-            "id",
-            "select_type",
-            "table",
-            "type",
-            "possible_keys",
-            "key",
-            "key_len",
-            "ref",
-            "rows",
-            "Extra"
-          ],
-          [
-            [
-              1,
-              "SIMPLE",
-              "tables",
-              "ALL",
-              null,
-              "TABLE_NAME",
-              null,
-              null,
-              null,
-              "Using where; Skip_open_table; Scanned 1 database"
-            ]
-          ]
-        ],
-        "backtrace": [
-          " in mysqli_stmt_execute called at __FILE__ (??)",
-          " in test_prepare called at __FILE__ (??)"
-        ]
-      }
-    ],
-    [
-      "OtherTransaction/php__FILE__",
-      "<unknown>",
-      "?? SQL ID",
       "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=? AND ? = ?",
       "Datastore/statement/MySQL/tables/select",
       1,
