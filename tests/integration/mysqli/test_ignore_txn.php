@@ -55,20 +55,6 @@ null
 
 require_once(realpath (dirname ( __FILE__ )) . '/../../include/config.php');
 
-error_reporting(E_ALL);
-
-// The bind_param warning is suppressed, so it is visible only when using a
-// custom error handler.
-set_error_handler(function ($errno, $errstr) {
-  try {
-    throw new Exception($errstr);
-  } catch (Exception $e) {
-    echo (string)$e;
-  }
-
-  return false;
-});
-
 function test_prepare($link, $query, $types = null, $params = null)
 {
   $stmt = mysqli_prepare($link, $query);
