@@ -10,6 +10,8 @@ GCOV  ?= gcov
 SHELL = /bin/bash
 GCOVR ?= gcovr
 GIT   ?= git
+# make sure go toolchain defined in daemon/go.mod is always used
+GOTOOLCHAIN=auto
 
 include make/config.mk
 include make/vendor.mk
