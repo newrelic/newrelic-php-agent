@@ -638,3 +638,28 @@ zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC) {
   nr_php_zval_free(&persistent);
   return result;
 }
+
+void nr_php_pdo_rshutdown() {
+  /*
+   * This frees pdo metadata stored in the transaction.
+   *
+   * `pdo_link_options` contains duplicates of zvals. If
+   * `nr_php_txn_end` is called from the post-deactivate callback, request
+   * shutdown functions have already been called; and the Zend VM has already
+   * forcefully freed all dangling zvals that are not referenced by the global
+   * scope (regardless of their reference count), thus leaving the zvals stored
+   * in the pdo_link_options metadata in an "undefined" state. Consequently,
+   * freeing the zvals in `nr_php_txn_end` at this stage can result in undefined
+   * behavior.
+   *
+   * Calling this function during the RSHUTDOWN phase ensures that the zvals in
+   * `pdo_link_options` are cleaned up before Zend winds down the VM and
+   * forcefully frees zvals.
+   *
+   * If `nr_php_txn_end` is called outside the post-deactivate callback,
+   * it frees `pdo_link_options` by itself.
+   */
+  if (nrlikely(NRPRG(txn))) {
+    nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
+  }
+}
