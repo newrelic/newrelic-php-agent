@@ -937,8 +937,8 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;          anything if the upstream entity sampled the parent.
 ;          The possible values are:
 ;          - "default": Use New Relic's standard sampling rules.
-;          - "always_on": Always sample spans whose upstream parent was not sampled.
-;          - "always_off": Always skip sampling spans whose upstream parent was not sampled.
+;          - "always_on": Always sample spans whose upstream parent was sampled.
+;          - "always_off": Always skip sampling spans whose upstream parent was sampled.
 ;
 ;newrelic.distributed_tracing.sampler.remote_parent_sampled = "default"
 
