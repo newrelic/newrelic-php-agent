@@ -10,6 +10,8 @@ GCOV  ?= gcov
 SHELL = /bin/bash
 GCOVR ?= gcovr
 GIT   ?= git
+# make sure go toolchain defined in daemon/go.mod is always used
+GOTOOLCHAIN=auto
 
 include make/config.mk
 include make/vendor.mk
@@ -165,9 +167,17 @@ agent-valgrind: agent/Makefile
 # Configure the target directory for go install
 export GOBIN=$(CURDIR)/bin
 
+.PHONY: daemon-golang-verify
+daemon-golang-verify:
+	@golang_in_binary=$$(go version -m bin/daemon | awk '/^bin\/daemon/ {print $$2;}') \
+	&& golang_from_toolchain=$$(awk '/^toolchain/ {print $$2;}' daemon/go.mod) \
+	&& [ "$$golang_in_binary" = "$$golang_from_toolchain" ] && echo "daemon built using: $$golang_from_toolchain" \
+	|| { echo "ERROR: daemon built using go: $$golang_in_binary, required: $$golang_from_toolchain"; exit 1; }
+
 .PHONY: daemon
 daemon:
 	$(MAKE) -C daemon
+	$(MAKE) daemon-golang-verify
 
 .PHONY: daemon_race
 daemon_race:

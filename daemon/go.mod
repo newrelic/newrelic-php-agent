@@ -1,7 +1,7 @@
 module github.com/newrelic/newrelic-php-agent/daemon
 
 go 1.24.0
-toolchain go1.24.4
+toolchain go1.25.1
 
 require (
 	github.com/golang/protobuf v1.5.3
