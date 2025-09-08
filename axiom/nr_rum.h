@@ -24,12 +24,14 @@ extern int nr_rum_do_autorum(const nrtxn_t* txn);
  * Params  : 1. The transaction pointer.
  *           2. Whether or not to use start tags.
  *           3. Whether or not this is being inserted by auto-RUM.
+ *           4. (optional) See nr_rum_produce_header_with_nonce.
  *
  * Returns : The string to insert, allocated. If the header has been produced
  *           before, returns NULL. That is, this function can only be called
  *           once per transaction.
  */
 extern char* nr_rum_produce_header(nrtxn_t* txn, int tags, int autorum);
+extern char* nr_rum_produce_header_with_nonce(nrtxn_t* txn, int tags, int autorum, const char* nonce);
 
 /*
  * Purpose : Produce the RUM footer for a transaction.
@@ -37,12 +39,24 @@ extern char* nr_rum_produce_header(nrtxn_t* txn, int tags, int autorum);
  * Params  : 1. The transaction pointer.
  *           2. Whether or not to use tags.
  *           3. Whether or not this is being inserted by auto-RUM.
+ *           4. (optional) See nr_rum_produce_footer_with_nonce.
  *
  * Returns : The string to insert, allocated. If the header has been produced
  *           before, returns NULL. That is, this function can only be called
  *           once per transaction.
  */
 extern char* nr_rum_produce_footer(nrtxn_t* txn, int tags, int autorum);
+extern char* nr_rum_produce_footer_with_nonce(nrtxn_t* txn, int tags, int autorum, const char* nonce);
+
+/*
+ * Purpose : Encode a CSP nonce attribute for insertion into a script tag.
+ *
+ * Params  : 1. The raw nonce value, or NULL/empty.
+ *
+ * Returns : An allocated string: "nonce=\"VALUE\"" if nonce is provided,
+ *           otherwise "" (empty). Caller must free with nr_free.
+ */
+extern char* nr_rum_encode_nonce(const char* nonce);
 
 /*
  * Purpose : Scan html looking for a heuristically good place in <head> to put

@@ -24,6 +24,28 @@ static char* nr_php_rum_malloc(int len) {
   return (char*)emalloc(len);
 }
 
+static char* nr_php_rum_produce_header_with_ini_nonce(nrtxn_t* txn,
+                                                     int tags,
+                                                     int autorum) {
+  char* nonce = nr_php_zend_ini_string(
+      NR_PSTR("newrelic.browser_monitoring.nonce_rum_header"), 0);
+  if (nonce && '\0' != nonce[0]) {
+    return nr_rum_produce_header_with_nonce(txn, tags, autorum, nonce);
+  }
+  return nr_rum_produce_header(txn, tags, autorum);
+}
+
+static char* nr_php_rum_produce_footer_with_ini_nonce(nrtxn_t* txn,
+                                                     int tags,
+                                                     int autorum) {
+  char* nonce = nr_php_zend_ini_string(
+      NR_PSTR("newrelic.browser_monitoring.nonce_rum_footer"), 0);
+  if (nonce && '\0' != nonce[0]) {
+    return nr_rum_produce_footer_with_nonce(txn, tags, autorum, nonce);
+  }
+  return nr_rum_produce_footer(txn, tags, autorum);
+}
+
 /*
  * Callback function for iterating the list of response headers that
  * prints the value of the Content-Type header, if present. This is so
@@ -91,8 +113,8 @@ void nr_php_rum_output_handler(
   }
 
   nr_memset(&control_block, 0, sizeof(control_block));
-  control_block.produce_header = nr_rum_produce_header;
-  control_block.produce_footer = nr_rum_produce_footer;
+  control_block.produce_header = nr_php_rum_produce_header_with_ini_nonce;
+  control_block.produce_footer = nr_php_rum_produce_footer_with_ini_nonce;
   control_block.malloc_worker = nr_php_rum_malloc;
 
   has_response_content_length = nr_php_has_response_content_length(TSRMLS_C);
