@@ -238,6 +238,9 @@ nrinibool_t
 nrinibool_t
     ignore_user_exception_handler; /* newrelic.error_collector.ignore_user_exception_handler
                                     */
+nrinibool_t
+    ignore_framework_error_exception_handler; /* newrelic.error_collector.ignore_framework_error_excpetion_handler
+                                               */
 nriniint_t ignore_errors;     /* newrelic.error_collector.ignore_errors */
 nrinistr_t ignore_exceptions; /* newrelic.error_collector.ignore_exceptions */
 nrinibool_t
@@ -491,6 +494,16 @@ nrinibool_t span_events_enabled; /* newrelic.span_events_enabled */
 nriniuint_t
     span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
                                      */
+
+nrinistr_t dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled */
+nrinistr_t
+    dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled */
+/* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
+ * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
+ */
+nr_upstream_parent_sampling_control_t dt_sampler_parent_sampled;
+nr_upstream_parent_sampling_control_t dt_sampler_parent_not_sampled;
+
 nrinistr_t
     trace_observer_host; /* newrelic.infinite_tracing.trace_observer.host */
 nriniuint_t

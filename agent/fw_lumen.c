@@ -218,16 +218,18 @@ void nr_lumen_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Laravel\\Lumen\\Application::handleFoundRoute"),
       nr_lumen_handle_found_route TSRMLS_CC);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
-      nr_lumen_exception, NULL, NULL);
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
+        nr_lumen_exception, NULL, NULL);
 #else
-  nr_php_wrap_user_function(
-      NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
-      nr_lumen_exception TSRMLS_CC);
+    nr_php_wrap_user_function(
+        NR_PSTR("Laravel\\Lumen\\Application::sendExceptionToHandler"),
+        nr_lumen_exception TSRMLS_CC);
 #endif
+  }
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME,

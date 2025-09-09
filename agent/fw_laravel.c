@@ -865,19 +865,21 @@ NR_PHP_WRAPPER(nr_laravel5_application_boot) {
    * to sensibly name transactions when an exception is thrown during routing
    * and also to record the error.
    */
-  exception_handler = nr_php_call_offsetGet(
-      this_var, "Illuminate\\Contracts\\Debug\\ExceptionHandler" TSRMLS_CC);
-  if (nr_php_is_zval_valid_object(exception_handler)) {
-    nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
-                                   NR_PSTR("render"),
-                                   nr_laravel5_exception_render TSRMLS_CC);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
+    exception_handler = nr_php_call_offsetGet(
+        this_var, "Illuminate\\Contracts\\Debug\\ExceptionHandler" TSRMLS_CC);
+    if (nr_php_is_zval_valid_object(exception_handler)) {
+      nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
+                                     NR_PSTR("render"),
+                                     nr_laravel5_exception_render TSRMLS_CC);
 
-    nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
-                                   NR_PSTR("report"),
-                                   nr_laravel5_exception_report TSRMLS_CC);
-  } else {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot get exception handler",
-                     __func__);
+      nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
+                                     NR_PSTR("report"),
+                                     nr_laravel5_exception_report TSRMLS_CC);
+    } else {
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot get exception handler",
+                       __func__);
+    }
   }
 
 end:

@@ -942,6 +942,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
+  opts.dt_sampler_parent_sampled
+      = NRPRG(dt_sampler_parent_sampled);
+  opts.dt_sampler_parent_not_sampled
+      = NRPRG(dt_sampler_parent_not_sampled);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
@@ -1187,9 +1191,6 @@ static void nr_php_txn_do_shutdown(nrtxn_t* txn TSRMLS_DC) {
    * cannot be configured into the browser client config.
    */
   nr_php_capture_request_parameters(txn TSRMLS_CC);
-
-  nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
-  nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
 }
 
 void nr_php_txn_shutdown(TSRMLS_D) {
@@ -1356,6 +1357,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
   nr_hashmap_destroy(&NRTXNGLOBAL(curl_multi_metadata));
 
   nr_mysqli_metadata_destroy(&NRTXNGLOBAL(mysqli_links));
+  nr_hashmap_destroy(&NRTXNGLOBAL(mysqli_queries));
+
+  nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
 
   return NR_SUCCESS;
 }
