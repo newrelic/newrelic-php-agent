@@ -233,10 +233,19 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
 }
 
 /*
- * Handle:
- *   Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent(Job $job):void
+ * Handle: Illuminate\Queue\SyncQueue::executeJob
+ *  /**
+     * Execute a given job synchronously.
+     *
+     * @param  string  $job
+     * @param  mixed  $data
+     * @param  string|null  $queue
+     * @return int
+     *
+     * @throws \Throwable
+    protected function executeJob($job, $data = '', $queue = null)
  */
-NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
+NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_executeJob_before) {
   zval* job = NULL;
 
   NR_UNUSED_SPECIALFN;
@@ -283,10 +292,15 @@ NR_PHP_WRAPPER_END
 
 /*
  * Handle:
- *   Illuminate\\Queue\\Worker::raiseBeforeJobEvent(string $connectionName, Job
- * $job):void
+ *   Illuminate\\Queue\\Worker::process
+ *   @param  string  $connectionName
+ *   @param  \Illuminate\Contracts\Queue\Job  $job
+ *   @param  \Illuminate\Queue\WorkerOptions  $options
+ *   @return void
+ *
+ *   @throws \Throwable
  */
-NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
+NR_PHP_WRAPPER(nr_laravel_queue_worker_process_before) {
   zval* job = NULL;
 
   NR_UNUSED_SPECIALFN;
@@ -300,7 +314,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
   nr_php_txn_end(1, 0 TSRMLS_CC);
 
   /*
-   * Laravel 7 and later passes Job as the second parameter.
+   * Job is the second parameter.
    */
   char* txn_name = NULL;
 
@@ -330,27 +344,22 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
 NR_PHP_WRAPPER_END
 
 /*
- * Handle:
- *   Illuminate\\Queue\\Worker::raiseAfterJobEvent(string $connectionName, Job
- * $job):void Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent(Job $job):void
+ * Handles:
+ *   Illuminate\\Queue\\Worker::process
+ *   Illuminate\\Queue\\SyncQueue::executeJob
  */
-NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseAfterJobEvent_before) {
+
+NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
   /*
-   * If we made it here, we are assured there are no uncaught exceptions (as it
-   * would be noticed with the oapi exception handling before calling this
-   * callback so no need to check before ending the txn.
-   */
-
-  /*
    * End the real transaction and then start a new transaction so our
    * instrumentation continues to fire, knowing that we'll ignore that
-   * transaction either when Worker::process() is called again or when
-   * WorkCommand::handle() exits.
+   * transaction either when Illuminate\\Queue\\Worker::process or
+   * Illuminate\\Queue\\SyncQueue::executeJob is called again
    */
   nr_php_txn_end(0, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
@@ -854,23 +863,24 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * that is executed, but don't want to record a transaction for the actual
    * queue:work command, since it spends most of its time sleeping.
    *
-   * We use the raiseBeforeJobEvent and raiseAfterJobEvent listeners which we
+   * We use the process and executeJob functions which we
    * can use to name the Laravel Job and capture the true time that the job
    * took.
    */
 
+  /*
+   * Wrap:
+   *   Illuminate\\Queue\\Worker::process
+   *   Illuminate\\Queue\\SyncQueue::executeJob
+   */
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"), NULL,
-      nr_laravel_queue_worker_raiseBeforeJobEvent_after, NULL);
+      NR_PSTR("Illuminate\\Queue\\SyncQueue::executeJob"),
+      nr_laravel_queue_syncqueue_executeJob_before,
+      nr_laravel_queue_worker_after, nr_laravel_queue_worker_after);
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
-      nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
+      NR_PSTR("Illuminate\\Queue\\Worker::process"),
+      nr_laravel_queue_worker_process_before, nr_laravel_queue_worker_after,
+      nr_laravel_queue_worker_after);
 
 #else
 
@@ -883,8 +893,9 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * aren't executed if we're not actually in a transaction.
    *
    * So instead, what we'll do is to keep recording, but ensure that we ignore
-   * the transaction after WorkCommand::handle() has finished executing, at
-   * which point no more jobs can be run.
+   * the transaction before and after
+   *   Illuminate\\Queue\\Worker::process
+   *   Illuminate\\Queue\\SyncQueue::executeJob
    */
 
   nr_php_wrap_user_function(
