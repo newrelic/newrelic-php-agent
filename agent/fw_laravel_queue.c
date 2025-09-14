@@ -247,9 +247,9 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
  */
 NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_executeJob_before) {
   zval* job = NULL;
+  nr_segment_t* segment = NULL;
 
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
@@ -274,6 +274,16 @@ NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_executeJob_before) {
 
   if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
     nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
+
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+    /*
+     * Transfer the old wraprec to the newly created segment inside the brand
+     * new txn so that the agent will be able to call any _after or _clean
+     * callbacks.
+     */
+    if (NULL != segment) {
+      segment->wraprec = wraprec;
+    }
 
     if (NULL == txn_name) {
       txn_name = nr_strdup("unknown");
@@ -302,9 +312,9 @@ NR_PHP_WRAPPER_END
  */
 NR_PHP_WRAPPER(nr_laravel_queue_worker_process_before) {
   zval* job = NULL;
+  nr_segment_t* segment = NULL;
 
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
@@ -312,7 +322,6 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process_before) {
    * End the current txn to prepare for the Job txn.
    */
   nr_php_txn_end(1, 0 TSRMLS_CC);
-
   /*
    * Job is the second parameter.
    */
@@ -327,7 +336,15 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process_before) {
 
   if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
     nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
-
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+    /*
+     * Transfer the old wraprec to the newly created segment inside the brand
+     * new txn so that the agent will be able to call any _after or _clean
+     * callbacks.
+     */
+    if (NULL != segment) {
+      segment->wraprec = wraprec;
+    }
     if (NULL == txn_name) {
       txn_name = nr_strdup("unknown");
     }
@@ -337,6 +354,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process_before) {
     nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
                     NR_OK_TO_OVERWRITE);
   }
+
   nr_free(txn_name);
   nr_php_arg_release(&job);
   NR_PHP_WRAPPER_CALL;
@@ -352,7 +370,6 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
-
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
   /*
@@ -861,11 +878,17 @@ void nr_laravel_queue_enable(TSRMLS_D) {
   /*
    * Here's the problem: we want to record individual transactions for each job
    * that is executed, but don't want to record a transaction for the actual
-   * queue:work command, since it spends most of its time sleeping.
+   * queue:work command, since it spends most of its time sleeping. The naive
+   * approach would be to end the transaction immediately and instrument
+   * Worker::process(). The issue with that is that instrumentation hooks
+   * aren't executed if we're not actually in a transaction.
    *
-   * We use the process and executeJob functions which we
-   * can use to name the Laravel Job and capture the true time that the job
-   * took.
+   * So instead, what we'll do is to keep recording, but ensure that we ignore
+   * the transaction before and after
+   *   Illuminate\\Queue\\Worker::process
+   *   Illuminate\\Queue\\SyncQueue::executeJob
+   * This ensures that we instrument the entirety of the job (including any
+   * handle/failed functions)
    */
 
   /*
@@ -893,9 +916,8 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * aren't executed if we're not actually in a transaction.
    *
    * So instead, what we'll do is to keep recording, but ensure that we ignore
-   * the transaction before and after
-   *   Illuminate\\Queue\\Worker::process
-   *   Illuminate\\Queue\\SyncQueue::executeJob
+   * the transaction after WorkCommand::handle() has finished executing, at
+   * which point no more jobs can be run.
    */
 
   nr_php_wrap_user_function(
