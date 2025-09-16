@@ -980,15 +980,17 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * worker ends. Anytime the worker is questioning whether it should stop or is
    * going to stop, we can end the txn.
    */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::stopIfNecessary"), NULL,
-      nr_laravel_queue_worker_stop_after, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::stopWorkerIfLostConnection"), NULL,
-      nr_laravel_queue_worker_stop_after, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::stop"), NULL,
-      nr_laravel_queue_worker_stop_after, NULL);
+  if (0) {
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stopIfNecessary"), NULL,
+        nr_laravel_queue_worker_stop_after, NULL);
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stopWorkerIfLostConnection"), NULL,
+        nr_laravel_queue_worker_stop_after, NULL);
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stop"), NULL,
+        nr_laravel_queue_worker_stop_after, NULL);
+  }
 
 #else
 
