@@ -387,15 +387,24 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
   }
 
   nr_php_txn_end(0, 0 TSRMLS_CC);
-  /* Let's give it some rudimentary name so it won't be unknown in case we exit
-   * and this becomes a txn.*/
-  if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL TSRMLS_CC)) {
-    nr_txn_set_as_background_job(NRPRG(txn), "Laravel queue worker process");
-    nr_txn_set_path("Laravel", NRPRG(txn), "Laravel queue worker process",
-                    NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
-  }
+  nr_php_txn_begin(NULL, NULL TSRMLS_CC);
 }
 NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_laravel_queue_worker_stop_after) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
+  /*
+   * Anytime the worker is considering whether to stop or not (or actually stopping),
+   * we can ignore everything that's happened previously (sleeping etc) that is non job processing related and avoid a useless txn.
+   */
+
+
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+    nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+  }
+  NR_PHP_WRAPPER_END
 
 #else
 /*
@@ -959,6 +968,20 @@ void nr_laravel_queue_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
       nr_laravel_queue_worker_raiseBeforeJobEvent_before, NULL, NULL);
+
+           /* 
+        * Additional cleanup so we don't help prevent a useless excess txn after the worker ends.
+        * Anytime the worker is questioning whether it should stop or is going to stop, we can end the txn.
+        */
+     nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stopIfNecessary"),
+        NULL, nr_laravel_queue_worker_stop_after, NULL);
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stopWorkerIfLostConnection"),
+        NULL, nr_laravel_queue_worker_stop_after, NULL);
+    nr_php_wrap_user_function_before_after_clean(
+        NR_PSTR("Illuminate\\Queue\\Worker::stop"),
+        NULL, nr_laravel_queue_worker_stop_after, NULL);   
 
 #else
 
