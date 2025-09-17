@@ -391,21 +391,6 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
 }
 NR_PHP_WRAPPER_END
 
-NR_PHP_WRAPPER(nr_laravel_queue_worker_stop_after) {
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
-  /*
-   * Anytime the worker is considering whether to stop or not (or actually stopping),
-   * we can ignore everything that's happened previously (sleeping etc) that is non job processing related and avoid a useless txn.
-   */
-
-
-    nr_php_txn_end(0, 0 TSRMLS_CC);
-    nr_php_txn_begin(NULL, NULL TSRMLS_CC);
-  }
-  NR_PHP_WRAPPER_END
-
 #else
 /*
  * Purpose : Extract the actual job name from a job that used CallQueuedHandler
@@ -659,8 +644,6 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
     nr_free(txn_name);
   }
 
-  NR_PHP_WRAPPER_CALL;
-
   /*
    * We need to report any uncaught exceptions now, so that they're on the
    * transaction we're about to end. We can see if there's an exception waiting
@@ -705,6 +688,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
    */
   nr_php_txn_end(1, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
@@ -968,20 +952,6 @@ void nr_laravel_queue_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
       nr_laravel_queue_worker_raiseBeforeJobEvent_before, NULL, NULL);
-
-           /* 
-        * Additional cleanup so we don't help prevent a useless excess txn after the worker ends.
-        * Anytime the worker is questioning whether it should stop or is going to stop, we can end the txn.
-        */
-     nr_php_wrap_user_function_before_after_clean(
-        NR_PSTR("Illuminate\\Queue\\Worker::stopIfNecessary"),
-        NULL, nr_laravel_queue_worker_stop_after, NULL);
-    nr_php_wrap_user_function_before_after_clean(
-        NR_PSTR("Illuminate\\Queue\\Worker::stopWorkerIfLostConnection"),
-        NULL, nr_laravel_queue_worker_stop_after, NULL);
-    nr_php_wrap_user_function_before_after_clean(
-        NR_PSTR("Illuminate\\Queue\\Worker::stop"),
-        NULL, nr_laravel_queue_worker_stop_after, NULL);   
 
 #else
 
