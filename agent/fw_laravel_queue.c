@@ -645,7 +645,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
     nr_free(txn_name);
   }
 
-  NR_WRAPPER_CALL;
+  NR_PHP_WRAPPER_CALL;
 
   /*
    * We need to report any uncaught exceptions now, so that they're on the
