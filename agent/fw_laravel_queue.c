@@ -645,6 +645,8 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
     nr_free(txn_name);
   }
 
+  NR_WRAPPER_CALL
+
   /*
    * We need to report any uncaught exceptions now, so that they're on the
    * transaction we're about to end. We can see if there's an exception waiting
@@ -683,13 +685,13 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
   nr_php_arg_release(&job);
 
   /*
-   * End the useless transaction and then start a new transaction so our
+   * End the real transaction and then start a new transaction so our
    * instrumentation continues to fire, knowing that we'll ignore that
-   * transaction if the worker continues when Worker::process() is called again.
+   * transaction either when Worker::process() is called again or when
+   * WorkCommand::handle() exits.
    */
-  nr_php_txn_end(1, 0 TSRMLS_CC);
+  nr_php_txn_end(0, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
-  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
