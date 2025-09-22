@@ -334,7 +334,6 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_before) {
       segment->wraprec = wraprec;
     }
   }
-  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
