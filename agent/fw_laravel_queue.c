@@ -372,12 +372,13 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
       txn for the job
       *
       */
+
       zval exception;
       ZVAL_OBJ(&exception, EG(exception));
       nr_status_t st;
       st = nr_php_error_record_exception(
-          NRPRG(txn), &exception, 50, false /* add to segment */,
-          NULL /* use default prefix */, &NRPRG(exception_filters));
+          NRPRG(txn), &exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, false /* add to segment */,
+          "Unhandled exception within Laravel Queue job: ", &NRPRG(exception_filters));
 
       if (NR_FAILURE == st) {
         nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception",
