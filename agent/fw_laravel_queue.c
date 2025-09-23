@@ -873,6 +873,14 @@ end:
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_laravel_horizon_end) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+}
+NR_PHP_WRAPPER_END
+
 void nr_laravel_queue_enable(TSRMLS_D) {
   /*
    * Hook the command class that implements Laravel's queue:work command so
@@ -975,6 +983,13 @@ void nr_laravel_queue_enable(TSRMLS_D) {
       nr_laravel_queue_workcommand_handle TSRMLS_CC);
 #endif
 
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\HorizonCommand::handle"),
+      nr_laravel_horizon_end, NULL, NULL);
+
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
+      nr_laravel_horizon_end, NULL, NULL);
   /*
    * Hook the method that creates the JSON payloads for queued jobs so that we
    * can add our metadata for CATMQ.
