@@ -11,6 +11,13 @@ transaction trace is not empty. Then it calls the HorizonCommand::handle method 
 verifies that the transaction has been stopped by checking that there was no harvest received.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not supported\n");
+}
+*/
+
 /*INI
 newrelic.framework = laravel
 */
