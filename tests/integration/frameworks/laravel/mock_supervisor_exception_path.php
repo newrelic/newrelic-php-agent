@@ -10,7 +10,7 @@
 namespace Laravel\Horizon\Console {
     class SupervisorCommand {
         public function handle() {
-            echo "handle function\n";
+            echo "Exception handle function\n";
             throw new \Exception("Exception occurred");
         }
     }
