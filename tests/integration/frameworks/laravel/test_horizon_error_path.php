@@ -6,6 +6,10 @@
 
 /*DESCRIPTION
 Ensure that when HorizonCommand::handle is executed, the transaction is properly stopped.
+This test verifies this behavior by first making sure the transaction exists and the
+transaction trace is not empty. Then it calls the HorizonCommand::handle method and
+verifies that the transaction has been stopped by checking that there was no harvest received.
+It also verifies that no traced errors and no error events were recorded.
 */
 
 /*INI
