@@ -61,6 +61,16 @@ typedef struct _nr_distributed_trace_t nr_distributed_trace_t;
 typedef struct _nr_distributed_trace_payload_t nr_distributed_trace_payload_t;
 
 /*
+ * Control options for how to respect other-vendor upstream sampling
+ * decisions.
+ */
+typedef enum {
+  DEFAULT,
+  ALWAYS_KEEP,
+  ALWAYS_DROP
+} nr_upstream_parent_sampling_control_t;
+
+/*
  * Purpose : Creates/allocates a new distributed tracing metadata struct
  *           instance.  It's the responsibility of the caller to
  *           free/destroy the struct with the nr_distributed_trace_destroy
@@ -408,5 +418,19 @@ bool nr_distributed_trace_accept_inbound_w3c_payload(
     const nrobj_t* trace_headers,
     const char* transport_type,
     const char** error);
+
+/*
+ * Purpose : Handle upstream w3c sampled flag according to settings
+ *
+ * Params : 1. The distributed trace object
+ *          2. W3C trace headers objet
+ *          3. Setting for if the upstream trace is sampled
+ *          4. Setting for if the upstream trace is not sampled
+ */
+void nr_distributed_trace_handle_inbound_w3c_sampled_flag(
+    nr_distributed_trace_t* dt,
+    const nrobj_t* trace_headers,
+    nr_upstream_parent_sampling_control_t remote_parent_sampled,
+    nr_upstream_parent_sampling_control_t remote_parent_not_sampled);
 
 #endif /* NR_DISTRIBUTED_TRACE_HDR */

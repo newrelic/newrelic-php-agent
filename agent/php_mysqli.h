@@ -163,4 +163,10 @@ extern nr_datastore_instance_t* nr_php_mysqli_retrieve_datastore_instance(
 extern void nr_php_mysqli_remove_datastore_instance(
     const zval* mysqli_obj TSRMLS_DC);
 
+/*
+ * Purpose : Frees reference incremented, transaction global zvals
+ *           that must be cleaned up prior to postdeactivate
+ */
+extern void nr_php_mysqli_rshutdown();
+
 #endif /* PHP_MYSQLI_HDR */

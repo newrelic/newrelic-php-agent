@@ -1970,6 +1970,55 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   return SUCCESS;
 }
 
+static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
+  nrinistr_t* p;
+
+  char* base = (char*)mh_arg2;
+  p = (nrinistr_t*)(base + (size_t)mh_arg1);
+  bool parent_sampled = false;
+
+  (void)mh_arg3;
+  NR_UNUSED_TSRMLS;
+
+  p->where = 0;
+
+  if (0 == nr_strcmp(ZEND_STRING_VALUE(entry->name),
+                     "newrelic.distributed_tracing.sampler.remote_parent_sampled")) {
+    parent_sampled = true;
+  }
+
+  if (0 == nr_strcmp(NEW_VALUE, "default")) {
+    if (parent_sampled) {
+      NRPRG(dt_sampler_parent_sampled) = DEFAULT;
+    } else {
+      NRPRG(dt_sampler_parent_not_sampled) = DEFAULT;
+    }
+  } else if (0 == nr_strcmp(NEW_VALUE, "always_on")) {
+    if (parent_sampled) {
+      NRPRG(dt_sampler_parent_sampled) = ALWAYS_KEEP;
+    } else {
+      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
+    }
+  } else if (0 == nr_strcmp(NEW_VALUE, "always_off")) {
+    if (parent_sampled) {
+      NRPRG(dt_sampler_parent_sampled) = ALWAYS_DROP;
+    } else {
+      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
+    }
+  } else {
+    nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
+                ZEND_STRING_VALUE(entry->name), NEW_VALUE,
+                DEFAULT_WORDPRESS_HOOKS_OPTIONS);
+    /* This will cause PHP to call the handler again with default value */
+    return FAILURE;
+  }
+
+  p->where = stage;
+  p->value = NEW_VALUE;
+
+  return SUCCESS;
+}
+
 /*
  * Now for the actual INI entry table. Please note there are two types of INI
  * entry specification used.
@@ -2587,6 +2636,14 @@ STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_user_exception_handler",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_yes_no_dh)
+STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_framework_error_exception_handler",
+                     "0",
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     ignore_framework_error_exception_handler,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_yes_no_dh)
 STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_errors",
                      "",
                      NR_PHP_REQUEST,
@@ -2936,6 +2993,24 @@ STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing_exclude_newrelic_header",
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      distributed_tracing_exclude_newrelic_header,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+
+
+STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.sampler.remote_parent_sampled",
+                     "default",
+                     NR_PHP_REQUEST,
+                     nr_dt_sampler_remote_parent_mh,
+                     dt_remote_parent_sampled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     0)
+STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.sampler.remote_parent_not_sampled",
+                     "default",
+                     NR_PHP_REQUEST,
+                     nr_dt_sampler_remote_parent_mh,
+                     dt_remote_parent_not_sampled,
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)

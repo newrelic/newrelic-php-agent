@@ -219,8 +219,10 @@ void nr_yii2_enable(TSRMLS_D) {
    * allowing default PHP error handler to be intercepted by the NewRelic agent
    * implementation.
    */
-  nr_php_wrap_user_function(NR_PSTR("yii\\base\\ErrorHandler::logException"),
-                            nr_yii2_error_handler_wrapper TSRMLS_CC);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
+    nr_php_wrap_user_function(NR_PSTR("yii\\base\\ErrorHandler::logException"),
+                              nr_yii2_error_handler_wrapper TSRMLS_CC);
+  }
 #endif
 
   if (NRINI(vulnerability_management_package_detection_enabled)) {

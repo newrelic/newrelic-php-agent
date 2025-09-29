@@ -173,10 +173,12 @@ void nr_cakephp_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Cake\\Controller\\Controller::invokeAction"),
       nr_cakephp_name_the_wt_4);
-  nr_php_wrap_user_function(
-      NR_PSTR(
-          "Cake\\Error\\Middleware\\ErrorHandlerMiddleware::handleException"),
-      nr_cakephp_error_handler_wrapper);
+  if (!NRINI(ignore_framework_error_exception_handler)) {
+    nr_php_wrap_user_function(
+        NR_PSTR(
+            "Cake\\Error\\Middleware\\ErrorHandlerMiddleware::handleException"),
+        nr_cakephp_error_handler_wrapper);
+  }
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                PHP_PACKAGE_VERSION_UNKNOWN);
 }
