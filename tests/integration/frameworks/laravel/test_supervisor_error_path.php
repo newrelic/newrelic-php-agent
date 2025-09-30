@@ -35,6 +35,14 @@ null
 null
 */
 
+/*EXPECT_REGEX
+foobar
+Custom/foobar
+Error handle function
+
+Fatal error: Uncaught Error: Error occurred in .*mock_supervisor_error_path.php:.*
+*/
+
 require_once(__DIR__ . '/mock_supervisor_error_path.php');
 require_once(__DIR__.'/../../../include/integration.php');
 
