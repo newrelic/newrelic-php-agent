@@ -1193,6 +1193,21 @@ static nr_status_t nr_laravel_should_assign_generic_path(const nrtxn_t* txn,
   return NR_FAILURE;
 }
 
+/*
+ * Ensure that the transaction is properly stopped when Laravel Horizon is being
+ * used by wrapping the handle method of the HorizonCommand and
+ * SupervisorCommand class.
+ */
+NR_PHP_WRAPPER(nr_laravel_horizon_end_txn) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+
+  nrl_verbosedebug(NRL_TXN, "Ending Laravel Horizon Transaction");
+}
+NR_PHP_WRAPPER_END
+
 void nr_laravel_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -1231,6 +1246,19 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
       nr_laravel_console_application_dorun, NULL, NULL);
+  
+  /*
+   * The following functions have been added to ensure that the transaction
+   * is properly stopped when Laravel Horizon is being used. This is
+   * accomplished by wrapping the handle method of the HorizonCommand class and
+   * the SupervisorCommand class.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\HorizonCommand::handle"),
+      nr_laravel_horizon_end_txn, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
+      nr_laravel_horizon_end_txn, NULL, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
