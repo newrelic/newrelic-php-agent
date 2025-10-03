@@ -1204,7 +1204,7 @@ NR_PHP_WRAPPER(nr_laravel_horizon_end_txn) {
 
   nr_php_txn_end(1, 0 TSRMLS_CC);
 
-  nrl_verbosedebug(NRL_TXN, "Ending Laravel Horizon Transaction");
+  nrl_verbosedebug(NRL_FRAMEWORK, "Ending Laravel Horizon Transaction");
 }
 NR_PHP_WRAPPER_END
 
