@@ -696,17 +696,32 @@ NR_PHP_WRAPPER_END
 
 #endif
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-
-#else
-
 /*
  * Handle:
  *   This changed in Laravel 5.5+ to be:
  *   Illuminate\Queue\Console\WorkCommand::handle (): void
  *
  */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle_before) {
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\Worker::process"),
+      nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
+      nr_laravel_queue_worker_after);
+}
+NR_PHP_WRAPPER_END
+
+NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle_after) {
+  /*
+   * Stop recording the transaction and throw it away.
+   */
+  nr_php_txn_end(1, 0);
+}
+NR_PHP_WRAPPER_END
+
+#else
 NR_PHP_WRAPPER(nr_laravel_queue_workcommand_handle) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -943,9 +958,9 @@ void nr_laravel_queue_enable(TSRMLS_D) {
       nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
       nr_laravel_queue_worker_after);
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::process"),
-      nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
-      nr_laravel_queue_worker_after);
+      NR_PSTR("Illuminate\\Queue\\Console\\WorkCommand::handle"),
+      nr_laravel_queue_workcommand_handle_before, nr_laravel_queue_workcommand_handle_after,
+      nr_laravel_queue_workcommand_handle_after);
 
   /* These wrappers will handle naming the job txn*/
   nr_php_wrap_user_function_before_after_clean(
