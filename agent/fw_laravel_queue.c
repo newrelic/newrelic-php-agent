@@ -251,7 +251,7 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
  *
  * The reason these functions are used for txn naming:
  * 1. It has been a consistent API called directly before the Job across Laravel
- * going back to at leaset 6
+ * going back to at least 6
  * 2. It allows us to have a reusable function callback for both sync/async.
  * 3. Sync jobs don't use the job that is passed in, they create a brand new job
  * based off of the passed in job that then then attempt to run.
