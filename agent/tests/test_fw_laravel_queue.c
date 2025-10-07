@@ -320,7 +320,7 @@ static void test_job_txn_startstop_wrappers(TSRMLS_D) {
                   NR_OK_TO_OVERWRITE);
   tlib_pass_if_str_equal("Path should exist", "Farewell", NRTXN(path));
 
-  /* Create the mocked Worker and call process*/
+  /* Create the mocked Worker and call trycatchExecuteJob, which calls executeJob*/
   obj = tlib_php_request_eval_expr("new Illuminate\\Queue\\SyncQueue");
   tlib_pass_if_not_null("object shouldn't be NULL", obj);
   /* We're doing the trycatch because otherwise our fragile testing system can't
