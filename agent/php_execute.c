@@ -1936,11 +1936,20 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
   if (nrunlikely(NRPRG(txn)->segment_root == segment)) {
-    /*
+/*
      * There should be no fcall_end associated with the segment root, If we are
-     * here, it is most likely due to an API call to newrelic_end_transaction
+     * here, it is most likely due to an API call to newrelic_end_transaction.
+     * However, there's a special case here, if we call nr_php_txn_end
+     * and then call nr_php_txn_start from within a wrapped call inside the agent,
+     * then there will be an fcall associated with the segment root.
+     * We may or may not need to do anything with this so we check if a wraprec exists.
+     * If a wraprec exists, we proceed so we can use the _after and _clean callbacks
+     * if they exist. If it doesn't exist, we exit as nothing needs to be done.
      */
-    return;
+
+    if (NULL == segment->wraprec) {
+      return;
+    }
   }
 
   wraprec = segment->wraprec;
