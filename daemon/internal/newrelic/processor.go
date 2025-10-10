@@ -930,7 +930,9 @@ func (p *Processor) Run() error {
 	utilChan := make(chan *utilization.Data, 1)
 
 	go func() {
+		log.Debugf("gathering utilization data")
 		utilChan <- utilization.Gather(p.cfg.UtilConfig)
+		log.Debugf("finished gathering utilization data")
 	}()
 
 	for {
