@@ -291,10 +291,12 @@ func (p *Processor) shutdownAppHarvest(id AgentRunID) {
 
 func (p *Processor) shouldConnect(app *App, now time.Time) bool {
 	if p.util == nil {
+		log.Debugf("shouldConnect: util is nil")
 		return false
 	}
 
 	if !app.NeedsConnectAttempt(now, p.appConnectBackoff) {
+		log.Debugf("shouldConnect: app %s does not need connect attempt", app.Key())
 		return false
 	}
 	return true
@@ -352,7 +354,7 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 		// Send the response back before attempting to connect the application
 		m.ResultChan <- r
 		if nil != app {
-			log.Debugf("defer func app is nill so considering connect")
+			log.Debugf("defer func app is not nil so considering connect")
 			p.considerConnect(app)
 		}
 	}()

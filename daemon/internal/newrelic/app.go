@@ -297,9 +297,11 @@ func (info *AppInfo) initSettings(data []byte) {
 
 func (app *App) NeedsConnectAttempt(now time.Time, backoff time.Duration) bool {
 	if app.state != AppStateUnknown {
+		log.Debugf("NeedsConnectAttempt:app %s is not unknown state", app.Key())
 		return false
 	}
 	if now.Sub(app.lastConnectAttempt) >= backoff {
+		log.Debugf("NeedsConnectAttempt: time not long enough since last attempt")
 		return true
 	}
 	return false
