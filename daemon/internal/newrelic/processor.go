@@ -333,7 +333,10 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	var app *App
 	r := AppInfoReply{State: AppStateUnknown}
 
+	log.Debugf("processing app info %+v", m.Info)
+
 	defer func() {
+		log.Debugf("defer func for app %+v", app)
 		if nil != app {
 			r.State = app.state
 			if AppStateConnected == app.state {
@@ -359,6 +362,8 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 		// This agent run id must be out of date, fall through:
 	}
 
+	log.Debugf("processing app key %+v", m.Info.Key())
+
 	key := m.Info.Key()
 	app = p.apps[key]
 	if nil != app {
@@ -368,12 +373,16 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 		return
 	}
 
+	log.Debugf("processing num apps initially is %d", len(p.apps))
+
 	numapps := len(p.apps)
 	if numapps >= limits.AppLimit {
 		log.Errorf("unable to add app '%s', limit of %d applications reached",
 			m.Info, limits.AppLimit)
 		return
 	}
+
+	log.Debugf("creating app %+v", m.Info)
 
 	app = NewApp(m.Info)
 	p.apps[key] = app
@@ -385,6 +394,7 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 			limits.AppLimit, limits.AppLimitNotifyHigh)
 	}
 
+	log.Debugf("finished appinfo processing and created app %+v", app)
 }
 
 func processConnectMessages(reply collector.RPMResponse) {
