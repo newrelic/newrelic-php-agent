@@ -338,6 +338,7 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 	defer func() {
 		log.Debugf("defer func for app %+v", app)
 		if nil != app {
+			log.Debugf("defer func app state is %s", app.state)
 			r.State = app.state
 			if AppStateConnected == app.state {
 				r.ConnectReply = app.RawConnectReply
@@ -347,9 +348,11 @@ func (p *Processor) processAppInfo(m AppInfoMessage) {
 				r.SamplingTarget = uint16(app.samplingTarget)
 			}
 		}
+		log.Debugf("defer func r is %+v", r)
 		// Send the response back before attempting to connect the application
 		m.ResultChan <- r
 		if nil != app {
+			log.Debugf("defer func app is nill so considering connect")
 			p.considerConnect(app)
 		}
 	}()
