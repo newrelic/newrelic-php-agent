@@ -922,6 +922,7 @@ func (p *Processor) Run() error {
 		// Nested select to give priority to appInfoChannel.
 		select {
 		case d := <-p.appInfoChannel:
+			log.Infof("Processing app info %+v", d)
 			p.processAppInfo(d)
 		case <-p.quitChan:
 			return nil
