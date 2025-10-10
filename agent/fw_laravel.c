@@ -1208,6 +1208,15 @@ NR_PHP_WRAPPER(nr_laravel_horizon_end_txn) {
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(nr_laravel_end_txn) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+  nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+}
+NR_PHP_WRAPPER_END
+
 void nr_laravel_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -1262,7 +1271,7 @@ void nr_laravel_enable(TSRMLS_D) {
 
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
-      nr_laravel_horizon_end_txn, NULL, NULL);
+      nr_laravel_end_txn, NULL, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
