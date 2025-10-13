@@ -1208,6 +1208,10 @@ NR_PHP_WRAPPER(nr_laravel_horizon_end_txn) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * End transaction for idle laravel queue workers and then start
+ * a new transaction.
+ */
 NR_PHP_WRAPPER(nr_laravel_end_txn) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
@@ -1269,6 +1273,11 @@ void nr_laravel_enable(TSRMLS_D) {
       NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
       nr_laravel_horizon_end_txn, NULL, NULL);
 
+  /*
+   * The following function has been added to ensure idle laravel queue workers
+   * are properly handled by ending the current transaction and starting a new
+   * one.
+   */
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
       nr_laravel_end_txn, NULL, NULL);
