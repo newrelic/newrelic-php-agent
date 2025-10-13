@@ -1212,8 +1212,10 @@ NR_PHP_WRAPPER(nr_laravel_end_txn) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
+  nrl_verbosedebug(NRL_FRAMEWORK, "Laravel Queue Transaction");
   nr_php_txn_end(1, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+  nrl_verbosedebug(NRL_FRAMEWORK, "Laravel Queue Transaction after");
 }
 NR_PHP_WRAPPER_END
 
