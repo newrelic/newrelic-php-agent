@@ -1271,9 +1271,11 @@ void nr_laravel_enable(TSRMLS_D) {
       NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
       nr_laravel_horizon_end_txn, NULL, NULL);
 
+  nrl_verbosedebug(NRL_FRAMEWORK, "Laravel Queue Enable");
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
       nr_laravel_end_txn, NULL, NULL);
+  nrl_verbosedebug(NRL_FRAMEWORK, "Laravel Queue Enable after");
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
