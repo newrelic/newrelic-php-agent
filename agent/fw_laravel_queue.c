@@ -303,8 +303,6 @@ NR_PHP_WRAPPER_END
 /*
  * Handles:
  *   Illuminate\\Queue\\Worker::process
- *   Illuminate\\Queue\\SyncQueue::executeJob (laravel 11+)
- *   Illuminate\\Queue\\SyncQueue::push (before laravel 11)
  *
  * Ends/discards the unneeded worker txn
  * Starts the job txn
@@ -340,8 +338,6 @@ NR_PHP_WRAPPER_END
 /*
  * Handles:
  *   Illuminate\\Queue\\Worker::process
- *   Illuminate\\Queue\\SyncQueue::executeJob (laravel 11+)
- *   Illuminate\\Queue\\SyncQueue::push (before laravel 11)
  *
  * Closes the job txn
  * Records any exceptions as needed
@@ -894,7 +890,6 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * So instead, what we'll do is to keep recording, but ensure that we ignore
    * the transaction before and after
    *   Illuminate\\Queue\\Worker::process
-   *   Illuminate\\Queue\\SyncQueue::executeJob/push
    * and we'll use raiseBeforeJobEvent to ensure we have the most up to date Job
    * info. This ensures that we instrument the entirety of the job (including
    * any handle/failed functions and also exceptions).
@@ -915,8 +910,6 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * you'd have to modify one of the checks in end_func to account for the fact
    * that a root segment is okay to encounter if it has a wraprec.
    *
-   * 2. Sync doesn't have all the resolved queue info at the beginning (or end)
-   * or executeJob/push.  It creates a temporary job that it uses internally.
    *
    * Why not just use the raiseAfterEventJob listener to end the txn?
    * It's not called all the time.  For instance, it is not called in the case
@@ -933,15 +926,6 @@ void nr_laravel_queue_enable(TSRMLS_D) {
    * 3) restarting the txn instrumentation going
    */
   /*Laravel 11+*/
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::executeJob"),
-      nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
-      nr_laravel_queue_worker_after);
-  /* Laravel below 11*/
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::push"),
-      nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
-      nr_laravel_queue_worker_after);
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::process"),
       nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
