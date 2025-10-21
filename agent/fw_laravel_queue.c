@@ -935,9 +935,6 @@ void nr_laravel_queue_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"),
       nr_laravel_queue_worker_raiseBeforeJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
-      nr_laravel_queue_worker_raiseBeforeJobEvent_before, NULL, NULL);
 
 #else
 
