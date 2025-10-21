@@ -295,6 +295,7 @@ static void test_job_txn_startstop_wrappers(TSRMLS_D) {
   tlib_pass_if_null("Txn name should be NULL", NRTXN(path));
   nr_php_zval_free(&expr);
   nr_php_zval_free(&obj);
+  nr_php_zval_free(&arg);
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
