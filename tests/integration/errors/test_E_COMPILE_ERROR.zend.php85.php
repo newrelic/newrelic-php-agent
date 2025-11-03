@@ -11,8 +11,8 @@ The agent should capture and report compile errors.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
-  die("skip: PHP >= 8.5 fatal error output behavior changed\n");
+if (version_compare(PHP_VERSION, "8.5", "<")) {
+  die("skip: PHP < 8.5 stack trace not reported\n");
 }
 */
 
@@ -22,7 +22,9 @@ log_errors=0
 */
 
 /*EXPECT_REGEX
-^\s*(PHP )?Fatal error:\s*Cannot re-assign \$this in .*? on line [0-9]+\s*$
+Fatal error:\s*Cannot re-assign \$this in .*? on line [0-9]+\s*
+Stack trace:
+#[0-9] {main}
 */
 
 /*EXPECT_TRACED_ERRORS
