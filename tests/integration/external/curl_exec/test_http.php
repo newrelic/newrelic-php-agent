@@ -11,6 +11,9 @@ is used.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -56,35 +59,35 @@ ok - strip credentials
 
 
 
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/tap.php');
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/config.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 
 function test_curl()
 {
-    global $EXTERNAL_HOST;
+  global $EXTERNAL_HOST;
 
-    $ch = curl_init();
+  $ch = curl_init();
 
-    curl_setopt($ch, CURLOPT_NOBODY, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_NOBODY, true);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '');
-    tap_not_equal(false, curl_exec($ch), 'simple hostname');
+  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '');
+  tap_not_equal(false, curl_exec($ch), 'simple hostname');
 
-    /* Query string should be stripped. */
-    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '?a=1&b=2');
-    tap_not_equal(false, curl_exec($ch), 'strip query string');
+  /* Query string should be stripped. */
+  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '?a=1&b=2');
+  tap_not_equal(false, curl_exec($ch), 'strip query string');
 
-    /* Fragment should be stripped. */
-    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '/#fragment');
-    tap_not_equal(false, curl_exec($ch), 'strip fragment');
+  /* Fragment should be stripped. */
+  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '/#fragment');
+  tap_not_equal(false, curl_exec($ch), 'strip fragment');
 
-    /* Auth credentials should be stripped. */
-    curl_setopt($ch, CURLOPT_URL, 'http://user:pass@' . $EXTERNAL_HOST . '');
-    tap_not_equal(false, curl_exec($ch), 'strip credentials');
+  /* Auth credentials should be stripped. */
+  curl_setopt($ch, CURLOPT_URL, 'http://user:pass@' . $EXTERNAL_HOST . '');
+  tap_not_equal(false, curl_exec($ch), 'strip credentials');
 
-    curl_close($ch);
+  curl_close($ch);
 }
 
 test_curl();

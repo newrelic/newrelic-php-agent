@@ -11,7 +11,7 @@ doesn't crash the daemon.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -55,8 +55,6 @@ function test_stop_txn()
     curl_multi_exec($mh, $active);
   } while ($active > 0);
 
-  curl_close($ch1);
-  curl_close($ch2);
   curl_multi_close($mh);
 
   tap_ok("end of function reached without crash", true);

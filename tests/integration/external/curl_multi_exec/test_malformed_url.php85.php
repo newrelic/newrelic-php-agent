@@ -14,7 +14,7 @@ newrelic.distributed_tracing_enabled=0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -91,9 +91,6 @@ function test_curl()
 
   curl_multi_remove_handle($cm, $ch);
   curl_multi_remove_handle($cm, $ch2);
-
-  curl_close($ch);
-  curl_close($ch2);
 }
 
 test_curl();

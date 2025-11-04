@@ -17,7 +17,7 @@ newrelic.transaction_tracer.threshold = 0
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -159,4 +159,3 @@ curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 curl_exec($ch);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
 curl_exec($ch);
-curl_close($ch);

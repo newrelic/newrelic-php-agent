@@ -5,19 +5,18 @@
  */
 
 /*DESCRIPTION
-Generate a DT request and ensure that the agent does NOT add: 
-    - X-NewRelic-ID and X-NewRelic-Transaction headers
-to external calls when cross application tracing is enabled in the INI
- */
+Test that DT works with curl_exec when curl_setopt+CURLOPT_HTTPHEADER is called
+with an empty array.
+*/
 
 /*INI
 newrelic.distributed_tracing_enabled = true
-newrelic.cross_application_tracer.enabled = true
+newrelic.cross_application_tracer.enabled = false
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -27,7 +26,7 @@ if (!extension_loaded("curl")) {
 
 /*EXPECT
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-ok - DT only request
+ok - tracing successful
 */
 
 /*EXPECT_RESPONSE_HEADERS
@@ -65,10 +64,12 @@ null
 */
 
 
+
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
-tap_not_equal(false, curl_exec($ch), "DT only request");
-curl_close($ch);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array());
+tap_not_equal(false, curl_exec($ch), "tracing successful");
