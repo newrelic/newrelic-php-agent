@@ -10,7 +10,7 @@
 ARG PHP_VER
 
 # FROM php:${PHP_VER:-8.4}-bookworm
-FROM php:8.5-rc-bookworm
+FROM php:${PHP_VER:-8.5-rc}-bookworm
 
 RUN docker-php-source extract
 
