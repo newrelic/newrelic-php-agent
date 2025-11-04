@@ -164,7 +164,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         include:
           - codecov: 0
           - platform: gnu
@@ -254,7 +254,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         include:
           - codecov: 0
     steps:
@@ -322,7 +322,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         include:
           - codecov: 0
           - platform: gnu
@@ -439,7 +439,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v4
