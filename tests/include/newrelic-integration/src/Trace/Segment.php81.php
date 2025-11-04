@@ -127,6 +127,6 @@ class Segment extends ArrayIterator implements RecursiveIterator
      */
     public function hasChildren(): bool
     {
-        return (boolean) $this->current()->count();
+        return (bool) $this->current()->count();
     }
 }
