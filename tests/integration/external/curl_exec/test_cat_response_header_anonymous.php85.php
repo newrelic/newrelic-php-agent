@@ -11,7 +11,7 @@ curl_exec when the the response headers are being sent to an anonymous function.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -73,4 +73,3 @@ curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl_resource, $header_data)
   return strlen($header_data);
 });
 tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);
