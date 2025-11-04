@@ -10,7 +10,7 @@ Test adding curl handle while curl multi exec is in flight.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -170,9 +170,6 @@ function test_curl_multi_exec_add_handles()
     curl_multi_exec($mh, $active);
   } while ($active > 0);
 
-  curl_close($ch1);
-  curl_close($ch2);
-  curl_close($ch3);
   curl_multi_close($mh);
 }
 

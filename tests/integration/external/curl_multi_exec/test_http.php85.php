@@ -11,7 +11,7 @@ protocol is used.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -83,8 +83,6 @@ function test_multi_url($url, $msg)
   tap_ok($msg, $info["result"] == 0);
 
   curl_multi_close($cm);
-
-  curl_close($ch);
 }
 
 

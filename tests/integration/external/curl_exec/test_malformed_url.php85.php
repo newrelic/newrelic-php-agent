@@ -10,7 +10,7 @@ Test the agent's handling of malformed urls passed to curl_exec().
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -70,8 +70,6 @@ function test_curl()
 
   curl_setopt($ch, CURLOPT_URL, false);
   tap_refute(curl_exec($ch), 'type mismatch (boolean)');
-
-  curl_close($ch);
 }
 
 test_curl();

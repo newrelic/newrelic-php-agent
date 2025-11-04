@@ -19,6 +19,9 @@ newrelic.application_logging.metrics.enabled = false
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }

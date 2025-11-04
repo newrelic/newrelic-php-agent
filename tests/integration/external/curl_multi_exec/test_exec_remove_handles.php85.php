@@ -5,12 +5,12 @@
  */
 
 /*DESCRIPTION
-Test adding curl handle while curl multi exec is in flight.
+Test removing a curl handle while curl multi exec is in flight.
  */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -39,48 +39,47 @@ newrelic.cross_application_tracer.enabled = false
           0, {}, {}, [
             "?? start time", "?? end time", "ROOT", "?? root attributes", [
               [
-                "?? start time", "?? end time", "`0", "?? node attributes", [
+              "?? start time", "?? end time", "`0", "?? node attributes", [
+                [
+                "?? start time", "?? end time", "`1", {"async_context": "`2"}, [
                   [
-                    "?? start time", "?? end time", "`1", {"async_context": "`2"}, [
-                      [
-                        "?? start time", "?? end time", "`3",
-                        {
-                          "uri": "??",
-                          "library": "curl",
-                          "procedure": "GET",
-                          "status": "??",
-                          "async_context": "`2"
-                        },
-                        []
-                      ],
-                      [
-                        "?? start time", "?? end time", "`3",
-                        {
-                          "uri": "??",
-                          "library": "curl",
-                          "procedure": "GET",
-                          "status": "??",
-                          "async_context": "`2"
-                        },
-                        []
-                      ],
-                      [
-                        "?? start time", "?? end time", "`3",
-                        {
-                          "uri": "??",
-                          "library": "curl",
-                          "procedure": "GET",
-                          "status": "??",
-                          "async_context": "`2"
-                        },
-                        []
-                      ]
-                    ]
+                    "?? start time", "?? end time", "`3",
+                    {
+                      "uri": "??",
+                      "library": "curl",
+                      "procedure": "GET",
+                      "status": "??",
+                      "async_context": "`2"
+                    },
+                    []
+                  ],
+                  [
+                    "?? start time", "?? end time", "`3",
+                    {
+                      "uri": "??",
+                      "library": "curl",
+                      "procedure": "GET",
+                      "status": "??",
+                      "async_context": "`2"
+                    },
+                    []
                   ]
                 ]
+              ],
+              [
+                "?? start time", "?? end time", "`3",
+                  {
+                    "uri": "??",
+                    "library": "curl",
+                    "procedure": "GET",
+                    "status": "??"
+                  },
+                []
               ]
             ]
-          ],
+          ]
+        ]
+        ],
           {
             "intrinsics": {
               "totalTime": "??",
@@ -134,8 +133,8 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},         [3, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Create/Success"},         [6, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [6, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
@@ -150,30 +149,35 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_curl_multi_exec_add_handles()
+function test_curl_multi_exec_remove_handles()
 {
   $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
   $ch1 = curl_init($url);
   $ch2 = curl_init($url);
   $ch3 = curl_init($url);
+  $ch4 = curl_init($url);
   $mh = curl_multi_init();
 
   curl_multi_add_handle($mh, $ch1);
   curl_multi_add_handle($mh, $ch2);
+  curl_multi_add_handle($mh, $ch3);
+  curl_multi_add_handle($mh, $ch4);
 
   $active = 0;
   curl_multi_exec($mh, $active);
-  curl_multi_add_handle($mh, $ch3);
+  curl_multi_remove_handle($mh, $ch2);
+  curl_multi_remove_handle($mh, $ch3);
+  curl_multi_remove_handle($mh, $ch4);
+  curl_multi_add_handle($mh, $ch4);
+
+  curl_exec($ch3);
 
   do {
     curl_multi_exec($mh, $active);
   } while ($active > 0);
 
-  curl_close($ch1);
-  curl_close($ch2);
-  curl_close($ch3);
   curl_multi_close($mh);
 }
 
-test_curl_multi_exec_add_handles();
+test_curl_multi_exec_remove_handles();

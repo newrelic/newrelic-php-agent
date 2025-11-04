@@ -5,19 +5,17 @@
  */
 
 /*DESCRIPTION
-Generate a DT request and ensure that the agent does NOT add: 
-    - X-NewRelic-ID and X-NewRelic-Transaction headers
-to external calls when cross application tracing is enabled in the INI
+Two simple DT requests in one curl_multi handle.
  */
 
 /*INI
 newrelic.distributed_tracing_enabled = true
-newrelic.cross_application_tracer.enabled = true
+newrelic.cross_application_tracer.enabled = false
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -27,7 +25,9 @@ if (!extension_loaded("curl")) {
 
 /*EXPECT
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-ok - DT only request
+traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+ok - dt request 1
+ok - dt request 2
 */
 
 /*EXPECT_RESPONSE_HEADERS
@@ -43,19 +43,19 @@ null
   "?? start time",
   "?? stop time",
   [
-    [{"name":"External/all"},                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                             [1, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                                       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                                  [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                             [2, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all",
-      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Create/Success"},         [2, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [2, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
@@ -65,10 +65,31 @@ null
 */
 
 
+
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
-$ch = curl_init($url);
-tap_not_equal(false, curl_exec($ch), "DT only request");
-curl_close($ch);
+
+
+$ch1 = curl_init($url);
+$ch2 = curl_init($url);
+
+$cm = curl_multi_init();
+curl_multi_add_handle($cm, $ch1);
+curl_multi_add_handle($cm, $ch2);
+
+$active = 0;
+
+do {
+  curl_multi_exec($cm, $active);
+} while ($active > 0);
+
+/* No errors */
+$info = curl_multi_info_read($cm);
+tap_ok('dt request 1', $info["result"] == 0);
+$info = curl_multi_info_read($cm);
+tap_ok('dt request 2', $info["result"] == 0);
+
+curl_multi_close($cm);

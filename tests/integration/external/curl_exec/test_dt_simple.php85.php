@@ -5,19 +5,17 @@
  */
 
 /*DESCRIPTION
-Generate a DT request and ensure that the agent does NOT add: 
-    - X-NewRelic-ID and X-NewRelic-Transaction headers
-to external calls when cross application tracing is enabled in the INI
+A simple DT request.
  */
 
 /*INI
 newrelic.distributed_tracing_enabled = true
-newrelic.cross_application_tracer.enabled = true
+newrelic.cross_application_tracer.enabled = false
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -27,10 +25,40 @@ if (!extension_loaded("curl")) {
 
 /*EXPECT
 traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-ok - DT only request
+ok - simple dt request
 */
 
 /*EXPECT_RESPONSE_HEADERS
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": false
+      },
+      {},
+      {}
+    ]
+  ]
+]
 */
 
 /*EXPECT_TRACED_ERRORS
@@ -65,10 +93,11 @@ null
 */
 
 
+
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
-tap_not_equal(false, curl_exec($ch), "DT only request");
-curl_close($ch);
+tap_not_equal(false, curl_exec($ch), "simple dt request");

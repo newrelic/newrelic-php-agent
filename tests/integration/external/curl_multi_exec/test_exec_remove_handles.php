@@ -10,6 +10,9 @@ Test removing a curl handle while curl multi exec is in flight.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -146,7 +149,8 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_curl_multi_exec_remove_handles() {
+function test_curl_multi_exec_remove_handles()
+{
   $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
   $ch1 = curl_init($url);

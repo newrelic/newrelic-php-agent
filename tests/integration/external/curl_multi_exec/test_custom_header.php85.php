@@ -5,19 +5,18 @@
  */
 
 /*DESCRIPTION
-Generate a DT request and ensure that the agent does NOT add: 
-    - X-NewRelic-ID and X-NewRelic-Transaction headers
-to external calls when cross application tracing is enabled in the INI
+Test that custom request headers added via curl_setopt+CURLOPT_HTTPHEADER are
+present when both DT and CAT are disabled.
  */
 
 /*INI
-newrelic.distributed_tracing_enabled = true
-newrelic.cross_application_tracer.enabled = true
+newrelic.distributed_tracing_enabled = false
+newrelic.cross_application_tracer.enabled = false
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -26,15 +25,8 @@ if (!extension_loaded("curl")) {
 */
 
 /*EXPECT
-traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-ok - DT only request
-*/
-
-/*EXPECT_RESPONSE_HEADERS
-*/
-
-/*EXPECT_TRACED_ERRORS
-null
+X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
+ok - tracing successful
 */
 
 /*EXPECT_METRICS
@@ -52,10 +44,6 @@ null
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},         [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},      [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"},[1, "??", "??", "??", "??", "??"]],
@@ -65,10 +53,27 @@ null
 */
 
 
+
+
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
+
 $ch = curl_init($url);
-tap_not_equal(false, curl_exec($ch), "DT only request");
-curl_close($ch);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(CUSTOMER_HEADER . ': foo'));
+
+$cm = curl_multi_init();
+curl_multi_add_handle($cm, $ch);
+
+$active = 0;
+
+do {
+  curl_multi_exec($cm, $active);
+} while ($active > 0);
+
+/* No errors */
+$info = curl_multi_info_read($cm);
+tap_ok('tracing successful', $info["result"] == 0);
+
+curl_multi_close($cm);

@@ -17,7 +17,7 @@ newrelic.cross_application_tracer.enabled = true
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -71,4 +71,3 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
 tap_not_equal(false, curl_exec($ch), "DT only request");
-curl_close($ch);
