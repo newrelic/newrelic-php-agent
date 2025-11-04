@@ -10,7 +10,7 @@ Test return value of curl_multi_add_handle and curl_multi_remove_handle.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 if (!extension_loaded("curl")) {
@@ -81,8 +81,6 @@ function test_curl_multi_add_remove_handles()
     tap_not_ok("execute request", 0, $result);
   }
 
-  curl_close($ch1);
-  curl_close($ch2);
   curl_multi_close($mh);
 }
 
