@@ -1212,7 +1212,7 @@ NR_PHP_WRAPPER_END
  * End transaction for idle laravel queue workers and then start
  * a new transaction.
  */
-NR_PHP_WRAPPER(nr_laravel_end_txn) {
+NR_PHP_WRAPPER(nr_laravel_queue_restart_transaction) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
@@ -1280,7 +1280,7 @@ void nr_laravel_enable(TSRMLS_D) {
    */
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
-      nr_laravel_end_txn, NULL, NULL);
+      nr_laravel_queue_restart_transaction, NULL, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
