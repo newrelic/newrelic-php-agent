@@ -67,11 +67,11 @@ newrelic_add_custom_tracer('computation');
 function computation(float $a): int
 {
 
-    $b = intval($a) % (2 ** 32);
-    return $b;
+  $b = intval($a) % (2 ** 32);
+  return $b;
 }
 
 for ($i = 0; $i < 500; ++$i) {
-    computation(2**64);
+  computation(2 ** 42);
 }
 echo 'Hello';
