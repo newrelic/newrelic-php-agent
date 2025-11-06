@@ -36,12 +36,17 @@ static void setup_classes() {
     const char* queue_classes =
       "namespace Illuminate\\Queue;"
       "class SyncQueue{"
-      "function trycatchExecuteJob() { try { $this->executeJob(); } catch (\\Exception $e) { } }"
-      "function executeJob() { throw new \\Exception('oops'); }"
       "function raiseBeforeJobEvent($job) { return; }"
       "}"
       "class Worker{"
-      "function process() { return; }"
+      "function executeJob() { throw new \\Exception('oops'); }"
+      "function process($flag = false) {"
+        "if ($flag) {"
+          " try { $this->executeJob(); } catch (\\Exception $e) { } "
+        "} else {"
+          "return;"
+        "}"
+      "}"
       "function raiseBeforeJobEvent(string $connectionName, $job) { return; }"
       "}";
   // clang-format on
@@ -51,10 +56,9 @@ static void setup_classes() {
 
 static void test_job_txn_naming_wrappers(TSRMLS_D) {
   /*
-   * Test the wrappers that name the job txn:
+   * Test the wrapper that names the job txn:
    * Illuminate\Queue\Worker::raiseBeforeJobEvent(connectionName, job)
-   * Illuminate\Queue\SyncQueue::raiseBeforeJobEvent(job)
-   * These wrappers should correctly name the transaction with the format:
+   * This wrapper should correctly name the transaction with the format:
    * "<job_name> (<connection_name>:<queue_name>)"
    */
 
@@ -185,55 +189,6 @@ static void test_job_txn_naming_wrappers(TSRMLS_D) {
                          "JobName (ConnectionName:QueueName)", NRTXN(path));
   nr_php_zval_free(&expr);
   nr_php_zval_free(&job_obj);
-
-  /*
-   * Create the mocked Illuminate\Queue\SyncQueue queue worker obj to trigger
-   * the wrappers that we tested with Worker::raiseBeforeJobEvent, we only to do
-   * basic tests of all null, all emptystring, and all properly set.
-   */
-  nr_php_zval_free(&worker_obj);
-  worker_obj = tlib_php_request_eval_expr("new Illuminate\\Queue\\SyncQueue");
-  tlib_pass_if_not_null("Mocked worker object shouldn't be NULL", worker_obj);
-
-  /* Get class with all values set to NULL.*/
-  job_obj = tlib_php_request_eval_expr("new my_job");
-  tlib_pass_if_not_null("Mocked job object shouldn't be NULL", job_obj);
-  /* trigger raiseBeforeJobEvent to name the txn*/
-  expr = nr_php_call(worker_obj, "raiseBeforeJobEvent", job_obj);
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  tlib_pass_if_not_null("Txn name should not be null", NRTXN(path));
-  tlib_pass_if_str_equal("Txn name should be changed",
-                         "unknown (unknown:default)", NRTXN(path));
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&job_obj);
-
-  /* Get class with all set to empty string. */
-  job_obj = tlib_php_request_eval_expr(
-      "new my_job(job_name:'', connection_name:'', queue_name:'')");
-  tlib_pass_if_not_null("Mocked job object shouldn't be NULL", job_obj);
-  /* trigger raiseBeforeJobEvent to name the txn*/
-  expr = nr_php_call(worker_obj, "raiseBeforeJobEvent", job_obj);
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  tlib_pass_if_not_null("Txn name should not be null", NRTXN(path));
-  tlib_pass_if_str_equal("Txn name should be changed",
-                         "unknown (unknown:default)", NRTXN(path));
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&job_obj);
-
-  /* Get class all set.*/
-  job_obj = tlib_php_request_eval_expr(
-      "new my_job(job_name:'JobName', connection_name:'ConnectionName', "
-      "queue_name:'QueueName')");
-  tlib_pass_if_not_null("Mocked job object shouldn't be NULL", job_obj);
-  /* trigger raiseBeforeJobEvent to name the txn*/
-  expr = nr_php_call(worker_obj, "raiseBeforeJobEvent", job_obj);
-  tlib_pass_if_not_null("Expression should evaluate.", expr);
-  tlib_pass_if_not_null("Txn name should not be null", NRTXN(path));
-  tlib_pass_if_str_equal("Txn name should be changed",
-                         "JobName (ConnectionName:QueueName)", NRTXN(path));
-  nr_php_zval_free(&expr);
-  nr_php_zval_free(&job_obj);
-
   nr_php_zval_free(&worker_obj);
   nr_php_zval_free(&arg_unused);
   tlib_php_request_end();
@@ -241,15 +196,15 @@ static void test_job_txn_naming_wrappers(TSRMLS_D) {
 
 static void test_job_txn_startstop_wrappers(TSRMLS_D) {
   /*
-   * Test the wrappers that start and end the job txn:
+   * Test the wrapper that starts and ends the job txn:
    * Illuminate\Queue\Worker::process
-   * Illuminate\Queue\SyncQueue::executeJob
-   * These wrappers should correctly end the current txn and start a new one
+   * This wrapper should correctly end the current txn and start a new one
    * in the before wrapper and end/start again in the after/clean
    */
 
   zval* expr = NULL;
   zval* obj = NULL;
+  zval* arg = NULL;
   nrtime_t txn_time = 0;
   nrtime_t new_txn_time = 0;
   tlib_php_engine_create("");
@@ -266,9 +221,7 @@ static void test_job_txn_startstop_wrappers(TSRMLS_D) {
    * segment in func_begin. Since nr_laravel_queue_worker_before is destroying
    * the old txn and discarding all segments, ensure the wraprec is preserved on
    * a segment for "after" wrappers that could be called in func_end.
-   * Illuminate\\Queue\\SyncQueue::executeJob and
-   * Illuminate\\Queue\\Worker::process both resolve to the same wrapper
-   * callback.  We'll use the mocked process to show the happy path, and we'll
+   * We'll use the mocked process to show the happy path, and we'll
    * use execute job to show the exception path.
    */
 
@@ -320,12 +273,13 @@ static void test_job_txn_startstop_wrappers(TSRMLS_D) {
                   NR_OK_TO_OVERWRITE);
   tlib_pass_if_str_equal("Path should exist", "Farewell", NRTXN(path));
 
-  /* Create the mocked Worker and call trycatchExecuteJob, which calls executeJob*/
-  obj = tlib_php_request_eval_expr("new Illuminate\\Queue\\SyncQueue");
+  /* Create the mocked Worker and call process, which calls executeJob*/
+  obj = tlib_php_request_eval_expr("new Illuminate\\Queue\\Worker");
   tlib_pass_if_not_null("object shouldn't be NULL", obj);
   /* We're doing the trycatch because otherwise our fragile testing system can't
    * handle an uncaught exception.*/
-  expr = nr_php_call(obj, "trycatchExecuteJob");
+  arg = tlib_php_request_eval_expr("true");
+  expr = nr_php_call(obj, "process", arg);
   tlib_pass_if_not_null("Expression should evaluate.", expr);
   new_txn_time = nr_txn_start_time(NRPRG(txn));
   tlib_pass_if_not_null(
@@ -341,6 +295,7 @@ static void test_job_txn_startstop_wrappers(TSRMLS_D) {
   tlib_pass_if_null("Txn name should be NULL", NRTXN(path));
   nr_php_zval_free(&expr);
   nr_php_zval_free(&obj);
+  nr_php_zval_free(&arg);
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
