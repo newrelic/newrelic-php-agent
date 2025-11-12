@@ -6,6 +6,7 @@
 #include "php_api_distributed_trace.h"
 #include "php_call.h"
 #include "php_error.h"
+#include "php_globals.h"
 #include "php_hash.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
