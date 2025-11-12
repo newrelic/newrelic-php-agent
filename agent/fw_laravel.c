@@ -1221,6 +1221,17 @@ NR_PHP_WRAPPER(nr_laravel_queue_restart_transaction) {
 }
 NR_PHP_WRAPPER_END
 
+/*
+ * Set global flag that checks if Laravel Horizon is being used to true.
+ */
+NR_PHP_WRAPPER(nr_laravel_horizon_is_used) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_PROCESS_GLOBALS(is_horizon_used) = true;
+}
+NR_PHP_WRAPPER_END
+
 void nr_laravel_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -1272,7 +1283,12 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
       nr_laravel_horizon_end_txn, NULL, NULL);
-
+  /*
+   * Check if Laravel Horizon is being used.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\WorkCommand::handle"),
+      nr_laravel_horizon_is_used, NULL, NULL);
   /*
    * The following function has been added to ensure idle laravel queue workers
    * are properly handled by ending the current transaction and starting a new
