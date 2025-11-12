@@ -1228,7 +1228,7 @@ NR_PHP_WRAPPER(nr_laravel_horizon_is_used) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  NR_PHP_PROCESS_GLOBALS(is_horizon_used) = true;
+  NR_PHP_PROCESS_GLOBALS(laravel_horizon_worker_used) = true;
 }
 NR_PHP_WRAPPER_END
 

@@ -295,7 +295,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_before) {
   nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
                   NR_OK_TO_OVERWRITE);
 
-  if (NR_PHP_PROCESS_GLOBALS(is_horizon_used)) {
+  if (NR_PHP_PROCESS_GLOBALS(laravel_horizon_worker_used)) {
     nrm_force_add(NRPRG(txn) ? NRPRG(txn)->unscoped_metrics : 0,
                   "Supportability/library/Laravel/Horizon/used", 0);
   } else {
