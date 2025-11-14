@@ -6,6 +6,7 @@
 #include "php_api_distributed_trace.h"
 #include "php_call.h"
 #include "php_error.h"
+#include "php_globals.h"
 #include "php_hash.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
@@ -294,6 +295,13 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_before) {
   nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
                   NR_OK_TO_OVERWRITE);
 
+  if (NR_PHP_PROCESS_GLOBALS(laravel_horizon_worker_used)) {
+    nrm_force_add(NRPRG(txn) ? NRPRG(txn)->unscoped_metrics : 0,
+                  "Supportability/library/Laravel/Horizon/used", 0);
+  } else {
+    nrm_force_add(NRPRG(txn) ? NRPRG(txn)->unscoped_metrics : 0,
+                  "Supportability/library/Laravel/Queue/used", 0);
+  }
   nr_free(txn_name);
   nr_php_arg_release(&job);
   NR_PHP_WRAPPER_CALL;
