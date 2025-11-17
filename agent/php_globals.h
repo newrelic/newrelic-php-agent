@@ -80,6 +80,7 @@ typedef struct _nrphpglobals_t {
                                               enabled */
   nr_composer_api_status_t composer_api_status; /* Composer API's status */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
+  bool laravel_horizon_worker_used; /* Set to true if Laravel Horizon is used */
 
   /* Original PHP callback pointer contents */
   nrphperrfn_t orig_error_cb;

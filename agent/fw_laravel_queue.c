@@ -6,6 +6,7 @@
 #include "php_api_distributed_trace.h"
 #include "php_call.h"
 #include "php_error.h"
+#include "php_globals.h"
 #include "php_hash.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
@@ -234,124 +235,161 @@ static char* nr_laravel_queue_job_txn_name(zval* job TSRMLS_DC) {
 
 /*
  * Handle:
- *   Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent(Job $job):void
+ * Illuminate\\Queue\\Worker::raiseBeforeJobEvent
+ * Raise the before queue job event.
+ *
+ * @param  string  $connectionName
+ * @param  \Illuminate\Contracts\Queue\Job  $job
+ * @return void
+ * protected function raiseBeforeJobEvent($connectionName, $job)
+ *
+ * Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent
+ * Raise the before queue job event.
+ *
+ * @param  \Illuminate\Contracts\Queue\Job  $job
+ * @return void
+ *  protected function raiseBeforeJobEvent(Job $job)
+ *
+ * The reason these functions are used for txn naming:
+ * 1. It has been a consistent API called directly before the Job across Laravel
+ * going back to at least 6
+ * 2. It allows us to have a reusable function callback for both sync/async.
+ * 3. Sync jobs don't use the job that is passed in, they create a brand new job
+ * based off of the passed in job that then then attempt to run.
  */
-NR_PHP_WRAPPER(nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before) {
+NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_before) {
   zval* job = NULL;
+  nr_segment_t* segment = NULL;
+  char* txn_name = NULL;
+  size_t argc = 0;
+  int job_param_num = 2; /* Most likely case of async job. */
 
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
-  /*
-   * End the current txn in preparation for the Job txn.
+  /* For raiseBeforeJobEvent:
+   * For Async jobs, Job is the second parameter.
+   * For Sync jobs, Job is the first and only parameter.
    */
-  nr_php_txn_end(1, 0);
+  argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS);
+  if (1 == argc) {
+    /* This is a sync job*/
+    job_param_num = 1;
+  }
 
-  /*
-   * Laravel 7+ passes Job as the first parameter.
-   */
-  char* txn_name = NULL;
-
-  job = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
-
-  /* txn_name needs to be freed by the caller. */
+  job = nr_php_arg_get(job_param_num, NR_EXECUTE_ORIG_ARGS);
   txn_name = nr_laravel_queue_job_txn_name(job);
 
-  /*
-   * Begin the transaction we'll actually record.
-   */
-
-  if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
-    nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
-
-    if (NULL == txn_name) {
-      txn_name = nr_strdup("unknown");
-    }
-
-    nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
-
-    nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
-                    NR_OK_TO_OVERWRITE);
+  if (NULL == txn_name) {
+    txn_name = nr_strdup("unknown");
   }
-  nr_php_arg_release(&job);
+
+  segment = NRPRG(txn)->segment_root;
+  if (NULL != segment) {
+    nr_segment_set_name(segment, txn_name);
+  }
+
+  nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
+
+  nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
+                  NR_OK_TO_OVERWRITE);
+
+  if (NR_PHP_PROCESS_GLOBALS(laravel_horizon_worker_used)) {
+    nrm_force_add(NRPRG(txn) ? NRPRG(txn)->unscoped_metrics : 0,
+                  "Supportability/library/Laravel/Horizon/used", 0);
+  } else {
+    nrm_force_add(NRPRG(txn) ? NRPRG(txn)->unscoped_metrics : 0,
+                  "Supportability/library/Laravel/Queue/used", 0);
+  }
   nr_free(txn_name);
+  nr_php_arg_release(&job);
   NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
 /*
- * Handle:
- *   Illuminate\\Queue\\Worker::raiseBeforeJobEvent(string $connectionName, Job
- * $job):void
+ * Handles:
+ *   Illuminate\\Queue\\Worker::process
+ *
+ * Ends/discards the unneeded worker txn
+ * Starts the job txn
  */
-NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseBeforeJobEvent_after) {
-  zval* job = NULL;
+
+NR_PHP_WRAPPER(nr_laravel_queue_worker_before) {
+  nr_segment_t* segment = NULL;
 
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
 
   /*
-   * End the current txn to prepare for the Job txn.
+   * End and discard the current txn to prepare for the Job txn.
    */
   nr_php_txn_end(1, 0 TSRMLS_CC);
 
   /*
-   * Laravel 7 and later passes Job as the second parameter.
-   */
-  char* txn_name = NULL;
-
-  job = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS);
-  txn_name = nr_laravel_queue_job_txn_name(job);
-
-  /*
    * Begin the transaction we'll actually record.
    */
 
   if (NR_SUCCESS == nr_php_txn_begin(NULL, NULL)) {
     nr_txn_set_as_background_job(NRPRG(txn), "Laravel job");
 
-    if (NULL == txn_name) {
-      txn_name = nr_strdup("unknown");
+    segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+    if (NULL != segment) {
+      segment->wraprec = wraprec;
     }
-
-    nr_laravel_queue_set_cat_txn(job TSRMLS_CC);
-
-    nr_txn_set_path("Laravel", NRPRG(txn), txn_name, NR_PATH_TYPE_CUSTOM,
-                    NR_OK_TO_OVERWRITE);
   }
-  nr_free(txn_name);
-  nr_php_arg_release(&job);
-  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
 /*
- * Handle:
- *   Illuminate\\Queue\\Worker::raiseAfterJobEvent(string $connectionName, Job
- * $job):void Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent(Job $job):void
+ * Handles:
+ *   Illuminate\\Queue\\Worker::process
+ *
+ * Closes the job txn
+ * Records any exceptions as needed
+ * Restarts the txn instrumentation
  */
-NR_PHP_WRAPPER(nr_laravel_queue_worker_raiseAfterJobEvent_before) {
+
+NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
   NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
+  nr_php_execute_metadata_t metadata;
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
-
-  /*
-   * If we made it here, we are assured there are no uncaught exceptions (as it
-   * would be noticed with the oapi exception handling before calling this
-   * callback so no need to check before ending the txn.
-   */
 
   /*
    * End the real transaction and then start a new transaction so our
    * instrumentation continues to fire, knowing that we'll ignore that
-   * transaction either when Worker::process() is called again or when
-   * WorkCommand::handle() exits.
+   * transaction either when Illuminate\\Queue\\Worker::process or
+   * Illuminate\\Queue\\SyncQueue::executeJob is called again
    */
+
+  if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
+    /* An exception occurred and we need to record it on the txn if it isn't
+     * already there. */
+    if (NULL == NRPRG(txn)->error) {
+      /* Since we are ending this txn within the wrapper, and we know it has an
+      error, apply it to the txn; otherwise, the
+      way it is handled in Laravel means the exception is caught by an internal
+      job exceptions handler and then thrown again AFTER we've already ended the
+      txn for the job
+      *
+      */
+
+      zval exception;
+      ZVAL_OBJ(&exception, EG(exception));
+      nr_status_t st;
+      st = nr_php_error_record_exception(
+          NRPRG(txn), &exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, false /* add to segment */,
+          "Unhandled exception within Laravel Queue job: ", &NRPRG(exception_filters));
+
+      if (NR_FAILURE == st) {
+        nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception",
+                         __func__);
+      }
+    }
+  }
+
   nr_php_txn_end(0, 0 TSRMLS_CC);
   nr_php_txn_begin(NULL, NULL TSRMLS_CC);
 }
@@ -791,9 +829,9 @@ NR_PHP_WRAPPER(nr_laravel_queue_queue_createpayload) {
   }
 
   /*
-   * The payload should be a JSON string: in essence, we want to decode it, add
-   * our attributes, and then re-encode it. Unfortunately, the payload will
-   * include NULL bytes for closures, and this causes nro to choke badly
+   * The payload should be a JSON string: in essence, we want to decode it,
+   * add our attributes, and then re-encode it. Unfortunately, the payload
+   * will include NULL bytes for closures, and this causes nro to choke badly
    * because it can't handle NULLs in strings, so we'll call back into PHP's
    * own JSON functions.
    */
@@ -850,27 +888,61 @@ void nr_laravel_queue_enable(TSRMLS_D) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
   /*
-   * Here's the problem: we want to record individual transactions for each job
-   * that is executed, but don't want to record a transaction for the actual
-   * queue:work command, since it spends most of its time sleeping.
+   * Here's the problem: we want to record individual transactions for each
+   * job that is executed, but don't want to record a transaction for the
+   * actual queue:work command, since it spends most of its time sleeping. The
+   * naive approach would be to end the transaction immediately and instrument
+   * Worker::process(). The issue with that is that instrumentation hooks
+   * aren't executed if we're not actually in a transaction.
    *
-   * We use the raiseBeforeJobEvent and raiseAfterJobEvent listeners which we
-   * can use to name the Laravel Job and capture the true time that the job
-   * took.
+   * So instead, what we'll do is to keep recording, but ensure that we ignore
+   * the transaction before and after
+   *   Illuminate\\Queue\\Worker::process
+   * and we'll use raiseBeforeJobEvent to ensure we have the most up to date Job
+   * info. This ensures that we instrument the entirety of the job (including
+   * any handle/failed functions and also exceptions).
+   *
+   *
+   * Why so many?
+   * 1. The main reason is because of the trickiness when starting/stopping txns
+   * within an OAPI wrapped func. OAPI handling assumes a segment is created
+   * with w/associated wraprecs in func_begin. However, when we end/discard the
+   * txn, we discard all those previous segments, so any functions that had
+   * wrapped callbacks will all go away after a txn end. We have only one
+   * opportunity to preserve any wraprecs and that is when we stop/start in a
+   * wrapped func that has both a before and an after/clean. Because we are
+   * starting/ending txns within the wrapper, it requires much more handling for
+   * OAPI compatibility.  Namely, you would need to transfer the old wraprec
+   * from the old segment to the newly created segment inside the brand new txn
+   * so that the agent will be able to call any _after or _clean callbacks AND
+   * you'd have to modify one of the checks in end_func to account for the fact
+   * that a root segment is okay to encounter if it has a wraprec.
+   *
+   *
+   * Why not just use the raiseAfterEventJob listener to end the txn?
+   * It's not called all the time.  For instance, it is not called in the case
+   * of exceptions.
    */
 
+  /*
+   * The before callbacks will handle:
+   * 1) ending the unneeded worker txn
+   * 2) starting
+   * the after/clean callbacks will handle:
+   * 1) ending the job txn
+   * 2) handling any exception
+   * 3) restarting the txn instrumentation going
+   */
+  /*Laravel 11+*/
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"), NULL,
-      nr_laravel_queue_worker_raiseBeforeJobEvent_after, NULL);
+      NR_PSTR("Illuminate\\Queue\\Worker::process"),
+      nr_laravel_queue_worker_before, nr_laravel_queue_worker_after,
+      nr_laravel_queue_worker_after);
+
+  /* These wrappers will handle naming the job txn*/
   nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\Worker::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseBeforeJobEvent"),
-      nr_laravel_queue_syncqueue_raiseBeforeJobEvent_before, NULL, NULL);
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Illuminate\\Queue\\SyncQueue::raiseAfterJobEvent"),
-      nr_laravel_queue_worker_raiseAfterJobEvent_before, NULL, NULL);
+      NR_PSTR("Illuminate\\Queue\\Worker::raiseBeforeJobEvent"),
+      nr_laravel_queue_worker_raiseBeforeJobEvent_before, NULL, NULL);
 
 #else
 

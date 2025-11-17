@@ -768,8 +768,6 @@ end:
    * want to strdup everything if we don't have to. RabbitMQ basic_get PHP 7.x
    * will only strdup server_address and destination_name.
    */
-  // amber make these peristent for all since retval of null clears the values
-  // from the cxn
   UNDO_PERSISTENCE(message_params.server_address);
   UNDO_PERSISTENCE(message_params.destination_name);
 }

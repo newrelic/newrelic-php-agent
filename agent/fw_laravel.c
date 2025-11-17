@@ -1193,6 +1193,45 @@ static nr_status_t nr_laravel_should_assign_generic_path(const nrtxn_t* txn,
   return NR_FAILURE;
 }
 
+/*
+ * Ensure that the transaction is properly stopped when Laravel Horizon is being
+ * used by wrapping the handle method of the HorizonCommand and
+ * SupervisorCommand class.
+ */
+NR_PHP_WRAPPER(nr_laravel_horizon_end_txn) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+
+  nrl_verbosedebug(NRL_FRAMEWORK, "Ending Laravel Horizon Transaction");
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * End transaction for idle laravel queue workers and then start
+ * a new transaction.
+ */
+NR_PHP_WRAPPER(nr_laravel_queue_restart_transaction) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  nr_php_txn_end(1, 0 TSRMLS_CC);
+  nr_php_txn_begin(NULL, NULL TSRMLS_CC);
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Set global flag that checks if Laravel Horizon is being used to true.
+ */
+NR_PHP_WRAPPER(nr_laravel_horizon_is_used) {
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_PROCESS_GLOBALS(laravel_horizon_worker_used) = true;
+}
+NR_PHP_WRAPPER_END
+
 void nr_laravel_enable(TSRMLS_D) {
   /*
    * We set the path to 'unknown' to prevent having to name routing errors.
@@ -1231,6 +1270,33 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
       nr_laravel_console_application_dorun, NULL, NULL);
+  
+  /*
+   * The following functions have been added to ensure that the transaction
+   * is properly stopped when Laravel Horizon is being used. This is
+   * accomplished by wrapping the handle method of the HorizonCommand class and
+   * the SupervisorCommand class.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\HorizonCommand::handle"),
+      nr_laravel_horizon_end_txn, NULL, NULL);
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\SupervisorCommand::handle"),
+      nr_laravel_horizon_end_txn, NULL, NULL);
+  /*
+   * Check if Laravel Horizon is being used.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Laravel\\Horizon\\Console\\WorkCommand::handle"),
+      nr_laravel_horizon_is_used, NULL, NULL);
+  /*
+   * The following function has been added to ensure idle laravel queue workers
+   * are properly handled by ending the current transaction and starting a new
+   * one.
+   */
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
+      nr_laravel_queue_restart_transaction, NULL, NULL);
 #else
   nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
                             nr_laravel_console_application_dorun TSRMLS_CC);
