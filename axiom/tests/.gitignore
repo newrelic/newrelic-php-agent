@@ -35,6 +35,9 @@ clang_header.h
 # vi/ex scripts
 *.ex
 
+# test file generation
+health-*.yml
+
 # Test binaries
 test_agent
 test_analytics_events
@@ -63,6 +66,7 @@ test_guid
 test_hash
 test_hashmap
 test_header
+test_health
 test_helgrind
 test_json
 test_labels
@@ -121,4 +125,5 @@ test_threads
 test_time
 test_txn
 test_url
+test_uuid
 test_vector

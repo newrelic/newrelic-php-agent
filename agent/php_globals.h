@@ -90,6 +90,11 @@ typedef struct _nrphpglobals_t {
   /* Original PHP SAPI header callback */
   nrphphdrfn_t orig_header_handler;
 
+  /* NR Control configuration settings */
+  int agent_control_enabled;
+  char* agent_control_health_location;
+  nrtime_t agent_control_frequency;
+
   struct {
     uint8_t no_sql_parsing;
     uint8_t show_sql_parsing;

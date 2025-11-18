@@ -30,6 +30,7 @@
 #include "nr_app.h"
 #include "nr_banner.h"
 #include "nr_daemon_spawn.h"
+#include "util_health.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_signals.h"
@@ -317,6 +318,25 @@ static void nr_php_check_high_security_log_forwarding(TSRMLS_D) {
         "Log Forwarding will be DISABLED because High Security mode "
         "is enabled. Please check 'newrelic.high_security' in the agent "
         "configuration.");
+  }
+}
+
+/*
+ * Check the INI values for 'agent_control_enabled' and
+ * `agent_control_health_location`, log a warning and set agent_control_enabled
+ * to 'false' on an invalid configuration state .
+ */
+static void nr_php_check_agent_control_health_file() {
+  if (NR_PHP_PROCESS_GLOBALS(agent_control_enabled)
+      && nr_strempty(NR_PHP_PROCESS_GLOBALS(agent_control_health_location))) {
+    nrl_warning(NRL_INIT,
+                "NR Control support will be DISABLED because a valid health "
+                "file location is not set. Please check "
+                "newrelic.agent_control.health.delivery_location in the agent "
+                "configuration file or the "
+                "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION environment "
+                "variable.");
+    NR_PHP_PROCESS_GLOBALS(agent_control_enabled) = 0;
   }
 }
 
@@ -663,6 +683,8 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_check_logging_config(TSRMLS_C);
   nr_php_check_high_security_log_forwarding(TSRMLS_C);
 
+  nr_php_check_agent_control_health_file();
+
   /*
    * Save the original PHP hooks and then apply our own hooks. The agent is
    * almost fully operational now. The last remaining initialization that
@@ -730,6 +752,10 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_laravel_minit(TSRMLS_C);
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
+
+  if (NR_PHP_PROCESS_GLOBALS(agent_control_enabled)) {
+    nrh_set_start_time();
+  }
 
   nrl_debug(NRL_INIT, "MINIT processing done");
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
