@@ -2897,6 +2897,16 @@ STD_PHP_INI_ENTRY_EX("newrelic.browser_monitoring.attributes.exclude",
                      zend_newrelic_globals,
                      newrelic_globals,
                      0)
+PHP_INI_ENTRY_EX("newrelic.browser_monitoring.nonce_rum_header",
+                 "",
+                 NR_PHP_REQUEST,
+                 0,
+                 0)
+PHP_INI_ENTRY_EX("newrelic.browser_monitoring.nonce_rum_footer",
+                 "",
+                 NR_PHP_REQUEST,
+                 0,
+                 0)
 /*
  * newrelic.browser_monitoring.ssl_for_http is omitted.
  */

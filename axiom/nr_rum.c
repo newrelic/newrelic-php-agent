@@ -42,6 +42,21 @@ static char* nr_rum_obfuscate(const char* input, const char* key) {
   return nr_obfuscate(input, key, NR_RUM_OBFUSCATION_KEY_LENGTH);
 }
 
+char* nr_rum_encode_nonce(const char* nonce) {
+  char* encoded = 0;
+  if ((0 == nonce) || ('\0' == nonce[0])) {
+    encoded = (char*)nr_malloc(1);
+    encoded[0] = '\0';
+    return encoded;
+  }
+  {
+    size_t needed = (size_t)snprintf(NULL, 0, " nonce=\"%s\"", nonce) + 1;
+    encoded = (char*)nr_malloc(needed);
+    snprintf(encoded, needed, " nonce=\"%s\"", nonce);
+  }
+  return encoded;
+}
+
 /*
  * Do not terminate these strings with a \n. If the fragments below end up
  * being inserted into the middle of a JavaScript string (for example the user
@@ -50,7 +65,7 @@ static char* nr_rum_obfuscate(const char* input, const char* key) {
  * Otherwise they will end up breaking the string in the middle of a line which
  * will cause JavaScript errors, which will break a user's web site.
  */
-static const char rum_start_tag[] = "<script type=\"text/javascript\">";
+static const char rum_start_tag[] = "<script type=\"text/javascript\"%s>";
 static const char rum_end_tag[] = "</script>";
 
 /*
@@ -59,10 +74,11 @@ static const char rum_end_tag[] = "</script>";
  */
 const char nr_rum_footer_prefix[] = "window.NREUM||(NREUM={});NREUM.info=";
 
-char* nr_rum_produce_header(nrtxn_t* txn, int tags, int autorum) {
+static char* nr_rum_produce_header_impl(nrtxn_t* txn, int tags, int autorum, const char* nonce) {
   char* return_header;
   size_t header_length;
   const char* loader;
+  char* formatted_rum_start_tag = 0;
 
   if (0 == txn) {
     return 0;
@@ -89,16 +105,35 @@ char* nr_rum_produce_header(nrtxn_t* txn, int tags, int autorum) {
 
   txn->status.rum_header = 1 + (autorum != 0);
 
-  header_length
-      = (tags ? (nr_strlen(rum_start_tag) + nr_strlen(rum_end_tag)) : 0)
-        + nr_strlen(loader) + 1;
+  if (tags) {
+    char* encoded_nonce = nr_rum_encode_nonce(nonce);
+    size_t needed = (size_t)snprintf(NULL, 0, rum_start_tag, encoded_nonce) + 1;
+    formatted_rum_start_tag = (char*)nr_malloc(needed);
+    snprintf(formatted_rum_start_tag, needed, rum_start_tag, encoded_nonce);
+    nr_free(encoded_nonce);
+  }
+
+  header_length = (tags ? (nr_strlen(formatted_rum_start_tag) + nr_strlen(rum_end_tag)) : 0)
+                  + nr_strlen(loader) + 1;
 
   return_header = (char*)nr_malloc(header_length);
   return_header[0] = '\0';
-  snprintf(return_header, header_length, "%s%s%s", tags ? rum_start_tag : "",
+  snprintf(return_header, header_length, "%s%s%s", tags ? formatted_rum_start_tag : "",
            loader, tags ? rum_end_tag : "");
 
+  if (formatted_rum_start_tag) {
+    nr_free(formatted_rum_start_tag);
+  }
+
   return return_header;
+}
+
+char* nr_rum_produce_header(nrtxn_t* txn, int tags, int autorum) {
+  return nr_rum_produce_header_impl(txn, tags, autorum, NULL);
+}
+
+char* nr_rum_produce_header_with_nonce(nrtxn_t* txn, int tags, int autorum, const char* nonce) {
+  return nr_rum_produce_header_impl(txn, tags, autorum, nonce);
 }
 
 char* nr_rum_get_attributes(const nr_attributes_t* attributes) {
@@ -152,13 +187,14 @@ static char* nr_rum_get_attributes_obfuscated(const nr_attributes_t* attributes,
   return json_obfuscated;
 }
 
-char* nr_rum_produce_footer(nrtxn_t* txn, int tags, int autorum) {
+static char* nr_rum_produce_footer_impl(nrtxn_t* txn, int tags, int autorum, const char* nonce) {
   char* txn_name;
   nrtime_t queue_time;
   nrtime_t app_time;
   nrobj_t* hash;
   char* hash_json;
   char* obfuscated_attributes;
+  char* formatted_rum_start_tag = 0;
 
   if (0 == txn) {
     return 0;
@@ -222,19 +258,38 @@ char* nr_rum_produce_footer(nrtxn_t* txn, int tags, int autorum) {
     char* footer;
     size_t footer_len;
 
-    footer_len = (tags ? (sizeof(rum_start_tag) + sizeof(rum_end_tag)) : 0)
-                 + sizeof(nr_rum_footer_prefix) + nr_strlen(hash_json) + 1;
+    if (tags) {
+      char* encoded_nonce = nr_rum_encode_nonce(nonce);
+      size_t needed = (size_t)snprintf(NULL, 0, rum_start_tag, encoded_nonce) + 1;
+      formatted_rum_start_tag = (char*)nr_malloc(needed);
+      snprintf(formatted_rum_start_tag, needed, rum_start_tag, encoded_nonce);
+      nr_free(encoded_nonce);
+    }
+
+    footer_len = (tags ? (nr_strlen(formatted_rum_start_tag) + nr_strlen(rum_end_tag)) : 0)
+                 + sizeof(nr_rum_footer_prefix) - 1 + nr_strlen(hash_json) + 1;
 
     footer = (char*)nr_malloc(footer_len);
     footer[0] = '\0';
-    snprintf(footer, footer_len, "%s%s%s%s", tags ? rum_start_tag : "",
+    snprintf(footer, footer_len, "%s%s%s%s", tags ? formatted_rum_start_tag : "",
              nr_rum_footer_prefix, hash_json, tags ? rum_end_tag : "");
 
     nr_free(hash_json);
+    if (formatted_rum_start_tag) {
+      nr_free(formatted_rum_start_tag);
+    }
 
     txn->status.rum_footer = 1 + (autorum != 0);
     return footer;
   }
+}
+
+char* nr_rum_produce_footer(nrtxn_t* txn, int tags, int autorum) {
+  return nr_rum_produce_footer_impl(txn, tags, autorum, NULL);
+}
+
+char* nr_rum_produce_footer_with_nonce(nrtxn_t* txn, int tags, int autorum, const char* nonce) {
+  return nr_rum_produce_footer_impl(txn, tags, autorum, nonce);
 }
 
 static const char nr_rum_x_ua_compatible_regex[]
