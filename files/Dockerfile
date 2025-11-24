@@ -10,7 +10,7 @@
 ARG PHP_VER
 
 # FROM php:${PHP_VER:-8.4}-bookworm
-FROM php:${PHP_VER:-8.5-rc}-bookworm
+FROM php:${PHP_VER:-8.5}-bookworm
 
 RUN docker-php-source extract
 
@@ -100,10 +100,6 @@ RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
 
 # install redis extension required by test_redis:
 RUN \
-  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.5.0-dev', '>=');"); \
-  if [ "$php_cmp" = 1 ]; then \
-  echo 'no' | pecl install redis-6.3.0RC1; \
-  else \
   php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
   if [ "$php_cmp" = 1 ]; then \
   # install latest redis for PHPs >= 7.4
@@ -111,13 +107,12 @@ RUN \
   else \
   # install redis-4.3.0 - last one with support for php 7.2
   echo 'no' | pecl install redis-4.3.0; \
-  fi \
   fi && docker-php-ext-enable redis
 
 # memcache
 # Pre 8.0 requires 4.0.5.2
 RUN \
-  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.5.0-dev', '=>');"); \
+  php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.5.0', '=>');"); \
   if [ "$php_cmp" = 1 ]; then \
   # pecl install memcache && docker-php-ext-enable memcache; \
   echo "unsupported" \
