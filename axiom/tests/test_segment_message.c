@@ -253,6 +253,29 @@ static void test_segment_message_destination_type(void) {
           .cloud_resource_id = NULL,
           .server_address = NULL,
           .aws_operation = NULL});
+
+  /* Test NR_MESSAGE_DESTINATION_TYPE_STREAM destination type */
+  test_message_segment(
+      &(nr_segment_message_params_t){
+          .library = "Kinesis",
+          .message_action = NR_SPANKIND_PRODUCER,
+          .destination_type = NR_MESSAGE_DESTINATION_TYPE_STREAM,
+          .destination_name = "my_stream_name"},
+      &(nr_segment_cloud_attrs_t){0}, true /* enable attributes */,
+      (segment_message_expecteds_t){
+          .test_name
+          = "Test NR_MESSAGE_DESTINATION_TYPE_STREAM destination type",
+          .name = "MessageBroker/Kinesis/Stream/Produce/Named/my_stream_name",
+          .txn_rollup_metric = "MessageBroker/all",
+          .library_metric = "MessageBroker/Kinesis/all",
+          .num_metrics = 1,
+          .destination_name = "my_stream_name",
+          .cloud_region = NULL,
+          .cloud_account_id = NULL,
+          .messaging_system = NULL,
+          .cloud_resource_id = NULL,
+          .server_address = NULL,
+          .aws_operation = NULL});
 }
 
 static void test_segment_message_message_action(void) {

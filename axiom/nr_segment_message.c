@@ -160,6 +160,9 @@ static char* nr_segment_message_create_metrics(
     case NR_MESSAGE_DESTINATION_TYPE_EXCHANGE:
       destination_type_string = "Exchange";
       break;
+    case NR_MESSAGE_DESTINATION_TYPE_STREAM:
+      destination_type_string = "Stream";
+      break;
     default:
       destination_type_string = "<unknown>";
       break;
