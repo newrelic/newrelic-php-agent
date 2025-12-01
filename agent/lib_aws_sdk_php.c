@@ -29,6 +29,266 @@
 /* Service instrumentation only supported above PHP 8.1+*/
 
 /*
+ * Note: For Kinesis data streams, see the following for information regarding
+ * inputs/outputs 1) underlying AWS API:
+ * https://docs.aws.amazon.com/kinesis/latest/APIReference/API_Operations.html
+ * 2) aws-sdk-php API:
+ * https://docs.aws.amazon.com/aws-sdk-php/v3/api/class-Aws.Kinesis.KinesisClient.html
+ *
+ * The Kinesis Data Stream ARN is of the format:
+ * arn:${Partition}:kinesis:${Region}:${Account}:stream/${StreamName}
+ * No partial ARNs are allowed. The aws-sdk-php will throw a fatal error if
+ * provided with an incomplete ARN.
+ *
+ * putRecord/putRecords: input MUST include the StreamName or the StreamARN and
+ * MAY include both.
+ *
+ * getRecords: input MAY include the StreamARN.
+ * If the ARN is not included for getRecords, there is no way to infer the ARN.
+ *
+ * Message params are determined as follows:
+ * | Call | Action | DestinationName | DestinationType | Library |
+ * | ---  | ---    | ---             | ---             | ---     |
+ * | Put Record | `Produce` | Stream Name | `Stream` | `Kinesis` |
+ * | Put Records | `Produce` | Stream Name | `Stream` | `Kinesis` |
+ * | Get Records | `Consume` | Stream Name | `Stream` | `Kinesis`|
+ *
+ * Kinesis Data Streams entity relationship requires the following span
+ * attributes:
+ * - `cloud.platform`: the string `aws_kinesis_data_streams`
+ * - `cloud.resource_id`: the ARN for the Kinesis data stream instance.
+ */
+void nr_lib_aws_sdk_php_kinesis_handle(nr_segment_t* auto_segment,
+                                       char* command_name_string,
+                                       size_t command_name_len,
+                                       NR_EXECUTE_PROTO) {
+  char* stream_name_arg_value = NULL;
+  char* stream_arn_arg_value = NULL;
+
+  nr_segment_t* message_segment = NULL;
+
+  nr_segment_message_params_t message_params = {
+      .library = KINESIS_LIBRARY_NAME,
+      .destination_type = NR_MESSAGE_DESTINATION_TYPE_STREAM,
+      .messaging_system = AWS_KINESIS_PLATFORM,
+  };
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
+
+  if (NULL == auto_segment) {
+    return;
+  }
+
+  if (NULL == command_name_string || 0 == command_name_len) {
+    return;
+  }
+
+#define AWS_COMMAND_IS(CMD) \
+  (command_name_len == (sizeof(CMD) - 1) && nr_streq(CMD, command_name_string))
+
+  /* Determine if we instrument this command. */
+  if (AWS_COMMAND_IS("putRecord")) {
+    message_params.message_action = NR_SPANKIND_PRODUCER;
+  } else if (AWS_COMMAND_IS("putRecords")) {
+    message_params.message_action = NR_SPANKIND_PRODUCER;
+  } else if (AWS_COMMAND_IS("getRecords")) {
+    message_params.message_action = NR_SPANKIND_CONSUMER;
+  } else {
+    /* Nothing to do here so exit. */
+    return;
+  }
+#undef AWS_COMMAND_IS
+
+  /*
+   * Linking between APM and Kinesis Data Streams will be done using the
+   * following span attributes:
+   * - `cloud.platform`: the string `aws_kinesis_data_streams`
+   * - `cloud.resource_id`: the ARN for the Kinesis data stream instance.
+   */
+
+  /*
+   * By this point, it's been determined that this call will be instrumented so
+   * only create the segment now, grab the parent segment start time, add our
+   * special segment attributes/metrics then close the newly created segment.
+   */
+  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  if (NULL == message_segment) {
+    return;
+  }
+  /* re-use start time from auto_segment started in func_begin */
+  message_segment->start_time = auto_segment->start_time;
+  cloud_attrs.aws_operation = command_name_string;
+
+  /*
+   * Only try to add attributes from the command parameters if there valid
+   * return value. This means the sdk validates that the ARN is complete and
+   * valid.  It also validates that the StreamName is valid.  If the values are
+   * formatted incorrectly, the sdk will throw a fatal error.  For instance, if
+   * a partial ARN is passed to the function, the sdk will throw a fatal error.
+   * If the values are formatted incorrectly, but unable to resolve to a known
+   * StreamName or ARN, the sdk will again throw an error.  This means, if any
+   * error occurs,  it's still okay to start/stop the segment, but any
+   * parameters passed to the call are suspect and will not be trusted and no
+   * attempts should be made to extract or infer any information.
+   */
+
+  if (NULL != func_return_value) {
+    /*
+     * If given both a StreamName and a StreamARN, in the aws-sdk-php, the
+     * StreamARN will take precedence if both are present and potentially
+     * conflicting. We will do likewise and prioritize information in the
+     * StreamARN.
+     */
+    stream_arn_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
+        AWS_SDK_PHP_KINESISCLIENT_STREAMARN_ARG, NR_EXECUTE_ORIG_ARGS);
+
+    nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+        stream_arn_arg_value, &message_params, &cloud_attrs);
+
+    if (NULL == cloud_attrs.cloud_resource_id) {
+      /*
+       * We weren't able to get the cloud_resource_id from the StreamARN, let's
+       * try to infer it from the StreamName.
+       */
+      stream_name_arg_value = nr_lib_aws_sdk_php_get_command_arg_value(
+          AWS_SDK_PHP_KINESISCLIENT_STREAMNAME_ARG, NR_EXECUTE_ORIG_ARGS);
+      /* NOTE: The cloud_attrs.cloud_resource_id must be freed by the caller. */
+      nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
+          stream_name_arg_value, &message_params, &cloud_attrs,
+          NR_EXECUTE_ORIG_ARGS);
+    }
+  }
+
+  /* Add cloud attributes, if available. */
+  nr_segment_traces_add_cloud_attributes(message_segment, &cloud_attrs);
+
+  /* Now end the instrumented segment as a message segment. */
+  nr_segment_message_end(&message_segment, &message_params);
+
+  /*
+   * NOTE: responsible for freeing cloud_attrs->cloud_resource_id ONLY if we
+   * inferred it using StreamName.  If we got it from the StreamARN, we don't
+   * need to free it as it is pointing to the same memory as
+   * stream_arn_arg_value.
+   */
+  if (cloud_attrs.cloud_resource_id != stream_arn_arg_value) {
+    nr_free(cloud_attrs.cloud_resource_id);
+  }
+
+  nr_free(stream_arn_arg_value);
+  nr_free(stream_name_arg_value);
+}
+
+void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+    char* stream_arn,
+    nr_segment_message_params_t* message_params,
+    nr_segment_cloud_attrs_t* cloud_attrs) {
+  char* destination_name = NULL;
+
+  if (nr_strempty(stream_arn) || NULL == message_params
+      || NULL == cloud_attrs) {
+    return;
+  }
+
+  /*
+   * AWS Kinesis Stream ARN has a very specific format.
+   * arn:${Partition}:kinesis:${Region}:${Account}:stream/${StreamName}
+   * We only need to extract the StreamName.
+   *
+   * No partial ARNs or invalid ARNS are allowed. The aws-sdk-php will throw a
+   * fatal error for anything other than a complete and valid ARN and this
+   * function isn't called if an exception occurs. We still do error checking,
+   * even though the sdk shouldn't allow it through, and if we are still unable
+   * to match what we are looking for, we will not attempt to set any values.
+   *
+   */
+
+  destination_name = stream_arn;
+
+  /*
+   * Find the pattern ':stream/' of the AWS stream ARN that should immediately
+   * precede the StreamName.
+   */
+  destination_name = nr_strstr(destination_name, AWS_STREAMARN_STREAM);
+  if (NULL == destination_name) {
+    /* Invalid Kinesis stream ARN */
+    return;
+  }
+
+  /*
+   * Move the pointer along. Since we found a valid pattern match moving the
+   * pointer beyond that point should be safe and give us either the start of
+   * the StreamName or the end of the string.
+   */
+  destination_name += AWS_STREAMARN_STREAM_LEN;
+  if (nr_strempty(destination_name)) {
+    /* Malformed stream ARN, we can't decode this. */
+    return;
+  }
+
+  /*
+   * If it's not an empty string, we've found the start of the StreamName and
+   * the end of the StreamName goes until the end of the string.
+   */
+
+  message_params->destination_name = destination_name;
+  cloud_attrs->cloud_resource_id = stream_arn;
+}
+
+/* NOTE: caller is responsible for freeing cloud_attrs->cloud_resource_id */
+void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
+    char* stream_name,
+    nr_segment_message_params_t* message_params,
+    nr_segment_cloud_attrs_t* cloud_attrs,
+    NR_EXECUTE_PROTO) {
+
+  char* region = NULL;
+  char* account_id = NULL;
+  char* cloud_resource_id = NULL;
+  zval* region_zval = NULL;
+  zval* this_obj = NR_PHP_USER_FN_THIS();
+  zend_class_entry* base_class = NULL;
+
+  if (NULL == message_params || NULL == cloud_attrs) {
+    return;
+  }
+
+  /*
+   * If stream_name is empty or NULL, we can still attempt to get
+   * region/accountid
+   */
+  if (!nr_strempty(stream_name)) {
+    message_params->destination_name = stream_name;
+  }
+
+  if (!nr_strempty(NRINI(aws_account_id))) {
+    account_id = NRINI(aws_account_id);
+  }
+
+  if (NULL != execute_data->func && NULL != execute_data->func->common.scope) {
+    base_class = execute_data->func->common.scope;
+  }
+  region_zval = nr_php_get_zval_object_property_with_class(this_obj, base_class,
+                                                           "region");
+  if (nr_php_is_zval_non_empty_string(region_zval)) {
+    region = Z_STRVAL_P(region_zval);
+  }
+  if (NULL != region && NULL != account_id
+      && NULL != message_params->destination_name) {
+    /* NOTE: caller is responsible for freeing cloud_resource_id */    
+    cloud_resource_id = nr_formatf("arn:aws:kinesis:%s:%s:stream/%s", region,
+                                   account_id, stream_name);
+  }
+
+  if (NULL == cloud_resource_id) {
+    /* If we have a valid ARN, these values are redundant so don't set. */
+    cloud_attrs->cloud_account_id = account_id;
+    cloud_attrs->cloud_region = region;
+  }
+  /* NOTE: caller is responsible for freeing cloud_attrs->cloud_resource_id */
+  cloud_attrs->cloud_resource_id = cloud_resource_id;
+}
+
+/*
 * Note: For SQS, the command_arg_array will contain the following arrays seen
 below:
 //clang-format off
@@ -749,6 +1009,10 @@ NR_PHP_WRAPPER(nr_aws_client_call) {
     nr_lib_aws_sdk_php_dynamodb_handle(auto_segment, command_name_string,
                                        Z_STRLEN_P(command_name),
                                        NR_EXECUTE_ORIG_ARGS);
+  } else if (AWS_CLASS_IS("Aws\\Kinesis\\KinesisClient", "KinesisClient")) {
+    nr_lib_aws_sdk_php_kinesis_handle(auto_segment, command_name_string,
+                                      Z_STRLEN_P(command_name),
+                                      NR_EXECUTE_ORIG_ARGS);
   }
 
 #undef AWS_CLASS_IS
