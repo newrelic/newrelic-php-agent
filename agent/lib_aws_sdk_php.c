@@ -70,9 +70,10 @@ void nr_lib_aws_sdk_php_kinesis_handle(nr_segment_t* auto_segment,
   nr_segment_message_params_t message_params = {
       .library = KINESIS_LIBRARY_NAME,
       .destination_type = NR_MESSAGE_DESTINATION_TYPE_STREAM,
-      .messaging_system = AWS_KINESIS_PLATFORM,
   };
-  nr_segment_cloud_attrs_t cloud_attrs = {0};
+  nr_segment_cloud_attrs_t cloud_attrs = {
+      .cloud_platform = AWS_KINESIS_PLATFORM,
+  };
 
   if (NULL == auto_segment) {
     return;
@@ -240,7 +241,6 @@ void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
     nr_segment_message_params_t* message_params,
     nr_segment_cloud_attrs_t* cloud_attrs,
     NR_EXECUTE_PROTO) {
-
   char* region = NULL;
   char* account_id = NULL;
   char* cloud_resource_id = NULL;
@@ -274,7 +274,7 @@ void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
   }
   if (NULL != region && NULL != account_id
       && NULL != message_params->destination_name) {
-    /* NOTE: caller is responsible for freeing cloud_resource_id */    
+    /* NOTE: caller is responsible for freeing cloud_resource_id */
     cloud_resource_id = nr_formatf("arn:aws:kinesis:%s:%s:stream/%s", region,
                                    account_id, stream_name);
   }
