@@ -167,12 +167,19 @@ agent-valgrind: agent/Makefile
 # Configure the target directory for go install
 export GOBIN=$(CURDIR)/bin
 
+# By default daemon golang verification will cause the build to fail. This
+# behavior can be overriden by setting GOLANG_VERIFICATION_FAILURE_SEVERITY
+# to a value different than ERROR. Overriding this value is helpful when
+# trying to build the agent with more recent version of go than the one
+# defined by toolchain go.mod.
+GOLANG_VERIFICATION_FAILURE_SEVERITY ?= ERROR
 .PHONY: daemon-golang-verify
 daemon-golang-verify:
 	@golang_in_binary=$$(go version -m bin/daemon | awk '/^bin\/daemon/ {print $$2;}') \
 	&& golang_from_toolchain=$$(awk '/^toolchain/ {print $$2;}' daemon/go.mod) \
 	&& [ "$$golang_in_binary" = "$$golang_from_toolchain" ] && echo "daemon built using: $$golang_from_toolchain" \
-	|| { echo "ERROR: daemon built using go: $$golang_in_binary, required: $$golang_from_toolchain"; exit 1; }
+	|| { echo "$(GOLANG_VERIFICATION_FAILURE_SEVERITY): daemon built using go: $$golang_in_binary, required: $$golang_from_toolchain"; \
+			[ "$(GOLANG_VERIFICATION_FAILURE_SEVERITY)" != "ERROR" ] || exit 1; }
 
 .PHONY: daemon
 daemon:
