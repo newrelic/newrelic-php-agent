@@ -99,7 +99,7 @@ static enum pdo_error_mode set_pdo_silent(zval* dbh TSRMLS_DC);
 nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
                                                       zval* parameters
                                                           TSRMLS_DC) {
-  zval* dbh = NULL;
+  PHP_PDO_DBH dbh = NULL;
   zval* dup = NULL;
   zval* explain_stmt = NULL;
   pdo_stmt_t* pdo_stmt = NULL;
@@ -121,7 +121,7 @@ nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
   const char* pdo_query_string = ZSTR_VAL(pdo_stmt->query_string);
   int pdo_query_string_len = ZSTR_LEN(pdo_stmt->query_string);
 #else
-  const char* pdo_query_string = pdo_stmt->query_string; 
+  const char* pdo_query_string = pdo_stmt->query_string;
   int pdo_query_string_len = pdo_stmt->query_stringlen;
 #endif /* PHP8.1+ */
 
@@ -130,7 +130,11 @@ nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
     goto end;
   }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+  dbh = pdo_stmt->database_object_handle;
+#else
   dbh = &pdo_stmt->database_object_handle;
+#endif
   dup = nr_php_pdo_duplicate(dbh TSRMLS_CC);
   if (NULL == dup) {
     goto end;

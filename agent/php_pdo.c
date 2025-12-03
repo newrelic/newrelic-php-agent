@@ -186,6 +186,16 @@ pdo_dbh_t* nr_php_pdo_get_database_object_from_object(zval* obj TSRMLS_DC) {
   return NULL;
 }
 
+pdo_dbh_t* nr_php_pdo_get_database_object_from_zend_object(
+    zend_object* dbh TSRMLS_DC) {
+  if (nr_php_class_entry_instanceof_class(dbh->ce, "PDO" TSRMLS_CC)) {
+    return nr_php_pdo_get_database_object_internal_from_zend_object(
+        dbh TSRMLS_CC);
+  }
+
+  return NULL;
+}
+
 pdo_dbh_t* nr_php_pdo_get_database_object(zval* dbh TSRMLS_DC) {
   if (nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
     return nr_php_pdo_get_database_object_internal(dbh TSRMLS_CC);
@@ -215,10 +225,20 @@ const char* nr_php_pdo_get_driver_internal(pdo_dbh_t* dbh) {
   return dbh->driver->driver_name;
 }
 
+const char* nr_php_pdo_get_driver_from_zend_object(zend_object* obj TSRMLS_DC) {
+  pdo_dbh_t* dbh = NULL;
+  dbh = nr_php_pdo_get_database_object_from_zend_object(obj TSRMLS_CC);
+  if (NULL == dbh) {
+    nrl_verbosedebug(NRL_SQL, "%s: unable to get pdo_dbh_t", __func__);
+    return NULL;
+  }
+
+  return nr_php_pdo_get_driver_internal(dbh);
+}
+
 const char* nr_php_pdo_get_driver(zval* obj TSRMLS_DC) {
   pdo_dbh_t* dbh = NULL;
-
-  dbh = nr_php_pdo_get_database_object_from_object(obj TSRMLS_CC);
+  dbh = nr_php_pdo_get_database_object(obj TSRMLS_CC);
   if (NULL == dbh) {
     nrl_verbosedebug(NRL_SQL, "%s: unable to get pdo_dbh_t", __func__);
     return NULL;
@@ -370,16 +390,20 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
-static zval* nr_php_pdo_options_get(zval* dbh TSRMLS_DC) {
+static zval* nr_php_pdo_options_get(PHP_PDO_DBH dbh TSRMLS_DC) {
   if (NULL == NRTXNGLOBAL(pdo_link_options)) {
     return NULL;
   }
-
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+  return (zval*)nr_hashmap_index_get(NRTXNGLOBAL(pdo_link_options),
+                                     dbh->handle);
+#else
   return (zval*)nr_hashmap_index_get(NRTXNGLOBAL(pdo_link_options),
                                      Z_OBJ_HANDLE_P(dbh));
+#endif
 }
 
-zval* nr_php_pdo_duplicate(zval* dbh TSRMLS_DC) {
+zval* nr_php_pdo_duplicate(PHP_PDO_DBH dbh TSRMLS_DC) {
   zend_uint argc = 3;
   zval* argv[4] = {NULL, NULL, NULL, NULL};
   const char* driver = NULL;
@@ -392,7 +416,11 @@ zval* nr_php_pdo_duplicate(zval* dbh TSRMLS_DC) {
   zval* retval = NULL;
   zend_class_entry* pdo_ce = NULL;
 
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+  pdo_dbh = nr_php_pdo_get_database_object_from_zend_object(dbh TSRMLS_CC);
+#else
   pdo_dbh = nr_php_pdo_get_database_object(dbh TSRMLS_CC);
+#endif
   if (NULL == pdo_dbh) {
     return NULL;
   }
@@ -407,16 +435,20 @@ zval* nr_php_pdo_duplicate(zval* dbh TSRMLS_DC) {
     return NULL;
   }
 
-  /*
-   * We'll always provide the first three arguments to PDO::__construct(), as
-   * it can handle NULLs if the username and/or password weren't provided.
-   */
+/*
+ * We'll always provide the first three arguments to PDO::__construct(), as
+ * it can handle NULLs if the username and/or password weren't provided.
+ */
 
-  /*
-   * The DSN in the pdo_dbh_t struct doesn't include the driver name, so let's
-   * get that and build up a new DSN.
-   */
+/*
+ * The DSN in the pdo_dbh_t struct doesn't include the driver name, so let's
+ * get that and build up a new DSN.
+ */
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+  driver = nr_php_pdo_get_driver_from_zend_object(dbh TSRMLS_CC);
+#else
   driver = nr_php_pdo_get_driver(dbh TSRMLS_CC);
+#endif
   dsn_len = asprintf(&dsn, "%s:%.*s", driver,
                      NRSAFELEN(pdo_dbh->data_source_len), pdo_dbh->data_source);
   argv[0] = nr_php_zval_alloc();
@@ -503,11 +535,11 @@ void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
  * Its signature doesn't change between PHP 5 and 7, with the
  * exception of the way zend_ulong itself changed.
  */
-extern int __attribute__((weak))
-php_pdo_parse_data_source(const char* data_source,
-                          zend_ulong data_source_len,
-                          struct pdo_data_src_parser* parsed,
-                          int nparams);
+extern int __attribute__((weak)) php_pdo_parse_data_source(
+    const char* data_source,
+    zend_ulong data_source_len,
+    struct pdo_data_src_parser* parsed,
+    int nparams);
 
 nr_status_t nr_php_pdo_parse_data_source(const char* data_source,
                                          uint64_t data_source_len,
