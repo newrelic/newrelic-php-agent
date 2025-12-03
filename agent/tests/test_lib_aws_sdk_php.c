@@ -673,7 +673,7 @@ static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
                                                         &cloud_attrs);
   tlib_pass_if_null("empty stream_arn, cloud_resource_id should be null.",
                     cloud_attrs.cloud_resource_id);
-  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+  tlib_pass_if_null("empty stream_arn, destination_name should be null.",
                     message_params.destination_name);
 
   /* Test null message_params, null arn.  No values extracted, shouldn't modify
@@ -681,7 +681,7 @@ static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(NULL, NULL,
                                                         &cloud_attrs);
   tlib_pass_if_null(
-      "null stream_arn and null arn, cloud_resource_id should be null.",
+      "null message_params and null arn, cloud_resource_id should be null.",
       cloud_attrs.cloud_resource_id);
 
   /* Test null cloud_attrs.  No values extracted, shouldn't modify
@@ -689,7 +689,7 @@ static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(NULL, &message_params,
                                                         NULL);
   tlib_pass_if_null(
-      "null cloud_attrsnull stream_arn, destination_name should be null.",
+      "null cloud_attrs and null stream_arn, destination_name should be null.",
       message_params.destination_name);
 
   /* Test null message_params but valid stream arn.  No values extracted,
@@ -697,7 +697,8 @@ static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(VALID_STREAM_ARN, NULL,
                                                         &cloud_attrs);
   tlib_pass_if_null(
-      "null stream_arn but valid stream arn, cloud_resource_id should be null.",
+      "null message_params but valid stream arn, cloud_resource_id should be "
+      "null.",
       cloud_attrs.cloud_resource_id);
 
   /* Test null cloud_attrs but valid stream arn.  No values extracted, shouldn't
@@ -705,36 +706,36 @@ static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(VALID_STREAM_ARN,
                                                         &message_params, NULL);
   tlib_pass_if_null(
-      "null stream_arn but valid stream arn, destination_name should be null.",
+      "null cloud_attrs but valid stream arn, destination_name should be null.",
       message_params.destination_name);
 
   /* Test invalid stream_arns.  Output values should be null.*/
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
       INVALID_STREAM_ARN_1, &message_params, &cloud_attrs);
-  tlib_pass_if_null("null stream_arn, cloud_resource_id should be null.",
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
                     cloud_attrs.cloud_resource_id);
-  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
                     message_params.destination_name);
 
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
       INVALID_STREAM_ARN_2, &message_params, &cloud_attrs);
-  tlib_pass_if_null("null stream_arn, cloud_resource_id should be null.",
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
                     cloud_attrs.cloud_resource_id);
-  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
                     message_params.destination_name);
 
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
       INVALID_STREAM_ARN_3, &message_params, &cloud_attrs);
-  tlib_pass_if_null("null stream_arn, cloud_resource_id should be null.",
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
                     cloud_attrs.cloud_resource_id);
-  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
                     message_params.destination_name);
 
   nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
       INVALID_STREAM_ARN_4, &message_params, &cloud_attrs);
-  tlib_pass_if_null("null stream_arn, cloud_resource_id should be null.",
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
                     cloud_attrs.cloud_resource_id);
-  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
                     message_params.destination_name);
 
   /* Test valid stream_arns.  Output values should be match.*/
