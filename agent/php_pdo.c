@@ -238,7 +238,7 @@ const char* nr_php_pdo_get_driver_from_zend_object(zend_object* obj TSRMLS_DC) {
 
 const char* nr_php_pdo_get_driver(zval* obj TSRMLS_DC) {
   pdo_dbh_t* dbh = NULL;
-  dbh = nr_php_pdo_get_database_object(obj TSRMLS_CC);
+  dbh = nr_php_pdo_get_database_object_from_object(obj TSRMLS_CC);
   if (NULL == dbh) {
     nrl_verbosedebug(NRL_SQL, "%s: unable to get pdo_dbh_t", __func__);
     return NULL;
