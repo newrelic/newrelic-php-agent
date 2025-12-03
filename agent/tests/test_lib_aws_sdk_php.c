@@ -629,7 +629,7 @@ static void setup_inherited_classes() {
       "class base_class {"
         "private ?string $region;"
         "private ?endpoint_class $endpoint;"
-        "function base_func($command1, $args, $expects) {return;}"
+        "function base_func($command, $args, $expects) {return;}"
         "function __construct(?string $region = null, ?int $port = null, ?string $host = null) {"
           "$this->region = $region;"
           "$this->endpoint = new endpoint_class($port, $host);"
