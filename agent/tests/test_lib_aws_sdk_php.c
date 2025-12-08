@@ -61,6 +61,70 @@ NR_PHP_WRAPPER(expect_arg_value_null) {
 }
 NR_PHP_WRAPPER_END
 
+NR_PHP_WRAPPER(aws_kinesis_set_params_from_stream_name_wrapper) {
+  (void)wraprec;
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
+  nr_segment_message_params_t message_params = {0};
+  char* expected_string = NULL;
+  char* test_name_string = NULL;
+  char* stream_name_string = NULL;
+  zval* test_name = NULL;
+  zval* expected = NULL;
+  zval* stream_name = NULL;
+
+  /*
+   * argument 1 is is used to pass in the test name
+   */
+  test_name = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS);
+  if (nr_php_is_zval_valid_string(test_name)) {
+    test_name_string = Z_STRVAL_P(test_name);
+  } else {
+    test_name_string = "Params should match expected.";
+  }
+
+  /*
+   * argument 2 is is used to pass in the stream name
+   */
+
+  stream_name = nr_php_get_user_func_arg(2, NR_EXECUTE_ORIG_ARGS);
+  if (nr_php_is_zval_valid_string(stream_name)) {
+    stream_name_string = Z_STRVAL_P(stream_name);
+  }
+
+  /*
+   * argument 3 is is used to pass in the expected value
+   */
+
+  expected = nr_php_get_user_func_arg(3, NR_EXECUTE_ORIG_ARGS);
+  if (nr_php_is_zval_valid_string(expected)) {
+    expected_string = Z_STRVAL_P(expected);
+  }
+
+  /*
+   * nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name sets:
+   *       - cloud_attrs->cloud_resource_id MUST be freed by caller
+   *       - cloud_attrs->cloud_region ONLY if cloud_resource_id is NULL
+   *       - cloud_attrs->cloud_account_id ONLY if cloud_resource_id is NULL
+   *       - message_params->destination_name
+   */
+  NR_PHP_WRAPPER_CALL;
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
+      stream_name_string, &message_params, &cloud_attrs, NR_EXECUTE_ORIG_ARGS);
+
+  char* result_string = nr_formatf(
+      "cloud_resource_id:%s region:%s account_id:%s destination_name:%s",
+      NRSAFESTR(cloud_attrs.cloud_resource_id),
+      NRSAFESTR(cloud_attrs.cloud_region),
+      NRSAFESTR(cloud_attrs.cloud_account_id),
+      NRSAFESTR(message_params.destination_name));
+
+  tlib_pass_if_str_equal(test_name_string, expected_string, result_string);
+
+  nr_free(result_string);
+  nr_free(cloud_attrs.cloud_resource_id);
+}
+NR_PHP_WRAPPER_END
+
 NR_PHP_WRAPPER(aws_dynamodb_set_params_wrapper) {
   (void)wraprec;
   nr_segment_cloud_attrs_t cloud_attrs = {0};
@@ -72,7 +136,6 @@ NR_PHP_WRAPPER(aws_dynamodb_set_params_wrapper) {
   zval* expected = NULL;
 
   datastore_params.instance = &instance;
-
   /*
    * argument 1 is is used to pass in the test name
    */
@@ -318,7 +381,7 @@ static void test_nr_lib_aws_sdk_php_sqs_parse_queueurl() {
 
   tlib_php_engine_create("");
 
-// clang-format off
+  // clang-format off
 #define VALID_QUEUE_URL  "https://sqs.us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME"
 #define INVALID_QUEUE_URL_1 "https://us-east-2.amazonaws.com/123456789012/SQS_QUEUE_NAME"
 #define INVALID_QUEUE_URL_2 "https://sqs.us-east-2.amazonaws.com/123456789012/"
@@ -576,6 +639,337 @@ static void setup_inherited_classes() {
   // clang-format on
   tlib_php_request_eval(classes);
 }
+
+static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn() {
+  /*
+   * nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn sets ONLY
+   * cloud_resource_id and destination_name, if possible.
+   */
+  nr_segment_message_params_t message_params = {0};
+  nr_segment_cloud_attrs_t cloud_attrs = {0};
+
+  tlib_php_engine_create("");
+
+  // clang-format off
+#define VALID_STREAM_ARN  "arn:aws:kinesis:us-east-2:123456789012:stream/MY_STREAM_NAME"
+#define VALID_STREAM_ARN_DESTINATION_NAME  "MY_STREAM_NAME"
+#define INVALID_STREAM_ARN_1 "arn:aws:kinesis:us-east-2:123456789012:stream/"
+#define INVALID_STREAM_ARN_2 "arn:aws:kinesis:us-east-2:123456789012:stream:MY_STREAM_NAME"
+#define INVALID_STREAM_ARN_3 "arn:aws:kinesis:us-east-2:123456789012:MY_STREAM_NAME"
+#define INVALID_STREAM_ARN_4 "arn:aws:kinesis:us-east-2:123456789012stream:MY_STREAM_NAME"
+
+  // clang-format on
+
+  /* Test null stream_arn.  Output values should be null.*/
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(NULL, &message_params,
+                                                        &cloud_attrs);
+  tlib_pass_if_null("null stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("null stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  /* Test empty stream_arn.  Output values should be null.*/
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn("", &message_params,
+                                                        &cloud_attrs);
+  tlib_pass_if_null("empty stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("empty stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  /* Test null message_params, null arn.  No values extracted, shouldn't modify
+   * cloud_attrs. */
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(NULL, NULL,
+                                                        &cloud_attrs);
+  tlib_pass_if_null(
+      "null message_params and null arn, cloud_resource_id should be null.",
+      cloud_attrs.cloud_resource_id);
+
+  /* Test null cloud_attrs.  No values extracted, shouldn't modify
+   * message_params. */
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(NULL, &message_params,
+                                                        NULL);
+  tlib_pass_if_null(
+      "null cloud_attrs and null stream_arn, destination_name should be null.",
+      message_params.destination_name);
+
+  /* Test null message_params but valid stream arn.  No values extracted,
+   * shouldn't modify cloud_attrs. */
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(VALID_STREAM_ARN, NULL,
+                                                        &cloud_attrs);
+  tlib_pass_if_null(
+      "null message_params but valid stream arn, cloud_resource_id should be "
+      "null.",
+      cloud_attrs.cloud_resource_id);
+
+  /* Test null cloud_attrs but valid stream arn.  No values extracted, shouldn't
+   * modify message_params. */
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(VALID_STREAM_ARN,
+                                                        &message_params, NULL);
+  tlib_pass_if_null(
+      "null cloud_attrs but valid stream arn, destination_name should be null.",
+      message_params.destination_name);
+
+  /* Test invalid stream_arns.  Output values should be null.*/
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+      INVALID_STREAM_ARN_1, &message_params, &cloud_attrs);
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+      INVALID_STREAM_ARN_2, &message_params, &cloud_attrs);
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+      INVALID_STREAM_ARN_3, &message_params, &cloud_attrs);
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+      INVALID_STREAM_ARN_4, &message_params, &cloud_attrs);
+  tlib_pass_if_null("invalid stream_arn, cloud_resource_id should be null.",
+                    cloud_attrs.cloud_resource_id);
+  tlib_pass_if_null("invalid stream_arn, destination_name should be null.",
+                    message_params.destination_name);
+
+  /* Test valid stream_arns.  Output values should be match.*/
+  nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+      VALID_STREAM_ARN, &message_params, &cloud_attrs);
+  tlib_pass_if_str_equal("valid stream_arn, cloud_resource_id should be match.",
+                         cloud_attrs.cloud_resource_id, VALID_STREAM_ARN);
+  tlib_pass_if_str_equal("valid stream_arn, destination_name should match.",
+                         message_params.destination_name,
+                         VALID_STREAM_ARN_DESTINATION_NAME);
+
+  tlib_php_engine_destroy();
+}
+
+static void test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name() {
+  zval* obj = NULL;
+  zval* expect_arg = NULL;
+  zval* stream_name_arg = NULL;
+  zval* test_name_arg = NULL;
+  zval* expr = NULL;
+  char* stream_name = NULL;
+  char* expect = NULL;
+  char* test_name = NULL;
+
+  tlib_php_engine_create("");
+  tlib_php_request_start();
+
+  setup_inherited_classes();
+
+  /* Get class with all values set to NULL*/
+  obj = tlib_php_request_eval_expr("new top_class");
+  tlib_pass_if_not_null("object shouldn't be NULL", obj);
+
+  nr_php_wrap_user_function(NR_PSTR("base_class::base_func"),
+                            aws_kinesis_set_params_from_stream_name_wrapper);
+
+  test_name
+      = "'test1:stream_name is null, region is null, account id is null so "
+        "expect no values set in structs'";
+
+  stream_name = NULL;
+
+  expect
+      = "'cloud_resource_id:<NULL> region:<NULL> account_id:<NULL> "
+        "destination_name:<NULL>'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  test_name
+      = "'test2:stream_name is empty string, region is null, account id is "
+        "null so expect no values set in structs'";
+
+  stream_name = "''";
+
+  expect
+      = "'cloud_resource_id:<NULL> region:<NULL> account_id:<NULL> "
+        "destination_name:<NULL>'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  test_name
+      = "'test3:stream_name is not null, region is null, account id is null so "
+        "expect destination_name to be set'";
+
+  stream_name = "'my_stream'";
+
+  expect
+      = "'cloud_resource_id:<NULL> region:<NULL> account_id:<NULL> "
+        "destination_name:my_stream'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  NRINI(aws_account_id) = "111122223333";
+  test_name
+      = "'test4:stream_name is not null, region is null, account id not null "
+        "so expect only destination_name and account_id to be set'";
+
+  stream_name = "'my_stream'";
+
+  expect
+      = "'cloud_resource_id:<NULL> region:<NULL> account_id:111122223333 "
+        "destination_name:my_stream'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  /* Done with obj where region is not set*/
+  nr_php_zval_free(&obj);
+
+  /* Get class with empty string region*/
+  obj = tlib_php_request_eval_expr("new top_class(region:'')");
+  tlib_pass_if_not_null("object shouldn't be NULL", obj);
+
+  nr_php_wrap_user_function(NR_PSTR("base_class::base_func"),
+                            aws_kinesis_set_params_from_stream_name_wrapper);
+
+  NRINI(aws_account_id) = "";
+  test_name
+      = "'test5:stream_name null, region is empty string, account id is empty"
+        "string so expect no values to be set'";
+
+  stream_name = NULL;
+
+  expect
+      = "'cloud_resource_id:<NULL> region:<NULL> account_id:<NULL> "
+        "destination_name:<NULL>'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  /* Done with obj where region is not set*/
+  nr_php_zval_free(&obj);
+
+  /* Get class with non-empty string region*/
+  obj = tlib_php_request_eval_expr("new top_class(region:'my_region')");
+  tlib_pass_if_not_null("object shouldn't be NULL", obj);
+
+  nr_php_wrap_user_function(NR_PSTR("base_class::base_func"),
+                            aws_kinesis_set_params_from_stream_name_wrapper);
+
+  NRINI(aws_account_id) = NULL;
+  test_name
+      = "'test6:stream_name null, region is not null, account id null so "
+        "expect only region to be set'";
+
+  stream_name = NULL;
+
+  expect
+      = "'cloud_resource_id:<NULL> region:my_region account_id:<NULL> "
+        "destination_name:<NULL>'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  test_name
+      = "'test7:stream_name not null, region is not null, account id null so "
+        "expect only region to be set'";
+
+  stream_name = "'my_stream'";
+
+  expect
+      = "'cloud_resource_id:<NULL> region:my_region account_id:<NULL> "
+        "destination_name:my_stream'";
+
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  test_name
+      = "'test8:stream_name is not null, region is not null, account id not "
+        "null so expect only destination_name and resource_id to be set'";
+
+  stream_name = "'my_stream'";
+
+  expect
+      = "'cloud_resource_id:arn:aws:kinesis:my_region:111122223333:stream/"
+        "my_stream region:<NULL> account_id:<NULL> destination_name:my_stream'";
+  NRINI(aws_account_id) = "111122223333";
+  test_name_arg = tlib_php_request_eval_expr(test_name);
+  stream_name_arg = tlib_php_request_eval_expr(stream_name);
+  expect_arg = tlib_php_request_eval_expr(expect);
+
+  expr = nr_php_call(obj, "base_func", test_name_arg, stream_name_arg,
+                     expect_arg);
+  nr_php_zval_free(&expr);
+  nr_php_zval_free(&expect_arg);
+  nr_php_zval_free(&stream_name_arg);
+  nr_php_zval_free(&test_name_arg);
+
+  /* Done with obj*/
+  nr_php_zval_free(&obj);
+
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+}
+
 static void test_nr_lib_aws_sdk_php_dynamodb_set_params() {
   zval* obj = NULL;
   zval* expect_arg = NULL;
@@ -1115,5 +1509,7 @@ void test_main(void* p NRUNUSED) {
   test_nr_lib_aws_sdk_php_get_command_arg_value();
   test_nr_lib_aws_sdk_php_lambda_invoke();
   test_nr_lib_aws_sdk_php_dynamodb_set_params();
+  test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn();
+  test_nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name();
 #endif /* PHP 8.1+ */
 }
