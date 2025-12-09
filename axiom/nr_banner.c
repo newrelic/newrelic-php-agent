@@ -18,7 +18,7 @@ void nr_banner(const char* daemon_address,
                const char* agent_specific_info) {
   const char* stype = 0;
   const char* startup = 0;
-  char osinfo[512];
+  char osinfo[1024];
   char daemon[64];
   char process_information[256];
 
@@ -45,10 +45,12 @@ void nr_banner(const char* daemon_address,
 
     if (sys) {
       snprintf(osinfo, sizeof(osinfo),
-               " os='%s' rel='%s' mach='%s' ver='%s' node='%s'",
-               NRBLANKSTR(sys->sysname), NRBLANKSTR(sys->release),
-               NRBLANKSTR(sys->machine), NRBLANKSTR(sys->version),
-               NRBLANKSTR(sys->nodename));
+               " osdistro='%s %s' oslibc='%s' os='%s' rel='%s' mach='%s' "
+               "ver='%s' node='%s'",
+               NRBLANKSTR(sys->distro_id), NRBLANKSTR(sys->distro_version_id),
+               NRBLANKSTR(sys->libc_version), NRBLANKSTR(sys->sysname),
+               NRBLANKSTR(sys->release), NRBLANKSTR(sys->machine),
+               NRBLANKSTR(sys->version), NRBLANKSTR(sys->nodename));
     }
 
     nr_system_destroy(&sys);

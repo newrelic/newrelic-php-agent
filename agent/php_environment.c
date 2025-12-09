@@ -289,6 +289,9 @@ static void nr_php_gather_machine_information(nrobj_t* env) {
            NRBLANKSTR(sys->version), NRBLANKSTR(sys->machine));
 
   nro_set_hash_string(env, "OS version", final);
+  nro_set_hash_string(env, "OS Distro Name", sys->distro_id);
+  nro_set_hash_string(env, "OS Distro Version", sys->distro_version_id);
+  nro_set_hash_string(env, "OS LIBC Version", sys->libc_version);
 
   /*
    * Advertise that we are running PHP on Heroku if DYNO env var is
