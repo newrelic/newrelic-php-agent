@@ -55,9 +55,9 @@ static void nr_system_get_system_libc(nr_system_t* sys) {
 
 #if defined(__GLIBC__)
   libc_version = gnu_get_libc_version();
-#else
-/* Currently unable to extract MUSL version. */
 #endif
+/* NOTE: Currently unable to extract MUSL version. */
+
 
   if (nr_strempty(libc_version)) {
     sys->libc_version = nr_formatf("%s", LIBC_NAME);
