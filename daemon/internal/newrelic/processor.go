@@ -888,7 +888,7 @@ func (p *Processor) processHarvestError(d HarvestError) {
 	case d.Reply.IsRestartException() || app.state == AppStateRestart:
 		log.Debugf("restart connection - stats code received = %d app.state = %d", d.Reply.StatusCode, app.state)
 		app.state = AppStateUnknown
-		app.ResetPhpPackages()
+		app.ResetPhpPackagesCache()
 		p.shutdownAppHarvest(d.id)
 		p.considerConnect(app)
 	}
