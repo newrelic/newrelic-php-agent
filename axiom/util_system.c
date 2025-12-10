@@ -56,8 +56,7 @@ static void nr_system_get_system_libc(nr_system_t* sys) {
 #if defined(__GLIBC__)
   libc_version = gnu_get_libc_version();
 #endif
-/* NOTE: Currently unable to extract MUSL version. */
-
+  /* NOTE: Currently unable to extract MUSL version. */
 
   if (nr_strempty(libc_version)) {
     sys->libc_version = nr_formatf("%s", LIBC_NAME);
@@ -112,7 +111,7 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
   }
 
   while (fgets(line, sizeof(line), fd) != NULL) {
-    if (nr_strstr(line, VERSION_ID_STRING) == line) {
+    if (0 == nr_strncmp(line, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
       len = strlen(line);
       STRIP_LINUX_NEWLINE;
       /*
@@ -122,7 +121,7 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
       HANDLE_START_QUOTE(VERSION_ID_STRING_LEN);
       sys->distro_version_id
           = nr_strdup(line + VERSION_ID_STRING_LEN + advance_value);
-    } else if (nr_strstr(line, ID_STRING) == line) {
+    } else if (0 == nr_strncmp(line, ID_STRING, ID_STRING_LEN)) {
       /*
        * By definition, the ID is a one word, lowercase, non-quoted string;
        * however, some OS have quoted IDs so just remove quotes if they exist.
