@@ -415,3 +415,11 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 
 	return resJson
 }
+
+// ResetPhpPackages clears the map of PHP packages that have been seen
+// during the current connection. This should be called when an application
+// reconnects to ensure package data is sent fresh to the collector.
+func (app *App) ResetPhpPackagesCache() {
+	app.PhpPackages = make(map[PhpPackagesKey]struct{})
+}
+
