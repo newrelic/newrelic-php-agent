@@ -422,4 +422,3 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 func (app *App) ResetPhpPackagesCache() {
 	app.PhpPackages = make(map[PhpPackagesKey]struct{})
 }
-
