@@ -71,24 +71,23 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
   FILE* fd = NULL;
   char line[256];
   int len = 0;
-  int advance_value = 0;
+  char* value = NULL;
 
 #define STRIP_LINUX_NEWLINE               \
   if (len > 0 && line[len - 1] == '\n') { \
-    line[len - 1] = 0;                    \
+    line[len - 1] = '\0';                 \
     len--;                                \
   }
 
 #define HANDLE_END_QUOTE                                            \
   if (len > 0 && ('"' == line[len - 1] || '\'' == line[len - 1])) { \
-    line[len - 1] = 0;                                              \
+    line[len - 1] = '\0';                                           \
     len--;                                                          \
   }
 
-#define HANDLE_START_QUOTE(prefix_len)                                    \
-  advance_value = 0;                                                      \
-  if (len > 1 && ('"' == line[prefix_len] || '\'' == line[prefix_len])) { \
-    advance_value = 1;                                                    \
+#define HANDLE_START_QUOTE                   \
+  if ('"' == value[0] || '\'' == value[0]) { \
+    value += 1;                              \
   }
 
   if (NULL == osrelease_fname) {
@@ -114,13 +113,15 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
     if (0 == nr_strncmp(line, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
       len = strlen(line);
       STRIP_LINUX_NEWLINE;
+      value = line + VERSION_ID_STRING_LEN;
       /*
        * some OS have quoted VERSION_IDs so just remove quotes if they exist.
        */
       HANDLE_END_QUOTE;
-      HANDLE_START_QUOTE(VERSION_ID_STRING_LEN);
-      sys->distro_version_id
-          = nr_strdup(line + VERSION_ID_STRING_LEN + advance_value);
+      HANDLE_START_QUOTE;
+      if (0 != *value) {
+        sys->distro_version_id = nr_strdup(value);
+      }
     } else if (0 == nr_strncmp(line, ID_STRING, ID_STRING_LEN)) {
       /*
        * By definition, the ID is a one word, lowercase, non-quoted string;
@@ -128,9 +129,12 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
        */
       len = strlen(line);
       STRIP_LINUX_NEWLINE;
+      value = line + ID_STRING_LEN;
       HANDLE_END_QUOTE;
-      HANDLE_START_QUOTE(ID_STRING_LEN);
-      sys->distro_id = nr_strdup(line + ID_STRING_LEN + advance_value);
+      HANDLE_START_QUOTE;
+      if (0 != *value) {
+        sys->distro_id = nr_strdup(value);
+      }
     }
   }
   fclose(fd);
