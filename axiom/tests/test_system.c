@@ -55,10 +55,14 @@ static void test_get_system_info_from_osrelease(void) {
   /* Sending a valid filename without VERSION_ID or ID shouldn't modify sys*/
   nr_system_get_system_info_from_osrelease(
       sys, REFERENCE_DIR "/osrelease_missingid_missingversionid");
-  tlib_pass_if_null("if NULL filename sys->distro_id should be NULL",
-                    sys->distro_id);
-  tlib_pass_if_null("if NULL filename sys->distro_version_id should be NULL",
-                    sys->distro_version_id);
+  tlib_pass_if_null(
+      "if valid filename but missing VERSION_ID or ID sys->distro_id should be "
+      "NULL",
+      sys->distro_id);
+  tlib_pass_if_null(
+      "if valid filename but missing VERSION_ID or ID sys->distro_version_id "
+      "should be NULL",
+      sys->distro_version_id);
 
   /* Sending a valid sys, valid filename but no VERSION_ID should set distro_id
    * but not distro_version_id*/
