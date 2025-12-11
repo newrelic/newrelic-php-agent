@@ -73,6 +73,63 @@ static void test_get_system_info_from_osrelease(void) {
       sys->distro_version_id);
   FREE_SYS_DISTRO_VALUES;
 
+  /* Unexpected Cases */
+
+  nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_emptyid_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename and VERSION_ID sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_null(
+      "if valid filename empty version_id, string sys->distro_id should be "
+      "NULL",
+      sys->distro_id);
+  FREE_SYS_DISTRO_VALUES;
+
+  nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_emptyquotes_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename and VERSION_ID sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_null(
+      "if valid filename, version_id has empty quotes sys->distro_id should be "
+      "NULL",
+      sys->distro_id);
+  FREE_SYS_DISTRO_VALUES;
+
+  nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_rightquote_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename and VERSION_ID sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename, version_id has only right quote sys->distro_id "
+      "should be set",
+      sys->distro_id, "ubuntu");
+  FREE_SYS_DISTRO_VALUES;
+
+  nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_leftquote_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename and VERSION_ID sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename, version_id has only left quote sys->distro_id should "
+      "be set",
+      sys->distro_id, "ubuntu");
+  FREE_SYS_DISTRO_VALUES;
+
+  nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_quoteonly_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename and VERSION_ID sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_null(
+      "if valid filename, version_id has just a quote no value sys->distro_id "
+      "should be NULL",
+      sys->distro_id);
+  FREE_SYS_DISTRO_VALUES;
+
   /* Sending a valid sys, valid filename but no ID should set distro_version_id
    * but not distro_id*/
   nr_system_get_system_info_from_osrelease(
