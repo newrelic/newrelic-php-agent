@@ -73,6 +73,12 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
   int len = 0;
   char* value = NULL;
 
+#define REMOVE_LEADING_WHITESPACE                                        \
+  value = line;                                                          \
+  while (value && '\0' != *value && nr_isspace((unsigned char)*value)) { \
+    value++;                                                             \
+  }
+
 #define STRIP_LINUX_NEWLINE               \
   if (len > 0 && line[len - 1] == '\n') { \
     line[len - 1] = '\0';                 \
@@ -110,29 +116,29 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
   }
 
   while (fgets(line, sizeof(line), fd) != NULL) {
-    if (0 == nr_strncmp(line, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
+    REMOVE_LEADING_WHITESPACE;
+    if (0 == nr_strncmp(value, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
       len = strlen(line);
       STRIP_LINUX_NEWLINE;
-      value = line + VERSION_ID_STRING_LEN;
+      value = value + VERSION_ID_STRING_LEN;
       /*
-       * some OS have quoted VERSION_IDs so just remove quotes if they exist.
+       * Some OS have quoted VERSION_IDs so just remove quotes if they exist.
        */
       HANDLE_END_QUOTE;
       HANDLE_START_QUOTE;
-      if (0 != *value) {
+      if ('\0' != *value) {
         sys->distro_version_id = nr_strdup(value);
       }
-    } else if (0 == nr_strncmp(line, ID_STRING, ID_STRING_LEN)) {
+    } else if (0 == nr_strncmp(value, ID_STRING, ID_STRING_LEN)) {
       /*
-       * By definition, the ID is a one word, lowercase, non-quoted string;
-       * however, some OS have quoted IDs so just remove quotes if they exist.
+       * Some OS have quoted IDs so just remove quotes if they exist.
        */
       len = strlen(line);
       STRIP_LINUX_NEWLINE;
-      value = line + ID_STRING_LEN;
+      value = value + ID_STRING_LEN;
       HANDLE_END_QUOTE;
       HANDLE_START_QUOTE;
-      if (0 != *value) {
+      if ('\0' != *value) {
         sys->distro_id = nr_strdup(value);
       }
     }
