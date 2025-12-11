@@ -106,12 +106,16 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
 
   /* Check if the file exists. */
   if (0 != nr_access(osrelease_fname, F_OK)) {
+    nrl_verbosedebug(NRL_AGENT, "%s file doesn't exist: %s", __func__,
+                     osrelease_fname);
     return;
   }
 
   /* Open file. */
   fd = fopen(osrelease_fname, "r");
   if (NULL == fd) {
+    nrl_verbosedebug(NRL_AGENT, "%s unable to open file: %s", __func__,
+                     osrelease_fname);
     return;
   }
 
