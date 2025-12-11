@@ -81,6 +81,18 @@ static void test_get_system_info_from_osrelease(void) {
   /* Unexpected Cases */
 
   nr_system_get_system_info_from_osrelease(
+      sys, REFERENCE_DIR "/osrelease_leadingwhitespace_ubuntu_24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename but leading whitespace, VERSION_ID "
+      "sys->distro_version_id should be set",
+      sys->distro_version_id, "24.04");
+  tlib_pass_if_str_equal(
+      "if valid filename but leading whitespace, ID sys->distro_id should be "
+      "set",
+      sys->distro_id, "ubuntu");
+  FREE_SYS_DISTRO_VALUES;
+
+  nr_system_get_system_info_from_osrelease(
       sys, REFERENCE_DIR "/osrelease_emptyid_ubuntu_24.04");
   tlib_pass_if_str_equal(
       "if valid filename and VERSION_ID sys->distro_version_id should be set",
