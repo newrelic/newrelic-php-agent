@@ -25,6 +25,8 @@
  */
 const char* cleanup_string
     = "sed "
+      "-e 's/ osdistro=[^]]*//g' "
+      "-e 's/ oslibc=[^]]*//g' "
       "-e 's/ os=[^]]*//g' "
       "-e 's/id=[0-9]*/id=-1/g' "
       "-e 's/New Relic [0-9.]*/New Relic X.Y.Z.W/' "
