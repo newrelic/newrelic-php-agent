@@ -9,10 +9,11 @@
 #ifndef UTIL_SYSTEM
 #define UTIL_SYSTEM
 
+#define NR_OSINFO_NOTDETECTED "nr_notdetected"
 #define VERSION_ID_STRING "VERSION_ID="
 #define ID_STRING "ID="
-#define VERSION_ID_STRING_LEN (sizeof(VERSION_ID_STRING)-1)
-#define ID_STRING_LEN (sizeof(ID_STRING)-1)
+#define VERSION_ID_STRING_LEN (sizeof(VERSION_ID_STRING) - 1)
+#define ID_STRING_LEN (sizeof(ID_STRING) - 1)
 #if defined(__GLIBC__)
 #define LIBC_NAME "GLIBC"
 #else

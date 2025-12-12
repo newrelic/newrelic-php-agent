@@ -73,28 +73,14 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
   int len = 0;
   char* value = NULL;
 
-#define REMOVE_LEADING_WHITESPACE                                        \
-  value = line;                                                          \
-  while (value && '\0' != *value && nr_isspace((unsigned char)*value)) { \
-    value++;                                                             \
-  }
-
-#define STRIP_LINUX_NEWLINE               \
-  if (len > 0 && line[len - 1] == '\n') { \
-    line[len - 1] = '\0';                 \
-    len--;                                \
-  }
-
-#define HANDLE_END_QUOTE                                            \
-  if (len > 0 && ('"' == line[len - 1] || '\'' == line[len - 1])) { \
-    line[len - 1] = '\0';                                           \
-    len--;                                                          \
-  }
-
-#define HANDLE_START_QUOTE                   \
-  if ('"' == value[0] || '\'' == value[0]) { \
-    value += 1;                              \
-  }
+  /* Note regarding: https://man.archlinux.org/man/os-release.5.en#DESCRIPTION
+   * The manpage mentions that /etc/os-release should be a relative symlink to
+   * /usr/lib/os-release and symlinks were not explicitly tested
+   *
+   * The manpage mentions that if /etc/os-release does not exist, the
+   * applications should fall back to /usr/lib/os-release but we do not
+   * currently support the fall back in our parsing.
+   */
 
   if (NULL == osrelease_fname) {
     return;
@@ -119,6 +105,29 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
     return;
   }
 
+#define REMOVE_LEADING_WHITESPACE                                        \
+  value = line;                                                          \
+  while (value && '\0' != *value && nr_isspace((unsigned char)*value)) { \
+    value++;                                                             \
+  }
+
+#define STRIP_LINUX_NEWLINE               \
+  if (len > 0 && line[len - 1] == '\n') { \
+    line[len - 1] = '\0';                 \
+    len--;                                \
+  }
+
+#define HANDLE_END_QUOTE                                            \
+  if (len > 0 && ('"' == line[len - 1] || '\'' == line[len - 1])) { \
+    line[len - 1] = '\0';                                           \
+    len--;                                                          \
+  }
+
+#define HANDLE_START_QUOTE                   \
+  if ('"' == value[0] || '\'' == value[0]) { \
+    value += 1;                              \
+  }
+
   while (fgets(line, sizeof(line), fd) != NULL) {
     REMOVE_LEADING_WHITESPACE;
     if (0 == nr_strncmp(value, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
@@ -131,6 +140,9 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
       HANDLE_END_QUOTE;
       HANDLE_START_QUOTE;
       if ('\0' != *value) {
+        if (NULL != sys->distro_version_id) {
+          nr_free(sys->distro_version_id);
+        }
         sys->distro_version_id = nr_strdup(value);
       }
     } else if (0 == nr_strncmp(value, ID_STRING, ID_STRING_LEN)) {
@@ -143,11 +155,19 @@ void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
       HANDLE_END_QUOTE;
       HANDLE_START_QUOTE;
       if ('\0' != *value) {
+        if (NULL != sys->distro_id) {
+          nr_free(sys->distro_id);
+        }
         sys->distro_id = nr_strdup(value);
       }
     }
   }
   fclose(fd);
+
+#undef REMOVE_LEADING_WHITESPACE
+#undef STRIP_LINUX_NEWLINE
+#undef HANDLE_END_QUOTE
+#undef HANDLE_START_QUOTE
 }
 
 /* Populates the nr_system_t struct with what we can get from uname. */

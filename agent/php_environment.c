@@ -291,12 +291,18 @@ static void nr_php_gather_machine_information(nrobj_t* env) {
   nro_set_hash_string(env, "OS version", final);
   if (NULL != sys->distro_id) {
     nro_set_hash_string(env, "OS Distro Name", sys->distro_id);
+  } else {
+    nro_set_hash_string(env, "OS Distro Name", NR_OSINFO_NOTDETECTED);
   }
   if (NULL != sys->distro_version_id) {
     nro_set_hash_string(env, "OS Distro Version", sys->distro_version_id);
+  } else {
+    nro_set_hash_string(env, "OS Distro Version", NR_OSINFO_NOTDETECTED);
   }
   if (NULL != sys->libc_version) {
     nro_set_hash_string(env, "OS LIBC Version", sys->libc_version);
+  } else {
+    nro_set_hash_string(env, "OS LIBC Version", NR_OSINFO_NOTDETECTED);
   }
 
   /*
