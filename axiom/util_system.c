@@ -8,14 +8,20 @@
 #include <netinet/in.h>
 #include <sys/utsname.h>
 
+#if defined(__GLIBC__)
+#include <gnu/libc-version.h>
+#endif
+
 #include <netdb.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
 #include "util_system.h"
+#include "util_syscalls.h"
 
 char* nr_system_get_service_port(const char* service, const char* port_type) {
   struct servent* serv_ptr;
@@ -39,9 +45,138 @@ char* nr_system_get_hostname(void) {
   return nr_strdup(hn);
 }
 
-nr_system_t* nr_system_get_system_information(void) {
+/* Populates the nr_system_t struct with libc info if available. */
+static void nr_system_get_system_libc(nr_system_t* sys) {
+  const char* libc_version = NULL;
+
+  if (NULL == sys) {
+    return;
+  }
+
+#if defined(__GLIBC__)
+  libc_version = gnu_get_libc_version();
+#endif
+  /* NOTE: Currently unable to extract MUSL version. */
+
+  if (nr_strempty(libc_version)) {
+    sys->libc_version = nr_formatf("%s", LIBC_NAME);
+  } else {
+    sys->libc_version = nr_formatf("%s %s", LIBC_NAME, libc_version);
+  }
+}
+
+/* Populates the nr_system_t struct with what we can get from etc/os-release. */
+void nr_system_get_system_info_from_osrelease(nr_system_t* sys,
+                                              char* osrelease_fname) {
+  FILE* fd = NULL;
+  char line[256];
+  int len = 0;
+  char* value = NULL;
+
+  /* Note regarding: https://man.archlinux.org/man/os-release.5.en#DESCRIPTION
+   * The manpage mentions that /etc/os-release should be a relative symlink to
+   * /usr/lib/os-release and symlinks were not explicitly tested
+   *
+   * The manpage mentions that if /etc/os-release does not exist, the
+   * applications should fall back to /usr/lib/os-release but we do not
+   * currently support the fall back in our parsing.
+   */
+
+  if (NULL == osrelease_fname) {
+    return;
+  }
+
+  if (NULL == sys) {
+    return;
+  }
+
+  /* Check if the file exists. */
+  if (0 != nr_access(osrelease_fname, F_OK)) {
+    nrl_verbosedebug(NRL_AGENT, "%s file doesn't exist: %s", __func__,
+                     osrelease_fname);
+    return;
+  }
+
+  /* Open file. */
+  fd = fopen(osrelease_fname, "r");
+  if (NULL == fd) {
+    nrl_verbosedebug(NRL_AGENT, "%s unable to open file: %s", __func__,
+                     osrelease_fname);
+    return;
+  }
+
+#define REMOVE_LEADING_WHITESPACE                                        \
+  value = line;                                                          \
+  while (value && '\0' != *value && nr_isspace((unsigned char)*value)) { \
+    value++;                                                             \
+  }
+
+#define STRIP_LINUX_NEWLINE               \
+  if (len > 0 && line[len - 1] == '\n') { \
+    line[len - 1] = '\0';                 \
+    len--;                                \
+  }
+
+#define HANDLE_END_QUOTE                                            \
+  if (len > 0 && ('"' == line[len - 1] || '\'' == line[len - 1])) { \
+    line[len - 1] = '\0';                                           \
+    len--;                                                          \
+  }
+
+#define HANDLE_START_QUOTE                   \
+  if ('"' == value[0] || '\'' == value[0]) { \
+    value += 1;                              \
+  }
+
+  while (fgets(line, sizeof(line), fd) != NULL) {
+    REMOVE_LEADING_WHITESPACE;
+    if (0 == nr_strncmp(value, VERSION_ID_STRING, VERSION_ID_STRING_LEN)) {
+      len = strlen(line);
+      STRIP_LINUX_NEWLINE;
+      value = value + VERSION_ID_STRING_LEN;
+      /*
+       * Some OS have quoted VERSION_IDs so just remove quotes if they exist.
+       */
+      HANDLE_END_QUOTE;
+      HANDLE_START_QUOTE;
+      if ('\0' != *value) {
+        if (NULL != sys->distro_version_id) {
+          nr_free(sys->distro_version_id);
+        }
+        sys->distro_version_id = nr_strdup(value);
+      }
+    } else if (0 == nr_strncmp(value, ID_STRING, ID_STRING_LEN)) {
+      /*
+       * Some OS have quoted IDs so just remove quotes if they exist.
+       */
+      len = strlen(line);
+      STRIP_LINUX_NEWLINE;
+      value = value + ID_STRING_LEN;
+      HANDLE_END_QUOTE;
+      HANDLE_START_QUOTE;
+      if ('\0' != *value) {
+        if (NULL != sys->distro_id) {
+          nr_free(sys->distro_id);
+        }
+        sys->distro_id = nr_strdup(value);
+      }
+    }
+  }
+  fclose(fd);
+
+#undef REMOVE_LEADING_WHITESPACE
+#undef STRIP_LINUX_NEWLINE
+#undef HANDLE_END_QUOTE
+#undef HANDLE_START_QUOTE
+}
+
+/* Populates the nr_system_t struct with what we can get from uname. */
+static void nr_system_get_system_info_from_uname(nr_system_t* sys) {
   struct utsname uni;
-  nr_system_t* sys;
+
+  if (NULL == sys) {
+    return;
+  }
 
   nr_memset(&uni, 0, sizeof(uni));
 
@@ -49,10 +184,8 @@ nr_system_t* nr_system_get_system_information(void) {
    * POSIX requires uname() to return a non-negative integer on success.
    */
   if (uname(&uni) < 0) {
-    return 0;
+    return;
   }
-
-  sys = (nr_system_t*)nr_zalloc(sizeof(nr_system_t));
 
   sys->sysname = nr_strdup(uni.sysname);
   sys->nodename = nr_strdup(uni.nodename);
@@ -67,7 +200,16 @@ nr_system_t* nr_system_get_system_information(void) {
       *colon = 0;
     }
   }
+}
 
+nr_system_t* nr_system_get_system_information(void) {
+  nr_system_t* sys;
+
+  sys = (nr_system_t*)nr_zalloc(sizeof(nr_system_t));
+
+  nr_system_get_system_info_from_uname(sys);
+  nr_system_get_system_info_from_osrelease(sys, OSRELEASE_DIR_PATH);
+  nr_system_get_system_libc(sys);
   return sys;
 }
 
@@ -87,6 +229,9 @@ void nr_system_destroy(nr_system_t** sys_ptr) {
   nr_free(sys->release);
   nr_free(sys->version);
   nr_free(sys->machine);
+  nr_free(sys->distro_id);
+  nr_free(sys->distro_version_id);
+  nr_free(sys->libc_version);
 
   nr_realfree((void**)sys_ptr);
 }

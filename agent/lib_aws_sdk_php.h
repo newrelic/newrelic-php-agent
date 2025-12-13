@@ -13,9 +13,16 @@
 #include "nr_segment_datastore.h"
 #include "nr_segment_datastore_private.h"
 
-
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP8.1+ */
 /* Service instrumentation only supported above PHP 8.1+*/
+
+/* Kinesis Data Streams */
+#define KINESIS_LIBRARY_NAME "Kinesis"
+#define AWS_KINESIS_PLATFORM "aws_kinesis_data_streams"
+#define AWS_SDK_PHP_KINESISCLIENT_STREAMNAME_ARG "StreamName"
+#define AWS_SDK_PHP_KINESISCLIENT_STREAMARN_ARG "StreamARN"
+#define AWS_STREAMARN_STREAM ":stream/"
+#define AWS_STREAMARN_STREAM_LEN sizeof(AWS_STREAMARN_STREAM) - 1
 
 /* SQS */
 #define SQS_LIBRARY_NAME "SQS"
@@ -64,14 +71,58 @@ extern void nr_lib_aws_sdk_php_add_supportability_service_metric(
  * supported with PHP 8.1+ */
 
 /*
+ * Purpose : Uses the StreamName to infer cloud_resource_id, if possible;
+ * otherwise, sets region and account_id, if found. Sets
+ * message_params.destination_name.
+ *
+ * Params  :
+ *           1. stream_name
+ *           2. message_params to set destination_name
+ *           3. cloud_attrs to set either cloud_resource_id OR cloud_region and
+ * cloud_account_id
+ *           4. NR_EXECUTE_ORIG_ARGS (execute_data, func_return_value)
+ *
+ * Returns :
+ *
+ * Note: the following values are set for the caller:
+ *       - cloud_attrs->cloud_resource_id MUST be freed by caller
+ *       - cloud_attrs->cloud_region ONLY if cloud_resource_id is NULL
+ *       - cloud_attrs->cloud_account_id ONLY if cloud_resource_id is NULL
+ *       - message_params->destination_name
+ */
+extern void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_name(
+    char* stream_name,
+    nr_segment_message_params_t* message_params,
+    nr_segment_cloud_attrs_t* cloud_attrs,
+    NR_EXECUTE_PROTO);
+
+/*
+ * Purpose : Uses the StreamARN to extract the StreamName.
+ *
+ * Params  : 1. stream_arn
+ *           2. message_params to set destination_name
+ *           3. cloud_attrs to set cloud_resource_id
+ *
+ * Returns :
+ *
+ * Note: the following values are set for the caller:
+ *       - cloud_attrs->cloud_resource_id
+ *       - message_params->destination_name
+ */
+extern void nr_lib_aws_sdk_php_kinesis_set_params_from_stream_arn(
+    char* stream_arn,
+    nr_segment_message_params_t* message_params,
+    nr_segment_cloud_attrs_t* cloud_attrs);
+
+/*
  * Purpose : Parses the QueueUrl to extract cloud_region, cloud_account_id, and
  * destination_name.  The extraction sets all or none since the values are from
  * the same string and if it is malformed, it cannot be used.
  *
  * Params  : 1. The QueueUrl, MUST be a modifiable string
  *           2. message_params to set message_params.destination_name
- *           3. cloud_attrs to set message_params.cloud_region,
- * message_params.cloud_account_id
+ *           3. cloud_attrs to set
+ * cloud_attrs.cloud_region,cloud_attrs.cloud_account_id
  *
  * Returns : applicable cloud_attrs and message params fields will point to null
  * terminated strings within the original string.
