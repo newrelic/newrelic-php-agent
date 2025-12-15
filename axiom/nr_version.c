@@ -50,8 +50,9 @@
  *   kernite            11Aug2025 (12.0)
  *   lizardite          09Sep2025 (12.1)
  *   malachite          19Nov2025 (12.2)
+ *   nephrite           15Dec2025 (12.3)
  */
-#define NR_CODENAME "nephrite"
+#define NR_CODENAME "obsidian"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
