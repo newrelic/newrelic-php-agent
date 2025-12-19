@@ -188,6 +188,9 @@ pdo_dbh_t* nr_php_pdo_get_database_object_from_object(zval* obj TSRMLS_DC) {
 
 pdo_dbh_t* nr_php_pdo_get_database_object_from_zend_object(
     zend_object* dbh TSRMLS_DC) {
+  if (NULL == dbh) {
+    return NULL;
+  }
   if (nr_php_class_entry_instanceof_class(dbh->ce, "PDO" TSRMLS_CC)) {
     return nr_php_pdo_get_database_object_internal_from_zend_object(
         dbh TSRMLS_CC);
@@ -391,6 +394,9 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
 }
 
 static zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+  if (NULL == dbh) {
+    return NULL;
+  }
   if (NULL == NRTXNGLOBAL(pdo_link_options)) {
     return NULL;
   }
