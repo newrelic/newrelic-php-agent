@@ -99,7 +99,7 @@ static enum pdo_error_mode set_pdo_silent(zval* dbh TSRMLS_DC);
 nr_explain_plan_t* nr_php_explain_pdo_mysql_statement(zval* stmt,
                                                       zval* parameters
                                                           TSRMLS_DC) {
-  PHP_PDO_DBH dbh = NULL;
+  NR_PHP_PDO_DBH dbh = NULL;
   zval* dup = NULL;
   zval* explain_stmt = NULL;
   pdo_stmt_t* pdo_stmt = NULL;

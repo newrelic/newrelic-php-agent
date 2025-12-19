@@ -14,9 +14,9 @@
 #include "nr_datastore_instance.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-#define PHP_PDO_DBH zend_object*
+#define NR_PHP_PDO_DBH zend_object*
 #else
-#define PHP_PDO_DBH zval*
+#define NR_PHP_PDO_DBH zval*
 #endif
 
 /*

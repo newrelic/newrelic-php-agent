@@ -390,7 +390,7 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
-static zval* nr_php_pdo_options_get(PHP_PDO_DBH dbh TSRMLS_DC) {
+static zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   if (NULL == NRTXNGLOBAL(pdo_link_options)) {
     return NULL;
   }
@@ -403,7 +403,7 @@ static zval* nr_php_pdo_options_get(PHP_PDO_DBH dbh TSRMLS_DC) {
 #endif
 }
 
-zval* nr_php_pdo_duplicate(PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   zend_uint argc = 3;
   zval* argv[4] = {NULL, NULL, NULL, NULL};
   const char* driver = NULL;
