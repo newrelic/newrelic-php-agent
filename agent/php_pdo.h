@@ -61,7 +61,8 @@ extern void nr_php_pdo_rebind_parameters(zval* source,
  */
 extern pdo_dbh_t* nr_php_pdo_get_database_object(zval* dbh TSRMLS_DC);
 
-/* Purpose : Returns the pdo_dbh_t struct that is contained in the object store
+/*
+ * Purpose : Returns the pdo_dbh_t struct that is contained in the object store
  *           for a PDO object.
  *
  * Params  : 1. The zend_object* database_object_handle
@@ -148,7 +149,7 @@ extern void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
  *
  * Returns : The new PDO object, or NULL if an error occurred.
  */
-extern zval* nr_php_pdo_duplicate(PHP_PDO_DBH dbh TSRMLS_DC);
+extern zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC);
 
 /*
  * Purpose : Save the options that were given when constructing a PDO object.
