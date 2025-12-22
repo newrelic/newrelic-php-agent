@@ -449,8 +449,11 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
    * get that and build up a new DSN.
    */
   driver = NR_PHP_PDO_GET_DRIVER(dbh TSRMLS_CC);
+  if (NULL == driver) {
+    return NULL;
+  }
 
-  dsn_len = asprintf(&dsn, "%s:%.*s", NRSAFESTR(driver),
+  dsn_len = asprintf(&dsn, "%s:%.*s", driver,
                      NRSAFELEN(pdo_dbh->data_source_len), pdo_dbh->data_source);
   argv[0] = nr_php_zval_alloc();
   nr_php_zval_str_len(argv[0], dsn, dsn_len);
