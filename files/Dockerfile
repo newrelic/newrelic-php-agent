@@ -9,7 +9,6 @@
 
 ARG PHP_VER
 
-# FROM php:${PHP_VER:-8.4}-bookworm
 FROM php:${PHP_VER:-8.5}-bookworm
 
 RUN docker-php-source extract
@@ -102,11 +101,11 @@ RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
 RUN \
   php_cmp=$(php -r "echo version_compare(PHP_VERSION, '7.4.0', '>=');"); \
   if [ "$php_cmp" = 1 ]; then \
-  # install latest redis for PHPs >= 7.4
-  echo 'no' | pecl install redis; \
+    # install latest redis for PHPs >= 7.4
+    echo 'no' | pecl install redis; \
   else \
-  # install redis-4.3.0 - last one with support for php 7.2
-  echo 'no' | pecl install redis-4.3.0; \
+    # install redis-4.3.0 - last one with support for php 7.2
+    echo 'no' | pecl install redis-4.3.0; \
   fi && docker-php-ext-enable redis
 
 # memcache
