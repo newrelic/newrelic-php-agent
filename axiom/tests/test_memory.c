@@ -13,11 +13,11 @@
 
 #include "tlib_main.h"
 
-// GCC 14 introduced changes that disallow invalid allocations of size 0
+// GCC 14 introduced changes that throw a fatal error on allocations of size 0
 // For PHP versions built on GCC 14+, suppress these errors so we may continue
 // to test on older GCC versions.
 #if defined __GNUC__ && __GNUC__ >= 14
-#pragma GCC diagnostic warning "-Wno-error=alloc-size"
+#pragma GCC diagnostic warning "-Wno-alloc-size"
 #endif
 
 /*
