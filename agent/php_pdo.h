@@ -19,6 +19,18 @@
 #define NR_PHP_PDO_DBH zval*
 #endif
 
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define NR_PHP_PDO_GET_DBO nr_php_pdo_get_database_object_from_zend_object
+#else
+#define NR_PHP_PDO_GET_DBO nr_php_pdo_get_database_object
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define NR_PHP_PDO_GET_DRIVER nr_php_pdo_get_driver_from_zend_object
+#else
+#define NR_PHP_PDO_GET_DRIVER nr_php_pdo_get_driver
+#endif
+
 /*
  * Purpose : Executes the given PDO prepared statement.
  *

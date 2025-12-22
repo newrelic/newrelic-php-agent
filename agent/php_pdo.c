@@ -422,11 +422,8 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   zval* retval = NULL;
   zend_class_entry* pdo_ce = NULL;
 
-#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  pdo_dbh = nr_php_pdo_get_database_object_from_zend_object(dbh TSRMLS_CC);
-#else
-  pdo_dbh = nr_php_pdo_get_database_object(dbh TSRMLS_CC);
-#endif
+  pdo_dbh = NR_PHP_PDO_GET_DBO(dbh TSRMLS_CC);
+
   if (NULL == pdo_dbh) {
     return NULL;
   }
@@ -441,20 +438,17 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
     return NULL;
   }
 
-/*
- * We'll always provide the first three arguments to PDO::__construct(), as
- * it can handle NULLs if the username and/or password weren't provided.
- */
+  /*
+   * We'll always provide the first three arguments to PDO::__construct(), as
+   * it can handle NULLs if the username and/or password weren't provided.
+   */
 
-/*
- * The DSN in the pdo_dbh_t struct doesn't include the driver name, so let's
- * get that and build up a new DSN.
- */
-#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  driver = nr_php_pdo_get_driver_from_zend_object(dbh TSRMLS_CC);
-#else
-  driver = nr_php_pdo_get_driver(dbh TSRMLS_CC);
-#endif
+  /*
+   * The DSN in the pdo_dbh_t struct doesn't include the driver name, so let's
+   * get that and build up a new DSN.
+   */
+  driver = NR_PHP_PDO_GET_DRIVER(dbh TSRMLS_CC);
+
   dsn_len = asprintf(&dsn, "%s:%.*s", driver,
                      NRSAFELEN(pdo_dbh->data_source_len), pdo_dbh->data_source);
   argv[0] = nr_php_zval_alloc();
