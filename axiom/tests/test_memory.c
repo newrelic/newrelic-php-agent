@@ -17,7 +17,7 @@
 // For PHP versions built on GCC 14+, suppress these errors so we may continue
 // to test on older GCC versions.
 #if defined __GNUC__ && __GNUC__ >= 14
-#pragma GCC diagnostic warning "-Wno-alloc-size"
+#pragma GCC diagnostic ignored "-Walloc-size"
 #endif
 
 /*
