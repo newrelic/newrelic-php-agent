@@ -121,6 +121,12 @@ static inline pdo_dbh_t* nr_php_pdo_get_database_object_internal(
   return Z_PDO_DBH_P(dbh);
 }
 
+static inline pdo_dbh_t*
+nr_php_pdo_get_database_object_internal_from_zend_object(
+    zend_object* dbh TSRMLS_DC) {
+  return php_pdo_dbh_fetch_inner(dbh);
+}
+
 /*
  * Purpose : Get the internal pdo_stmt_t struct for the given PDOStatement
  *           object.
