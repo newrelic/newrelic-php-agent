@@ -13,7 +13,7 @@ variable.
 /*SKIPIF
 <?php
 if (version_compare(PHP_VERSION, "8.5", "<")) {
-  die("skip: PHP >= 8.5.0 $http_response_header deprecated\n");
+  die("skip: PHP >= 8.5.0 http_response_header deprecated\n");
 }
 
 if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"])) {
