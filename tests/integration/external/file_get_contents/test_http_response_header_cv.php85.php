@@ -12,7 +12,7 @@ variable.
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 $http_response_header deprecated\n");
 }
 
@@ -89,23 +89,23 @@ function f()
 
     /* only URL */
     echo file_get_contents($url);
-    echo is_array($http_response_header)."\n";
+    echo is_array(http_get_last_response_headers())."\n";
 
     /* no context */
     echo file_get_contents($url, false);
-    echo is_array($http_response_header)."\n";
+    echo is_array(http_get_last_response_headers())."\n";
 
     /* NULL context */
     echo file_get_contents($url, false, null);
-    echo is_array($http_response_header)."\n";
+    echo is_array(http_get_last_response_headers())."\n";
 
     /* NULL context with offset and maxlen */
     echo file_get_contents($url, false, null, 0, 50000);
-    echo is_array($http_response_header)."\n";
+    echo is_array(http_get_last_response_headers())."\n";
 
     /* small maxlen */
     echo file_get_contents($url, false, null, 0, 128);
-    echo is_array($http_response_header)."\n";
+    echo is_array(http_get_last_response_headers())."\n";
 }
 
 f();
