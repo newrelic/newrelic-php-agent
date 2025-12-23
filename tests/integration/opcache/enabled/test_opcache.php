@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2022 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -65,10 +66,10 @@ Hello
 */
 
 if (!extension_loaded('Zend OPcache')) {
-  die("fail: opcache not loaded");
+    die("fail: opcache not loaded");
 }
 if (!opcache_get_status()) {
-  die("fail: opcache disabled");
+    die("fail: opcache disabled");
 }
 
 newrelic_add_custom_tracer('computation');
