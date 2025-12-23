@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -78,4 +79,3 @@ curl_setopt_array($ch, array(
   CURLOPT_HTTPHEADER => array("zip: zap", "zap: zip"),
 ));
 tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);

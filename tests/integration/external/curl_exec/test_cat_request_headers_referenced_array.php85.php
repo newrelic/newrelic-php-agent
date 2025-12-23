@@ -12,7 +12,7 @@ with an array that has been iterated over by-reference. PHP-1265
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
@@ -83,4 +83,3 @@ foreach ($headers as &$header) {
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);

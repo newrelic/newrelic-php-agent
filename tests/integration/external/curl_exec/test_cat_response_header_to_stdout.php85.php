@@ -6,13 +6,12 @@
  */
 
 /*DESCRIPTION
-Test that CAT works with curl_exec when curl_setopt+CURLOPT_HTTPHEADER is called
-with an array that has been iterated over by-reference. PHP-1265
+Test that CAT works with curl_exec when curl_setopt+CURLOPT_HEADER is called.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
@@ -30,9 +29,8 @@ newrelic.distributed_tracing_enabled=0
 newrelic.cross_application_tracer.enabled = true
 */
 
-/*EXPECT
-Customer-Header=found tracing endpoint reached
-ok - tracing successful
+/*EXPECT_REGEX
+tracing endpoint reached
 */
 
 /*EXPECT_RESPONSE_HEADERS
@@ -76,11 +74,5 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
-
-$headers = array(CUSTOMER_HEADER.': foo');
-foreach ($headers as &$header) {
-}
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
+curl_setopt($ch, CURLOPT_HEADER, true);
 tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);

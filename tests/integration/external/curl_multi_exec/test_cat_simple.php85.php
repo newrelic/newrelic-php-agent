@@ -6,13 +6,12 @@
  */
 
 /*DESCRIPTION
-Test that CAT works with curl_exec when curl_setopt+CURLOPT_HTTPHEADER is called
-with an array that has been iterated over by-reference. PHP-1265
+Two simple cross process requests in a curl_multi handle.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
@@ -31,11 +30,14 @@ newrelic.cross_application_tracer.enabled = true
 */
 
 /*EXPECT
-Customer-Header=found tracing endpoint reached
-ok - tracing successful
+tracing endpoint reached
+tracing endpoint reached
+ok - simple cat request 1
+ok - simple cat request 2
 */
 
 /*EXPECT_RESPONSE_HEADERS
+X-NewRelic-App-Data=??
 X-NewRelic-App-Data=??
 */
 
@@ -49,13 +51,13 @@ null
   "?? start time",
   "?? stop time",
   [
-    [{"name":"External/all"},                                       [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"}, [1, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                                       [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                                  [2, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                             [2, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"}, [2, "??", "??", "??", "??", "??"]],
+    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"}, [2, "??", "??", "??", "??", "??"]],
     [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
-      "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                      [2, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
@@ -75,12 +77,25 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
-$ch = curl_init($url);
 
-$headers = array(CUSTOMER_HEADER.': foo');
-foreach ($headers as &$header) {
-}
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+$ch1 = curl_init($url);
+$ch2 = curl_init($url);
 
-tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);
+$cm = curl_multi_init();
+
+curl_multi_add_handle($cm, $ch1);
+curl_multi_add_handle($cm, $ch2);
+
+$active = 0;
+
+do {
+    curl_multi_exec($cm, $active);
+} while ($active > 0);
+
+/* No errors */
+$info = curl_multi_info_read($cm);
+tap_ok('simple cat request 1', $info["result"] == 0);
+$info = curl_multi_info_read($cm);
+tap_ok('simple cat request 2', $info["result"] == 0);
+
+curl_multi_close($cm);

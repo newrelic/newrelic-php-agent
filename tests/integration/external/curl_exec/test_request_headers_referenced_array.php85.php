@@ -6,41 +6,29 @@
  */
 
 /*DESCRIPTION
-Test that CAT works with curl_exec when curl_setopt+CURLOPT_HTTPHEADER is called
-with an array that has been iterated over by-reference. PHP-1265
+Test that custom request headers added via curl_setopt+CURLOPT_HTTPHEADER are
+present when both DT and CAT are disabled.
+ */
+
+/*INI
+newrelic.distributed_tracing_enabled = false
+newrelic.cross_application_tracer.enabled = false
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", "<")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
-
-if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"])) {
-    die("skip: env vars required");
-}
-*/
-
-/*INI
-newrelic.distributed_tracing_enabled=0
-newrelic.cross_application_tracer.enabled = true
 */
 
 /*EXPECT
-Customer-Header=found tracing endpoint reached
+X-NewRelic-ID=missing X-NewRelic-Transaction=missing Customer-Header=found tracing endpoint reached
 ok - tracing successful
-*/
-
-/*EXPECT_RESPONSE_HEADERS
-X-NewRelic-App-Data=??
-*/
-
-/*EXPECT_TRACED_ERRORS
-null
 */
 
 /*EXPECT_METRICS
@@ -52,9 +40,7 @@ null
     [{"name":"External/all"},                                       [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/allOther"},                                  [1, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalApp/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/all"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"ExternalTransaction/127.0.0.1/ENV[ACCOUNT_supportability]#ENV[APP_supportability]/WebTransaction/Custom/tracing",
+    [{"name":"External/127.0.0.1/all",
       "scope":"OtherTransaction/php__FILE__"},                      [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                       [1, "??", "??", "??", "??", "??"]],
@@ -77,10 +63,6 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
 
-$headers = array(CUSTOMER_HEADER.': foo');
-foreach ($headers as &$header) {
-}
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(CUSTOMER_HEADER.': foo'));
 
 tap_not_equal(false, curl_exec($ch), "tracing successful");
-curl_close($ch);

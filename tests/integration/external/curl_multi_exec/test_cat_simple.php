@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -10,6 +11,10 @@ Two simple cross process requests in a curl_multi handle.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
+
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -84,7 +89,7 @@ curl_multi_add_handle($cm, $ch2);
 $active = 0;
 
 do {
-  curl_multi_exec($cm, $active);
+    curl_multi_exec($cm, $active);
 } while ($active > 0);
 
 /* No errors */
