@@ -12,7 +12,7 @@ the Synthetics feature is disabled.
 
 /*SKIPIF
 <?php
-<if (version_compare(PHP_VERSION, "8.5", ">=")) {
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
   die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
