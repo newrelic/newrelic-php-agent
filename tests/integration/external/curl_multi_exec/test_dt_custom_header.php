@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -79,7 +80,7 @@ curl_multi_add_handle($cm, $ch);
 $active = 0;
 
 do {
-  curl_multi_exec($cm, $active);
+    curl_multi_exec($cm, $active);
 } while ($active > 0);
 
 /* No errors */

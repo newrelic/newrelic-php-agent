@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -70,7 +71,7 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl_resource, $header_data) {
-  return strlen($header_data);
+    return strlen($header_data);
 });
 tap_not_equal(false, curl_exec($ch), "tracing successful");
 curl_close($ch);
