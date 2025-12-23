@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -32,7 +33,7 @@ ok - end of function reached without crash
 */
 
 
-/* the following metrics would be expected as well but due to an issue on the creation 
+/* the following metrics would be expected as well but due to an issue on the creation
  * of these metrics when a transaction is stopped and new one started they do not
  * currently show up.
  * [{"name": "Supportability/Logging/Forwarding/PHP/enabled"},                   [1, "??", "??", "??", "??", "??"]],
@@ -63,37 +64,34 @@ ok - end of function reached without crash
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function test_txn_restart()
 {
-  $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
+    $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
-  $ch1 = curl_init($url);
-  $ch2 = curl_init($url);
-  $mh = curl_multi_init();
+    $ch1 = curl_init($url);
+    $ch2 = curl_init($url);
+    $mh = curl_multi_init();
 
-  $active = 0;
+    $active = 0;
 
-  curl_multi_add_handle($mh, $ch1);
-  curl_multi_exec($mh, $active);
-
-  newrelic_ignore_transaction();
-  newrelic_end_transaction();
-  newrelic_start_transaction(ini_get("newrelic.appname"));
-
-  curl_multi_add_handle($mh, $ch2);
-  do {
+    curl_multi_add_handle($mh, $ch1);
     curl_multi_exec($mh, $active);
-  } while ($active > 0);
 
-  curl_multi_close($mh);
+    newrelic_ignore_transaction();
+    newrelic_end_transaction();
+    newrelic_start_transaction(ini_get("newrelic.appname"));
 
-  tap_ok("end of function reached without crash", true);
+    curl_multi_add_handle($mh, $ch2);
+    do {
+        curl_multi_exec($mh, $active);
+    } while ($active > 0);
+
+    curl_multi_close($mh);
+
+    tap_ok("end of function reached without crash", true);
 }
 
 test_txn_restart();

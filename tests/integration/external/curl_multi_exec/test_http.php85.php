@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -56,44 +57,41 @@ ok - strip credentials
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function test_multi_url($url, $msg)
 {
-  $cm = curl_multi_init();
+    $cm = curl_multi_init();
 
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_NOBODY, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch, CURLOPT_URL, $url);
-  curl_multi_add_handle($cm, $ch);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_multi_add_handle($cm, $ch);
 
-  $active = 0;
+    $active = 0;
 
-  do {
-    curl_multi_exec($cm, $active);
-  } while ($active > 0);
+    do {
+        curl_multi_exec($cm, $active);
+    } while ($active > 0);
 
-  /* No errors */
-  $info = curl_multi_info_read($cm);
-  tap_ok($msg, $info["result"] == 0);
+    /* No errors */
+    $info = curl_multi_info_read($cm);
+    tap_ok($msg, $info["result"] == 0);
 
-  curl_multi_close($cm);
+    curl_multi_close($cm);
 }
 
 
 function test_curl()
 {
-  global $EXTERNAL_HOST;
+    global $EXTERNAL_HOST;
 
-  test_multi_url('http://' . $EXTERNAL_HOST . '', 'simple hostname');
-  test_multi_url('http://' . $EXTERNAL_HOST . '?a=1&b=2', 'strip query string');
-  test_multi_url('http://' . $EXTERNAL_HOST . '/#fragment', 'strip fragment');
-  test_multi_url('http://user:pass@' . $EXTERNAL_HOST . '', 'strip credentials');
+    test_multi_url('http://' . $EXTERNAL_HOST . '', 'simple hostname');
+    test_multi_url('http://' . $EXTERNAL_HOST . '?a=1&b=2', 'strip query string');
+    test_multi_url('http://' . $EXTERNAL_HOST . '/#fragment', 'strip fragment');
+    test_multi_url('http://user:pass@' . $EXTERNAL_HOST . '', 'strip credentials');
 }
 
 test_curl();

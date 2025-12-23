@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -56,36 +57,32 @@ ok - strip credentials
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-
 function test_curl()
 {
-  global $EXTERNAL_HOST;
+    global $EXTERNAL_HOST;
 
-  $ch = curl_init();
+    $ch = curl_init();
 
-  curl_setopt($ch, CURLOPT_NOBODY, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '');
-  tap_not_equal(false, curl_exec($ch), 'simple hostname');
+    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '');
+    tap_not_equal(false, curl_exec($ch), 'simple hostname');
 
-  /* Query string should be stripped. */
-  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '?a=1&b=2');
-  tap_not_equal(false, curl_exec($ch), 'strip query string');
+    /* Query string should be stripped. */
+    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '?a=1&b=2');
+    tap_not_equal(false, curl_exec($ch), 'strip query string');
 
-  /* Fragment should be stripped. */
-  curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '/#fragment');
-  tap_not_equal(false, curl_exec($ch), 'strip fragment');
+    /* Fragment should be stripped. */
+    curl_setopt($ch, CURLOPT_URL, 'http://' . $EXTERNAL_HOST . '/#fragment');
+    tap_not_equal(false, curl_exec($ch), 'strip fragment');
 
-  /* Auth credentials should be stripped. */
-  curl_setopt($ch, CURLOPT_URL, 'http://user:pass@' . $EXTERNAL_HOST . '');
-  tap_not_equal(false, curl_exec($ch), 'strip credentials');
+    /* Auth credentials should be stripped. */
+    curl_setopt($ch, CURLOPT_URL, 'http://user:pass@' . $EXTERNAL_HOST . '');
+    tap_not_equal(false, curl_exec($ch), 'strip credentials');
 }
 
 test_curl();

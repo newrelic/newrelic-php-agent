@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -53,23 +54,20 @@ ok - type mismatch (boolean)
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
 function test_curl()
 {
-  $ch = curl_init();
+    $ch = curl_init();
 
-  curl_setopt($ch, CURLOPT_NOBODY, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-  curl_setopt($ch, CURLOPT_URL, '');
-  tap_refute(curl_exec($ch), 'empty string');
+    curl_setopt($ch, CURLOPT_URL, '');
+    tap_refute(curl_exec($ch), 'empty string');
 
-  curl_setopt($ch, CURLOPT_URL, false);
-  tap_refute(curl_exec($ch), 'type mismatch (boolean)');
+    curl_setopt($ch, CURLOPT_URL, false);
+    tap_refute(curl_exec($ch), 'type mismatch (boolean)');
 }
 
 test_curl();

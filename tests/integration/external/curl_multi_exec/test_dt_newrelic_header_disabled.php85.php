@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -64,14 +65,10 @@ null
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
-
 
 $ch1 = curl_init($url);
 $ch2 = curl_init($url);
@@ -83,7 +80,7 @@ curl_multi_add_handle($cm, $ch2);
 $active = 0;
 
 do {
-  curl_multi_exec($cm, $active);
+    curl_multi_exec($cm, $active);
 } while ($active > 0);
 
 /* No errors */

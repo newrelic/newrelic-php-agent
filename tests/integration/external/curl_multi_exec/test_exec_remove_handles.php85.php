@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -143,41 +144,38 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function test_curl_multi_exec_remove_handles()
 {
-  $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
+    $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
-  $ch1 = curl_init($url);
-  $ch2 = curl_init($url);
-  $ch3 = curl_init($url);
-  $ch4 = curl_init($url);
-  $mh = curl_multi_init();
+    $ch1 = curl_init($url);
+    $ch2 = curl_init($url);
+    $ch3 = curl_init($url);
+    $ch4 = curl_init($url);
+    $mh = curl_multi_init();
 
-  curl_multi_add_handle($mh, $ch1);
-  curl_multi_add_handle($mh, $ch2);
-  curl_multi_add_handle($mh, $ch3);
-  curl_multi_add_handle($mh, $ch4);
+    curl_multi_add_handle($mh, $ch1);
+    curl_multi_add_handle($mh, $ch2);
+    curl_multi_add_handle($mh, $ch3);
+    curl_multi_add_handle($mh, $ch4);
 
-  $active = 0;
-  curl_multi_exec($mh, $active);
-  curl_multi_remove_handle($mh, $ch2);
-  curl_multi_remove_handle($mh, $ch3);
-  curl_multi_remove_handle($mh, $ch4);
-  curl_multi_add_handle($mh, $ch4);
-
-  curl_exec($ch3);
-
-  do {
+    $active = 0;
     curl_multi_exec($mh, $active);
-  } while ($active > 0);
+    curl_multi_remove_handle($mh, $ch2);
+    curl_multi_remove_handle($mh, $ch3);
+    curl_multi_remove_handle($mh, $ch4);
+    curl_multi_add_handle($mh, $ch4);
 
-  curl_multi_close($mh);
+    curl_exec($ch3);
+
+    do {
+        curl_multi_exec($mh, $active);
+    } while ($active > 0);
+
+    curl_multi_close($mh);
 }
 
 test_curl_multi_exec_remove_handles();

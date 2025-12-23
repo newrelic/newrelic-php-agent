@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -54,43 +55,40 @@ ok - no more errors
 ]
 */
 
-
-
-
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
 function test_curl()
 {
-  $cm = curl_multi_init();
+    $cm = curl_multi_init();
 
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_NOBODY, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch, CURLOPT_URL, '');
-  curl_multi_add_handle($cm, $ch);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_URL, '');
+    curl_multi_add_handle($cm, $ch);
 
-  $ch2 = curl_init();
-  curl_setopt($ch2, CURLOPT_NOBODY, true);
-  curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch2, CURLOPT_URL, 19);
-  curl_multi_add_handle($cm, $ch2);
-  $active = 0;
+    $ch2 = curl_init();
+    curl_setopt($ch2, CURLOPT_NOBODY, true);
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_URL, 19);
+    curl_multi_add_handle($cm, $ch2);
+    $active = 0;
 
-  do {
-    curl_multi_exec($cm, $active);
-  } while ($active > 0);
+    do {
+        curl_multi_exec($cm, $active);
+    } while ($active > 0);
 
-  /* Non-0 result indicates an error */
-  $info = curl_multi_info_read($cm);
-  tap_ok('invalid url', $info["result"]);
-  $info = curl_multi_info_read($cm);
-  tap_ok('invalid url', $info["result"]);
+    /* Non-0 result indicates an error */
+    $info = curl_multi_info_read($cm);
+    tap_ok('invalid url', $info["result"]);
+    $info = curl_multi_info_read($cm);
+    tap_ok('invalid url', $info["result"]);
 
-  /* No more errors */
-  tap_refute(curl_multi_info_read($cm), 'no more errors');
+    /* No more errors */
+    tap_refute(curl_multi_info_read($cm), 'no more errors');
 
-  curl_multi_remove_handle($cm, $ch);
-  curl_multi_remove_handle($cm, $ch2);
+    curl_multi_remove_handle($cm, $ch);
+    curl_multi_remove_handle($cm, $ch2);
 }
 
 test_curl();
