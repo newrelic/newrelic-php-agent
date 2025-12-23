@@ -11,8 +11,8 @@ Test that CAT works with curl_exec when curl_setopt+CURLOPT_RETURNTRANSFER+CURLO
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, "8.5", ">=")) {
-  die("skip: PHP >= 8.5.0 http_response_header deprecated\n");
+if (version_compare(PHP_VERSION, "8.5", "<")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
 }
 
 if (!extension_loaded("curl")) {
@@ -77,4 +77,3 @@ $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_HEADER, true);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 echo curl_exec($ch);
-curl_close($ch);
