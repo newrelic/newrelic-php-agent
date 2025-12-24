@@ -27,18 +27,8 @@
 #define PHP_PACKAGE_NAME "laravel/framework"
 
 /*
- * This instruments Laravel 4.0-5.0, inclusive.
- * There is no support for Laravel 3.X or earlier.
- *
- * The first round of support was done for Laravel 4.1 (Jan 2014), thinking
- * that what worked for Laravel 4.1 would work for Laravel 4.0.
- *
- * This proved to not be the case, as significant changes were made in the
- * Routing code going from 4.0 to 4.1, and it is the Routing code that we hook.
- *
  * Known issue: users who have replaced the router service with code that
- * doesn't call Router::callGlobalFilter() (for Laravel 4.0) or
- * Router::dispatchToRoute() (for Laravel 4.1 and later) _and_ have disabled
+ * doesn't call Router::dispatchToRoute() _and_ have disabled
  * filtering will not get naming without adding PHP code that calls
  * newrelic_name_transaction().
  */
@@ -227,18 +217,7 @@ static nr_status_t nr_laravel_name_transaction_from_route_action(
     const zval* action TSRMLS_DC) {
   nr_php_zval_unwrap(action);
 
-  /*
-   * In Laravel 4.0, the route action is a simple string. In later versions,
-   * the action is an array: we want the "controller" element, which should be
-   * a string.
-   */
-  if (nr_php_is_zval_valid_string(action)) {
-    nrl_debug(NRL_FRAMEWORK,
-              "%s: using Route::getAction() for transaction naming", __func__);
-    nr_laravel_name_transaction_from_zval(action TSRMLS_CC);
-
-    return NR_SUCCESS;
-  } else if (nr_php_is_zval_valid_array(action)) {
+  if (nr_php_is_zval_valid_array(action)) {
     const zval* controller
         = nr_php_zend_hash_find(Z_ARRVAL_P(action), "controller");
 
@@ -301,7 +280,7 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
 
   /*
    * We intentionally don't check if the router or request implement the
-   * relevant interfaces. Unlike Symfony 2, Laravel mostly doesn't type hint
+   * relevant interfaces. Laravel mostly doesn't type hint
    * its internal method calls, which means that it's possible to replace these
    * services with something that exposes the same methods without implementing
    * the interfaces. As a result, we just check if they're an object and rely
@@ -322,22 +301,15 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
    * object, so let's grab that. Earlier versions of this code called
    * Router::currentRouteName() and Router::currentRouteAction(), which are
    * convenience methods that are less likely to be reimplemented in an
-   * alternative implementation of the router than the current() or
-   * getCurrentRoute() methods they depend upon.
-   *
-   * Laravel 4.1+ always provides current(), so we'll look for that first.
-   * Laravel 4.0 used getCurrentRoute(), and some later versions of 4.2 have
-   * re-added it as an alias for current() for improved backward compatibility,
-   * which suggests that this is intended to be a stable public API.
+   * alternative implementation of the router than the current() methods
+   * they depend upon.
    */
   if (nr_php_object_has_method(router, "current" TSRMLS_CC)) {
     route = nr_php_call(router, "current");
-  } else if (nr_php_object_has_method(router, "getCurrentRoute" TSRMLS_CC)) {
-    route = nr_php_call(router, "getCurrentRoute");
   } else {
     nrl_debug(
         NRL_FRAMEWORK,
-        "%s: router does not provide a current() or getCurrentRoute() method",
+        "%s: router does not provide a current() method",
         __func__);
   }
 
@@ -411,22 +383,11 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
 
     /*
      * The next route-related option is to grab the route pattern from
-     * Route::uri(), which is available in Laravel 4.1 to (at
-     * least) 5.4, inclusive.
+     * Route::uri()
      */
     if (NR_SUCCESS
         == nr_laravel_name_transaction_from_route_method(route,
                                                          "uri" TSRMLS_CC)) {
-      goto leave;
-    }
-
-    /*
-     * To support Laravel 4.0 naming, the final route-related option is to grab
-     * the route pattern from Route::getPath().
-     */
-    if (NR_SUCCESS
-        == nr_laravel_name_transaction_from_route_method(route,
-                                                         "getPath" TSRMLS_CC)) {
       goto leave;
     }
   } else if (route) {
@@ -489,7 +450,7 @@ leave:
  * See: http://laravel.com/docs/5.0/errors#handling-errors
  *
  */
-NR_PHP_WRAPPER(nr_laravel5_exception_render) {
+NR_PHP_WRAPPER(nr_laravel_exception_render) {
   const char* class_name = NULL;
   const char* ignored = NULL;
 
@@ -497,8 +458,6 @@ NR_PHP_WRAPPER(nr_laravel5_exception_render) {
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_LARAVEL, 5);
 
   /*
    * When the exception handler renders the response, name the transaction
@@ -524,15 +483,13 @@ NR_PHP_WRAPPER_END
  *
  * See: http://laravel.com/docs/5.0/errors#handling-errors
  */
-NR_PHP_WRAPPER(nr_laravel5_exception_report) {
+NR_PHP_WRAPPER(nr_laravel_exception_report) {
   zval* exception = NULL;
   int priority;
   zval* this_var = NULL;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_LARAVEL, 5);
 
   /*
    * PHP treats uncaught exceptions as E_ERROR, so we shall too.
@@ -552,7 +509,7 @@ NR_PHP_WRAPPER(nr_laravel5_exception_report) {
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   /*
-   * Laravel 5's default exception handler is an instance of
+   * Laravel's default exception handler is an instance of
    * Illuminate\Foundation\Exceptions\Handler, which includes a shouldReport()
    * method that returns false if the exception should be ignored.
    * Unfortunately, this isn't on the contract that Laravel exception handlers
@@ -598,93 +555,6 @@ NR_PHP_WRAPPER(nr_laravel5_exception_report) {
 NR_PHP_WRAPPER_END
 
 /*
- * Not applicable to OAPI.
- */
-static void nr_laravel_register_after_filter(zval* app TSRMLS_DC) {
-  zval* filter = NULL;
-  zval* retval = NULL;
-  zval* router = NULL;
-
-  /*
-   * We're going to call Router::after() to register a filter for
-   * transaction naming. Unfortunately, after() filters don't get the
-   * Application object as one of their parameters, so we use the AfterFilter
-   * object that is declared elsewhere in this file to emulate a closure that
-   * captures the Application object. (The Zend Engine API is insufficient
-   * to use a true closure.)
-   */
-
-  /*
-   * Get the router service from the container.
-   */
-  router = nr_php_call_offsetGet(app, "router" TSRMLS_CC);
-  if (NULL == router) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot get router service", __func__);
-    return;
-  }
-
-  /*
-   * Only install our filter if this version of Laravel supports them.
-   * Filters were deprecated in Laravel 5.0 and removed in version 5.2.
-   * As such, not applicable to OAPI.
-   */
-  if (0 == nr_php_object_has_concrete_method(router, "after" TSRMLS_CC)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Router does not support filters",
-                     __func__);
-    goto end;
-  }
-
-  filter = nr_php_zval_alloc();
-  object_init_ex(filter, nr_laravel_afterfilter_ce);
-
-  retval = nr_php_call(filter, "__construct", app);
-  if (NULL == retval) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: error constructing AfterFilter object",
-                     __func__);
-    goto end;
-  }
-  nr_php_zval_free(&retval);
-
-  retval = nr_php_call(router, "after", filter);
-  if (NULL == retval) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: error installing AfterFilter",
-                     __func__);
-    goto end;
-  }
-
-end:
-  nr_php_zval_free(&router);
-  nr_php_zval_free(&filter);
-  nr_php_zval_free(&retval);
-}
-/*
- * Not applicable to OAPI.
- */
-NR_PHP_WRAPPER(nr_laravel4_application_run) {
-  zval* this_var = NULL;
-
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_LARAVEL, 4);
-
-  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-
-  if (0 == nr_php_is_zval_valid_object(this_var)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
-                     __func__);
-    goto leave;
-  }
-
-  nr_laravel_register_after_filter(this_var TSRMLS_CC);
-
-leave:
-  NR_PHP_WRAPPER_CALL;
-  nr_php_scope_release(&this_var);
-}
-NR_PHP_WRAPPER_END
-
-/*
  * Purpose : Wrap implementations of the Middleware interface, and update
  *           the transaction name. This ensures the transaction is named if
  *           the middleware short-circuits request processing by returning
@@ -697,10 +567,8 @@ NR_PHP_WRAPPER_END
  * OAPI compatibility. This entails that the last wrapped call gets to name the
  * txn (as detailed in the purpose above).
  */
-NR_PHP_WRAPPER(nr_laravel5_middleware_handle) {
+NR_PHP_WRAPPER(nr_laravel_middleware_handle) {
   NR_UNUSED_SPECIALFN;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_LARAVEL, 5);
 
   if (wraprec->classname) {
     char* name = NULL;
@@ -718,7 +586,7 @@ NR_PHP_WRAPPER(nr_laravel5_middleware_handle) {
 }
 NR_PHP_WRAPPER_END
 
-static void nr_laravel5_wrap_middleware(zval* app TSRMLS_DC) {
+static void nr_laravel_wrap_middleware(zval* app TSRMLS_DC) {
   zval* kernel = NULL;
   zval* middleware = NULL;
   zval* classname = NULL;
@@ -768,10 +636,10 @@ static void nr_laravel5_wrap_middleware(zval* app TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
       nr_php_wrap_user_function_before_after_clean(
-          name, nr_strlen(name), nr_laravel5_middleware_handle, NULL, NULL);
+          name, nr_strlen(name), nr_laravel_middleware_handle, NULL, NULL);
 #else
       nr_php_wrap_user_function(name, nr_strlen(name),
-                                nr_laravel5_middleware_handle TSRMLS_CC);
+                                nr_laravel_middleware_handle TSRMLS_CC);
 #endif
       nr_free(name);
     }
@@ -837,14 +705,12 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
   nr_free(class_method);
 }
 
-NR_PHP_WRAPPER(nr_laravel5_application_boot) {
+NR_PHP_WRAPPER(nr_laravel_application_boot) {
   zval* this_var = NULL;
   zval* exception_handler = NULL;
 
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
-
-  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(NR_FW_LARAVEL, 5);
 
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   if (0 == nr_php_is_zval_valid_object(this_var)) {
@@ -856,11 +722,10 @@ NR_PHP_WRAPPER(nr_laravel5_application_boot) {
 
   NR_PHP_WRAPPER_CALL;
 
-  nr_laravel_register_after_filter(this_var TSRMLS_CC);
-  nr_laravel5_wrap_middleware(this_var TSRMLS_CC);
+  nr_laravel_wrap_middleware(this_var TSRMLS_CC);
 
   /*
-   * Laravel 5 has a known interface applications can implement to supplement or
+   * Laravel has a known interface applications can implement to supplement or
    * replace the default error handling. This is convenient because it allows us
    * to sensibly name transactions when an exception is thrown during routing
    * and also to record the error.
@@ -871,11 +736,11 @@ NR_PHP_WRAPPER(nr_laravel5_application_boot) {
     if (nr_php_is_zval_valid_object(exception_handler)) {
       nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
                                      NR_PSTR("render"),
-                                     nr_laravel5_exception_render TSRMLS_CC);
+                                     nr_laravel_exception_render TSRMLS_CC);
 
       nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
                                      NR_PSTR("report"),
-                                     nr_laravel5_exception_report TSRMLS_CC);
+                                     nr_laravel_exception_report TSRMLS_CC);
     } else {
       nrl_verbosedebug(NRL_FRAMEWORK, "%s: cannot get exception handler",
                        __func__);
@@ -950,12 +815,7 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   NR_UNUSED_SPECIALFN;
   (void)wraprec;
 
-  /*
-   * Retrieving the version is not included in the INI check below because it is
-   * needed for Laravel's instrumentation.
-   */
   version = nr_php_get_object_constant(this_var, "VERSION");
-
   if (NRINI(vulnerability_management_package_detection_enabled)) {
     // Add php package to transaction
     nr_txn_add_php_package(NRPRG(txn), PHP_PACKAGE_NAME, version);
@@ -963,35 +823,11 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
 
   nr_txn_suggest_package_supportability_metric(NRPRG(txn), PHP_PACKAGE_NAME,
                                                version);
+  nr_free(version);
 
-  if (version) {
-    nrl_debug(NRL_FRAMEWORK, "Laravel version is " NRP_FMT, NRP_PHP(version));
-
-    if (php_version_compare(version, "5.0") < 0) {
-      NRPRG(framework_version) = 4;
-
-      /* Laravel 4.x */
-      nr_php_wrap_user_function(
-          NR_PSTR("Illuminate\\Foundation\\Application::run"),
-          nr_laravel4_application_run TSRMLS_CC);
-
-      if (php_version_compare(version, "4.1") < 0) {
-        /* Laravel 4.0 */
-        nr_php_wrap_user_function(
-            NR_PSTR("Illuminate\\Routing\\Router::callAfterFilter"),
-            nr_laravel_router_method_with_request TSRMLS_CC);
-      }
-    } else {
-      NRPRG(framework_version) = 5;
-
-      /* Laravel >= 5.0 */
-      nr_php_wrap_user_function(
-          NR_PSTR("Illuminate\\Foundation\\Application::boot"),
-          nr_laravel5_application_boot TSRMLS_CC);
-    }
-
-    nr_free(version);
-  }
+  nr_php_wrap_user_function(
+      NR_PSTR("Illuminate\\Foundation\\Application::boot"),
+      nr_laravel_application_boot TSRMLS_CC);
 
   /*
    * If router filtering is disabled, then the filter installed by the previous
