@@ -114,7 +114,7 @@ RUN \
   php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.5.0', '>=');"); \
   if [ "$php_cmp" = 1 ]; then \
   # pecl install memcache && docker-php-ext-enable memcache; \
-    echo "unsupported"; \
+    echo "memcache unsupported for PHP 8.5+"; \
   else \
     php_cmp=$(php -r "echo version_compare(PHP_VERSION, '8.0.0', '>');"); \
     if [ "$php_cmp" = 1 ]; then \
