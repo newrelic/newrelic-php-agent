@@ -339,8 +339,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    /* See below: Zend, the legacy project of Laminas, which shares much
-       of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
     {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
@@ -376,15 +374,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii1_enable, NR_FW_YII1},
     {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable, NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable, NR_FW_YII2},
-
-    /* See above: Laminas, the successor to Zend, which shares much
-       of the instrumentation implementation with Zend */
-    // treating zend2 as zend3 for backwards compatibility
-    {"Zend3", "zend2", NULL, 0, 0, nr_fw_zend3_enable, NR_FW_ZEND3}, 
-    {"Zend3", "zend3", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend3_enable,
-     NR_FW_ZEND3},
-    {"Zend3", "zend3", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend3_enable,
-     NR_FW_ZEND3},
 };
 // clang-format: on
 static const int num_all_frameworks
