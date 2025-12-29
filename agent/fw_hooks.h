@@ -24,7 +24,6 @@ extern void nr_laminas3_enable(TSRMLS_D);
 extern void nr_laravel_enable(TSRMLS_D);
 extern void nr_magento1_enable(TSRMLS_D);
 extern void nr_magento2_enable(TSRMLS_D);
-extern void nr_mediawiki_enable(TSRMLS_D);
 extern void nr_symfony4_enable(TSRMLS_D);
 extern void nr_slim_enable(TSRMLS_D);
 extern void nr_wordpress_enable(TSRMLS_D);

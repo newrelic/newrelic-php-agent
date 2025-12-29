@@ -362,9 +362,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Magento2", "magento2", NR_PSTR("magento/framework/registration.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
-    {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,
-     NR_FW_MEDIAWIKI},
-
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 3.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
