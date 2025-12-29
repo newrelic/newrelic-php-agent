@@ -357,9 +357,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
 
-    {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
-     NR_FW_LUMEN},
-
     {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
     {"Magento2", "magento2", NR_PSTR("magento/framework/registration.php"), 0,
