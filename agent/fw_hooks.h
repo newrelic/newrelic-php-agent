@@ -38,7 +38,6 @@ extern void nr_guzzle6_enable(TSRMLS_D);
 extern void nr_laminas_http_enable(TSRMLS_D);
 extern void nr_mongodb_enable(TSRMLS_D);
 extern void nr_php_amqplib_enable();
-extern void nr_phpunit_enable(TSRMLS_D);
 extern void nr_predis_enable(TSRMLS_D);
 extern void nr_zend_http_enable(TSRMLS_D);
 extern void nr_monolog_enable(TSRMLS_D);

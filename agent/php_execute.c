@@ -448,13 +448,6 @@ static nr_library_table_t libraries[] = {
     {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
      nr_php_amqplib_enable},
     
-    /*
-     * The first path is for Composer installs, the second is for
-     * /usr/local/bin.
-     */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
-
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
 

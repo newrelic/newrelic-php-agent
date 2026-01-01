@@ -314,8 +314,6 @@ nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samp
                                                */
 nrinibool_t synthetics_enabled;               /* newrelic.synthetics.enabled */
 
-nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */
-
 nrinibool_t
     instance_reporting_enabled; /* newrelic.datastore_tracer.instance_reporting.enabled
                                  */

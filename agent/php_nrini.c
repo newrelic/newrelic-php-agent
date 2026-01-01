@@ -2826,18 +2826,6 @@ STD_PHP_INI_ENTRY_EX(
     nr_enabled_disabled_dh)
 
 /*
- * Library Support
- */
-STD_PHP_INI_ENTRY_EX("newrelic.phpunit_events.enabled",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     phpunit_events_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
-
-/*
  * Browser Monitoring
  */
 STD_PHP_INI_ENTRY_EX("newrelic.browser_monitoring.auto_instrument",
