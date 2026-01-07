@@ -173,9 +173,11 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   request = nr_php_call(event, "getRequest");
   if (nr_php_object_instanceof_class(
           request, "Symfony\\Component\\HttpFoundation\\Request" TSRMLS_CC)) {
+    zval* request_attrs = nr_php_get_zval_object_property(request, "attributes");
+
     /* Let's look for _route first. */
     zval* route_rval
-        = nr_symfony_object_get_string(request, "_route" TSRMLS_CC);
+        = nr_symfony_object_get_string(request_attrs, "_route" TSRMLS_CC);
 
     if (route_rval) {
       if (NR_SUCCESS
@@ -188,7 +190,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
     } else {
       /* No _route. Look for _controller. */
       zval* controller_rval
-          = nr_symfony_object_get_string(request, "_controller" TSRMLS_CC);
+          = nr_symfony_object_get_string(request_attrs, "_controller" TSRMLS_CC);
 
       if (controller_rval) {
         if (NR_SUCCESS
