@@ -2,10 +2,14 @@
 name: Enhancement request
 about: Suggest an idea for a future version of this project
 title: ''
-labels: enhancement, needs-triage
+labels: enhancement
 assignees: ''
 
 ---
+
+If you have an account representative, we ask that you first reach out to them as there is a process that will move much better for you. If you **do not** have one, please check the [New Relic Support Center](https://support.newrelic.com/) to ensure there is not already an open discussion around this request.
+
+This GitHub repository is focused on tracking specific technical bugs, architectural feature requests, and code-level contributions.
 
 [NOTE]: # ( ^^ Provide a general summary of the request in the title above. ^^ )
 
