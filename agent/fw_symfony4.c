@@ -130,6 +130,9 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   zval* event = NULL;
   zval* request = NULL;
+  zval* request_attrs;
+  zval* route_rval;
+  zval* controller_rval;
 
   /* Warning avoidance */
   (void)wraprec;
@@ -173,7 +176,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   request = nr_php_call(event, "getRequest");
   if (nr_php_object_instanceof_class(
           request, "Symfony\\Component\\HttpFoundation\\Request" TSRMLS_CC)) {
-    zval* request_attrs = nr_php_get_zval_object_property(request, "attributes");
+    request_attrs = nr_php_get_zval_object_property(request, "attributes");
     if (!nr_php_is_zval_valid_object(request_attrs)) {
       nrl_verbosedebug(
           NRL_TXN, "Symfony 4: Request->attributes could not be obtained");
@@ -181,7 +184,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
     }
 
     /* Let's look for _route first. */
-    zval* route_rval
+    route_rval
         = nr_symfony_object_get_string(request_attrs, "_route" TSRMLS_CC);
 
     if (route_rval) {
@@ -194,7 +197,7 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
       nr_php_zval_free(&route_rval);
     } else {
       /* No _route. Look for _controller. */
-      zval* controller_rval
+      controller_rval
           = nr_symfony_object_get_string(request_attrs, "_controller" TSRMLS_CC);
 
       if (controller_rval) {
