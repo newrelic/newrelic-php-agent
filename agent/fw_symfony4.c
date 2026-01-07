@@ -174,6 +174,11 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   if (nr_php_object_instanceof_class(
           request, "Symfony\\Component\\HttpFoundation\\Request" TSRMLS_CC)) {
     zval* request_attrs = nr_php_get_zval_object_property(request, "attributes");
+    if (!nr_php_is_zval_valid_object(request_attrs)) {
+      nrl_verbosedebug(
+          NRL_TXN, "Symfony 4: Request->attributes could not be obtained");
+      goto end;
+    }
 
     /* Let's look for _route first. */
     zval* route_rval
