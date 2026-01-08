@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 /*
  * This file provides utility functions for handling PDO and PDOStatement
  * objects.
@@ -13,6 +12,24 @@
 
 #include "nr_datastore.h"
 #include "nr_datastore_instance.h"
+
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define NR_PHP_PDO_DBH zend_object*
+#else
+#define NR_PHP_PDO_DBH zval*
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define NR_PHP_PDO_GET_DBO nr_php_pdo_get_database_object_from_zend_object
+#else
+#define NR_PHP_PDO_GET_DBO nr_php_pdo_get_database_object
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+#define NR_PHP_PDO_GET_DRIVER nr_php_pdo_get_driver_from_zend_object
+#else
+#define NR_PHP_PDO_GET_DRIVER nr_php_pdo_get_driver
+#endif
 
 /*
  * Purpose : Executes the given PDO prepared statement.
@@ -57,6 +74,17 @@ extern void nr_php_pdo_rebind_parameters(zval* source,
 extern pdo_dbh_t* nr_php_pdo_get_database_object(zval* dbh TSRMLS_DC);
 
 /*
+ * Purpose : Returns the pdo_dbh_t struct that is contained in the object store
+ *           for a PDO object.
+ *
+ * Params  : 1. The zend_object* database_object_handle
+ *
+ * Returns : A pointer to the pdo_dbh_t struct, or NULL if an error occurred.
+ */
+extern pdo_dbh_t* nr_php_pdo_get_database_object_from_zend_object(
+    zend_object* dbh TSRMLS_DC);
+
+/*
  * Purpose : Returns the pdo_stmt_t struct that is contained in the object store
  *           for a PDOStatement object.
  *
@@ -75,6 +103,17 @@ extern pdo_stmt_t* nr_php_pdo_get_statement_object(zval* stmt TSRMLS_DC);
  * Returns : The driver name.
  */
 extern const char* nr_php_pdo_get_driver(zval* obj TSRMLS_DC);
+
+/*
+ * Purpose : Returns the PDO driver in use for the given PDO or PDOStatement
+ *           object.
+ *
+ * Params  : 1. The PDO or PDOStatement zend_object.
+ *
+ * Returns : The driver name.
+ */
+extern const char* nr_php_pdo_get_driver_from_zend_object(
+    zend_object* obj TSRMLS_DC);
 
 /*
  * Purpose : Return the PDO driver in nr_datastore_t form.  This will return
@@ -122,7 +161,7 @@ extern void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
  *
  * Returns : The new PDO object, or NULL if an error occurred.
  */
-extern zval* nr_php_pdo_duplicate(zval* dbh TSRMLS_DC);
+extern zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC);
 
 /*
  * Purpose : Save the options that were given when constructing a PDO object.

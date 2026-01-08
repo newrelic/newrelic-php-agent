@@ -10,6 +10,9 @@ Test return value of curl_multi_add_handle and curl_multi_remove_handle.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -50,7 +53,8 @@ ok - curl handle removed
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
-function test_curl_multi_add_remove_handles() {
+function test_curl_multi_add_remove_handles()
+{
   $ch1 = curl_init();
   $ch2 = curl_init();
 

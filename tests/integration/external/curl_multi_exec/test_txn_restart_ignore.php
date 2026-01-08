@@ -10,6 +10,9 @@ Tests that transaction globals are properly freed when using New Relic API
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -65,7 +68,8 @@ ok - end of function reached without crash
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_txn_restart() {
+function test_txn_restart()
+{
   $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
   $ch1 = curl_init($url);

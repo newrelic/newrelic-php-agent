@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -11,6 +12,10 @@ variable.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 http_response_header deprecated\n");
+}
+
 if (!isset($_ENV["ACCOUNT_supportability"]) || !isset($_ENV["APP_supportability"])) {
     die("skip: env vars required");
 }
@@ -72,34 +77,35 @@ X-NewRelic-App-Data=??
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function f() {
-  $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
+function f()
+{
+    $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
-  /*
-   * Seeking (offset) is not supported with remote files, so testing if this
-   * parameter is maintained is not important. Similarly, I don't think
-   * use_include_path has any effect on remote files.
-   */
+    /*
+     * Seeking (offset) is not supported with remote files, so testing if this
+     * parameter is maintained is not important. Similarly, I don't think
+     * use_include_path has any effect on remote files.
+     */
 
-  /* only URL */
-  echo file_get_contents ($url);
-  echo is_array($http_response_header)."\n";
+    /* only URL */
+    echo file_get_contents($url);
+    echo is_array($http_response_header)."\n";
 
-  /* no context */
-  echo file_get_contents ($url, false);
-  echo is_array($http_response_header)."\n";
+    /* no context */
+    echo file_get_contents($url, false);
+    echo is_array($http_response_header)."\n";
 
-  /* NULL context */
-  echo file_get_contents ($url, false, NULL);
-  echo is_array($http_response_header)."\n";
+    /* NULL context */
+    echo file_get_contents($url, false, null);
+    echo is_array($http_response_header)."\n";
 
-  /* NULL context with offset and maxlen */
-  echo file_get_contents ($url, false, NULL, 0, 50000);
-  echo is_array($http_response_header)."\n";
+    /* NULL context with offset and maxlen */
+    echo file_get_contents($url, false, null, 0, 50000);
+    echo is_array($http_response_header)."\n";
 
-  /* small maxlen */
-  echo file_get_contents ($url, false, NULL, 0, 128);
-  echo is_array($http_response_header)."\n";
+    /* small maxlen */
+    echo file_get_contents($url, false, null, 0, 128);
+    echo is_array($http_response_header)."\n";
 }
 
 f();

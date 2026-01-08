@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -10,6 +11,10 @@ Test that CAT works with curl_exec when curl_setopt+CURLOPT_RETURNTRANSFER+CURLO
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 http_response_header deprecated\n");
+}
+
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }

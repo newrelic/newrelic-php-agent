@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -11,6 +12,10 @@ with an array that has been iterated over by-reference. PHP-1265
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
+
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -73,7 +78,8 @@ $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing
 $ch = curl_init($url);
 
 $headers = array(CUSTOMER_HEADER.': foo');
-foreach ($headers as &$header) {}
+foreach ($headers as &$header) {
+}
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 tap_not_equal(false, curl_exec($ch), "tracing successful");

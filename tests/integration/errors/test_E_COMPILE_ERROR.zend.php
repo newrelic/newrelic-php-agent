@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -6,6 +7,13 @@
 
 /*DESCRIPTION
 The agent should capture and report compile errors.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5 fatal error output behavior changed\n");
+}
 */
 
 /*INI
