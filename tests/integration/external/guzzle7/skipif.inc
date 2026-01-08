@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2022 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -8,6 +9,10 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php'
 
 if (version_compare(phpversion(), '8.1', '<')) {
     die("skip: PHP >= 8.1 required\n");
+}
+
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+    die("skip: PHP >= 8.5.0 only supported on guzzle 7.10+\n");
 }
 
 /*

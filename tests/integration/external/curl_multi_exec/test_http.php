@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -11,6 +12,9 @@ protocol is used.
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -56,10 +60,11 @@ ok - strip credentials
 
 
 
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/tap.php');
-require_once(realpath(dirname( __FILE__ )) . '/../../../include/config.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_multi_url($url, $msg) {
+function test_multi_url($url, $msg)
+{
     $cm = curl_multi_init();
 
     $ch = curl_init();
@@ -71,7 +76,7 @@ function test_multi_url($url, $msg) {
     $active = 0;
 
     do {
-	curl_multi_exec($cm, $active);
+        curl_multi_exec($cm, $active);
     } while ($active > 0);
 
     /* No errors */

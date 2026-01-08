@@ -10,6 +10,9 @@ Test the agent's handling of malformed urls passed to curl_exec().
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -53,9 +56,10 @@ ok - type mismatch (boolean)
 
 
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
-function test_curl() {
+function test_curl()
+{
   $ch = curl_init();
 
   curl_setopt($ch, CURLOPT_NOBODY, true);

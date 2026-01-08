@@ -1,16 +1,21 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*DESCRIPTION
-Test that Cross Application Tracing works with curl_exec when 
+Test that Cross Application Tracing works with curl_exec when
 curl_setopt+CURLOPT_HEADERFUNCTION is called.
 */
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
+
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -71,7 +76,7 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
 function headerfunction_callback($ch, $header_data)
 {
-    return strlen($header_data); 
+    return strlen($header_data);
 }
 
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -15,6 +16,9 @@ newrelic.cross_application_tracer.enabled = false
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -68,7 +72,7 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
 $ch = curl_init($url);
-curl_setopt($ch, CURLOPT_HTTPHEADER, array(CUSTOMER_HEADER.': foo'));
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(CUSTOMER_HEADER . ': foo'));
 
 $cm = curl_multi_init();
 curl_multi_add_handle($cm, $ch);

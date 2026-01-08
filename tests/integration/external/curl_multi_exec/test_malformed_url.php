@@ -14,6 +14,9 @@ newrelic.distributed_tracing_enabled=0
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
 if (!extension_loaded("curl")) {
   die("skip: curl extension required");
 }
@@ -54,9 +57,10 @@ ok - no more errors
 
 
 
-require_once(realpath (dirname ( __FILE__ )) . '/../../../include/tap.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 
-function test_curl() {
+function test_curl()
+{
   $cm = curl_multi_init();
 
   $ch = curl_init();

@@ -30,6 +30,10 @@ newrelic.distributed_tracing_enabled = false
 
 /*SKIPIF
 <?php
+if (version_compare(PHP_VERSION, "8.5", ">=")) {
+  die("skip: PHP >= 8.5.0 curl_close deprecated\n");
+}
+
 if (!$_ENV["SYNTHETICS_HEADER_supportability"]) {
     die("skip: env vars required");
 }
@@ -84,7 +88,8 @@ if (!extension_loaded("curl")) {
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_curl() {
+function test_curl()
+{
   $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
   $ch = curl_init($url);
 

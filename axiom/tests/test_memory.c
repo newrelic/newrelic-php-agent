@@ -13,6 +13,16 @@
 
 #include "tlib_main.h"
 
+// GCC 14 introduced changes that throw a fatal error on allocations of size 0
+// when the "-Walloc-size" option is enabled.  For the test case in this file
+// this error is not relevant as the tests are designed to explicitly test
+// allocations of size 0.  This pragma will suppress these errors so the tests
+// will be built and run on GCC 14+.  It does not affect GCC < 14 which works
+// as previously.
+#if defined __GNUC__ && __GNUC__ >= 14
+#pragma GCC diagnostic ignored "-Walloc-size"
+#endif
+
 /*
  * nr_malloc (0) must return a valid pointer.
  */
