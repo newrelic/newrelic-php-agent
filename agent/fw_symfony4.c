@@ -130,9 +130,9 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
   zval* event = NULL;
   zval* request = NULL;
-  zval* request_attrs;
-  zval* route_rval;
-  zval* controller_rval;
+  zval* request_attrs = NULL;
+  zval* route_rval = NULL;
+  zval* controller_rval = NULL;
 
   /* Warning avoidance */
   (void)wraprec;
