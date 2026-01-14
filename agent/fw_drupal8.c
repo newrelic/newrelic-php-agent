@@ -650,14 +650,13 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
       module_handler, "hookImplementationsMap");
 
   if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "hookImplementationsMap property not a valid array");
     hook_implementation_map
         = nr_php_get_zval_object_property(module_handler, "hookLists");
     if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
       nrl_verbosedebug(NRL_FRAMEWORK, "hookLists property not a valid array");
       return false;
     }
+    nrl_verbosedebug(NRL_FRAMEWORK, "failed to identify a valid hook map");
   }
 
   dump = nr_php_call(NULL, "var_dump", hook_implementation_map);
