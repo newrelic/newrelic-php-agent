@@ -607,7 +607,9 @@ NR_PHP_WRAPPER_END
 static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
                                       zval* val,
                                       const char* key_ident) {
-  if (NULL == key || 0 == ZEND_STRING_LEN(key)) {
+  nrl_verbosedebug(
+      NRL_FRAMEWORK, "hook map key: %s",
+      ZEND_STRING_VALUE(key)) if (NULL == key || 0 == ZEND_STRING_LEN(key)) {
     nrl_warning(NRL_FRAMEWORK, "hookImplementationsMap[%s]: invalid key",
                 key_ident);
     return true;
@@ -641,8 +643,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   zval* class_val = NULL;
   nr_php_string_hash_key_t* method_key = NULL;
   zval* module_val = NULL;
-  zval* dump = NULL;
-  char* dumpstr = NULL;
 
   char* hookpath = NULL;
 
@@ -659,9 +659,6 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     nrl_verbosedebug(NRL_FRAMEWORK, "failed to identify a valid hook map");
   }
 
-  dump = nr_php_call(NULL, "var_dump", hook_implementation_map);
-  dumpstr = nr_strndup(Z_STRVAL_P(dump), Z_STRLEN_P(dump));
-  nrl_verbosedebug(NRL_FRAMEWORK, "HOOKLIST: %s", dumpstr);
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
                                 hook_val) {
     if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
