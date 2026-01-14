@@ -641,6 +641,7 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
   zval* class_val = NULL;
   nr_php_string_hash_key_t* method_key = NULL;
   zval* module_val = NULL;
+  zval* dump = NULL;
 
   char* hookpath = NULL;
 
@@ -658,6 +659,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     }
   }
 
+  dump = nr_php_call(NULL, "var_dump", hook_implementation_map);
+  nrl_verbosedebug(NRL_FRAMEWORK, "HOOKLIST: %s", Z_STRVAL_P(dump));
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
                                 hook_val) {
     if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
