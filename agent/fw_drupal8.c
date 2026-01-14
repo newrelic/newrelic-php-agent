@@ -607,9 +607,8 @@ NR_PHP_WRAPPER_END
 static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
                                       zval* val,
                                       const char* key_ident) {
-  nrl_verbosedebug(
-      NRL_FRAMEWORK, "hook map key: %s",
-      ZEND_STRING_VALUE(key)) if (NULL == key || 0 == ZEND_STRING_LEN(key)) {
+  nrl_verbosedebug(NRL_FRAMEWORK, "hook map key: %s", ZEND_STRING_VALUE(key));
+  if (NULL == key || 0 == ZEND_STRING_LEN(key)) {
     nrl_warning(NRL_FRAMEWORK, "hookImplementationsMap[%s]: invalid key",
                 key_ident);
     return true;
