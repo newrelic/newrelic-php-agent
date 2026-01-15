@@ -18,6 +18,7 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
+#include "zend_hash.h"
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
@@ -625,41 +626,16 @@ static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
   return false;
 }
 
-/*
- * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
- *
- * Params: 1. A zval pointer to the moduleHandler instance in use by Drupal.
- *
- * Return: bool
- *
- */
-static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
-  zval* hook_implementation_map = NULL;
-
+static bool nr_drupal_parse_hookmap(zval* hookmap) {
   nr_php_string_hash_key_t* hook_key = NULL;
   zval* hook_val = NULL;
   nr_php_string_hash_key_t* class_key = NULL;
   zval* class_val = NULL;
   nr_php_string_hash_key_t* method_key = NULL;
   zval* module_val = NULL;
-
   char* hookpath = NULL;
 
-  hook_implementation_map = nr_php_get_zval_object_property(
-      module_handler, "hookImplementationsMap");
-
-  if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-    hook_implementation_map
-        = nr_php_get_zval_object_property(module_handler, "hookLists");
-    if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "hookLists property not a valid array");
-      return false;
-    }
-    nrl_verbosedebug(NRL_FRAMEWORK, "failed to identify a valid hook map");
-  }
-
-  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
-                                hook_val) {
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hookmap), hook_key, hook_val) {
     if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
       return false;
     }
@@ -705,6 +681,93 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     ZEND_HASH_FOREACH_END();
   }
   ZEND_HASH_FOREACH_END();
+
+  return true;
+}
+
+static bool nr_drupal_parse_hooklist(zval* hooklist) {
+  nr_php_string_hash_key_t* hook_key = NULL;
+  zval* hook_val = NULL;
+  nr_php_string_hash_key_t* func_key = NULL;
+  zval* module_val = NULL;
+
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hooklist), hook_key, hook_val) {
+    if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
+      return false;
+    }
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), func_key, module_val) {
+      if (NULL == func_key) {
+        nrl_verbosedebug(NRL_FRAMEWORK,
+                         "hookLists[hook][func]: NULL key for hook: %s",
+                         NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+      if (NULL == module_val) {
+        nrl_verbosedebug(
+            NRL_FRAMEWORK,
+            "hookLists[hook][func]: NULL module for func %s on hook %s",
+            NRSAFESTR(ZEND_STRING_VALUE(func_key)),
+            NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+      if (0 == nr_php_is_zval_valid_string(module_val)) {
+        nrl_verbosedebug(
+            NRL_FRAMEWORK,
+            "hookLists: non-string module value for func %s on hook %s",
+            NRSAFESTR(ZEND_STRING_VALUE(func_key)),
+            NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+
+      nrl_verbosedebug(
+          NRL_FRAMEWORK,
+          "hookLists: creating wrapper for hook: %s func: %s module: %s",
+          NRSAFESTR(ZEND_STRING_VALUE(hook_key)),
+          NRSAFESTR(ZEND_STRING_VALUE(func_key)), Z_STRVAL_P(module_val));
+
+      nr_php_wrap_user_function_drupal(
+          ZEND_STRING_VALUE(func_key), ZEND_STRING_LEN(func_key),
+          Z_STRVAL_P(module_val), Z_STRLEN_P(module_val),
+          ZEND_STRING_VALUE(hook_key), ZEND_STRING_LEN(hook_key));
+    }
+    ZEND_HASH_FOREACH_END();
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return true;
+}
+
+/*
+ * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
+ *
+ * Params: 1. A zval pointer to the moduleHandler instance in use by Drupal.
+ *
+ * Return: bool
+ *
+ */
+static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
+  zval* hook_implementation_map = NULL;
+
+  bool uses_hooklist = false;
+
+  hook_implementation_map = nr_php_get_zval_object_property(
+      module_handler, "hookImplementationsMap");
+
+  if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
+    hook_implementation_map
+        = nr_php_get_zval_object_property(module_handler, "hookLists");
+    if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "hookLists property not a valid array");
+      return false;
+    }
+    uses_hooklist = true;
+  }
+
+  if (uses_hooklist) {
+    nr_drupal_parse_hooklist(hook_implementation_map);
+  } else {
+    nr_drupal_parse_hookmap(hook_implementation_map);
+  }
 
   return true;
 }
