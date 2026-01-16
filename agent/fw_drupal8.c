@@ -18,7 +18,6 @@
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_strings.h"
-#include "zend_hash.h"
 
 #define PHP_PACKAGE_NAME "drupal/core"
 
