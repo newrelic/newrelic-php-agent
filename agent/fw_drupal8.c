@@ -626,6 +626,68 @@ static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
   return false;
 }
 
+/*
+ * Extract all hook functions and hook data for the drupal 11.1-11.2
+ * application
+ *
+ * @param zval* hookmap: a pointer to the zval containing the
+ *    ModuleHandler `hookImplementationsMap` class property.
+ *
+ * @return bool: true for success, false for failure
+ *
+ * Drupal 11.1 introduces the `hookImplementationsMap` property on the
+ * ModuleHandler class. This map contains all the hooks registered for the
+ * current drupal application.
+ *
+ * The structure of `hookImplementationsMap` resembles the following:
+ *
+ * array(348) {              <------ the `hookImplementationsMap` property array
+ * ["hook_info"]=>           <------ a subarray keyed by hook name
+ * array(1) {
+ *   ["Drupal\Core\Extension\ProceduralCall"]=> <- an array keyed by class name
+ *   array(2) {
+ *     ["system_hook_info"]=> <----- the function name implementing the hook
+ *     string(6) "system"     <----- the module name
+ *     ["views_hook_info"]=>
+ *     string(5) "views"
+ *   }
+ * }
+ * ...
+ *
+ * The `ProceduralCall` class name is a special case where the classname is not
+ * required to call the hook and should be left out of the hookpath used to name
+ * the hook.
+ *
+ * An example of the `help` hook:
+ *
+ * ["help"]=>
+ * array(51) {
+ *   ["Drupal\announcements_feed\Hook\AnnouncementsFeedHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(18) "announcements_feed"
+ *   }
+ *   ["Drupal\automated_cron\Hook\AutomatedCronHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(14) "automated_cron"
+ *   }
+ *   ["Drupal\big_pipe\Hook\BigPipeHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(8) "big_pipe"
+ *   }
+ *   ["Drupal\block\Hook\BlockHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(5) "block"
+ *   }
+ *   ...
+ *
+ * To provide hook instrumentation, we loop through all the elements of the
+ * array and extract the hook key name, class key name, function key name and
+ * module name, and construct a wrapper using that data for each hook.
+ */
 static bool nr_drupal_parse_hookmap(zval* hookmap) {
   nr_php_string_hash_key_t* hook_key = NULL;
   zval* hook_val = NULL;
@@ -685,6 +747,50 @@ static bool nr_drupal_parse_hookmap(zval* hookmap) {
   return true;
 }
 
+/*
+ * Extract all hook functions and hook data for the drupal 11.3+ application
+ *
+ * @param zval* hookList: a pointer to the zval containing the ModuleHandler
+ *                        `hookLists` class property.
+ *
+ * @return bool: true for success, false for failure
+ *
+ * Drupal 11.3+ again changes the internal model of how hooks are stored
+ * and represented from prior versions. The `hookImplementationsMap`
+ * property introduced in Drupal 11.1 is replaced with `hookLists`, and the
+ * internal representation of the hook data is flattened compared to 11.1.
+ *
+ * The structure of `hookLists` resembles the following:
+ *
+ * array(244) {              <------ the `hookLists` property array
+ * ["hook_info"]=>           <------ a subarray keyed by hook name
+ * array(2) {
+ *   ["system_hook_info"]=>  <------ the function name implementing the hook
+ *   string(6) "system"      <------ the module name
+ *   ["views_hook_info"]=>
+ *   string(5) "views"
+ * }
+ * ...
+ *
+ * An example of the `help` hook where the full classpath is contained in the
+ * function key:
+ *
+ *   ["help"]=>
+ * array(50) {
+ *   ["Drupal\announcements_feed\Hook\AnnouncementsFeedHelpHooks::help"]=>
+ *   string(18) "announcements_feed"
+ *   ["Drupal\automated_cron\Hook\AutomatedCronHooks::help"]=>
+ *   string(14) "automated_cron"
+ *   ["Drupal\big_pipe\Hook\BigPipeHooks::help"]=>
+ *   string(8) "big_pipe"
+ *   ["Drupal\block\Hook\BlockHooks::help"]=>
+ *   string(5) "block"
+ *   ...
+ *
+ * To provide hook instrumentation, we loop through all the elements of the
+ * array and extract the hook key name, function key name, and module name,
+ * and construct a wrapper using that data for each hook.
+ */
 static bool nr_drupal_parse_hooklist(zval* hooklist) {
   nr_php_string_hash_key_t* hook_key = NULL;
   zval* hook_val = NULL;
