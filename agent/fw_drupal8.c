@@ -861,7 +861,8 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     hook_implementation_map
         = nr_php_get_zval_object_property(module_handler, "hookLists");
     if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-      nrl_verbosedebug(NRL_FRAMEWORK, "hookLists property not a valid array");
+      nrl_verbosedebug(NRL_FRAMEWORK,
+                       "unable to extract hook array from ModuleHandler class");
       return false;
     }
     uses_hooklist = true;
