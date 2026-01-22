@@ -233,7 +233,6 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id);
 
-leave:
   nr_segment_datastore_end(&auto_segment, &params);
   nr_php_arg_release(&server);
   nr_php_scope_release(&this_var);
