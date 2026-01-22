@@ -628,8 +628,8 @@ static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
  * Extract all hook functions and hook data for the drupal 11.1-11.2
  * application
  *
- * @param zval* hookmap: a pointer to the zval containing the
- *    ModuleHandler `hookImplementationsMap` class property.
+ * @param zval* hookmap: a valid, non-null pointer to the zval containing the
+ *                       ModuleHandler `hookImplementationsMap` class property.
  *
  * @return bool: true for success, false for failure
  *
@@ -748,8 +748,8 @@ static bool nr_drupal_parse_hookmap(zval* hookmap) {
 /*
  * Extract all hook functions and hook data for the drupal 11.3+ application
  *
- * @param zval* hookList: a pointer to the zval containing the ModuleHandler
- *                        `hookLists` class property.
+ * @param zval* hookList: a valid, non-null pointer to the zval containing the
+ *                        ModuleHandler `hookLists` class property.
  *
  * @return bool: true for success, false for failure
  *
