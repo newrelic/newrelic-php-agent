@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* Verify agent behavior when hookImplemementationsMap is not an array */
+/* Verify agent behavior when hookLists is not an array */
 
 namespace Drupal\Core\Extension {
     interface ModuleHandlerInterface
