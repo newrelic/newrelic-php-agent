@@ -77,6 +77,40 @@ const (
 	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents
 )
 
+func (ht HarvestType) ToString() string {
+	switch ht {
+	case HarvestMetrics:
+		return "Metrics"
+	case HarvestErrors:
+		return "Errors"
+	case HarvestSlowSQLs:
+		return "SlowSQLs"
+	case HarvestTxnTraces:
+		return "TxnTraces"
+	case HarvestTxnEvents:
+		return "TxnEvents"
+	case HarvestCustomEvents:
+		return "CustomEvents"
+	case HarvestErrorEvents:
+		return "ErrorEvents"
+	case HarvestSpanEvents:
+		return "SpanEvents"
+	case HarvestLogEvents:
+		return "LogEvents"
+	case HarvestPhpPackages:
+		return "PhpPackages"
+	case HarvestDefaultData:
+		return "DefaultData"
+	case HarvestAll:
+		return "HarvestAll"
+	}
+	return "Invalid Harvest Type"
+}
+
+func (ht HarvestType) Debug() {
+	log.Debugf("Harvesting: %s", ht.ToString())
+}
+
 // ProcessorHarvest represents a processor harvest event: when this is received by a
 // processor, it indicates that a harvest should be performed for the harvest
 // and run ID contained within. The word "event" doesn't appear in the type only
@@ -660,6 +694,8 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// TxnEvents, CustomEvents, or ErrorEvents.  As a result, this
 	// function harvests by type.
 	harvest := ah.Harvest
+
+	ht.Debug()
 
 	// This needs to be determined here, as even an empty harvest needs
 	// to be overwritten with new containers for the next harvest.
