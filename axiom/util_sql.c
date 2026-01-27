@@ -385,7 +385,7 @@ void nr_sql_get_operation_and_table(const char* sql,
   static sql_parse_expectation_t operations[]
       = {/*
           * In the future, we could match additional sql statements, e.g.,
-          * create, alter, drop, etc. We could also expand on the show to parse
+          * alter, etc. We could also expand on the show to parse
           * the table name from "show columns in", etc.
           */
          {"select", sizeof("select") - 1, NR_SQL_PARSE_FROM},
@@ -498,6 +498,43 @@ void nr_sql_get_operation_and_table(const char* sql,
           x += 5;
           break;
         }
+      }
+
+      /*
+       * Sometimes you can get a `FROM` in the EXTRACT function.
+       * https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT
+       * The EXTRACT function retrieves subfields such as year or hour from
+       * date/time values. source must be a value expression of type timestamp,
+       * date, time, or interval. Ex: SELECT EXTRACT(CENTURY FROM TIMESTAMP
+       * '2000-12-16 12:21:13'); Result: 20 This FROM is NOT followed by a table
+       * name but a timestamp and therefore when we are trying to
+       * NR_SQL_PARSE_FROM, the whole EXTRACT(...) clause should be ignored to
+       * avoid keying off of the FROM value contained inside.
+       */
+      if ((NR_SQL_PARSE_FROM == operations[i].opflag)
+          && ('e' == nr_tolower(x[0])) && ('x' == nr_tolower(x[1]))
+          && ('t' == nr_tolower(x[2])) && ('r' == nr_tolower(x[3]))
+          && ('a' == nr_tolower(x[4])) && ('c' == nr_tolower(x[5]))
+          && ('t' == nr_tolower(x[6]))
+          && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[7]))) {
+        x += 7;
+
+        /* process any whitespace before the () block */
+        x = nr_sql_whitespace_comment_prefix(x, show_sql_parsing);
+        if (NULL == x) {
+          return;
+        }
+
+        /* Remove the parentheses block */
+        if ('(' == *x) {
+          x = nr_sql_parse_over(x + 1, ')', show_sql_parsing);
+          if (NULL == x) {
+            return;
+          }
+          continue;
+        }
+        /* We only get here if there weren't parentheses which isn't valid */
+        return;
       }
 
       if ((NR_SQL_PARSE_FROM == operations[i].opflag)
