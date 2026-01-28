@@ -470,6 +470,7 @@ func (p *Processor) processConnectAttempt(rep ConnectAttempt) {
 
 	log.Infof("app '%s' connected with run id '%s'", app, app.connectReply.ID)
 
+	log.Debugf("creating initial harvest for app %q with run id %q", app, *app.connectReply.ID)
 	p.harvests[*app.connectReply.ID] = NewAppHarvest(*app.connectReply.ID, app,
 		NewHarvest(time.Now(), app.connectReply.EventHarvestConfig.EventConfigs), p.processorHarvestChan)
 }
@@ -589,12 +590,14 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController
 		}),
 	}
 
+	log.Debugf("sending harvest to collector: cmd=%s runID=%s", cmd.Name, args.id)
 	reply := args.client.Execute(&cmd, cs)
 
 	// We don't need to process the response to a harvest command unless an
 	// error happened.  (Note that this may change if we have to support metric
 	// cache ids).
 	if nil == reply.Err {
+		log.Debugf("harvest sent successfully: cmd=%s payloadSize=%d responseSize=%d", cmd.Name, len(cmd.Data), len(reply.Body))
 		addDataUsage(duc.duc, cmd.Name, len(cmd.Data), len(reply.Body))
 		return
 	}
@@ -635,6 +638,7 @@ func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, du
 func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, du_chan chan dataUsageInfo) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
+	log.Debugf("calling createFinalMetrics to generate supportability and summary metrics")
 	harvest.createFinalMetrics(harvestLimits, to)
 	harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
 	duc := newDataUsageController(du_chan)
@@ -672,6 +676,8 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	//       at the same rate.
 	// In such cases, harvest all types and return.
 	if ht&HarvestAll == HarvestAll {
+		log.Debugf("copying harvest data for HarvestAll (will send to collector)")
+		log.Debugf("creating new harvest bucket for HarvestAll")
 		ah.Harvest = NewHarvest(time.Now(), ah.App.connectReply.EventHarvestConfig.EventConfigs)
 		// filter already seen php packages
 		harvest.PhpPackages.data = ah.App.filterPhpPackages(harvest.PhpPackages.data)
@@ -692,9 +698,11 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
+		log.Debugf("calling createFinalMetrics to generate supportability and summary metrics")
 		harvest.createFinalMetrics(ah.connectReply.EventHarvestConfig, ah.TraceObserver)
 		harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
 
+		log.Debugf("copying HarvestDefaultData: metrics, errors, slowSQLs, txnTraces, phpPackages")
 		metrics := harvest.Metrics
 		errors := harvest.Errors
 		slowSQLs := harvest.SlowSQLs
@@ -702,6 +710,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		phpPackages := harvest.PhpPackages
 		phpPackages.data = ah.App.filterPhpPackages(phpPackages.data)
 
+		log.Debugf("creating new harvest buckets for HarvestDefaultData types")
 		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
 		harvest.SlowSQLs = NewSlowSQLs(limits.MaxSlowSQLs)
@@ -724,7 +733,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestCustomEvents == HarvestCustomEvents && eventConfigs.CustomEventConfig.Limit != 0 {
 		log.Debugf("harvesting custom events")
 
+		log.Debugf("copying custom events data (count: %d)", harvest.CustomEvents.NumSaved())
 		customEvents := harvest.CustomEvents
+		log.Debugf("creating new harvest bucket for custom events (limit=%d)", eventConfigs.CustomEventConfig.Limit)
 		harvest.CustomEvents = NewCustomEvents(eventConfigs.CustomEventConfig.Limit)
 		considerHarvestPayload(customEvents, args, duc)
 	}
@@ -732,7 +743,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestErrorEvents == HarvestErrorEvents && eventConfigs.ErrorEventConfig.Limit != 0 {
 		log.Debugf("harvesting error events")
 
+		log.Debugf("copying error events data (count: %d)", harvest.ErrorEvents.NumSaved())
 		errorEvents := harvest.ErrorEvents
+		log.Debugf("creating new harvest bucket for error events (limit=%d)", eventConfigs.ErrorEventConfig.Limit)
 		harvest.ErrorEvents = NewErrorEvents(eventConfigs.ErrorEventConfig.Limit)
 		considerHarvestPayload(errorEvents, args, duc)
 	}
@@ -740,7 +753,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestTxnEvents == HarvestTxnEvents && eventConfigs.AnalyticEventConfig.Limit != 0 {
 		log.Debugf("harvesting transaction events")
 
+		log.Debugf("copying transaction events data (count: %d)", harvest.TxnEvents.NumSaved())
 		txnEvents := harvest.TxnEvents
+		log.Debugf("creating new harvest bucket for transaction events (limit=%d)", eventConfigs.AnalyticEventConfig.Limit)
 		harvest.TxnEvents = NewTxnEvents(eventConfigs.AnalyticEventConfig.Limit)
 		considerHarvestPayloadTxnEvents(txnEvents, args, duc)
 	}
@@ -748,7 +763,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestSpanEvents == HarvestSpanEvents && eventConfigs.SpanEventConfig.Limit != 0 {
 		log.Debugf("harvesting span events")
 
+		log.Debugf("copying span events data (count: %d)", harvest.SpanEvents.NumSaved())
 		spanEvents := harvest.SpanEvents
+		log.Debugf("creating new harvest bucket for span events (limit=%d)", eventConfigs.SpanEventConfig.Limit)
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
 		considerHarvestPayload(spanEvents, args, duc)
 	}
@@ -756,7 +773,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	if ht&HarvestLogEvents == HarvestLogEvents && eventConfigs.LogEventConfig.Limit != 0 {
 		log.Debugf("harvesting log events")
 
+		log.Debugf("copying log events data (count: %d)", harvest.LogEvents.NumSaved())
 		logEvents := harvest.LogEvents
+		log.Debugf("creating new harvest bucket for log events (limit=%d)", eventConfigs.LogEventConfig.Limit)
 		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
 		considerHarvestPayload(logEvents, args, duc)
 
@@ -824,6 +843,8 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 	app := ph.AppHarvest.App
 	harvestType := ph.Type
 	id := ph.ID
+
+	log.Infof("harvest triggered for app %q with run id %q: type=%d blocking=%v", app, id, harvestType, ph.Blocking)
 
 	if p.cfg.AppTimeout > 0 && app.Inactive(p.cfg.AppTimeout) {
 		log.Infof("removing %q with run id %q for lack of activity within %v",
