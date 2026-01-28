@@ -600,9 +600,14 @@ static void test_real_world_things(void) {
       = " SELECT foo, EXTRACT(EPOCH FROM(content.creation)::timestamptz) as "
         "creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Valid EXTRACT function with no whitespace before parenthesis in select "
-      "should return correct table name",
+      "Valid EXTRACT function at the end of the query string should return "
+      "correct table name",
       sql, "select", "baz_table");
+
+  sql = " SELECT foo,bar FROM baz_table WHERE (MONTH FROM event_date) = 10";
+  test_get_operation_and_table(
+      "Valid EXTRACT function in select should return correct table name", sql,
+      "select", "baz_table");
 
   sql = " SELECT foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
