@@ -422,8 +422,9 @@ static inline zval* nr_php_execute_scope(zend_execute_data* execute_data) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   while (execute_data) {
-    if ((Z_TYPE(execute_data->This) == IS_OBJECT)
-        || (Z_CE(execute_data->This))) {
+//    if ((Z_TYPE(execute_data->This) == IS_OBJECT)
+//        || (Z_CE(execute_data->This))) {
+    if (Z_TYPE(execute_data->This) == IS_OBJECT) {
       return &execute_data->This;
     } else if (execute_data->func) {
       if (ZEND_USER_CODE(execute_data->func->type)
