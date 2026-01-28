@@ -18,6 +18,39 @@ type AggregaterInto interface {
 	AggregateInto(h *Harvest)
 }
 
+// HarvestCounters tracks cumulative event counts across harvest cycles.
+// These counters are used to generate accurate TotalEventsSeen/Sent metrics
+// even when custom harvest triggers fire at different intervals than the
+// default harvest trigger.
+type HarvestCounters struct {
+	txnEventsSeen    float64
+	txnEventsSent    float64
+	customEventsSeen float64
+	customEventsSent float64
+	errorEventsSeen  float64
+	errorEventsSent  float64
+	spanEventsSeen   float64
+	spanEventsSent   float64
+	logEventsSeen    float64
+	logEventsSent    float64
+}
+
+// Reset clears all counters back to zero. This should be called after
+// HarvestDefaultData completes and the counters have been used to generate
+// TotalEventsSeen/Sent metrics.
+func (hc *HarvestCounters) Reset() {
+	hc.txnEventsSeen = 0
+	hc.txnEventsSent = 0
+	hc.customEventsSeen = 0
+	hc.customEventsSent = 0
+	hc.errorEventsSeen = 0
+	hc.errorEventsSent = 0
+	hc.spanEventsSeen = 0
+	hc.spanEventsSent = 0
+	hc.logEventsSeen = 0
+	hc.logEventsSent = 0
+}
+
 type Harvest struct {
 	Metrics           *MetricTable
 	Errors            *ErrorHeap
@@ -32,6 +65,7 @@ type Harvest struct {
 	commandsProcessed int
 	pidSet            map[int]struct{}
 	httpErrorSet      map[int]float64
+	counters          HarvestCounters
 }
 
 func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
@@ -137,22 +171,24 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	h.Metrics.AddCount("Instance/Reporting", "", float64(pidSetSize), Forced)
 
 	// Custom Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", h.CustomEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", h.CustomEvents.NumSaved(), Forced)
+	// Use cumulative counters to avoid race conditions with custom harvest triggers
+	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", h.counters.customEventsSeen, Forced)
+	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", h.counters.customEventsSent, Forced)
 	h.createEndpointAttemptsMetric(h.CustomEvents.Cmd(), h.CustomEvents.NumFailedAttempts())
 
 	// Transaction Events Supportability Metrics
 	// Note that these metrics used to have different names:
 	//   Supportability/RequestSampler/requests
 	//   Supportability/RequestSampler/samples
-
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", h.TxnEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", h.TxnEvents.NumSaved(), Forced)
+	// Use cumulative counters to avoid race conditions with custom harvest triggers
+	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", h.counters.txnEventsSeen, Forced)
+	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", h.counters.txnEventsSent, Forced)
 	h.createEndpointAttemptsMetric(h.TxnEvents.Cmd(), h.TxnEvents.NumFailedAttempts())
 
 	// Error Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Seen", "", h.ErrorEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Sent", "", h.ErrorEvents.NumSaved(), Forced)
+	// Use cumulative counters to avoid race conditions with custom harvest triggers
+	h.Metrics.AddCount("Supportability/Events/TransactionError/Seen", "", h.counters.errorEventsSeen, Forced)
+	h.Metrics.AddCount("Supportability/Events/TransactionError/Sent", "", h.counters.errorEventsSent, Forced)
 	h.createEndpointAttemptsMetric(h.ErrorEvents.Cmd(), h.ErrorEvents.NumFailedAttempts())
 
 	if h.Metrics.numDropped > 0 {
@@ -160,13 +196,15 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	}
 
 	// Span Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", h.SpanEvents.analyticsEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", h.SpanEvents.analyticsEvents.NumSaved(), Forced)
+	// Use cumulative counters to avoid race conditions with custom harvest triggers
+	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", h.counters.spanEventsSeen, Forced)
+	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", h.counters.spanEventsSent, Forced)
 	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), h.SpanEvents.analyticsEvents.NumFailedAttempts())
 
 	// Log Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", h.LogEvents.analyticsEvents.NumSeen(), Forced)
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", h.LogEvents.analyticsEvents.NumSaved(), Forced)
+	// Use cumulative counters to avoid race conditions with custom harvest triggers
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", h.counters.logEventsSeen, Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", h.counters.logEventsSent, Forced)
 	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), h.LogEvents.analyticsEvents.NumFailedAttempts())
 
 	// Certificate supportability metrics.

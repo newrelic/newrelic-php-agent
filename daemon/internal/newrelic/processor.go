@@ -700,6 +700,8 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("calling createFinalMetrics to generate supportability and summary metrics")
 		harvest.createFinalMetrics(ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+		// Reset cumulative event counters immediately after they've been used in createFinalMetrics
+		harvest.counters.Reset()
 		harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
 
 		log.Debugf("copying HarvestDefaultData: metrics, errors, slowSQLs, txnTraces, phpPackages")
@@ -735,6 +737,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("copying custom events data (count: %d)", harvest.CustomEvents.NumSaved())
 		customEvents := harvest.CustomEvents
+		// Update cumulative counters for metrics
+		harvest.counters.customEventsSeen += customEvents.NumSeen()
+		harvest.counters.customEventsSent += customEvents.NumSaved()
 		log.Debugf("creating new harvest bucket for custom events (limit=%d)", eventConfigs.CustomEventConfig.Limit)
 		harvest.CustomEvents = NewCustomEvents(eventConfigs.CustomEventConfig.Limit)
 		considerHarvestPayload(customEvents, args, duc)
@@ -745,6 +750,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("copying error events data (count: %d)", harvest.ErrorEvents.NumSaved())
 		errorEvents := harvest.ErrorEvents
+		// Update cumulative counters for metrics
+		harvest.counters.errorEventsSeen += errorEvents.NumSeen()
+		harvest.counters.errorEventsSent += errorEvents.NumSaved()
 		log.Debugf("creating new harvest bucket for error events (limit=%d)", eventConfigs.ErrorEventConfig.Limit)
 		harvest.ErrorEvents = NewErrorEvents(eventConfigs.ErrorEventConfig.Limit)
 		considerHarvestPayload(errorEvents, args, duc)
@@ -755,6 +763,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("copying transaction events data (count: %d)", harvest.TxnEvents.NumSaved())
 		txnEvents := harvest.TxnEvents
+		// Update cumulative counters for metrics
+		harvest.counters.txnEventsSeen += txnEvents.NumSeen()
+		harvest.counters.txnEventsSent += txnEvents.NumSaved()
 		log.Debugf("creating new harvest bucket for transaction events (limit=%d)", eventConfigs.AnalyticEventConfig.Limit)
 		harvest.TxnEvents = NewTxnEvents(eventConfigs.AnalyticEventConfig.Limit)
 		considerHarvestPayloadTxnEvents(txnEvents, args, duc)
@@ -765,6 +776,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("copying span events data (count: %d)", harvest.SpanEvents.NumSaved())
 		spanEvents := harvest.SpanEvents
+		// Update cumulative counters for metrics
+		harvest.counters.spanEventsSeen += spanEvents.analyticsEvents.NumSeen()
+		harvest.counters.spanEventsSent += spanEvents.analyticsEvents.NumSaved()
 		log.Debugf("creating new harvest bucket for span events (limit=%d)", eventConfigs.SpanEventConfig.Limit)
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
 		considerHarvestPayload(spanEvents, args, duc)
@@ -775,6 +789,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		log.Debugf("copying log events data (count: %d)", harvest.LogEvents.NumSaved())
 		logEvents := harvest.LogEvents
+		// Update cumulative counters for metrics
+		harvest.counters.logEventsSeen += logEvents.analyticsEvents.NumSeen()
+		harvest.counters.logEventsSent += logEvents.analyticsEvents.NumSaved()
 		log.Debugf("creating new harvest bucket for log events (limit=%d)", eventConfigs.LogEventConfig.Limit)
 		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
 		considerHarvestPayload(logEvents, args, duc)
