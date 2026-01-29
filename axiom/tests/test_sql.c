@@ -604,7 +604,9 @@ static void test_real_world_things(void) {
       "should return correct table name",
       sql, "select", "baz_table");
 
-  sql = " SELECT foo,bar FROM baz_table WHERE EXTRACT(MONTH FROM event_date) = 10";
+  sql
+      = " SELECT foo,bar FROM baz_table WHERE EXTRACT(MONTH FROM event_date) = "
+        "10";
   test_get_operation_and_table(
       "Valid EXTRACT function at the end of the query string should return "
       "correct table name",
@@ -614,6 +616,37 @@ static void test_real_world_things(void) {
   test_get_operation_and_table(
       "Invalid EXTRACT function with in select should return null table name",
       sql, "select", NULL);
+
+  sql
+      = " DELETE foo, EXTRACT(EPOCH FROM (content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function in DELETE should return correct table name", sql,
+      "delete", "baz_table");
+
+  sql
+      = " DELETE foo, EXTRACT(EPOCH FROM(content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function with no whitespace before parenthesis in DELETE "
+      "should return correct table name",
+      sql, "delete", "baz_table");
+
+  sql
+      = " DELETE foo, EXTRACT() as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "invalid EXTRACT function with nothing in parenthesis in DELETE "
+      "but this parser isn't detecting sql correctness so should still return "
+      "correct table name which is same as functionality now and the important "
+      "thing here is that we don't try to parse the FROM inside anyway so for "
+      "that we are good",
+      sql, "delete", "baz_table");
+
+  sql = " DELETE foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Invalid EXTRACT function with DELETE should return null table name", sql,
+      "delete", NULL);
 }
 
 /*
