@@ -74,13 +74,13 @@ static char* create_metrics(nr_segment_t* segment,
     }
   }
 
-  instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
-                               instance->host, instance->port_path_or_id);
-
-  nr_segment_add_metric(segment, instance_metric, false);
   nr_datastore_instance_set_host(&datastore->instance, instance->host);
   nr_datastore_instance_set_port_path_or_id(&datastore->instance,
                                             instance->port_path_or_id);
+
+  instance_metric = nr_formatf("Datastore/instance/%s/%s/%s", product,
+                               datastore->instance.host, datastore->instance.port_path_or_id);
+  nr_segment_add_metric(segment, instance_metric, false);
 
   nr_free(instance_metric);
 
