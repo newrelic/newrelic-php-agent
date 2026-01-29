@@ -618,25 +618,47 @@ static void test_real_world_things(void) {
       sql, "select", NULL);
 
   sql
+      = " SELECT foo, EXTRACT() as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "invalid EXTRACT function with nothing in parenthesis in SELECT "
+      "but this parser isn't detecting sql correctness so should still return "
+      "correct table name which is same as functionality now and the important "
+      "thing here is that we don't try to parse the FROM inside anyway so for "
+      "that we are good",
+      sql, "select", "baz_table");
+
+  sql = " DELETE from baz_table WHERE EXTRACT(MONTH FROM event_date) = 10";
+  test_get_operation_and_table(
+      "Valid EXTRACT function at the end of the query string should return "
+      "correct table name",
+      sql, "delete", "baz_table");
+
+  sql
       = " DELETE foo, EXTRACT(EPOCH FROM (content.creation)::timestamptz) as "
         "creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Valid EXTRACT function in DELETE should return correct table name", sql,
-      "delete", "baz_table");
+      "Valid EXTRACT function in invalid DELETE should return correct table "
+      "name but this parser isn't detecting sql correctness so should still "
+      "return the correct table name which is same as functionality now and "
+      "the important thing here is that we don't try to parse the FROM inside "
+      "anyway so for that we are good",
+      sql, "delete", "baz_table");
 
   sql
       = " DELETE foo, EXTRACT(EPOCH FROM(content.creation)::timestamptz) as "
         "creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Valid EXTRACT function with no whitespace before parenthesis in DELETE "
-      "should return correct table name",
+      "Valid EXTRACT function with no whitespace before parenthesis in invalid "
+      "DELETE but this parser isn't detecting sql correctness so should still "
+      "return the correct table name which is same as functionality now and "
+      "the important thing here is that we don't try to parse the FROM inside "
+      "anyway so for that we are good and should return correct table name",
       sql, "delete", "baz_table");
 
-  sql
-      = " DELETE foo, EXTRACT() as "
-        "creation_timestamp,bar FROM baz_table ";
+  sql = " DELETE foo, EXTRACT() as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "invalid EXTRACT function with nothing in parenthesis in DELETE "
+      "invalid EXTRACT function with nothing in parenthesis in invalid DELETE "
       "but this parser isn't detecting sql correctness so should still return "
       "correct table name which is same as functionality now and the important "
       "thing here is that we don't try to parse the FROM inside anyway so for "
@@ -645,8 +667,10 @@ static void test_real_world_things(void) {
 
   sql = " DELETE foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Invalid EXTRACT function with DELETE should return null table name", sql,
-      "delete", NULL);
+      "Invalid EXTRACT function with invalid DELETE should return null table "
+      "name as this parser isn't detecting sql correctness but still verifies "
+      "don't try to parse the FROM inside anyway so for that we are good",
+      sql, "delete", NULL);
 }
 
 /*
