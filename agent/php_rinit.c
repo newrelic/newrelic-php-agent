@@ -67,6 +67,11 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
 
+  /* initialization of transient wraprecs which are per request globals */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  NRPRG(transient_wraprecs) = NULL;
+#endif
+
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
     return SUCCESS;
   }

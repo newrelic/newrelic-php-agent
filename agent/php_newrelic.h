@@ -103,6 +103,8 @@ extern zend_module_entry newrelic_module_entry;
  */
 #define NR_UNUSED_TSRMLS
 
+#include "php_user_instrument.h"
+
 typedef enum {
   NR_FW_UNSET = 0,
 
@@ -572,6 +574,13 @@ nrinibool_t
  */
 uint64_t pid;
 nr_vector_t* user_function_wrappers;
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * transient wrappers are stored at request level for thread safety
+ */
+nruserfn_t* transient_wraprecs; /* a singly linked list */
 #endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a
