@@ -190,12 +190,10 @@ NR_PHP_WRAPPER(nr_mongodb_operation_before) {
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_mongodb_operation_after) {
-  const char* this_klass = "MongoDB\\Operation\\Executable";
   zval* collection = NULL;
   zval* database = NULL;
   zval* server = NULL;
   zval* this_var = NULL;
-  bool discard_segment = false;
   nr_datastore_instance_t instance = {
       .host = NULL,
       .port_path_or_id = NULL,
@@ -218,18 +216,8 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
     },
   };
 #pragma GCC diagnostic pop
-  /*
-   * We check for the interface all Collection operations extend, rather than
-   * their specific class. Not all operations have the properties we need but
-   * the ones we hook do (as of mongo-php-library v.1.1).
-   */
+
   this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
-  if (!nr_php_object_instanceof_class(this_var, this_klass)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: operation is not %s", __func__,
-                     this_klass);
-    discard_segment = true;
-    goto leave;
-  }
 
   collection = nr_php_get_zval_object_property(this_var, "collectionName");
   if (nr_php_is_zval_valid_string(collection)) {
@@ -245,12 +233,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id);
 
-leave:
-  if (discard_segment) {
-    nr_segment_discard(&auto_segment);
-  } else {
-    nr_segment_datastore_end(&auto_segment, &params);
-  }
+  nr_segment_datastore_end(&auto_segment, &params);
   nr_php_arg_release(&server);
   nr_php_scope_release(&this_var);
   nr_free(instance.host);
