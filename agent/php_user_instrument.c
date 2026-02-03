@@ -667,12 +667,15 @@ void nr_php_remove_transient_user_instrumentation(void) {
     nr_php_user_wraprec_destroy(&wraprec);
     count++;
   }
+
+  nrl_verbosedebug(NRL_INSTRUMENT, "Setting transient wraprecs to NULL");
   NRPRG(transient_wraprecs) = NULL;
 
   if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: freed %zu transient wraprecs, list is now empty",
-                     __func__, count);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "%s: freed %zu transient wraprecs, list now has %zu wraprecs", __func__,
+        count, nr_php_count_transient_wraprecs());
   }
 #endif
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO

@@ -125,6 +125,32 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
    * cope with an uninitialised extensions structure.
    */
   nr_php_extension_instrument_destroy(&newrelic_globals->extensions);
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /*
+   * Safety check: if transient_wraprecs is not NULL at GSHUTDOWN, it means
+   * post_deactivate was not called (abnormal termination). Clean up any
+   * remaining transient wraprecs to prevent memory leak.
+   */
+  if (newrelic_globals->transient_wraprecs != NULL) {
+    nrl_warning(NRL_INSTRUMENT,
+                "GSHUTDOWN: transient_wraprecs was not NULL - "
+                "cleaning up leaked wraprecs from abnormal termination");
+
+    nruserfn_t* p = newrelic_globals->transient_wraprecs;
+    size_t count = 0;
+    while (p) {
+      nruserfn_t* wraprec = p;
+      p = wraprec->next;
+      nr_php_user_wraprec_destroy(&wraprec);
+      count++;
+    }
+    newrelic_globals->transient_wraprecs = NULL;
+
+    nrl_warning(NRL_INSTRUMENT,
+                "GSHUTDOWN: freed %zu leaked transient wraprecs", count);
+  }
+#endif
 }
 
 #if defined(__GNUC__)
