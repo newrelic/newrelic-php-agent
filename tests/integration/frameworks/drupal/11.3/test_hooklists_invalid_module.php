@@ -1,17 +1,18 @@
 <?php
+
 /*
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*DESCRIPTION
-Verify the agent does not crash when handling an invalid hookImplementationsMap property.
+Verify agent does not crash when module name is not a string.
 */
 
 /*SKIPIF
 <?php
-if (version_compare(PHP_VERSION, '7.4', '<')) {
-    die("skip: PHP >= 7.4 required\n");
+if (version_compare(PHP_VERSION, '8.3', '<')) {
+    die("skip: PHP >= 8.3 required\n");
 }
 */
 
@@ -26,15 +27,15 @@ newrelic.framework = drupal8
 /*EXPECT
 */
 
-require_once __DIR__ . '/mock_module_handler_invalid_map.php';
+require_once __DIR__ . '/mock_module_handler_invalid_module.php';
 
 // This specific API is needed for us to instrument the ModuleHandler
 class Drupal
 {
-  public function moduleHandler()
-  {
-    return new Drupal\Core\Extension\ModuleHandler();
-  }
+    public function moduleHandler()
+    {
+        return new Drupal\Core\Extension\ModuleHandler();
+    }
 }
 
 // Create module handler
