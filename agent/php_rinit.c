@@ -69,7 +69,13 @@ PHP_RINIT_FUNCTION(newrelic) {
 
   /* initialization of transient wraprecs which are per request globals */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  if (NRPRG(transient_wraprecs) != NULL) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: transient_wraprecs was not NULL at RINIT", __func__);
+  }
   NRPRG(transient_wraprecs) = NULL;
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized transient_wraprecs to NULL",
+                   __func__);
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {

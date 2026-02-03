@@ -450,6 +450,22 @@ static int nr_php_user_wraprec_is_match(const nruserfn_t* w1,
 
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
 /* global nr_transient_wraprecs was removed for ZTS support */
+
+/*
+ * Helper function to count the length of the transient wraprecs linked list
+ * for debugging purposes.
+ */
+static size_t nr_php_count_transient_wraprecs(void) {
+  size_t count = 0;
+  nruserfn_t* p = NRPRG(transient_wraprecs);
+
+  while (p) {
+    count++;
+    p = p->next;
+  }
+
+  return count;
+}
 #else
 static nruserfn_t* nr_wrapped_user_functions = NULL; /* a singly linked list */
 #endif
@@ -463,6 +479,13 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
      * end of the request. */
     wraprec->next = NRPRG(transient_wraprecs);
     NRPRG(transient_wraprecs) = wraprec;
+
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      size_t count = nr_php_count_transient_wraprecs();
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "%s: added transient wraprec, list length now = %zu",
+                       __func__, count);
+    }
     return;
   }
 #endif
@@ -627,13 +650,30 @@ void nr_php_reset_user_instrumentation(void) {
  */
 void nr_php_remove_transient_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
+  size_t count = 0;
   nruserfn_t* p = NRPRG(transient_wraprecs);
+
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+    count = nr_php_count_transient_wraprecs();
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: freeing transient wraprecs, list length = %zu",
+                     __func__, count);
+  }
+
+  count = 0;
   while (p) {
     nruserfn_t* wraprec = p;
     p = wraprec->next;
     nr_php_user_wraprec_destroy(&wraprec);
+    count++;
   }
   NRPRG(transient_wraprecs) = NULL;
+
+  if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: freed %zu transient wraprecs, list is now empty",
+                     __func__, count);
+  }
 #endif
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nruserfn_t* p = nr_wrapped_user_functions;
