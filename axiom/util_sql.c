@@ -564,7 +564,7 @@ void nr_sql_get_operation_and_table(const char* sql,
        * sql string  to the position of the next ')'+1 and check again.
        * Once the next ')' character precedes the next '(' character or the next
        * '(' character does not exist, break out of the loop and advance one
-       * final time to reach the end of the highest nested statement.
+       * final time to reach the end of the outermost nested statement.
        */
       if ((NR_SQL_PARSE_FROM == operations[i].opflag) && nested
           && (nr_parse_sql_keyword(x, "select")
