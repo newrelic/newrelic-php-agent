@@ -6,6 +6,7 @@
 #include "nr_axiom.h"
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "util_hash.h"
 #include "util_logging.h"
@@ -368,11 +369,25 @@ static char* nr_sql_parse_over(const char* str,
   return cend + 1; /* Character is consumed */
 }
 
+static bool nr_parse_sql_keyword(const char* sql, const char* keyword) {
+  int i;
+  for (i = 0; i < nr_strlen(keyword); i++) {
+    if (keyword[i] != nr_tolower(sql[i])) {
+      return false;
+    }
+  }
+  if (NULL == nr_strchr(NR_SQL_DELIMITER_CHARS, sql[i])) {
+    return false;
+  }
+  return true;
+}
+
 void nr_sql_get_operation_and_table(const char* sql,
                                     const char** operation_ptr,
                                     char** table_ptr,
                                     int show_sql_parsing) {
   int i;
+  bool nested = false;
   const char* start = 0;
   const char* end = 0;
   const char* x;
@@ -475,6 +490,10 @@ void nr_sql_get_operation_and_table(const char* sql,
         continue;
       }
 
+      if ('(' == nr_tolower(x[0])) {
+        nested = true;
+      }
+
       if ((NR_SQL_PARSE_CREATE == operations[i].opflag)
           || (NR_SQL_PARSE_DROP == operations[i].opflag)) {
         /*
@@ -535,6 +554,35 @@ void nr_sql_get_operation_and_table(const char* sql,
         }
         /* We only get here if there weren't parentheses which isn't valid */
         return;
+      }
+
+      /*
+       * Handle the edge case of a nested SELECT parenthetical causing
+       * misidentification of the main table name.
+       * If we've detected an open parenthetical above, check the index of the
+       * next '(' character and compare it to the index of the next ')'
+       * character. If '(' exists and precedes the ')' character, advance the
+       * sql string  to the position of the next ')'+1 and check again.
+       * Once the next ')' character precedes the next '(' character or the next
+       * '(' character does not exist, break out of the loop and advance one
+       * final time to reach the end of the highest nested statement.
+       */
+      if ((NR_SQL_PARSE_FROM == operations[i].opflag) && nested
+          && (nr_parse_sql_keyword(x, "select")
+              || nr_parse_sql_keyword(x, "(select"))) {
+        while (nr_stridx(x, "(") != -1
+               && (nr_stridx(x, "(") < nr_stridx(x, ")"))) {
+          x = nr_sql_parse_over(x, ')', show_sql_parsing);
+          if (NULL == x) {
+            return;
+          }
+        }
+        x = nr_sql_parse_over(x, ')', show_sql_parsing);
+        nested = false;
+        if (NULL == x) {
+          return;
+        }
+        continue;
       }
 
       if ((NR_SQL_PARSE_FROM == operations[i].opflag)
