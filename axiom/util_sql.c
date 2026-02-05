@@ -6,7 +6,6 @@
 #include "nr_axiom.h"
 
 #include <stddef.h>
-#include <stdio.h>
 
 #include "util_hash.h"
 #include "util_logging.h"
