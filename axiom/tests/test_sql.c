@@ -573,6 +573,104 @@ static void test_real_world_things(void) {
         "n.locale_id = :locale_id AND n.is_active = ? LIMIT ? ";
   test_get_operation_and_table("_from in alias", sql, "select",
                                "notifications");
+
+  /*
+   * Sometimes you can get a `FROM` in the EXTRACT function.
+   * https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT
+   * The EXTRACT function retrieves subfields such as year or hour from
+   * date/time values. source must be a value expression of type timestamp,
+   * date, time, or interval. Ex: SELECT EXTRACT(CENTURY FROM TIMESTAMP
+   * '2000-12-16 12:21:13'); Result: 20 This FROM is NOT followed by a table
+   * name but a timestamp and therefore when we are trying to NR_SQL_PARSE_FROM,
+   * the whole EXTRACT(...) clause should be ignored to avoid keying off of the
+   * FROM value contained inside.
+   *
+   * The following are the real world case followed by valid and invalid
+   * variations
+   */
+
+  sql
+      = " SELECT foo, EXTRACT(EPOCH FROM (content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function in select should return correct table name", sql,
+      "select", "baz_table");
+
+  sql
+      = " SELECT foo, EXTRACT(EPOCH FROM(content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function with no whitespace before parenthesis in select "
+      "should return correct table name",
+      sql, "select", "baz_table");
+
+  sql
+      = " SELECT foo,bar FROM baz_table WHERE EXTRACT(MONTH FROM event_date) = "
+        "10";
+  test_get_operation_and_table(
+      "Valid EXTRACT function at the end of the query string should return "
+      "correct table name",
+      sql, "select", "baz_table");
+
+  sql = " SELECT foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Invalid EXTRACT function with in select should return null table name",
+      sql, "select", NULL);
+
+  sql
+      = " SELECT foo, EXTRACT() as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "invalid EXTRACT function with nothing in parenthesis in SELECT "
+      "but this parser isn't detecting sql correctness so should still return "
+      "correct table name which is same as functionality now and the important "
+      "thing here is that we don't try to parse the FROM inside anyway so for "
+      "that we are good",
+      sql, "select", "baz_table");
+
+  sql = " DELETE from baz_table WHERE EXTRACT(MONTH FROM event_date) = 10";
+  test_get_operation_and_table(
+      "Valid EXTRACT function at the end of the query string should return "
+      "correct table name",
+      sql, "delete", "baz_table");
+
+  sql
+      = " DELETE foo, EXTRACT(EPOCH FROM (content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function in invalid DELETE should return correct table "
+      "name but this parser isn't detecting sql correctness so should still "
+      "return the correct table name which is same as functionality now and "
+      "the important thing here is that we don't try to parse the FROM inside "
+      "anyway so for that we are good",
+      sql, "delete", "baz_table");
+
+  sql
+      = " DELETE foo, EXTRACT(EPOCH FROM(content.creation)::timestamptz) as "
+        "creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Valid EXTRACT function with no whitespace before parenthesis in invalid "
+      "DELETE but this parser isn't detecting sql correctness so should still "
+      "return the correct table name which is same as functionality now and "
+      "the important thing here is that we don't try to parse the FROM inside "
+      "anyway so for that we are good and should return correct table name",
+      sql, "delete", "baz_table");
+
+  sql = " DELETE foo, EXTRACT() as creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "invalid EXTRACT function with nothing in parenthesis in invalid DELETE "
+      "but this parser isn't detecting sql correctness so should still return "
+      "correct table name which is same as functionality now and the important "
+      "thing here is that we don't try to parse the FROM inside anyway so for "
+      "that we are good",
+      sql, "delete", "baz_table");
+
+  sql = " DELETE foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
+  test_get_operation_and_table(
+      "Invalid EXTRACT function with invalid DELETE should return null table "
+      "name as this parser isn't detecting sql correctness but still verifies "
+      "don't try to parse the FROM inside anyway so for that we are good",
+      sql, "delete", NULL);
 }
 
 /*

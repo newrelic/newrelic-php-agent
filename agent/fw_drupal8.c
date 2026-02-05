@@ -625,36 +625,77 @@ static bool nr_is_invalid_key_val_arr(nr_php_string_hash_key_t* key,
 }
 
 /*
- * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
+ * Extract all hook functions and hook data for the drupal 11.1-11.2
+ * application
  *
- * Params: 1. A zval pointer to the moduleHandler instance in use by Drupal.
+ * @param zval* hookmap: a valid, non-null pointer to the zval containing the
+ *                       ModuleHandler `hookImplementationsMap` class property.
  *
- * Return: bool
+ * @return bool: true for success, false for failure
  *
+ * Drupal 11.1 introduces the `hookImplementationsMap` property on the
+ * ModuleHandler class. This map contains all the hooks registered for the
+ * current drupal application.
+ *
+ * The structure of `hookImplementationsMap` resembles the following:
+ *
+ * array(348) {              <------ the `hookImplementationsMap` property array
+ * ["hook_info"]=>           <------ a subarray keyed by hook name
+ * array(1) {
+ *   ["Drupal\Core\Extension\ProceduralCall"]=> <- an array keyed by class name
+ *   array(2) {
+ *     ["system_hook_info"]=> <----- the function name implementing the hook
+ *     string(6) "system"     <----- the module name
+ *     ["views_hook_info"]=>
+ *     string(5) "views"
+ *   }
+ * }
+ * ...
+ *
+ * The `ProceduralCall` class name is a special case where the classname is not
+ * required to call the hook and should be left out of the hookpath used to name
+ * the hook.
+ *
+ * An example of the `help` hook:
+ *
+ * ["help"]=>
+ * array(51) {
+ *   ["Drupal\announcements_feed\Hook\AnnouncementsFeedHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(18) "announcements_feed"
+ *   }
+ *   ["Drupal\automated_cron\Hook\AutomatedCronHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(14) "automated_cron"
+ *   }
+ *   ["Drupal\big_pipe\Hook\BigPipeHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(8) "big_pipe"
+ *   }
+ *   ["Drupal\block\Hook\BlockHooks"]=>
+ *   array(1) {
+ *     ["help"]=>
+ *     string(5) "block"
+ *   }
+ *   ...
+ *
+ * To provide hook instrumentation, we loop through all the elements of the
+ * array and extract the hook key name, class key name, function key name and
+ * module name, and construct a wrapper using that data for each hook.
  */
-static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
-  zval* hook_implementation_map = NULL;
-
+static bool nr_drupal_parse_hookmap(zval* hookmap) {
   nr_php_string_hash_key_t* hook_key = NULL;
   zval* hook_val = NULL;
   nr_php_string_hash_key_t* class_key = NULL;
   zval* class_val = NULL;
   nr_php_string_hash_key_t* method_key = NULL;
   zval* module_val = NULL;
-
   char* hookpath = NULL;
 
-  hook_implementation_map = nr_php_get_zval_object_property(
-      module_handler, "hookImplementationsMap");
-
-  if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
-    nrl_verbosedebug(NRL_FRAMEWORK,
-                     "hookImplementationsMap property not a valid array");
-    return false;
-  }
-
-  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_implementation_map), hook_key,
-                                hook_val) {
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hookmap), hook_key, hook_val) {
     if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
       return false;
     }
@@ -700,6 +741,138 @@ static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
     ZEND_HASH_FOREACH_END();
   }
   ZEND_HASH_FOREACH_END();
+
+  return true;
+}
+
+/*
+ * Extract all hook functions and hook data for the drupal 11.3+ application
+ *
+ * @param zval* hookList: a valid, non-null pointer to the zval containing the
+ *                        ModuleHandler `hookLists` class property.
+ *
+ * @return bool: true for success, false for failure
+ *
+ * Drupal 11.3+ again changes the internal model of how hooks are stored
+ * and represented from prior versions. The `hookImplementationsMap`
+ * property introduced in Drupal 11.1 is replaced with `hookLists`, and the
+ * internal representation of the hook data is flattened compared to 11.1.
+ *
+ * The structure of `hookLists` resembles the following:
+ *
+ * array(244) {              <------ the `hookLists` property array
+ * ["hook_info"]=>           <------ a subarray keyed by hook name
+ * array(2) {
+ *   ["system_hook_info"]=>  <------ the function name implementing the hook
+ *   string(6) "system"      <------ the module name
+ *   ["views_hook_info"]=>
+ *   string(5) "views"
+ * }
+ * ...
+ *
+ * An example of the `help` hook where the full classpath is contained in the
+ * function key:
+ *
+ *   ["help"]=>
+ * array(50) {
+ *   ["Drupal\announcements_feed\Hook\AnnouncementsFeedHelpHooks::help"]=>
+ *   string(18) "announcements_feed"
+ *   ["Drupal\automated_cron\Hook\AutomatedCronHooks::help"]=>
+ *   string(14) "automated_cron"
+ *   ["Drupal\big_pipe\Hook\BigPipeHooks::help"]=>
+ *   string(8) "big_pipe"
+ *   ["Drupal\block\Hook\BlockHooks::help"]=>
+ *   string(5) "block"
+ *   ...
+ *
+ * To provide hook instrumentation, we loop through all the elements of the
+ * array and extract the hook key name, function key name, and module name,
+ * and construct a wrapper using that data for each hook.
+ */
+static bool nr_drupal_parse_hooklist(zval* hooklist) {
+  nr_php_string_hash_key_t* hook_key = NULL;
+  zval* hook_val = NULL;
+  nr_php_string_hash_key_t* func_key = NULL;
+  zval* module_val = NULL;
+
+  ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hooklist), hook_key, hook_val) {
+    if (nr_is_invalid_key_val_arr(hook_key, hook_val, "hook")) {
+      return false;
+    }
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(hook_val), func_key, module_val) {
+      if (NULL == func_key) {
+        nrl_verbosedebug(NRL_FRAMEWORK,
+                         "hookLists[hook][func]: NULL key for hook: %s",
+                         NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+      if (NULL == module_val) {
+        nrl_verbosedebug(
+            NRL_FRAMEWORK,
+            "hookLists[hook][func]: NULL module for func %s on hook %s",
+            NRSAFESTR(ZEND_STRING_VALUE(func_key)),
+            NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+      if (0 == nr_php_is_zval_valid_string(module_val)) {
+        nrl_verbosedebug(
+            NRL_FRAMEWORK,
+            "hookLists: non-string module value for func %s on hook %s",
+            NRSAFESTR(ZEND_STRING_VALUE(func_key)),
+            NRSAFESTR(ZEND_STRING_VALUE(hook_key)));
+        return false;
+      }
+
+      nrl_verbosedebug(
+          NRL_FRAMEWORK,
+          "hookLists: creating wrapper for hook: %s func: %s module: %s",
+          NRSAFESTR(ZEND_STRING_VALUE(hook_key)),
+          NRSAFESTR(ZEND_STRING_VALUE(func_key)), Z_STRVAL_P(module_val));
+
+      nr_php_wrap_user_function_drupal(
+          ZEND_STRING_VALUE(func_key), ZEND_STRING_LEN(func_key),
+          Z_STRVAL_P(module_val), Z_STRLEN_P(module_val),
+          ZEND_STRING_VALUE(hook_key), ZEND_STRING_LEN(hook_key));
+    }
+    ZEND_HASH_FOREACH_END();
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return true;
+}
+
+/*
+ * Purpose: Instrument Drupal Attribute Hooks for Drupal 11.1+
+ *
+ * Params: 1. A zval pointer to the moduleHandler instance in use by Drupal.
+ *
+ * Return: bool
+ *
+ */
+static bool nr_drupal_hook_attribute_instrument(zval* module_handler) {
+  zval* hook_implementation_map = NULL;
+
+  bool uses_hooklist = false;
+
+  hook_implementation_map = nr_php_get_zval_object_property(
+      module_handler, "hookImplementationsMap");
+
+  if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
+    hook_implementation_map
+        = nr_php_get_zval_object_property(module_handler, "hookLists");
+    if (!nr_php_is_zval_valid_array(hook_implementation_map)) {
+      nrl_verbosedebug(NRL_FRAMEWORK,
+                       "unable to extract hook array from ModuleHandler class");
+      return false;
+    }
+    uses_hooklist = true;
+  }
+
+  if (uses_hooklist) {
+    nr_drupal_parse_hooklist(hook_implementation_map);
+  } else {
+    nr_drupal_parse_hookmap(hook_implementation_map);
+  }
 
   return true;
 }

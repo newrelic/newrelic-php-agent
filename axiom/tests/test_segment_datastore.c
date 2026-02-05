@@ -312,6 +312,91 @@ static void test_instance_info_empty(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_instance_info_null(void) {
+  nrtxn_t* txn = new_txn(0);
+  nrtime_t duration = 4 * NR_TIME_DIVISOR;
+  nr_segment_datastore_params_t params = sample_segment_datastore_params();
+  nr_segment_t* segment = NULL;
+  nr_datastore_instance_t instance = {
+      .host = NULL,
+      .port_path_or_id = NULL,
+      .database_name = NULL,
+  };
+  const char* tname = "instance info null";
+  params.instance = &instance;
+
+  // Test: Instance info all NULL
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+  test_segment_datastore_end_and_keep(&segment, &params);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/unknown/unknown",
+                              false);
+  test_datastore_segment(&segment->typed_attributes->datastore, tname,
+                         "MongoDB", NULL, NULL, NULL, NULL, NULL, "unknown",
+                         "unknown", "unknown");
+
+  // Test: Instance info port_path_or_id and database_name set, host NULL
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+  instance.port_path_or_id = "1234";
+  instance.database_name = "my_database";
+  test_segment_datastore_end_and_keep(&segment, &params);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/unknown/1234",
+                              false);
+  test_datastore_segment(&segment->typed_attributes->datastore, tname,
+                         "MongoDB", NULL, NULL, NULL, NULL, NULL, "unknown",
+                         "1234", "my_database");
+
+  // Test: Instance info host and database_name set, port_path_or_id NULL
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+  instance.host = "super_db_host";
+  instance.port_path_or_id = NULL;
+  test_segment_datastore_end_and_keep(&segment, &params);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/super_db_host/unknown",
+                              false);
+  test_datastore_segment(&segment->typed_attributes->datastore, tname,
+                         "MongoDB", NULL, NULL, NULL, NULL, NULL, "super_db_host",
+                         "unknown", "my_database");
+
+  // Test: Instance info host set, port_path_or_id and database_name NULL
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+  instance.port_path_or_id = NULL;
+  instance.database_name = NULL;
+  test_segment_datastore_end_and_keep(&segment, &params);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/super_db_host/unknown",
+                              false);
+  test_datastore_segment(&segment->typed_attributes->datastore, tname,
+                         "MongoDB", NULL, NULL, NULL, NULL, NULL, "super_db_host",
+                         "unknown", "unknown");
+
+  // Test: All instance info is set to empty strings
+  segment = nr_segment_start(txn, NULL, NULL);
+  segment->start_time = 1 * NR_TIME_DIVISOR;
+  segment->stop_time = 1 * NR_TIME_DIVISOR + duration;
+  instance.host = "";
+  instance.port_path_or_id = "";
+  instance.database_name = "";
+  test_segment_datastore_end_and_keep(&segment, &params);
+  test_segment_metric_created(tname, segment->metrics,
+                              "Datastore/instance/MongoDB/unknown/unknown",
+                              false);
+  test_datastore_segment(&segment->typed_attributes->datastore, tname,
+                         "MongoDB", NULL, NULL, NULL, NULL, NULL, "unknown",
+                         "unknown", "unknown");
+  nr_txn_destroy(&txn);
+}
+
+
 static void test_instance_metric_with_slashes(void) {
   nrtxn_t* txn = new_txn(0);
   nrtime_t duration = 4 * NR_TIME_DIVISOR;
@@ -1132,6 +1217,7 @@ void test_main(void* p NRUNUSED) {
   test_instance_info_reporting_disabled();
   test_instance_database_name_reporting_disabled();
   test_instance_info_empty();
+  test_instance_info_null();
   test_instance_metric_with_slashes();
   test_value_transforms();
   test_web_transaction_commit();
