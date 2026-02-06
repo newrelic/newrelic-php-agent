@@ -1659,6 +1659,8 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
 void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   zval* status = NULL;
   zval* scripts = NULL;
+  zval* preload_stats = NULL;
+  zval* preload_scripts = NULL;
   zend_ulong key_num = 0;
   nr_php_string_hash_key_t* key_str = NULL;
   zval* val = NULL;
@@ -1686,33 +1688,49 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   }
 
   scripts = nr_php_zend_hash_find(Z_ARRVAL_P(status), "scripts");
+  preload_stats
+      = nr_php_zend_hash_find(Z_ARRVAL_P(status), "preload_statistics");
 
-  if (NULL == scripts) {
-    nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: missing 'scripts' key in "
-                "status information");
-    goto end;
+  if (NULL != preload_stats) {
+    preload_scripts
+        = nr_php_zend_hash_find(Z_ARRVAL_P(preload_stats), "scripts");
   }
 
-  if (IS_ARRAY != Z_TYPE_P(scripts)) {
+  if (NULL == scripts && NULL == preload_scripts) {
     nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: 'scripts' value in status "
-                "information is not an array");
+                "User instrumentation from opcache: missing 'scripts' "
+                "key in status information");
     goto end;
   }
 
   nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: started");
 
-  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(scripts), key_num, key_str, val) {
-    (void)key_num;
-    (void)val;
+  if (NULL != scripts && IS_ARRAY == Z_TYPE_P(scripts)) {
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(scripts), key_num, key_str, val) {
+      (void)key_num;
+      (void)val;
 
-    filename = ZEND_STRING_VALUE(key_str);
-    filename_len = ZEND_STRING_LEN(key_str);
+      filename = ZEND_STRING_VALUE(key_str);
+      filename_len = ZEND_STRING_LEN(key_str);
 
-    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
+      nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
+    }
+    ZEND_HASH_FOREACH_END();
   }
-  ZEND_HASH_FOREACH_END();
+
+  if (NULL != preload_scripts && IS_ARRAY == Z_TYPE_P(preload_scripts)) {
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(preload_scripts), key_num, key_str,
+                              val) {
+      (void)key_num;
+      (void)val;
+
+      filename = ZEND_STRING_VALUE(key_str);
+      filename_len = ZEND_STRING_LEN(key_str);
+
+      nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
+    }
+    ZEND_HASH_FOREACH_END();
+  }
 
   nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: done");
 
