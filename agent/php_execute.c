@@ -1666,14 +1666,14 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   zval* val = NULL;
   const char* filename;
   size_t filename_len;
-  zval param = nr_php_zval_alloc();
+  zval* param = nr_php_zval_alloc();
   zend_ulong key_num_debug = 0;
   nr_php_string_hash_key_t* key_str_debug = NULL;
   zval* val_debug = NULL;
   int key_count = 0;
 
-  nr_php_zval_bool(&param, 1);
-  status = nr_php_call(NULL, "opcache_get_status", &param);
+  nr_php_zval_bool(param, 1);
+  status = nr_php_call(NULL, "opcache_get_status", param);
   nr_php_zval_free(&param);
   if (NULL == status) {
     nrl_warning(NRL_INSTRUMENT,
