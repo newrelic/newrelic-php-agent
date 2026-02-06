@@ -1710,6 +1710,10 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
       (void)key_num;
       (void)val;
 
+      if (NULL == key_str) {
+        continue;
+      }
+
       filename = ZEND_STRING_VALUE(key_str);
       filename_len = ZEND_STRING_LEN(key_str);
 
@@ -1723,6 +1727,10 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
                               val) {
       (void)key_num;
       (void)val;
+
+      if (NULL == key_str) {
+        continue;
+      }
 
       filename = ZEND_STRING_VALUE(key_str);
       filename_len = ZEND_STRING_LEN(key_str);
