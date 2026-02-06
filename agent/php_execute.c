@@ -1732,9 +1732,6 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
       filename = ZEND_STRING_VALUE(key_str);
       filename_len = ZEND_STRING_LEN(key_str);
 
-      nrl_warning(NRL_INSTRUMENT,
-                  "User instrumentation from opcache: found file=%s", filename);
-
       nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
     }
     ZEND_HASH_FOREACH_END();
