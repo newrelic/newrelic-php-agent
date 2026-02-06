@@ -1666,9 +1666,11 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   zval* val = NULL;
   const char* filename;
   size_t filename_len;
+  zval param = nr_php_zval_alloc();
 
-  status = nr_php_call(NULL, "opcache_get_status");
-
+  nr_php_zval_bool(&param, 1);
+  status = nr_php_call(NULL, "opcache_get_status", &param);
+  nr_php_zval_free(&param);
   if (NULL == status) {
     nrl_warning(NRL_INSTRUMENT,
                 "User instrumentation from opcache: error obtaining opcache "
