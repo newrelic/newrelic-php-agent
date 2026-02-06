@@ -1691,7 +1691,7 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   preload_stats
       = nr_php_zend_hash_find(Z_ARRVAL_P(status), "preload_statistics");
 
-  if (NULL != preload_stats) {
+  if (NULL != preload_stats && IS_ARRAY == Z_TYPE_P(preload_stats)) {
     preload_scripts
         = nr_php_zend_hash_find(Z_ARRVAL_P(preload_stats), "scripts");
   }
