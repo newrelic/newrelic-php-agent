@@ -1667,6 +1667,10 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   const char* filename;
   size_t filename_len;
   zval param = nr_php_zval_alloc();
+  zend_ulong key_num_debug = 0;
+  nr_php_string_hash_key_t* key_str_debug = NULL;
+  zval* val_debug = NULL;
+  int key_count = 0;
 
   nr_php_zval_bool(&param, 1);
   status = nr_php_call(NULL, "opcache_get_status", &param);
@@ -1688,6 +1692,15 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
               "information is not an array");
     goto end;
   }
+
+  nrl_warning(NRL_INSTRUMENT, "User instrumentation from opcache: Listing all keys in status:");
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(status), key_num_debug, key_str_debug, val_debug) {
+    if (NULL != key_str_debug) {
+      nrl_warning(NRL_INSTRUMENT, "  Key[%d]: %s (type=%d)",
+                  key_count++, ZEND_STRING_VALUE(key_str_debug), Z_TYPE_P(val_debug));
+    }
+  }
+  ZEND_HASH_FOREACH_END();
 
   scripts = nr_php_zend_hash_find(Z_ARRVAL_P(status), "scripts");
   preload_stats
