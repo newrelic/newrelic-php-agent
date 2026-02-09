@@ -614,8 +614,9 @@ static void test_real_world_things(void) {
 
   sql = " SELECT foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Invalid EXTRACT function with in select should return null table name",
-      sql, "select", NULL);
+      "Invalid EXTRACT function in SELECT should return table name as this "
+      "parser isn't detecting sql correctness",
+      sql, "select", "baz_table");
 
   sql
       = " SELECT foo, EXTRACT() as "
@@ -667,17 +668,17 @@ static void test_real_world_things(void) {
 
   sql = " DELETE foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Invalid EXTRACT function with invalid DELETE should return null table "
-      "name as this parser isn't detecting sql correctness but still verifies "
-      "don't try to parse the FROM inside anyway so for that we are good",
-      sql, "delete", NULL);
+      "Invalid EXTRACT function with DELETE should return table "
+      "name as this parser isn't detecting sql correctness",
+      sql, "delete", "baz_table");
 }
 
 static void test_nested_parentheticals(void) {
   const char* sql;
 
   sql
-      = "SELECT label, (SELECT COUNT(1) FROM my_table_event WHERE my_table_id "
+      = "SELECT (label), (SELECT COUNT(1) FROM my_table_event WHERE "
+        "my_table_id "
         "= my_table.my_table_id) as event_count FROM my_table";
   test_get_operation_and_table(
       "Valid SQL SELECT operation with nested SELECT statement should "

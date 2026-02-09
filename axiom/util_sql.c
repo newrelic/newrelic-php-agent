@@ -368,6 +368,16 @@ static char* nr_sql_parse_over(const char* str,
   return cend + 1; /* Character is consumed */
 }
 
+/*
+ * Purpose: Determine whether the provided keyword is the next token in an SQL
+ * statement
+ *
+ * @param sql     The SQL statement to parse
+ * @param keyword The SQL keyword to compare
+ *
+ * @return bool
+ *
+ */
 static bool nr_parse_sql_keyword(const char* sql, const char* keyword) {
   int i;
   for (i = 0; i < nr_strlen(keyword); i++) {
@@ -386,7 +396,7 @@ void nr_sql_get_operation_and_table(const char* sql,
                                     char** table_ptr,
                                     int show_sql_parsing) {
   int i;
-  bool nested = false;
+  int nest_level = 0;
   const char* start = 0;
   const char* end = 0;
   const char* x;
@@ -490,117 +500,59 @@ void nr_sql_get_operation_and_table(const char* sql,
       }
 
       if ('(' == nr_tolower(x[0])) {
-        nested = true;
-      }
-
-      if ((NR_SQL_PARSE_CREATE == operations[i].opflag)
-          || (NR_SQL_PARSE_DROP == operations[i].opflag)) {
-        /*
-         * If this is a `CREATE` or `DROP` statement then it will be followed by
-         * `DATABASE` or `TABLE` (ignoring whitespace and comments). Since
-         * 'create' is the first word, we merely advance to the second word to
-         * see if it is DATABASE OR TABLE then advance to the db/table name.
-         */
-        if (('d' == nr_tolower(x[0])) && ('a' == nr_tolower(x[1]))
-            && ('t' == nr_tolower(x[2])) && ('a' == nr_tolower(x[3]))
-            && ('b' == nr_tolower(x[4])) && ('a' == nr_tolower(x[5]))
-            && ('s' == nr_tolower(x[6])) && ('e' == nr_tolower(x[7]))
-            && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[8]))) {
-          x += 8;
-          break;
-
-        } else if (('t' == nr_tolower(x[0])) && ('a' == nr_tolower(x[1]))
-                   && ('b' == nr_tolower(x[2])) && ('l' == nr_tolower(x[3]))
-                   && ('e' == nr_tolower(x[4]))
-                   && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[5]))) {
-          x += 5;
-          break;
-        }
-      }
-
-      /*
-       * Sometimes you can get a `FROM` in the EXTRACT function.
-       * https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT
-       * The EXTRACT function retrieves subfields such as year or hour from
-       * date/time values. source must be a value expression of type timestamp,
-       * date, time, or interval. Ex: SELECT EXTRACT(CENTURY FROM TIMESTAMP
-       * '2000-12-16 12:21:13'); Result: 20 This FROM is NOT followed by a table
-       * name but a timestamp and therefore when we are trying to
-       * NR_SQL_PARSE_FROM, the whole EXTRACT(...) clause should be ignored to
-       * avoid keying off of the FROM value contained inside.
-       */
-      if ((NR_SQL_PARSE_FROM == operations[i].opflag)
-          && ('e' == nr_tolower(x[0])) && ('x' == nr_tolower(x[1]))
-          && ('t' == nr_tolower(x[2])) && ('r' == nr_tolower(x[3]))
-          && ('a' == nr_tolower(x[4])) && ('c' == nr_tolower(x[5]))
-          && ('t' == nr_tolower(x[6]))
-          && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[7]))) {
-        x += 7;
-
-        /* process any whitespace before the () block */
-        x = nr_sql_whitespace_comment_prefix(x, show_sql_parsing);
-        if (NULL == x) {
-          return;
-        }
-
-        /* Remove the parentheses block */
-        if ('(' == *x) {
-          x = nr_sql_parse_over(x + 1, ')', show_sql_parsing);
-          if (NULL == x) {
-            return;
-          }
-          continue;
-        }
-        /* We only get here if there weren't parentheses which isn't valid */
-        return;
-      }
-
-      /*
-       * Handle the edge case of a nested SELECT parenthetical causing
-       * misidentification of the main table name.
-       * If we've detected an open parenthetical above, check the index of the
-       * next '(' character and compare it to the index of the next ')'
-       * character. If '(' exists and precedes the ')' character, advance the
-       * sql string  to the position of the next ')'+1 and check again.
-       * Once the next ')' character precedes the next '(' character or the next
-       * '(' character does not exist, break out of the loop and advance one
-       * final time to reach the end of the outermost nested statement.
-       */
-      if ((NR_SQL_PARSE_FROM == operations[i].opflag) && nested
-          && (nr_parse_sql_keyword(x, "select")
-              || nr_parse_sql_keyword(x, "(select"))) {
-        while (nr_stridx(x, "(") != -1
-               && (nr_stridx(x, "(") < nr_stridx(x, ")"))) {
-          x = nr_sql_parse_over(x, ')', show_sql_parsing);
-          if (NULL == x) {
-            return;
-          }
-        }
-        x = nr_sql_parse_over(x, ')', show_sql_parsing);
-        nested = false;
+        nest_level++;
+        x++;
         if (NULL == x) {
           return;
         }
         continue;
       }
 
-      if ((NR_SQL_PARSE_FROM == operations[i].opflag)
-          && ('f' == nr_tolower(x[0])) && ('r' == nr_tolower(x[1]))
-          && ('o' == nr_tolower(x[2])) && ('m' == nr_tolower(x[3]))
-          && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[4]))) {
-        x += 4;
-        break;
+      if (')' == nr_tolower(x[0])) {
+        nest_level--;
+        x++;
+        if (NULL == x) {
+          return;
+        }
+        continue;
       }
 
-      if ((NR_SQL_PARSE_INTO == operations[i].opflag)
-          && ('i' == nr_tolower(x[0])) && ('n' == nr_tolower(x[1]))
-          && ('t' == nr_tolower(x[2])) && ('o' == nr_tolower(x[3]))
-          && (NULL != nr_strchr(NR_SQL_DELIMITER_CHARS, x[4]))) {
-        x += 4;
-        break;
+      if (0 == nest_level) {
+        if (NR_SQL_PARSE_CREATE == operations[i].opflag
+            || NR_SQL_PARSE_DROP == operations[i].opflag) {
+          /*
+           * If this is a `CREATE` or `DROP` statement then it will be followed
+           * by `DATABASE` or `TABLE` (ignoring whitespace and comments). Since
+           * 'create' is the first word, we merely advance to the second word to
+           * see if it is DATABASE OR TABLE then advance to the db/table name.
+           */
+          if (nr_parse_sql_keyword(x, "database")) {
+            x += 8;
+            break;
+
+          } else if (nr_parse_sql_keyword(x, "table")) {
+            x += 5;
+            break;
+          }
+        }
+
+        if (NR_SQL_PARSE_FROM == operations[i].opflag
+            && nr_parse_sql_keyword(x, "from")) {
+          x += 4;
+          break;
+        }
+
+        if (NR_SQL_PARSE_INTO == operations[i].opflag
+            && nr_parse_sql_keyword(x, "into")) {
+          x += 4;
+          break;
+        }
       }
 
-      sl = nr_strcspn(x, NR_SQL_WHITESPACE_CHARS "'\"");
+      sl = nr_strcspn(x, NR_SQL_WHITESPACE_CHARS
+                      "'\""
+                      "("
+                      ")");
       x += sl;
     }
   }
