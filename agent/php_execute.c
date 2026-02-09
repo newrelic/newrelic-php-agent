@@ -452,14 +452,6 @@ static nr_library_table_t libraries[] = {
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
 
     /*
-     * Allow Zend Framework 1.x to be detected as a library as well as a
-     * framework. This allows Zend_Http_Client to be instrumented when used
-     * with other frameworks or even without a framework at all. This is
-     * necessary for Magento in particular, which is built on ZF1.
-     */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
-
-    /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.

@@ -2,8 +2,8 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef LIB_ZEND_HTTP_HDR
-#define LIB_ZEND_HTTP_HDR
+#ifndef LIB_LAMINAS_HTTP_HDR
+#define LIB_LAMINAS_HTTP_HDR
 
 #include "php_wrapper.h"
 

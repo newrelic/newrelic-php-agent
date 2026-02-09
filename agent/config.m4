@@ -230,7 +230,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   fw_symfony_common.c fw_wordpress.c fw_yii.c"
   LIBRARIES="lib_aws_sdk_php.c lib_monolog.c lib_doctrine2.c \
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
-  lib_mongodb.c lib_predis.c lib_zend_http.c \
+  lib_mongodb.c lib_predis.c lib_laminas_http.c \
   lib_composer.c lib_php_amqplib.c"
   PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, $(NEWRELIC_CFLAGS))
 

@@ -8,7 +8,7 @@
 #include "php_hash.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
-#include "lib_zend_http.h"
+#include "lib_laminas_http.h"
 #include "nr_header.h"
 #include "nr_segment_external.h"
 #include "util_logging.h"
