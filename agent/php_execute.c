@@ -1774,7 +1774,13 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
       (void)key_num;
       (void)val;
 
+      nrl_warning(NRL_INSTRUMENT,
+                  "User instrumentation from opcache: In loop, key_str=%p",
+                  key_str);
+
       if (NULL == key_str) {
+        nrl_warning(NRL_INSTRUMENT,
+                    "User instrumentation from opcache: Skipping NULL key_str");
         continue;
       }
 
