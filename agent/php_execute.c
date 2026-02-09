@@ -1727,6 +1727,19 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
                   "User instrumentation from opcache: preload_scripts type=%d (IS_ARRAY=%d)",
                   Z_TYPE_P(preload_scripts), IS_ARRAY);
     }
+
+    if (IS_ARRAY == Z_TYPE_P(preload_scripts)) {
+      nrl_warning(
+          NRL_INSTRUMENT,
+          "User instrumentation from opcache: preload_scripts has %d elements",
+          zend_hash_num_elements(Z_ARRVAL_P(preload_scripts)));
+    }
+  }
+
+  if (NULL != scripts && IS_ARRAY == Z_TYPE_P(scripts)) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: scripts array has %d elements",
+                zend_hash_num_elements(Z_ARRVAL_P(scripts)));
   }
 
   if (NULL == scripts && NULL == preload_scripts) {
