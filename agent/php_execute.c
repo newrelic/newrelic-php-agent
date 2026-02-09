@@ -1771,26 +1771,24 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
   if (NULL != preload_scripts && IS_ARRAY == Z_TYPE_P(preload_scripts)) {
     ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(preload_scripts), key_num, key_str,
                               val) {
-      (void)key_num;
-      (void)val;
+      zval* full_path_zval = NULL;
 
-      nrl_warning(NRL_INSTRUMENT,
-                  "User instrumentation from opcache: In loop, key_str=%p",
-                  key_str);
+      if (NULL != val && IS_ARRAY == Z_TYPE_P(val)) {
+        full_path_zval = nr_php_zend_hash_find(Z_ARRVAL_P(val), "full_path");
 
-      if (NULL == key_str) {
-        nrl_warning(NRL_INSTRUMENT,
-                    "User instrumentation from opcache: Skipping NULL key_str");
-        continue;
+        if (NULL != full_path_zval && IS_STRING == Z_TYPE_P(full_path_zval)) {
+          filename = Z_STRVAL_P(full_path_zval);
+          filename_len = Z_STRLEN_P(full_path_zval);
+
+          nrl_warning(
+              NRL_INSTRUMENT,
+              "User instrumentation from opcache: found preloaded file=%s",
+              filename);
+
+          nr_php_user_instrumentation_from_file(filename,
+                                                filename_len TSRMLS_CC);
+        }
       }
-
-      filename = ZEND_STRING_VALUE(key_str);
-      filename_len = ZEND_STRING_LEN(key_str);
-
-      nrl_warning(NRL_INSTRUMENT,
-                  "User instrumentation from opcache: found preloaded file=%s", filename);
-
-      nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
     }
     ZEND_HASH_FOREACH_END();
   }
