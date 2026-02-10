@@ -771,6 +771,7 @@ static void test_nested_parentheticals(void) {
       "`nested_table`",
       sql, "delete", "my_table");
 }
+// clang-format on
 
 /*
  * Read the section on identifiers and comments carefully:
