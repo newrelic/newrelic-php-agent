@@ -676,30 +676,47 @@ static void test_real_world_things(void) {
 static void test_nested_parentheticals(void) {
   const char* sql;
 
-  sql
-      = "SELECT (label), (SELECT COUNT(1) FROM my_table_event WHERE "
-        "my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
+  // clang-format off
+  sql = "                 \
+    SELECT                \
+      (label),            \
+      (                   \
+        SELECT            \
+          COUNT(1)        \
+        FROM              \
+          my_table_event  \
+        WHERE             \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count    \
+    FROM                  \
+      my_table            \
+    ";
   test_get_operation_and_table(
       "Valid SQL SELECT operation with nested SELECT statement should "
       "correctly identify "
       "`my_table` rather than the nested table name `my_table_event`",
       sql, "select", "my_table");
 
-  sql
-      = "SELECT label, ( SELECT COUNT(1) FROM my_table_event WHERE my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
-  test_get_operation_and_table(
-      "Valid SQL SELECT operation with nested SELECT statement containing "
-      "whitespace between "
-      "the parenthesis and the SELECT keyword should correctly identify "
-      "`my_table` rather than the nested table name `my_table_event`",
-      sql, "select", "my_table");
-
-  sql
-      = "SELECT label, (SELECT COUNT(1), (SELECT nested FROM nested_table) "
-        "FROM my_table_event WHERE my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
   test_get_operation_and_table(
       "Valid SQL SELECT operation with double nested SELECT statement should "
       "correctly identify "
@@ -707,29 +724,46 @@ static void test_nested_parentheticals(void) {
       "`nested_table`",
       sql, "select", "my_table");
 
-  sql
-      = "DELETE label, (SELECT COUNT(1) FROM my_table_event WHERE my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
+  sql = "                 \
+    DELETE                \
+      (label),            \
+      (                   \
+        SELECT            \
+          COUNT(1)        \
+        FROM              \
+          my_table_event  \
+        WHERE             \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count    \
+    FROM                  \
+      my_table            \
+    ";
   test_get_operation_and_table(
       "Valid SQL DELETE operation with nested SELECT statement should "
       "correctly identify "
       "`my_table` rather than the nested table name `my_table_event`",
       sql, "delete", "my_table");
 
-  sql
-      = "DELETE label, ( SELECT COUNT(1) FROM my_table_event WHERE my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
-  test_get_operation_and_table(
-      "Valid SQL DELETE operation with nested SELECT statement containing "
-      "whitespace between "
-      "the parenthesis and the SELECT keyword should correctly identify "
-      "`my_table` rather than the nested table name `my_table_event`",
-      sql, "delete", "my_table");
-
-  sql
-      = "DELETE label, (SELECT COUNT(1), (SELECT nested FROM nested_table) "
-        "FROM my_table_event WHERE my_table_id "
-        "= my_table.my_table_id) as event_count FROM my_table";
+  sql = "                   \
+    DELETE                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
   test_get_operation_and_table(
       "Valid SQL DELETE operation with double nested SELECT statement should "
       "correctly identify "
@@ -737,6 +771,7 @@ static void test_nested_parentheticals(void) {
       "`nested_table`",
       sql, "delete", "my_table");
 }
+
 /*
  * Read the section on identifiers and comments carefully:
  *   https://dev.mysql.com/doc/refman/5.0/en/identifiers.html
