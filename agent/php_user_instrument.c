@@ -135,6 +135,23 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
     wr->is_disabled = 1;
     return;
   }
+
+  /*
+   * CRITICAL FOR ZTS: Do not store transient wraprecs in the op_array
+   * extension slot. The op_array (and its extension slots) may be shared
+   * across threads/requests when OPcache is enabled. Storing a pointer to
+   * per-request memory in shared storage causes use-after-free when:
+   *   1. Thread A creates transient wraprec, stores pointer in shared slot
+   *   2. Thread A's request ends, frees the wraprec
+   *   3. Thread B reads stale pointer from shared slot -> CRASH
+   *
+   * Transient wraprecs are looked up via the transient_wraprecs linked list
+   * stored in per-request globals (NRPRG).
+   */
+  if (wr->is_transient) {
+    return;
+  }
+
   // for situation when wraprec is added after first execution of the function
   // store the wraprec in the op_array extension for the duration of the request for later lookup
   // The op_array extension slot for function may not be initialized yet because it is
@@ -143,7 +160,9 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
   // on the first call to the function when observer is registered for that function.
   zend_init_func_run_time_cache(&zf->op_array);
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
-    ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+    ZEND_OP_ARRAY_EXTENSION(&zf->op_array,
+                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
+        = wr;
   }
 }
 
@@ -664,6 +683,25 @@ void nr_php_remove_transient_user_instrumentation(void) {
   while (p) {
     nruserfn_t* wraprec = p;
     p = wraprec->next;
+
+    /*
+     * We cannot safely clear the op_array extension slot here because
+     * by the time nr_php_post_deactivate is called during request shutdown,
+     * the RUN_TIME_CACHE for the op_array may have already been freed by PHP.
+     * Accessing it would cause a segfault.
+     *
+     * Instead, we rely on:
+     * 1. The magic number check in nr_php_wraprec_lookup_get to detect
+     *    invalid/stale wraprecs
+     * 2. PHP's own cleanup of the run-time cache which invalidates the
+     *    extension slot
+     *
+     * Zero the magic number before freeing as a safety measure.
+     * If the memory is not immediately reused, this helps detect
+     * use-after-free in nr_php_wraprec_lookup_get.
+     */
+    wraprec->magic = 0;
+
     nr_php_user_wraprec_destroy(&wraprec);
     count++;
   }
