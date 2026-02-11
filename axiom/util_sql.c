@@ -499,7 +499,7 @@ void nr_sql_get_operation_and_table(const char* sql,
         continue;
       }
 
-      if ('(' == nr_tolower(x[0])) {
+      if ('(' == x[0]) {
         nest_level++;
         x++;
         if (NULL == x) {
@@ -508,7 +508,7 @@ void nr_sql_get_operation_and_table(const char* sql,
         continue;
       }
 
-      if (')' == nr_tolower(x[0])) {
+      if (')' == x[0]) {
         nest_level--;
         x++;
         if (NULL == x) {
