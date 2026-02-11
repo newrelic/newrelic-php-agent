@@ -15,6 +15,13 @@
 #include "util_memory.h"
 #include "util_signals.h"
 #include "util_strings.h"
+#include "util_threads.h"
+
+/*
+ * Mutex to protect Drupal wraprec fields from race conditions in ZTS mode.
+ * Multiple threads may attempt to instrument the same function simultaneously.
+ */
+static nrthread_mutex_t drupal_wraprec_mutex = NRTHREAD_MUTEX_INITIALIZER;
 
 int nr_drupal_do_view_execute(const char* name,
                               int name_len,
@@ -82,6 +89,14 @@ nruserfn_t* nr_php_wrap_user_function_drupal(const char* name,
                                       nr_drupal_wrap_module_hook TSRMLS_CC);
   if (wraprec) {
     /*
+     * Lock the mutex to prevent race conditions when modifying Drupal-specific
+     * fields in ZTS mode. Multiple threads may attempt to instrument the same
+     * function simultaneously, which could lead to double-free or
+     * use-after-free.
+     */
+    nrt_mutex_lock(&drupal_wraprec_mutex);
+
+    /*
      * As wraprecs can be reused, we need to free any previous hook or module
      * to avoid memory leaks.
      */
@@ -92,6 +107,8 @@ nruserfn_t* nr_php_wrap_user_function_drupal(const char* name,
     wraprec->drupal_hook_len = hook_len;
     wraprec->drupal_module = nr_strndup(module, module_len);
     wraprec->drupal_module_len = module_len;
+
+    nrt_mutex_unlock(&drupal_wraprec_mutex);
   }
 
   return wraprec;
