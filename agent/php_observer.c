@@ -124,11 +124,32 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   return handlers;
 }
 
+#if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
+static void nr_fiber_disable(zend_fiber_context* fiber_context) {
+  if (NULL != NRPRG(txn)) {
+    /* Fiber init/desetroy detected, end and keep the transaction. */
+    nrl_warning(NRL_INSTRUMENT,
+                "Transaction is truncated because PHP Fiber use is detected.");
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+
+static void nr_fiber_switch_disable(zend_fiber_context* from,
+                                    zend_fiber_context* to) {
+  if (NULL != NRPRG(txn)) {
+    /* Fiber switch detected, end and keep the transaction. */
+    nrl_warning(NRL_INSTRUMENT,
+                "Transaction is truncated because PHP Fiber use is detected.");
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+#endif /* PHP 8.1+ */
+
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED){};
 
 void nr_php_observer_minit() {
   /*
-   * Register the Observer API handlers.
+   * Register the Observer API function handlers.
    */
   zend_observer_fcall_register(nr_php_fcall_register_handlers);
 
@@ -138,6 +159,23 @@ void nr_php_observer_minit() {
    * turn it into a no_op when using OAPI.
    */
   NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
+
+
+#if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP 8.1+ */
+
+  /*
+   * Register the Observer API fiber handlers.
+   */
+
+   /* Currently only register if we are disabling instrumentation. */
+   if (NRINI(fibers_disabled)) {
+    zend_observer_fiber_init_register(nr_fiber_disable);
+		zend_observer_fiber_switch_register(nr_fiber_switch_disable);
+		zend_observer_fiber_destroy_register(nr_fiber_disable);
+   }
+
+#endif /* PHP 8.1+ */
+
 }
 
 #endif
