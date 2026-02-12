@@ -36,3 +36,13 @@ function force_error() {
 function force_transaction_trace() {
   error_reporting(error_reporting()); time_nanosleep(0, 50000); // 50usec should be enough
 }
+
+/*
+ * Formats an env var to pass back to integration_runner for use with EXPECT blocks.
+ * Note: integration_runner will use vars set via this method to overwrite previously 
+ * existing vars of the same name.
+ */
+function env_var_for_expects($name, $value) {
+  echo "NR_EXPECT_ENV_VAR[" . $name . "]=" . $value . "\n";
+}
+
