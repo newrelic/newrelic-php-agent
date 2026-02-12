@@ -724,6 +724,91 @@ static void test_nested_parentheticals(void) {
       "`nested_table`",
       sql, "select", "my_table");
 
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1,          \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+      "Invalid SQL SELECT operation missing a closing parenthesis should return"
+    " NULL table name",
+    sql, "select", NULL);
+
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT 1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+    "Invalid SQL SELECT operation missing an opening parenthesis should not "
+    "cause agent to crash",
+      sql, "select", "my_table_event");
+
+  sql = "         \
+    SELECT        \
+      id          \
+    FROM          \
+      records     \
+    WHERE         \
+      CONCAT(     \
+        '(',      \
+        name,     \
+        suffix    \
+      ) = '(test' \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation should skip parenthesis in quotations and "
+    "return correct table name",
+      sql, "select", "records");
+
+  sql = "           \
+    SELECT          \
+      id(           \
+        SELECT      \
+          COUNT(*)  \
+        FROM        \
+          events    \
+        WHERE       \
+          note = 'Started (' \
+      ) AS COUNT    \
+    FROM            \
+      orders        \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation with nested SELECT statement should skip "
+    "parenthesis in quotations and return correct table name",
+      sql, "select", "orders");
+
   sql = "                 \
     DELETE                \
       (label),            \
