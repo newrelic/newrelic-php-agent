@@ -5,9 +5,17 @@
  */
 /*DESCRIPTION
 Test that the txn is ended if PHP fiber use is detected. 
-Fiber action detected on root span so only root span will exist.
+Fiber action detected on root span so only root span will exist and be named.
+
 Output should show that PHP functionality should continue to work 
 as expected.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP 8.1+ required\n");
+}
 */
 
 /*INI

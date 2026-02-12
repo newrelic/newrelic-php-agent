@@ -13,6 +13,13 @@ Output should show that PHP functionality should continue to work
 as expected.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP 8.1+ required\n");
+}
+*/
+
 /*INI
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
