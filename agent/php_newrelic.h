@@ -16,7 +16,6 @@
 #include "php_extension.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
-#include "php_user_instrument_wraprec_hashmap.h"
 #include "util_vector.h"
 
 #define PHP_NEWRELIC_EXT_NAME "newrelic"
@@ -104,7 +103,9 @@ extern zend_module_entry newrelic_module_entry;
  */
 #define NR_UNUSED_TSRMLS
 
+/* move include here to avoid circular dependencies */
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 
 typedef enum {
   NR_FW_UNSET = 0,
