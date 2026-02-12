@@ -130,6 +130,7 @@ static void nr_fiber_disable(zend_fiber_context* fiber_context) {
     /* Fiber init/desetroy detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
+    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/library/PHP/Fiber/used", 0);
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
@@ -140,6 +141,7 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
     /* Fiber switch detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
+    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/library/PHP/Fiber/used", 0);
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
