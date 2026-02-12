@@ -492,16 +492,6 @@ PHP_MINIT_FUNCTION(newrelic) {
    */
   nr_php_generate_internal_wrap_records();
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /* 
-   * The user function wraprec hashmap must be initialized before INI processing
-   * because INI processing adds wraprecs:
-   *  - newrelic.webtransaction.name.functions
-   *  - newrelic.transaction_tracer.custom
-  */
-  nr_php_user_instrument_wraprec_hashmap_init();
-#endif
-
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {

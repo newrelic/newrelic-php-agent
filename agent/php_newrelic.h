@@ -16,6 +16,7 @@
 #include "php_extension.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "util_vector.h"
 
 #define PHP_NEWRELIC_EXT_NAME "newrelic"
@@ -578,6 +579,13 @@ nr_vector_t* user_function_wrappers;
  * transient wrappers are stored at request level for thread safety
  */
 nruserfn_t* transient_wraprecs; /* a singly linked list */
+
+/*
+ * User instrumentation wraprec hashmaps stored at request level for thread
+ * safety
+ */
+nr_func_hashmap_t* global_funcs_ht; /* hashmap for global functions */
+nr_scope_hashmap_t* scope_ht;       /* hashmap for scoped methods */
 #endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a

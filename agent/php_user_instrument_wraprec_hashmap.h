@@ -8,6 +8,10 @@
 
 #include "php_user_instrument.h"
 
+// Forward declarations for hashmap types
+typedef struct _nr_func_hashmap nr_func_hashmap_t;
+typedef struct _nr_scope_hashmap nr_scope_hashmap_t;
+
 // clang-format off
 
 extern void nr_php_user_instrument_wraprec_hashmap_init(void);
