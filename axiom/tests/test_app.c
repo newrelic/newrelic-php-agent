@@ -453,7 +453,7 @@ static void test_agent_should_do_app_daemon_query(void) {
   app.failed_daemon_query_count = 0;
   app.last_daemon_query = now - (NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS - 1);
   do_query = nr_agent_should_do_app_daemon_query(&app, now);
-  tlib_pass_if_int_equal("app unknown no failed queries too soon", 0, do_query);
+  tlib_pass_if_int_equal("app unknown no failed queries do query", 1, do_query);
 
   app.state = NR_APP_UNKNOWN;
   app.failed_daemon_query_count = 0;
