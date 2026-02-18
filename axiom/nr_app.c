@@ -434,7 +434,7 @@ int nr_agent_should_do_app_daemon_query(const nrapp_t* app, time_t now) {
   }
 
   if (NR_APP_UNKNOWN == app->state) {
-    period = (1 + app->failed_daemon_query_count)
+    period = app->failed_daemon_query_count
              * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS;
 
     if (period > NR_APP_UNKNOWN_QUERY_BACKOFF_LIMIT_SECONDS) {

@@ -819,6 +819,97 @@ static void test_verify_id(void) {
   nr_app_info_destroy_fields(&info);
 }
 
+static void test_app_consider_appinfo_backoff(void) {
+  test_app_state_t* p = (test_app_state_t*)tlib_getspecific();
+  nrapp_t app = {0};
+  time_t now = time(0);
+  struct test_case {
+    const char* description;
+    int failed_daemon_query_count;
+    time_t last_daemon_query;
+    time_t elapsed_time;
+    int cmd_appinfo_called;
+  } test_cases[] = {
+    {"first transaction should query appinfo", 0, 0, 0, 1},
+    {"after 1 failed attempt - too soon should not query appinfo",
+      1, now, NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS - 1, 0},
+    {"after 1 failed attempt - enough time should query appinfo",
+      1, now, NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1},
+    {"after 2 failed attempts - too soon should not query appinfo", 
+      2, now, 2 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS - 1, 0},
+    {"after 2 failed attempts - enough time should query appinfo",
+      2, now, 2 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1},
+    {"after 3 failed attempts - enough time should query appinfo",
+      3, now, 3 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1},
+    {"after 4 failed attempts - enough time should query appinfo",
+      4, now, 4 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1},
+    {"after 5 failed attempts - enough time should query appinfo",
+      5, now, 5 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1},
+    {"after > 5 failed attempts - backoff is constant",
+      6, now, 5 * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS + 1, 1}
+  };
+
+  for (size_t i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); i++) {
+    struct test_case* tc = &test_cases[i];
+    time_t query_time = now + tc->elapsed_time;
+
+    // Set app state before each test case
+    app.state = NR_APP_UNKNOWN;
+    app.failed_daemon_query_count = tc->failed_daemon_query_count;
+    app.last_daemon_query = tc->last_daemon_query;
+
+    // Simulate appinfo consideration at the specified query time
+    memset(p, 0, sizeof(test_app_state_t));
+    p->cmd_appinfo_succeed = false;
+    nr_app_consider_appinfo(&app, query_time);
+
+    tlib_pass_if_int_equal(tc->description, tc->cmd_appinfo_called, p->cmd_appinfo_called);
+    if (tc->cmd_appinfo_called) {
+      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query, "Expected last_daemon_query to be updated, but it was not");
+      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count+1 == app.failed_daemon_query_count, "Expected last_daemon_query to be updated, but it was not");
+    } else {
+      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query, "Expected last_daemon_query to remain unchanged, but it was updated");
+      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count == app.failed_daemon_query_count, "Expected failed_daemon_query_count to remain unchanged, but it was updated");
+    }
+  }
+}
+
+static void test_app_consider_appinfo_refresh(void) {
+  test_app_state_t* p = (test_app_state_t*)tlib_getspecific();
+  nrapp_t app = {0};
+  time_t now = time(0);
+  struct test_case {
+    const char* description;
+    time_t last_daemon_query;
+    time_t elapsed_time;
+    int cmd_appinfo_called;
+  } test_cases[] = {
+    {"too soon should not query appinfo", now, NR_APP_REFRESH_QUERY_PERIOD_SECONDS - 1, 0},
+    {"enough time should query appinfo", now, NR_APP_REFRESH_QUERY_PERIOD_SECONDS + 1, 1}
+  };
+
+  for (size_t i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); i++) {
+    struct test_case* tc = &test_cases[i];
+    time_t query_time = now + tc->elapsed_time;
+
+    // Set app state before each test case
+    app.state = NR_APP_OK;
+    app.last_daemon_query = tc->last_daemon_query;
+
+    // Simulate appinfo consideration at the specified query time
+    memset(p, 0, sizeof(test_app_state_t));
+    p->cmd_appinfo_succeed = true;
+    nr_app_consider_appinfo(&app, query_time);
+
+    tlib_pass_if_int_equal(tc->description, tc->cmd_appinfo_called, p->cmd_appinfo_called);
+    if (tc->cmd_appinfo_called) {
+      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query, "Expected last_daemon_query to be updated, but it was not");
+    } else {
+      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query, "Expected last_daemon_query to remain unchanged, but it was updated");
+    }
+  }
+}
+
 static void test_app_consider_appinfo(void) {
   nrapp_t app;
   time_t now = time(0);
@@ -1039,4 +1130,6 @@ void test_main(void* p NRUNUSED) {
   test_app_entity_type_get();
   test_app_host_name_get();
   test_app_entity_guid_get();
+  test_app_consider_appinfo_backoff();
+  test_app_consider_appinfo_refresh();
 }
