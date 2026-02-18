@@ -819,6 +819,8 @@ static void test_verify_id(void) {
   nr_app_info_destroy_fields(&info);
 }
 
+// clang-format off
+
 static void test_app_consider_appinfo_backoff(void) {
   test_app_state_t* p = (test_app_state_t*)tlib_getspecific();
   nrapp_t app = {0};
@@ -865,11 +867,15 @@ static void test_app_consider_appinfo_backoff(void) {
 
     tlib_pass_if_int_equal(tc->description, tc->cmd_appinfo_called, p->cmd_appinfo_called);
     if (tc->cmd_appinfo_called) {
-      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query, "Expected last_daemon_query to be updated, but it was not");
-      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count+1 == app.failed_daemon_query_count, "Expected last_daemon_query to be updated, but it was not");
+      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query, 
+        "Expected last_daemon_query to be updated, but it was not");
+      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count+1 == app.failed_daemon_query_count, 
+        "Expected last_daemon_query to be updated, but it was not");
     } else {
-      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query, "Expected last_daemon_query to remain unchanged, but it was updated");
-      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count == app.failed_daemon_query_count, "Expected failed_daemon_query_count to remain unchanged, but it was updated");
+      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query, 
+        "Expected last_daemon_query to remain unchanged, but it was updated");
+      tlib_pass_if_true(tc->description, tc->failed_daemon_query_count == app.failed_daemon_query_count, 
+        "Expected failed_daemon_query_count to remain unchanged, but it was updated");
     }
   }
 }
@@ -903,12 +909,16 @@ static void test_app_consider_appinfo_refresh(void) {
 
     tlib_pass_if_int_equal(tc->description, tc->cmd_appinfo_called, p->cmd_appinfo_called);
     if (tc->cmd_appinfo_called) {
-      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query, "Expected last_daemon_query to be updated, but it was not");
+      tlib_pass_if_true(tc->description, query_time == app.last_daemon_query,
+        "Expected last_daemon_query to be updated, but it was not");
     } else {
-      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query, "Expected last_daemon_query to remain unchanged, but it was updated");
+      tlib_pass_if_true(tc->description, tc->last_daemon_query == app.last_daemon_query,
+        "Expected last_daemon_query to remain unchanged, but it was updated");
     }
   }
 }
+
+// clang-format on
 
 static void test_app_consider_appinfo(void) {
   nrapp_t app;
