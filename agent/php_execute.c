@@ -344,8 +344,8 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
 
-    {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 5.1.0-x */
+    {"Laravel", "laravel", NR_PSTR("illuminate/foundation/application.php"), 0,
+     nr_laravel_enable, NR_FW_LARAVEL},
 
     {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
