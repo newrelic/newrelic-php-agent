@@ -315,21 +315,6 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
     }                                                                      \
   } while (0)
 
-#define NR_PHP_WRAPPER_REQUIRE_FRAMEWORK_VERSION(fw, ver)                   \
-  do {                                                                      \
-    nrframework_t _required_fw = (fw);                                      \
-    int _required_version = (ver);                                          \
-                                                                            \
-    if ((_required_fw != NRPRG(current_framework))                          \
-        || (_required_version != NRPRG(framework_version))) {               \
-      nrl_verbosedebug(NRL_FRAMEWORK,                                       \
-                       "%s: expected framework %d ver %d; got %d ver %d",   \
-                       __func__, _required_fw, _required_version,           \
-                       NRPRG(current_framework), NRPRG(framework_version)); \
-      NR_PHP_WRAPPER_LEAVE;                                                 \
-    }                                                                       \
-  } while (0)
-
 #define NR_PHP_WRAPPER_DELEGATE(name)                                \
   if (!was_executed) {                                               \
     zcaught = ((name)(NR_SPECIALFNPTR_ORIG_ARGS TSRMLS_CC)).zcaught; \

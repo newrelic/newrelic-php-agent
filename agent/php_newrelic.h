@@ -365,7 +365,6 @@ nriniuint_t tt_recordsql; /* newrelic.transaction_tracer.record_sql */
 nrinifw_t force_framework; /* newrelic.framework */
 nrframework_t
     current_framework; /* Current request framework (forced or detected) */
-int framework_version; /* Current framework version */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
      && !defined OVERWRITE_ZEND_EXECUTE_DATA

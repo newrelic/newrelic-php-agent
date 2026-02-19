@@ -344,14 +344,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
 
-    {"Laravel", "laravel", NR_PSTR("illuminate/foundation/application.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL},
-    {"Laravel", "laravel", NR_PSTR("bootstrap/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 4.x */
-    {"Laravel", "laravel", NR_PSTR("storage/framework/compiled.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL}, /* 5.0.0-14 */
-    {"Laravel", "laravel", NR_PSTR("vendor/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
     {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
      NR_FW_LARAVEL}, /* 5.1.0-x */
 
@@ -361,7 +353,7 @@ static const nr_framework_table_t all_frameworks[] = {
      nr_magento2_enable, NR_FW_MAGENTO2},
 
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
-     NR_FW_SLIM}, /* 3.x */
+     NR_FW_SLIM}, /* 4.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 

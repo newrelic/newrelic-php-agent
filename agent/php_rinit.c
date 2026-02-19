@@ -48,7 +48,6 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)module_number;
 
   NRPRG(current_framework) = NR_FW_UNSET;
-  NRPRG(framework_version) = 0;
   NRPRG(php_cur_stack_depth) = 0;
   NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG(sapi_headers) = NULL;

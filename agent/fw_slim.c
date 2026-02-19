@@ -180,10 +180,6 @@ void nr_slim_enable(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 
-  /* Slim 3 */
-  nr_php_wrap_user_function_before_after_clean(
-      NR_PSTR("Slim\\Route::run"), nr_slim3_4_route_run, NULL, NULL);
-
   /* Slim 4 */
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Slim\\Routing\\Route::run"), nr_slim3_4_route_run, NULL, NULL);
@@ -200,9 +196,6 @@ void nr_slim_enable(TSRMLS_D) {
   nr_php_wrap_user_function(NR_PSTR("Slim\\Routing\\Dispatcher::dispatch"),
                             nr_slim4_route_dispatch TSRMLS_CC);
 
-  /* Slim 3 */
-  nr_php_wrap_user_function(NR_PSTR("Slim\\Route::run"),
-                            nr_slim3_4_route_run TSRMLS_CC);
 #endif
 
   /* Slim 2 does not have the same path as Slim 3/4 which is why
