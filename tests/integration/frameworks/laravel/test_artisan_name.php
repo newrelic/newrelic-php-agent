@@ -9,6 +9,13 @@ Running an artisan command should result in the transaction being named
 according to that command.
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not supported\n");
+}
+*/
+
 /*INI
 newrelic.framework = laravel
 */
@@ -41,11 +48,7 @@ use Illuminate\Console\Application;
 use Symfony\Component\Console\Input\Input;
 use Symfony\Component\Console\Output\Output;
 
-if (version_compare(PHP_VERSION, "8.0", ">=")){
-  require_once __DIR__.'/mock_artisan.php8.php';
-} else {
-  require_once __DIR__.'/mock_artisan.php';
-}
+require_once __DIR__.'/mock_artisan.php';
 
 $input = new Input('foo:bar');
 $output = new Output;

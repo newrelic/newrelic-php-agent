@@ -9,6 +9,13 @@ Running an artisan command with a bad command name should result in the
 transaction being named "list".
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: PHP < 8.0 not supported\n");
+}
+*/
+
 /*INI
 newrelic.framework=laravel
 */
@@ -41,11 +48,7 @@ use Illuminate\Console\Application;
 use Symfony\Component\Console\Input\Input;
 use Symfony\Component\Console\Output\Output;
 
-if (version_compare(PHP_VERSION, "8.0", ">=")){
-  require_once __DIR__.'/mock_artisan.php8.php';
-} else {
-  require_once __DIR__.'/mock_artisan.php';
-}
+require_once __DIR__.'/mock_artisan.php';
 
 $input = new Input(new stdClass);
 $output = new Output;
