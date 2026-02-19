@@ -449,7 +449,7 @@ int nr_agent_should_do_app_daemon_query(const nrapp_t* app, time_t now) {
     period = NR_APP_REFRESH_QUERY_PERIOD_SECONDS;
   }
 
-  if ((now - app->last_daemon_query) > period) {
+  if ((now - app->last_daemon_query) >= period) {
     return 1;
   }
 

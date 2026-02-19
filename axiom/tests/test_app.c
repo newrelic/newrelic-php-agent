@@ -858,8 +858,8 @@ static void test_app_consider_appinfo_backoff(void) {
       p->cmd_appinfo_succeed = false;
       // Simulate appinfo consideration at the specified query time
       nr_app_consider_appinfo(&app, now);
-      if (time_since_last_query == failed_daemon_query_count * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS+1 ||
-          time_since_last_query > NR_APP_UNKNOWN_QUERY_BACKOFF_LIMIT_SECONDS) {
+      if (time_since_last_query >= failed_daemon_query_count * NR_APP_UNKNOWN_QUERY_BACKOFF_SECONDS ||
+          time_since_last_query >= NR_APP_UNKNOWN_QUERY_BACKOFF_LIMIT_SECONDS) {
         tlib_pass_if_true("expected to query appinfo",
           1 == p->cmd_appinfo_called,
           "failed_daemon_query_count=%d, now=%ld, last_query=%ld, expected cmd_appinfo_called to be 1, but it was %d", 
@@ -900,7 +900,7 @@ static void test_app_consider_appinfo_refresh(void) {
     int cmd_appinfo_called;
   } test_cases[] = {
     {"too soon should not query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS - 1, 0},
-    {"still too soon should not query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS, 0},
+    {"still too soon should not query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS, 1},
     {"enough time should query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS + 1, 1}
   };
 
