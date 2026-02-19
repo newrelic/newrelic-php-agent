@@ -14,6 +14,8 @@ tlib_parallel_info_t parallel_info
 
 // clang-format off
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
 #define SCOPE_NAME "Vendor\\Namespace\\ClassName"
 #define METHOD_NAME "getSomething"
 #define SCOPED_METHOD_NAME SCOPE_NAME "::" METHOD_NAME
@@ -69,13 +71,17 @@ static void test_wraprecs_hashmap() {
   zend_string_free(method_name);
 }
 
+#endif /* ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO */
+
 // clang-format on
 
 void test_main(void* p NRUNUSED) {
 
   tlib_php_engine_create("" PTSRMLS_CC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   test_wraprecs_hashmap();
+#endif
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
