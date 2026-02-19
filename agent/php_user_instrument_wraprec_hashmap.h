@@ -8,6 +8,8 @@
 
 #include "php_user_instrument.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
 // Forward declarations for hashmap types
 typedef struct _nr_func_hashmap nr_func_hashmap_t;
 typedef struct _nr_scope_hashmap nr_scope_hashmap_t;
@@ -20,5 +22,7 @@ extern nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_
 extern void nr_php_user_instrument_wraprec_hashmap_destroy(void);
 
 // clang-format on
+
+#endif /* ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO */
 
 #endif

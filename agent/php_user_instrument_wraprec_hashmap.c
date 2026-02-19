@@ -9,6 +9,8 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
 // -----------------------------------------------------------------------------
 // func hash map
 
@@ -483,3 +485,5 @@ void nr_php_user_instrument_wraprec_hashmap_destroy(void) {
   }
   return;
 }
+
+#endif /* ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO */
