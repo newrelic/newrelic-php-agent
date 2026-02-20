@@ -931,6 +931,15 @@ set_daemon_location() {
 #   what we detect.
 # pi_php8
 #   True if PHP version is 8.0+
+# pi_mods_avail
+#   On Debian/Ubuntu systems, the path to the mods-available directory
+#   (e.g. /etc/php/8.4/mods-available). Empty if the system does not use
+#   the Debian PHP module management layout.
+# pi_sapi_confdirs
+#   Space-separated list of SAPI conf.d directories found under the same
+#   PHP configuration prefix as pi_mods_avail (e.g. /etc/php/8.4/cli/conf.d
+#   /etc/php/8.4/fpm/conf.d). Used to create symlinks after installing the
+#   INI file into mods-available. Empty if pi_mods_avail is empty.
 #
 # For installation, 4 things are important:
 # the extension API version, the extension load directory, and whether or not
@@ -1089,6 +1098,8 @@ to view compatibilty requirements for the the New Relic PHP agent.
   pi_extdir=
   pi_inidir_cli=
   pi_inifile_cli=
+  pi_mods_avail=
+  pi_sapi_confdirs=
   pi_arch="${NR_INSTALL_ARCH}"
   if [ -n "${havebin}" ]; then
     #
@@ -1391,22 +1402,23 @@ EOF
       fi
 
       #
-      # Debian can use a mods-available directory to store the ini files.
-      # It creates a symlink from the ini file in the conf.d directory that
-      # our installer can fail to find (because the symlink is prefixed with
-      # "20-" (notably the number can change based on configurations).
-      # While this install script will not install into the mods-available
-      # directory, our .deb installer can. Therefore, we want to detect if
-      # newrelic has previously been installed in the mods-available directory
-      # so that we do not create an additional ini file -- which would result in
-      # the conf.d directory having both newrelic.ini and 20-newrelic.ini.
+      # Debian/Ubuntu systems can use a mods-available directory to manage
+      # PHP module INI files. When the mods-available directory exists, we
+      # install the newrelic.ini file there and create symlinks in each
+      # SAPI's conf.d directory. This is consistent with how the Debian
+      # phpenmod/phpdismod tools work.
       #
 
-      if [ -d "${cfg_pfx}/mods-available" -a -f "${cfg_pfx}/mods-available/newrelic.ini" ]; then
+      if [ -d "${cfg_pfx}/mods-available" ]; then
+        pi_mods_avail="${cfg_pfx}/mods-available"
+        pi_sapi_confdirs=""
+        for sapi_dir in "${cfg_pfx}"/*/conf.d; do
+          if [ -d "${sapi_dir}" ]; then
+            pi_sapi_confdirs="${pi_sapi_confdirs} ${sapi_dir}"
+          fi
+        done
         pi_inidir_cli="${cfg_pfx}/mods-available"
-        if [ -n "${pi_inidir_dso}" ]; then
-          pi_inidir_dso="${cfg_pfx}/mods-available"
-        fi
+        pi_inidir_dso=""
       fi
     fi
   done
@@ -1514,6 +1526,28 @@ install_agent_here() {
         log "${pdir}: copy ini template to ${pi_inidir_dso}/newrelic.ini failed"
       fi
     fi
+  fi
+
+  #
+  # If we installed to mods-available, create symlinks in each SAPI conf.d
+  # directory so PHP picks up the module configuration. This follows the
+  # Debian convention used by phpenmod/phpdismod with a "20-" priority prefix.
+  #
+  if [ -n "${pi_mods_avail}" -a -f "${pi_mods_avail}/newrelic.ini" ]; then
+    for sapi_confdir in ${pi_sapi_confdirs}; do
+      if [ -d "${sapi_confdir}" ]; then
+        if [ ! -e "${sapi_confdir}/newrelic.ini" -a ! -e "${sapi_confdir}/20-newrelic.ini" ]; then
+          if logcmd ln -sf "${pi_mods_avail}/newrelic.ini" "${sapi_confdir}/20-newrelic.ini"; then
+            if [ -z "${NR_INSTALL_SILENT}" ]; then
+              echo "      Install Status : ${sapi_confdir}/20-newrelic.ini symlinked"
+            fi
+            log "${pdir}: created symlink ${sapi_confdir}/20-newrelic.ini -> ${pi_mods_avail}/newrelic.ini"
+          else
+            log "${pdir}: failed to create symlink ${sapi_confdir}/20-newrelic.ini"
+          fi
+        fi
+      fi
+    done
   fi
 
   if [ -n "${pi_inidir_cli}" -a -f "${pi_inidir_cli}/newrelic.ini" ]; then
