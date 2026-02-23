@@ -900,7 +900,7 @@ static void test_app_consider_appinfo_refresh(void) {
     int cmd_appinfo_called;
   } test_cases[] = {
     {"too soon should not query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS - 1, 0},
-    {"still too soon should not query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS, 1},
+    {"right on time should query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS, 1},
     {"enough time should query appinfo", NR_APP_REFRESH_QUERY_PERIOD_SECONDS + 1, 1}
   };
 
