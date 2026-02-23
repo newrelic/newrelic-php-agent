@@ -854,7 +854,7 @@ static void test_app_consider_appinfo_backoff(void) {
       app.failed_daemon_query_count = failed_daemon_query_count;
       app.last_daemon_query = now - time_since_last_query;
       // Setup mock state
-      memset(p, 0, sizeof(test_app_state_t));
+      nr_memset(p, 0, sizeof(test_app_state_t));
       p->cmd_appinfo_succeed = false;
       // Simulate appinfo consideration at the specified query time
       nr_app_consider_appinfo(&app, now);
@@ -913,7 +913,7 @@ static void test_app_consider_appinfo_refresh(void) {
     app.last_daemon_query = last_daemon_query;
 
     // Simulate appinfo consideration at the specified query time
-    memset(p, 0, sizeof(test_app_state_t));
+    nr_memset(p, 0, sizeof(test_app_state_t));
     p->cmd_appinfo_succeed = true;
     nr_app_consider_appinfo(&app, query_time);
 
