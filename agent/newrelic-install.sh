@@ -1975,6 +1975,19 @@ remove_from_here() {
   if [ -n "${pi_inidir_dso}" -a -f "${pi_inidir_dso}/newrelic.ini" ]; then
     remove_if_unchanged "${pi_inidir_dso}/newrelic.ini" "${ilibdir}/scripts/newrelic.ini.template"
   fi
+
+  #
+  # Remove symlinks created in SAPI conf.d directories when the INI file
+  # was installed into mods-available.
+  #
+  if [ -n "${pi_mods_avail}" ]; then
+    for sapi_confdir in ${pi_sapi_confdirs}; do
+      if [ -L "${sapi_confdir}/20-newrelic.ini" ]; then
+        logcmd rm -f "${sapi_confdir}/20-newrelic.ini"
+        log "removed symlink ${sapi_confdir}/20-newrelic.ini"
+      fi
+    done
+  fi
 }
 
 do_uninstall() {
