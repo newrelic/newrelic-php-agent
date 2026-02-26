@@ -1285,20 +1285,30 @@ end:
 
 /*
  * Handle
- *   resource mysqli_stmt_execute ( object $link )
- *   resource mysqli_stmt::execute()
+ *   resource mysqli_stmt_execute ( object $link, ?array $params )
+ *   resource mysqli_stmt::execute( ?array $params )
  */
 NR_INNER_WRAPPER(mysqli_stmt_execute) {
   zval* stmt_obj = NULL;
   const char* sqlstr = NULL;
   int sqlstrlen;
   int zcaught = 0;
+  zval* params = NULL;
   nr_segment_t* segment = NULL;
 
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o", &stmt_obj)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!",
+                                  &stmt_obj, &params)) {
     stmt_obj = NR_PHP_INTERNAL_FN_THIS();
+    if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
+                                  &params)) {
+      nrl_warning(NRL_INSTRUMENT,
+                  "failed to parse mysqli_stmt_execute params");
+      return;
+    }
   }
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
   sqlstrlen = nr_strlen(sqlstr);
@@ -1316,6 +1326,7 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
     if ((0 == NRTXNGLOBAL(generating_explain_plan))
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)) {
       plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
+                                        params,
                                         segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }

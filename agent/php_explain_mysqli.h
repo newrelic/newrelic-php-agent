@@ -37,6 +37,7 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
  *
  * Params  : 1. The transaction.
  *           2. The mysqli_stmt object instance.
+ *           3. Optional params to be bound during execute
  *           3. The start time of the original query.
  *           4. The stop time of the original query.
  *
@@ -46,6 +47,7 @@ extern nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
 extern nr_explain_plan_t* nr_php_explain_mysqli_stmt(
     const nrtxn_t* txn,
     nr_php_object_handle_t handle,
+    zval* params,
     nrtime_t start,
     nrtime_t stop TSRMLS_DC);
 
