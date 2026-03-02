@@ -19,6 +19,13 @@ newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 */
 
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.0", "<")) {
+  die("skip: Only for PHP 8.0+\n");
+}
+*/
+
 /*EXPECT_ERROR_EVENTS
 null
 */
