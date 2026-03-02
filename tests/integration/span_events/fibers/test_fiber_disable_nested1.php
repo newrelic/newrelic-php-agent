@@ -24,8 +24,6 @@ newrelic.transaction_tracer.threshold = 0
 newrelic.span_events_enabled=1
 newrelic.cross_application_tracer.enabled = false
 newrelic.fibers.disabled = true
-newrelic.loglevel = verbosedebug
-newrelic.special = show_executes, show_execute_params, show_execute_stack, show_execute_returns, show_executes_untrimmed
 */
 
 /*EXPECT_ERROR_EVENTS
