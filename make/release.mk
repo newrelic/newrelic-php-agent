@@ -193,8 +193,8 @@ PHP_ZTS=$(shell awk '/^#define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CO
 agent-for-release: Makefile agent | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 	@echo "PHP API version detected: [$(PHP_API_VERSION)]"
 	@echo "PHP variant detected: [$(PHP_ZTS)]"
-	@cp agent/modules/newrelic.so "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).map" || true
+	@cp -v agent/modules/newrelic.so "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).so"
+	@test -e agent/newrelic.map && cp -v agent/newrelic.map "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).map" || true
 
 #
 # Release directories
