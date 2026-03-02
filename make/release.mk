@@ -90,6 +90,13 @@ release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 	cp agent/scripts/newrelic.sysconfig        releases/$(RELEASE_OS)/scripts
 	cp agent/scripts/newrelic.xml              releases/$(RELEASE_OS)/scripts
 
+#
+# NRCAMP/NRLAMP release target - release-agent. NRCAMP/NRLAMP release workflow
+# builds extension binaries in sequentially, switching PHP environment for each
+# supported PHP version (build box had all PHPs and a system to switch them
+# dynamically, a'la Python's venv).
+#
+
 # Build the agent sequentially for each version of PHP. This is necessary
 # because the PHP build process only supports in-tree builds.
 release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
@@ -171,6 +178,23 @@ $(eval $(call RELEASE_AGENT_TARGET,7.4,20190902))
 $(eval $(call RELEASE_AGENT_TARGET,7.3,20180731))
 $(eval $(call RELEASE_AGENT_TARGET,7.2,20170718))
 
+#
+# GitHub Actions release target - agent-for-release. GitHub Actions release
+# workflow builds extension binaries in parallel with dedicated build service
+# for each supported PHP version.
+#
+
+# Target for building the agent for a given PHP version. Works well
+# when building agent using containers. This is useful not only in
+# GitHub Actions workflows, but also in a day to day development,
+# because it allows to preserve agent between PHP version switches.
+PHP_API_VERSION=$(shell awk '/^#define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
+PHP_ZTS=$(shell awk '/^#define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
+agent-for-release: Makefile agent | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
+	@echo "PHP API version detected: [$(PHP_API_VERSION)]"
+	@echo "PHP variant detected: [$(PHP_ZTS)]"
+	@cp agent/modules/newrelic.so "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).so"
+	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).map" || true
 
 #
 # Release directories
