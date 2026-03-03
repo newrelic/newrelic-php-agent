@@ -1410,15 +1410,31 @@ EOF
       #
 
       if [ -d "${cfg_pfx}/mods-available" ]; then
-        pi_mods_avail="${cfg_pfx}/mods-available"
-        pi_sapi_confdirs=""
+        #
+        # If a previous install placed a plain newrelic.ini directly in a
+        # SAPI conf.d directory, skip the mods-available redirect to avoid
+        # creating a duplicate INI with default settings. The user's
+        # existing customized files in conf.d will continue to be used.
+        #
+        pi_has_confd_ini=
         for sapi_dir in "${cfg_pfx}"/*/conf.d; do
-          if [ -d "${sapi_dir}" ]; then
-            pi_sapi_confdirs="${pi_sapi_confdirs} ${sapi_dir}"
+          if [ -f "${sapi_dir}/newrelic.ini" -a ! -L "${sapi_dir}/newrelic.ini" ]; then
+            pi_has_confd_ini=1
+            break
           fi
         done
-        pi_inidir_cli="${cfg_pfx}/mods-available"
-        pi_inidir_dso=""
+
+        if [ -z "${pi_has_confd_ini}" ]; then
+          pi_mods_avail="${cfg_pfx}/mods-available"
+          pi_sapi_confdirs=""
+          for sapi_dir in "${cfg_pfx}"/*/conf.d; do
+            if [ -d "${sapi_dir}" ]; then
+              pi_sapi_confdirs="${pi_sapi_confdirs} ${sapi_dir}"
+            fi
+          done
+          pi_inidir_cli="${cfg_pfx}/mods-available"
+          pi_inidir_dso=""
+        fi
       fi
     fi
   done
