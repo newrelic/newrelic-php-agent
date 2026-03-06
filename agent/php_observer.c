@@ -127,7 +127,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   if (NULL != NRPRG(txn)) {
-    /* Fiber init/desetroy detected, end and keep the transaction. */
+    /* Fiber init/destroy detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
     nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used", 0);
@@ -171,9 +171,9 @@ void nr_php_observer_minit() {
 
    /* Currently only register if we are disabling instrumentation. */
    if (NRINI(fibers_disabled)) {
-    zend_observer_fiber_init_register(nr_fiber_disable);
-		zend_observer_fiber_switch_register(nr_fiber_switch_disable);
-		zend_observer_fiber_destroy_register(nr_fiber_disable);
+     zend_observer_fiber_init_register(nr_fiber_disable);
+     zend_observer_fiber_switch_register(nr_fiber_switch_disable);
+     zend_observer_fiber_destroy_register(nr_fiber_disable);
    }
 
 #endif /* PHP 8.1+ */
