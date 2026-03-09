@@ -20,24 +20,7 @@ on:
 
 jobs:
   get-php-versions:
-    runs-on: ubuntu-latest
-    outputs:
-      php-versions: ${{ steps.parse.outputs.php-versions }}
-      php-versions-arm64: ${{ steps.parse.outputs.php-versions-arm64 }}
-    steps:
-      - name: Checkout php_versions.mk
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: make/php_versions.mk
-          path: php-agent
-      - name: Parse PHP versions from make/php_versions.mk
-        id: parse
-        run: |
-          versions=$(sed -n 's/.*:-\(.*\)}/\1/p' php-agent/make/php_versions.mk)
-          json="[$(echo $versions | tr ' ' '\n' | sort -t. -k1,1n -k2,2n | sed 's/.*/"&"/' | paste -sd,)]"
-          echo "php-versions=$json" >> $GITHUB_OUTPUT
-          json_arm="[$(echo $versions | tr ' ' '\n' | sort -t. -k1,1n -k2,2n | awk -F. '$1>=8' | sed 's/.*/"&"/' | paste -sd,)]"
-          echo "php-versions-arm64=$json_arm" >> $GITHUB_OUTPUT
+    uses: ./.github/workflows/get-php-versions.yml
 
   gofmt-check:
     runs-on: ubuntu-latest
