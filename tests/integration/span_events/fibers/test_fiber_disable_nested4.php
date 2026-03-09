@@ -56,6 +56,10 @@ newrelic.fibers.disabled = true
 null
 */
 
+/*EXPECT_METRICS_EXIST
+Supportability/PHP/Fiber/used
+*/
+
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
@@ -183,7 +187,7 @@ function c()
 
     newrelic_start_transaction(ini_get("newrelic.appname"));
     newrelic_name_transaction("manual_txn");
-    
+
     echo "Ending Func 'c'\n";
 }
 

@@ -26,6 +26,10 @@ newrelic.cross_application_tracer.enabled = false
 newrelic.fibers.disabled = true
 */
 
+/*EXPECT_METRICS_EXIST
+Supportability/PHP/Fiber/used
+*/
+
 /*EXPECT_ERROR_EVENTS
 null
 */

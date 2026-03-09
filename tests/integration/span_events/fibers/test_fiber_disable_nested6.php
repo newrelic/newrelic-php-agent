@@ -56,6 +56,10 @@ newrelic.fibers.disabled = true
 null
 */
 
+/*EXPECT_METRICS_EXIST
+Supportability/PHP/Fiber/used
+*/
+
 /*EXPECT_SPAN_EVENTS
 [
   "?? agent run id",
