@@ -1,5 +1,5 @@
 {
-   <PHP 8.1 Fiber Defect #2>
+   <PHP 8.1 Fiber Defect #1>
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
