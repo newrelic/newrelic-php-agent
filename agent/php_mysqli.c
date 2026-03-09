@@ -135,13 +135,11 @@ zval* nr_php_mysqli_query_get_link(nr_php_object_handle_t handle TSRMLS_DC) {
 
   metadata = nr_php_mysqli_query_find(handle TSRMLS_CC);
   if (NULL == metadata) {
-    printf("LINK 1\n");
     return NULL;
   }
 
   link = nr_php_zend_hash_find(Z_ARRVAL_P(metadata), "link");
   if (!nr_php_mysqli_zval_is_link(link TSRMLS_CC)) {
-    printf("LINK 2\n");
     return NULL;
   }
 
