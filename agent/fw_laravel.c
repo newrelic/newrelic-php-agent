@@ -14,7 +14,6 @@
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "php_hash.h"
-#include "fw_laravel.h"
 #include "fw_laravel_queue.h"
 #include "fw_support.h"
 #include "util_logging.h"
@@ -58,9 +57,6 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC);
 static nr_status_t nr_laravel_should_assign_generic_path(const nrtxn_t* txn,
                                                          zval* request
                                                              TSRMLS_DC);
-
-void nr_laravel_minit(TSRMLS_D) {
-}
 
 static void nr_laravel_name_transaction_from_zval(const zval* name TSRMLS_DC) {
   char* name_terminated = nr_alloca(Z_STRLEN_P(name) + 1);
