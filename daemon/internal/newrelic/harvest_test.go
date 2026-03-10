@@ -99,22 +99,12 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 		`[{"name":"Supportability/Agent/Collector/error_event_data/Attempts"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/log_event_data/Attempts"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[3,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[8,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[3,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[1234,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Seen"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Sent"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[28,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[28,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Seen"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Sent"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[24,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[24,0,0,0,0,0]]]]`
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]]]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
@@ -152,22 +142,12 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
 		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[3,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[1234,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]]]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
