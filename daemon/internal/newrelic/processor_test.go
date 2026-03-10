@@ -242,32 +242,45 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	}
 
 	// this code path will trigger three `harvestPayload` calls, so we need
-	// to pluck three items out of the clientParams channels
+	// to pluck two items out of the clientParams channels
 	/* collect txn */
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp := <-m.clientParams
 	/* collect metrics */
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp2 := <-m.clientParams
-	/* collect usage metrics */
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp3 := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
 
 	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
 
 	if string(cp.data) != toTest {
-		// if string(cp2.data) != toTest {
 		t.Error(string(append(cp.data, cp2.data...)))
-		// }
 	}
 	time1 := strings.Split(string(cp2.data), ",")[1]
 	time2 := strings.Split(string(cp2.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1333,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]]]]`
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[1,80,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/transaction_sample_data/Output/Bytes"},[1,80,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+
 	if got, _ := OrderScrubMetrics(cp2.data, nil); string(got) != usageMetrics {
 		t.Error(string(got))
 	}
@@ -303,27 +316,38 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	cp_metrics := <-m.clientParams
 
-	// collect usage metrics
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp_usage := <-m.clientParams
-
 	<-m.p.trackProgress // unblock processor after harvest
 
-	// check pkgs and metric data - it appears these can
-	// come in different orders so check both
+	// check pkgs
 	toTestPkgs := `["Jars",[["package","1.2.3",{}]]]`
 	if toTestPkgs != string(cp_pkgs.data) {
-		// if toTestPkgs != string(cp_metrics.data) {
 		t.Errorf("packages data: expected '%s', got '%s'", toTestPkgs, string(cp_pkgs.data))
-		// }
 	}
 
 	time1 := strings.Split(string(cp_metrics.data), ",")[1]
 	time2 := strings.Split(string(cp_metrics.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1286,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,33,0,0,0,0]]]]`
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[1,33,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/update_loaded_modules/Output/Bytes"},[1,33,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+
 	if got, _ := OrderScrubMetrics(cp_metrics.data, nil); string(got) != usageMetrics {
 		t.Errorf("metrics data: expected '%s', got '%s'", string(usageMetrics), string(got))
 	}
