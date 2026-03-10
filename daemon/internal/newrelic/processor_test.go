@@ -615,9 +615,6 @@ func TestSupportabilityHarvest(t *testing.T) {
 	// Add timeout error response code
 	<-m.clientParams
 	m.clientReturn <- ClientReturn{nil, ErrUnsupportedMedia, 408}
-	/* usage metrics */
-	// <-m.clientParams
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
 
 	<-m.p.trackProgress // unblock processor after harvest error
 
@@ -627,12 +624,9 @@ func TestSupportabilityHarvest(t *testing.T) {
 		Type:       HarvestDefaultData,
 	}
 
-	/* error event */
+	/* metrics */
 	cp1 := <-m.clientParams
 	m.clientReturn <- ClientReturn{}
-	/* usage metrics */
-	// cp2 := <-m.clientParams
-	// m.clientReturn <- ClientReturn{}
 
 	<-m.p.trackProgress // unblock processor after harvest
 
@@ -642,10 +636,12 @@ func TestSupportabilityHarvest(t *testing.T) {
 	time2 := strings.Split(string(cp1.data), ",")[2]
 	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` + // Check for HTTPError Supportability metric
-		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` + //	Metrics were sent first when the 408 error occurred, so check for the metric failure.
+		`[{"name":"Supportability/Agent/Collector/HTTPError/408"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Agent/Collector/metric_data/Attempts"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[20000,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[10,0,0,0,0,0]],` +
@@ -654,27 +650,17 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[2,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1584,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[2,1584,0,0,0,0]]]]`
-	// time1 = strings.Split(string(cp2.data), ",")[1]
-	// time2 = strings.Split(string(cp2.data), ",")[2]
-	// includes usage of the first data usage metrics sent
-	// var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
-	// 	`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1584,0,0,0,0]],` +
-	// 	`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[2,1584,0,0,0,0]]]]`
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp1.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
 	}
-	// if got2, _ := OrderScrubMetrics(cp2.data, nil); string(got2) != expectedJSON2 {
-	// 	t.Errorf("\ngot=%q \nwant=%q", got2, expectedJSON2)
-	// }
 	m.QuitTestProcessor()
 }
 
