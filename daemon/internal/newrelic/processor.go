@@ -571,83 +571,62 @@ type harvestArgs struct {
 	blocking bool
 }
 
-type EventType int
-
-const (
-	CustomEventType EventType = iota
-	AnalyticEventType
-	ErrorEventType
-	SpanEventType
-	LogEventType
-	MaxEventType
-)
-
 type metricsInfo struct {
-	eventType EventType
+	eventType string
 	seen      float64
 	sent      float64
 }
 
-type metricsController struct {
-	mc chan metricsInfo
-	wg *sync.WaitGroup
-}
-
-func newMetricsController(metricsChan chan metricsInfo) metricsController {
-	return metricsController{
-		mc: metricsChan,
-		wg: new(sync.WaitGroup),
-	}
-}
-
-func (mController *metricsController) AddMetricData(event EventType, seen, sent float64) {
-
-	select {
-	case mController.mc <- metricsInfo{
-		eventType: event,
-		seen:      seen,
-		sent:      sent,
-	}:
-		// data stored in channel
-	default:
-		// no send or recv operation ready
-	}
-}
-
-// Has all usage stats needed for the spec
 type dataUsageInfo struct {
 	endpoint_name string
 	payloadSize   int
 	responseSize  int
 }
 
-type dataUsageController struct {
+type metricsController struct {
+	mc  chan metricsInfo
 	duc chan dataUsageInfo
 	wg  *sync.WaitGroup
 }
 
-func newDataUsageController(du_chan chan dataUsageInfo) dataUsageController {
-	return dataUsageController{
-		duc: du_chan,
+func newMetricsController(metricsChan chan metricsInfo, dataUsageChan chan dataUsageInfo) metricsController {
+	return metricsController{
+		mc:  metricsChan,
+		duc: dataUsageChan,
 		wg:  new(sync.WaitGroup),
 	}
 }
 
-func addDataUsage(duc chan dataUsageInfo, endpoint string, data_stored int, data_received int) {
+func (m *metricsController) AddMetricData(event string, seen, sent float64) {
 	select {
-	case duc <- dataUsageInfo{
+	case m.mc <- metricsInfo{
+		eventType: event,
+		seen:      seen,
+		sent:      sent,
+	}:
+		// data stored in channel
+	default:
+		// channel full
+		log.Debugf("Metric Data Channel full, dropping data")
+
+	}
+}
+
+func (m *metricsController) addDataUsage(endpoint string, data_stored int, data_received int) {
+	select {
+	case m.duc <- dataUsageInfo{
 		endpoint_name: endpoint,
 		payloadSize:   data_stored,
 		responseSize:  data_received,
 	}:
 		// data stored
 	default:
-		// channel full, don't store
+		// channel full
+		log.Debugf("Data Usage Channel full, dropping data")
 	}
 }
 
-func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController, mc metricsController) {
-	defer duc.wg.Done()
+func harvestPayload(p PayloadCreator, args *harvestArgs, mc metricsController) {
 	defer mc.wg.Done()
 	cmd := collector.RpmCmd{
 		Name:              p.Cmd(),
@@ -674,11 +653,41 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController
 	// error happened.  (Note that this may change if we have to support metric
 	// cache ids).
 	if nil == reply.Err {
-		addDataUsage(duc.duc, cmd.Name, len(cmd.Data), len(reply.Body))
+		mc.addDataUsage(cmd.Name, len(cmd.Data), len(reply.Body))
+
+		switch cmd.Name {
+		case collector.CommandCustomEvents:
+			ce, ok := p.(*CustomEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, ce.NumSeen(), ce.NumSaved())
+			}
+		case collector.CommandTxnEvents:
+			te, ok := p.(*TxnEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, te.NumSeen(), te.NumSaved())
+			}
+		case collector.CommandErrorEvents:
+			ee, ok := p.(*ErrorEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, ee.NumSeen(), ee.NumSaved())
+			}
+		case collector.CommandSpanEvents:
+			se, ok := p.(*SpanEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, se.NumSeen(), se.NumSaved())
+			}
+		case collector.CommandLogEvents:
+			le, ok := p.(*LogEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, le.NumSeen(), le.NumSaved())
+			}
+		default:
+			// skip non-metric data
+		}
 		return
 	}
 	// If we receive an error, the data was not stored into the collector
-	addDataUsage(duc.duc, cmd.Name, 0, len(reply.Body))
+	mc.addDataUsage(cmd.Name, 0, len(reply.Body))
 
 	args.harvestErrorChannel <- HarvestError{
 		Reply: reply,
@@ -687,59 +696,49 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController
 	}
 }
 
-func considerHarvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController, mc metricsController) {
+func considerHarvestPayload(p PayloadCreator, args *harvestArgs, mc metricsController) {
 	if p.Empty() {
 		return
 	}
 
-	duc.wg.Add(1)
 	mc.wg.Add(1)
 	if args.blocking {
 		// Invoked primarily by CleanExit
-		harvestPayload(p, args, duc, mc)
+		harvestPayload(p, args, mc)
 	} else {
-		go harvestPayload(p, args, duc, mc)
+		go harvestPayload(p, args, mc)
 	}
 }
 
-func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, duc dataUsageController, mc metricsController) {
+func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, mc metricsController) {
 	if args.splitLargePayloads && (txnEvents.events.Len() >= (limits.MaxTxnEvents / 2)) {
 		events1, events2 := txnEvents.Split()
-		considerHarvestPayload(&TxnEvents{events1}, args, duc, mc)
-		considerHarvestPayload(&TxnEvents{events2}, args, duc, mc)
+		considerHarvestPayload(&TxnEvents{events1}, args, mc)
+		considerHarvestPayload(&TxnEvents{events2}, args, mc)
 	} else {
-		considerHarvestPayload(txnEvents, args, duc, mc)
+		considerHarvestPayload(txnEvents, args, mc)
 	}
 }
 
 func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, du_chan chan dataUsageInfo, metricsChan chan metricsInfo) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
-	duc := newDataUsageController(du_chan)
-	mc := newMetricsController(metricsChan)
+	mc := newMetricsController(metricsChan, du_chan)
 
-	mc.AddMetricData(CustomEventType, harvest.CustomEvents.NumSeen(), harvest.CustomEvents.NumSaved())
-	mc.AddMetricData(ErrorEventType, harvest.ErrorEvents.NumSeen(), harvest.ErrorEvents.NumSaved())
-	mc.AddMetricData(AnalyticEventType, harvest.TxnEvents.NumSeen(), harvest.TxnEvents.NumSaved())
-	mc.AddMetricData(SpanEventType, harvest.SpanEvents.NumSeen(), harvest.SpanEvents.NumSaved())
-	mc.AddMetricData(LogEventType, harvest.LogEvents.NumSeen(), harvest.LogEvents.NumSaved())
-
-	considerHarvestPayload(harvest.CustomEvents, args, duc, mc)
-	considerHarvestPayload(harvest.ErrorEvents, args, duc, mc)
-	considerHarvestPayload(harvest.Errors, args, duc, mc)
-	considerHarvestPayload(harvest.SlowSQLs, args, duc, mc)
-	considerHarvestPayload(harvest.TxnTraces, args, duc, mc)
-	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, duc, mc)
-	considerHarvestPayload(harvest.SpanEvents, args, duc, mc)
-	considerHarvestPayload(harvest.LogEvents, args, duc, mc)
-	considerHarvestPayload(harvest.PhpPackages, args, duc, mc)
+	considerHarvestPayload(harvest.CustomEvents, args, mc)
+	considerHarvestPayload(harvest.ErrorEvents, args, mc)
+	considerHarvestPayload(harvest.Errors, args, mc)
+	considerHarvestPayload(harvest.SlowSQLs, args, mc)
+	considerHarvestPayload(harvest.TxnTraces, args, mc)
+	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, mc)
+	considerHarvestPayload(harvest.SpanEvents, args, mc)
+	considerHarvestPayload(harvest.LogEvents, args, mc)
+	considerHarvestPayload(harvest.PhpPackages, args, mc)
 
 	if args.blocking {
-		harvestDataUsage(args, duc, mc)
-		harvestMetrics(harvest, args, duc, mc, harvestLimits, to)
+		harvestMetrics(harvest, args, mc, harvestLimits, to)
 	} else {
-		go harvestDataUsage(args, duc, mc)
-		go harvestMetrics(harvest, args, duc, mc, harvestLimits, to)
+		go harvestMetrics(harvest, args, mc, harvestLimits, to)
 	}
 }
 
@@ -751,12 +750,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 	ht.Debug()
 
-	// This needs to be determined here, as even an empty harvest needs
-	// to be overwritten with new containers for the next harvest.
-	skip_data_usage := false
-	if harvest.empty() {
-		skip_data_usage = true
-	}
 	// In many cases, all types are harvested
 	//    at the same time
 	//       at the same rate.
@@ -777,8 +770,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// Otherwise, harvest by type.  The first type is DefaultData.  This
 	// comprises the Metrics, Errors, SlowSQLs, and TxnTraces whose
 	// reporting periods have no custom reporting periods.
-	duc := newDataUsageController(du_chan)
-	mc := newMetricsController(metricsChan)
+	mc := newMetricsController(metricsChan, du_chan)
 	if ht&HarvestDefaultData == HarvestDefaultData {
 
 		log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
@@ -796,15 +788,15 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		harvest.commandsProcessed = 0
 		harvest.pidSet = make(map[int]struct{})
 
-		considerHarvestPayload(errors, args, duc, mc)
-		considerHarvestPayload(slowSQLs, args, duc, mc)
-		considerHarvestPayload(txnTraces, args, duc, mc)
-		considerHarvestPayload(phpPackages, args, duc, mc)
+		considerHarvestPayload(errors, args, mc)
+		considerHarvestPayload(slowSQLs, args, mc)
+		considerHarvestPayload(txnTraces, args, mc)
+		considerHarvestPayload(phpPackages, args, mc)
 
 		if args.blocking {
-			harvestMetrics(harvest, args, duc, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
 		} else {
-			go harvestMetrics(harvest, args, duc, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
 		}
 	}
 
@@ -816,65 +808,49 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		log.Debugf("harvesting custom events")
 
 		customEvents := harvest.CustomEvents
-		mc.AddMetricData(CustomEventType, harvest.CustomEvents.NumSeen(), harvest.CustomEvents.NumSaved())
 		harvest.CustomEvents = NewCustomEvents(eventConfigs.CustomEventConfig.Limit)
-		considerHarvestPayload(customEvents, args, duc, mc)
+		considerHarvestPayload(customEvents, args, mc)
 	}
 
 	if ht&HarvestErrorEvents == HarvestErrorEvents && eventConfigs.ErrorEventConfig.Limit != 0 {
 		log.Debugf("harvesting error events")
 
 		errorEvents := harvest.ErrorEvents
-		mc.AddMetricData(ErrorEventType, harvest.ErrorEvents.NumSeen(), harvest.ErrorEvents.NumSaved())
 		harvest.ErrorEvents = NewErrorEvents(eventConfigs.ErrorEventConfig.Limit)
-		considerHarvestPayload(errorEvents, args, duc, mc)
+		considerHarvestPayload(errorEvents, args, mc)
 	}
 
 	if ht&HarvestTxnEvents == HarvestTxnEvents && eventConfigs.AnalyticEventConfig.Limit != 0 {
 		log.Debugf("harvesting transaction events")
 
 		txnEvents := harvest.TxnEvents
-		mc.AddMetricData(AnalyticEventType, harvest.TxnEvents.NumSeen(), harvest.TxnEvents.NumSaved())
 		harvest.TxnEvents = NewTxnEvents(eventConfigs.AnalyticEventConfig.Limit)
-		considerHarvestPayloadTxnEvents(txnEvents, args, duc, mc)
+		considerHarvestPayloadTxnEvents(txnEvents, args, mc)
 	}
 
 	if ht&HarvestSpanEvents == HarvestSpanEvents && eventConfigs.SpanEventConfig.Limit != 0 {
 		log.Debugf("harvesting span events")
 
 		spanEvents := harvest.SpanEvents
-		mc.AddMetricData(SpanEventType, harvest.SpanEvents.NumSeen(), harvest.SpanEvents.NumSaved())
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
-		considerHarvestPayload(spanEvents, args, duc, mc)
+		considerHarvestPayload(spanEvents, args, mc)
 	}
 
 	if ht&HarvestLogEvents == HarvestLogEvents && eventConfigs.LogEventConfig.Limit != 0 {
 		log.Debugf("harvesting log events")
 
 		logEvents := harvest.LogEvents
-		mc.AddMetricData(LogEventType, harvest.LogEvents.NumSeen(), harvest.LogEvents.NumSaved())
 		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
-		considerHarvestPayload(logEvents, args, duc, mc)
+		considerHarvestPayload(logEvents, args, mc)
 	}
 
-	// Only harvest data usage metrics if metrics are being harvested
-	if ht&HarvestDefaultData == HarvestDefaultData {
-		if !skip_data_usage {
-			if args.blocking {
-				harvestDataUsage(args, duc, mc)
-			} else {
-				go harvestDataUsage(args, duc, mc)
-			}
-		}
-	}
 }
 
-func harvestMetrics(h *Harvest, args *harvestArgs, duc dataUsageController, mc metricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
+func harvestMetrics(h *Harvest, args *harvestArgs, mc metricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	mc.wg.Wait()
-	duc.wg.Wait()
 	log.Debugf("harvestMetrics")
 
-	var metricsArray [MaxEventType]metricsInfo
+	metricsMap := make(map[string]metricsInfo)
 
 	// aggregate data from metrics channel
 	loop := true
@@ -882,8 +858,10 @@ func harvestMetrics(h *Harvest, args *harvestArgs, duc dataUsageController, mc m
 		select {
 		case m, ok := <-mc.mc:
 			if ok {
-				metricsArray[m.eventType].seen += m.seen
-				metricsArray[m.eventType].sent += m.sent
+				metrics := metricsMap[m.eventType]
+				metrics.seen += m.seen
+				metrics.sent += m.sent
+				metricsMap[m.eventType] = metrics
 			}
 		default:
 			loop = false
@@ -891,36 +869,35 @@ func harvestMetrics(h *Harvest, args *harvestArgs, duc dataUsageController, mc m
 	}
 
 	// Custom Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", metricsArray[CustomEventType].seen, Forced)
-	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", metricsArray[CustomEventType].sent, Forced)
+	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", metricsMap[collector.CommandCustomEvents].seen, Forced)
+	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", metricsMap[collector.CommandCustomEvents].sent, Forced)
 
 	// Transaction Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", metricsArray[AnalyticEventType].seen, Forced)
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", metricsArray[AnalyticEventType].sent, Forced)
+	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", metricsMap[collector.CommandTxnEvents].seen, Forced)
+	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", metricsMap[collector.CommandTxnEvents].sent, Forced)
 
 	// Error Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Seen", "", metricsArray[ErrorEventType].seen, Forced)
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Sent", "", metricsArray[ErrorEventType].sent, Forced)
+	h.Metrics.AddCount("Supportability/Events/TransactionError/Seen", "", metricsMap[collector.CommandErrorEvents].seen, Forced)
+	h.Metrics.AddCount("Supportability/Events/TransactionError/Sent", "", metricsMap[collector.CommandErrorEvents].sent, Forced)
 
 	// Span Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", metricsArray[SpanEventType].seen, Forced)
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", metricsArray[SpanEventType].sent, Forced)
+	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", metricsMap[collector.CommandSpanEvents].seen, Forced)
+	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", metricsMap[collector.CommandSpanEvents].sent, Forced)
 
 	// Log Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", metricsArray[LogEventType].seen, Forced)
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", metricsArray[LogEventType].sent, Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", metricsMap[collector.CommandLogEvents].seen, Forced)
+	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", metricsMap[collector.CommandLogEvents].sent, Forced)
 
 	h.createFinalMetrics(harvestLimits, to)
+	harvestDataUsage(h, args, mc)
 	h.Metrics = h.Metrics.ApplyRules(args.rules)
 	metrics := h.Metrics
 	h.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
-	considerHarvestPayload(metrics, args, duc, mc)
+	considerHarvestPayload(metrics, args, mc)
 }
 
-func harvestDataUsage(args *harvestArgs, duc dataUsageController, mc metricsController) {
-	duc.wg.Wait()
-	mc.wg.Wait()
-	if len(duc.duc) == 0 {
+func harvestDataUsage(h *Harvest, args *harvestArgs, mc metricsController) {
+	if len(mc.duc) == 0 {
 		return
 	} // no usage metrics found
 
@@ -937,7 +914,7 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController, mc metricsCont
 	loop := true
 	for loop {
 		select {
-		case d, ok := <-duc.duc:
+		case d, ok := <-mc.duc:
 			if ok {
 				usage := dataUsageMap[d.endpoint_name]
 				usage.payloadSize += d.payloadSize
@@ -953,15 +930,22 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController, mc metricsCont
 		}
 	}
 
-	metrics := NewMetricTable(limits.MaxMetrics, time.Now())
 	for name, data := range dataUsageMap {
-		metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/"+name+"/Output/Bytes"),
+		if data.attempts == 0 && data.payloadSize == 0 && data.responseSize == 0 {
+			// do not sent data with a call or byte count of zero
+			continue
+		}
+		h.Metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/"+name+"/Output/Bytes"),
 			"", "", [6]float64{float64(data.attempts), float64(data.payloadSize), float64(data.responseSize), 0.0, 0.0, 0.0}, Forced)
 	}
-	metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/Output/Bytes"),
+
+	if sumAttempts == 0 && sumPayload == 0 && sumResponse == 0 {
+		// do not sent data with a call or byte count of zero
+		return
+	}
+
+	h.Metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/Output/Bytes"),
 		"", "", [6]float64{float64(sumAttempts), float64(sumPayload), float64(sumResponse), 0.0, 0.0, 0.0}, Forced)
-	metrics = metrics.ApplyRules(args.rules)
-	considerHarvestPayload(metrics, args, duc, mc)
 }
 
 func (p *Processor) doHarvest(ph ProcessorHarvest) {
