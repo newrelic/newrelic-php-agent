@@ -444,15 +444,33 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 	time1 := strings.Split(string(cp2.data), ",")[1]
 	time2 := strings.Split(string(cp2.data), ",")[2]
 	usageMetrics := `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[2,1313,0,0,0,0]],` +
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[1,60,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/custom_event_data/Output/Bytes"},[1,60,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+
 	if got, _ := OrderScrubMetrics(cp2.data, nil); string(got) != usageMetrics {
 		t.Error(string(got))
 	}
 }
 
-func TestUsageHarvest(t *testing.T) {
+func TestMetricHarvest(t *testing.T) {
 	m := NewMockedProcessor(1)
 
 	m.DoAppInfo(t, nil, AppStateUnknown)
@@ -471,9 +489,6 @@ func TestUsageHarvest(t *testing.T) {
 	/* collect metrics */
 	cp1 := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
-	// // /* collect metrics */
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
-	// cp1 := <-m.clientParams
 
 	<-m.p.trackProgress // unblock processor after harvest
 
@@ -493,24 +508,17 @@ func TestUsageHarvest(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TestMetricHarvest/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
-	// time1 = strings.Split(string(cp2.data), ",")[1]
-	// time2 = strings.Split(string(cp2.data), ",")[2]
-	// var expectedJSON2 = `["one",` + time1 + `,` + time2 + `,` +
-	// 	`[[{"name":"Supportability/C/Collector/Output/Bytes"},[1,1253,0,0,0,0]],` +
-	// 	`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1253,0,0,0,0]]]]`
 
 	if got1, _ := OrderScrubMetrics(cp1.data, nil); string(got1) != expectedJSON1 {
-		t.Errorf("\ngot=%q \nwant=%q", got1, expectedJSON1)
+		t.Errorf("\ngot=%q \nwant=%q", string(got1), expectedJSON1)
 	}
-	// if string(cp2.data) != expectedJSON1 {
-	// 	t.Errorf("\ngot=%q \nwant=%q", string(cp2.data), "NOTHING")
-	// }
 	m.QuitTestProcessor()
 }
 
@@ -545,12 +553,9 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 		Type:       HarvestDefaultData,
 	}
 	// Need to have other data, because data usage is not harvested on empty harvest
-	/* collect txn data */
+	/* collect metric data */
 	cp := <-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
-	/* collect usage metrics */
-	// cp := <-m.clientParams
-	// m.clientReturn <- ClientReturn{nil, nil, 202}
 
 	<-m.p.trackProgress // unblock processor after harvest
 
@@ -558,8 +563,26 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	time2 := strings.Split(string(cp.data), ",")[2]
 	// The data usage channel only holds 25 points until dropping data
 	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]]]]`
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[300,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[300,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
