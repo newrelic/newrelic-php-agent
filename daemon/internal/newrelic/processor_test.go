@@ -903,8 +903,6 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
-		// blocking to get data usage correct
-		Blocking: true,
 	}
 	/* txn events */
 	cp1 = <-m.clientParams
@@ -922,8 +920,6 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
 		Type:       HarvestTxnEvents,
-		// blocking to get data usage correct
-		Blocking: true,
 	}
 	/* txn events first payload */
 	cp1 = <-m.clientParams
@@ -951,20 +947,16 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		ID:         idOne,
 		// harvest both txn events and metrics
 		Type: HarvestTxnEvents | HarvestDefaultData,
-		// needs to be blocking to know order of clientParams
-		Blocking: true,
 	}
-	/* metrics */
-	// <-m.clientParams
-	// m.clientReturn <- ClientReturn{}
+
 	/* txn events first payload */
-	cp3 := <-m.clientParams
-	m.clientReturn <- ClientReturn{}
-	/* txn events second payload */
 	cp1 = <-m.clientParams
 	m.clientReturn <- ClientReturn{}
-	/* usage metrics */
+	/* txn events second payload */
 	cp2 = <-m.clientParams
+	m.clientReturn <- ClientReturn{}
+	/* usage metrics */
+	cp3 := <-m.clientParams
 	m.clientReturn <- ClientReturn{}
 
 	<-m.p.trackProgress // unblock processor
@@ -982,9 +974,26 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	time1 := strings.Split(string(cp3.data), ",")[1]
 	time2 := strings.Split(string(cp3.data), ",")[2]
 	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
-		`[[{"name":"Supportability/C/Collector/Output/Bytes"},[6,289520,0,0,0,0]],` +
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[18000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[18000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[5,288261,0,0,0,0]],` +
 		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[5,288261,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/metric_data/Output/Bytes"},[1,1259,0,0,0,0]]]]`
+		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[5000000000,0,0,0,0,0]],` +
+		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
 	if got, _ := OrderScrubMetrics(cp3.data, nil); string(got) != expectedJSON {
 		t.Errorf("\ngot=%q \nwant=%q", got, expectedJSON)
