@@ -14,9 +14,12 @@ PHP_VERSIONS_ARM64 := $(filter 8.%, $(PHP_VERSIONS))
 # Shell-friendly version list with PHPS env var override.
 PHP_VERSION_LIST=$${PHPS:-$(PHP_VERSIONS)}
 
-# ARCH is already set by config.mk. This fallback exists for standalone use
-# (e.g., GHA workflow running make -f php_versions.mk directly without the
-# top-level Makefile that includes config.mk).
+# ARCH can come from several sources:
+#   - config.mk (top-level Makefile): x64, x86, arm64, aarch64
+#   - GHA workflow input:             amd64, arm64
+#   - uname -m fallback (standalone): x86_64, aarch64, arm64
+# The php-versions-json recipe only checks for ARM variants (arm64, aarch64);
+# any other value returns the full version list.
 ARCH ?= $(shell uname -m)
 
 # Output a JSON array of supported PHP versions for the given ARCH.
