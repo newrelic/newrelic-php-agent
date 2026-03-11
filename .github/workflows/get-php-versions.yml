@@ -10,21 +10,21 @@ on:
     outputs:
       php-versions:
         description: 'JSON array of supported PHP versions for the given architecture'
-        value: ${{ jobs.parse.outputs.php-versions }}
+        value: ${{ jobs.get-php-versions.outputs.php-versions }}
 
 jobs:
-  parse:
+  get-php-versions:
     runs-on: ubuntu-latest
     outputs:
-      php-versions: ${{ steps.parse.outputs.php-versions }}
+      php-versions: ${{ steps.get-php-versions.outputs.php-versions }}
     steps:
       - name: Checkout php_versions.mk
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           sparse-checkout: make/php_versions.mk
           path: php-agent
       - name: Get PHP versions
-        id: parse
+        id: get-php-versions
         run: |
           json=$(make -f php-agent/make/php_versions.mk php-versions-json ARCH=${{ inputs.arch }})
           echo "php-versions=$json" >> $GITHUB_OUTPUT
