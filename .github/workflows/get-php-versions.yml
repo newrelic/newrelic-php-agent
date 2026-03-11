@@ -23,13 +23,8 @@ jobs:
         with:
           sparse-checkout: make/php_versions.mk
           path: php-agent
-      - name: Parse PHP versions from make/php_versions.mk
+      - name: Get PHP versions
         id: parse
         run: |
-          versions=$(sed -n 's/.*:-\(.*\)}/\1/p' php-agent/make/php_versions.mk)
-          sorted=$(echo $versions | tr ' ' '\n' | sort -t. -k1,1n -k2,2n)
-          if [[ "${{ inputs.arch }}" == "arm64" ]]; then
-            sorted=$(echo "$sorted" | awk -F. '$1>=8')
-          fi
-          json="[$(echo "$sorted" | sed 's/.*/"&"/' | paste -sd,)]"
+          json=$(make -f php-agent/make/php_versions.mk php-versions-json ARCH=${{ inputs.arch }})
           echo "php-versions=$json" >> $GITHUB_OUTPUT
