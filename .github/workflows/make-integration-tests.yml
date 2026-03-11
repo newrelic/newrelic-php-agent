@@ -32,6 +32,8 @@ on:
 jobs:
   get-php-versions:
     uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: ${{ inputs.arch }}
   test-agent:
     needs: [get-php-versions]
     name: test agent (${{ matrix.platform }}, ${{ inputs.arch }}, ${{ matrix.php }})
@@ -41,7 +43,7 @@ jobs:
       fail-fast: true
       matrix:
         platform: [gnu, musl]
-        php: ${{ fromJson(needs.get-php-versions.outputs.php-versions-arm64) }}
+        php: ${{ fromJson(needs.get-php-versions.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v4
