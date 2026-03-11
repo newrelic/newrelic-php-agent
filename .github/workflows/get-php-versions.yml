@@ -25,6 +25,8 @@ jobs:
           path: php-agent
       - name: Get PHP versions
         id: get-php-versions
+        env:
+          ARCH: ${{ inputs.arch }}
         run: |
-          json=$(make -f php-agent/make/php_versions.mk php-versions-json ARCH=${{ inputs.arch }})
+          json=$(make -f php-agent/make/php_versions.mk php-versions-json ARCH=$ARCH)
           echo "php-versions=$json" >> $GITHUB_OUTPUT
