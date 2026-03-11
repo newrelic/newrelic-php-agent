@@ -277,7 +277,6 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -344,7 +343,6 @@ func TestProcessorHarvestDefaultDataPhpPackages(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -461,7 +459,6 @@ func TestProcessorHarvestCleanExit(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -508,11 +505,10 @@ func TestMetricHarvest(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TestMetricHarvest/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -580,7 +576,6 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -654,7 +649,6 @@ func TestSupportabilityHarvest(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
@@ -991,7 +985,6 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/PHP/SystemCertificates/Unavailable"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
 		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
