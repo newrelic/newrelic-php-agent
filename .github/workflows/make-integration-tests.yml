@@ -65,6 +65,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Enable amd64 emulation
+        if: ${{ inputs.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: amd64
       - name: Start services
         env:
           PHP: ${{matrix.php}}
