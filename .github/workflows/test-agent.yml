@@ -4,6 +4,8 @@
 
 name: test-pull-request
 
+permissions: {}
+
 #
 # Controls when the action will run. 
 #

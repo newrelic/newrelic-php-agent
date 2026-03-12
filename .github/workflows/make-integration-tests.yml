@@ -1,5 +1,7 @@
 name: _make-integration-tests
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:

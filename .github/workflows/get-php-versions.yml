@@ -1,5 +1,7 @@
 name: _get-php-versions
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:

@@ -1,5 +1,7 @@
 name: _make-agent
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
