@@ -4,6 +4,8 @@
 
 name: test-pull-request
 
+permissions: {}
+
 #
 # Controls when the action will run. 
 #
@@ -19,6 +21,15 @@ on:
   pull_request:
 
 jobs:
+  get-php-versions-amd64:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: amd64
+  get-php-versions-arm64:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: arm64
+
   gofmt-check:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -155,6 +166,7 @@ jobs:
           path: php-agent/bin/integration_runner
 
   agent-unit-test-amd64:
+    needs: [get-php-versions-amd64]
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -164,7 +176,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-amd64.outputs.php-versions) }}
         include:
           - codecov: 0
           - platform: gnu
@@ -245,6 +257,7 @@ jobs:
           path: php-agent/agent/.libs/*.gc*
 
   agent-unit-test-arm64:
+    needs: [get-php-versions-arm64]
     runs-on: ubuntu-24.04-arm
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -254,7 +267,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-arm64.outputs.php-versions) }}
         include:
           - codecov: 0
     steps:
@@ -315,14 +328,14 @@ jobs:
           path: php-agent/agent/modules/newrelic.so
 
   integration-tests-amd64:
-    needs: [daemon-unit-tests-amd64, agent-unit-test-amd64]
+    needs: [daemon-unit-tests-amd64, agent-unit-test-amd64, get-php-versions-amd64]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-amd64.outputs.php-versions) }}
         include:
           - codecov: 0
           - platform: gnu
@@ -432,14 +445,14 @@ jobs:
           make test-services-stop
 
   integration-tests-arm64:
-    needs: [daemon-unit-tests-arm64, agent-unit-test-arm64]
+    needs: [daemon-unit-tests-arm64, agent-unit-test-arm64, get-php-versions-arm64]
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-arm64.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v4
