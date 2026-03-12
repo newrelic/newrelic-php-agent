@@ -77,40 +77,6 @@ const (
 	HarvestAll          HarvestType = HarvestDefaultData | HarvestTxnEvents | HarvestCustomEvents | HarvestErrorEvents | HarvestSpanEvents | HarvestLogEvents
 )
 
-func (ht HarvestType) ToString() string {
-	switch ht {
-	case HarvestMetrics:
-		return "Metrics"
-	case HarvestErrors:
-		return "Errors"
-	case HarvestSlowSQLs:
-		return "SlowSQLs"
-	case HarvestTxnTraces:
-		return "TxnTraces"
-	case HarvestTxnEvents:
-		return "TxnEvents"
-	case HarvestCustomEvents:
-		return "CustomEvents"
-	case HarvestErrorEvents:
-		return "ErrorEvents"
-	case HarvestSpanEvents:
-		return "SpanEvents"
-	case HarvestLogEvents:
-		return "LogEvents"
-	case HarvestPhpPackages:
-		return "PhpPackages"
-	case HarvestDefaultData:
-		return "DefaultData"
-	case HarvestAll:
-		return "HarvestAll"
-	}
-	return "Invalid Harvest Type"
-}
-
-func (ht HarvestType) Debug() {
-	log.Debugf("Harvesting: %s", ht.ToString())
-}
-
 // ProcessorHarvest represents a processor harvest event: when this is received by a
 // processor, it indicates that a harvest should be performed for the harvest
 // and run ID contained within. The word "event" doesn't appear in the type only
@@ -748,8 +714,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// function harvests by type.
 	harvest := ah.Harvest
 
-	ht.Debug()
-
 	// In many cases, all types are harvested
 	//    at the same time
 	//       at the same rate.
@@ -848,7 +812,6 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 func harvestMetrics(h *Harvest, args *harvestArgs, mc metricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	mc.wg.Wait()
-	log.Debugf("harvestMetrics")
 
 	metricsMap := make(map[string]metricsInfo)
 
