@@ -1,5 +1,7 @@
 name: _make-integration-tests
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
@@ -30,7 +32,12 @@ on:
         type: boolean
 
 jobs:
+  get-php-versions:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: ${{ inputs.arch }}
   test-agent:
+    needs: [get-php-versions]
     name: test agent (${{ matrix.platform }}, ${{ inputs.arch }}, ${{ matrix.php }})
     runs-on: ${{inputs.runs-on}}
     continue-on-error: ${{inputs.continue-on-error}}
@@ -38,7 +45,7 @@ jobs:
       fail-fast: true
       matrix:
         platform: [gnu, musl]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
         uses: actions/checkout@v4
