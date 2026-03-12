@@ -12,7 +12,6 @@ import (
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/limits"
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 type AggregaterInto interface {
@@ -126,8 +125,6 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 		// upstream to detect inactivity sooner.
 		return
 	}
-
-	log.Debugf("CreateFinalMetrics")
 
 	pidSetSize := len(h.pidSet)
 
