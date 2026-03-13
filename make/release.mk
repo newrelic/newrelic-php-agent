@@ -97,8 +97,8 @@ H := \#
 # when building agent using containers. This is useful not only in
 # GitHub Actions workflows, but also in a day to day development,
 # because it allows to preserve agent between PHP version switches.
-PHP_API_VERSION=$(shell awk '/^$(H)define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
-PHP_ZTS=$(shell awk '/^$(H)define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
+agent-for-release: PHP_API_VERSION=$(shell awk '/^$(H)define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
+agent-for-release: PHP_ZTS=$(shell awk '/^$(H)define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
 agent-for-release: Makefile agent | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 	@test -n "$(PHP_API_VERSION)" || { echo "ERROR: Could not detect PHP_API_VERSION"; exit 1; }
 	@echo "PHP API version detected: [$(PHP_API_VERSION)]"
