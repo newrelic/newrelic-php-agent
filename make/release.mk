@@ -184,12 +184,19 @@ $(eval $(call RELEASE_AGENT_TARGET,7.2,20170718))
 # for each supported PHP version.
 #
 
+# Older versions of GNU Make had a bug where "#" in a function invocation
+# such as $(shell ...) was treated as a make comment. This makefile needs
+# to be compatible with older versions of GNU Make, so we need to use
+# a workaround by assigning "#" to a variable and using that variable in
+# the function invocation.
+H := \#
+
 # Target for building the agent for a given PHP version. Works well
 # when building agent using containers. This is useful not only in
 # GitHub Actions workflows, but also in a day to day development,
 # because it allows to preserve agent between PHP version switches.
-PHP_API_VERSION=$(shell awk '/^#define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
-PHP_ZTS=$(shell awk '/^#define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
+PHP_API_VERSION=$(shell awk '/^$(H)define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
+PHP_ZTS=$(shell awk '/^$(H)define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
 agent-for-release: Makefile agent | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
 	@echo "PHP API version detected: [$(PHP_API_VERSION)]"
 	@echo "PHP variant detected: [$(PHP_ZTS)]"
