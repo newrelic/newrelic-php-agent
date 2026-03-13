@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
@@ -131,6 +132,55 @@ type ConnectReply struct {
 	MaxPayloadSizeInBytes  int                              `json:"max_payload_size_in_bytes"`
 }
 
+type metricsInfo struct {
+	eventType string
+	seen      float64
+	sent      float64
+	failed    float64
+}
+
+type dataUsageInfo struct {
+	endpoint_name string
+	payloadSize   int
+	responseSize  int
+}
+
+type MetricsController struct {
+	mc  chan metricsInfo
+	duc chan dataUsageInfo
+	wg  *sync.WaitGroup
+}
+
+func (m *MetricsController) AddMetricData(event string, seen, sent, failed float64) {
+	select {
+	case m.mc <- metricsInfo{
+		eventType: event,
+		seen:      seen,
+		sent:      sent,
+		failed:    failed,
+	}:
+		// data stored in channel
+	default:
+		// channel full
+		log.Debugf("Metric Data Channel full, dropping data")
+
+	}
+}
+
+func (m *MetricsController) addDataUsage(endpoint string, data_stored int, data_received int) {
+	select {
+	case m.duc <- dataUsageInfo{
+		endpoint_name: endpoint,
+		payloadSize:   data_stored,
+		responseSize:  data_received,
+	}:
+		// data stored
+	default:
+		// channel full
+		log.Debugf("Data Usage Channel full, dropping data")
+	}
+}
+
 // An App represents the state of an application.
 type App struct {
 	state               AppState
@@ -147,6 +197,7 @@ type App struct {
 	LastActivity        time.Time
 	Rules               MetricRules
 	PhpPackages         map[PhpPackagesKey]struct{}
+	MetricController    *MetricsController
 }
 
 func (app *App) String() string {
@@ -182,6 +233,11 @@ func NewApp(info *AppInfo) *App {
 		HarvestTrigger:     nil,
 		LastActivity:       now,
 		PhpPackages:        make(map[PhpPackagesKey]struct{}),
+		MetricController: &MetricsController{
+			mc:  make(chan metricsInfo, 64),
+			duc: make(chan dataUsageInfo, 25),
+			wg:  new(sync.WaitGroup),
+		},
 	}
 }
 

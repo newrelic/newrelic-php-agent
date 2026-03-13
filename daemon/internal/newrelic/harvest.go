@@ -136,13 +136,6 @@ func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig,
 	// NOTE: It is important that this metric be created once per harvest period.
 	h.Metrics.AddCount("Instance/Reporting", "", float64(pidSetSize), Forced)
 
-	// Custom Events Supportability Metrics
-	h.createEndpointAttemptsMetric(h.CustomEvents.Cmd(), h.CustomEvents.NumFailedAttempts())
-	h.createEndpointAttemptsMetric(h.TxnEvents.Cmd(), h.TxnEvents.NumFailedAttempts())
-	h.createEndpointAttemptsMetric(h.ErrorEvents.Cmd(), h.ErrorEvents.NumFailedAttempts())
-	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), h.SpanEvents.analyticsEvents.NumFailedAttempts())
-	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), h.LogEvents.analyticsEvents.NumFailedAttempts())
-
 	if h.Metrics.numDropped > 0 {
 		h.Metrics.AddCount("Supportability/MetricsDropped", "", float64(h.Metrics.numDropped), Forced)
 	}
