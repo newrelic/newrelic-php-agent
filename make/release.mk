@@ -84,7 +84,7 @@ release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 # service for each supported PHP version.
 #
 release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
-	@$(MAKE) agent-clean; $(MAKE) agent-for-release;
+	@$(MAKE) agent-clean && $(MAKE) agent-for-release
 
 # Older versions of GNU Make had a bug where "#" in a function invocation
 # such as $(shell ...) was treated as a make comment. This makefile needs
