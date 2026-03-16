@@ -8,10 +8,59 @@ package integration
 import (
 	"bytes"
 	"maps"
+	"reflect"
 	"testing"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/sysinfo"
 )
+
+func TestGetEnvVarsFromBody_RemovesEnvLinesAndSetsEnv(t *testing.T) {
+	test := &Test{Env: make(map[string]string)}
+	input := []byte("starting it out\nNR_EXPECT_ENV_VAR[BLUE]=apricot\nrandomoutputpart 1\nNR_EXPECT_ENV_VAR[YELLOW]=kiwi\nsome other random output")
+	expectedOutput := []byte("starting it out\nrandomoutputpart 1\nsome other random output")
+	expectedEnv := map[string]string{"BLUE": "apricot", "YELLOW": "kiwi"}
+
+	output := test.GetEnvVarsFromBody(input)
+
+	if !bytes.Equal(output, expectedOutput) {
+		t.Errorf("Expected output:\n%q\ngot:\n%q", expectedOutput, output)
+	}
+	if !reflect.DeepEqual(test.Env, expectedEnv) {
+		t.Errorf("Expected Env: %+v, got: %+v", expectedEnv, test.Env)
+	}
+}
+
+func TestGetEnvVarsFromBody_NoEnvLines(t *testing.T) {
+	test := &Test{Env: make(map[string]string)}
+	input := []byte("starting it out\nand continuing on\neaching the end")
+	expectedOutput := []byte("starting it out\nand continuing on\neaching the end")
+	expectedEnv := map[string]string{}
+
+	output := test.GetEnvVarsFromBody(input)
+
+	if !bytes.Equal(output, expectedOutput) {
+		t.Errorf("Expected output:\n%q\ngot:\n%q", expectedOutput, output)
+	}
+	if !reflect.DeepEqual(test.Env, expectedEnv) {
+		t.Errorf("Expected Env: %+v, got: %+v", expectedEnv, test.Env)
+	}
+}
+
+func TestGetEnvVarsFromBody_EmptyInput(t *testing.T) {
+	test := &Test{Env: make(map[string]string)}
+	input := []byte("")
+	expectedOutput := []byte("")
+	expectedEnv := map[string]string{}
+
+	output := test.GetEnvVarsFromBody(input)
+
+	if !bytes.Equal(output, expectedOutput) {
+		t.Errorf("Expected output:\n%q\ngot:\n%q", expectedOutput, output)
+	}
+	if !reflect.DeepEqual(test.Env, expectedEnv) {
+		t.Errorf("Expected Env: %+v, got: %+v", expectedEnv, test.Env)
+	}
+}
 
 func TestScrubHost(t *testing.T) {
 	host, err := sysinfo.Hostname()
