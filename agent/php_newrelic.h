@@ -363,6 +363,7 @@ nrinistr_t file_name_list;            /* newrelic.webtransaction.name.files */
 nrinibool_t
     tt_inputquery;        /* newrelic.transaction_tracer.gather_input_queries */
 nriniuint_t tt_recordsql; /* newrelic.transaction_tracer.record_sql */
+nrinibool_t fibers_disabled; /* newrelic.fibers.disabled */
 #define NR_PHP_RECORDSQL_OFF NR_SQL_NONE
 #define NR_PHP_RECORDSQL_RAW NR_SQL_RAW
 #define NR_PHP_RECORDSQL_OBFUSCATED NR_SQL_OBFUSCATED
