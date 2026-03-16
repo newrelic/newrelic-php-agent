@@ -528,7 +528,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 
 	// Harvest enough data that the data usage channel overflows and drops data
 	// Make the harvest blocking so that we are guaranteed channel fills before accessing it
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 70; i++ {
 		m.TxnData(t, idOne, txnEventSample1Times(10))
 		m.processorHarvestChan <- ProcessorHarvest{
 			AppHarvest: m.p.harvests[idOne],
@@ -560,10 +560,10 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 	// The data usage channel only holds 25 points until dropping data
 	var expectedJSON = `["one",` + time1 + `,` + time2 + `,` +
 		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[300,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[300,0,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/Output/Bytes"},[25,5275,0,0,0,0]],` +
-		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[25,5275,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[640,0,0,0,0,0]],` +
+		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[640,0,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/Output/Bytes"},[64,13504,0,0,0,0]],` +
+		`[{"name":"Supportability/C/Collector/analytic_event_data/Output/Bytes"},[64,13504,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[10000,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[5,0,0,0,0,0]],` +

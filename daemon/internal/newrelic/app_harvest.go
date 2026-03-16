@@ -6,9 +6,11 @@
 package newrelic
 
 import (
+	"sync"
 	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing"
+	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
 )
 
 // This type takes the HarvestType values sent from an application's harvest
@@ -21,8 +23,28 @@ type AppHarvest struct {
 	*Harvest
 	*infinite_tracing.TraceObserver
 
-	trigger chan HarvestType
-	cancel  chan bool
+	trigger          chan HarvestType
+	cancel           chan bool
+	MetricController *MetricsController
+}
+
+type metricsInfo struct {
+	eventType string
+	seen      float64
+	sent      float64
+	failed    float64
+}
+
+type dataUsageInfo struct {
+	endpoint_name string
+	payloadSize   int
+	responseSize  int
+}
+
+type MetricsController struct {
+	mc  chan metricsInfo
+	duc chan dataUsageInfo
+	wg  *sync.WaitGroup
 }
 
 func (ah *AppHarvest) NewProcessorHarvestEvent(id AgentRunID, t HarvestType) ProcessorHarvest {
@@ -33,6 +55,36 @@ func (ah *AppHarvest) NewProcessorHarvestEvent(id AgentRunID, t HarvestType) Pro
 	}
 }
 
+func (m *MetricsController) AddMetricData(event string, seen, sent, failed float64) {
+	select {
+	case m.mc <- metricsInfo{
+		eventType: event,
+		seen:      seen,
+		sent:      sent,
+		failed:    failed,
+	}:
+		// data stored in channel
+	default:
+		// channel full
+		log.Debugf("Metric Data Channel full, dropping data")
+
+	}
+}
+
+func (m *MetricsController) addDataUsage(endpoint string, data_stored int, data_received int) {
+	select {
+	case m.duc <- dataUsageInfo{
+		endpoint_name: endpoint,
+		payloadSize:   data_stored,
+		responseSize:  data_received,
+	}:
+		// data stored
+	default:
+		// channel full
+		log.Debugf("Data Usage Channel full, dropping data")
+	}
+}
+
 func NewAppHarvest(id AgentRunID, app *App, harvest *Harvest, ph chan ProcessorHarvest) *AppHarvest {
 	ah := &AppHarvest{
 		App:           app,
@@ -40,6 +92,11 @@ func NewAppHarvest(id AgentRunID, app *App, harvest *Harvest, ph chan ProcessorH
 		TraceObserver: nil,
 		trigger:       make(chan HarvestType),
 		cancel:        make(chan bool),
+		MetricController: &MetricsController{
+			mc:  make(chan metricsInfo, 64),
+			duc: make(chan dataUsageInfo, 64),
+			wg:  new(sync.WaitGroup),
+		},
 	}
 
 	if len(app.info.TraceObserverHost) > 0 {

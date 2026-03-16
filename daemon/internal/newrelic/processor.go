@@ -711,7 +711,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 	// TxnEvents, CustomEvents, or ErrorEvents.  As a result, this
 	// function harvests by type.
 	harvest := ah.Harvest
-	mc := ah.App.MetricController
+	mc := ah.MetricController
 
 	// In many cases, all types are harvested
 	//    at the same time
