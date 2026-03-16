@@ -578,6 +578,15 @@ func runTest(t *integration.Test) {
 		fmt.Printf("Test output:\n%s\n", body)
 	}
 
+	//
+	// Extract and remove from the output any env vars from the output that
+	// we want to add to t.Env for use with EXPECT blocks.
+	// The env vars will be proceeded with the
+	// NR_EXPECT_ENV_VAR prefix followed by the env var name and value.
+	// ex: NR_EXPECT_ENV_VAR[NEW_VAR_FROM_TEST]=1234567
+	//
+
+	body = t.GetEnvVarsFromBody(body)
 	// Always save the test output. If an error occurred it may contain
 	// critical information regarding the cause. Currently, it may also
 	// contain valgrind commentary which we want to display.
