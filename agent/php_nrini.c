@@ -3265,6 +3265,21 @@ STD_PHP_INI_ENTRY_EX("newrelic.message_tracer.segment_parameters.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
+
+/*
+ * This setting is not documented.  If enabled, on fiber detection, it will end
+ * the current transaction and disable instrumentation for the remainder of the
+ * request.
+ */
+STD_PHP_INI_ENTRY_EX("newrelic.fibers.disabled",
+                     "1",  // default will eventually be false
+                     NR_PHP_REQUEST,
+                     nr_boolean_mh,
+                     fibers_disabled,
+                     zend_newrelic_globals,
+                     newrelic_globals,
+                     nr_enabled_disabled_dh)
+
 PHP_INI_END() /* } */
 
 void nr_php_register_ini_entries(int module_number TSRMLS_DC) {

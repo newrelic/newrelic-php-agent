@@ -285,7 +285,7 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 //
 // Extract and remove from the output any env vars from the output that
 // we want to add to t.Env for use with EXPECT blocks.
-// The env vars will be proceeded with the
+// The env vars will be preceded by the
 // NR_EXPECT_ENV_VAR prefix followed by the env var name and value.
 // ex: NR_EXPECT_ENV_VAR[NEW_VAR_FROM_TEST]=1234567 followed by a newline
 // Be aware this will overwrite any previously existing env vars with the same name.
