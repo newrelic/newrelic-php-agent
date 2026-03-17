@@ -101,14 +101,14 @@ typedef struct _nrtxnopt_t {
                                                        W3C trace context headers
                                                      */
   nr_upstream_parent_sampling_control_t
-    dt_sampler_parent_sampled; /* how to sample spans when non-
-                                  New Relic upstream did sample.
-                                */
+      dt_sampler_parent_sampled; /* how to sample spans when non-
+                                    New Relic upstream did sample.
+                                  */
   nr_upstream_parent_sampling_control_t
-    dt_sampler_parent_not_sampled; /* how to sample spans when non-
-                                      New Relic upstream didn't sample.
-                                    */
-  int span_events_enabled; /* Whether span events are enabled */
+      dt_sampler_parent_not_sampled; /* how to sample spans when non-
+                                        New Relic upstream didn't sample.
+                                      */
+  int span_events_enabled;           /* Whether span events are enabled */
   size_t
       span_events_max_samples_stored; /* The maximum number of span events per
                                          transaction. When set to 0, the default
@@ -313,8 +313,8 @@ typedef struct _nrtxn_t {
   nr_php_packages_t*
       php_package_major_version_metrics_suggestions; /* Suggested packages for
                                   major metric creation */
-  nrtime_t user_cpu[NR_CPU_USAGE_COUNT]; /* User CPU usage */
-  nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];  /* System CPU usage */
+  nrtime_t user_cpu[NR_CPU_USAGE_COUNT];             /* User CPU usage */
+  nrtime_t sys_cpu[NR_CPU_USAGE_COUNT];              /* System CPU usage */
 
   char* license;     /* License copied from application for RUM encoding use. */
   char* request_uri; /* Request URI */

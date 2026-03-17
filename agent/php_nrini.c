@@ -1982,8 +1982,10 @@ static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
 
   p->where = 0;
 
-  if (0 == nr_strcmp(ZEND_STRING_VALUE(entry->name),
-                     "newrelic.distributed_tracing.sampler.remote_parent_sampled")) {
+  if (0
+      == nr_strcmp(
+          ZEND_STRING_VALUE(entry->name),
+          "newrelic.distributed_tracing.sampler.remote_parent_sampled")) {
     parent_sampled = true;
   }
 
@@ -2636,14 +2638,15 @@ STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_user_exception_handler",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_yes_no_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_framework_error_exception_handler",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     ignore_framework_error_exception_handler,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_yes_no_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.error_collector.ignore_framework_error_exception_handler",
+    "0",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    ignore_framework_error_exception_handler,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_yes_no_dh)
 STD_PHP_INI_ENTRY_EX("newrelic.error_collector.ignore_errors",
                      "",
                      NR_PHP_REQUEST,
@@ -2987,23 +2990,24 @@ STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing_exclude_newrelic_header",
                      newrelic_globals,
                      0)
 
-
-STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.sampler.remote_parent_sampled",
-                     "default",
-                     NR_PHP_REQUEST,
-                     nr_dt_sampler_remote_parent_mh,
-                     dt_remote_parent_sampled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
-STD_PHP_INI_ENTRY_EX("newrelic.distributed_tracing.sampler.remote_parent_not_sampled",
-                     "default",
-                     NR_PHP_REQUEST,
-                     nr_dt_sampler_remote_parent_mh,
-                     dt_remote_parent_not_sampled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.distributed_tracing.sampler.remote_parent_sampled",
+    "default",
+    NR_PHP_REQUEST,
+    nr_dt_sampler_remote_parent_mh,
+    dt_remote_parent_sampled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.distributed_tracing.sampler.remote_parent_not_sampled",
+    "default",
+    NR_PHP_REQUEST,
+    nr_dt_sampler_remote_parent_mh,
+    dt_remote_parent_not_sampled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
 
 /*
  * This setting is not documented and affects the length of the interally used
@@ -3180,30 +3184,33 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.metrics.enabled",
                      zend_newrelic_globals,
                      newrelic_globals,
                      nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.enabled",
-                     "0",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     log_context_data_attributes.enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.include",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.include,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
-STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.context_data.exclude",
-                     "",
-                     NR_PHP_REQUEST,
-                     nr_string_mh,
-                     log_context_data_attributes.exclude,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.enabled",
+    "0",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    log_context_data_attributes.enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.include",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.include,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.application_logging.forwarding.context_data.exclude",
+    "",
+    NR_PHP_REQUEST,
+    nr_string_mh,
+    log_context_data_attributes.exclude,
+    zend_newrelic_globals,
+    newrelic_globals,
+    0)
 STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.enabled",
                      "0",
                      NR_PHP_REQUEST,
@@ -3224,14 +3231,15 @@ STD_PHP_INI_ENTRY_EX("newrelic.application_logging.forwarding.labels.exclude",
 /*
  * Vulnerability Management
  */
-STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.package_detection.enabled",
-                     "1",
-                     NR_PHP_REQUEST,
-                     nr_boolean_mh,
-                     vulnerability_management_package_detection_enabled,
-                     zend_newrelic_globals,
-                     newrelic_globals,
-                     nr_enabled_disabled_dh)
+STD_PHP_INI_ENTRY_EX(
+    "newrelic.vulnerability_management.package_detection.enabled",
+    "1",
+    NR_PHP_REQUEST,
+    nr_boolean_mh,
+    vulnerability_management_package_detection_enabled,
+    zend_newrelic_globals,
+    newrelic_globals,
+    nr_enabled_disabled_dh)
 
 STD_PHP_INI_ENTRY_EX("newrelic.vulnerability_management.composer_api.enabled",
                      "1",
