@@ -534,62 +534,6 @@ type harvestArgs struct {
 	blocking bool
 }
 
-// type metricsInfo struct {
-// 	eventType string
-// 	seen      float64
-// 	sent      float64
-// 	failed    float64
-// }
-//
-// type dataUsageInfo struct {
-// 	endpoint_name string
-// 	payloadSize   int
-// 	responseSize  int
-// }
-//
-// type metricsController struct {
-// 	mc  chan metricsInfo
-// 	duc chan dataUsageInfo
-// 	wg  *sync.WaitGroup
-// }
-
-// func newMetricsController(metricsChan chan metricsInfo, dataUsageChan chan dataUsageInfo) metricsController {
-// 	return metricsController{
-// 		mc:  metricsChan,
-// 		duc: dataUsageChan,
-// 		wg:  new(sync.WaitGroup),
-// 	}
-// }
-
-//	func (m *metricsController) AddMetricData(event string, seen, sent, failed float64) {
-//		select {
-//		case m.mc <- metricsInfo{
-//			eventType: event,
-//			seen:      seen,
-//			sent:      sent,
-//			failed:    failed,
-//		}:
-//			// data stored in channel
-//		default:
-//			// channel full
-//			log.Debugf("Metric Data Channel full, dropping data")
-//
-//		}
-//	}
-//
-//	func (m *metricsController) addDataUsage(endpoint string, data_stored int, data_received int) {
-//		select {
-//		case m.duc <- dataUsageInfo{
-//			endpoint_name: endpoint,
-//			payloadSize:   data_stored,
-//			responseSize:  data_received,
-//		}:
-//			// data stored
-//		default:
-//			// channel full
-//			log.Debugf("Data Usage Channel full, dropping data")
-//		}
-//	}
 func harvestPayload(p PayloadCreator, args *harvestArgs, mc *MetricsController) {
 	defer mc.wg.Done()
 	cmd := collector.RpmCmd{
@@ -687,8 +631,6 @@ func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, mc
 func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
-	// mc := newMetricsController(metricsChan, du_chan)
-
 	considerHarvestPayload(harvest.CustomEvents, args, mc)
 	considerHarvestPayload(harvest.ErrorEvents, args, mc)
 	considerHarvestPayload(harvest.Errors, args, mc)
@@ -733,9 +675,8 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 	// Otherwise, harvest by type.  The first type is DefaultData.  This
 	// comprises the Metrics, Errors, SlowSQLs, and TxnTraces whose
 	// reporting periods have no custom reporting periods.
-	// mc := newMetricsController(metricsChan, du_chan)
 	if ht&HarvestDefaultData == HarvestDefaultData {
-
+		log.Debugf("harvesting default data")
 		log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
 		errors := harvest.Errors
@@ -811,6 +752,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	mc.wg.Wait()
+	log.Debugf("harvesting metrics")
 
 	metricsMap := make(map[string]metricsInfo)
 
