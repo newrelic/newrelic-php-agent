@@ -84,11 +84,11 @@ static void nr_php_set_initial_path(nrtxn_t* txn TSRMLS_DC) {
                != (uri = nr_php_zend_hash_find(Z_ARRVAL_P(server),
                                                "SCRIPT_NAME"))) {
       whence = "WT_IS_FILENAME & SCRIPT_NAME";
-/* uri has a zval with the name of the script */
+      /* uri has a zval with the name of the script */
     } else if (CG(active_op_array)) {
       whence = "WT_IS_FILENAME & op_array";
       suri = nr_php_op_array_file_name(CG(active_op_array));
-/* suri has a char* to the name of the script */
+      /* suri has a char* to the name of the script */
     }
 
     if ((NULL == uri) && (NULL == suri)) {
@@ -242,11 +242,11 @@ static int nr_php_capture_request_parameter(zval* element,
       break;
 #endif /* PHP < 7.3 */
 
-/*
- * PHP 5.6.0 beta 2 replaced IS_CONSTANT_ARRAY and IS_CONSTANT_INDEX with
- * IS_CONSTANT_AST. For the purposes of this function, it can be
- * considered the same thing.
- */
+      /*
+       * PHP 5.6.0 beta 2 replaced IS_CONSTANT_ARRAY and IS_CONSTANT_INDEX with
+       * IS_CONSTANT_AST. For the purposes of this function, it can be
+       * considered the same thing.
+       */
     case IS_CONSTANT_AST:
       nr_strcpy(datastr, "[constants]");
       break;
@@ -942,10 +942,8 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
-  opts.dt_sampler_parent_sampled
-      = NRPRG(dt_sampler_parent_sampled);
-  opts.dt_sampler_parent_not_sampled
-      = NRPRG(dt_sampler_parent_not_sampled);
+  opts.dt_sampler_parent_sampled = NRPRG(dt_sampler_parent_sampled);
+  opts.dt_sampler_parent_not_sampled = NRPRG(dt_sampler_parent_not_sampled);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);

@@ -210,7 +210,7 @@
 ; Type   : bool
 ; Scope  : per-directory
 ; Default: true
-; Info   : If set to true, the agent, on detecting fiber activity, will end the txn
-;          and disable instrumentation for the remainder of the request.
+; Info   : If set to true, the agent, on detecting fiber activity, will end the txn,
+;          send the recorded telementry, and disable instrumentation for the remainder of the request.
 ;
 ;newrelic.fibers.disabled = true

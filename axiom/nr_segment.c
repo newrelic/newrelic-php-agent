@@ -263,7 +263,7 @@ static void nr_populate_datastore_spans(nr_span_event_t* span_event,
                               component);
 
   nr_span_event_set_datastore(span_event, NR_SPAN_DATASTORE_DB_SYSTEM,
-                              segment->typed_attributes->datastore.db_system);                            
+                              segment->typed_attributes->datastore.db_system);
 
   host = segment->typed_attributes->datastore.instance.host;
   nr_span_event_set_datastore(span_event, NR_SPAN_DATASTORE_PEER_HOSTNAME,
