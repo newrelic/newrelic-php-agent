@@ -597,6 +597,36 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, mc *MetricsController) 
 	// If we receive an error, the data was not stored into the collector
 	mc.addDataUsage(cmd.Name, 0, len(reply.Body))
 
+	switch cmd.Name {
+	case collector.CommandCustomEvents:
+		ce, ok := p.(*CustomEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, ce.NumFailedAttempts())
+		}
+	case collector.CommandTxnEvents:
+		te, ok := p.(*TxnEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, te.NumFailedAttempts())
+		}
+	case collector.CommandErrorEvents:
+		ee, ok := p.(*ErrorEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, ee.NumFailedAttempts())
+		}
+	case collector.CommandSpanEvents:
+		se, ok := p.(*SpanEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, se.NumFailedAttempts())
+		}
+	case collector.CommandLogEvents:
+		le, ok := p.(*LogEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, le.NumFailedAttempts())
+		}
+	default:
+		// skip non-metric data
+	}
+
 	args.harvestErrorChannel <- HarvestError{
 		Reply: reply,
 		id:    args.id,
@@ -754,57 +784,15 @@ func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harves
 	mc.wg.Wait()
 	log.Debugf("harvesting metrics")
 
-	metricsMap := make(map[string]metricsInfo)
-
-	// aggregate data from metrics channel
-	loop := true
-	for loop {
-		select {
-		case m, ok := <-mc.mc:
-			if ok {
-				metrics := metricsMap[m.eventType]
-				metrics.seen += m.seen
-				metrics.sent += m.sent
-				metrics.failed += m.failed
-				metricsMap[m.eventType] = metrics
-			}
-		default:
-			loop = false
-		}
-	}
-
-	// Custom Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/Customer/Seen", "", metricsMap[collector.CommandCustomEvents].seen, Forced)
-	h.Metrics.AddCount("Supportability/Events/Customer/Sent", "", metricsMap[collector.CommandCustomEvents].sent, Forced)
-
-	// Transaction Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", metricsMap[collector.CommandTxnEvents].seen, Forced)
-	h.Metrics.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", metricsMap[collector.CommandTxnEvents].sent, Forced)
-
-	// Error Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Seen", "", metricsMap[collector.CommandErrorEvents].seen, Forced)
-	h.Metrics.AddCount("Supportability/Events/TransactionError/Sent", "", metricsMap[collector.CommandErrorEvents].sent, Forced)
-
-	// Span Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", metricsMap[collector.CommandSpanEvents].seen, Forced)
-	h.Metrics.AddCount("Supportability/SpanEvent/TotalEventsSent", "", metricsMap[collector.CommandSpanEvents].sent, Forced)
-
-	// Log Events Supportability Metrics
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Seen", "", metricsMap[collector.CommandLogEvents].seen, Forced)
-	h.Metrics.AddCount("Supportability/Logging/Forwarding/Sent", "", metricsMap[collector.CommandLogEvents].sent, Forced)
-
-	h.createEndpointAttemptsMetric(h.CustomEvents.Cmd(), metricsMap[collector.CommandCustomEvents].failed)
-	h.createEndpointAttemptsMetric(h.TxnEvents.Cmd(), metricsMap[collector.CommandTxnEvents].failed)
-	h.createEndpointAttemptsMetric(h.ErrorEvents.Cmd(), metricsMap[collector.CommandErrorEvents].failed)
-	h.createEndpointAttemptsMetric(h.SpanEvents.Cmd(), metricsMap[collector.CommandSpanEvents].failed)
-	h.createEndpointAttemptsMetric(h.LogEvents.Cmd(), metricsMap[collector.CommandLogEvents].failed)
-
-	h.createFinalMetrics(harvestLimits, to)
-
+	h.createFinalMetrics(harvestLimits, to, mc)
 	harvestDataUsage(h, args, mc)
+
 	h.Metrics = h.Metrics.ApplyRules(args.rules)
+
 	metrics := h.Metrics
+
 	h.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
+
 	considerHarvestPayload(metrics, args, mc)
 }
 

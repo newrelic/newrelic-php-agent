@@ -85,6 +85,31 @@ func (m *MetricsController) addDataUsage(endpoint string, data_stored int, data_
 	}
 }
 
+func (m *MetricsController) AggregateMetricData() map[string]metricsInfo {
+	metricsMap := make(map[string]metricsInfo)
+
+	// aggregate data from metrics channel
+	loop := true
+	for loop {
+		select {
+		case metric, ok := <-m.mc:
+			if ok { // check that channel is not closed
+				metrics := metricsMap[metric.eventType]
+				metrics.seen += metric.seen
+				metrics.sent += metric.sent
+				if metric.failed > metrics.failed {
+					metrics.failed = metric.failed
+				}
+				metricsMap[metric.eventType] = metrics
+			}
+		default:
+			loop = false
+		}
+	}
+
+	return metricsMap
+}
+
 func NewAppHarvest(id AgentRunID, app *App, harvest *Harvest, ph chan ProcessorHarvest) *AppHarvest {
 	ah := &AppHarvest{
 		App:           app,
