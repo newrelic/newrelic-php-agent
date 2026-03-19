@@ -242,7 +242,6 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 		Type:       HarvestTxnEvents,
 	}
 
-	// <-m.p.trackProgress // unblock processor after harvest
 	<-m.clientParams
 	m.clientReturn <- ClientReturn{nil, nil, 202}
 	<-m.p.trackProgress // unblock processor after harvest
@@ -977,7 +976,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
-		// harvest both txn events and metrics
+		// harvest txn events
 		Type: HarvestTxnEvents,
 	}
 
@@ -993,7 +992,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	m.processorHarvestChan <- ProcessorHarvest{
 		AppHarvest: m.p.harvests[idOne],
 		ID:         idOne,
-		// harvest both txn events and metrics
+		// harvest metrics
 		Type: HarvestDefaultData,
 	}
 
@@ -1168,11 +1167,6 @@ func TestDisconnectAtHarvest(t *testing.T) {
 	<-m.clientParams
 	m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
 	<-m.p.trackProgress // unblock after harvest error
-
-	/* usage metrics */
-	// <-m.clientParams
-	// m.clientReturn <- ClientReturn{nil, SampleDisonnectException, 410}
-	// <-m.p.trackProgress // unblock after harvest error
 
 	m.DoAppInfo(t, nil, AppStateDisconnected)
 

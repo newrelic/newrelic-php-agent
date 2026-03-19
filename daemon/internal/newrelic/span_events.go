@@ -5,10 +5,6 @@
 
 package newrelic
 
-import (
-	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
-)
-
 // SpanEvents is a wrapper over AnalyticsEvents created for additional type
 // safety and proper FailedHarvest behavior.
 type SpanEvents struct {
@@ -17,8 +13,6 @@ type SpanEvents struct {
 
 // NewSpanEvents returns a new span event reservoir with capacity max.
 func NewSpanEvents(max int) *SpanEvents {
-	log.Debugf("NewSpanEvents: Resetting Span Events")
-
 	return &SpanEvents{newAnalyticsEvents(max)}
 }
 
