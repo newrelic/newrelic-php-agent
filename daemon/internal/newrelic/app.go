@@ -147,7 +147,6 @@ type App struct {
 	LastActivity        time.Time
 	Rules               MetricRules
 	PhpPackages         map[PhpPackagesKey]struct{}
-	// MetricController    *MetricsController
 }
 
 func (app *App) String() string {
