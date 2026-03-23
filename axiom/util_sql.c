@@ -404,6 +404,7 @@ void nr_sql_get_operation_and_table(const char* sql,
   const char* end = 0;
   const char* x;
   int sl;
+  bool check_replication_stmt = false;
   typedef struct _sql_parse_expectation {
     const char* opname;
     int oplength;
@@ -486,6 +487,23 @@ void nr_sql_get_operation_and_table(const char* sql,
         return;
       }
 
+      if (check_replication_stmt) {
+        if (nr_parse_sql_keyword(x, NR_PSTR("if"))) {
+          x += 2;
+          continue;
+        } else if (nr_parse_sql_keyword(x, NR_PSTR("not"))) {
+          x += 3;
+          continue;
+        } else if (nr_parse_sql_keyword(x, NR_PSTR("exists"))) {
+          x += 6;
+          check_replication_stmt = false;
+          break;
+        } else {
+          check_replication_stmt = false;
+          break;
+        }
+      }
+
       if ('\'' == *x) {
         x = nr_sql_parse_over(x + 1, '\'', show_sql_parsing);
         if (NULL == x) {
@@ -531,11 +549,13 @@ void nr_sql_get_operation_and_table(const char* sql,
            */
           if (nr_parse_sql_keyword(x, NR_PSTR("database"))) {
             x += 8;
-            break;
+            check_replication_stmt = true;
+            continue;
 
           } else if (nr_parse_sql_keyword(x, NR_PSTR("table"))) {
             x += 5;
-            break;
+            check_replication_stmt = true;
+            continue;
           }
         }
 

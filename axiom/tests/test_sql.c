@@ -855,6 +855,34 @@ static void test_nested_parentheticals(void) {
       "`my_table` rather than the nested table names `my_table_event` or "
       "`nested_table`",
       sql, "delete", "my_table");
+
+  sql = "CREATE TABLE IF NOT EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL CREATE TABLE operation with [IF NOT EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "create", "birthdays");
+
+  sql = "DROP TABLE IF EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL DROP TABLE operation with [IF EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "drop", "birthdays");
+
+  sql = "CREATE DATABASE IF NOT EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL CREATE DATABASE operation with [IF NOT EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "create", "birthdays");
+
+  sql = "DROP DATABASE IF EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL DROP DATABASE operation with [IF EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "drop", "birthdays");
 }
 // clang-format on
 
