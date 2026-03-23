@@ -1559,6 +1559,7 @@ install_agent_here() {
             fi
             log "${pdir}: created symlink ${sapi_confdir}/20-newrelic.ini -> ${pi_mods_avail}/newrelic.ini"
           else
+            istat="failed"
             log "${pdir}: failed to create symlink ${sapi_confdir}/20-newrelic.ini"
           fi
         fi
