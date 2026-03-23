@@ -374,13 +374,16 @@ static char* nr_sql_parse_over(const char* str,
  *
  * @param sql     The SQL statement to parse
  * @param keyword The SQL keyword to compare
+ * @param len     Length of the SQL keyword
  *
  * @return bool
  *
  */
-static bool nr_parse_sql_keyword(const char* sql, const char* keyword) {
+static bool nr_parse_sql_keyword(const char* sql,
+                                 const char* keyword,
+                                 int len) {
   int i;
-  for (i = 0; i < nr_strlen(keyword); i++) {
+  for (i = 0; i < len; i++) {
     if (keyword[i] != nr_tolower(sql[i])) {
       return false;
     }
@@ -526,24 +529,24 @@ void nr_sql_get_operation_and_table(const char* sql,
            * 'create' is the first word, we merely advance to the second word to
            * see if it is DATABASE OR TABLE then advance to the db/table name.
            */
-          if (nr_parse_sql_keyword(x, "database")) {
+          if (nr_parse_sql_keyword(x, NR_PSTR("database"))) {
             x += 8;
             break;
 
-          } else if (nr_parse_sql_keyword(x, "table")) {
+          } else if (nr_parse_sql_keyword(x, NR_PSTR("table"))) {
             x += 5;
             break;
           }
         }
 
         if (NR_SQL_PARSE_FROM == operations[i].opflag
-            && nr_parse_sql_keyword(x, "from")) {
+            && nr_parse_sql_keyword(x, NR_PSTR("from"))) {
           x += 4;
           break;
         }
 
         if (NR_SQL_PARSE_INTO == operations[i].opflag
-            && nr_parse_sql_keyword(x, "into")) {
+            && nr_parse_sql_keyword(x, NR_PSTR("into"))) {
           x += 4;
           break;
         }
