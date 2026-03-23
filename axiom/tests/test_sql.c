@@ -856,6 +856,11 @@ static void test_nested_parentheticals(void) {
       "`nested_table`",
       sql, "delete", "my_table");
 
+}
+// clang-format on
+
+static void test_replication_clause(void) {
+  const char* sql;
   sql = "CREATE TABLE IF NOT EXISTS birthdays";
   test_get_operation_and_table(
       "Valid SQL CREATE TABLE operation with [IF NOT EXISTS] clause should "
@@ -884,7 +889,6 @@ static void test_nested_parentheticals(void) {
       "`birthdays` rather than the operator name `IF`",
       sql, "drop", "birthdays");
 }
-// clang-format on
 
 /*
  * Read the section on identifiers and comments carefully:
@@ -1210,6 +1214,7 @@ void test_main(void* p NRUNUSED) {
   test_find_table_with_from();
   test_real_world_things();
   test_nested_parentheticals();
+  test_replication_clause();
   test_diabolical_quoting();
   test_get_operation_and_table_in_sql_with_info();
   test_weird_and_wonderful();
