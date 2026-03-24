@@ -48,18 +48,18 @@ jobs:
         php: ${{ fromJson(needs.get-php-versions.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{inputs.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
@@ -68,13 +68,13 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Enable amd64 emulation
         if: ${{ inputs.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # 4.0.0
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64
