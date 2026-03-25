@@ -27,7 +27,7 @@ static void nr_php_datastore_instance_destroy(
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-/* OAPI global stacks (as opposed to call stack used previously) 
+/* OAPI global stacks (as opposed to call stack used previously)
  * need to have a dtor set so that when we free it
  * during rshutdown, all elements are properly freed */
 static void str_stack_dtor(void* e, NRUNUSED void* d) {
