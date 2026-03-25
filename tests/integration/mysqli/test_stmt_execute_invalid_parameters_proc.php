@@ -25,7 +25,6 @@ newrelic.transaction_tracer.record_sql = obfuscated
 */
 
 /*EXPECT
-STATISTICS
 */
 
 /*EXPECT_METRICS
@@ -36,14 +35,6 @@ STATISTICS
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/all"},                                        [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/allOther"},                                   [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/all"},                                  [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/MySQL/allOther"},                             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/operation/MySQL/select"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select"},              [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Datastore/statement/MySQL/tables/select",
-      "scope":"OtherTransaction/php__FILE__"},                        [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
@@ -74,6 +65,20 @@ function test_stmt_execute($link, $data)
   if (FALSE === mysqli_stmt_execute($stmt, $data)) {
     echo mysqli_stmt_error($stmt) . "\n";
     return;
+  }
+
+  if (FALSE === mysqli_stmt_bind_result($stmt, $value)) {
+    echo mysqli_stmt_error($stmt) . "\n";
+    return;
+  }
+
+
+  try {
+    while (mysqli_stmt_fetch($stmt)) {
+      echo $value . "\n";
+    }
+  } catch (mysqli_sql_exception $e) {
+    echo (string)$e;
   }
 
   mysqli_stmt_close($stmt);
