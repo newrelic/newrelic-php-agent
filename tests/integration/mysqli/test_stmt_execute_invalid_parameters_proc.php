@@ -76,7 +76,7 @@ function test_stmt_execute($link, $data)
       echo mysqli_stmt_error($stmt) . "\n";
       return;
     }
-  } catch (Exception $e) {
+  } catch (mysqli_sql_exception $e) {
     echo (string)$e;
     mysqli_stmt_close($stmt);
     return;
