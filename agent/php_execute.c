@@ -339,8 +339,6 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0,
      nr_joomla_enable, NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    /* See below: Zend, the legacy project of Laminas, which shares much
-       of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
     {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
@@ -348,28 +346,14 @@ static const nr_framework_table_t all_frameworks[] = {
 
     {"Laravel", "laravel", NR_PSTR("illuminate/foundation/application.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL},
-    {"Laravel", "laravel", NR_PSTR("bootstrap/compiled.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL}, /* 4.x */
-    {"Laravel", "laravel", NR_PSTR("storage/framework/compiled.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL}, /* 5.0.0-14 */
-    {"Laravel", "laravel", NR_PSTR("vendor/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
-    {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL}, /* 5.1.0-x */
-
-    {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0,
-     nr_lumen_enable, NR_FW_LUMEN},
 
     {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
     {"Magento2", "magento2", NR_PSTR("magento/framework/registration.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
-    {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0,
-     nr_mediawiki_enable, NR_FW_MEDIAWIKI},
-
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
-     NR_FW_SLIM}, /* 3.x */
+     NR_FW_SLIM}, /* 4.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
@@ -384,15 +368,6 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
      NR_FW_YII2},
-
-    /* See above: Laminas, the successor to Zend, which shares much
-       of the instrumentation implementation with Zend */
-    // treating zend2 as zend3 for backwards compatibility
-    {"Zend3", "zend2", NULL, 0, 0, nr_fw_zend3_enable, NR_FW_ZEND3},
-    {"Zend3", "zend3", NR_PSTR("zend/mvc/application.php"), 0,
-     nr_fw_zend3_enable, NR_FW_ZEND3},
-    {"Zend3", "zend3", NR_PSTR("zend-mvc/src/application.php"), 0,
-     nr_fw_zend3_enable, NR_FW_ZEND3},
 };
 // clang-format: on
 static const int num_all_frameworks
@@ -468,24 +443,9 @@ static nr_library_table_t libraries[] = {
     /* php-amqplib RabbitMQ; PHP Agent supports php-amqplib >= 3.7 */
     {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
      nr_php_amqplib_enable},
-
-    /*
-     * The first path is for Composer installs, the second is for
-     * /usr/local/bin.
-     */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
-
+    
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
-
-    /*
-     * Allow Zend Framework 1.x to be detected as a library as well as a
-     * framework. This allows Zend_Http_Client to be instrumented when used
-     * with other frameworks or even without a framework at all. This is
-     * necessary for Magento in particular, which is built on ZF1.
-     */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a

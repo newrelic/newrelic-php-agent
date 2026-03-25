@@ -112,16 +112,13 @@ typedef enum {
   NR_FW_DRUPAL8,
   NR_FW_JOOMLA,
   NR_FW_LARAVEL,
-  NR_FW_LUMEN,
   NR_FW_MAGENTO1,
   NR_FW_MAGENTO2,
-  NR_FW_MEDIAWIKI,
   NR_FW_SLIM,
   NR_FW_SYMFONY4,
   NR_FW_WORDPRESS,
   NR_FW_YII1,
   NR_FW_YII2,
-  NR_FW_ZEND3,
   NR_FW_LAMINAS3,
   NR_FW_NONE, /* Must be immediately before NR_FW_MUST_BE_LAST */
   NR_FW_MUST_BE_LAST
@@ -319,8 +316,6 @@ nriniuint_t
                                        */
 nrinibool_t synthetics_enabled;       /* newrelic.synthetics.enabled */
 
-nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */
-
 nrinibool_t
     instance_reporting_enabled; /* newrelic.datastore_tracer.instance_reporting.enabled
                                  */
@@ -372,7 +367,6 @@ nrinibool_t fibers_disabled; /* newrelic.fibers.disabled */
 nrinifw_t force_framework; /* newrelic.framework */
 nrframework_t
     current_framework; /* Current request framework (forced or detected) */
-int framework_version; /* Current framework version */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA

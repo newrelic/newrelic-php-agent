@@ -8,7 +8,7 @@
 #include "php_hash.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
-#include "lib_zend_http.h"
+#include "lib_laminas_http.h"
 #include "nr_header.h"
 #include "nr_segment_external.h"
 #include "util_logging.h"
@@ -25,29 +25,18 @@ typedef enum _nr_zend_http_adapter {
  *
  * Refer to the manual for up to date specs:
  * https://docs.laminas.dev/
- *
- * In order to toggle between `zend` and `laminas` naming schemes, the names
- * are stored in defines.  The default is the `zend` naming scheme.
- * If `laminas` is detected, the values are redefined in this file's
- * `nr_laminas_http_enable` function.
  */
-#define LIB_NAME_Z "Zend"
-#define CURL_ADAPTER_Z "Zend_Http_Client_Adapter_Curl"
-#define URI_HTTP_Z "Zend_Uri_Http"
-#define HTTP_CLIENT_Z "Zend_Http_Client"
-#define HTTP_CLIENT_REQUEST_Z "Zend_Http_Client::request"
-
 #define LIB_NAME_L "Laminas"
 #define CURL_ADAPTER_L "Laminas\\Http\\Client\\Adapter\\Curl::class"
 #define URI_HTTP_L "Laminas\\Uri\\Http"
 #define HTTP_CLIENT_L "Laminas\\Http\\Client"
 #define HTTP_CLIENT_REQUEST_L "Laminas\\Http\\Client::send"
 
-char* library_name = LIB_NAME_Z;
-char* curl_adapter_typename = CURL_ADAPTER_Z;
-char* uri_http_typename = URI_HTTP_Z;
-char* http_client = HTTP_CLIENT_Z;
-char* http_client_request = HTTP_CLIENT_REQUEST_Z;
+char* library_name = LIB_NAME_L;
+char* curl_adapter_typename = CURL_ADAPTER_L;
+char* uri_http_typename = URI_HTTP_L;
+char* http_client = HTTP_CLIENT_L;
+char* http_client_request = HTTP_CLIENT_REQUEST_L;
 
 /*
  * Purpose : Determine which HTTP client adapter is being used by a Zend
@@ -126,14 +115,10 @@ static nr_zend_http_adapter nr_zend_check_adapter(zval* this_var TSRMLS_DC) {
 }
 
 /*
- * Purpose : For Zend, get the url of a Zend_Http_Client instance before a
- *           Zend_Http_Client::request call.
- *           For Laminas, get the url of a Zend_Http_Client instance before a
+ * Purpose : For Laminas, get the url of a Zend_Http_Client instance before a
  *           Laminas_Http_Client::send call.
  *
- * Params  : 1. For Zend, the instance receiver of the
- *              Zend_Http_Client::request call.
- *              For Laminas, the instance receiver of the
+ * Params  : 1. For Laminas, the instance receiver of the
  *              Zend_Http_Client::send call.
  *           2. A pointer to a string that will receive the URL. It is the
  *              responsibility of the caller to free this URL.
@@ -323,10 +308,7 @@ static uint64_t nr_zend_http_client_request_get_response_code(
 }
 
 /*
- * Wrap and record external metrics for Zend_Http_Client::request.
  * Wrap and record external metrics for Laminas_Http_Client::send.
- *
- * http://framework.zend.com/manual/1.12/en/zend.http.client.advanced.html
  */
 NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
   zval* this_var = NULL;
@@ -367,8 +349,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    * This solution of purely for Zend_Http_Client issues related to older
    * versions of the Zend framework.
    *
-   * Our agent creates an external segment for calls to `request` method calls
-   * of `Zend_Http_Client` objects or for calls to `send` method calls
+   * Our agent creates an external segment for calls `send` method calls
    * of `Laminas_Http_Client` objects. However, the request method itself
    * creates child segments to the external segments triggered by our automatic
    * instrumentation. These child segments are not correctly parented, to the
@@ -377,8 +358,8 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
    * related to the stacked segment implementation in the agent. This
    * implementation relies on the fact that segments created in the agent
    * explicitly do not have children created by automatic instrumentation.
-   * Implement a solution just for `Zend_Http_Client` (e. g. deleting all child
-   * segments from the `request` related segment).
+   * Implement a solution just for `Laminas_Http_Client` (e. g. deleting all
+   * child segments from the `request` related segment).
    */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
@@ -409,7 +390,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
   }
 
   /*
-   * We don't want to have Zend_Http_Client request segments to have any
+   * We don't want to have Laminas_Http_Client request segments to have any
    * children, as this would scramble the exclusive time calculation.
    *
    * Therefore we delete all children of the segment. Afterwards we set
@@ -440,23 +421,7 @@ leave:
 }
 NR_PHP_WRAPPER_END
 
-void nr_zend_http_enable(TSRMLS_D) {
-  if (NR_FW_LAMINAS3 != NRPRG(current_framework)) {
-    nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_Z),
-                              nr_zend_http_client_request TSRMLS_CC);
-  }
-}
-
 void nr_laminas_http_enable(TSRMLS_D) {
-    /*
-     * Redefine zend to laminas.
-     */
-    library_name = LIB_NAME_L;
-    curl_adapter_typename = CURL_ADAPTER_L;
-    uri_http_typename = URI_HTTP_L;
-    http_client = HTTP_CLIENT_L;
-    http_client_request = HTTP_CLIENT_REQUEST_L;
-
     nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_L),
                               nr_zend_http_client_request TSRMLS_CC);
 }

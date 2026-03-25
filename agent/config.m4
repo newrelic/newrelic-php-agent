@@ -224,14 +224,13 @@ if test "$PHP_NEWRELIC" = "yes"; then
   php_user_instrument_hashmap.c php_vm.c php_wrapper.c"
   FRAMEWORKS="fw_cakephp.c fw_codeigniter.c fw_drupal8.c \
   fw_drupal.c fw_drupal_common.c fw_joomla.c \
-  fw_laminas3.c fw_laravel.c fw_laravel_queue.c fw_lumen.c \
-  fw_magento1.c fw_magento2.c fw_magento_common.c fw_mediawiki.c \
+  fw_laminas3.c fw_laravel.c fw_laravel_queue.c \
+  fw_magento1.c fw_magento2.c fw_magento_common.c \
   fw_slim.c fw_support.c fw_symfony4.c \
-  fw_symfony_common.c fw_wordpress.c fw_yii.c \
-  fw_zend3.c"
+  fw_symfony_common.c fw_wordpress.c fw_yii.c"
   LIBRARIES="lib_aws_sdk_php.c lib_monolog.c lib_doctrine2.c \
   lib_guzzle4.c lib_guzzle6.c lib_guzzle_common.c \
-  lib_mongodb.c lib_phpunit.c lib_predis.c lib_zend_http.c \
+  lib_mongodb.c lib_predis.c lib_laminas_http.c \
   lib_composer.c lib_php_amqplib.c"
   PHP_NEW_EXTENSION(newrelic, $FRAMEWORKS $LIBRARIES $NEWRELIC_AGENT, $ext_shared,, $(NEWRELIC_CFLAGS))
 
