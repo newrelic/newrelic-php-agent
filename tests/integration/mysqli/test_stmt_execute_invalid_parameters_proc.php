@@ -24,7 +24,8 @@ newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = obfuscated
 */
 
-/*EXPECT
+/*EXPECT_REGEX
+mysqli_sql_exception: Commands out of sync; you can't run this command.*
 */
 
 /*EXPECT_METRICS
