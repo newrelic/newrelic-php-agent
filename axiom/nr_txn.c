@@ -2975,8 +2975,7 @@ static bool nr_txn_accept_w3c_trace_context_headers(
   /* Depending on the user's INI settings, we may or may not want to
    * consider the traceparent's sampled field */
   nr_distributed_trace_handle_inbound_w3c_sampled_flag(
-      txn->distributed_trace,
-      trace_headers,
+      txn->distributed_trace, trace_headers,
       txn->options.dt_sampler_parent_sampled,
       txn->options.dt_sampler_parent_not_sampled);
 

@@ -282,6 +282,32 @@ func (t *Test) MakeSkipIf(ctx *Context) (Tx, error) {
 	return PhpTx(src, t.Env, settings, ctx)
 }
 
+//
+// Extract and remove from the output any env vars from the output that
+// we want to add to t.Env for use with EXPECT blocks.
+// The env vars will be preceded by the
+// NR_EXPECT_ENV_VAR prefix followed by the env var name and value.
+// ex: NR_EXPECT_ENV_VAR[NEW_VAR_FROM_TEST]=1234567 followed by a newline
+// Be aware this will overwrite any previously existing env vars with the same name.
+//
+
+func (t *Test) GetEnvVarsFromBody(body []byte) []byte {
+
+	nrExpectEnvVarRE := regexp.MustCompile(`^NR_EXPECT_ENV_VAR\[(.+?)\]=(.*)$`)
+
+	lines := bytes.Split(body, []byte("\n"))
+	filteredLines := make([][]byte, 0, len(lines))
+	for _, line := range lines {
+		matches := nrExpectEnvVarRE.FindSubmatch(line)
+		if matches != nil {
+			t.Env[string(matches[1])] = string(matches[2])
+			continue
+		}
+		filteredLines = append(filteredLines, line)
+	}
+	return bytes.Join(filteredLines, []byte("\n"))
+}
+
 type Scrub struct {
 	re          *regexp.Regexp
 	replacement []byte

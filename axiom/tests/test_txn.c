@@ -6303,10 +6303,14 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   nrtxn_t txn = {0};
   nr_hashmap_t* headers;
   bool rv = true;
-  char* TRACEPARENT_SAMPLED = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01";
-  char* TRACEPARENT_NOT_SAMPLED = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00";
-  char* TRACESTATE_SAMPLED = "123@nr=0-2-account-app-span-transaction-1-1.1273-1529445826000";
-  char* TRACESTATE_NOT_SAMPLED = "123@nr=0-2-account-app-span-transaction-0-1.1273-1529445826000";
+  char* TRACEPARENT_SAMPLED
+      = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-01";
+  char* TRACEPARENT_NOT_SAMPLED
+      = "00-87b1c9a429205b25e5b687d890d4821f-7d3efb1b173fecfa-00";
+  char* TRACESTATE_SAMPLED
+      = "123@nr=0-2-account-app-span-transaction-1-1.1273-1529445826000";
+  char* TRACESTATE_NOT_SAMPLED
+      = "123@nr=0-2-account-app-span-transaction-0-1.1273-1529445826000";
   nrtime_t payload_timestamp_ms = 1529445826000;
   nrtime_t txn_timestamp_us = 15214458260000 * NR_TIME_DIVISOR_MS;
   nrtime_t delta_timestamp_us = nr_time_duration(
@@ -6324,10 +6328,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   txn.options.distributed_tracing_pad_trace_id = false;
   txn.options.distributed_tracing_enabled = true;
 
-#define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET         \
-  txn.distributed_trace->inbound.set = 0;        \
-  nrm_table_destroy(&txn.unscoped_metrics);      \
-  txn.unscoped_metrics = nrm_table_create(0);    \
+#define TEST_TXN_ACCEPT_DT_PAYLOAD_RESET               \
+  txn.distributed_trace->inbound.set = 0;              \
+  nrm_table_destroy(&txn.unscoped_metrics);            \
+  txn.unscoped_metrics = nrm_table_create(0);          \
   txn.options.dt_sampler_parent_not_sampled = DEFAULT; \
   txn.options.dt_sampler_parent_sampled = DEFAULT;
 
@@ -6346,11 +6350,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
   tlib_pass_if_false("Sampled should be set to false",
-                    txn.distributed_trace->sampled, "sampled flag = %d",
-                    (int)txn.distributed_trace->sampled);
+                     txn.distributed_trace->sampled, "sampled flag = %d",
+                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   // 2: upstream not sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
@@ -6382,8 +6385,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
                     txn.distributed_trace->sampled, "sampled flag = %d",
                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   // 4: upstream not sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
@@ -6396,11 +6398,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
   tlib_pass_if_false("Sampled should be set to false",
-                    txn.distributed_trace->sampled, "sampled flag = %d",
-                    (int)txn.distributed_trace->sampled);
+                     txn.distributed_trace->sampled, "sampled flag = %d",
+                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   // 5: upstream sampled, agent discard
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
@@ -6413,11 +6414,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
   tlib_pass_if_false("Sampled should be set to false",
-                    txn.distributed_trace->sampled, "sampled flag = %d",
-                    (int)txn.distributed_trace->sampled);
+                     txn.distributed_trace->sampled, "sampled flag = %d",
+                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   // 6: upstream sampled, agent keep
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
@@ -6449,8 +6449,7 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
                     txn.distributed_trace->sampled, "sampled flag = %d",
                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   // 8: upstream sampled, agent default (toss)
   TEST_TXN_ACCEPT_DT_PAYLOAD_RESET
@@ -6463,11 +6462,10 @@ static void test_txn_accept_distributed_trace_payload_w3c_sample_flags(void) {
   tlib_pass_if_true("The header should be accepted", rv, "Return value = %d",
                     (int)rv);
   tlib_pass_if_false("Sampled should be set to false",
-                    txn.distributed_trace->sampled, "sampled flag = %d",
-                    (int)txn.distributed_trace->sampled);
+                     txn.distributed_trace->sampled, "sampled flag = %d",
+                     (int)txn.distributed_trace->sampled);
   tlib_pass_if_true("Priority should not be overwritten",
-                    2.0 != txn.distributed_trace->priority,
-                    "priority is 2.0");
+                    2.0 != txn.distributed_trace->priority, "priority is 2.0");
 
   nr_txn_destroy_fields(&txn);
   nr_hashmap_destroy(&headers);

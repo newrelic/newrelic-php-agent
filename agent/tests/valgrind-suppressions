@@ -1,4 +1,26 @@
 {
+   <PHP 8.1 Fiber Defect #1>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:__zend_malloc
+   fun:zend_llist_add_element
+   fun:zend_observer_fiber_init_register
+   ...
+}
+
+{
+   <PHP 8.1 Fiber Defect #2>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:__zend_malloc
+   fun:zend_llist_add_element
+   fun:zend_observer_fiber_destroy_register
+   ... 
+}
+
+{
    agent-32bit-debian-invalid-read
    Memcheck:Addr4
    fun:check_free
