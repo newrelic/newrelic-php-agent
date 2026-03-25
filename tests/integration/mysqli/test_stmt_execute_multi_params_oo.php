@@ -22,6 +22,7 @@ error_reporting = E_ALL & ~E_DEPRECATED
 newrelic.transaction_tracer.explain_enabled = true
 newrelic.transaction_tracer.explain_threshold = 0
 newrelic.transaction_tracer.record_sql = obfuscated
+newrelic.enabled = false
 */
 
 /*EXPECT
