@@ -71,24 +71,9 @@ function test_stmt_execute($link, $data)
     return;
   }
 
-  try {
-    if (FALSE === mysqli_stmt_execute($stmt, $data)) {
-      echo mysqli_stmt_error($stmt) . "\n";
-      return;
-    }
-  } catch (mysqli_sql_exception $e) {
-    echo (string)$e;
-    mysqli_stmt_close($stmt);
-    return;
-  }
-
-  if (FALSE === mysqli_stmt_bind_result($stmt, $value)) {
+  if (FALSE === mysqli_stmt_execute($stmt, $data)) {
     echo mysqli_stmt_error($stmt) . "\n";
     return;
-  }
-
-  while (mysqli_stmt_fetch($stmt)) {
-    echo $value . "\n";
   }
 
   mysqli_stmt_close($stmt);

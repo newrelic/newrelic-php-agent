@@ -67,21 +67,12 @@ function test_stmt_execute($mysqli, $data)
   $query = "SELECT TABLE_NAME FROM information_schema.tables WHERE table_name=?";
   $stmt = $mysqli->prepare($query);
 
-  try {
-    if (FALSE === $stmt->execute($data) ||
-        FALSE === $stmt->bind_result($name)) {
-      echo $stmt->error . "\n";
-      $stmt->close();
-      return;
-    }
-  } catch (mysqli_sql_exception $e) {
-    echo (string)$e;
+  if (FALSE === $stmt->execute($data) ||
+      FALSE === $stmt->bind_result($name)) {
+    echo $stmt->error . "\n";
     $stmt->close();
     return;
   }
-
-  $stmt->fetch();
-  echo $name . "\n";
 
   $stmt->close();
 }
