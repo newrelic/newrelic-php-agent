@@ -70,8 +70,15 @@ function test_stmt_execute($link, $data)
     echo mysqli_error($link) . "\n";
     return;
   }
-  if (FALSE === mysqli_stmt_execute($stmt, $data)) {
-    echo mysqli_stmt_error($stmt) . "\n";
+
+  try {
+    if (FALSE === mysqli_stmt_execute($stmt, $data)) {
+      echo mysqli_stmt_error($stmt) . "\n";
+      return;
+    }
+  } catch (Exception $e) {
+    echo (string)$e;
+    mysqli_stmt_close($stmt);
     return;
   }
 
