@@ -781,6 +781,11 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 }
 
 func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered harvestMetrics Panic. Dropping Harvest. Error: %v\n", r)
+		}
+	}()
 	mc.wg.Wait()
 	log.Debugf("harvesting metrics")
 
