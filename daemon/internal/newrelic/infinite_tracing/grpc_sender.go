@@ -18,9 +18,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding"
-	_ "google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
@@ -36,6 +36,21 @@ type grpcSpanBatchSender struct {
 	Config
 }
 
+// protoCodec implements the encoding.Codec interface for standard protobuf messages
+type protoCodec struct{}
+
+func (protoCodec) Marshal(v interface{}) ([]byte, error) {
+	return proto.Marshal(v.(proto.Message))
+}
+
+func (protoCodec) Unmarshal(data []byte, v interface{}) error {
+	return proto.Unmarshal(data, v.(proto.Message))
+}
+
+func (protoCodec) Name() string {
+	return "proto"
+}
+
 // Implement a custom codec that can just send encoded spans as they are.
 type codec struct {
 	encoding.Codec
@@ -46,8 +61,11 @@ const (
 	runIDMetadataKey   = "agent_run_token"
 )
 
-// Import the proto encoding package to automatically register the proto codec
-// This is required for gRPC v1.60.0+ where automatic codec registration was removed
+func init() {
+	// Manually register the proto codec for gRPC v1.64.0+ where automatic registration was removed
+	// This ensures encoding.GetCodec("proto") returns a valid codec for our custom codec wrapper
+	encoding.RegisterCodec(protoCodec{})
+}
 
 var (
 	supportabilityCodeErr = "Supportability/InfiniteTracing/Span/gRPC/"
