@@ -21,6 +21,7 @@ import (
 )
 
 type testGrpcServer struct {
+	v1.UnimplementedIngestServiceServer
 	server               *grpc.Server
 	host                 string
 	port                 uint16

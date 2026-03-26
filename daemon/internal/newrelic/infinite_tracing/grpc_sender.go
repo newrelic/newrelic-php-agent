@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding"
+	_ "google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -44,6 +45,9 @@ const (
 	licenseMetadataKey = "license_key"
 	runIDMetadataKey   = "agent_run_token"
 )
+
+// Import the proto encoding package to automatically register the proto codec
+// This is required for gRPC v1.60.0+ where automatic codec registration was removed
 
 var (
 	supportabilityCodeErr = "Supportability/InfiniteTracing/Span/gRPC/"
