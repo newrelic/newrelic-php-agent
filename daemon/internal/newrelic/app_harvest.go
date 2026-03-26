@@ -45,6 +45,7 @@ type MetricsController struct {
 	mc  chan metricsInfo
 	duc chan dataUsageInfo
 	wg  *sync.WaitGroup
+	mu  sync.Mutex
 }
 
 func (ah *AppHarvest) NewProcessorHarvestEvent(id AgentRunID, t HarvestType) ProcessorHarvest {
