@@ -62,14 +62,25 @@ func (c *codec) Marshal(v interface{}) ([]byte, error) {
 		return []byte(batch), nil
 	}
 
+	if c.Codec == nil {
+		return nil, fmt.Errorf("no codec available for marshaling non-encodedSpanBatch type")
+	}
 	return c.Codec.Marshal(v)
 }
 
 func (c *codec) Unmarshal(data []byte, v interface{}) error {
+	if c.Codec == nil {
+		return fmt.Errorf("no codec available for unmarshaling")
+	}
 	return c.Codec.Unmarshal(data, v)
 }
 
-func (c *codec) Name() string { return c.Codec.Name() }
+func (c *codec) Name() string {
+	if c.Codec == nil {
+		return "proto"
+	}
+	return c.Codec.Name()
+}
 
 func newGrpcSpanBatchSender(cfg *Config) (*grpcSpanBatchSender, error) {
 	var cred grpc.DialOption
