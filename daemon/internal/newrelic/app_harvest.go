@@ -11,6 +11,7 @@ import (
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
+	"golang.org/x/sync/semaphore"
 )
 
 // This type takes the HarvestType values sent from an application's harvest
@@ -45,7 +46,7 @@ type MetricsController struct {
 	mc  chan metricsInfo
 	duc chan dataUsageInfo
 	wg  *sync.WaitGroup
-	mu  sync.Mutex
+	sem *semaphore.Weighted
 }
 
 func (ah *AppHarvest) NewProcessorHarvestEvent(id AgentRunID, t HarvestType) ProcessorHarvest {
@@ -122,6 +123,7 @@ func NewAppHarvest(id AgentRunID, app *App, harvest *Harvest, ph chan ProcessorH
 			mc:  make(chan metricsInfo, 64),
 			duc: make(chan dataUsageInfo, 64),
 			wg:  new(sync.WaitGroup),
+			sem: semaphore.NewWeighted(1),
 		},
 	}
 
