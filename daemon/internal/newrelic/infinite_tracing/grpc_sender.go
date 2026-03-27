@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	_ "google.golang.org/protobuf/protoadapt"
 
 	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
