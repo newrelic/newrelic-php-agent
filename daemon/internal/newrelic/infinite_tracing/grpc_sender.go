@@ -17,11 +17,11 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-        codecproto "google.golang.org/grpc/encoding/proto"
-	"google.golang.org/protobuf/proto"
-	_ "google.golang.org/protobuf/protoadapt"
+	codecproto "google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	_ "google.golang.org/protobuf/protoadapt"
 
 	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
@@ -36,7 +36,6 @@ type grpcSpanBatchSender struct {
 
 	Config
 }
-
 
 // Implement a custom codec that can just send encoded spans as they are.
 type codec struct {
