@@ -17,9 +17,10 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/encoding"
+	codecproto "google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/log"
@@ -37,7 +38,6 @@ type grpcSpanBatchSender struct {
 
 // Implement a custom codec that can just send encoded spans as they are.
 type codec struct {
-	encoding.Codec
 }
 
 const (
@@ -62,14 +62,16 @@ func (c *codec) Marshal(v interface{}) ([]byte, error) {
 		return []byte(batch), nil
 	}
 
-	return c.Codec.Marshal(v)
+	// Use the default proto Marshal
+	return proto.Marshal(v.(proto.Message))
 }
 
 func (c *codec) Unmarshal(data []byte, v interface{}) error {
-	return c.Codec.Unmarshal(data, v)
+	// Use default proto unmarshal
+	return proto.Unmarshal(data, v.(proto.Message))
 }
 
-func (c *codec) Name() string { return c.Codec.Name() }
+func (c *codec) Name() string { return codecproto.Name }
 
 func newGrpcSpanBatchSender(cfg *Config) (*grpcSpanBatchSender, error) {
 	var cred grpc.DialOption
@@ -117,7 +119,7 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 
 	stream, err := s.client.RecordSpanBatch(
 		ctx,
-		grpc.ForceCodec(&codec{encoding.GetCodec("proto")}))
+		grpc.ForceCodec(&codec{}))
 
 	if err != nil {
 		log.Errorf("cannot establish stream to grpc endpoint: %v", err)
