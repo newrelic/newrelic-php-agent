@@ -161,24 +161,24 @@ jobs:
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/.libs
@@ -250,7 +250,7 @@ jobs:
           echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # 6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
