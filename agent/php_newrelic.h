@@ -46,7 +46,7 @@ extern zend_module_entry newrelic_module_entry;
  * instrumentation. When checking in, leave this toggled on to have the CI work
  * as long as possible until the handler functionality is implemented.*/
 
-//#define OVERWRITE_ZEND_EXECUTE_DATA true
+// #define OVERWRITE_ZEND_EXECUTE_DATA true
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP 8.0+ and OAPI */
@@ -112,16 +112,13 @@ typedef enum {
   NR_FW_DRUPAL8,
   NR_FW_JOOMLA,
   NR_FW_LARAVEL,
-  NR_FW_LUMEN,
   NR_FW_MAGENTO1,
   NR_FW_MAGENTO2,
-  NR_FW_MEDIAWIKI,
   NR_FW_SLIM,
   NR_FW_SYMFONY4,
   NR_FW_WORDPRESS,
   NR_FW_YII1,
   NR_FW_YII2,
-  NR_FW_ZEND3,
   NR_FW_LAMINAS3,
   NR_FW_NONE, /* Must be immediately before NR_FW_MUST_BE_LAST */
   NR_FW_MUST_BE_LAST
@@ -262,12 +259,13 @@ nrinibool_t drupal_modules;  /* newrelic.framework.drupal.modules */
 nrinibool_t wordpress_hooks; /* newrelic.framework.wordpress.hooks */
 nrinistr_t
     wordpress_hooks_options; /* newrelic.framework.wordpress.hooks.options */
-nrinitime_t wordpress_hooks_threshold; /* newrelic.framework.wordpress.hooks.threshold
-                                        */
-bool wordpress_plugins;                /* set based on
-                                                 newrelic.framework.wordpress.hooks.options */
-bool wordpress_core;                   /* set based on
-                                                 newrelic.framework.wordpress.hooks.options */
+nrinitime_t
+    wordpress_hooks_threshold; /* newrelic.framework.wordpress.hooks.threshold
+                                */
+bool wordpress_plugins;        /* set based on
+                                         newrelic.framework.wordpress.hooks.options */
+bool wordpress_core;           /* set based on
+                                         newrelic.framework.wordpress.hooks.options */
 nrinistr_t
     wordpress_hooks_skip_filename; /* newrelic.framework.wordpress.hooks_skip_filename
                                     */
@@ -313,11 +311,10 @@ nr_php_ini_attribute_config_t
                                   */
 
 nrinibool_t custom_events_enabled; /* newrelic.custom_insights_events.enabled */
-nriniuint_t custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored
-                                               */
-nrinibool_t synthetics_enabled;               /* newrelic.synthetics.enabled */
-
-nrinibool_t phpunit_events_enabled; /* newrelic.phpunit_events.enabled */
+nriniuint_t
+    custom_events_max_samples_stored; /* newrelic.custom_events.max_samples_stored
+                                       */
+nrinibool_t synthetics_enabled;       /* newrelic.synthetics.enabled */
 
 nrinibool_t
     instance_reporting_enabled; /* newrelic.datastore_tracer.instance_reporting.enabled
@@ -328,8 +325,7 @@ nrinibool_t
 /*
  * Cloud relationship settings
  */
-nrinistr_t
-    aws_account_id; /* newrelic.cloud.aws.account_id */
+nrinistr_t aws_account_id; /* newrelic.cloud.aws.account_id */
 
 /*
  * Deprecated settings that control request parameter capture.
@@ -363,6 +359,7 @@ nrinistr_t file_name_list;            /* newrelic.webtransaction.name.files */
 nrinibool_t
     tt_inputquery;        /* newrelic.transaction_tracer.gather_input_queries */
 nriniuint_t tt_recordsql; /* newrelic.transaction_tracer.record_sql */
+nrinibool_t fibers_disabled; /* newrelic.fibers.disabled */
 #define NR_PHP_RECORDSQL_OFF NR_SQL_NONE
 #define NR_PHP_RECORDSQL_RAW NR_SQL_RAW
 #define NR_PHP_RECORDSQL_OBFUSCATED NR_SQL_OBFUSCATED
@@ -370,14 +367,13 @@ nriniuint_t tt_recordsql; /* newrelic.transaction_tracer.record_sql */
 nrinifw_t force_framework; /* newrelic.framework */
 nrframework_t
     current_framework; /* Current request framework (forced or detected) */
-int framework_version; /* Current framework version */
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
 /* Without OAPI, we are able to utilize the call stack to keep track
  * of the previous hooks. With OAPI, we can no longer do this so
  * we track the stack manually */
-nr_stack_t drupal_invoke_all_hooks; /* stack of Drupal hooks */
+nr_stack_t drupal_invoke_all_hooks;  /* stack of Drupal hooks */
 nr_stack_t drupal_invoke_all_states; /* stack of bools indicating
                                                whether the current hook
                                                needs to be released */
@@ -385,7 +381,7 @@ nr_stack_t drupal_invoke_all_states; /* stack of bools indicating
 char* drupal_invoke_all_hook;      /* The current Drupal hook */
 size_t drupal_invoke_all_hook_len; /* The length of the current Drupal
                                              hook */
-#endif //OAPI
+#endif                            // OAPI
 size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
                                      calls */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
@@ -394,7 +390,7 @@ nr_segment_t* drupal_http_request_segment;
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
 bool check_cufa;
 /* Without OAPI, we are able to utilize the call stack to keep track
  * of the previous tags. With OAPI, we can no longer do this so
@@ -404,18 +400,18 @@ nr_stack_t wordpress_tag_states; /* stack of bools indicating
                                     whether the current tag
                                     needs to be released */
 #else
-bool check_cufa; /* Whether we need to check cufa because we are
-                    instrumenting hooks, or whether we can skip cufa */
-char* wordpress_tag;                    /* The current WordPress tag */
+bool check_cufa;     /* Whether we need to check cufa because we are
+                        instrumenting hooks, or whether we can skip cufa */
+char* wordpress_tag; /* The current WordPress tag */
 
-#endif //OAPI
+#endif  // OAPI
 
-nr_matcher_t* wordpress_plugin_matcher; /* Matcher for plugin filenames */
-nr_matcher_t* wordpress_theme_matcher;  /* Matcher for theme filenames */
-nr_matcher_t* wordpress_core_matcher;   /* Matcher for plugin filenames */
-nr_hashmap_t* wordpress_file_metadata;  /* Metadata for plugin and theme names
-                                           given a filename */
-nr_hashmap_t* wordpress_clean_tag_cache; /* Cached clean tags */                                           
+nr_matcher_t* wordpress_plugin_matcher;  /* Matcher for plugin filenames */
+nr_matcher_t* wordpress_theme_matcher;   /* Matcher for theme filenames */
+nr_matcher_t* wordpress_core_matcher;    /* Matcher for plugin filenames */
+nr_hashmap_t* wordpress_file_metadata;   /* Metadata for plugin and theme names
+                                            given a filename */
+nr_hashmap_t* wordpress_clean_tag_cache; /* Cached clean tags */
 
 char* doctrine_dql; /* The current Doctrine DQL. Only non-NULL while a Doctrine
                        object is on the stack. */
@@ -488,16 +484,17 @@ nrinibool_t
 nrinibool_t
     distributed_tracing_exclude_newrelic_header; /* newrelic.distributed_tracing_exclude_newrelic_header
                                                   */
-nrinibool_t
-    distributed_tracing_pad_trace_id; /* newrelic.distributed_tracing.pad_trace_id */
-nrinibool_t span_events_enabled; /* newrelic.span_events_enabled */
+nrinibool_t distributed_tracing_pad_trace_id; /* newrelic.distributed_tracing.pad_trace_id
+                                               */
+nrinibool_t span_events_enabled;              /* newrelic.span_events_enabled */
 nriniuint_t
     span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
                                      */
 
-nrinistr_t dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled */
-nrinistr_t
-    dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled */
+nrinistr_t dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled
+                                      */
+nrinistr_t dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled
+                                          */
 /* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
  * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
  */
@@ -536,12 +533,11 @@ nrinibool_t
 nriniuint_t
     log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
                                */
-nrinibool_t
-    log_forwarding_labels_enabled; /* newrelic.application_logging.forwarding.labels.enabled */
+nrinibool_t log_forwarding_labels_enabled; /* newrelic.application_logging.forwarding.labels.enabled
+                                            */
 
-nrinistr_t
-    log_forwarding_labels_exclude; /* newrelic.application_logging.forwarding.labels.exclude */
-
+nrinistr_t log_forwarding_labels_exclude; /* newrelic.application_logging.forwarding.labels.exclude
+                                           */
 
 /*
  * Configuration option to toggle code level metrics collection.
@@ -550,19 +546,20 @@ nrinibool_t
     code_level_metrics_enabled; /* newrelic.code_level_metrics.enabled */
 
 /*
- * Configuration option to enable or disable package detection for vulnerability management
+ * Configuration option to enable or disable package detection for vulnerability
+ * management
  */
 nrinibool_t
     vulnerability_management_package_detection_enabled; /* newrelic.vulnerability_management.package_detection.enabled
                                                          */
-nrinibool_t
-    vulnerability_management_composer_api_enabled; /* newrelic.vulnerability_management.composer_api.enabled */
+nrinibool_t vulnerability_management_composer_api_enabled; /* newrelic.vulnerability_management.composer_api.enabled
+                                                            */
 
 /*
  * Configuration options for recording Messaging APIs
  */
-nrinibool_t
-    message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled */
+nrinibool_t message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled
+                                                        */
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
@@ -654,7 +651,7 @@ static inline int nr_php_recording(TSRMLS_D) {
 }
 
 static inline bool is_error_callback_set() {
-    return NRPRG(error_group_user_callback).is_set;
+  return NRPRG(error_group_user_callback).is_set;
 }
 
 /*

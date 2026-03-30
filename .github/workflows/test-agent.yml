@@ -4,6 +4,8 @@
 
 name: test-pull-request
 
+permissions: {}
+
 #
 # Controls when the action will run. 
 #
@@ -19,16 +21,25 @@ on:
   pull_request:
 
 jobs:
+  get-php-versions-amd64:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: amd64
+  get-php-versions-arm64:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: arm64
+
   gofmt-check:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Setup go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: ./php-agent/daemon/go.mod
           cache: false
@@ -49,7 +60,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Get go version
@@ -60,7 +71,7 @@ jobs:
           echo "[${toolchain}]"
           echo "go-toolchain-version=${toolchain}" >> $GITHUB_OUTPUT
       - name: Setup go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ steps.get-go-version.outputs.go-toolchain-version }}
           cache-dependency-path: "**/*.sum"
@@ -90,11 +101,11 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -111,7 +122,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
@@ -128,11 +139,11 @@ jobs:
         arch: [arm64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -149,12 +160,13 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
 
   agent-unit-test-amd64:
+    needs: [get-php-versions-amd64]
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -164,7 +176,7 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-amd64.outputs.php-versions) }}
         include:
           - codecov: 0
           - platform: gnu
@@ -172,11 +184,11 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -226,25 +238,26 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
       - name: Save axiom gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom/*.gc*
       - name: Save agent gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           include-hidden-files: true
           path: php-agent/agent/.libs/*.gc*
 
   agent-unit-test-arm64:
+    needs: [get-php-versions-arm64]
     runs-on: ubuntu-24.04-arm
     env:
       IMAGE_NAME: newrelic/nr-php-agent-builder
@@ -254,16 +267,16 @@ jobs:
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-arm64.outputs.php-versions) }}
         include:
           - codecov: 0
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -309,20 +322,20 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
 
   integration-tests-amd64:
-    needs: [daemon-unit-tests-amd64, agent-unit-test-amd64]
+    needs: [daemon-unit-tests-amd64, agent-unit-test-amd64, get-php-versions-amd64]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-amd64.outputs.php-versions) }}
         include:
           - codecov: 0
           - platform: gnu
@@ -330,28 +343,28 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Get integration_runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/.libs
@@ -360,7 +373,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -417,7 +430,7 @@ jobs:
           nr-php make gcov
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@v3.1.5
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
@@ -432,26 +445,26 @@ jobs:
           make test-services-stop
 
   integration-tests-arm64:
-    needs: [daemon-unit-tests-arm64, agent-unit-test-arm64]
+    needs: [daemon-unit-tests-arm64, agent-unit-test-arm64, get-php-versions-arm64]
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [arm64]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions-arm64.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
       - name: Get integration_runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
@@ -460,12 +473,12 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Emable amd64 emulation
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # 4.0.0
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

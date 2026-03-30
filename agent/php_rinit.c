@@ -27,7 +27,7 @@ static void nr_php_datastore_instance_destroy(
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-/* OAPI global stacks (as opposed to call stack used previously) 
+/* OAPI global stacks (as opposed to call stack used previously)
  * need to have a dtor set so that when we free it
  * during rshutdown, all elements are properly freed */
 static void str_stack_dtor(void* e, NRUNUSED void* d) {
@@ -48,7 +48,6 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)module_number;
 
   NRPRG(current_framework) = NR_FW_UNSET;
-  NRPRG(framework_version) = 0;
   NRPRG(php_cur_stack_depth) = 0;
   NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG(sapi_headers) = NULL;

@@ -10,8 +10,6 @@
 # the top-level of the project.
 #
 
-include make/php_versions.mk
-
 RELEASE_OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 RELEASE_OS := $(RELEASE_OS:darwin=osx)
 RELEASE_OS := $(RELEASE_OS:sunos=solaris)

@@ -22,16 +22,13 @@ extern void nr_drupal8_enable(TSRMLS_D);
 extern void nr_joomla_enable(TSRMLS_D);
 extern void nr_laminas3_enable(TSRMLS_D);
 extern void nr_laravel_enable(TSRMLS_D);
-extern void nr_lumen_enable(TSRMLS_D);
 extern void nr_magento1_enable(TSRMLS_D);
 extern void nr_magento2_enable(TSRMLS_D);
-extern void nr_mediawiki_enable(TSRMLS_D);
 extern void nr_symfony4_enable(TSRMLS_D);
 extern void nr_slim_enable(TSRMLS_D);
 extern void nr_wordpress_enable(TSRMLS_D);
 extern void nr_yii1_enable(TSRMLS_D);
 extern void nr_yii2_enable(TSRMLS_D);
-extern void nr_fw_zend3_enable(TSRMLS_D);
 
 /* Libraries. */
 extern void nr_aws_sdk_php_enable();
@@ -41,9 +38,7 @@ extern void nr_guzzle6_enable(TSRMLS_D);
 extern void nr_laminas_http_enable(TSRMLS_D);
 extern void nr_mongodb_enable(TSRMLS_D);
 extern void nr_php_amqplib_enable();
-extern void nr_phpunit_enable(TSRMLS_D);
 extern void nr_predis_enable(TSRMLS_D);
-extern void nr_zend_http_enable(TSRMLS_D);
 extern void nr_monolog_enable(TSRMLS_D);
 extern void nr_composer_handle_autoload(const char* filename);
 

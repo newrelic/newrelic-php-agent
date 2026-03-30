@@ -326,21 +326,19 @@ static const nr_framework_table_t all_frameworks[] = {
      * specifically a problem for Expression Engine (look for expression_engine,
      * below.)
      */
-    {"CodeIgniter", "codeigniter", NR_PSTR("codeigniter.php"), 0, nr_codeigniter_enable,
-     NR_FW_CODEIGNITER},
+    {"CodeIgniter", "codeigniter", NR_PSTR("codeigniter.php"), 0,
+     nr_codeigniter_enable, NR_FW_CODEIGNITER},
 
-    {"Drupal8", "drupal8", NR_PSTR("core/includes/bootstrap.inc"), 0, nr_drupal8_enable,
-     NR_FW_DRUPAL8},
+    {"Drupal8", "drupal8", NR_PSTR("core/includes/bootstrap.inc"), 0,
+     nr_drupal8_enable, NR_FW_DRUPAL8},
     {"Drupal", "drupal", NR_PSTR("includes/common.inc"), 0, nr_drupal_enable,
      NR_FW_DRUPAL},
 
     {"Joomla", "joomla", NR_PSTR("joomla/import.php"), 0, nr_joomla_enable,
      NR_FW_JOOMLA}, /* <= Joomla 1.5 */
-    {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0, nr_joomla_enable,
-     NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
+    {"Joomla", "joomla", NR_PSTR("libraries/joomla/factory.php"), 0,
+     nr_joomla_enable, NR_FW_JOOMLA}, /* >= Joomla 1.6, including 2.5 and 3.2 */
 
-    /* See below: Zend, the legacy project of Laminas, which shares much
-       of the instrumentation implementation with Laminas */
     {"Laminas3", "laminas3", NR_PSTR("laminas/mvc/application.php"), 0,
      nr_laminas3_enable, NR_FW_LAMINAS3},
     {"Laminas3", "laminas3", NR_PSTR("laminas-mvc/src/application.php"), 0,
@@ -348,28 +346,14 @@ static const nr_framework_table_t all_frameworks[] = {
 
     {"Laravel", "laravel", NR_PSTR("illuminate/foundation/application.php"), 0,
      nr_laravel_enable, NR_FW_LARAVEL},
-    {"Laravel", "laravel", NR_PSTR("bootstrap/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 4.x */
-    {"Laravel", "laravel", NR_PSTR("storage/framework/compiled.php"), 0,
-     nr_laravel_enable, NR_FW_LARAVEL}, /* 5.0.0-14 */
-    {"Laravel", "laravel", NR_PSTR("vendor/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 5.0.15-5.0.x */
-    {"Laravel", "laravel", NR_PSTR("bootstrap/cache/compiled.php"), 0, nr_laravel_enable,
-     NR_FW_LARAVEL}, /* 5.1.0-x */
-
-    {"Lumen", "lumen", NR_PSTR("lumen-framework/src/helpers.php"), 0, nr_lumen_enable,
-     NR_FW_LUMEN},
 
     {"Magento", "magento", NR_PSTR("app/mage.php"), 0, nr_magento1_enable,
      NR_FW_MAGENTO1},
     {"Magento2", "magento2", NR_PSTR("magento/framework/registration.php"), 0,
      nr_magento2_enable, NR_FW_MAGENTO2},
 
-    {"MediaWiki", "mediawiki", NR_PSTR("includes/webstart.php"), 0, nr_mediawiki_enable,
-     NR_FW_MEDIAWIKI},
-
     {"Slim", "slim", NR_PSTR("slim/slim/app.php"), 0, nr_slim_enable,
-     NR_FW_SLIM}, /* 3.x */
+     NR_FW_SLIM}, /* 4.x */
     {"Slim", "slim", NR_PSTR("slim/slim/slim.php"), 0, nr_slim_enable,
      NR_FW_SLIM}, /* 2.x */
 
@@ -380,17 +364,10 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_WORDPRESS},
 
     {"Yii", "yii", NR_PSTR("framework/yii.php"), 0, nr_yii1_enable, NR_FW_YII1},
-    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable, NR_FW_YII1},
-    {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable, NR_FW_YII2},
-
-    /* See above: Laminas, the successor to Zend, which shares much
-       of the instrumentation implementation with Zend */
-    // treating zend2 as zend3 for backwards compatibility
-    {"Zend3", "zend2", NULL, 0, 0, nr_fw_zend3_enable, NR_FW_ZEND3}, 
-    {"Zend3", "zend3", NR_PSTR("zend/mvc/application.php"), 0, nr_fw_zend3_enable,
-     NR_FW_ZEND3},
-    {"Zend3", "zend3", NR_PSTR("zend-mvc/src/application.php"), 0, nr_fw_zend3_enable,
-     NR_FW_ZEND3},
+    {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable,
+     NR_FW_YII1},
+    {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
+     NR_FW_YII2},
 };
 // clang-format: on
 static const int num_all_frameworks
@@ -449,7 +426,8 @@ typedef struct _nr_library_table_t {
 // clang-format: off
 static nr_library_table_t libraries[] = {
     /* AWS-SDK-PHP 3 */
-    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"), nr_aws_sdk_php_enable},
+    {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"),
+     nr_aws_sdk_php_enable},
 
     /* Doctrine < 2.18 */
     {"Doctrine 2", NR_PSTR("doctrine/orm/query.php"), nr_doctrine2_enable},
@@ -457,7 +435,8 @@ static nr_library_table_t libraries[] = {
     {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
 
     {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
-    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"), nr_guzzle6_enable},
+    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"),
+     nr_guzzle6_enable},
 
     {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
@@ -465,30 +444,16 @@ static nr_library_table_t libraries[] = {
     {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
      nr_php_amqplib_enable},
     
-    /*
-     * The first path is for Composer installs, the second is for
-     * /usr/local/bin.
-     */
-    {"PHPUnit", NR_PSTR("phpunit/src/framework/test.php"), nr_phpunit_enable},
-    {"PHPUnit", NR_PSTR("phpunit/framework/test.php"), nr_phpunit_enable},
-
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
-
-    /*
-     * Allow Zend Framework 1.x to be detected as a library as well as a
-     * framework. This allows Zend_Http_Client to be instrumented when used
-     * with other frameworks or even without a framework at all. This is
-     * necessary for Magento in particular, which is built on ZF1.
-     */
-    {"Zend_Http", NR_PSTR("zend/http/client.php"), nr_zend_http_enable},
 
     /*
      * Allow Laminas Framework 3.x to be detected as a library as well as a
      * framework. This allows Laminas_Http_Client to be instrumented when used
      * with other frameworks or even without a framework at all.
      */
-    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"), nr_laminas_http_enable},
+    {"Laminas_Http", NR_PSTR("laminas-http/src/client.php"),
+     nr_laminas_http_enable},
 };
 // clang-format: on
 
@@ -520,7 +485,8 @@ typedef struct _nr_vuln_mgmt_table_t {
 /* Note that all paths should be in lowercase. */
 // clang-format: off
 static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
-    {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"), nr_drupal_version},
+    {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"),
+     nr_drupal_version},
     {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
 // clang-format: on
@@ -579,13 +545,13 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
     nrl_verbosedebug(
         NRL_AGENT,
         NRP_FMT_UQ ": %.*s scope={%.*s} function={" NRP_FMT_UQ
-        "}"
-        " params={" NRP_FMT_UQ
-        "}"
-        " %.5s"
-        "@ " NRP_FMT_UQ ":%d",
-        NRP_SHOW_EXEC_CONTEXT(ctx),
-        nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
+                   "}"
+                   " params={" NRP_FMT_UQ
+                   "}"
+                   " %.5s"
+                   "@ " NRP_FMT_UQ ":%d",
+        NRP_SHOW_EXEC_CONTEXT(ctx), nr_php_show_exec_indentation(TSRMLS_C),
+        nr_php_indentation_spaces,
         NRSAFELEN(nr_php_class_entry_name_length(NR_OP_ARRAY->scope)),
         nr_php_class_entry_name(NR_OP_ARRAY->scope),
         NRP_PHP(function_name ? function_name : "?"), NRP_ARGSTR(argstr),
@@ -603,14 +569,13 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
     nrl_verbosedebug(
         NRL_AGENT,
         NRP_FMT_UQ ": %.*s function={" NRP_FMT_UQ
-        "}"
-        " params={" NRP_FMT_UQ
-        "}"
-        " %.5s"
-        "@ " NRP_FMT_UQ ":%d",
-        NRP_SHOW_EXEC_CONTEXT(ctx),
-        nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
-        NRP_PHP(function_name), NRP_ARGSTR(argstr),
+                   "}"
+                   " params={" NRP_FMT_UQ
+                   "}"
+                   " %.5s"
+                   "@ " NRP_FMT_UQ ":%d",
+        NRP_SHOW_EXEC_CONTEXT(ctx), nr_php_show_exec_indentation(TSRMLS_C),
+        nr_php_indentation_spaces, NRP_PHP(function_name), NRP_ARGSTR(argstr),
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
         nr_php_op_array_get_wraprec(NR_OP_ARRAY TSRMLS_CC) ? " *" : "",
 #else
@@ -629,9 +594,9 @@ void nr_php_show_exec(const char* context, NR_EXECUTE_PROTO TSRMLS_DC) {
     /*
      * unknown
      */
-    nrl_verbosedebug(NRL_AGENT, NRP_FMT_UQ ": %.*s ?",
-                     NRP_SHOW_EXEC_CONTEXT(ctx),
-                     nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces);
+    nrl_verbosedebug(
+        NRL_AGENT, NRP_FMT_UQ ": %.*s ?", NRP_SHOW_EXEC_CONTEXT(ctx),
+        nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces);
   }
 }
 
@@ -862,14 +827,14 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
-  /* 
-  *  There is a possibility of the txn being NULL if nr_php_end_txn has been called. 
-  *  Verify txn is not null before dereferencing and continuing on.
-  */  
+  /*
+   *  There is a possibility of the txn being NULL if nr_php_end_txn has been
+   * called. Verify txn is not null before dereferencing and continuing on.
+   */
   if (NULL == NRPRG(txn)) {
     return;
   }
-  
+
   if (NRPRG(txn)->composer_info.autoload_detected) {
     // autoload already handled
     return;
@@ -972,7 +937,7 @@ static void nr_php_user_instrumentation_from_file(const char* filename,
 #define METRIC_NAME_MAX_LEN 512
 
 void nr_php_execute_file(const zend_op_array* op_array,
-                                NR_EXECUTE_PROTO TSRMLS_DC) {
+                         NR_EXECUTE_PROTO TSRMLS_DC) {
   const char* filename = nr_php_op_array_file_name(op_array);
   size_t filename_len = nr_php_op_array_file_name_len(op_array);
 
@@ -1210,7 +1175,6 @@ static void nr_php_execute_metadata_metric(
  */
 static inline void nr_php_execute_metadata_release(
     nr_php_execute_metadata_t* metadata) {
-
   if (NULL != metadata->scope) {
     zend_string_release(metadata->scope);
     metadata->scope = NULL;
@@ -1233,7 +1197,7 @@ static inline void nr_php_execute_segment_add_metric(
     bool create_metric) {
   char buf[METRIC_NAME_MAX_LEN];
 
-/*
+  /*
    * If the name is not already set, use the metadata to get the class and
    * function name to name the metric and the segment.
    *
@@ -1288,14 +1252,13 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     // There are no stacked segments for OAPI.
     nr_segment_t* s = stacked;
 #else
     nr_segment_t* s = nr_php_stacked_segment_move_to_heap(stacked TSRMLS_CC);
-#endif // OAPI
+#endif  // OAPI
     nr_php_execute_segment_add_metric(s, metadata, create_metric);
 
     /*
@@ -1314,7 +1277,7 @@ static inline void nr_php_execute_segment_end(
     nr_segment_discard(&stacked);
 #else
     nr_php_stacked_segment_deinit(stacked TSRMLS_CC);
-#endif // OAPI
+#endif  // OAPI
   }
 }
 
@@ -1493,7 +1456,7 @@ static void nr_php_execute_show(NR_EXECUTE_PROTO TSRMLS_DC) {
     nr_php_show_exec_return(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   }
 }
-#endif // not OAPI
+#endif  // not OAPI
 
 static void nr_php_max_nesting_level_reached(TSRMLS_D) {
   /*
@@ -1577,7 +1540,7 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
 
   return;
 }
-#endif // not OAPI
+#endif  // not OAPI
 
 static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
                                       const zend_function* func TSRMLS_DC) {
@@ -1601,8 +1564,7 @@ static void nr_php_show_exec_internal(NR_EXECUTE_PROTO_OVERWRITE,
   (NR_PHP_PROCESS_GLOBALS(orig_execute_internal)(execute_data, return_value))
 
 void nr_php_execute_internal(zend_execute_data* execute_data,
-                             zval* return_value NRUNUSED)
-{
+                             zval* return_value NRUNUSED) {
   nrtime_t duration = 0;
   zend_function* func = NULL;
   nr_segment_t* segment;
@@ -1936,15 +1898,16 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     return;
   }
   if (nrunlikely(NRPRG(txn)->segment_root == segment)) {
-/*
+    /*
      * There should be no fcall_end associated with the segment root, If we are
      * here, it is most likely due to an API call to newrelic_end_transaction.
      * However, there's a special case here, if we call nr_php_txn_end
-     * and then call nr_php_txn_start from within a wrapped call inside the agent,
-     * then there will be an fcall associated with the segment root.
-     * We may or may not need to do anything with this so we check if a wraprec exists.
-     * If a wraprec exists, we proceed so we can use the _after and _clean callbacks
-     * if they exist. If it doesn't exist, we exit as nothing needs to be done.
+     * and then call nr_php_txn_start from within a wrapped call inside the
+     * agent, then there will be an fcall associated with the segment root. We
+     * may or may not need to do anything with this so we check if a wraprec
+     * exists. If a wraprec exists, we proceed so we can use the _after and
+     * _clean callbacks if they exist. If it doesn't exist, we exit as nothing
+     * needs to be done.
      */
 
     if (NULL == segment->wraprec) {
@@ -1977,8 +1940,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     zval exception;
     ZVAL_OBJ(&exception, EG(exception));
     nr_status_t status = nr_php_error_record_exception_segment(
-      NRPRG(txn), &exception,
-      &NRPRG(exception_filters));
+        NRPRG(txn), &exception, &NRPRG(exception_filters));
 
     if (NR_FAILURE == status) {
       nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
@@ -2009,7 +1971,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      */
     if (NULL != nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
       zcaught = nr_zend_call_orig_execute_special(wraprec, segment,
-                                                NR_EXECUTE_ORIG_ARGS);
+                                                  NR_EXECUTE_ORIG_ARGS);
     } else {
       zcaught = nr_zend_call_oapi_special_clean(wraprec, segment,
                                                 NR_EXECUTE_ORIG_ARGS);

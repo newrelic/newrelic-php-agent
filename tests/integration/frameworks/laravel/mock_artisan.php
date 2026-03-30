@@ -16,6 +16,7 @@ namespace Symfony\Component\Console\Input {
     public function getFirstArgument();
   }
   class Input implements InputInterface {
+    private mixed $argument;
     public function __construct($argument) {
       $this->argument = $argument;
     }

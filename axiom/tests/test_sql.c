@@ -614,8 +614,9 @@ static void test_real_world_things(void) {
 
   sql = " SELECT foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Invalid EXTRACT function with in select should return null table name",
-      sql, "select", NULL);
+      "Invalid EXTRACT function in SELECT should return table name as this "
+      "parser isn't detecting sql correctness",
+      sql, "select", "baz_table");
 
   sql
       = " SELECT foo, EXTRACT() as "
@@ -667,10 +668,226 @@ static void test_real_world_things(void) {
 
   sql = " DELETE foo, EXTRACT as creation_timestamp,bar FROM baz_table ";
   test_get_operation_and_table(
-      "Invalid EXTRACT function with invalid DELETE should return null table "
-      "name as this parser isn't detecting sql correctness but still verifies "
-      "don't try to parse the FROM inside anyway so for that we are good",
-      sql, "delete", NULL);
+      "Invalid EXTRACT function with DELETE should return table "
+      "name as this parser isn't detecting sql correctness",
+      sql, "delete", "baz_table");
+}
+
+static void test_nested_parentheticals(void) {
+  const char* sql;
+
+  // clang-format off
+  sql = "                 \
+    SELECT                \
+      (label),            \
+      (                   \
+        SELECT            \
+          COUNT(1)        \
+        FROM              \
+          my_table_event  \
+        WHERE             \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count    \
+    FROM                  \
+      my_table            \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation with nested SELECT statement should "
+      "correctly identify "
+      "`my_table` rather than the nested table name `my_table_event`",
+      sql, "select", "my_table");
+
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation with double nested SELECT statement should "
+      "correctly identify "
+      "`my_table` rather than the nested table names `my_table_event` or "
+      "`nested_table`",
+      sql, "select", "my_table");
+
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1,          \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+      "Invalid SQL SELECT operation missing a closing parenthesis should return"
+    " NULL table name",
+    sql, "select", NULL);
+
+  sql = "                   \
+    SELECT                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT 1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+    "Invalid SQL SELECT operation missing an opening parenthesis should not "
+    "cause agent to crash",
+      sql, "select", "my_table_event");
+
+  sql = "         \
+    SELECT        \
+      id          \
+    FROM          \
+      records     \
+    WHERE         \
+      CONCAT(     \
+        '(',      \
+        name,     \
+        suffix    \
+      ) = '(test' \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation should skip parenthesis in quotations and "
+    "return correct table name",
+      sql, "select", "records");
+
+  sql = "           \
+    SELECT          \
+      id(           \
+        SELECT      \
+          COUNT(*)  \
+        FROM        \
+          events    \
+        WHERE       \
+          note = 'Started (' \
+      ) AS COUNT    \
+    FROM            \
+      orders        \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL SELECT operation with nested SELECT statement should skip "
+    "parenthesis in quotations and return correct table name",
+      sql, "select", "orders");
+
+  sql = "                 \
+    DELETE                \
+      (label),            \
+      (                   \
+        SELECT            \
+          COUNT(1)        \
+        FROM              \
+          my_table_event  \
+        WHERE             \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count    \
+    FROM                  \
+      my_table            \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL DELETE operation with nested SELECT statement should "
+      "correctly identify "
+      "`my_table` rather than the nested table name `my_table_event`",
+      sql, "delete", "my_table");
+
+  sql = "                   \
+    DELETE                  \
+      label,                \
+      (                     \
+        SELECT              \
+          COUNT(1),         \
+          (                 \
+            SELECT          \
+              nested        \
+            FROM            \
+              nested_table  \
+          )                 \
+        FROM                \
+          my_table_event    \
+        WHERE               \
+          my_table_id = my_table.my_table_id \
+      ) AS event_count      \
+    FROM                    \
+      my_table              \
+    ";
+  test_get_operation_and_table(
+      "Valid SQL DELETE operation with double nested SELECT statement should "
+      "correctly identify "
+      "`my_table` rather than the nested table names `my_table_event` or "
+      "`nested_table`",
+      sql, "delete", "my_table");
+
+}
+// clang-format on
+
+static void test_replication_clause(void) {
+  const char* sql;
+  sql = "CREATE TABLE IF NOT EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL CREATE TABLE operation with [IF NOT EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "create", "birthdays");
+
+  sql = "DROP TABLE IF EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL DROP TABLE operation with [IF EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "drop", "birthdays");
+
+  sql = "CREATE DATABASE IF NOT EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL CREATE DATABASE operation with [IF NOT EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "create", "birthdays");
+
+  sql = "DROP DATABASE IF EXISTS birthdays";
+  test_get_operation_and_table(
+      "Valid SQL DROP DATABASE operation with [IF EXISTS] clause should "
+      "correctly identify "
+      "`birthdays` rather than the operator name `IF`",
+      sql, "drop", "birthdays");
 }
 
 /*
@@ -996,6 +1213,8 @@ tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 void test_main(void* p NRUNUSED) {
   test_find_table_with_from();
   test_real_world_things();
+  test_nested_parentheticals();
+  test_replication_clause();
   test_diabolical_quoting();
   test_get_operation_and_table_in_sql_with_info();
   test_weird_and_wonderful();

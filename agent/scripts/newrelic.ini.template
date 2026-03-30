@@ -654,8 +654,8 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ;
 ;          Must be one of the following values:
 ;          cakephp, codeigniter, drupal, drupal8, joomla, laravel,
-;          magento, magento2, mediawiki, slim, symfony4,
-;          wordpress, yii, yii2, zend3, no_framework
+;          magento, magento2, slim, symfony4,
+;          wordpress, yii, yii2, no_framework
 ;
 ;          Note that "drupal" covers only Drupal 6 and 7.
 ;
@@ -1047,22 +1047,6 @@ newrelic.daemon.logfile = "/var/log/newrelic/newrelic-daemon.log"
 ; Info   : Enables or disables support for the Guzzle library.
 ;
 ;newrelic.guzzle.enabled = true
-
-; Setting: newrelic.phpunit_events.enabled
-; Type   : boolean
-; Scope  : per-directory
-; Default: false
-; Info   : Collect and report PHPUnit (https://phpunit.de/) data as custom
-;          Insights events. Test suite summary data are sent as "TestSuite"
-;          events, while individual test cases are sent as "Test" events.
-;          Depending on your events retention policy, enabling this setting may
-;          impact your billing statement.
-;
-;          Please note that exception messages are collected and sent with
-;          events. Additionally, if you use PHPUnit's --disallow-test-output
-;          flag, any offending output from a risky test will also be included.
-;
-;newrelic.phpunit_events.enabled = false
 
 ; Setting: newrelic.datastore_tracer.instance_reporting.enabled
 ; Type   : boolean

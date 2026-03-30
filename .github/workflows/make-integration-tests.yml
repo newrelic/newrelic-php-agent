@@ -1,5 +1,7 @@
 name: _make-integration-tests
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
@@ -30,7 +32,12 @@ on:
         type: boolean
 
 jobs:
+  get-php-versions:
+    uses: ./.github/workflows/get-php-versions.yml
+    with:
+      arch: ${{ inputs.arch }}
   test-agent:
+    needs: [get-php-versions]
     name: test agent (${{ matrix.platform }}, ${{ inputs.arch }}, ${{ matrix.php }})
     runs-on: ${{inputs.runs-on}}
     continue-on-error: ${{inputs.continue-on-error}}
@@ -38,21 +45,21 @@ jobs:
       fail-fast: true
       matrix:
         platform: [gnu, musl]
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ${{ fromJson(needs.get-php-versions.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
           ref: ${{ inputs.ref }}
       - name: Get integration_runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{inputs.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{inputs.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
@@ -61,10 +68,16 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Enable amd64 emulation
+        if: ${{ inputs.arch == 'arm64' }}
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # 4.0.0
+        with:
+          image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
+          platforms: amd64
       - name: Start services
         env:
           PHP: ${{matrix.php}}
@@ -81,7 +94,7 @@ jobs:
         run: |
           docker exec \
           -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so ${{ inputs.use-valgrind && '-valgrind /usr/bin/valgrind' }}" \
+          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so ${{ inputs.use-valgrind && '-valgrind /usr/bin/valgrind' || '' }}" \
           -e APP_supportability=${{secrets.APP_SUPPORTABILITY}} \
           -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}} \
           -e ACCOUNT_supportability_trusted=${{secrets.ACCOUNT_SUPPORTABILITY_TRUSTED}} \

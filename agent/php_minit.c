@@ -22,7 +22,6 @@
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "php_wrapper.h"
-#include "fw_laravel.h"
 #include "fw_wordpress.h"
 #include "lib_guzzle4.h"
 #include "lib_guzzle6.h"
@@ -727,7 +726,6 @@ PHP_MINIT_FUNCTION(newrelic) {
 
   nr_guzzle4_minit(TSRMLS_C);
   nr_guzzle6_minit(TSRMLS_C);
-  nr_laravel_minit(TSRMLS_C);
   nr_wordpress_minit();
   nr_php_set_opcode_handlers();
 
