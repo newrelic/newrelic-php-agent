@@ -368,6 +368,8 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
      NR_FW_YII2},
+
+    {"Zend", "zend", NR_PSTR("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
 };
 // clang-format: on
 static const int num_all_frameworks
