@@ -383,6 +383,8 @@ static const nr_framework_table_t all_frameworks[] = {
     {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable, NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable, NR_FW_YII2},
 
+    {"Zend", "zend", NR_PSTR("zend/loader.php"), 0, nr_zend_enable, NR_FW_ZEND},
+
     /* See above: Laminas, the successor to Zend, which shares much
        of the instrumentation implementation with Zend */
     // treating zend2 as zend3 for backwards compatibility
