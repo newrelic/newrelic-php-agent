@@ -90,6 +90,14 @@ func (m *MetricsController) AggregateMetricData() map[string]metricsInfo {
 	metricsMap := make(map[string]metricsInfo)
 
 	// aggregate data from metrics channel
+	//
+	// Each metric can be aggregated as it is processed except for the failed
+	// metrics. `failed` metrics are populated via the `NumFailedAttempts` function
+	// call to the corresponding analytics event type, which is a running total of
+	// the number of failed harvests until a success tracked in the
+	// events.failedHarvests field. For that reason, we track the largest failed
+	// value for a given event type rather than the sum of all failures to avoid
+	// overcounting.
 	loop := true
 	for loop {
 		select {
