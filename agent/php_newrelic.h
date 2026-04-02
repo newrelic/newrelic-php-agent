@@ -224,6 +224,13 @@ typedef int (*nrphphdrfn_t)(sapi_header_struct* sapi_header,
                             sapi_header_op_enum op,
                             sapi_headers_struct* sapi_headers TSRMLS_DC);
 
+/* SAPI activate/deactivate hook types (used for FrankenPHP) */
+typedef int (*nr_sapi_activate_fn_t)(void);
+typedef int (*nr_sapi_deactivate_fn_t)(void);
+
+extern int nr_php_sapi_activate(void);
+extern int nr_php_sapi_deactivate(void);
+
 typedef void (*nr_php_execute_internal_function_t)(
     zend_execute_data* execute_data,
     zval* return_value);

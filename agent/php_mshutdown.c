@@ -52,6 +52,14 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
   sapi_module.header_handler = NR_PHP_PROCESS_GLOBALS(orig_header_handler);
   NR_PHP_PROCESS_GLOBALS(orig_header_handler) = NULL;
 
+  /* restore FrankenPHP SAPI activate/deactivate hooks if installed */
+  if (NR_PHP_PROCESS_GLOBALS(orig_sapi_activate)) {
+    sapi_module.activate = NR_PHP_PROCESS_GLOBALS(orig_sapi_activate);
+    sapi_module.deactivate = NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate);
+    NR_PHP_PROCESS_GLOBALS(orig_sapi_activate) = NULL;
+    NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate) = NULL;
+  }
+
   nr_agent_close_daemon_connection();
 
   nrl_close_log_file();

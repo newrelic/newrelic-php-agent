@@ -709,6 +709,17 @@ PHP_MINIT_FUNCTION(newrelic) {
   NR_PHP_PROCESS_GLOBALS(orig_header_handler) = sapi_module.header_handler;
   sapi_module.header_handler = nr_php_header_handler;
 
+  /*
+   * When running under FrankenPHP, hook the SAPI activate/deactivate to
+   * observe request boundaries at the earliest/latest possible point.
+   */
+  if (0 == nr_strcmp(sapi_module.name, "frankenphp")) {
+    NR_PHP_PROCESS_GLOBALS(orig_sapi_activate) = sapi_module.activate;
+    NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate) = sapi_module.deactivate;
+    sapi_module.activate = nr_php_sapi_activate;
+    sapi_module.deactivate = nr_php_sapi_deactivate;
+  }
+
 #define NR_INFO_SPECIAL_FLAGS(field)                  \
   if (NR_PHP_PROCESS_GLOBALS(special_flags).field) {  \
     nrl_info(NRL_INIT, "special_flags." #field "=1"); \

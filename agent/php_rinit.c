@@ -41,6 +41,33 @@ static void zval_stack_dtor(void* e, NRUNUSED void* d) {
 }
 #endif
 
+int nr_php_sapi_activate(void) {
+  int result = 0;
+
+  if (NR_PHP_PROCESS_GLOBALS(orig_sapi_activate)) {
+    result = NR_PHP_PROCESS_GLOBALS(orig_sapi_activate)();
+  }
+
+  nrl_verbosedebug(NRL_INIT, "FrankenPHP sapi activate");
+  PHP_RINIT(newrelic)(0, 0);
+
+  return result;
+}
+
+int nr_php_sapi_deactivate(void) {
+  int result = 0;
+
+  nrl_verbosedebug(NRL_INIT, "FrankenPHP sapi deactivate");
+  PHP_RSHUTDOWN(newrelic)(0, 0);
+  nr_php_post_deactivate();
+
+  if (NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate)) {
+    result = NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate)();
+  }
+
+  return result;
+}
+
 #ifdef TAGS
 void zm_activate_newrelic(void); /* ctags landing pad only */
 #endif

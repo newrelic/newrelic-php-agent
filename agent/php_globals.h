@@ -90,6 +90,10 @@ typedef struct _nrphpglobals_t {
   /* Original PHP SAPI header callback */
   nrphphdrfn_t orig_header_handler;
 
+  /* Original SAPI activate/deactivate — saved when running under FrankenPHP */
+  nr_sapi_activate_fn_t orig_sapi_activate;
+  nr_sapi_deactivate_fn_t orig_sapi_deactivate;
+
   struct {
     uint8_t no_sql_parsing;
     uint8_t show_sql_parsing;
