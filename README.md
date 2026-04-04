@@ -6,7 +6,7 @@ The [New Relic APM PHP agent](https://docs.newrelic.com/docs/agents/php-agent/ge
 
 ![PHP Agent Architecture](docs/img/PHP_Agent_Architecture.png)
 
-## Installation!
+## Installation!!
 
 The PHP agent supports many of the most common PHP releases, PHP frameworks, databases, and libraries. Prior to installation, please ensure your system meets the [compatibility requirements](https://docs.newrelic.com/docs/agents/php-agent/getting-started/php-agent-compatibility-requirements).
 
