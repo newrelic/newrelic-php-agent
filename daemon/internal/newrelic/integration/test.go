@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -808,7 +809,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 			if -1 != matchingIdx {
 				testPackageNameOnly := false
 				if nil != expectedPkgsCollection.config.packageNameOnly {
-					testPackageNameOnly = StringSliceContains(expectedPkgsCollection.config.packageNameOnly, actualPackages[matchingIdx].Name)
+					testPackageNameOnly = slices.Contains(expectedPkgsCollection.config.packageNameOnly, actualPackages[matchingIdx].Name)
 					if testPackageNameOnly {
 						t.AddNote(fmt.Sprintf("Tested package name only for packages: %+v", expectedPkgsCollection.config.packageNameOnly))
 					}
