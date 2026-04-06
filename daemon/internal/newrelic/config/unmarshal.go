@@ -44,7 +44,7 @@ func unmarshalValue(dest reflect.Value, keyword string, value []byte) error {
 // asTextUnmarshaler checks whether v implements the TextUnmarshaler interface.
 func asTextUnmarshaler(v reflect.Value) encoding.TextUnmarshaler {
 	// Get a pointer to v so that methods with pointer receivers will be included below.
-	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
 

@@ -29,7 +29,7 @@ func aggregateMetrics(txn protocol.Transaction, h *Harvest, txnName string) {
 	var d [6]float64
 
 	n := txn.MetricsLength()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		txn.Metrics(&m, i)
 		m.Data(&data)
 
@@ -105,7 +105,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.ErrorsLength(); n > 0 {
 		var e protocol.Error
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.Errors(&e, i)
 
 			priority := int(e.Priority())
@@ -117,7 +117,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.SlowSqlsLength(); n > 0 {
 		var slowSQL protocol.SlowSQL
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.SlowSqls(&slowSQL, i)
 
 			slow := &SlowSQL{}
@@ -140,7 +140,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.CustomEventsLength(); n > 0 {
 		var e protocol.Event
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.CustomEvents(&e, i)
 			data := copySlice(e.Data())
 			h.CustomEvents.AddEventFromData(data, samplingPriority)
@@ -150,7 +150,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.SpanEventsLength(); n > 0 {
 		var e protocol.Event
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.SpanEvents(&e, i)
 			data := copySlice(e.Data())
 			h.SpanEvents.AddEventFromData(data, samplingPriority)
@@ -160,7 +160,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.LogEventsLength(); n > 0 {
 		var e protocol.Event
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.LogEvents(&e, i)
 			data := copySlice(e.Data())
 			h.LogEvents.AddEventFromData(data, samplingPriority)
@@ -199,7 +199,7 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 	if n := txn.ErrorEventsLength(); n > 0 {
 		var e protocol.Event
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			txn.ErrorEvents(&e, i)
 			data := copySlice(e.Data())
 			h.ErrorEvents.AddEventFromData(data, samplingPriority)

@@ -62,7 +62,7 @@ type ComposerJSON struct {
 //   - nil upon error processing JSON
 func GetPhpPackagesFromData(data []byte) ([]PhpPackage, error) {
 	var pkgs []PhpPackage
-	var x []interface{}
+	var x []any
 
 	// extract string "Jars" and array of Php Packages JSON
 	err := json.Unmarshal(data, &x)
@@ -78,9 +78,9 @@ func GetPhpPackagesFromData(data []byte) ([]PhpPackage, error) {
 	}
 
 	// walk through array of Php packages JSON
-	v2, _ := x[1].([]interface{})
+	v2, _ := x[1].([]any)
 	for _, e1 := range v2 {
-		v3, _ := e1.([]interface{})
+		v3, _ := e1.([]any)
 		if 3 != len(v3) {
 			return nil, fmt.Errorf("Expected php packages json to have 3 values, has %d : %+v", len(v3), v3)
 		}
@@ -113,7 +113,7 @@ func NewPhpPackagesCollection(path string, config []byte) (*PhpPackagesCollectio
 
 	params := make(map[string]string)
 
-	for _, line := range bytes.Split(config, []byte("\n")) {
+	for line := range bytes.SplitSeq(config, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)
 		if len(trimmed) == 0 {
 			continue
@@ -254,7 +254,7 @@ func ParsePackagesList(expectedPackages string) ([]string, error) {
 	return strings.Split(tmp, ","), nil
 }
 
-func ParseOverrideVersionsFile(path, overrideVersionFile string) (map[string]interface{}, error) {
+func ParseOverrideVersionsFile(path, overrideVersionFile string) (map[string]any, error) {
 	jsonFile, err := os.Open(filepath.Dir(path) + "/" + overrideVersionFile)
 	if err != nil {
 		return nil, fmt.Errorf("error opening versions override list %s!", err.Error())
@@ -267,7 +267,7 @@ func ParseOverrideVersionsFile(path, overrideVersionFile string) (map[string]int
 		return nil, fmt.Errorf("Error reading versions override list %s!", err.Error())
 	}
 
-	var versions_override map[string]interface{}
+	var versions_override map[string]any
 
 	err = json.Unmarshal([]byte(versions_json), &versions_override)
 	if nil != err {

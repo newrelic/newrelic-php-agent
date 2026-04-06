@@ -4,7 +4,6 @@
 //
 
 //go:build ignore
-// +build ignore
 
 // compile-certs generates the New Relic Root CA Bundle.
 package main

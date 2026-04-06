@@ -86,12 +86,12 @@ func (h analyticsEventHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 // Push appends x to the heap. This method should not be called
 // directly because it does not maintain the min-heap property, and
 // it does not enforce the maximum capacity. Use AddEvent instead.
-func (h *analyticsEventHeap) Push(x interface{}) {
+func (h *analyticsEventHeap) Push(x any) {
 	*h = append(*h, x.(AnalyticsEvent))
 }
 
 // Pop removes and returns the analytics event with the lowest priority.
-func (h *analyticsEventHeap) Pop() interface{} {
+func (h *analyticsEventHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]
@@ -198,7 +198,7 @@ func (events *analyticsEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 	buf.Bytes()[buf.Len()-1] = ','
 
 	buf.WriteByte('[')
-	for i := 0; i < len(es); i++ {
+	for i := range es {
 		if i > 0 {
 			buf.WriteByte(',')
 		}

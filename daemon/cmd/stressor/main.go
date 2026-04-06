@@ -350,11 +350,7 @@ func hammer(bucket *ratelimit.Bucket, stopChan <-chan struct{}, txn flatbuffersd
 
 			// Send spans in batches
 			for numSpans := *flagSpans; numSpans > 0; numSpans -= *flagSpansBatch {
-				batchSize := *flagSpansBatch
-
-				if batchSize > numSpans {
-					batchSize = numSpans
-				}
+				batchSize := min(*flagSpansBatch, numSpans)
 
 				// Protobuf encoded span batch
 				protoSpanBatch, err := proto_testdata.MarshalSpanBatch(uint(batchSize))
@@ -432,7 +428,7 @@ func formatNumber(n uint64) string {
 	return strings.TrimLeft(s, "0")
 }
 
-func getDaemonStats(url string, v interface{}) error {
+func getDaemonStats(url string, v any) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -636,9 +632,7 @@ func main() {
 	}
 
 	for i := 0; i < nworkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			totals := &Stats{}
 			for {
@@ -659,7 +653,7 @@ func main() {
 				}
 			}
 			statChan <- totals
-		}()
+		})
 	}
 
 	time.AfterFunc(*flagLifespan, func() { close(stopChan) })

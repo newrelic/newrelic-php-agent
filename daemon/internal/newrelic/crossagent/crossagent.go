@@ -32,7 +32,7 @@ func ReadFile(name string) ([]byte, error) {
 
 // ReadJSON takes the name of a file and parses it using JSON.Unmarshal into
 // the interface given.
-func ReadJSON(name string, v interface{}) error {
+func ReadJSON(name string, v any) error {
 	data, err := ReadFile(name)
 	if err != nil {
 		return err

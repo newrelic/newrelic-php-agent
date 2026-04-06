@@ -252,7 +252,7 @@ func NewLimitClient(c Client, max int, timeout time.Duration) Client {
 	//
 	// See Channel Communication in the Go Memory Model for details.
 	// https://golang.org/ref/mem#tmp_7
-	for i := 0; i < max; i++ {
+	for range max {
 		l.semaphore <- true
 	}
 	return l

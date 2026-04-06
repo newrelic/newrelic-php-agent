@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/http"
 	"os"
@@ -148,7 +149,7 @@ func (t *Test) Skip(reason string) {
 
 // Skipf marks the test as skipped and formats its arguments
 // according to the format, and records the text as the reason.
-func (t *Test) Skipf(format string, args ...interface{}) {
+func (t *Test) Skipf(format string, args ...any) {
 	t.Skipped = true
 	t.Err = fmt.Errorf(format, args...)
 }
@@ -161,7 +162,7 @@ func (t *Test) Warn(reason string) {
 
 // Warnf marks the test as unable to be run  and formats its arguments
 // according to the format, and records the text as the reason.
-func (t *Test) Warnf(format string, args ...interface{}) {
+func (t *Test) Warnf(format string, args ...any) {
 	t.Warned = true
 	t.Err = fmt.Errorf(format, args...)
 }
@@ -192,12 +193,8 @@ func (t *Test) AddNote(note string) {
 
 func merge(a, b map[string]string) map[string]string {
 	merged := make(map[string]string)
-	for k, v := range a {
-		merged[k] = v
-	}
-	for k, v := range b {
-		merged[k] = v
-	}
+	maps.Copy(merged, a)
+	maps.Copy(merged, b)
 	return merged
 }
 
@@ -394,7 +391,7 @@ func (t *Test) compareResponseHeaders() {
 			return
 		}
 
-		for i := 0; i < len(values); i++ {
+		for i := range values {
 			if expectValues[i] == "??" {
 				continue
 			}
@@ -410,7 +407,7 @@ func (t *Test) compareResponseHeaders() {
 // a different function is required
 func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	// convert array of expected spans JSON to interface representation
-	var x2 interface{}
+	var x2 any
 
 	if nil == t.spanEventsLike {
 		return
@@ -426,10 +423,10 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 	// for each expected span
 	// this is needed for the call to isFuzzyMatch Recursive later
 	// when comparing to the actual spans in their internal representation
-	expected := x2.([]interface{})
+	expected := x2.([]any)
 
 	// now parse actual span data JSON into interface representation
-	var x1 interface{}
+	var x1 any
 
 	es := *harvest.SpanEvents
 	id := newrelic.AgentRunID("?? agent run id")
@@ -461,34 +458,34 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 
 	// test initial type is as expected
 	switch x1.(type) {
-	case []interface{}:
+	case []any:
 	default:
 		t.Fatal(errors.New("span event data json doesnt match expected format"))
 		return
 	}
 
 	// expect array of len 3
-	v2, _ := x1.([]interface{})
+	v2, _ := x1.([]any)
 	if 3 != len(v2) {
 		t.Fatal(errors.New("span event data json doesnt match expected format - expected 3 elements"))
 		return
 	}
 
 	// get array of actual spans from 3rd element
-	actual := v2[2].([]interface{})
+	actual := v2[2].([]any)
 
 	// check if expected JSON is present in actual data
 	// will call isFuzzyMatchRecursive with "interface" representations
 	numMatched := 0
 	haveMatched := make([]bool, len(expected))
-	for i := 0; i < len(expected); i++ {
+	for i := range expected {
 		haveMatched[i] = false
 	}
 
-	for i := 0; i < len(actual); i++ {
+	for i := range actual {
 		// check each expected span (interface representation) against current actual span
 		// only iterate over unmatched expected spans
-		for j := 0; j < len(expected); j++ {
+		for j := range expected {
 			if haveMatched[j] {
 				continue
 			}
@@ -506,7 +503,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 		}
 	}
 
-	for j := 0; j < len(expected); j++ {
+	for j := range expected {
 		if !haveMatched[j] {
 			actualPretty := bytes.Buffer{}
 			json.Indent(&actualPretty, actualJSON, "", "  ")
@@ -524,7 +521,7 @@ func (t *Test) compareSpanEventsLike(harvest *newrelic.Harvest) {
 
 // Handles EXPECT_METRICS_EXIST
 func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
-	for _, spec := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
+	for spec := range strings.SplitSeq(strings.TrimSpace(string(t.subEnvVars(t.metricsExist))), "\n") {
 		var err error
 		var count int64
 
@@ -561,7 +558,7 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 
 		// parse actual JSON to internal format since we can't get the actual count from
 		// the MetricTable type
-		var x1 interface{}
+		var x1 any
 		if err := json.Unmarshal(scrubjson, &x1); nil != err {
 			t.Fatal(fmt.Errorf("unable to parse actual metric like json for fuzzy matching: %v"+
 				"actual metric table: %s", err, actualPretty.String()))
@@ -580,32 +577,32 @@ func (t *Test) compareMetricsExist(harvest *newrelic.Harvest) {
 
 		// test initial type is as expected
 		switch x1.(type) {
-		case []interface{}:
+		case []any:
 		default:
 			t.Fatal(errors.New("metric event data json doesnt match expected format"))
 			return
 		}
 
 		// expect array of len 4
-		v2, _ := x1.([]interface{})
+		v2, _ := x1.([]any)
 		if len(v2) != 4 {
 			t.Fatal(errors.New("metric event data json doesnt match expected format - expected 4 elements"))
 			return
 		}
 
 		// get array of actual metric from 4th element
-		actual := v2[3].([]interface{})
+		actual := v2[3].([]any)
 		found := false
-		for i := 0; i < len(actual); i++ {
-			actualName := actual[i].([]interface{})[0].(map[string]interface{})
+		for i := range actual {
+			actualName := actual[i].([]any)[0].(map[string]any)
 			act1 := actualName["name"]
 			act2 := actualName["scope"]
 
 			// only support an empty scope for now
 			if act1 == expected && act2 == nil {
 				// compare count
-				actualData := actual[i].([]interface{})[1]
-				actualCount := int64(math.Round(actualData.([]interface{})[0].(float64)))
+				actualData := actual[i].([]any)[1]
+				actualCount := int64(math.Round(actualData.([]any)[0].(float64)))
 
 				metricPasses := false
 
@@ -700,7 +697,7 @@ func (t *Test) comparePhpPackages(harvest *newrelic.Harvest) {
 	var expectedPackages []PhpPackage
 	var expectedPkgsCollection *PhpPackagesCollection
 	var expectNullPkgs bool
-	var version_overrides map[string]interface{}
+	var version_overrides map[string]any
 	var subsetMatch bool = false
 
 	if nil != t.phpPackagesConfig {
@@ -939,7 +936,7 @@ func (t *Test) Compare(harvest *newrelic.Harvest) {
 	}
 
 	if nil != t.metricsDontExist {
-		for _, name := range strings.Split(strings.TrimSpace(string(t.subEnvVars(t.metricsDontExist))), "\n") {
+		for name := range strings.SplitSeq(strings.TrimSpace(string(t.subEnvVars(t.metricsDontExist))), "\n") {
 			name = strings.TrimSpace(name)
 			expected := strings.Replace(name, "__FILE__", t.Path, -1)
 			if harvest.Metrics.Has(expected) {
