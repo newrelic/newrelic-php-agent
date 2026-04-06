@@ -8,7 +8,6 @@ package newrelic
 import (
 	"encoding/json"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
@@ -110,7 +109,6 @@ type Processor struct {
 	quitChan              chan struct{}
 	processorHarvestChan  chan ProcessorHarvest
 	trackProgress         chan struct{} // Usually nil, used for testing
-	dataUsageChannel      chan dataUsageInfo
 	appConnectBackoff     time.Duration
 	cfg                   ProcessorConfig
 	util                  *utilization.Data
@@ -536,40 +534,8 @@ type harvestArgs struct {
 	blocking bool
 }
 
-// Has all usage stats needed for the spec
-type dataUsageInfo struct {
-	endpoint_name string
-	payloadSize   int
-	responseSize  int
-}
-
-type dataUsageController struct {
-	duc chan dataUsageInfo
-	wg  *sync.WaitGroup
-}
-
-func newDataUsageController(du_chan chan dataUsageInfo) dataUsageController {
-	return dataUsageController{
-		duc: du_chan,
-		wg:  new(sync.WaitGroup),
-	}
-}
-
-func addDataUsage(duc chan dataUsageInfo, endpoint string, data_stored int, data_received int) {
-	select {
-	case duc <- dataUsageInfo{
-		endpoint_name: endpoint,
-		payloadSize:   data_stored,
-		responseSize:  data_received,
-	}:
-		// data stored
-	default:
-		// channel full, don't store
-	}
-}
-
-func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController) {
-	defer duc.wg.Done()
+func harvestPayload(p PayloadCreator, args *harvestArgs, mc *MetricsController) {
+	defer mc.wg.Done()
 	cmd := collector.RpmCmd{
 		Name:              p.Cmd(),
 		Collector:         args.collector,
@@ -595,11 +561,71 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController
 	// error happened.  (Note that this may change if we have to support metric
 	// cache ids).
 	if nil == reply.Err {
-		addDataUsage(duc.duc, cmd.Name, len(cmd.Data), len(reply.Body))
+		mc.addDataUsage(cmd.Name, len(cmd.Data), len(reply.Body))
+
+		switch cmd.Name {
+		case collector.CommandCustomEvents:
+			ce, ok := p.(*CustomEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, ce.NumSeen(), ce.NumSaved(), ce.NumFailedAttempts())
+			}
+		case collector.CommandTxnEvents:
+			te, ok := p.(*TxnEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, te.NumSeen(), te.NumSaved(), te.NumFailedAttempts())
+			}
+		case collector.CommandErrorEvents:
+			ee, ok := p.(*ErrorEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, ee.NumSeen(), ee.NumSaved(), ee.NumFailedAttempts())
+			}
+		case collector.CommandSpanEvents:
+			se, ok := p.(*SpanEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, se.NumSeen(), se.NumSaved(), se.NumFailedAttempts())
+			}
+		case collector.CommandLogEvents:
+			le, ok := p.(*LogEvents)
+			if ok {
+				mc.AddMetricData(cmd.Name, le.NumSeen(), le.NumSaved(), le.NumFailedAttempts())
+			}
+		default:
+			// skip non-metric data
+		}
 		return
 	}
 	// If we receive an error, the data was not stored into the collector
-	addDataUsage(duc.duc, cmd.Name, 0, len(reply.Body))
+	mc.addDataUsage(cmd.Name, 0, len(reply.Body))
+
+	switch cmd.Name {
+	case collector.CommandCustomEvents:
+		ce, ok := p.(*CustomEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, ce.NumFailedAttempts())
+		}
+	case collector.CommandTxnEvents:
+		te, ok := p.(*TxnEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, te.NumFailedAttempts())
+		}
+	case collector.CommandErrorEvents:
+		ee, ok := p.(*ErrorEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, ee.NumFailedAttempts())
+		}
+	case collector.CommandSpanEvents:
+		se, ok := p.(*SpanEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, se.NumFailedAttempts())
+		}
+	case collector.CommandLogEvents:
+		le, ok := p.(*LogEvents)
+		if ok {
+			mc.AddMetricData(cmd.Name, 0, 0, le.NumFailedAttempts())
+		}
+	default:
+		// skip non-metric data
+	}
 
 	args.harvestErrorChannel <- HarvestError{
 		Reply: reply,
@@ -608,65 +634,57 @@ func harvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController
 	}
 }
 
-func considerHarvestPayload(p PayloadCreator, args *harvestArgs, duc dataUsageController) {
+func considerHarvestPayload(p PayloadCreator, args *harvestArgs, mc *MetricsController) {
 	if p.Empty() {
 		return
 	}
 
-	duc.wg.Add(1)
+	mc.wg.Add(1)
 	if args.blocking {
 		// Invoked primarily by CleanExit
-		harvestPayload(p, args, duc)
+		harvestPayload(p, args, mc)
 	} else {
-		go harvestPayload(p, args, duc)
+		go harvestPayload(p, args, mc)
 	}
 }
 
-func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, duc dataUsageController) {
+func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, mc *MetricsController) {
 	if args.splitLargePayloads && (txnEvents.events.Len() >= (limits.MaxTxnEvents / 2)) {
 		events1, events2 := txnEvents.Split()
-		considerHarvestPayload(&TxnEvents{events1}, args, duc)
-		considerHarvestPayload(&TxnEvents{events2}, args, duc)
+		considerHarvestPayload(&TxnEvents{events1}, args, mc)
+		considerHarvestPayload(&TxnEvents{events2}, args, mc)
 	} else {
-		considerHarvestPayload(txnEvents, args, duc)
+		considerHarvestPayload(txnEvents, args, mc)
 	}
 }
 
-func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, du_chan chan dataUsageInfo) {
+func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
-	harvest.createFinalMetrics(harvestLimits, to)
-	harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
-	duc := newDataUsageController(du_chan)
-	considerHarvestPayload(harvest.Metrics, args, duc)
-	considerHarvestPayload(harvest.CustomEvents, args, duc)
-	considerHarvestPayload(harvest.ErrorEvents, args, duc)
-	considerHarvestPayload(harvest.Errors, args, duc)
-	considerHarvestPayload(harvest.SlowSQLs, args, duc)
-	considerHarvestPayload(harvest.TxnTraces, args, duc)
-	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, duc)
-	considerHarvestPayload(harvest.SpanEvents, args, duc)
-	considerHarvestPayload(harvest.LogEvents, args, duc)
-	considerHarvestPayload(harvest.PhpPackages, args, duc)
+	considerHarvestPayload(harvest.CustomEvents, args, mc)
+	considerHarvestPayload(harvest.ErrorEvents, args, mc)
+	considerHarvestPayload(harvest.Errors, args, mc)
+	considerHarvestPayload(harvest.SlowSQLs, args, mc)
+	considerHarvestPayload(harvest.TxnTraces, args, mc)
+	considerHarvestPayloadTxnEvents(harvest.TxnEvents, args, mc)
+	considerHarvestPayload(harvest.SpanEvents, args, mc)
+	considerHarvestPayload(harvest.LogEvents, args, mc)
+	considerHarvestPayload(harvest.PhpPackages, args, mc)
+
 	if args.blocking {
-		harvestDataUsage(args, duc)
+		harvestMetrics(harvest, args, mc, harvestLimits, to)
 	} else {
-		go harvestDataUsage(args, duc)
+		go harvestMetrics(harvest, args, mc, harvestLimits, to)
 	}
 }
 
-func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan chan dataUsageInfo) {
+func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 	// The collector may provide custom reporting periods for harvesting
 	// TxnEvents, CustomEvents, or ErrorEvents.  As a result, this
 	// function harvests by type.
 	harvest := ah.Harvest
+	mc := ah.MetricController
 
-	// This needs to be determined here, as even an empty harvest needs
-	// to be overwritten with new containers for the next harvest.
-	skip_data_usage := false
-	if harvest.empty() {
-		skip_data_usage = true
-	}
 	// In many cases, all types are harvested
 	//    at the same time
 	//       at the same rate.
@@ -677,9 +695,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		harvest.PhpPackages.data = ah.App.filterPhpPackages(harvest.PhpPackages.data)
 		if args.blocking {
 			// Invoked primarily by CleanExit
-			harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, du_chan)
+			harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, mc)
 		} else {
-			go harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, du_chan)
+			go harvestAll(harvest, args, ah.connectReply.EventHarvestConfig, ah.TraceObserver, mc)
 		}
 		return
 	}
@@ -687,22 +705,16 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 	// Otherwise, harvest by type.  The first type is DefaultData.  This
 	// comprises the Metrics, Errors, SlowSQLs, and TxnTraces whose
 	// reporting periods have no custom reporting periods.
-	duc := newDataUsageController(du_chan)
 	if ht&HarvestDefaultData == HarvestDefaultData {
-
+		log.Debugf("harvesting default data")
 		log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
-		harvest.createFinalMetrics(ah.connectReply.EventHarvestConfig, ah.TraceObserver)
-		harvest.Metrics = harvest.Metrics.ApplyRules(args.rules)
-
-		metrics := harvest.Metrics
 		errors := harvest.Errors
 		slowSQLs := harvest.SlowSQLs
 		txnTraces := harvest.TxnTraces
 		phpPackages := harvest.PhpPackages
 		phpPackages.data = ah.App.filterPhpPackages(phpPackages.data)
 
-		harvest.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
 		harvest.Errors = NewErrorHeap(limits.MaxErrors)
 		harvest.SlowSQLs = NewSlowSQLs(limits.MaxSlowSQLs)
 		harvest.TxnTraces = NewTxnTraces()
@@ -710,11 +722,16 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 		harvest.commandsProcessed = 0
 		harvest.pidSet = make(map[int]struct{})
 
-		considerHarvestPayload(metrics, args, duc)
-		considerHarvestPayload(errors, args, duc)
-		considerHarvestPayload(slowSQLs, args, duc)
-		considerHarvestPayload(txnTraces, args, duc)
-		considerHarvestPayload(phpPackages, args, duc)
+		considerHarvestPayload(errors, args, mc)
+		considerHarvestPayload(slowSQLs, args, mc)
+		considerHarvestPayload(txnTraces, args, mc)
+		considerHarvestPayload(phpPackages, args, mc)
+
+		if args.blocking {
+			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+		} else {
+			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+		}
 	}
 
 	eventConfigs := ah.App.connectReply.EventHarvestConfig.EventConfigs
@@ -726,7 +743,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		customEvents := harvest.CustomEvents
 		harvest.CustomEvents = NewCustomEvents(eventConfigs.CustomEventConfig.Limit)
-		considerHarvestPayload(customEvents, args, duc)
+		considerHarvestPayload(customEvents, args, mc)
 	}
 
 	if ht&HarvestErrorEvents == HarvestErrorEvents && eventConfigs.ErrorEventConfig.Limit != 0 {
@@ -734,7 +751,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		errorEvents := harvest.ErrorEvents
 		harvest.ErrorEvents = NewErrorEvents(eventConfigs.ErrorEventConfig.Limit)
-		considerHarvestPayload(errorEvents, args, duc)
+		considerHarvestPayload(errorEvents, args, mc)
 	}
 
 	if ht&HarvestTxnEvents == HarvestTxnEvents && eventConfigs.AnalyticEventConfig.Limit != 0 {
@@ -742,7 +759,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		txnEvents := harvest.TxnEvents
 		harvest.TxnEvents = NewTxnEvents(eventConfigs.AnalyticEventConfig.Limit)
-		considerHarvestPayloadTxnEvents(txnEvents, args, duc)
+		considerHarvestPayloadTxnEvents(txnEvents, args, mc)
 	}
 
 	if ht&HarvestSpanEvents == HarvestSpanEvents && eventConfigs.SpanEventConfig.Limit != 0 {
@@ -750,7 +767,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		spanEvents := harvest.SpanEvents
 		harvest.SpanEvents = NewSpanEvents(eventConfigs.SpanEventConfig.Limit)
-		considerHarvestPayload(spanEvents, args, duc)
+		considerHarvestPayload(spanEvents, args, mc)
 	}
 
 	if ht&HarvestLogEvents == HarvestLogEvents && eventConfigs.LogEventConfig.Limit != 0 {
@@ -758,25 +775,41 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType, du_chan ch
 
 		logEvents := harvest.LogEvents
 		harvest.LogEvents = NewLogEvents(eventConfigs.LogEventConfig.Limit)
-		considerHarvestPayload(logEvents, args, duc)
-
+		considerHarvestPayload(logEvents, args, mc)
 	}
 
-	// Only harvest data usage metrics if metrics are being harvested
-	if ht&HarvestDefaultData == HarvestDefaultData {
-		if !skip_data_usage {
-			if args.blocking {
-				harvestDataUsage(args, duc)
-			} else {
-				go harvestDataUsage(args, duc)
-			}
-		}
-	}
 }
 
-func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
-	duc.wg.Wait()
-	if len(duc.duc) == 0 {
+func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
+	if !mc.mu.TryLock() {
+		log.Warnf("harvestMetrics skipped: previous cycle still running")
+		return
+	}
+
+	defer func() {
+		mc.mu.Unlock()
+		if r := recover(); r != nil {
+			log.Errorf("Recovered harvestMetrics Panic. Dropping Harvest. Error: %v\n", r)
+		}
+	}()
+
+	mc.wg.Wait()
+	log.Debugf("harvesting metrics")
+
+	h.createFinalMetrics(harvestLimits, to, mc)
+	harvestDataUsage(h, args, mc)
+
+	h.Metrics = h.Metrics.ApplyRules(args.rules)
+
+	metrics := h.Metrics
+
+	h.Metrics = NewMetricTable(limits.MaxMetrics, time.Now())
+
+	considerHarvestPayload(metrics, args, mc)
+}
+
+func harvestDataUsage(h *Harvest, args *harvestArgs, mc *MetricsController) {
+	if len(mc.duc) == 0 {
 		return
 	} // no usage metrics found
 
@@ -793,7 +826,7 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
 	loop := true
 	for loop {
 		select {
-		case d, ok := <-duc.duc:
+		case d, ok := <-mc.duc:
 			if ok {
 				usage := dataUsageMap[d.endpoint_name]
 				usage.payloadSize += d.payloadSize
@@ -809,15 +842,22 @@ func harvestDataUsage(args *harvestArgs, duc dataUsageController) {
 		}
 	}
 
-	metrics := NewMetricTable(limits.MaxMetrics, time.Now())
 	for name, data := range dataUsageMap {
-		metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/"+name+"/Output/Bytes"),
+		if data.attempts == 0 && data.payloadSize == 0 && data.responseSize == 0 {
+			// do not sent data with a call or byte count of zero
+			continue
+		}
+		h.Metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/"+name+"/Output/Bytes"),
 			"", "", [6]float64{float64(data.attempts), float64(data.payloadSize), float64(data.responseSize), 0.0, 0.0, 0.0}, Forced)
 	}
-	metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/Output/Bytes"),
+
+	if sumAttempts == 0 && sumPayload == 0 && sumResponse == 0 {
+		// do not sent data with a call or byte count of zero
+		return
+	}
+
+	h.Metrics.AddRaw([]byte("Supportability/"+strings.ToUpper(args.agentLanguage)+"/Collector/Output/Bytes"),
 		"", "", [6]float64{float64(sumAttempts), float64(sumPayload), float64(sumResponse), 0.0, 0.0, 0.0}, Forced)
-	metrics = metrics.ApplyRules(args.rules)
-	considerHarvestPayload(metrics, args, duc)
 }
 
 func (p *Processor) doHarvest(ph ProcessorHarvest) {
@@ -860,7 +900,7 @@ func (p *Processor) doHarvest(ph ProcessorHarvest) {
 		splitLargePayloads: app.info.Settings["newrelic.distributed_tracing_enabled"] == true,
 		blocking:           ph.Blocking,
 	}
-	harvestByType(ph.AppHarvest, &args, harvestType, p.dataUsageChannel)
+	harvestByType(ph.AppHarvest, &args, harvestType)
 }
 
 func (p *Processor) processHarvestError(d HarvestError) {
@@ -905,11 +945,8 @@ func NewProcessor(cfg ProcessorConfig) *Processor {
 		harvestErrorChannel:   make(chan HarvestError),
 		quitChan:              make(chan struct{}),
 		processorHarvestChan:  make(chan ProcessorHarvest),
-		// We don't want data usage collection to ever block, so we create a
-		// sized buffer that will drop any excess data once filled
-		dataUsageChannel:  make(chan dataUsageInfo, 25),
-		appConnectBackoff: limits.AppConnectAttemptBackoff,
-		cfg:               cfg,
+		appConnectBackoff:     limits.AppConnectAttemptBackoff,
+		cfg:                   cfg,
 	}
 }
 

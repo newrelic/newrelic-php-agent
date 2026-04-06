@@ -6,14 +6,25 @@
 package newrelic
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
 )
 
+func mockMetricsController() *MetricsController {
+	mc := &MetricsController{
+		mc:  make(chan metricsInfo, 64),
+		duc: make(chan dataUsageInfo, 64),
+		wg:  new(sync.WaitGroup),
+	}
+	return mc
+}
+
 func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
+	mc := mockMetricsController()
 
 	harvest.TxnEvents.AddEvent(AnalyticsEvent{data: []byte(`[{"z":42},{},{}]`), priority: SamplingPriority(0.8)})
 	harvest.TxnEvents.AddEvent(AnalyticsEvent{data: []byte(`[{"z":42},{},{}]`), priority: SamplingPriority(0.8)})
@@ -73,29 +84,44 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 
 	// TxnEvents will succeed on the first attempt and should not generate a metric
 
+	// Since we're testing failed harvests without properly triggering a harvest,
+	// we need to simulate the success state (for Txn Events) and the failure
+	// states for the other event types.
+	mc.AddMetricData(collector.CommandTxnEvents, harvest.TxnEvents.NumSeen(), harvest.TxnEvents.NumSaved(), harvest.TxnEvents.NumFailedAttempts())
+
 	// Have CustomEvents fail once
 	harvest.CustomEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandCustomEvents, 0, 0, harvest.CustomEvents.NumFailedAttempts())
 
 	// Have ErrorEvents fail twice for a total of 2
 	harvest.ErrorEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandErrorEvents, 0, 0, harvest.ErrorEvents.NumFailedAttempts())
 	harvest.ErrorEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandErrorEvents, 0, 0, harvest.ErrorEvents.NumFailedAttempts())
 
 	// Have SpanEvents fail three times for a total of 3
 	harvest.SpanEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandSpanEvents, 0, 0, harvest.SpanEvents.NumFailedAttempts())
 	harvest.SpanEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandSpanEvents, 0, 0, harvest.SpanEvents.NumFailedAttempts())
 	harvest.SpanEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandSpanEvents, 0, 0, harvest.SpanEvents.NumFailedAttempts())
 
 	// Have LogEvents fail 4 times for a total of 4
 	harvest.LogEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 	harvest.LogEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 	harvest.LogEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 	harvest.LogEvents.FailedHarvest(harvest)
+	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 
-	harvest.createFinalMetrics(limits, nil)
+	harvest.createFinalMetrics(limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
 		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` + // Check for Connect attempt supportability metrics
+		`[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/error_event_data/Attempts"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/log_event_data/Attempts"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[3,0,0,0,0,0]],` +
@@ -107,14 +133,14 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[1234,0,0,0,0,0]],` +
 		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Seen"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Sent"},[8,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[28,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[28,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Seen"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Sent"},[48,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[24,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[24,0,0,0,0,0]]]]`
+		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
+		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
@@ -127,6 +153,8 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 
 func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
+	mc := mockMetricsController()
+
 	harvest.pidSet[0] = struct{}{}
 	limits := collector.EventHarvestConfig{
 		ReportPeriod: 1234,
@@ -148,26 +176,10 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 			},
 		},
 	}
-	harvest.createFinalMetrics(limits, nil)
+	harvest.createFinalMetrics(limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/AnalyticsEvents/TotalEventsSent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/AnalyticEventData/HarvestLimit"},[2,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/CustomEventData/HarvestLimit"},[3,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/ErrorEventData/HarvestLimit"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/LogEventData/HarvestLimit"},[5,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/ReportPeriod"},[1234,0,0,0,0,0]],` +
-		`[{"name":"Supportability/EventHarvest/SpanEventData/HarvestLimit"},[4,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/Customer/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Events/TransactionError/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Seen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Logging/Forwarding/Sent"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSeen"},[0,0,0,0,0,0]],` +
-		`[{"name":"Supportability/SpanEvent/TotalEventsSent"},[0,0,0,0,0,0]]]]`
+		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]]]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
