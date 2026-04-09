@@ -2120,7 +2120,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * start and then stop a segment. If that happened, we want to ensure we
    * get the now-current segment
    */
-  //  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
   segment = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
