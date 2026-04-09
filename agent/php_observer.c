@@ -136,7 +136,9 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
                 0);
 
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
-  nr_fiber_show_fiber(fiber_context, "init/destroy");
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(fiber_context, "init/destroy");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
@@ -148,8 +150,10 @@ static void nr_fiber_disable(zend_fiber_context* fiber_context) {
 
 static void nr_fiber_switch_disable(zend_fiber_context* from,
                                     zend_fiber_context* to) {
-  nr_fiber_show_fiber(from, "switch from");
-  nr_fiber_show_fiber(to, "switch to");
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
@@ -161,12 +165,16 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
 
 static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   NR_FIBER_USED_CREATE_METRIC
-  nr_fiber_show_fiber(zfc, "init");
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "init");
+  }
 }
 
 static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
   NR_FIBER_USED_CREATE_METRIC
-  nr_fiber_show_fiber(zfc, "destroy");
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "destroy");
+  }
 }
 
 static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
@@ -220,8 +228,10 @@ static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
 static void nr_fiber_switch_observe(zend_fiber_context* from,
                                     zend_fiber_context* to) {
   NR_FIBER_USED_CREATE_METRIC
-  nr_fiber_show_fiber(from, "switch from");
-  nr_fiber_show_fiber(to, "switch to");
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
 
   /*
    * If kind != zend_ce_fiber that means the fiber context is the MAIN php
