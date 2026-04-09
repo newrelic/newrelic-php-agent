@@ -210,7 +210,7 @@ static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
     /* Main process is the parent, set to NULL. */
     NRPRG(fiber_parent_segment) = NULL;
   } else {
-    const char* parent_fiber_context_string = nr_formatf("%p", zfc);
+    char* parent_fiber_context_string = nr_formatf("%p", zfc);
     NRPRG(fiber_parent_segment)
         = nr_txn_get_current_segment(NRPRG(txn), parent_fiber_context_string);
     nr_free(parent_fiber_context_string);
