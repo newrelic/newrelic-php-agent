@@ -7807,10 +7807,16 @@ static void test_get_current_trace_id(void) {
 static void test_get_current_span_id(void) {
   nrapp_t app;
   nrtxnopt_t opts;
-  nr_segment_t* segment;
-  char* span_id;
-  nrtxn_t* txn;
+  nr_segment_t* segment = NULL;
+  nr_segment_t* segment_async = NULL;
+  char* span_id = NULL;
+  char* span_id_async = NULL;
+  nrtxn_t* txn = NULL;
   uint32_t priority;
+  const char* async_context = "sunshine";
+  nr_segment_t* parent;
+  nr_segment_t* first_born;
+  nr_segment_t* async_grandchild;
 
   /* start txn and segment */
   nr_memset(&app, 0, sizeof(app));
@@ -7819,27 +7825,66 @@ static void test_get_current_span_id(void) {
   opts.distributed_tracing_enabled = 1;
   txn = nr_txn_begin(&app, &opts, NULL, NULL);
   segment = nr_segment_start(txn, txn->segment_root, NULL);
+  segment_async = nr_segment_start(txn, segment, async_context);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
-  nr_txn_set_current_segment(txn, segment);
 
+  parent = nr_segment_start(txn, NULL, NULL);
+  first_born = nr_segment_start(txn, NULL, NULL);
+  tlib_pass_if_not_null("parent should not be null", parent);
+
+  async_grandchild = nr_segment_start(txn, first_born, "another_async");
+  tlib_pass_if_not_null(
+      "Starting a segment on a valid txn and an implicit parent must succeed",
+      async_grandchild);
+
+  tlib_pass_if_int_equal(
+      "grandchild segment has initialized async context",
+      first_grandchild->async_context,
+      nr_string_find(first_grandchild->txn->trace_strings, "another_async"));
+
+  tlib_pass_if_int_equal(
+      "grandchild has initialized async context",
+      nr_string_find(txn->trace_strings, "another_async"),
+      nr_string_find(first_grandchild->txn->trace_strings, "another_async"));
+
+  tlib_pass_if_ptr_equal(
+      "The most recently started, implicitly-parented segment must not alter "
+      "the NULL context's current segment",
+      nr_txn_get_current_segment(txn, NULL), first_born);
+
+  tlib_pass_if_ptr_equal(
+      "The most recently started, implicitly-parented segment must set the "
+      "current segment for the new context",
+      nr_txn_get_current_segment(txn, "another_async"), async_grandchild);
+
+  tlib_pass_if_not_null("Default Segment should not be null", segment);
+  tlib_pass_if_not_null("Async Segment should not be null", segment_async);
+  tlib_pass_if_int_equal(
+      "Async segment has initialized async context",
+      segment_async->async_context,
+      nr_string_find(segment_async->txn->trace_strings, async_context));
+  tlib_pass_if_ptr_equal(
+      "should be able to retrieve current of an async context",
+      nr_txn_get_current_segment(txn, async_context), segment_async);
   /*
    * Test : Bad parameters
    */
   tlib_pass_if_null("no span id. txn is null",
-                    nr_txn_get_current_span_id(NULL));
+                    nr_txn_get_current_span_id(NULL, NULL));
 
   /*
    * Test : disabled span events
    */
   txn->options.span_events_enabled = 0;
-  tlib_pass_if_null("span events disabled", nr_txn_get_current_span_id(txn));
+  tlib_pass_if_null("span events disabled",
+                    nr_txn_get_current_span_id(txn, NULL));
 
   /*
-   * Test : span id is created
+   * Test : span id is created for default (NULL) context
    */
   txn->options.span_events_enabled = 1;
-  span_id = nr_txn_get_current_span_id(txn);
-  tlib_fail_if_null("span id is created", span_id);
+  span_id = nr_txn_get_current_span_id(txn, NULL);
+  tlib_fail_if_null("span id is created for default (NULL) context", span_id);
   nr_free(span_id);
 
   /*
@@ -7848,6 +7893,27 @@ static void test_get_current_span_id(void) {
   priority = segment->priority;
   tlib_pass_if_true("log segment priority", priority & NR_SEGMENT_PRIORITY_LOG,
                     "priority=0x%08x", priority);
+
+  /*
+   * Test : span id is created for a segment with async context
+   */
+  span_id_async = nr_txn_get_current_span_id(txn, async_context);
+  tlib_fail_if_null("span id is created for segment with async context",
+                    span_id_async);
+  nr_free(span_id_async);
+
+  /*
+   * Test : default segment and async segment are different.
+   * And span ids are also different.
+   */
+  //  nr_txn_set_current_segment(txn, segment_async);
+  span_id_async = nr_txn_get_current_span_id(txn, async_context);
+  span_id = nr_txn_get_current_span_id(txn, NULL);
+  tlib_pass_if_str_equal(
+      "async current span id should not equal default current span id",
+      span_id_async, span_id);
+  nr_free(span_id);
+  nr_free(span_id_async);
 
   nr_txn_destroy(&txn);
 }

@@ -368,6 +368,7 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
      NR_FW_YII2},
+
 };
 // clang-format: on
 static const int num_all_frameworks
@@ -443,7 +444,7 @@ static nr_library_table_t libraries[] = {
     /* php-amqplib RabbitMQ; PHP Agent supports php-amqplib >= 3.7 */
     {"php-amqplib", NR_PSTR("phpamqplib/connection/abstractconnection.php"),
      nr_php_amqplib_enable},
-    
+
     {"Predis", NR_PSTR("predis/src/client.php"), nr_predis_enable},
     {"Predis", NR_PSTR("predis/client.php"), nr_predis_enable},
 
@@ -632,6 +633,22 @@ static nrframework_t nr_try_force_framework(
 static void nr_framework_log(const char* log_prefix,
                              const char* framework_name) {
   nrl_debug(NRL_FRAMEWORK, "%s = '%s'", log_prefix, framework_name);
+}
+
+/*
+ * Return the parent segment.
+ * This will only be non-null when creating a segment for a new fiber context
+ * that needs to be a child of another fiber context. If it is non-null, it will
+ * be set to NULL after being used. The helper function will ensure the fiber
+ * parent segment is only used once.
+ */
+static nr_segment_t* nr_use_fiber_parent() {
+  if (NULL == NRPRG(fiber_parent_segment)) {
+    return NULL;
+  }
+  nr_segment_t* ret_segment = NRPRG(fiber_parent_segment);
+  NRPRG(fiber_parent_segment) = NULL;
+  return ret_segment;
 }
 
 void nr_framework_create_metric(TSRMLS_D) {
@@ -1599,7 +1616,10 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
     nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
   }
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = nr_segment_start(NRPRG(txn), NRPRG(fiber_parent_segment),
+                             NRPRG(current_php_context));
+  NRPRG(fiber_parent_segment) = NULL;
+
   CALL_ORIGINAL;
 
   duration = nr_time_duration(segment->start_time, nr_txn_now_rel(NRPRG(txn)));
@@ -1610,7 +1630,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
 
     nr_php_execute_metadata_init(&metadata, (zend_op_array*)func);
 
-    nr_php_execute_segment_add_metric(segment, &metadata, false);
+    nr_php_execute_segment_add_metric(segment, &metadata645, false);
 
     nr_php_execute_metadata_release(&metadata);
   }
@@ -1694,6 +1714,96 @@ end:
  */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ and OAPI */
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO    
+void nr_fiber_show_fiber(zend_fiber_context* zfc, const char* fiber_action) {
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    zend_fiber* zfc_fiber = NULL;
+    char* zfc_status = NULL;
+    char* fiber_destroy_flag = NULL;
+    char* fiber_threw_flag = NULL;
+    char* fiber_bailout_flag = NULL;
+    char* fiber_func_name = NULL;
+    char* label = "  fiber";
+
+    if (NULL == zfc) {
+      nrl_warning(NRL_AGENT,
+                  "PHP Issue: %s Fiber context is unexpectedly NULL.",
+                  fiber_action);
+      return;
+    }
+
+    switch (zfc->status) {
+      case ZEND_FIBER_STATUS_INIT:
+        zfc_status = "ZEND_FIBER_STATUS_INIT";
+        break;
+      case ZEND_FIBER_STATUS_RUNNING:
+        zfc_status = "ZEND_FIBER_STATUS_RUNNING";
+        break;
+      case ZEND_FIBER_STATUS_SUSPENDED:
+        zfc_status = "ZEND_FIBER_STATUS_SUSPENDED";
+        break;
+      case ZEND_FIBER_STATUS_DEAD:
+        zfc_status = "ZEND_FIBER_STATUS_DEAD";
+        break;
+      default:
+        zfc_status = "UNKNOWN STATUS";
+    }
+
+    if (zend_ce_fiber != zfc->kind) {
+      /*
+       * Return with what we have since we can't extract a fiber from the main
+       * context for any additional info.
+       */
+      nrl_verbosedebug(
+          NRL_AGENT, "%s: %.*s %s:`main` context ctx={%p} status{%s}", label,
+          nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
+          NRSAFESTR(fiber_action), zfc, zfc_status);
+      return;
+    }
+    zfc_fiber = zend_fiber_from_context(zfc);
+
+    if (NULL == zfc_fiber) {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT,
+          "PHP Issue: The Fiber associated with %p is unexpectedly NULL.", zfc);
+      return;
+    }
+    if (zfc_fiber->flags & ZEND_FIBER_FLAG_DESTROYED) {
+      fiber_destroy_flag = "destroyed";
+    }
+
+    if (zfc_fiber->flags & ZEND_FIBER_FLAG_THREW) {
+      fiber_threw_flag = "threw";
+    }
+
+    if (zfc_fiber->flags & ZEND_FIBER_FLAG_BAILOUT) {
+      fiber_bailout_flag = "bailout";
+    }
+
+    /*
+     * Use fci_cache vs fci since fci.function_name will be set to undef in PHP
+     * when the fiber is dead and cannot be depended on.
+     */
+    zend_fcall_info_cache zfc_fci_cache = zfc_fiber->fci_cache;
+    if (NULL != zfc_fci_cache.function_handler) {
+      fiber_func_name
+          = nr_php_function_debug_name(zfc_fci_cache.function_handler);
+    }
+
+    nrl_verbosedebug(
+        NRL_AGENT,
+        "%s: %.*s %s: fiber context ctx={%p} function={%s} status{%s}"
+        "flags={%s|%s|%s}",
+        label, nr_php_show_exec_indentation(TSRMLS_C),
+        nr_php_indentation_spaces, NRSAFESTR(fiber_action), zfc,
+        NRSAFESTR(fiber_func_name), NRSAFESTR(zfc_status),
+        NRSAFESTR(fiber_destroy_flag), NRSAFESTR(fiber_threw_flag),
+        NRSAFESTR(fiber_bailout_flag));
+    nr_free(fiber_func_name);
+  }
+}
+#endif /* PHP 8.1+ */
 
 static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
   NR_UNUSED_FUNC_RETURN_VALUE;
@@ -1816,7 +1926,9 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = nr_segment_start(NRPRG(txn), NRPRG(fiber_parent_segment),
+                             NRPRG(current_php_context));
+  NRPRG(fiber_parent_segment) = NULL;
 
   if (nrunlikely(NULL == segment)) {
     nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
@@ -1889,7 +2001,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   /*
    * Get the current segment and return if null.
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  segment = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
   if (nrunlikely(NULL == segment)) {
     /*
      * Most likely caused by txn ending prematurely and closing all segments. We
@@ -1909,7 +2021,6 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
      * _clean callbacks if they exist. If it doesn't exist, we exit as nothing
      * needs to be done.
      */
-
     if (NULL == segment->wraprec) {
       return;
     }
@@ -2010,7 +2121,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * start and then stop a segment. If that happened, we want to ensure we
    * get the now-current segment
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  //  segment = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  segment = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);

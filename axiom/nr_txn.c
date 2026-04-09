@@ -571,11 +571,12 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->abs_start_time = nr_get_time();
 
   /*
-   * Allocate the stacks to manage segment parenting
+   * Allocate the stacks to manage segment parenting and set context to default
    */
   nr_stack_init(&nt->default_parent_stack, NR_STACK_DEFAULT_CAPACITY);
   nt->parent_stacks
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_txn_destroy_parent_stack);
+  nt->current_async_context = 0;
 
   /*
    * Install the root segment
@@ -1598,7 +1599,8 @@ void nr_txn_record_error(nrtxn_t* txn,
   /* Only try to get a span_id in cases where we know spans should be created.
    */
   if (nr_txn_should_create_span_events(txn)) {
-    span_id = nr_txn_get_current_span_id(txn);
+    span_id = nr_txn_get_current_span_id(
+        txn, nr_string_get(txn->trace_strings, txn->current_async_context));
 
     /*
      * The specification says span_id MUST be included so if span events are
@@ -3190,6 +3192,16 @@ void nr_txn_finalize_parent_stacks(nrtxn_t* txn) {
   nr_txn_end_segments_in_stack(&txn->default_parent_stack, txn);
 }
 
+const char* nr_txn_get_current_context(nrtxn_t* txn) {
+  if (NULL == txn) {
+    return NULL;
+  }
+  if (0 == txn->current_async_context) {
+    return NULL;
+  }
+  return nr_string_get(txn->trace_strings, txn->current_async_context);
+}
+
 nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
                                          const char* async_context) {
   if (nrunlikely(NULL == txn)) {
@@ -3231,15 +3243,20 @@ void nr_txn_set_current_segment(nrtxn_t* txn, nr_segment_t* segment) {
 
       if (NR_SUCCESS
           != nr_hashmap_index_set(txn->parent_stacks, key, (void*)stack)) {
-        // If we can't add the stack to the hashmap, then we should free it to
-        // avoid a memory leak.
+        /*
+         * If we can't add the stack to the hashmap, then we should free it to
+         * avoid a memory leak.
+         */
         nr_stack_destroy_fields(stack);
         nr_free(stack);
         return;
       }
     }
+    txn->current_async_context = segment->async_context;
   } else {
     stack = &txn->default_parent_stack;
+
+    txn->current_async_context = 0;
   }
 
   nr_stack_push(stack, (void*)segment);
@@ -3255,6 +3272,13 @@ void nr_txn_retire_current_segment(nrtxn_t* txn, nr_segment_t* segment) {
         (nr_stack_t*)nr_hashmap_index_get(txn->parent_stacks,
                                           (uint64_t)segment->async_context),
         segment);
+
+    if (NULL != segment->parent) {
+      txn->current_async_context = segment->parent->async_context;
+    } else {
+      txn->current_async_context = 0;
+    }
+
   } else {
     nr_stack_remove_topmost(&txn->default_parent_stack, segment);
   }
@@ -3284,7 +3308,7 @@ char* nr_txn_get_current_trace_id(nrtxn_t* txn) {
   return nr_strdup(trace_id);
 }
 
-char* nr_txn_get_current_span_id(nrtxn_t* txn) {
+char* nr_txn_get_current_span_id(nrtxn_t* txn, const char* async_context) {
   nr_segment_t* segment;
   char* span_id;
 
@@ -3292,7 +3316,7 @@ char* nr_txn_get_current_span_id(nrtxn_t* txn) {
     return NULL;
   }
 
-  segment = nr_txn_get_current_segment(txn, NULL);
+  segment = nr_txn_get_current_segment(txn, async_context);
   if (NULL == segment) {
     return NULL;
   }
@@ -3422,7 +3446,8 @@ static void log_event_set_linking_metadata(nr_log_event_t* e,
     nr_log_event_set_trace_id(e, trace_id);
     nr_free(trace_id);
 
-    span_id = nr_txn_get_current_span_id(txn);
+    span_id = nr_txn_get_current_span_id(
+        txn, nr_string_get(txn->trace_strings, txn->current_async_context));
     nr_log_event_set_span_id(e, span_id);
     nr_free(span_id);
 
