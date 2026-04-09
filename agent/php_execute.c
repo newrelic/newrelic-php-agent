@@ -368,7 +368,6 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
      NR_FW_YII2},
-
 };
 // clang-format: on
 static const int num_all_frameworks
@@ -1630,7 +1629,7 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
 
     nr_php_execute_metadata_init(&metadata, (zend_op_array*)func);
 
-    nr_php_execute_segment_add_metric(segment, &metadata645, false);
+    nr_php_execute_segment_add_metric(segment, &metadata, false);
 
     nr_php_execute_metadata_release(&metadata);
   }
