@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -233,7 +233,7 @@ func LoadSupportedPackagesList(path, supportedListFile string) ([]string, error)
 		defer jsonFile.Close()
 	}
 
-	supported_json, err := ioutil.ReadAll(jsonFile)
+	supported_json, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading supported list %s!", err.Error())
 	}
@@ -263,7 +263,7 @@ func ParseOverrideVersionsFile(path, overrideVersionFile string) (map[string]any
 		defer jsonFile.Close()
 	}
 
-	versions_json, err := ioutil.ReadAll(jsonFile)
+	versions_json, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading versions override list %s!", err.Error())
 	}

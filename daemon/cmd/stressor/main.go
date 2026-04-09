@@ -13,7 +13,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -173,7 +172,7 @@ func fatal(e error) {
 }
 
 func getFileContents(filename string) []byte {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if nil != err {
 		fatal(err)
 	}
@@ -382,7 +381,7 @@ func hammer(bucket *ratelimit.Bucket, stopChan <-chan struct{}, txn flatbuffersd
 func setLogName(name string) error {
 	switch {
 	case name == "":
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	case strings.EqualFold(name, "stdout"):
 		log.SetOutput(os.Stdout)
 	case strings.EqualFold(name, "stderr"):
@@ -434,7 +433,7 @@ func getDaemonStats(url string, v any) error {
 		return err
 	}
 
-	js, err := ioutil.ReadAll(resp.Body)
+	js, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	if err != nil {

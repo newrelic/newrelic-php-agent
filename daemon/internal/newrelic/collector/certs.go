@@ -7,7 +7,7 @@ package collector
 
 import (
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -35,7 +35,7 @@ func newCertPoolFromFiles(files []string) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
 
 	for _, f := range files {
-		b, err := ioutil.ReadFile(f)
+		b, err := os.ReadFile(f)
 		if nil != err {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func NewCertPool(cafile, capath string) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
 
 	for _, f := range files {
-		b, err := ioutil.ReadFile(f)
+		b, err := os.ReadFile(f)
 		if nil != err {
 			return nil, err
 		}

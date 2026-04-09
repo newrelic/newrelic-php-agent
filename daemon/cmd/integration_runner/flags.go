@@ -7,7 +7,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -30,7 +29,7 @@ func (f *FlagStringOrFile) Set(flagValue string) error {
 	}
 
 	fileName := flagValue[1:]
-	contents, err := ioutil.ReadFile(fileName)
+	contents, err := os.ReadFile(fileName)
 
 	if nil != err {
 		fmt.Fprintf(os.Stderr, "unable read file [%v], Error: [%v]\n", flagValue[1:], err)

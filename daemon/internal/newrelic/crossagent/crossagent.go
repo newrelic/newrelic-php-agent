@@ -8,7 +8,6 @@ package crossagent
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,9 +16,9 @@ import (
 var crossAgentDir = mustExist("../../../axiom/tests/cross_agent_tests")
 
 // ReadFile reads a file from the crossagent tests directory given as with
-// ioutil.ReadFile.
+// os.ReadFile.
 func ReadFile(name string) ([]byte, error) {
-	data, err := ioutil.ReadFile(filepath.Join(crossAgentDir, name))
+	data, err := os.ReadFile(filepath.Join(crossAgentDir, name))
 	if err == nil {
 		return data, nil
 	}
@@ -45,7 +44,7 @@ func ReadJSON(name string, v any) error {
 func ReadDir(name string) ([]string, error) {
 	dir := filepath.Join(crossAgentDir, name)
 
-	entries, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, &notExistError{name}
