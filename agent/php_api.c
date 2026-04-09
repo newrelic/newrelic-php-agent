@@ -1244,6 +1244,8 @@ static nr_status_t nr_php_api_add_custom_span_attribute(const char* keystr,
   nr_segment_t* current = NULL;
   nrtxn_t* txn = NULL;
 
+  txn = NRPRG(txn);
+
   current = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
   if (!current) {
     return NR_FAILURE;
