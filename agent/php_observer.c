@@ -141,7 +141,7 @@ static void nr_fiber_disable(zend_fiber_context* fiber_context) {
     /* Fiber init/destroy detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
-    NR_FIBER_USED_CREATE_METRIC;
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
@@ -154,18 +154,18 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
     /* Fiber switch detected, end and keep the transaction. */
     nrl_warning(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
-    NR_FIBER_USED_CREATE_METRIC;
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
 
 static void nr_fiber_init_observe(zend_fiber_context* zfc) {
-  NR_FIBER_USED_CREATE_METRIC;
+  NR_FIBER_USED_CREATE_METRIC
   nr_fiber_show_fiber(zfc, "init");
 }
 
 static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
-  NR_FIBER_USED_CREATE_METRIC;
+  NR_FIBER_USED_CREATE_METRIC
   nr_fiber_show_fiber(zfc, "destroy");
 }
 
@@ -219,7 +219,7 @@ static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
 
 static void nr_fiber_switch_observe(zend_fiber_context* from,
                                     zend_fiber_context* to) {
-  NR_FIBER_USED_CREATE_METRIC;
+  NR_FIBER_USED_CREATE_METRIC
   nr_fiber_show_fiber(from, "switch from");
   nr_fiber_show_fiber(to, "switch to");
 
