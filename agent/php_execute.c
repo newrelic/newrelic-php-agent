@@ -1714,93 +1714,93 @@ end:
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA /* PHP8+ and OAPI */
 
-#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO    
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 void nr_fiber_show_fiber(zend_fiber_context* zfc, const char* fiber_action) {
-  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
-    zend_fiber* zfc_fiber = NULL;
-    char* zfc_status = NULL;
-    char* fiber_destroy_flag = NULL;
-    char* fiber_threw_flag = NULL;
-    char* fiber_bailout_flag = NULL;
-    char* fiber_func_name = NULL;
-    char* label = "  fiber";
-
-    if (NULL == zfc) {
-      nrl_warning(NRL_AGENT,
-                  "PHP Issue: %s Fiber context is unexpectedly NULL.",
-                  fiber_action);
-      return;
-    }
-
-    switch (zfc->status) {
-      case ZEND_FIBER_STATUS_INIT:
-        zfc_status = "ZEND_FIBER_STATUS_INIT";
-        break;
-      case ZEND_FIBER_STATUS_RUNNING:
-        zfc_status = "ZEND_FIBER_STATUS_RUNNING";
-        break;
-      case ZEND_FIBER_STATUS_SUSPENDED:
-        zfc_status = "ZEND_FIBER_STATUS_SUSPENDED";
-        break;
-      case ZEND_FIBER_STATUS_DEAD:
-        zfc_status = "ZEND_FIBER_STATUS_DEAD";
-        break;
-      default:
-        zfc_status = "UNKNOWN STATUS";
-    }
-
-    if (zend_ce_fiber != zfc->kind) {
-      /*
-       * Return with what we have since we can't extract a fiber from the main
-       * context for any additional info.
-       */
-      nrl_verbosedebug(
-          NRL_AGENT, "%s: %.*s %s:`main` context ctx={%p} status{%s}", label,
-          nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
-          NRSAFESTR(fiber_action), zfc, zfc_status);
-      return;
-    }
-    zfc_fiber = zend_fiber_from_context(zfc);
-
-    if (NULL == zfc_fiber) {
-      nrl_verbosedebug(
-          NRL_INSTRUMENT,
-          "PHP Issue: The Fiber associated with %p is unexpectedly NULL.", zfc);
-      return;
-    }
-    if (zfc_fiber->flags & ZEND_FIBER_FLAG_DESTROYED) {
-      fiber_destroy_flag = "destroyed";
-    }
-
-    if (zfc_fiber->flags & ZEND_FIBER_FLAG_THREW) {
-      fiber_threw_flag = "threw";
-    }
-
-    if (zfc_fiber->flags & ZEND_FIBER_FLAG_BAILOUT) {
-      fiber_bailout_flag = "bailout";
-    }
-
-    /*
-     * Use fci_cache vs fci since fci.function_name will be set to undef in PHP
-     * when the fiber is dead and cannot be depended on.
-     */
-    zend_fcall_info_cache zfc_fci_cache = zfc_fiber->fci_cache;
-    if (NULL != zfc_fci_cache.function_handler) {
-      fiber_func_name
-          = nr_php_function_debug_name(zfc_fci_cache.function_handler);
-    }
-
-    nrl_verbosedebug(
-        NRL_AGENT,
-        "%s: %.*s %s: fiber context ctx={%p} function={%s} status{%s}"
-        "flags={%s|%s|%s}",
-        label, nr_php_show_exec_indentation(TSRMLS_C),
-        nr_php_indentation_spaces, NRSAFESTR(fiber_action), zfc,
-        NRSAFESTR(fiber_func_name), NRSAFESTR(zfc_status),
-        NRSAFESTR(fiber_destroy_flag), NRSAFESTR(fiber_threw_flag),
-        NRSAFESTR(fiber_bailout_flag));
-    nr_free(fiber_func_name);
+  if (nrlikely(0 == NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    return;
   }
+
+  zend_fiber* zfc_fiber = NULL;
+  char* zfc_status = NULL;
+  char* fiber_destroy_flag = NULL;
+  char* fiber_threw_flag = NULL;
+  char* fiber_bailout_flag = NULL;
+  char* fiber_func_name = NULL;
+  char* label = "  fiber";
+
+  if (NULL == zfc) {
+    nrl_warning(NRL_AGENT, "PHP Issue: %s Fiber context is unexpectedly NULL.",
+                fiber_action);
+    return;
+  }
+
+  switch (zfc->status) {
+    case ZEND_FIBER_STATUS_INIT:
+      zfc_status = "ZEND_FIBER_STATUS_INIT";
+      break;
+    case ZEND_FIBER_STATUS_RUNNING:
+      zfc_status = "ZEND_FIBER_STATUS_RUNNING";
+      break;
+    case ZEND_FIBER_STATUS_SUSPENDED:
+      zfc_status = "ZEND_FIBER_STATUS_SUSPENDED";
+      break;
+    case ZEND_FIBER_STATUS_DEAD:
+      zfc_status = "ZEND_FIBER_STATUS_DEAD";
+      break;
+    default:
+      zfc_status = "UNKNOWN STATUS";
+  }
+
+  if (zend_ce_fiber != zfc->kind) {
+    /*
+     * Return with what we have since we can't extract a fiber from the main
+     * context for any additional info.
+     */
+    nrl_verbosedebug(
+        NRL_AGENT, "%s: %.*s %s:`main` context ctx={%p} status{%s}", label,
+        nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
+        NRSAFESTR(fiber_action), zfc, zfc_status);
+    return;
+  }
+  zfc_fiber = zend_fiber_from_context(zfc);
+
+  if (NULL == zfc_fiber) {
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "PHP Issue: The Fiber associated with %p is unexpectedly NULL.", zfc);
+    return;
+  }
+  if (zfc_fiber->flags & ZEND_FIBER_FLAG_DESTROYED) {
+    fiber_destroy_flag = "destroyed";
+  }
+
+  if (zfc_fiber->flags & ZEND_FIBER_FLAG_THREW) {
+    fiber_threw_flag = "threw";
+  }
+
+  if (zfc_fiber->flags & ZEND_FIBER_FLAG_BAILOUT) {
+    fiber_bailout_flag = "bailout";
+  }
+
+  /*
+   * Use fci_cache vs fci since fci.function_name will be set to undef in PHP
+   * when the fiber is dead and cannot be depended on.
+   */
+  zend_fcall_info_cache zfc_fci_cache = zfc_fiber->fci_cache;
+  if (NULL != zfc_fci_cache.function_handler) {
+    fiber_func_name
+        = nr_php_function_debug_name(zfc_fci_cache.function_handler);
+  }
+
+  nrl_verbosedebug(
+      NRL_AGENT,
+      "%s: %.*s %s: fiber context ctx={%p} function={%s} status{%s}"
+      "flags={%s|%s|%s}",
+      label, nr_php_show_exec_indentation(TSRMLS_C), nr_php_indentation_spaces,
+      NRSAFESTR(fiber_action), zfc, NRSAFESTR(fiber_func_name),
+      NRSAFESTR(zfc_status), NRSAFESTR(fiber_destroy_flag),
+      NRSAFESTR(fiber_threw_flag), NRSAFESTR(fiber_bailout_flag));
+  nr_free(fiber_func_name);
 }
 #endif /* PHP 8.1+ */
 
