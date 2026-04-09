@@ -237,9 +237,11 @@ bool nr_segment_init(nr_segment_t* segment,
       nr_txn_set_current_segment(txn, segment);
     }
 
-  } /* Otherwise, the parent of this new segment is the current segment on the
-       transaction */
-  else {
+  } else {
+    /*
+     * Otherwise, the parent of this new segment is the current segment on the
+     * transaction
+     */
     nr_segment_t* current_segment
         = nr_txn_get_current_segment(txn, async_context);
 

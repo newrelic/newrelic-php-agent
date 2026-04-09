@@ -3309,8 +3309,8 @@ char* nr_txn_get_current_trace_id(nrtxn_t* txn) {
 }
 
 char* nr_txn_get_current_span_id(nrtxn_t* txn, const char* async_context) {
-  nr_segment_t* segment;
-  char* span_id;
+  nr_segment_t* segment = NULL;
+  char* span_id = NULL;
 
   if (NULL == txn) {
     return NULL;
