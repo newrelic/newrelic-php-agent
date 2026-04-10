@@ -943,6 +943,10 @@ static void foreach_special_control_flag(const char* str,
     NR_PHP_PROCESS_GLOBALS(special_flags).show_executes_untrimmed = 1;
     return;
   }
+  if (0 == nr_strcmp(str, "show_fibers")) {
+    NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers = 1;
+    return;
+  }
   if (0 == nr_strcmp(str, "no_exception_handler")) {
     NR_PHP_PROCESS_GLOBALS(special_flags).no_exception_handler = 1;
     return;

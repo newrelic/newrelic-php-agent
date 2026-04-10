@@ -1241,9 +1241,12 @@ static nr_status_t nr_php_api_add_custom_span_attribute(const char* keystr,
                                                             TSRMLS_DC) {
   bool rv;
   char* key = NULL;
-  nr_segment_t* current;
+  nr_segment_t* current = NULL;
+  nrtxn_t* txn = NULL;
 
-  current = nr_txn_get_current_segment(NRPRG(txn), NULL);
+  txn = NRPRG(txn);
+
+  current = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
   if (!current) {
     return NR_FAILURE;
   }
@@ -1482,6 +1485,8 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
   NR_UNUSED_RETURN_VALUE_USED;
   NR_UNUSED_THIS_PTR;
 
+  nrtxn_t* txn = NULL;
+
   nr_php_api_add_supportability_metric("get_linking_metadata" TSRMLS_CC);
 
   array_init(return_value);
@@ -1494,6 +1499,8 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
     return;
   }
 
+  txn = NRPRG(txn);
+
   if (nrlikely(NRPRG(app))) {
     nr_php_add_assoc_string_const(return_value, "entity.name",
                                   nr_app_get_entity_name(NRPRG(app)));
@@ -1505,10 +1512,9 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
                                   nr_app_get_host_name(NRPRG(app)));
   }
 
-  if (nrlikely(NRPRG(txn))) {
-    trace_id = nr_txn_get_current_trace_id(NRPRG(txn));
-    span_id = nr_txn_get_current_span_id(NRPRG(txn));
-
+  if (nrlikely(txn)) {
+    trace_id = nr_txn_get_current_trace_id(txn);
+    span_id = nr_txn_get_current_span_id(txn, nr_txn_get_current_context(txn));
     if (trace_id) {
       nr_php_add_assoc_string(return_value, "trace.id", trace_id);
     }
@@ -1535,6 +1541,8 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
   NR_UNUSED_RETURN_VALUE_USED;
   NR_UNUSED_THIS_PTR;
 
+  nrtxn_t* txn = NULL;
+
   nr_php_api_add_supportability_metric("get_trace_metadata" TSRMLS_CC);
 
   array_init(return_value);
@@ -1547,14 +1555,15 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
     return;
   }
 
-  if (nrlikely(NRPRG(txn))) {
-    trace_id = nr_txn_get_current_trace_id(NRPRG(txn));
+  txn = NRPRG(txn);
+
+  if (nrlikely(txn)) {
+    trace_id = nr_txn_get_current_trace_id(txn);
     if (trace_id) {
       nr_php_add_assoc_string(return_value, "trace_id", trace_id);
     }
     nr_free(trace_id);
-
-    span_id = nr_txn_get_current_span_id(NRPRG(txn));
+    span_id = nr_txn_get_current_span_id(txn, nr_txn_get_current_context(txn));
     if (span_id) {
       nr_php_add_assoc_string(return_value, "span_id", span_id);
     }
@@ -1564,7 +1573,7 @@ PHP_FUNCTION(newrelic_get_trace_metadata) {
 
 /*
  * Purpose      Allows a caller to add a user id string to agent attributes in
-                transaction event, transaction trace, error and span.
+ *              transaction event, transaction trace, error and span.
  *
  */
 #ifdef TAGS

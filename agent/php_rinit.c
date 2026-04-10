@@ -113,6 +113,9 @@ PHP_RINIT_FUNCTION(newrelic) {
 
   NRPRG(check_cufa) = false;
 
+  NRPRG(current_php_context) = NULL;
+  NRPRG(fiber_parent_segment) = NULL;
+
   /*
    * Pre-OAPI, this variables were kept on the call stack and
    * therefore had no need to be in an nr_stack

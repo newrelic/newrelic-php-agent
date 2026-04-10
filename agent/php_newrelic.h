@@ -484,17 +484,20 @@ nrinibool_t
 nrinibool_t
     distributed_tracing_exclude_newrelic_header; /* newrelic.distributed_tracing_exclude_newrelic_header
                                                   */
-nrinibool_t distributed_tracing_pad_trace_id; /* newrelic.distributed_tracing.pad_trace_id
-                                               */
-nrinibool_t span_events_enabled;              /* newrelic.span_events_enabled */
+nrinibool_t
+    distributed_tracing_pad_trace_id; /* newrelic.distributed_tracing.pad_trace_id
+                                       */
+nrinibool_t span_events_enabled;      /* newrelic.span_events_enabled */
 nriniuint_t
     span_events_max_samples_stored; /* newrelic.span_events.max_samples_stored
                                      */
 
-nrinistr_t dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled
-                                      */
-nrinistr_t dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled
-                                          */
+nrinistr_t
+    dt_remote_parent_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_sampled
+                               */
+nrinistr_t
+    dt_remote_parent_not_sampled; /* newrelic.distributed_tracing.sampler.remote_parent_not_sampled
+                                   */
 /* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
  * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
  */
@@ -533,11 +536,13 @@ nrinibool_t
 nriniuint_t
     log_forwarding_log_level; /* newrelic.application_logging.forwarding.log_level
                                */
-nrinibool_t log_forwarding_labels_enabled; /* newrelic.application_logging.forwarding.labels.enabled
-                                            */
+nrinibool_t
+    log_forwarding_labels_enabled; /* newrelic.application_logging.forwarding.labels.enabled
+                                    */
 
-nrinistr_t log_forwarding_labels_exclude; /* newrelic.application_logging.forwarding.labels.exclude
-                                           */
+nrinistr_t
+    log_forwarding_labels_exclude; /* newrelic.application_logging.forwarding.labels.exclude
+                                    */
 
 /*
  * Configuration option to toggle code level metrics collection.
@@ -552,14 +557,16 @@ nrinibool_t
 nrinibool_t
     vulnerability_management_package_detection_enabled; /* newrelic.vulnerability_management.package_detection.enabled
                                                          */
-nrinibool_t vulnerability_management_composer_api_enabled; /* newrelic.vulnerability_management.composer_api.enabled
-                                                            */
+nrinibool_t
+    vulnerability_management_composer_api_enabled; /* newrelic.vulnerability_management.composer_api.enabled
+                                                    */
 
 /*
  * Configuration options for recording Messaging APIs
  */
-nrinibool_t message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled
-                                                        */
+nrinibool_t
+    message_tracer_segment_parameters_enabled; /* newrelic.segment_tracer.segment_parameters.enabled
+                                                */
 
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
 /*
@@ -588,6 +595,22 @@ nr_hashmap_t* predis_commands;
 
 nrcallbackfn_t error_group_user_callback; /* The user defined callback for
                                               error group naming */
+
+/*
+ * Pointer to the current context string.
+ * If NULL, execution is occuring in the main PHP Process.
+ * Otherwise it will point to the fiber context string.
+ */
+const char* current_php_context;
+
+/* Contains the fiber address as a string to use as the async_context.*/
+char fiber_context_string[32];
+/*
+ * Contains the parent segment of a fiber only when starting a fiber within a
+ * fiber. For all other cases will be null which indicates that the main PHP
+ * process is the parent.
+ */
+nr_segment_t* fiber_parent_segment;
 
 /*
  * The globals below all refer to a transaction. Those globals contain

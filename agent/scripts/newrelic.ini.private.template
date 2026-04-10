@@ -44,6 +44,7 @@
 ;            show_execute_stack
 ;            show_execute_returns
 ;            show_executes_untrimmed
+;            show_fibers
 ;            no_exception_handler
 ;            no_signal_handler
 ;            debug_autorum
