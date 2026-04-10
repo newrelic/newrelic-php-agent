@@ -7908,7 +7908,6 @@ static void test_get_current_span_id(void) {
    * Test : default segment and async segment are different.
    * And span ids are also different.
    */
-  //  nr_txn_set_current_segment(txn, segment_async);
   span_id_async = nr_txn_get_current_span_id(txn, async_context);
   span_id = nr_txn_get_current_span_id(txn, NULL);
   tlib_pass_if_str_equal(
