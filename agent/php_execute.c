@@ -634,15 +634,6 @@ static void nr_framework_log(const char* log_prefix,
   nrl_debug(NRL_FRAMEWORK, "%s = '%s'", log_prefix, framework_name);
 }
 
-static nr_segment_t* nr_use_fiber_parent() {
-  if (NULL == NRPRG(fiber_parent_segment)) {
-    return NULL;
-  }
-  nr_segment_t* ret_segment = NRPRG(fiber_parent_segment);
-  NRPRG(fiber_parent_segment) = NULL;
-  return ret_segment;
-}
-
 void nr_framework_create_metric(TSRMLS_D) {
   char* metric_name = NULL;
   const char* framework_name = "None";
