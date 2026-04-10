@@ -634,13 +634,6 @@ static void nr_framework_log(const char* log_prefix,
   nrl_debug(NRL_FRAMEWORK, "%s = '%s'", log_prefix, framework_name);
 }
 
-/*
- * Return the parent segment.
- * This will only be non-null when creating a segment for a new fiber context
- * that needs to be a child of another fiber context. If it is non-null, it will
- * be set to NULL after being used. The helper function will ensure the fiber
- * parent segment is only used once.
- */
 static nr_segment_t* nr_use_fiber_parent() {
   if (NULL == NRPRG(fiber_parent_segment)) {
     return NULL;
