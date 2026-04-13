@@ -1252,6 +1252,25 @@ static inline void nr_php_execute_segment_end(
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {
+    if (nrunlikely(nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT))) {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT,
+          "segment keep: %.*s%s%.*s duration=" NR_TIME_FMT
+          "us threshold=" NR_TIME_FMT
+          "us reason=%s%s%s%s%s",
+          metadata->scope ? (int)ZSTR_LEN(metadata->scope) : 0,
+          metadata->scope ? ZSTR_VAL(metadata->scope) : "",
+          metadata->scope ? "::" : "",
+          metadata->function ? (int)ZSTR_LEN(metadata->function) : 0,
+          metadata->function ? ZSTR_VAL(metadata->function) : "(file)",
+          duration / NR_TIME_DIVISOR_US,
+          NR_PHP_PROCESS_GLOBALS(expensive_min) / NR_TIME_DIVISOR_US,
+          create_metric ? "metric " : "",
+          (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min)) ? "duration " : "",
+          nr_vector_size(stacked->metrics) ? "has_metrics " : "",
+          (stacked->id || stacked->attributes) ? "has_attrs " : "",
+          stacked->error ? "has_error" : "");
+    }
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     // There are no stacked segments for OAPI.
@@ -1271,6 +1290,19 @@ static inline void nr_php_execute_segment_end(
 
     nr_segment_end(&s);
   } else {
+    if (nrunlikely(nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT))) {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT,
+          "segment discard: %.*s%s%.*s duration=" NR_TIME_FMT
+          "us threshold=" NR_TIME_FMT "us",
+          metadata->scope ? (int)ZSTR_LEN(metadata->scope) : 0,
+          metadata->scope ? ZSTR_VAL(metadata->scope) : "",
+          metadata->scope ? "::" : "",
+          metadata->function ? (int)ZSTR_LEN(metadata->function) : 0,
+          metadata->function ? ZSTR_VAL(metadata->function) : "(file)",
+          duration / NR_TIME_DIVISOR_US,
+          NR_PHP_PROCESS_GLOBALS(expensive_min) / NR_TIME_DIVISOR_US);
+    }
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     // There are no stacked segments for OAPI.
