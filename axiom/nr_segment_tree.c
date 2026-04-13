@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "nr_axiom.h"
+
+#include "util_logging.h"
+#include "util_vector.h"
+
 #include "nr_segment_traces.h"
 #include "nr_segment_tree.h"
 
@@ -43,6 +48,20 @@ nrtxnfinal_t nr_segment_tree_finalise(nrtxn_t* txn,
   should_save_spans = (span_limit > 0) && nr_txn_should_create_span_events(txn)
                       && NULL == txn->span_queue;
   should_sample_spans = txn->segment_count > span_limit;
+
+  if (!should_save_spans && span_limit > 0) {
+    nrl_verbosedebug(NRL_TXN,
+                     "segment_tree_finalise: save_spans=0 detail:"
+                     " span_queue=%p dt=%p dt_sampled=%d"
+                     " dt_enabled=%d span_events_enabled=%d",
+                     (void*)txn->span_queue,
+                     (void*)txn->distributed_trace,
+                     txn->distributed_trace
+                         ? nr_distributed_trace_is_sampled(txn->distributed_trace)
+                         : -1,
+                     txn->options.distributed_tracing_enabled,
+                     txn->options.span_events_enabled);
+  }
 
   if (should_save_spans && should_sample_spans) {
     first_pass_metadata.span_heap = nr_segment_heap_create(
@@ -148,6 +167,13 @@ nrtxnfinal_t nr_segment_tree_finalise(nrtxn_t* txn,
     nr_minmax_heap_destroy(&first_pass_metadata.trace_heap);
     nr_minmax_heap_destroy(&first_pass_metadata.span_heap);
   }
+
+  nrl_verbosedebug(NRL_TXN,
+                   "segment_tree_finalise: segment_count=%zu span_limit=%zu"
+                   " span_events=%zu save_spans=%d sample_spans=%d",
+                   txn->segment_count, span_limit,
+                   nr_vector_size(result.span_events),
+                   should_save_spans, should_sample_spans);
 
   return result;
 }

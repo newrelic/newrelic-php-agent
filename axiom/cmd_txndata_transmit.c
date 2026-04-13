@@ -741,15 +741,18 @@ nr_status_t nr_cmd_txndata_tx(int daemon_fd, const nrtxn_t* txn) {
       "sending txnname='%.64s'"
       " agent_run_id=" NR_AGENT_RUN_ID_FMT
       " segment_count=%zu"
+      " span_event_count=%zu"
       " duration=" NR_TIME_FMT " threshold=" NR_TIME_FMT " priority=%f",
       txn->name ? txn->name : "unknown", txn->agent_run_id, txn->segment_count,
+      nr_vector_size(txn->final_data.span_events),
       nr_txn_duration(txn), txn->options.tt_threshold,
       (double)nr_distributed_trace_get_priority(txn->distributed_trace));
 
   msg = nr_txndata_encode(txn);
   msglen = nr_flatbuffers_len(msg);
 
-  nrl_verbosedebug(NRL_DAEMON, "sending transaction message, len=%zu", msglen);
+  nrl_verbosedebug(NRL_DAEMON, "sending transaction message, len=%zu msglen=%zu",
+                   msglen, msglen);
 
   if (nr_command_is_flatbuffer_invalid(msg, msglen)) {
     nr_flatbuffers_destroy(&msg);

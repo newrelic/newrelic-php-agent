@@ -155,6 +155,8 @@ func (t FlatTxn) AggregateInto(h *Harvest) {
 			data := copySlice(e.Data())
 			h.SpanEvents.AddEventFromData(data, samplingPriority)
 		}
+		log.Debugf("txn span_events: name=%s count=%d msg_len=%d",
+			txnName, n, len(t))
 	}
 
 	if n := txn.LogEventsLength(); n > 0 {
