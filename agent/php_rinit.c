@@ -44,6 +44,12 @@ static void zval_stack_dtor(void* e, NRUNUSED void* d) {
 int nr_php_sapi_activate(void) {
   int result = 0;
 
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi activate: entry, rinit_active=%d, "
+                   "worker_request_active=%d, txn=%p",
+                   NRPRG_SHARED(rinit_active), NRPRG_SHARED(worker_request_active),
+                   NRPRG(txn));
+
   /*
    * Chain to the original sapi_module.activate if one existed.
    */
@@ -58,9 +64,14 @@ int nr_php_sapi_activate(void) {
    * engine call RINIT via zend_activate_modules().
    */
   if (!NRPRG_SHARED(rinit_active)) {
+    nrl_verbosedebug(NRL_INIT,
+                     "FrankenPHP sapi activate: rinit_active=false, "
+                     "skipping (classic mode or pre-RINIT)");
     return result;
   }
 
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi activate: worker per-request begin");
   NRPRG_SHARED(worker_request_active) = true;
 
   /*
@@ -130,11 +141,21 @@ int nr_php_sapi_activate(void) {
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
 
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi activate: done, txn=%p",
+                   NRPRG(txn));
+
   return result;
 }
 
 int nr_php_sapi_deactivate(void) {
   int result = 0;
+
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi deactivate: entry, rinit_active=%d, "
+                   "worker_request_active=%d, txn=%p",
+                   NRPRG_SHARED(rinit_active), NRPRG_SHARED(worker_request_active),
+                   NRPRG(txn));
 
   /*
    * Gate: only fire per-request end if our sapi_activate fired per-request
@@ -145,9 +166,14 @@ int nr_php_sapi_deactivate(void) {
    *   - worker shutdown (after RSHUTDOWN, rinit_active=false)
    */
   if (!NRPRG_SHARED(worker_request_active)) {
+    nrl_verbosedebug(NRL_INIT,
+                     "FrankenPHP sapi deactivate: worker_request_active=false, "
+                     "skipping (classic mode, dummy request, or shutdown)");
     goto chain_original;
   }
 
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi deactivate: worker per-request end");
   NRPRG_SHARED(worker_request_active) = false;
 
   /*
@@ -227,6 +253,9 @@ int nr_php_sapi_deactivate(void) {
   NRPRG_CTX(drupal_http_request_segment) = NULL;
 #endif
 
+  nrl_verbosedebug(NRL_INIT,
+                   "FrankenPHP sapi deactivate: per-request end done");
+
 chain_original:
   if (NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate)) {
     result = NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate)();
@@ -241,6 +270,10 @@ void zm_activate_newrelic(void); /* ctags landing pad only */
 PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
+
+  nrl_verbosedebug(NRL_INIT,
+                   "RINIT: entry (top of function), pid=%d, sapi='%s'",
+                   (int)getpid(), sapi_module.name);
 
   NRPRG_SHARED(rinit_active) = true;
 
@@ -278,6 +311,9 @@ PHP_RINIT_FUNCTION(newrelic) {
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
+    nrl_verbosedebug(NRL_INIT,
+                     "RINIT: early return, enabled=%d, ini_enabled=%d",
+                     NR_PHP_PROCESS_GLOBALS(enabled), NRINI(enabled));
     return SUCCESS;
   }
 
@@ -285,7 +321,9 @@ PHP_RINIT_FUNCTION(newrelic) {
    * Ensure that all late initialisation tasks are complete before starting any
    * transactions.
    */
+  nrl_verbosedebug(NRL_INIT, "RINIT: calling late_initialization");
   nr_php_global_once(nr_php_late_initialization);
+  nrl_verbosedebug(NRL_INIT, "RINIT: late_initialization done");
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing started");
 

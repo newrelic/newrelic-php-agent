@@ -713,11 +713,19 @@ PHP_MINIT_FUNCTION(newrelic) {
    * When running under FrankenPHP, hook the SAPI activate/deactivate to
    * observe request boundaries at the earliest/latest possible point.
    */
+  nrl_verbosedebug(NRL_INIT, "MINIT: sapi_module.name='%s'", sapi_module.name);
   if (0 == nr_strcmp(sapi_module.name, "frankenphp")) {
+    nrl_verbosedebug(NRL_INIT,
+                     "MINIT: FrankenPHP detected, installing SAPI hooks. "
+                     "orig_activate=%p, orig_deactivate=%p",
+                     sapi_module.activate, sapi_module.deactivate);
     NR_PHP_PROCESS_GLOBALS(orig_sapi_activate) = sapi_module.activate;
     NR_PHP_PROCESS_GLOBALS(orig_sapi_deactivate) = sapi_module.deactivate;
     sapi_module.activate = nr_php_sapi_activate;
     sapi_module.deactivate = nr_php_sapi_deactivate;
+    nrl_verbosedebug(NRL_INIT,
+                     "MINIT: SAPI hooks installed. activate=%p, deactivate=%p",
+                     sapi_module.activate, sapi_module.deactivate);
   }
 
 #define NR_INFO_SPECIAL_FLAGS(field)                  \

@@ -551,9 +551,17 @@ void nr_guzzle4_minit(TSRMLS_D) {
 void nr_guzzle4_rshutdown(TSRMLS_D) {
   zend_class_entry* iface_ce = NULL;
 
+  nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: entry, guzzle_enabled=%d",
+                   NRINI(guzzle_enabled));
+
   if (0 == NRINI(guzzle_enabled)) {
+    nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: guzzle disabled, returning");
     return;
   }
+
+  nrl_verbosedebug(NRL_INIT,
+                   "nr_guzzle4_rshutdown: guzzle enabled, EG(class_table)=%p",
+                   EG(class_table));
 
   /*
    * We need to uninherit Subscriber from SubscriberInterface, otherwise we
@@ -562,12 +570,18 @@ void nr_guzzle4_rshutdown(TSRMLS_D) {
    * Of course, if SubscriberInterface was never declared, we're good. Note
    * that nr_php_find_class requires the lowercase version of the class name.
    */
+  nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: calling nr_php_find_class");
   iface_ce
       = nr_php_find_class("guzzlehttp\\event\\subscriberinterface" TSRMLS_CC);
+  nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: nr_php_find_class returned %p",
+                   iface_ce);
   if (NULL == iface_ce) {
+    nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: interface not found, returning");
     return;
   }
 
+  nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: removing interface from class");
   nr_php_remove_interface_from_class(nr_guzzle4_subscriber_ce,
                                      iface_ce TSRMLS_CC);
+  nrl_verbosedebug(NRL_INIT, "nr_guzzle4_rshutdown: done");
 }

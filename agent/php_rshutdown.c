@@ -45,15 +45,28 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
 
-  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing started");
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing started, txn=%p", NRPRG(txn));
 
   /* nr_php_txn_shutdown will check for a NULL transaction. */
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: calling nr_php_txn_shutdown");
   nr_php_txn_shutdown(TSRMLS_C);
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: nr_php_txn_shutdown done");
 
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: calling nr_guzzle4_rshutdown");
   nr_guzzle4_rshutdown(TSRMLS_C);
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: nr_guzzle4_rshutdown done");
+
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: calling nr_curl_rshutdown");
   nr_curl_rshutdown(TSRMLS_C);
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: nr_curl_rshutdown done");
+
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: calling nr_php_pdo_rshutdown");
   nr_php_pdo_rshutdown();
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: nr_php_pdo_rshutdown done");
+
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: calling nr_php_mysqli_rshutdown");
   nr_php_mysqli_rshutdown();
+  nrl_verbosedebug(NRL_INIT, "RSHUTDOWN: nr_php_mysqli_rshutdown done");
 
   NRPRG_SHARED(rinit_active) = false;
 
