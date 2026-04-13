@@ -84,6 +84,17 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   }
 
   if (0 == nr_php_recording()) {
+    if (nrunlikely(nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT))) {
+      zend_string* fn = NR_OP_ARRAY->function_name;
+      zend_string* sc = OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY)
+                            ? NR_OP_ARRAY->scope->name
+                            : NULL;
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "oapi register: {NULL,NULL} %.*s%s%.*s reason=not_recording",
+                       sc ? (int)ZSTR_LEN(sc) : 0, sc ? ZSTR_VAL(sc) : "",
+                       sc ? "::" : "",
+                       fn ? (int)ZSTR_LEN(fn) : 0, fn ? ZSTR_VAL(fn) : "(unknown)");
+    }
     return handlers;
   }
 
@@ -96,6 +107,12 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
      * Let's get the framework info.
      */
     nr_php_execute_file(NR_OP_ARRAY, execute_data, NULL TSRMLS_CC);
+    if (nrunlikely(nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT))) {
+      const char* filename = nr_php_op_array_file_name(NR_OP_ARRAY);
+      nrl_verbosedebug(NRL_INSTRUMENT,
+                       "oapi register: {NULL,NULL} file=%s reason=file_op",
+                       NRSAFESTR(filename));
+    }
     return handlers;
   }
 
@@ -122,6 +139,18 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY,
                             NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
         = wr;
+  }
+
+  if (nrunlikely(nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT))) {
+    zend_string* fn = NR_OP_ARRAY->function_name;
+    zend_string* sc = OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY)
+                          ? NR_OP_ARRAY->scope->name
+                          : NULL;
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "oapi register: {begin,end} %.*s%s%.*s",
+                     sc ? (int)ZSTR_LEN(sc) : 0, sc ? ZSTR_VAL(sc) : "",
+                     sc ? "::" : "",
+                     fn ? (int)ZSTR_LEN(fn) : 0, fn ? ZSTR_VAL(fn) : "(unknown)");
   }
 
   handlers.begin = nr_php_observer_fcall_begin;
