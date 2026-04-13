@@ -55,6 +55,8 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
   nr_php_pdo_rshutdown();
   nr_php_mysqli_rshutdown();
 
+  NRPRG_SHARED(rinit_active) = false;
+
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
 
   return SUCCESS;

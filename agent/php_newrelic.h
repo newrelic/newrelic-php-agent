@@ -466,6 +466,22 @@ typedef struct _shared_globals_t {
    */
   zend_llist exception_filters;
 
+  /*
+  * FrankenPHP worker mode gating flags (per-request/per-thread via NRPRG).
+  *
+  * rinit_active: true after RINIT, false after RSHUTDOWN. Used by
+  *   sapi_activate to distinguish worker per-request calls (rinit_active=true,
+  *   RINIT fired at boot and never followed by RSHUTDOWN) from classic mode
+  *   calls (rinit_active=false, sapi_activate fires before RINIT).
+  *
+  * worker_request_active: true after sapi_activate fires per-request begin,
+  *   false after sapi_deactivate fires per-request end. Pairs activate with
+  *   deactivate so the dummy request teardown (sapi_deactivate without a
+  *   preceding worker-mode sapi_activate) is skipped.
+  */
+  bool rinit_active;
+  bool worker_request_active;
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
