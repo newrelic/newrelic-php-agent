@@ -156,6 +156,8 @@ void nr_app_harvest_private_init(nr_app_harvest_t* ah,
 bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
                                           nr_random_t* rnd,
                                           nrtime_t now) {
+  uint64_t rand_val = 0;
+
   if ((NULL == ah) || (NULL == rnd)) {
     return false;
   }
@@ -180,6 +182,14 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
       ah->prev_transactions_seen = ah->transactions_seen;
     }
 
+    nrl_verbosedebug(NRL_AGENT,
+                     "sampling: harvest rollover seen=" NR_UINT64_FMT
+                     " sampled=" NR_UINT64_FMT " prev_seen=" NR_UINT64_FMT
+                     " target=%d",
+                     ah->transactions_seen, ah->transactions_sampled,
+                     ah->prev_transactions_seen,
+                     (int)ah->target_transactions_per_cycle);
+
     ah->transactions_seen = 0;
     ah->transactions_sampled = 0;
     ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(ah, now);
@@ -195,19 +205,43 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
   if (nr_app_harvest_is_first(ah, now)) {
     if (ah->transactions_sampled < ah->target_transactions_per_cycle) {
       ah->transactions_sampled++;
+      nrl_verbosedebug(NRL_AGENT,
+                       "sampling: first_harvest SAMPLED seen=" NR_UINT64_FMT
+                       " sampled=" NR_UINT64_FMT " target=%d",
+                       ah->transactions_seen, ah->transactions_sampled,
+                       (int)ah->target_transactions_per_cycle);
       return true;
     }
+    nrl_verbosedebug(NRL_AGENT,
+                     "sampling: first_harvest REJECTED seen=" NR_UINT64_FMT
+                     " sampled=" NR_UINT64_FMT " target=%d (budget exhausted)",
+                     ah->transactions_seen, ah->transactions_sampled,
+                     (int)ah->target_transactions_per_cycle);
     return false;
   }
   /* We're still here! If we've not yet sampled the target number, we
    * determine whether this transaction should be sampled based on how many
    * transactions were sampled in the previous harvest cycle. */
   if (ah->transactions_sampled < ah->target_transactions_per_cycle) {
-    if (nr_random_range(rnd, ah->prev_transactions_seen)
-        < ah->target_transactions_per_cycle) {
+    rand_val = nr_random_range(rnd, ah->prev_transactions_seen);
+    if (rand_val < ah->target_transactions_per_cycle) {
       ah->transactions_sampled++;
+      nrl_verbosedebug(NRL_AGENT,
+                       "sampling: subsequent SAMPLED seen=" NR_UINT64_FMT
+                       " sampled=" NR_UINT64_FMT " prev_seen=" NR_UINT64_FMT
+                       " target=%d rand=" NR_UINT64_FMT,
+                       ah->transactions_seen, ah->transactions_sampled,
+                       ah->prev_transactions_seen,
+                       (int)ah->target_transactions_per_cycle, rand_val);
       return true;
     }
+    nrl_verbosedebug(NRL_AGENT,
+                     "sampling: subsequent REJECTED seen=" NR_UINT64_FMT
+                     " sampled=" NR_UINT64_FMT " prev_seen=" NR_UINT64_FMT
+                     " target=%d rand=" NR_UINT64_FMT,
+                     ah->transactions_seen, ah->transactions_sampled,
+                     ah->prev_transactions_seen,
+                     (int)ah->target_transactions_per_cycle, rand_val);
     return false;
   } else {
     /* If we've already sampled enough transactions to hit the target, then we
@@ -217,10 +251,23 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
     ah->threshold = nr_app_harvest_calculate_threshold(
         ah->target_transactions_per_cycle, ah->transactions_sampled);
 
-    if (nr_random_range(rnd, ah->transactions_seen) < ah->threshold) {
+    rand_val = nr_random_range(rnd, ah->transactions_seen);
+    if (rand_val < ah->threshold) {
       ah->transactions_sampled++;
+      nrl_verbosedebug(NRL_AGENT,
+                       "sampling: backoff SAMPLED seen=" NR_UINT64_FMT
+                       " sampled=" NR_UINT64_FMT " threshold=" NR_UINT64_FMT
+                       " rand=" NR_UINT64_FMT,
+                       ah->transactions_seen, ah->transactions_sampled,
+                       ah->threshold, rand_val);
       return true;
     }
+    nrl_verbosedebug(NRL_AGENT,
+                     "sampling: backoff REJECTED seen=" NR_UINT64_FMT
+                     " sampled=" NR_UINT64_FMT " threshold=" NR_UINT64_FMT
+                     " rand=" NR_UINT64_FMT,
+                     ah->transactions_seen, ah->transactions_sampled,
+                     ah->threshold, rand_val);
   }
 
   return false;
