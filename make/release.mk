@@ -40,18 +40,6 @@ ifeq (osx,$(RELEASE_OS))
   endif
 endif
 
-# Set the PHP versions we support on 64-bit OSs.
-SUPPORTED_64=$(PHP_VERSION_LIST)
-# Set the PHP versions we support on 32-bit OSs.
-SUPPORTED_32=
-# Of the PHP versions we want to build, determine which are supported on the detected OS.
-ifeq (x64,$(ARCH))
-  SUPPORTED_PHP = $(filter $(SUPPORTED_64),$(PHP_VERSION_LIST))
-else
-  SUPPORTED_PHP = $(filter $(SUPPORTED_32),$(PHP_VERSION_LIST))
-endif
-
-
 .PHONY: release
 release: Makefile release-version release-installer release-agent release-docs release-scripts | releases/$(RELEASE_OS)/
 
@@ -90,87 +78,33 @@ release-scripts: Makefile | releases/$(RELEASE_OS)/scripts/
 	cp agent/scripts/newrelic.sysconfig        releases/$(RELEASE_OS)/scripts
 	cp agent/scripts/newrelic.xml              releases/$(RELEASE_OS)/scripts
 
-# Build the agent sequentially for each version of PHP. This is necessary
-# because the PHP build process only supports in-tree builds.
+#
+# GitHub Actions release target - release-agent. GitHub Actions release
+# workflow builds extension binaries in parallel with dedicated build
+# service for each supported PHP version.
+#
 release-agent: Makefile | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
+	@$(MAKE) agent-clean && $(MAKE) agent-for-release
 
-#
-# First build non-ZTS binaries of the PHP versions requested that are supported
-# on this OS.
-#
-	for PHP in $(SUPPORTED_PHP) ; do \
-		$(MAKE) agent-clean; $(MAKE) release-$$PHP-no-zts; \
-        done
-#
-# Next build ZTS binaries of the PHP versions requested that are supported
-# on this OS.
-#
-	for PHP in $(SUPPORTED_PHP) ; do \
-		$(MAKE) agent-clean; $(MAKE) release-$$PHP-zts; \
-	done
+# Older versions of GNU Make had a bug where "#" in a function invocation
+# such as $(shell ...) was treated as a make comment. This makefile needs
+# to be compatible with older versions of GNU Make, so we need to use
+# a workaround by assigning "#" to a variable and using that variable in
+# the function invocation.
+H := \#
 
-
-#
-# Add a new target to build the agent against build machines.
-#
-#   $1 - PHP version in MAJOR.MINOR format (e.g. 5.6)
-#   $2 - Zend module API number (e.g. 20131226)
-#
-define RELEASE_AGENT_TARGET
-
-#
 # Target for building the agent for a given PHP version. Works well
-# when building agent using containers. This is useful not only in 
+# when building agent using containers. This is useful not only in
 # GitHub Actions workflows, but also in a day to day development,
 # because it allows to preserve agent between PHP version switches.
-#
-agent-for-php-$1: PHP_CONFIG := /usr/local/bin/php-config
-agent-for-php-$1: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
-
-#
-# Target for non-zts GHA releases.
-#
-release-$1-gha: PHPIZE := /usr/local/bin/phpize
-release-$1-gha: PHP_CONFIG := /usr/local/bin/php-config
-release-$1-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
-
-#
-# Target for zts GHA releases.
-#
-release-$1-zts-gha: PHPIZE := /usr/local/bin/phpize
-release-$1-zts-gha: PHP_CONFIG := /usr/local/bin/php-config
-release-$1-zts-gha: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.so"
-	 @test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
-
-release-$1-no-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-no-zts
-release-$1-no-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-no-zts
-release-$1-no-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2.map" || true
-
-release-$1-zts: PHPIZE := /opt/nr/lamp/bin/phpize-$1-zts
-release-$1-zts: PHP_CONFIG := /opt/nr/lamp/bin/php-config-$1-zts
-release-$1-zts: Makefile agent | releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/
-	@cp agent/modules/newrelic.so "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.so"
-	@test -e agent/newrelic.map && cp agent/newrelic.map "releases/$$(RELEASE_OS)/agent/$$(RELEASE_ARCH)/newrelic-$2-zts.map" || true
-
-endef
-
-$(eval $(call RELEASE_AGENT_TARGET,8.5,20250925))
-$(eval $(call RELEASE_AGENT_TARGET,8.4,20240924))
-$(eval $(call RELEASE_AGENT_TARGET,8.3,20230831))
-$(eval $(call RELEASE_AGENT_TARGET,8.2,20220829))
-$(eval $(call RELEASE_AGENT_TARGET,8.1,20210902))
-$(eval $(call RELEASE_AGENT_TARGET,8.0,20200930))
-$(eval $(call RELEASE_AGENT_TARGET,7.4,20190902))
-$(eval $(call RELEASE_AGENT_TARGET,7.3,20180731))
-$(eval $(call RELEASE_AGENT_TARGET,7.2,20170718))
-
+agent-for-release: PHP_API_VERSION=$(shell awk '/^$(H)define[[:space:]]+PHP_API_VERSION/ {print $$3}' "$(shell $(PHP_CONFIG) --include-dir)/main/php.h")
+agent-for-release: PHP_ZTS=$(shell awk '/^$(H)define[[:space:]]+ZTS/ {print "-zts"}' "$(shell $(PHP_CONFIG) --include-dir)/main/php_config.h")
+agent-for-release: Makefile agent | releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/
+	@test -n "$(PHP_API_VERSION)" || { echo "ERROR: Could not detect PHP_API_VERSION"; exit 1; }
+	@echo "PHP API version detected: [$(PHP_API_VERSION)]"
+	@echo "PHP variant detected: [$(PHP_ZTS)]"
+	@cp -v agent/modules/newrelic.so "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).so"
+	@test -e agent/newrelic.map && cp -v agent/newrelic.map "releases/$(RELEASE_OS)/agent/$(RELEASE_ARCH)/newrelic-$(PHP_API_VERSION)$(PHP_ZTS).map" || true
 
 #
 # Release directories
