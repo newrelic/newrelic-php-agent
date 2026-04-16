@@ -133,6 +133,21 @@ typedef struct _nrcallbackfn_t {
   bool is_set;
 } nrcallbackfn_t;
 
+typedef struct _txn_globals_t {
+  int execute_count; /* How many times nr_php_execute_enabled was called */
+  int generating_explain_plan; /* Are we currently working on an explain plan?
+                                */
+  nr_hashmap_t* guzzle_objs; /* Guzzle request object storage: requests that are
+                                currently in progress are stored here */
+  nr_mysqli_metadata_t* mysqli_links; /* MySQLi link metadata storage */
+  nr_hashmap_t* mysqli_queries;       /* MySQLi query metadata storage */
+  nr_hashmap_t* pdo_link_options;     /* PDO link option storage */
+  int curl_ignore_setopt; /* Non-zero to disable curl_setopt instrumentation */
+  nr_hashmap_t* curl_metadata;       /* curl metadata storage */
+  nr_hashmap_t* curl_multi_metadata; /* curl multi metadata storage */
+  nr_hashmap_t* prepared_statements; /* Prepared statement storage */
+} txn_globals_t;
+
 /*
  * Per-request globals. This is designed for thread safety.
  * These are the globals that are accessible to each request, of which
