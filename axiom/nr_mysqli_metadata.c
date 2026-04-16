@@ -209,3 +209,14 @@ void nr_mysqli_metadata_save(nr_mysqli_metadata_t* metadata,
   nr_mysqli_metadata_id(handle, id);
   nro_set_hash(metadata->links, id, link);
 }
+
+nr_mysqli_metadata_t* nr_mysqli_metadata_copy(nr_mysqli_metadata_t* src) {
+  nr_mysqli_metadata_t* metadata = NULL;
+  if (NULL == src) {
+    return NULL;
+  }
+
+  metadata = nr_mysqli_metadata_create();
+  metadata->links = nro_copy(src->links);
+  return metadata;
+}

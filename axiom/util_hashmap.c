@@ -365,3 +365,26 @@ nr_vector_t* nr_hashmap_keys(nr_hashmap_t* hashmap) {
 
   return keys;
 }
+
+nr_hashmap_t* nr_hashmap_copy(nr_hashmap_t* src) {
+  nr_hashmap_t* hashmap = NULL;
+  size_t num_buckets;
+  size_t i;
+  if (NULL == src) {
+    return NULL;
+  }
+
+  hashmap = nr_hashmap_create(NULL);
+  num_buckets = nr_hashmap_count_buckets(src);
+
+  for (i = 0; i < num_buckets; i++) {
+    nr_hashmap_bucket_t* bucket = NULL;
+
+    for (bucket = src->buckets[i]; bucket; bucket = bucket->next) {
+      nr_hashmap_set(hashmap, bucket->key.value, bucket->key.length,
+                     bucket->value);
+    }
+  }
+
+  return hashmap;
+}
