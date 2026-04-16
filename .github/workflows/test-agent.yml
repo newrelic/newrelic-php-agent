@@ -132,6 +132,7 @@ jobs:
       IMAGE_TAG: make-php
       IMAGE_VERSION: ${{vars.MAKE_PHP_VERSION}}
     strategy:
+      fail-fast: false
       matrix:
         platform: [gnu, musl]
         arch: [amd64]
