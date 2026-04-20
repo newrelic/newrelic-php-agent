@@ -67,17 +67,17 @@ void nr_print_globals(FILE* fp) {
     fp = stdout;
   }
 
-  fprintf(fp, "attributes=%d\n", NRPRG(attributes).enabled.value);
+  fprintf(fp, "attributes=%d\n", NRINI(attributes.enabled));
   fprintf(fp, "transaction_tracer_attributes=%d\n",
-          NRPRG(transaction_tracer_attributes).enabled.value);
+          NRINI(transaction_tracer_attributes.enabled));
   fprintf(fp, "error_collector_attributes=%d\n",
-          NRPRG(error_collector_attributes).enabled.value);
+          NRINI(error_collector_attributes.enabled));
   fprintf(fp, "transaction_events_attributes=%d\n",
-          NRPRG(transaction_events_attributes).enabled.value);
+          NRINI(transaction_events_attributes.enabled));
   fprintf(fp, "span_events_attributes=%d\n",
-          NRPRG(span_events_attributes).enabled.value);
+          NRINI(span_events_attributes.enabled));
   fprintf(fp, "browser_monitoring_attributes=%d\n",
-          NRPRG(browser_monitoring_attributes).enabled.value);
+          NRINI(browser_monitoring_attributes.enabled));
 
   fprintf(fp, "tt_threshold_is_apdex_f=%d\n", NRPRG(tt_threshold_is_apdex_f));
 
