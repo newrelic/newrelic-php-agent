@@ -14,21 +14,25 @@
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
 #define COPY_FIELD(x) (dest->x = src->x)
+#define COPY_HASHMAP(x) (dest->x = nr_hashmap_copy(NRTXNGLOBAL(x)))
 
 static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
   COPY_FIELD(execute_count);
   COPY_FIELD(generating_explain_plan);
   COPY_FIELD(curl_ignore_setopt);
 
-  dest->guzzle_objs = nr_hashmap_copy(NRTXNGLOBAL(guzzle_objs));
-  dest->mysqli_queries = nr_hashmap_copy(NRTXNGLOBAL(mysqli_queries));
-  dest->pdo_link_options = nr_hashmap_copy(NRTXNGLOBAL(pdo_link_options));
-  dest->curl_metadata = nr_hashmap_copy(NRTXNGLOBAL(curl_metadata));
-  dest->curl_multi_metadata = nr_hashmap_copy(NRTXNGLOBAL(curl_multi_metadata));
-  dest->prepared_statements = nr_hashmap_copy(NRTXNGLOBAL(prepared_statements));
+  COPY_HASHMAP(guzzle_objs);
+  COPY_HASHMAP(mysqli_queries);
+  COPY_HASHMAP(pdo_link_options);
+  COPY_HASHMAP(curl_metadata);
+  COPY_HASHMAP(curl_multi_metadata);
+  COPY_HASHMAP(prepared_statements);
 
   dest->mysqli_links = nr_mysqli_metadata_copy(NRTXNGLOBAL(mysqli_links));
 }
+
+#undef COPY_FIELD
+#undef COPY_HASHMAP
 
 txn_globals_t* nrf_fiber_init_txn_globals() {
   txn_globals_t* fiber_globals = NULL;
@@ -39,7 +43,5 @@ txn_globals_t* nrf_fiber_init_txn_globals() {
 
   return fiber_globals;
 }
-
-#undef COPY_FIELD
 
 #endif  // PHP 8.1+
