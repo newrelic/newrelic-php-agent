@@ -416,9 +416,6 @@ bool wordpress_plugins; /* set based on
                                   newrelic.framework.wordpress.hooks.options */
 bool wordpress_core;    /* set based on
                                   newrelic.framework.wordpress.hooks.options */
-#define NR_PHP_RECORDSQL_OFF NR_SQL_NONE
-#define NR_PHP_RECORDSQL_RAW NR_SQL_RAW
-#define NR_PHP_RECORDSQL_OBFUSCATED NR_SQL_OBFUSCATED
 
 nrframework_t
     current_framework; /* Current request framework (forced or detected) */
