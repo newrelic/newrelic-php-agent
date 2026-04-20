@@ -107,7 +107,6 @@ static void test_is_unix_socket(void) {
   tlib_fail_if_int_equal("socket", 0, nr_php_redis_is_unix_socket("/tmp/foo"));
 }
 
-#ifndef ZTS
 static void test_remove_datastore_instance(TSRMLS_D) {
   zval* redis;
 
@@ -215,26 +214,26 @@ static void test_save_datastore_instance(TSRMLS_D) {
   nr_php_zval_free(&redis);
   tlib_php_request_end();
 }
-#endif
 
 void test_main(void* p NRUNUSED) {
+#define REQUIRED_EXTENSION "redis"
 
   default_database = nr_strdup(nr_php_redis_default_database);
   system_host_name = nr_system_get_hostname();
 
   test_create_datastore_instance();
   test_is_unix_socket();
-  tlib_php_engine_create("" PTSRMLS_CC);
 
-  if (tlib_php_require_extension("redis" TSRMLS_CC)) {
-#ifndef ZTS
+  tlib_php_engine_create("extension=" REQUIRED_EXTENSION PTSRMLS_CC);
+
+  if (nr_php_extension_loaded(REQUIRED_EXTENSION)) {
     test_remove_datastore_instance(TSRMLS_C);
     test_retrieve_datastore_instance(TSRMLS_C);
     test_save_datastore_instance(TSRMLS_C);
-#endif
   }
 
   tlib_php_engine_destroy(TSRMLS_C);
+
   nr_free(default_database);
   nr_free(system_host_name);
 }
