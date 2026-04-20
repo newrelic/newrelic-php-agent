@@ -10,6 +10,7 @@
 #include "php_curl_md.h"
 #include "php_error.h"
 #include "php_globals.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "php_mysqli.h"
@@ -106,17 +107,17 @@ int nr_php_post_deactivate(void) {
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
 
-  nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
-  nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
-  nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
-  nr_hashmap_destroy(&NRPRG(wordpress_file_metadata));
-  nr_hashmap_destroy(&NRPRG(wordpress_clean_tag_cache));
+  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_plugin_matcher));
+  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_core_matcher));
+  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_theme_matcher));
+  nr_hashmap_destroy(&NRSHAREDGLOBAL(wordpress_file_metadata));
+  nr_hashmap_destroy(&NRSHAREDGLOBAL(wordpress_clean_tag_cache));
 
   nr_free(NRPRG(mysql_last_conn));
   nr_free(NRPRG(pgsql_last_conn));
   nr_hashmap_destroy(&NRPRG(datastore_connections));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
    * Pre-OAPI, this variables were kept on the call stack and
    * therefore had no need to be in an nr_stack
@@ -133,12 +134,12 @@ int nr_php_post_deactivate(void) {
 #else
   nr_free(NRPRG(predis_ctx));
 #endif /* OAPI */
-  nr_hashmap_destroy(&NRPRG(predis_commands));
+  nr_hashmap_destroy(&NRSHAREDGLOBAL(predis_commands));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_reset_user_instrumentation();
 #else
-  nr_vector_destroy(&NRPRG(user_function_wrappers));
+  nr_vector_destroy(&NRSHAREDGLOBAL(user_function_wrappers));
 #endif
 
   NRPRG(cufa_callback) = NULL;

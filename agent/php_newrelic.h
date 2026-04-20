@@ -9,11 +9,15 @@
 #ifndef PHP_NEWRELIC_HDR
 #define PHP_NEWRELIC_HDR
 
+#include "SAPI.h"
 #include "nr_banner.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_segment.h"
 #include "nr_txn.h"
+#include "php.h"
+#include "php_compat.h"
 #include "php_extension.h"
+#include "php_includes.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
 #include "util_vector.h"
@@ -407,6 +411,135 @@ typedef struct _ini_t {
       message_tracer_segment_parameters_enabled;  // newrelic.segment_tracer.segment_parameters.enabled
 } ini_t;
 
+typedef struct _shared_globals_t {
+  bool wordpress_plugins;  // set based on
+                           // newrelic.framework.wordpress.hooks.options
+  bool wordpress_core;     // set based on
+                           // newrelic.framework.wordpress.hooks.options
+  nr_matcher_t* wordpress_plugin_matcher;  // Matcher for plugin filenames
+  nr_matcher_t* wordpress_theme_matcher;   // Matcher for theme filenames
+  nr_matcher_t* wordpress_core_matcher;    // Matcher for plugin filenames
+  nr_hashmap_t* wordpress_file_metadata;  // Metadata for plugin and theme names
+                                          // given a filename
+  nr_hashmap_t* wordpress_clean_tag_cache;  // Cached clean tags
+  nrtime_t start_sample;                    // Time of starting rusage query
+  struct timeval start_user_time;  // User rusage at transaction's start
+  struct timeval start_sys_time;   // System rusage at transaction's start
+  int wtfuncs_where;   // Where was newrelic.webtransaction.name.functions set?
+  int wtfiles_where;   // Where was newrelic.webtransaction.name.files set?
+  int ttcustom_where;  // Where was newrelic.transaction_tracer.custom set?
+  nr_php_extensions_t* extensions;  // Instrumented extensions
+
+  /*
+   * Save a valid pointer to the sapi_headers_struct for the current response.
+   * This field is NULL until the agent detects that the runtime layout
+   * sapi_globals_struct differs from compile time.
+   */
+  sapi_headers_struct* sapi_headers;
+
+  /* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
+   * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
+   */
+  nr_upstream_parent_sampling_control_t dt_sampler_parent_sampled;
+  nr_upstream_parent_sampling_control_t dt_sampler_parent_not_sampled;
+  zend_bool tt_threshold_is_apdex_f;  // True if threshold is apdex_f
+  nrapp_t* app;  // The application used in the last attempt to initialize a
+                 // transaction
+
+  nr_hashmap_t* predis_commands;
+
+#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
+  /*
+   * pid and user_function_wrappers are used to store user function wrappers.
+   * Storing this on a request level (as opposed to storing it on transaction
+   * level) is more robust when using multiple transactions in one request.
+   */
+  uint64_t pid;
+  nr_vector_t* user_function_wrappers;
+#endif
+} shared_globals_t;
+
+typedef struct _ctx_globals_t {
+  nrframework_t
+      current_framework;  // Current request framework (forced or detected)
+  char* doctrine_dql;     // The current Doctrine DQL. Only non-NULL while a
+                          // Doctrine object is on the stack.
+  size_t drupal_http_request_depth;  // The current depth of
+                                     // drupal_http_request() calls
+  int php_cur_stack_depth;  // Total current depth of PHP stack, measured in PHP
+                            // call frames
+  nrphpcufafn_t
+      cufa_callback;  // The current call_user_func_array callback, if any
+
+  /*
+   * We instrument database connection constructors and store the instance
+   * information in a hash keyed by a string containing the connection resource
+   * id.
+
+   * Some database extensions allow commands without explicit connections and
+   * use the last known connection. <database>_last_conn tracks the hashmap key
+   * for the last opened connection. Its presence can be used to determine
+   * whether the last connection was valid.
+   */
+  char* mysql_last_conn;
+  char* pgsql_last_conn;
+  nr_hashmap_t* datastore_connections;
+
+  /*
+   * Request parameters are now controlled by attribute configuration.
+   * However, for backwards compatibility, the capture of request parameters
+   * can still be controlled by:
+   *
+   *   * API function newrelic_enable_params
+   *   * API function newrelic_capture_params
+   *   * INI setting newrelic.capture_params
+   *
+   * This value tracks those mechanisms.
+   */
+  int deprecated_capture_request_parameters;
+
+  /*
+   * List of callback functions used to filter which exceptions caught
+   * by the agent's last chance exception handler should recorded as
+   * traced errors.
+   */
+  zend_llist exception_filters;
+  nrcallbackfn_t error_group_user_callback;  // The user defined callback for
+                                             // error group naming
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* Without OAPI, we are able to utilize the call stack to keep track
+   * of the previous hooks. With OAPI, we can no longer do this so
+   * we track the stack manually */
+  nr_stack_t drupal_invoke_all_hooks;   // stack of Drupal hooks
+  nr_stack_t drupal_invoke_all_states;  // stack of bools indicating whether the
+                                        // current hook needs to be released
+
+  nr_segment_t* drupal_http_request_segment;
+  bool check_cufa;
+  /* Without OAPI, we are able to utilize the call stack to keep track
+   * of the previous tags. With OAPI, we can no longer do this so
+   * we track the stack manually */
+  nr_stack_t wordpress_tags;
+  nr_stack_t wordpress_tag_states;  // stack of bools indicating whether the
+                                    // current tag needs to be released
+
+  /* Without OAPI, we are able to utilize the call
+   * stack to keep track of the current predis_ctx.
+   * WIth OAPI, we must track this manually
+   */
+  nr_stack_t predis_ctxs;
+#else
+  char* drupal_invoke_all_hook;       // The current Drupal hook
+  size_t drupal_invoke_all_hook_len;  // The length of the current Drupal hook
+  bool check_cufa;      // Whether we need to check cufa because we are
+                        // instrumenting hooks, or whether we can skip cufa
+  char* wordpress_tag;  // The current WordPress tag
+  char* predis_ctx;     // The current Predis pipeline context name, if any
+
+#endif  // OAPI
+} ctx_globals_t;
+
 /*
  * The globals below all refer to a transaction. Those globals contain
  * information related to the active transaction and, contrary to the
@@ -431,154 +564,13 @@ typedef struct _txn_globals_t {
  * Globals
  */
 ZEND_BEGIN_MODULE_GLOBALS(newrelic)
-ini_t ini;              // INI settings
-bool wordpress_plugins; /* set based on
-                                  newrelic.framework.wordpress.hooks.options */
-bool wordpress_core;    /* set based on
-                                  newrelic.framework.wordpress.hooks.options */
+ini_t ini;  // INI settings
 
-nrframework_t
-    current_framework; /* Current request framework (forced or detected) */
+shared_globals_t shared;  // Shared globals that are not context-dependent
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-/* Without OAPI, we are able to utilize the call stack to keep track
- * of the previous hooks. With OAPI, we can no longer do this so
- * we track the stack manually */
-nr_stack_t drupal_invoke_all_hooks;  /* stack of Drupal hooks */
-nr_stack_t drupal_invoke_all_states; /* stack of bools indicating
-                                               whether the current hook
-                                               needs to be released */
-#else
-char* drupal_invoke_all_hook;      /* The current Drupal hook */
-size_t drupal_invoke_all_hook_len; /* The length of the current Drupal
-                                             hook */
-#endif                            // OAPI
-size_t drupal_http_request_depth; /* The current depth of drupal_http_request()
-                                     calls */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-nr_segment_t* drupal_http_request_segment;
-#endif
+ctx_globals_t ctx;  // Context-specific globals
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-bool check_cufa;
-/* Without OAPI, we are able to utilize the call stack to keep track
- * of the previous tags. With OAPI, we can no longer do this so
- * we track the stack manually */
-nr_stack_t wordpress_tags;
-nr_stack_t wordpress_tag_states; /* stack of bools indicating
-                                    whether the current tag
-                                    needs to be released */
-#else
-bool check_cufa;     /* Whether we need to check cufa because we are
-                        instrumenting hooks, or whether we can skip cufa */
-char* wordpress_tag; /* The current WordPress tag */
-
-#endif  // OAPI
-
-nr_matcher_t* wordpress_plugin_matcher;  /* Matcher for plugin filenames */
-nr_matcher_t* wordpress_theme_matcher;   /* Matcher for theme filenames */
-nr_matcher_t* wordpress_core_matcher;    /* Matcher for plugin filenames */
-nr_hashmap_t* wordpress_file_metadata;   /* Metadata for plugin and theme names
-                                            given a filename */
-nr_hashmap_t* wordpress_clean_tag_cache; /* Cached clean tags */
-
-char* doctrine_dql; /* The current Doctrine DQL. Only non-NULL while a Doctrine
-                       object is on the stack. */
-
-int php_cur_stack_depth; /* Total current depth of PHP stack, measured in PHP
-                            call frames */
-
-nrphpcufafn_t
-    cufa_callback; /* The current call_user_func_array callback, if any */
-
-nr_regex_t* aws_arn_regex; /* The compiled regex to search for ARNs */
-/*
- * We instrument database connection constructors and store the instance
- * information in a hash keyed by a string containing the connection resource
- * id.
-
- * Some database extensions allow commands without explicit connections and
- * use the last known connection. <database>_last_conn tracks the hashmap key
- * for the last opened connection. Its presence can be used to determine
- * whether the last connection was valid.
- */
-char* mysql_last_conn;
-char* pgsql_last_conn;
-nr_hashmap_t* datastore_connections;
-
-nrtime_t start_sample;          /* Time of starting rusage query */
-struct timeval start_user_time; /* User rusage at transaction's start  */
-struct timeval start_sys_time;  /* System rusage at transaction's start */
-
-int wtfuncs_where;  /* Where was newrelic.webtransaction.name.functions set? */
-int wtfiles_where;  /* Where was newrelic.webtransaction.name.files set? */
-int ttcustom_where; /* Where was newrelic.transaction_tracer.custom set? */
-
-/*
- * Request parameters are now controlled by attribute configuration.
- * However, for backwards compatibility, the capture of request parameters
- * can still be controlled by:
- *
- *   * API function newrelic_enable_params
- *   * API function newrelic_capture_params
- *   * INI setting newrelic.capture_params
- *
- * This value tracks those mechanisms.
- */
-int deprecated_capture_request_parameters;
-nr_php_extensions_t* extensions; /* Instrumented extensions */
-
-/*
- * List of callback functions used to filter which exceptions caught
- * by the agent's last chance exception handler should recorded as
- * traced errors.
- */
-zend_llist exception_filters;
-
-/*
- * Save a valid pointer to the sapi_headers_struct for the current response.
- * This field is NULL until the agent detects that the runtime layout
- * sapi_globals_struct differs from compile time.
- */
-sapi_headers_struct* sapi_headers;
-
-/* decoding of newrelic.distributed_tracing.sampler.remote_parent_sampled and
- * newrelic.distributed_tracing.sampler.remote_parent_not_sampled.
- */
-nr_upstream_parent_sampling_control_t dt_sampler_parent_sampled;
-nr_upstream_parent_sampling_control_t dt_sampler_parent_not_sampled;
-
-zend_bool tt_threshold_is_apdex_f; /* True if threshold is apdex_f */
-#if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
-/*
- * pid and user_function_wrappers are used to store user function wrappers.
- * Storing this on a request level (as opposed to storing it on transaction
- * level) is more robust when using multiple transactions in one request.
- */
-uint64_t pid;
-nr_vector_t* user_function_wrappers;
-#endif
-
-nrapp_t* app; /* The application used in the last attempt to initialize a
-                 transaction */
-
-nrtxn_t* txn; /* The all-important transaction pointer */
-
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-    && !defined OVERWRITE_ZEND_EXECUTE_DATA
-nr_stack_t predis_ctxs; /* Without OAPI, we are able to utilize the call
-                           stack to keep track of the current predis_ctx.
-                           WIth OAPI, we must track this manually */
-#else
-char* predis_ctx; /* The current Predis pipeline context name, if any */
-#endif
-nr_hashmap_t* predis_commands;
-
-nrcallbackfn_t error_group_user_callback; /* The user defined callback for
-                                              error group naming */
+nrtxn_t* txn;  // The all-important transaction pointer
 
 txn_globals_t txn_globals;  // Transaction Globals
 
@@ -606,10 +598,16 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 
 #if defined(ZTS)
 #define NRPRG(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, X)
-#define NRINI(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, X.value)
+#define NRINI(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ini.X.value)
+#define NRSHAREDGLOBAL(X) \
+  TSRMG(newrelic_globals_id, zend_newrelic_globals*, shared.X.value)
+#define NRCTXGLOBAL(X) \
+  TSRMG(newrelic_globals_id, zend_newrelic_globals*, ctx.X.value)
 #else
 #define NRPRG(X) (newrelic_globals.X)
 #define NRINI(X) (newrelic_globals.ini.X.value)
+#define NRSHAREDGLOBAL(X) (newrelic_globals.shared.X)
+#define NRCTXGLOBAL(X) (newrelic_globals.ctx.X)
 #endif
 
 #define NRTXN(Y) (NRPRG(txn)->Y)
@@ -624,7 +622,7 @@ static inline int nr_php_recording(TSRMLS_D) {
 }
 
 static inline bool is_error_callback_set() {
-  return NRPRG(error_group_user_callback).is_set;
+  return NRCTXGLOBAL(error_group_user_callback).is_set;
 }
 
 /*

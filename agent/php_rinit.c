@@ -11,6 +11,7 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "nr_txn.h"
@@ -50,7 +51,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(current_framework) = NR_FW_UNSET;
   NRPRG(php_cur_stack_depth) = 0;
   NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
-  NRPRG(sapi_headers) = NULL;
+  NRSHAREDGLOBAL(sapi_headers) = NULL;
   NRPRG(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
@@ -62,8 +63,8 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG(drupal_http_request_depth) = 0;
 #endif
 #else
-  NRPRG(pid) = nr_getpid();
-  NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+  NRSHAREDGLOBAL(pid) = nr_getpid();
+  NRSHAREDGLOBAL(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
@@ -106,9 +107,9 @@ PHP_RINIT_FUNCTION(newrelic) {
    * happened.
    */
   if ((NR_PHP_PROCESS_GLOBALS(instrument_extensions))
-      && (NULL == NRPRG(extensions))) {
-    NRPRG(extensions) = nr_php_extension_instrument_create();
-    nr_php_extension_instrument_rescan(NRPRG(extensions) TSRMLS_CC);
+      && (NULL == NRSHAREDGLOBAL(extensions))) {
+    NRSHAREDGLOBAL(extensions) = nr_php_extension_instrument_create();
+    nr_php_extension_instrument_rescan(NRSHAREDGLOBAL(extensions) TSRMLS_CC);
   }
 
   NRPRG(check_cufa) = false;

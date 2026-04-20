@@ -7,6 +7,7 @@
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 
 #include "nr_commands.h"
@@ -1531,11 +1532,11 @@ static PHP_INI_MH(nr_tt_threshold_mh) {
 
   if (0 == NEW_VALUE_LEN) {
     val = 0;
-    NRPRG(tt_threshold_is_apdex_f) = 1;
+    NRSHAREDGLOBAL(tt_threshold_is_apdex_f) = 1;
   } else {
     if (0 == nr_strcmp(NEW_VALUE, "apdex_f")) {
       val = 0;
-      NRPRG(tt_threshold_is_apdex_f) = 1;
+      NRSHAREDGLOBAL(tt_threshold_is_apdex_f) = 1;
     } else {
       val = nr_parse_time_from_config(NEW_VALUE);
     }
@@ -1683,7 +1684,7 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
     foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
   }
 
-  NRPRG(wtfuncs_where) = stage;
+  NRSHAREDGLOBAL(wtfuncs_where) = stage;
   return SUCCESS;
 }
 
@@ -1697,7 +1698,7 @@ static PHP_INI_MH(nr_ttcustom_mh) {
     foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);
   }
 
-  NRPRG(ttcustom_where) = stage;
+  NRSHAREDGLOBAL(ttcustom_where) = stage;
   return SUCCESS;
 }
 
@@ -1948,14 +1949,14 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   NR_UNUSED_TSRMLS;
 
   if (0 == nr_strcmp(NEW_VALUE, "all_callbacks")) {
-    NRPRG(wordpress_plugins) = true;
-    NRPRG(wordpress_core) = true;
+    NRSHAREDGLOBAL(wordpress_plugins) = true;
+    NRSHAREDGLOBAL(wordpress_core) = true;
   } else if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
-    NRPRG(wordpress_plugins) = true;
-    NRPRG(wordpress_core) = false;
+    NRSHAREDGLOBAL(wordpress_plugins) = true;
+    NRSHAREDGLOBAL(wordpress_core) = false;
   } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
-    NRPRG(wordpress_plugins) = false;
-    NRPRG(wordpress_core) = false;
+    NRSHAREDGLOBAL(wordpress_plugins) = false;
+    NRSHAREDGLOBAL(wordpress_core) = false;
   } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
                 ZEND_STRING_VALUE(entry->name), NEW_VALUE,
@@ -1991,21 +1992,21 @@ static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
 
   if (0 == nr_strcmp(NEW_VALUE, "default")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = DEFAULT;
+      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = DEFAULT;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = DEFAULT;
+      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = DEFAULT;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_on")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = ALWAYS_KEEP;
+      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = ALWAYS_KEEP;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
+      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_off")) {
     if (parent_sampled) {
-      NRPRG(dt_sampler_parent_sampled) = ALWAYS_DROP;
+      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = ALWAYS_DROP;
     } else {
-      NRPRG(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
+      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
     }
   } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",

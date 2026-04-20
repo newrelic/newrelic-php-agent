@@ -5,6 +5,7 @@
 
 #include "php_agent.h"
 #include "php_call.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_datastore.h"
 #include "php_execute.h"
@@ -86,12 +87,12 @@ static void nr_predis_command_destroy(nrtime_t* time) {
 }
 
 static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  if (NULL == NRPRG(predis_commands)) {
-    NRPRG(predis_commands)
+  if (NULL == NRSHAREDGLOBAL(predis_commands)) {
+    NRSHAREDGLOBAL(predis_commands)
         = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
   }
 
-  return NRPRG(predis_commands);
+  return NRSHAREDGLOBAL(predis_commands);
 }
 
 static void nr_predis_instrument_connection(zval* conn TSRMLS_DC) {

@@ -9,6 +9,7 @@
 #include "php_api.h"
 #include "php_error.h"
 #include "php_hash.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "fw_drupal_common.h"
 #include "nr_rum.h"
@@ -1494,15 +1495,15 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
     return;
   }
 
-  if (nrlikely(NRPRG(app))) {
+  if (nrlikely(NRSHAREDGLOBAL(app))) {
     nr_php_add_assoc_string_const(return_value, "entity.name",
-                                  nr_app_get_entity_name(NRPRG(app)));
+                                  nr_app_get_entity_name(NRSHAREDGLOBAL(app)));
     nr_php_add_assoc_string_const(return_value, "entity.type",
-                                  nr_app_get_entity_type(NRPRG(app)));
+                                  nr_app_get_entity_type(NRSHAREDGLOBAL(app)));
     nr_php_add_assoc_string_const(return_value, "entity.guid",
-                                  nr_app_get_entity_guid(NRPRG(app)));
+                                  nr_app_get_entity_guid(NRSHAREDGLOBAL(app)));
     nr_php_add_assoc_string_const(return_value, "hostname",
-                                  nr_app_get_host_name(NRPRG(app)));
+                                  nr_app_get_host_name(NRSHAREDGLOBAL(app)));
   }
 
   if (nrlikely(NRPRG(txn))) {

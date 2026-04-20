@@ -79,7 +79,8 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "browser_monitoring_attributes=%d\n",
           NRINI(browser_monitoring_attributes.enabled));
 
-  fprintf(fp, "tt_threshold_is_apdex_f=%d\n", NRPRG(tt_threshold_is_apdex_f));
+  fprintf(fp, "tt_threshold_is_apdex_f=%d\n",
+          NRSHAREDGLOBAL(tt_threshold_is_apdex_f));
 
   fprintf(fp, "current_framework=%d\n", (int)NRPRG(current_framework));
 
@@ -91,20 +92,20 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRPRG(start_sample));
 
   fprintf(fp, "start_user_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRPRG(start_user_time.tv_sec),
-          (int)NRPRG(start_user_time.tv_usec));
+          (nrtime_t)NRSHAREDGLOBAL(start_user_time.tv_sec),
+          (int)NRSHAREDGLOBAL(start_user_time.tv_usec));
   fprintf(fp, "start_sys_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRPRG(start_sys_time.tv_sec),
-          (int)NRPRG(start_user_time.tv_usec));
+          (nrtime_t)NRSHAREDGLOBAL(start_sys_time.tv_sec),
+          (int)NRSHAREDGLOBAL(start_user_time.tv_usec));
 
-  fprintf(fp, "wtfuncs_where=%d\n", NRPRG(wtfuncs_where));
-  fprintf(fp, "wtfiles_where=%d\n", NRPRG(wtfiles_where));
-  fprintf(fp, "ttcustom_where=%d\n", NRPRG(ttcustom_where));
+  fprintf(fp, "wtfuncs_where=%d\n", NRSHAREDGLOBAL(wtfuncs_where));
+  fprintf(fp, "wtfiles_where=%d\n", NRSHAREDGLOBAL(wtfiles_where));
+  fprintf(fp, "ttcustom_where=%d\n", NRSHAREDGLOBAL(ttcustom_where));
 
   fprintf(fp, "deprecated_capture_request_parameters=%d\n",
           NRPRG(deprecated_capture_request_parameters));
 
-  fprintf(fp, "extensions=%p\n", NRPRG(extensions));
+  fprintf(fp, "extensions=%p\n", NRSHAREDGLOBAL(extensions));
   fflush(fp);
 
   nr_print_txn(fp);
