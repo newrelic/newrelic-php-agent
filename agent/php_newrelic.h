@@ -97,6 +97,9 @@ extern zend_module_entry newrelic_module_entry;
 #define NR_UNUSED_RETURN_VALUE_PTR
 #define NR_UNUSED_RETURN_VALUE_USED
 #define NR_UNUSED_THIS_PTR
+#define NR_PHP_RECORDSQL_OFF NR_SQL_NONE
+#define NR_PHP_RECORDSQL_RAW NR_SQL_RAW
+#define NR_PHP_RECORDSQL_OBFUSCATED NR_SQL_OBFUSCATED
 
 /*
  * Convenience macro to handle unused TSRM parameters.
