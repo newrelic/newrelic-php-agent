@@ -133,7 +133,7 @@ int nr_php_post_deactivate(void) {
 #else
   nr_free(NRCTXGLOBAL(predis_ctx));
 #endif /* OAPI */
-  nr_hashmap_destroy(&NRSHAREDGLOBAL(predis_commands));
+  nr_hashmap_destroy(&NRCTXGLOBAL(predis_commands));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_reset_user_instrumentation();

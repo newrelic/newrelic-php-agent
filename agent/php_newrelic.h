@@ -442,8 +442,6 @@ typedef struct _shared_globals_t {
   nrapp_t* app;  // The application used in the last attempt to initialize a
                  // transaction
 
-  nr_hashmap_t* predis_commands;
-
   /*
    * List of callback functions used to filter which exceptions caught
    * by the agent's last chance exception handler should recorded as
@@ -528,6 +526,7 @@ typedef struct _ctx_globals_t {
    * WIth OAPI, we must track this manually
    */
   nr_stack_t predis_ctxs;
+  nr_hashmap_t* predis_commands;
 #else
   char* drupal_invoke_all_hook;       // The current Drupal hook
   size_t drupal_invoke_all_hook_len;  // The length of the current Drupal hook

@@ -86,12 +86,12 @@ static void nr_predis_command_destroy(nrtime_t* time) {
 }
 
 static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  if (NULL == NRSHAREDGLOBAL(predis_commands)) {
-    NRSHAREDGLOBAL(predis_commands)
+  if (NULL == NRCTXGLOBAL(predis_commands)) {
+    NRCTXGLOBAL(predis_commands)
         = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
   }
 
-  return NRSHAREDGLOBAL(predis_commands);
+  return NRCTXGLOBAL(predis_commands);
 }
 
 static void nr_predis_instrument_connection(zval* conn TSRMLS_DC) {
