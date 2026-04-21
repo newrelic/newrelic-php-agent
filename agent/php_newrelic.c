@@ -82,7 +82,7 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "tt_threshold_is_apdex_f=%d\n",
           NRSHAREDGLOBAL(tt_threshold_is_apdex_f));
 
-  fprintf(fp, "current_framework=%d\n", (int)NRCTXGLOBAL(current_framework));
+  fprintf(fp, "current_framework=%d\n", (int)NRSHAREDGLOBAL(current_framework));
 
   fprintf(fp, "execute_count=%d\n", NRTXNGLOBAL(execute_count));
   fprintf(fp, "php_cur_stack_depth=%d\n", NRCTXGLOBAL(php_cur_stack_depth));

@@ -408,6 +408,8 @@ typedef struct _ini_t {
 } ini_t;
 
 typedef struct _shared_globals_t {
+  nrframework_t
+      current_framework;   // Current request framework (forced or detected)
   bool wordpress_plugins;  // set based on
                            // newrelic.framework.wordpress.hooks.options
   bool wordpress_core;     // set based on
@@ -461,10 +463,8 @@ typedef struct _shared_globals_t {
 } shared_globals_t;
 
 typedef struct _ctx_globals_t {
-  nrframework_t
-      current_framework;  // Current request framework (forced or detected)
-  char* doctrine_dql;     // The current Doctrine DQL. Only non-NULL while a
-                          // Doctrine object is on the stack.
+  char* doctrine_dql;  // The current Doctrine DQL. Only non-NULL while a
+                       // Doctrine object is on the stack.
   size_t drupal_http_request_depth;  // The current depth of
                                      // drupal_http_request() calls
   int php_cur_stack_depth;  // Total current depth of PHP stack, measured in PHP

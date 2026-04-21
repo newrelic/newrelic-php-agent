@@ -47,7 +47,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
 
-  NRCTXGLOBAL(current_framework) = NR_FW_UNSET;
+  NRSHAREDGLOBAL(current_framework) = NR_FW_UNSET;
   NRCTXGLOBAL(php_cur_stack_depth) = 0;
   NRCTXGLOBAL(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRSHAREDGLOBAL(sapi_headers) = NULL;

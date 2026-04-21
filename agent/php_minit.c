@@ -46,7 +46,7 @@ static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   nr_memset(nrg, 0, sizeof(*nrg));
   nrg->ini.enabled.value = 1;
   nrg->ini.enabled.where = PHP_INI_STAGE_STARTUP;
-  nrg->ctx.current_framework = NR_FW_UNSET;
+  nrg->shared.current_framework = NR_FW_UNSET;
 }
 
 /*

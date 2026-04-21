@@ -543,7 +543,7 @@ static void nr_drupal_call_user_func_array_callback(zend_function* func,
     return;
   }
 
-  if (!nr_drupal_is_framework(NRCTXGLOBAL(current_framework))) {
+  if (!nr_drupal_is_framework(NRSHAREDGLOBAL(current_framework))) {
     return;
   }
 

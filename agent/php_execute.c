@@ -637,7 +637,7 @@ static void nr_framework_log(const char* log_prefix,
 void nr_framework_create_metric(TSRMLS_D) {
   char* metric_name = NULL;
   const char* framework_name = "None";
-  nrframework_t fw = NRCTXGLOBAL(current_framework);
+  nrframework_t fw = NRSHAREDGLOBAL(current_framework);
 
   if (NR_FW_UNSET == fw) {
     return;
@@ -684,7 +684,7 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
                                         size_t num_frameworks,
                                         const char* filename,
                                         const size_t filename_len TSRMLS_DC) {
-  if (NR_FW_UNSET != NRCTXGLOBAL(current_framework)) {
+  if (NR_FW_UNSET != NRSHAREDGLOBAL(current_framework)) {
     return;
   }
 
@@ -694,18 +694,18 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
     detected_framework = nr_try_detect_framework(
         frameworks, num_frameworks, filename, filename_len TSRMLS_CC);
     if (NR_FW_UNSET != detected_framework) {
-      NRCTXGLOBAL(current_framework) = detected_framework;
+      NRSHAREDGLOBAL(current_framework) = detected_framework;
     }
   } else if (NR_FW_NONE == NRINI(force_framework)) {
     nr_framework_log("forcing framework", "None");
-    NRCTXGLOBAL(current_framework) = NR_FW_NONE;
+    NRSHAREDGLOBAL(current_framework) = NR_FW_NONE;
   } else {
     nrframework_t forced_framework = NR_FW_UNSET;
 
     forced_framework = nr_try_force_framework(
         frameworks, num_frameworks, NRINI(force_framework), filename TSRMLS_CC);
     if (NR_FW_UNSET != forced_framework) {
-      NRCTXGLOBAL(current_framework) = forced_framework;
+      NRSHAREDGLOBAL(current_framework) = forced_framework;
     }
   }
 }

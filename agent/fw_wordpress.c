@@ -402,7 +402,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
    * function, we're instrumenting hooks, and WordPress is currently executing
    * hooks (denoted by the wordpress_tag being set).
    */
-  if ((NR_FW_WORDPRESS != NRCTXGLOBAL(current_framework))
+  if ((NR_FW_WORDPRESS != NRSHAREDGLOBAL(current_framework))
       || (0 == NRINI(wordpress_hooks))
       || (NULL == NRCTXGLOBAL(wordpress_tag))) {
     return;
@@ -755,7 +755,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
    * function, we're instrumenting hooks, and WordPress is currently executing
    * hooks (denoted by the wordpress_tag being set).
    */
-  if ((NR_FW_WORDPRESS != NRCTXGLOBAL(current_framework))
+  if ((NR_FW_WORDPRESS != NRSHAREDGLOBAL(current_framework))
       || (0 == NRINI(wordpress_hooks))) {
     wrap_hook = false;
   }

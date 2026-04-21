@@ -143,7 +143,7 @@ int nr_php_post_deactivate(void) {
 
   NRCTXGLOBAL(cufa_callback) = NULL;
 
-  NRCTXGLOBAL(current_framework) = NR_FW_UNSET;
+  NRSHAREDGLOBAL(current_framework) = NR_FW_UNSET;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRCTXGLOBAL(drupal_http_request_segment) = NULL;

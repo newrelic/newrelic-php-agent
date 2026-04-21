@@ -308,10 +308,10 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   do {                                                                     \
     nrframework_t _required_fw = (fw);                                     \
                                                                            \
-    if (_required_fw != NRCTXGLOBAL(current_framework)) {                  \
+    if (_required_fw != NRSHAREDGLOBAL(current_framework)) {               \
       nrl_verbosedebug(NRL_FRAMEWORK, "%s: expected framework %d; got %d", \
                        __func__, _required_fw,                             \
-                       NRCTXGLOBAL(current_framework));                    \
+                       NRSHAREDGLOBAL(current_framework));                 \
       NR_PHP_WRAPPER_LEAVE;                                                \
     }                                                                      \
   } while (0)
