@@ -18,7 +18,6 @@
 #include "php_hash.h"
 #include "php_hooks.h"
 #include "php_internal_instrument.h"
-#include "php_newrelic.h"
 #include "php_stacked_segment.h"
 #include "php_user_instrument.h"
 #include "util_logging.h"

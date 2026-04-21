@@ -12,7 +12,6 @@
 #include "php_header.h"
 #include "php_globals.h"
 #include "php_hooks.h"
-#include "php_newrelic.h"
 #include "php_zval.h"
 #include "fw_support.h"
 #include "util_logging.h"

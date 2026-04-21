@@ -5,7 +5,6 @@
 
 #include "php_agent.h"
 #include "php_internal_instrument.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "fw_codeigniter.h"

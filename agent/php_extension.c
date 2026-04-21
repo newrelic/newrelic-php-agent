@@ -5,7 +5,6 @@
 
 #include "php_agent.h"
 #include "php_extension.h"
-#include "php_newrelic.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "php_hash.h"

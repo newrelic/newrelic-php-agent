@@ -8,7 +8,6 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_hash.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "nr_header.h"

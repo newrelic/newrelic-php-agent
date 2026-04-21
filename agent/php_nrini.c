@@ -7,7 +7,6 @@
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 
 #include "nr_commands.h"

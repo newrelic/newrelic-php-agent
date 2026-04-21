@@ -7,7 +7,6 @@
 #include "php_agent.h"
 #include "php_datastore.h"
 #include "php_pgsql.h"
-#include "php_newrelic.h"
 #include "php_pgsql_private.h"
 #include "util_logging.h"
 

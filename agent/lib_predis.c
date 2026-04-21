@@ -5,7 +5,6 @@
 
 #include "php_agent.h"
 #include "php_call.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_datastore.h"
 #include "php_execute.h"

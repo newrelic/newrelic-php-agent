@@ -9,15 +9,11 @@
 #ifndef PHP_NEWRELIC_HDR
 #define PHP_NEWRELIC_HDR
 
-#include "SAPI.h"
 #include "nr_banner.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_segment.h"
 #include "nr_txn.h"
-#include "php.h"
-#include "php_compat.h"
 #include "php_extension.h"
-#include "php_includes.h"
 #include "util_hashmap.h"
 #include "util_matcher.h"
 #include "util_vector.h"

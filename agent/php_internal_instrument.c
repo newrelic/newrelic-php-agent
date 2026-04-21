@@ -19,7 +19,6 @@
 #include "php_memcached.h"
 #include "php_mysql.h"
 #include "php_mysqli.h"
-#include "php_newrelic.h"
 #include "php_pdo.h"
 #include "php_pgsql.h"
 #include "php_redis.h"

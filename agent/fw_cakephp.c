@@ -6,7 +6,6 @@
 #include "php_agent.h"
 #include "php_error.h"
 #include "php_execute.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"

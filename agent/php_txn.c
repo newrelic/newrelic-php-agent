@@ -11,7 +11,6 @@
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_header.h"
-#include "php_newrelic.h"
 #include "php_output.h"
 #include "php_samplers.h"
 #include "php_user_instrument.h"

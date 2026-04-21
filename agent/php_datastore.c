@@ -7,7 +7,6 @@
 #include "php_datastore.h"
 #include "lib_doctrine2.h"
 #include "nr_segment_datastore.h"
-#include "php_newrelic.h"
 #include "util_logging.h"
 
 /*

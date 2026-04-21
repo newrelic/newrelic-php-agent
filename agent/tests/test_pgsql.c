@@ -2,7 +2,6 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "php_newrelic.h"
 #include "tlib_datastore.h"
 #include "tlib_main.h"
 #include "tlib_php.h"

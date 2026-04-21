@@ -8,7 +8,6 @@
 #include "php_datastore.h"
 #include "php_mysql.h"
 #include "php_mysql_private.h"
-#include "php_newrelic.h"
 #include "util_system.h"
 
 /*

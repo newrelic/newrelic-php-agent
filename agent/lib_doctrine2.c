@@ -9,7 +9,6 @@
  * Implemented according to the newrelic-internal SQL Input Query Spec.
  */
 #include "php_agent.h"
-#include "php_newrelic.h"
 #include "php_wrapper.h"
 #include "fw_support.h"
 #include "util_logging.h"

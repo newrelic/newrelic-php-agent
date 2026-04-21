@@ -9,7 +9,6 @@
 #include "php_api.h"
 #include "php_error.h"
 #include "php_hash.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "fw_drupal_common.h"
 #include "nr_rum.h"

@@ -7,7 +7,6 @@
 #include "php_call.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "php_wrapper.h"

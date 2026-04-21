@@ -11,7 +11,6 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
-#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "nr_txn.h"

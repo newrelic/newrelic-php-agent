@@ -5,7 +5,6 @@
 
 #include "php_agent.h"
 #include "php_samplers.h"
-#include "php_newrelic.h"
 #include "util_errno.h"
 #include "util_logging.h"
 #include "util_metrics.h"
