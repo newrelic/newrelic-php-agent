@@ -105,7 +105,7 @@ int nr_php_post_deactivate(void) {
 
   nr_php_remove_transient_user_instrumentation();
 
-  nr_php_exception_filters_destroy(&NRPRG(exception_filters));
+  nr_php_exception_filters_destroy(&NRSHAREDGLOBAL(exception_filters));
 
   nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_plugin_matcher));
   nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_core_matcher));
@@ -113,26 +113,26 @@ int nr_php_post_deactivate(void) {
   nr_hashmap_destroy(&NRSHAREDGLOBAL(wordpress_file_metadata));
   nr_hashmap_destroy(&NRSHAREDGLOBAL(wordpress_clean_tag_cache));
 
-  nr_free(NRPRG(mysql_last_conn));
-  nr_free(NRPRG(pgsql_last_conn));
-  nr_hashmap_destroy(&NRPRG(datastore_connections));
+  nr_free(NRCTXGLOBAL(mysql_last_conn));
+  nr_free(NRCTXGLOBAL(pgsql_last_conn));
+  nr_hashmap_destroy(&NRCTXGLOBAL(datastore_connections));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
    * Pre-OAPI, this variables were kept on the call stack and
    * therefore had no need to be in an nr_stack
    */
-  nr_stack_destroy_fields(&NRPRG(wordpress_tags));
-  nr_stack_destroy_fields(&NRPRG(wordpress_tag_states));
-  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_hooks));
-  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_states));
+  nr_stack_destroy_fields(&NRCTXGLOBAL(wordpress_tags));
+  nr_stack_destroy_fields(&NRCTXGLOBAL(wordpress_tag_states));
+  nr_stack_destroy_fields(&NRCTXGLOBAL(drupal_invoke_all_hooks));
+  nr_stack_destroy_fields(&NRCTXGLOBAL(drupal_invoke_all_states));
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_stack_destroy_fields(&NRPRG(predis_ctxs));
+  nr_stack_destroy_fields(&NRCTXGLOBAL(predis_ctxs));
 #else
-  nr_free(NRPRG(predis_ctx));
+  nr_free(NRCTXGLOBAL(predis_ctx));
 #endif /* OAPI */
   nr_hashmap_destroy(&NRSHAREDGLOBAL(predis_commands));
 
@@ -142,12 +142,12 @@ int nr_php_post_deactivate(void) {
   nr_vector_destroy(&NRSHAREDGLOBAL(user_function_wrappers));
 #endif
 
-  NRPRG(cufa_callback) = NULL;
+  NRCTXGLOBAL(cufa_callback) = NULL;
 
-  NRPRG(current_framework) = NR_FW_UNSET;
+  NRCTXGLOBAL(current_framework) = NR_FW_UNSET;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(drupal_http_request_segment) = NULL;
+  NRCTXGLOBAL(drupal_http_request_segment) = NULL;
 #endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");

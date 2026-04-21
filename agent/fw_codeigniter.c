@@ -5,6 +5,7 @@
 
 #include "php_agent.h"
 #include "php_internal_instrument.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "fw_codeigniter.h"
@@ -37,7 +38,7 @@ static void nr_codeigniter_name_the_wt(zend_function* func,
                                            TSRMLS_DC) {
   zend_op_array* op_array = NULL;
 
-  if ((NR_FW_CODEIGNITER != NRPRG(current_framework) || (NULL == func)
+  if ((NR_FW_CODEIGNITER != NRCTXGLOBAL(current_framework) || (NULL == func)
        || (NULL == func->common.scope))) {
     return;
   }

@@ -7,6 +7,7 @@
 #include "nr_txn.h"
 #include "php_agent.h"
 #include "php_call.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_error.h"
 #include "php_execute.h"
@@ -160,10 +161,8 @@ static void nr_laravel_name_transaction(zval* router, zval* request TSRMLS_DC) {
   if (nr_php_object_has_method(router, "current" TSRMLS_CC)) {
     route = nr_php_call(router, "current");
   } else {
-    nrl_debug(
-        NRL_FRAMEWORK,
-        "%s: router does not provide a current() method",
-        __func__);
+    nrl_debug(NRL_FRAMEWORK, "%s: router does not provide a current() method",
+              __func__);
   }
 
   if (nr_php_is_zval_valid_object(route)) {
@@ -381,10 +380,10 @@ NR_PHP_WRAPPER(nr_laravel_exception_report) {
     if (nr_php_is_zval_true(retval)) {
       nr_status_t st;
 
-      st = nr_php_error_record_exception(NRPRG(txn), exception, priority,
-                                         true /* add to segment */,
-                                         NULL /* use default prefix */,
-                                         &NRPRG(exception_filters) TSRMLS_CC);
+      st = nr_php_error_record_exception(
+          NRPRG(txn), exception, priority, true /* add to segment */,
+          NULL /* use default prefix */,
+          &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC);
 
       if (NR_FAILURE == st) {
         nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception",
@@ -959,7 +958,7 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function_before_after_clean(
       NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
       nr_laravel_console_application_dorun, NULL, NULL);
-  
+
   /*
    * The following functions have been added to ensure that the transaction
    * is properly stopped when Laravel Horizon is being used. This is
@@ -987,8 +986,9 @@ void nr_laravel_enable(TSRMLS_D) {
       NR_PSTR("Illuminate\\Queue\\Worker::daemonShouldRun"),
       nr_laravel_queue_restart_transaction, NULL, NULL);
 #else
-  nr_php_wrap_user_function(NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
-                            nr_laravel_console_application_dorun TSRMLS_CC);
+  nr_php_wrap_user_function(
+      NR_PSTR("Symfony\\Component\\Console\\Application::doRun"),
+      nr_laravel_console_application_dorun TSRMLS_CC);
 #endif
   /*
    * Start Laravel queue instrumentation, provided it's not disabled.

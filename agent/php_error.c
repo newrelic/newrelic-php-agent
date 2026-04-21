@@ -12,6 +12,7 @@
 #include "php_header.h"
 #include "php_globals.h"
 #include "php_hooks.h"
+#include "php_newrelic.h"
 #include "php_zval.h"
 #include "fw_support.h"
 #include "util_logging.h"
@@ -99,8 +100,8 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_php_add_assoc_string(error_arr, "file", file);
   nr_php_add_assoc_string(error_arr, "stack", stack_json);
 
-  fci = NRPRG(error_group_user_callback).fci;
-  fcc = NRPRG(error_group_user_callback).fcc;
+  fci = NRCTXGLOBAL(error_group_user_callback).fci;
+  fcc = NRCTXGLOBAL(error_group_user_callback).fcc;
 
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
 
@@ -273,7 +274,7 @@ PHP_FUNCTION(newrelic_exception_handler) {
 
   nr_php_error_record_exception(
       NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, true,
-      "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+      "Uncaught exception ", &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC);
   /*
    * Finally, we need to generate an E_ERROR to match what PHP would have done
    * if this handler wasn't installed. Happily, PHP exposes an API function

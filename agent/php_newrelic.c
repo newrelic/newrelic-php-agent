@@ -82,14 +82,14 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "tt_threshold_is_apdex_f=%d\n",
           NRSHAREDGLOBAL(tt_threshold_is_apdex_f));
 
-  fprintf(fp, "current_framework=%d\n", (int)NRPRG(current_framework));
+  fprintf(fp, "current_framework=%d\n", (int)NRCTXGLOBAL(current_framework));
 
   fprintf(fp, "execute_count=%d\n", NRTXNGLOBAL(execute_count));
-  fprintf(fp, "php_cur_stack_depth=%d\n", NRPRG(php_cur_stack_depth));
+  fprintf(fp, "php_cur_stack_depth=%d\n", NRCTXGLOBAL(php_cur_stack_depth));
 
   fprintf(fp, "txn=%p\n", NRPRG(txn));
 
-  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRPRG(start_sample));
+  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRSHAREDGLOBAL(start_sample));
 
   fprintf(fp, "start_user_time=" NR_TIME_FMT ".%06d\n",
           (nrtime_t)NRSHAREDGLOBAL(start_user_time.tv_sec),
@@ -103,7 +103,7 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "ttcustom_where=%d\n", NRSHAREDGLOBAL(ttcustom_where));
 
   fprintf(fp, "deprecated_capture_request_parameters=%d\n",
-          NRPRG(deprecated_capture_request_parameters));
+          NRCTXGLOBAL(deprecated_capture_request_parameters));
 
   fprintf(fp, "extensions=%p\n", NRSHAREDGLOBAL(extensions));
   fflush(fp);

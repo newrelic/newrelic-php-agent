@@ -5,6 +5,7 @@
 
 #include "php_agent.h"
 #include "php_internal_instrument.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "php_hash.h"
@@ -49,7 +50,7 @@ int nr_drupal_is_framework(nrframework_t fw) {
  * Purpose : Wrap a module hook function to generate module and hook metrics.
  */
 NR_PHP_WRAPPER(nr_drupal_wrap_module_hook) {
-  if (!nr_drupal_is_framework(NRPRG(current_framework))) {
+  if (!nr_drupal_is_framework(NRCTXGLOBAL(current_framework))) {
     NR_PHP_WRAPPER_LEAVE;
   }
 
@@ -300,21 +301,21 @@ void nr_drupal_headers_add(zval* arg, bool is_drupal_7 TSRMLS_DC) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 void nr_drupal_invoke_all_hook_stacks_push(zval* hook_copy) {
   if (nr_php_is_zval_non_empty_string(hook_copy)) {
-    nr_stack_push(&NRPRG(drupal_invoke_all_hooks), hook_copy);
-    nr_stack_push(&NRPRG(drupal_invoke_all_states), (void*)!NULL);
-    NRPRG(check_cufa) = true;
+    nr_stack_push(&NRCTXGLOBAL(drupal_invoke_all_hooks), hook_copy);
+    nr_stack_push(&NRCTXGLOBAL(drupal_invoke_all_states), (void*)!NULL);
+    NRCTXGLOBAL(check_cufa) = true;
   } else {
-    nr_stack_push(&NRPRG(drupal_invoke_all_states), NULL);
+    nr_stack_push(&NRCTXGLOBAL(drupal_invoke_all_states), NULL);
   }
 }
 
 void nr_drupal_invoke_all_hook_stacks_pop() {
-  if ((bool)nr_stack_pop(&NRPRG(drupal_invoke_all_states))) {
-    zval* hook_copy = nr_stack_pop(&NRPRG(drupal_invoke_all_hooks));
+  if ((bool)nr_stack_pop(&NRCTXGLOBAL(drupal_invoke_all_states))) {
+    zval* hook_copy = nr_stack_pop(&NRCTXGLOBAL(drupal_invoke_all_hooks));
     nr_php_arg_release(&hook_copy);
   }
-  if (nr_stack_is_empty(&NRPRG(drupal_invoke_all_hooks))) {
-    NRPRG(check_cufa) = false;
+  if (nr_stack_is_empty(&NRCTXGLOBAL(drupal_invoke_all_hooks))) {
+    NRCTXGLOBAL(check_cufa) = false;
   }
 }
 #endif

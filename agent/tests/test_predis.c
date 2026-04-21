@@ -796,8 +796,9 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(a, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("first connection", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+  tlib_pass_if_size_t_equal(
+      "first connection", 1,
+      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
 
   assert_datastore_instance_equals(
       "second connection",
@@ -807,8 +808,9 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(b, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("second connection", 2,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+  tlib_pass_if_size_t_equal(
+      "second connection", 2,
+      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
 
   assert_datastore_instance_equals(
       "updated connection",
@@ -818,8 +820,9 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = default_port,
       }),
       nr_predis_save_datastore_instance(b, NULL TSRMLS_CC));
-  tlib_pass_if_size_t_equal("second connection", 2,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+  tlib_pass_if_size_t_equal(
+      "second connection", 2,
+      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
 
   nr_php_zval_free(&a);
   nr_php_zval_free(&b);
@@ -828,7 +831,6 @@ static void test_save_datastore_instance(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-
   default_database = nr_formatf("%ld", (long)nr_predis_default_database);
   default_port = nr_formatf("%ld", (long)nr_predis_default_port);
   system_host_name = nr_system_get_hostname();

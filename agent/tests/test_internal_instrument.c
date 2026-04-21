@@ -49,11 +49,11 @@ static void test_cufa_direct(TSRMLS_D) {
 
   tlib_php_request_start();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(check_cufa) = true;
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRCTXGLOBAL(check_cufa) = true;
 #endif
 
-  NRPRG(check_cufa) = true;
+  NRCTXGLOBAL(check_cufa) = true;
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
       "function g() { return call_user_func_array('f', array()); }" TSRMLS_CC);
@@ -79,11 +79,11 @@ static void test_cufa_indirect(TSRMLS_D) {
 
   tlib_php_request_start();
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(check_cufa) = true;
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  NRCTXGLOBAL(check_cufa) = true;
 #endif
 
-  NRPRG(check_cufa) = true;
+  NRCTXGLOBAL(check_cufa) = true;
   define_cufa_function_f(TSRMLS_C);
   tlib_php_request_eval(
       "function g() { $cufa = 'call_user_func_array'; return $cufa('f', "
@@ -106,7 +106,6 @@ static void test_cufa_indirect(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_cufa_direct(TSRMLS_C);

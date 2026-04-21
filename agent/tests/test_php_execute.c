@@ -2,6 +2,7 @@
  * Copyright 2020 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "php_newrelic.h"
 #include "tlib_php.h"
 
 #include "php_agent.h"
@@ -108,13 +109,13 @@ static void test_php_cur_stack_depth(TSRMLS_D) {
   nr_php_zval_free(&expr);
 
   tlib_pass_if_int_equal("PHP stack depth tracking when recording", 0,
-                         NRPRG(php_cur_stack_depth));
+                         NRCTXGLOBAL(php_cur_stack_depth));
 
   expr = nr_php_call(NULL, "f2");
   nr_php_zval_free(&expr);
 
   tlib_pass_if_int_equal("PHP stack depth tracking when ignoring", 0,
-                         NRPRG(php_cur_stack_depth));
+                         NRCTXGLOBAL(php_cur_stack_depth));
 
   tlib_php_request_end();
 }

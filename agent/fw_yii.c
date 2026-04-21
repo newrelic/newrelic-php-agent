@@ -180,7 +180,8 @@ NR_PHP_WRAPPER(nr_yii2_error_handler_wrapper) {
   if (NR_SUCCESS
       != nr_php_error_record_exception(
           NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
-          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC)) {
+          "Uncaught exception ",
+          &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC)) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
   }
 

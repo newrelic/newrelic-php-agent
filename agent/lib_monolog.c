@@ -285,7 +285,7 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
 
     if (NULL != obj) {
       nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
-                                  ZSTR_VAL(key), obj);
+                             ZSTR_VAL(key), obj);
       nro_delete(obj);
     } else {
       nrl_verbosedebug(NRL_INSTRUMENT,
@@ -384,7 +384,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
   /* Record the log event */
   nr_txn_record_log_event(NRPRG(txn), level_name, message, timestamp,
-                          context_attributes, NRPRG(app));
+                          context_attributes, NRSHAREDGLOBAL(app));
 
   nr_free(level_name);
   nr_free(message);
@@ -404,7 +404,8 @@ static int nr_monolog_create_decorate_processor_function(TSRMLS_D) {
   zend_function* processor_func = NULL;
 
   /* see if processor function exists and if not create */
-  processor_func = nr_php_find_function(LOG_DECORATE_NAMESPACE_LC "\\" LOG_DECORATE_PROC_FUNC_NAME);
+  processor_func = nr_php_find_function(LOG_DECORATE_NAMESPACE_LC
+                                        "\\" LOG_DECORATE_PROC_FUNC_NAME);
   if (NULL == processor_func) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "Creating Monolog decorating processor func");
@@ -438,7 +439,8 @@ static int nr_monolog_create_decorate_processor_function(TSRMLS_D) {
                   __func__);
     }
   } else {
-    nrl_verbosedebug(NRL_INSTRUMENT, "Using existing Monolog decorating processor func");
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "Using existing Monolog decorating processor func");
   }
 
   return retval;
@@ -472,12 +474,11 @@ NR_PHP_WRAPPER(nr_monolog_logger_pushhandler) {
 
     /* Verify the handler implements pushProcessor () */
     if (!nr_php_object_has_method(handler, "pushProcessor" TSRMLS_CC)) {
-      nrl_warning(
-          NRL_INSTRUMENT,
-          "Monolog handler %*s does not implement the pushProcessor() "
-          "method so log decoration will not occur!",
-          NRSAFELEN(nr_php_class_entry_name_length(Z_OBJCE_P(handler))),
-          nr_php_class_entry_name(Z_OBJCE_P(handler)));
+      nrl_warning(NRL_INSTRUMENT,
+                  "Monolog handler %*s does not implement the pushProcessor() "
+                  "method so log decoration will not occur!",
+                  NRSAFELEN(nr_php_class_entry_name_length(Z_OBJCE_P(handler))),
+                  nr_php_class_entry_name(Z_OBJCE_P(handler)));
 
       goto end;
     }

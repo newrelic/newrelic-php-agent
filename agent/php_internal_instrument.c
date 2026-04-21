@@ -2512,7 +2512,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
  * to enable profiling of call_user_func_array
  */
 NR_INNER_WRAPPER(call_user_func_array) {
-  if (NULL != NRPRG(cufa_callback)) {
+  if (NULL != NRCTXGLOBAL(cufa_callback)) {
     zval* args = NULL;
     zend_fcall_info fci;
     zend_fcall_info_cache fcc;
@@ -2530,7 +2530,7 @@ NR_INNER_WRAPPER(call_user_func_array) {
       goto leave;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
+    nr_php_call_user_func_array_handler(NRCTXGLOBAL(cufa_callback),
                                         fcc.function_handler, NULL TSRMLS_CC);
   }
 
@@ -3958,7 +3958,7 @@ void nr_php_add_call_user_func_array_pre_callback(
   nrinternalfn_t* cufa_wraprec = NULL;
   nrinternalfn_t* w = NULL;
 
-  NRPRG(cufa_callback) = callback;
+  NRCTXGLOBAL(cufa_callback) = callback;
 
   for (w = nr_wrapped_internal_functions; NULL != w; w = w->next) {
     if (0 == nr_strcmp(w->full_name, "call_user_func_array")) {

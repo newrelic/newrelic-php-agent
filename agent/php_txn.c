@@ -257,8 +257,8 @@ static int nr_php_capture_request_parameter(zval* element,
       break;
   }
 
-  nr_txn_add_request_parameter(txn, keystr, datastr,
-                               NRPRG(deprecated_capture_request_parameters));
+  nr_txn_add_request_parameter(
+      txn, keystr, datastr, NRCTXGLOBAL(deprecated_capture_request_parameters));
 
   return ZEND_HASH_APPLY_KEEP;
 }
@@ -1280,7 +1280,7 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 #endif
 
   nrl_verbosedebug(NRL_TXN, "%s: Ending the transaction and stack depth = %d",
-                   __func__, NRPRG(php_cur_stack_depth));
+                   __func__, NRCTXGLOBAL(php_cur_stack_depth));
 
   /* Stop all recording although we shouldn't be getting anything */
   NRTXN(status.recording) = 0;

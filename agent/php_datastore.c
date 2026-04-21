@@ -7,6 +7,7 @@
 #include "php_datastore.h"
 #include "lib_doctrine2.h"
 #include "nr_segment_datastore.h"
+#include "php_newrelic.h"
 #include "util_logging.h"
 
 /*
@@ -67,11 +68,11 @@ static void nr_php_modify_sql_table_name_wordpress(char* tablename) {
 static nr_modify_table_name_fn_t nr_php_modify_table_name_fn(TSRMLS_D) {
   nr_modify_table_name_fn_t modify_table_name_fn = NULL;
 
-  if (NR_FW_WORDPRESS == NRPRG(current_framework)) {
+  if (NR_FW_WORDPRESS == NRCTXGLOBAL(current_framework)) {
     modify_table_name_fn = &nr_php_modify_sql_table_name_wordpress;
   }
 
-  if (NR_FW_MAGENTO2 == NRPRG(current_framework)) {
+  if (NR_FW_MAGENTO2 == NRCTXGLOBAL(current_framework)) {
     modify_table_name_fn = &nr_php_modify_sql_table_name_magento2;
   }
 
@@ -171,7 +172,8 @@ int nr_php_datastore_has_conn(const char* key TSRMLS_DC) {
     return 0;
   }
 
-  return nr_hashmap_has(NRPRG(datastore_connections), key, nr_strlen(key));
+  return nr_hashmap_has(NRCTXGLOBAL(datastore_connections), key,
+                        nr_strlen(key));
 }
 
 void nr_php_datastore_instance_save(const char* key,
@@ -181,7 +183,7 @@ void nr_php_datastore_instance_save(const char* key,
     return;
   }
 
-  nr_hashmap_update(NRPRG(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_update(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key),
                     instance);
 }
 
@@ -191,8 +193,8 @@ nr_datastore_instance_t* nr_php_datastore_instance_retrieve(
     return NULL;
   }
 
-  return (nr_datastore_instance_t*)nr_hashmap_get(NRPRG(datastore_connections),
-                                                  key, nr_strlen(key));
+  return (nr_datastore_instance_t*)nr_hashmap_get(
+      NRCTXGLOBAL(datastore_connections), key, nr_strlen(key));
 }
 
 void nr_php_datastore_instance_remove(const char* key TSRMLS_DC) {
@@ -200,5 +202,5 @@ void nr_php_datastore_instance_remove(const char* key TSRMLS_DC) {
     return;
   }
 
-  nr_hashmap_delete(NRPRG(datastore_connections), key, nr_strlen(key));
+  nr_hashmap_delete(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key));
 }

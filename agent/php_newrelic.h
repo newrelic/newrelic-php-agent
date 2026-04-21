@@ -448,6 +448,13 @@ typedef struct _shared_globals_t {
 
   nr_hashmap_t* predis_commands;
 
+  /*
+   * List of callback functions used to filter which exceptions caught
+   * by the agent's last chance exception handler should recorded as
+   * traced errors.
+   */
+  zend_llist exception_filters;
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
@@ -498,14 +505,11 @@ typedef struct _ctx_globals_t {
    */
   int deprecated_capture_request_parameters;
 
-  /*
-   * List of callback functions used to filter which exceptions caught
-   * by the agent's last chance exception handler should recorded as
-   * traced errors.
-   */
-  zend_llist exception_filters;
   nrcallbackfn_t error_group_user_callback;  // The user defined callback for
                                              // error group naming
+
+  bool check_cufa;  // Whether we need to check cufa because we are
+                    // instrumenting hooks, or whether we can skip cufa
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /* Without OAPI, we are able to utilize the call stack to keep track
@@ -516,7 +520,6 @@ typedef struct _ctx_globals_t {
                                         // current hook needs to be released
 
   nr_segment_t* drupal_http_request_segment;
-  bool check_cufa;
   /* Without OAPI, we are able to utilize the call stack to keep track
    * of the previous tags. With OAPI, we can no longer do this so
    * we track the stack manually */
@@ -532,10 +535,8 @@ typedef struct _ctx_globals_t {
 #else
   char* drupal_invoke_all_hook;       // The current Drupal hook
   size_t drupal_invoke_all_hook_len;  // The length of the current Drupal hook
-  bool check_cufa;      // Whether we need to check cufa because we are
-                        // instrumenting hooks, or whether we can skip cufa
-  char* wordpress_tag;  // The current WordPress tag
-  char* predis_ctx;     // The current Predis pipeline context name, if any
+  char* wordpress_tag;                // The current WordPress tag
+  char* predis_ctx;  // The current Predis pipeline context name, if any
 
 #endif  // OAPI
 } ctx_globals_t;

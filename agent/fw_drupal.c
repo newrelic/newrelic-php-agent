@@ -7,6 +7,7 @@
 #include "php_call.h"
 #include "php_hash.h"
 #include "php_internal_instrument.h"
+#include "php_newrelic.h"
 #include "php_user_instrument.h"
 #include "php_execute.h"
 #include "php_wrapper.h"
@@ -246,7 +247,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
-  NRPRG(drupal_http_request_depth) += 1;
+  NRCTXGLOBAL(drupal_http_request_depth) += 1;
 
   /*
    * We only want to create a metric here if this isn't a recursive call to
@@ -254,21 +255,21 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
    * We can check how many drupal_http_request() calls are on the stack by
    * checking a counter.
    */
-  if (1 == NRPRG(drupal_http_request_depth)) {
+  if (1 == NRCTXGLOBAL(drupal_http_request_depth)) {
     /*
      * Parent this segment to the txn root so as to not interfere with
      * the OAPI default segment stack, which is used to dispatch to the
      * after function properly
      */
-    NRPRG(drupal_http_request_segment)
+    NRCTXGLOBAL(drupal_http_request_segment)
         = nr_segment_start(NRPRG(txn), NULL, NULL);
     /*
      * The new segment needs to have the wraprec data attached, so that
      * fcall_end is able to properly dispatch to the after wrapper, as
      * this new segment is now at the top of the segment stack.
      */
-    if (NULL != NRPRG(drupal_http_request_segment)) {
-      NRPRG(drupal_http_request_segment)->wraprec = auto_segment->wraprec;
+    if (NULL != NRCTXGLOBAL(drupal_http_request_segment)) {
+      NRCTXGLOBAL(drupal_http_request_segment)->wraprec = auto_segment->wraprec;
     }
   }
 }
@@ -296,7 +297,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
    * We can check how many drupal_http_request() calls are on the stack by
    * checking a counter.
    */
-  if (1 == NRPRG(drupal_http_request_depth)) {
+  if (1 == NRCTXGLOBAL(drupal_http_request_depth)) {
     nr_segment_external_params_t external_params
         = {.library = "Drupal",
            .uri = nr_strndup(Z_STRVAL_P(arg1), Z_STRLEN_P(arg1))};
@@ -316,9 +317,9 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
           NRP_CAT(external_params.encoded_response_header));
     }
 
-    nr_segment_external_end(&NRPRG(drupal_http_request_segment),
+    nr_segment_external_end(&NRCTXGLOBAL(drupal_http_request_segment),
                             &external_params);
-    NRPRG(drupal_http_request_segment) = NULL;
+    NRCTXGLOBAL(drupal_http_request_segment) = NULL;
 
     nr_free(external_params.encoded_response_header);
     nr_free(external_params.procedure);
@@ -327,7 +328,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_after) {
 
 end:
   nr_php_arg_release(&arg1);
-  NRPRG(drupal_http_request_depth) -= 1;
+  NRCTXGLOBAL(drupal_http_request_depth) -= 1;
 }
 NR_PHP_WRAPPER_END
 
@@ -338,7 +339,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_clean) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
-  NRPRG(drupal_http_request_depth) -= 1;
+  NRCTXGLOBAL(drupal_http_request_depth) -= 1;
 }
 NR_PHP_WRAPPER_END
 #else
@@ -383,7 +384,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
 
   NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_DRUPAL);
 
-  NRPRG(drupal_http_request_depth) += 1;
+  NRCTXGLOBAL(drupal_http_request_depth) += 1;
 
   /*
    * Grab the URL for the external metric, which is the first parameter in all
@@ -403,7 +404,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
    * We can check how many drupal_http_request() calls are on the stack by
    * checking a counter.
    */
-  if (1 == NRPRG(drupal_http_request_depth)) {
+  if (1 == NRCTXGLOBAL(drupal_http_request_depth)) {
     nr_segment_t* segment;
     nr_segment_external_params_t external_params
         = {.library = "Drupal",
@@ -444,7 +445,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
 
 end:
   nr_php_arg_release(&arg1);
-  NRPRG(drupal_http_request_depth) -= 1;
+  NRCTXGLOBAL(drupal_http_request_depth) -= 1;
 }
 NR_PHP_WRAPPER_END
 
@@ -484,7 +485,8 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  zval* curr_hook = (zval*)nr_stack_get_top(&NRPRG(drupal_invoke_all_hooks));
+  zval* curr_hook
+      = (zval*)nr_stack_get_top(&NRCTXGLOBAL(drupal_invoke_all_hooks));
   if (!nr_php_is_zval_non_empty_string(curr_hook)) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
@@ -494,8 +496,8 @@ static void nr_drupal_wrap_hook_within_module_invoke_all(
   char* hook_name = Z_STRVAL_P(curr_hook);
   size_t hook_len = Z_STRLEN_P(curr_hook);
 #else
-  char* hook_name = NRPRG(drupal_invoke_all_hook);
-  size_t hook_len = NRPRG(drupal_invoke_all_hook_len);
+  char* hook_name = NRCTXGLOBAL(drupal_invoke_all_hook);
+  size_t hook_len = NRCTXGLOBAL(drupal_invoke_all_hook_len);
 #endif
   if (NULL == hook_name) {
     nrl_verbosedebug(NRL_FRAMEWORK,
@@ -542,7 +544,7 @@ static void nr_drupal_call_user_func_array_callback(zend_function* func,
     return;
   }
 
-  if (!nr_drupal_is_framework(NRPRG(current_framework))) {
+  if (!nr_drupal_is_framework(NRCTXGLOBAL(current_framework))) {
     return;
   }
 
@@ -801,20 +803,20 @@ NR_PHP_WRAPPER(nr_drupal_wrap_module_invoke_all) {
     goto leave;
   }
 
-  prev_hook = NRPRG(drupal_invoke_all_hook);
-  prev_hook_len = NRPRG(drupal_invoke_all_hook_len);
-  NRPRG(drupal_invoke_all_hook)
+  prev_hook = NRCTXGLOBAL(drupal_invoke_all_hook);
+  prev_hook_len = NRCTXGLOBAL(drupal_invoke_all_hook_len);
+  NRCTXGLOBAL(drupal_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
-  NRPRG(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
-  NRPRG(check_cufa) = true;
+  NRCTXGLOBAL(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
+  NRCTXGLOBAL(check_cufa) = true;
 
   NR_PHP_WRAPPER_CALL;
 
-  nr_free(NRPRG(drupal_invoke_all_hook));
-  NRPRG(drupal_invoke_all_hook) = prev_hook;
-  NRPRG(drupal_invoke_all_hook_len) = prev_hook_len;
-  if (NULL == NRPRG(drupal_invoke_all_hook)) {
-    NRPRG(check_cufa) = false;
+  nr_free(NRCTXGLOBAL(drupal_invoke_all_hook));
+  NRCTXGLOBAL(drupal_invoke_all_hook) = prev_hook;
+  NRCTXGLOBAL(drupal_invoke_all_hook_len) = prev_hook_len;
+  if (NULL == NRCTXGLOBAL(drupal_invoke_all_hook)) {
+    NRCTXGLOBAL(check_cufa) = false;
   }
 
 leave:

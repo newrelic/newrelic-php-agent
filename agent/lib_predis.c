@@ -549,9 +549,9 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  char* ctx = (char*)nr_stack_get_top(&NRPRG(predis_ctxs));
+  char* ctx = (char*)nr_stack_get_top(&NRCTXGLOBAL(predis_ctxs));
 #else
-  char* ctx = NRPRG(predis_ctx);
+  char* ctx = NRCTXGLOBAL(predis_ctx);
 #endif /* OAPI */
   if (ctx) {
     /*
@@ -718,12 +718,12 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_stack_push(&NRPRG(predis_ctxs),
+  nr_stack_push(&NRCTXGLOBAL(predis_ctxs),
                 nr_formatf("Predis #" NR_TIME_FMT, nr_get_time()));
 #else
   char* prev_predis_ctx;
-  prev_predis_ctx = NRPRG(predis_ctx);
-  NRPRG(predis_ctx) = nr_formatf("Predis #" NR_TIME_FMT, nr_get_time());
+  prev_predis_ctx = NRCTXGLOBAL(predis_ctx);
+  NRCTXGLOBAL(predis_ctx) = nr_formatf("Predis #" NR_TIME_FMT, nr_get_time());
 #endif /* OAPI */
 
   NR_PHP_WRAPPER_CALL;
@@ -737,8 +737,8 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
    */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_free(NRPRG(predis_ctx));
-  NRPRG(predis_ctx) = prev_predis_ctx;
+  nr_free(NRCTXGLOBAL(predis_ctx));
+  NRCTXGLOBAL(predis_ctx) = prev_predis_ctx;
 #endif /* not OAPI */
 }
 NR_PHP_WRAPPER_END
@@ -746,7 +746,7 @@ NR_PHP_WRAPPER_END
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 static void predis_executePipeline_handle_stack() {
-  char* predis_ctx = (char*)nr_stack_pop(&NRPRG(predis_ctxs));
+  char* predis_ctx = (char*)nr_stack_pop(&NRCTXGLOBAL(predis_ctxs));
   nr_free(predis_ctx);
 }
 

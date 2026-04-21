@@ -46,7 +46,7 @@ static void php_newrelic_init_globals(zend_newrelic_globals* nrg) {
   nr_memset(nrg, 0, sizeof(*nrg));
   nrg->ini.enabled.value = 1;
   nrg->ini.enabled.where = PHP_INI_STAGE_STARTUP;
-  nrg->current_framework = NR_FW_UNSET;
+  nrg->ctx.current_framework = NR_FW_UNSET;
 }
 
 /*
@@ -123,7 +123,7 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
    * in the more obvious GINIT function. nr_php_extension_instrument_dtor can
    * cope with an uninitialised extensions structure.
    */
-  nr_php_extension_instrument_destroy(&newrelic_globals->extensions);
+  nr_php_extension_instrument_destroy(&newrelic_globals->shared.extensions);
 }
 
 #if defined(__GNUC__)

@@ -137,8 +137,8 @@ extern void nr_php_error_install_exception_handler(TSRMLS_D);
  *           5. A prefix to prepend to the error message before the class name.
  *              If NULL, then the default "Exception " will be used.
  *           6. The exception filters to apply.
- *              Typically, &NRPRG (exception_filters) or NULL to disable
- *              exception filtering.
+ *              Typically, &NRSHAREDGLOBAL (exception_filters) or NULL to
+ *              disable exception filtering.
  *
  * Returns : NR_SUCCESS if an error was recorded; NR_FAILURE otherwise (which
  *           will generally indicate that the exception wasn't really an
@@ -157,8 +157,8 @@ extern nr_status_t nr_php_error_record_exception(nrtxn_t* txn,
  * Params  : 1. The transaction.
  *           2. The exception to record an error for.
  *           5. The exception filters to apply.
- *              Typically, &NRPRG (exception_filters) or NULL to disable
- *              exception filtering.
+ *              Typically, &NRSHAREDGLOBAL (exception_filters) or NULL to
+ *              disable exception filtering.
  *
  * Returns : NR_SUCCESS if an error was recorded; NR_FAILURE otherwise
  */
