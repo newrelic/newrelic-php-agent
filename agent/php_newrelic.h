@@ -505,6 +505,8 @@ typedef struct _ctx_globals_t {
   bool check_cufa;  // Whether we need to check cufa because we are
                     // instrumenting hooks, or whether we can skip cufa
 
+  nr_hashmap_t* predis_commands;
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /* Without OAPI, we are able to utilize the call stack to keep track
    * of the previous hooks. With OAPI, we can no longer do this so
@@ -526,7 +528,6 @@ typedef struct _ctx_globals_t {
    * WIth OAPI, we must track this manually
    */
   nr_stack_t predis_ctxs;
-  nr_hashmap_t* predis_commands;
 #else
   char* drupal_invoke_all_hook;       // The current Drupal hook
   size_t drupal_invoke_all_hook_len;  // The length of the current Drupal hook
