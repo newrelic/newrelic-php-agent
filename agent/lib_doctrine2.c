@@ -57,7 +57,7 @@ NR_PHP_WRAPPER(nr_doctrine2_cache_dql) {
  */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_free(NRPRG(doctrine_dql));
+  nr_free(NRCTXGLOBAL(doctrine_dql));
 #endif /* not OAPI */
 }
 NR_PHP_WRAPPER_END
