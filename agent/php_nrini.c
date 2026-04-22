@@ -1940,7 +1940,11 @@ static PHP_INI_MH(nr_custom_events_max_samples_stored_mh) {
 static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   nrinistr_t* p;
 
+#ifndef ZTS
   char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
 
   p = (nrinistr_t*)(base + (size_t)mh_arg1);
 
@@ -1973,7 +1977,11 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
 static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
   nrinistr_t* p;
 
+#ifndef ZTS
   char* base = (char*)mh_arg2;
+#else
+  char* base = (char*)ts_resource(*((int*)mh_arg2));
+#endif
   p = (nrinistr_t*)(base + (size_t)mh_arg1);
   bool parent_sampled = false;
 
