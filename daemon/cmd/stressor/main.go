@@ -630,7 +630,7 @@ func main() {
 		}()
 	}
 
-	for i := 0; i < nworkers; i++ {
+	for range nworkers {
 		wg.Go(func() {
 
 			totals := &Stats{}
