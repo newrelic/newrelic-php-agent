@@ -112,28 +112,28 @@ int nr_php_post_deactivate(void) {
   nr_hashmap_destroy(&NRPRG_SHARED(wordpress_file_metadata));
   nr_hashmap_destroy(&NRPRG_SHARED(wordpress_clean_tag_cache));
 
-  nr_free(NRCTXGLOBAL(mysql_last_conn));
-  nr_free(NRCTXGLOBAL(pgsql_last_conn));
-  nr_hashmap_destroy(&NRCTXGLOBAL(datastore_connections));
+  nr_free(NRPRG_CTX(mysql_last_conn));
+  nr_free(NRPRG_CTX(pgsql_last_conn));
+  nr_hashmap_destroy(&NRPRG_CTX(datastore_connections));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
    * Pre-OAPI, this variables were kept on the call stack and
    * therefore had no need to be in an nr_stack
    */
-  nr_stack_destroy_fields(&NRCTXGLOBAL(wordpress_tags));
-  nr_stack_destroy_fields(&NRCTXGLOBAL(wordpress_tag_states));
-  nr_stack_destroy_fields(&NRCTXGLOBAL(drupal_invoke_all_hooks));
-  nr_stack_destroy_fields(&NRCTXGLOBAL(drupal_invoke_all_states));
+  nr_stack_destroy_fields(&NRPRG_CTX(wordpress_tags));
+  nr_stack_destroy_fields(&NRPRG_CTX(wordpress_tag_states));
+  nr_stack_destroy_fields(&NRPRG_CTX(drupal_invoke_all_hooks));
+  nr_stack_destroy_fields(&NRPRG_CTX(drupal_invoke_all_states));
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_stack_destroy_fields(&NRCTXGLOBAL(predis_ctxs));
+  nr_stack_destroy_fields(&NRPRG_CTX(predis_ctxs));
 #else
-  nr_free(NRCTXGLOBAL(predis_ctx));
+  nr_free(NRPRG_CTX(predis_ctx));
 #endif /* OAPI */
-  nr_hashmap_destroy(&NRCTXGLOBAL(predis_commands));
+  nr_hashmap_destroy(&NRPRG_CTX(predis_commands));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_reset_user_instrumentation();
@@ -141,12 +141,12 @@ int nr_php_post_deactivate(void) {
   nr_vector_destroy(&NRPRG_SHARED(user_function_wrappers));
 #endif
 
-  NRCTXGLOBAL(cufa_callback) = NULL;
+  NRPRG_CTX(cufa_callback) = NULL;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRCTXGLOBAL(drupal_http_request_segment) = NULL;
+  NRPRG_CTX(drupal_http_request_segment) = NULL;
 #endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");

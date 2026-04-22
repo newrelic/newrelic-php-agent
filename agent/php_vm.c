@@ -88,7 +88,7 @@ static void nr_php_set_opcode_handler(zend_uchar opcode,
  *           the Zend Engine should execute the opline normally.
  */
 static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
-  nrphpcufafn_t cufa_callback = NRCTXGLOBAL(cufa_callback);
+  nrphpcufafn_t cufa_callback = NRPRG_CTX(cufa_callback);
   zend_uchar opcode;
   nr_php_opcode_handler_entry_t prev_handler;
   const zend_op* prev_opline;
@@ -117,7 +117,7 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
    * If we don't have instrumented hooks that require this, skip to the
    * end.
    */
-  if (false == NRCTXGLOBAL(check_cufa)) {
+  if (false == NRPRG_CTX(check_cufa)) {
     goto call_previous_and_return;
   }
 

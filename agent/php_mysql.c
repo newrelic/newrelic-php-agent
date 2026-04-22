@@ -137,8 +137,8 @@ void nr_php_mysql_save_datastore_instance(const zval* mysql_conn,
   instance = nr_php_mysql_create_datastore_instance(host_and_port);
   nr_php_datastore_instance_save(key, instance TSRMLS_CC);
 
-  nr_free(NRCTXGLOBAL(mysql_last_conn));
-  NRCTXGLOBAL(mysql_last_conn) = key;
+  nr_free(NRPRG_CTX(mysql_last_conn));
+  NRPRG_CTX(mysql_last_conn) = key;
 }
 
 nr_datastore_instance_t* nr_php_mysql_retrieve_datastore_instance(
@@ -151,8 +151,8 @@ nr_datastore_instance_t* nr_php_mysql_retrieve_datastore_instance(
      * If we have an existing connection, use that as the key. Otherwise,
      * create a default mysql instance and make a key with the NULL zval.
      */
-    if (NRCTXGLOBAL(mysql_last_conn)) {
-      key = nr_strdup(NRCTXGLOBAL(mysql_last_conn));
+    if (NRPRG_CTX(mysql_last_conn)) {
+      key = nr_strdup(NRPRG_CTX(mysql_last_conn));
     } else {
       nr_php_mysql_save_datastore_instance(mysql_conn, NULL TSRMLS_CC);
       key = nr_php_datastore_make_key(mysql_conn, "mysql");
@@ -174,16 +174,16 @@ void nr_php_mysql_remove_datastore_instance(const zval* mysql_conn TSRMLS_DC) {
    * If the connection is NULL but we have an existing connection, use that as
    * the key. Otherwise make a key with the NULL zval.
    */
-  if ((NULL == mysql_conn) && (NRCTXGLOBAL(mysql_last_conn))) {
-    key = nr_strdup(NRCTXGLOBAL(mysql_last_conn));
+  if ((NULL == mysql_conn) && (NRPRG_CTX(mysql_last_conn))) {
+    key = nr_strdup(NRPRG_CTX(mysql_last_conn));
   } else {
     key = nr_php_datastore_make_key(mysql_conn, "mysql");
   }
 
   nr_php_datastore_instance_remove(key TSRMLS_CC);
 
-  if (0 == nr_strcmp(key, NRCTXGLOBAL(mysql_last_conn))) {
-    nr_free(NRCTXGLOBAL(mysql_last_conn));
+  if (0 == nr_strcmp(key, NRPRG_CTX(mysql_last_conn))) {
+    nr_free(NRPRG_CTX(mysql_last_conn));
   }
 
   nr_free(key);

@@ -491,11 +491,11 @@ static void nr_php_api_capture_params_internal(const char* function_name,
     enable = 1;
   }
 
-  NRCTXGLOBAL(deprecated_capture_request_parameters) = enable ? 1 : 0;
+  NRPRG_CTX(deprecated_capture_request_parameters) = enable ? 1 : 0;
 
   nrl_debug(
       NRL_API, "capture params enabled='%.10s'",
-      NRCTXGLOBAL(deprecated_capture_request_parameters) ? "true" : "false");
+      NRPRG_CTX(deprecated_capture_request_parameters) ? "true" : "false");
 }
 
 /*
@@ -1691,9 +1691,9 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
   }
 
   // Set global values
-  NRCTXGLOBAL(error_group_user_callback).fci = fci;
-  NRCTXGLOBAL(error_group_user_callback).fcc = fcc;
-  NRCTXGLOBAL(error_group_user_callback).is_set = true;
+  NRPRG_CTX(error_group_user_callback).fci = fci;
+  NRPRG_CTX(error_group_user_callback).fcc = fcc;
+  NRPRG_CTX(error_group_user_callback).is_set = true;
 
   nrl_debug(
       NRL_API,

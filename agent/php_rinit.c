@@ -48,18 +48,18 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)module_number;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
-  NRCTXGLOBAL(php_cur_stack_depth) = 0;
-  NRCTXGLOBAL(deprecated_capture_request_parameters) = NRINI(capture_params);
+  NRPRG_CTX(php_cur_stack_depth) = 0;
+  NRPRG_CTX(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG_SHARED(sapi_headers) = NULL;
-  NRCTXGLOBAL(error_group_user_callback).is_set = false;
+  NRPRG_CTX(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRCTXGLOBAL(drupal_http_request_segment) = NULL;
-  NRCTXGLOBAL(drupal_http_request_depth) = 0;
+  NRPRG_CTX(drupal_http_request_segment) = NULL;
+  NRPRG_CTX(drupal_http_request_depth) = 0;
 #endif
 #else
   NRPRG_SHARED(pid) = nr_getpid();
@@ -111,7 +111,7 @@ PHP_RINIT_FUNCTION(newrelic) {
     nr_php_extension_instrument_rescan(NRPRG_SHARED(extensions) TSRMLS_CC);
   }
 
-  NRCTXGLOBAL(check_cufa) = false;
+  NRPRG_CTX(check_cufa) = false;
 
   /*
    * Pre-OAPI, this variables were kept on the call stack and
@@ -119,21 +119,20 @@ PHP_RINIT_FUNCTION(newrelic) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRCTXGLOBAL(check_cufa) = false;
-  nr_stack_init(&NRCTXGLOBAL(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRCTXGLOBAL(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRCTXGLOBAL(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRCTXGLOBAL(drupal_invoke_all_hooks),
+  NRPRG_CTX(check_cufa) = false;
+  nr_stack_init(&NRPRG_CTX(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(drupal_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(drupal_invoke_all_states),
                 NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRCTXGLOBAL(drupal_invoke_all_states),
-                NR_STACK_DEFAULT_CAPACITY);
-  NRCTXGLOBAL(predis_ctxs).dtor = str_stack_dtor;
-  NRCTXGLOBAL(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
+  NRPRG_CTX(predis_ctxs).dtor = str_stack_dtor;
+  NRPRG_CTX(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
 #endif
 
-  NRCTXGLOBAL(mysql_last_conn) = NULL;
-  NRCTXGLOBAL(pgsql_last_conn) = NULL;
-  NRCTXGLOBAL(datastore_connections) = nr_hashmap_create(
+  NRPRG_CTX(mysql_last_conn) = NULL;
+  NRPRG_CTX(pgsql_last_conn) = NULL;
+  NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
 
   nr_php_txn_begin(0, 0 TSRMLS_CC);

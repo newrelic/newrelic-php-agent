@@ -45,12 +45,12 @@ static void test_save_datastore_instance(TSRMLS_D) {
   nr_php_mysqli_save_datastore_instance(NULL, NULL, 0, NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "null conn and null host", expected_default,
-      nr_hashmap_get(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   nr_php_mysqli_save_datastore_instance(NULL, "", 0, NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "null conn and empty host", expected_default,
-      nr_hashmap_get(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   /*
    * Test: Normal operation
@@ -61,18 +61,18 @@ static void test_save_datastore_instance(TSRMLS_D) {
   nr_php_mysqli_save_datastore_instance(conn, NULL, 0, NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "null host saves default instance", expected_default,
-      nr_hashmap_get(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   nr_php_mysqli_save_datastore_instance(conn, "blue", 0, NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "same conn saves new instance", expected,
-      nr_hashmap_get(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
-  nr_hashmap_delete(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key));
+  nr_hashmap_delete(NRPRG_CTX(datastore_connections), key, nr_strlen(key));
   nr_php_mysqli_save_datastore_instance(conn, "blue", 0, NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "new conn saves new instance", expected,
-      nr_hashmap_get(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   nr_php_zval_free(&conn);
   nr_free(key);
@@ -105,7 +105,7 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
    */
   key = nr_php_datastore_make_key(NULL, "mysqli");
 
-  nr_hashmap_set(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_mysqli_create_datastore_instance(NULL, 0, NULL, NULL));
   assert_datastore_instance_equals(
       "connection info is found", expected,
@@ -114,7 +114,7 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
   nr_free(key);
   key = nr_php_datastore_make_key(conn, "mysqli");
 
-  nr_hashmap_set(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_mysqli_create_datastore_instance(NULL, 0, NULL, NULL));
   assert_datastore_instance_equals(
       "connection info is found", expected,
@@ -145,7 +145,7 @@ static void test_remove_datastore_instance(TSRMLS_D) {
   /*
    * Test: null connection
    */
-  nr_hashmap_set(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_mysqli_create_datastore_instance(NULL, 0, NULL, NULL));
   nr_php_mysqli_remove_datastore_instance(NULL TSRMLS_CC);
   tlib_pass_if_int_equal("removing known null connection works", 0,
@@ -161,7 +161,7 @@ static void test_remove_datastore_instance(TSRMLS_D) {
   tlib_pass_if_int_equal("removing unknown non-null connection has no effect",
                          0, nr_php_datastore_has_conn(key TSRMLS_CC));
 
-  nr_hashmap_set(NRCTXGLOBAL(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_mysqli_create_datastore_instance(NULL, 0, NULL, NULL));
   nr_php_mysqli_remove_datastore_instance(conn TSRMLS_CC);
   tlib_pass_if_int_equal("removing known non-null connection works", 0,

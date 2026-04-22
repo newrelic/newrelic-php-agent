@@ -501,7 +501,7 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   zval* curr_hook
-      = (zval*)nr_stack_get_top(&NRCTXGLOBAL(drupal_invoke_all_hooks));
+      = (zval*)nr_stack_get_top(&NRPRG_CTX(drupal_invoke_all_hooks));
   if (UNEXPECTED(!nr_php_is_zval_non_empty_string(curr_hook))) {
     nrl_verbosedebug(NRL_FRAMEWORK,
                      "%s: cannot extract hook name from global stack",
@@ -512,8 +512,8 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with_callback) {
                             Z_STRVAL_P(curr_hook), Z_STRLEN_P(curr_hook));
 #else
   nr_drupal_hook_instrument(Z_STRVAL_P(module), Z_STRLEN_P(module),
-                            NRCTXGLOBAL(drupal_invoke_all_hook),
-                            NRCTXGLOBAL(drupal_invoke_all_hook_len) TSRMLS_CC);
+                            NRPRG_CTX(drupal_invoke_all_hook),
+                            NRPRG_CTX(drupal_invoke_all_hook_len) TSRMLS_CC);
 #endif  // OAPI
 
 leave:
@@ -554,12 +554,12 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   nr_drupal_invoke_all_hook_stacks_push(hook);
 #else
-  prev_hook = NRCTXGLOBAL(drupal_invoke_all_hook);
-  prev_hook_len = NRCTXGLOBAL(drupal_invoke_all_hook_len);
-  NRCTXGLOBAL(drupal_invoke_all_hook)
+  prev_hook = NRPRG_CTX(drupal_invoke_all_hook);
+  prev_hook_len = NRPRG_CTX(drupal_invoke_all_hook_len);
+  NRPRG_CTX(drupal_invoke_all_hook)
       = nr_strndup(Z_STRVAL_P(hook), Z_STRLEN_P(hook));
-  NRCTXGLOBAL(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
-  NRCTXGLOBAL(check_cufa) = true;
+  NRPRG_CTX(drupal_invoke_all_hook_len) = Z_STRLEN_P(hook);
+  NRPRG_CTX(check_cufa) = true;
 #endif  // OAPI
   callback = nr_php_arg_get(2, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
@@ -574,11 +574,11 @@ NR_PHP_WRAPPER(nr_drupal94_invoke_all_with) {
   nr_php_arg_release(&callback);
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_free(NRCTXGLOBAL(drupal_invoke_all_hook));
-  NRCTXGLOBAL(drupal_invoke_all_hook) = prev_hook;
-  NRCTXGLOBAL(drupal_invoke_all_hook_len) = prev_hook_len;
-  if (NULL == NRCTXGLOBAL(drupal_invoke_all_hook)) {
-    NRCTXGLOBAL(check_cufa) = false;
+  nr_free(NRPRG_CTX(drupal_invoke_all_hook));
+  NRPRG_CTX(drupal_invoke_all_hook) = prev_hook;
+  NRPRG_CTX(drupal_invoke_all_hook_len) = prev_hook_len;
+  if (NULL == NRPRG_CTX(drupal_invoke_all_hook)) {
+    NRPRG_CTX(check_cufa) = false;
   }
 #endif  // not OAPI
 

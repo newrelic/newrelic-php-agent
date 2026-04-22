@@ -598,12 +598,12 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 #define NRINI(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ini.X.value)
 #define NRPRG_SHARED(X) \
   TSRMG(newrelic_globals_id, zend_newrelic_globals*, shared.X)
-#define NRCTXGLOBAL(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ctx.X)
+#define NRPRG_CTX(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ctx.X)
 #else
 #define NRPRG(X) (newrelic_globals.X)
 #define NRINI(X) (newrelic_globals.ini.X.value)
 #define NRPRG_SHARED(X) (newrelic_globals.shared.X)
-#define NRCTXGLOBAL(X) (newrelic_globals.ctx.X)
+#define NRPRG_CTX(X) (newrelic_globals.ctx.X)
 #endif
 
 #define NRTXN(Y) (NRPRG(txn)->Y)
@@ -618,7 +618,7 @@ static inline int nr_php_recording(TSRMLS_D) {
 }
 
 static inline bool is_error_callback_set() {
-  return NRCTXGLOBAL(error_group_user_callback).is_set;
+  return NRPRG_CTX(error_group_user_callback).is_set;
 }
 
 /*

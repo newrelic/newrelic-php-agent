@@ -86,12 +86,12 @@ static void nr_predis_command_destroy(nrtime_t* time) {
 }
 
 static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  if (NULL == NRCTXGLOBAL(predis_commands)) {
-    NRCTXGLOBAL(predis_commands)
+  if (NULL == NRPRG_CTX(predis_commands)) {
+    NRPRG_CTX(predis_commands)
         = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
   }
 
-  return NRCTXGLOBAL(predis_commands);
+  return NRPRG_CTX(predis_commands);
 }
 
 static void nr_predis_instrument_connection(zval* conn TSRMLS_DC) {
@@ -548,9 +548,9 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  char* ctx = (char*)nr_stack_get_top(&NRCTXGLOBAL(predis_ctxs));
+  char* ctx = (char*)nr_stack_get_top(&NRPRG_CTX(predis_ctxs));
 #else
-  char* ctx = NRCTXGLOBAL(predis_ctx);
+  char* ctx = NRPRG_CTX(predis_ctx);
 #endif /* OAPI */
   if (ctx) {
     /*
@@ -717,12 +717,12 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_stack_push(&NRCTXGLOBAL(predis_ctxs),
+  nr_stack_push(&NRPRG_CTX(predis_ctxs),
                 nr_formatf("Predis #" NR_TIME_FMT, nr_get_time()));
 #else
   char* prev_predis_ctx;
-  prev_predis_ctx = NRCTXGLOBAL(predis_ctx);
-  NRCTXGLOBAL(predis_ctx) = nr_formatf("Predis #" NR_TIME_FMT, nr_get_time());
+  prev_predis_ctx = NRPRG_CTX(predis_ctx);
+  NRPRG_CTX(predis_ctx) = nr_formatf("Predis #" NR_TIME_FMT, nr_get_time());
 #endif /* OAPI */
 
   NR_PHP_WRAPPER_CALL;
@@ -736,8 +736,8 @@ NR_PHP_WRAPPER(nr_predis_pipeline_executePipeline) {
    */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_free(NRCTXGLOBAL(predis_ctx));
-  NRCTXGLOBAL(predis_ctx) = prev_predis_ctx;
+  nr_free(NRPRG_CTX(predis_ctx));
+  NRPRG_CTX(predis_ctx) = prev_predis_ctx;
 #endif /* not OAPI */
 }
 NR_PHP_WRAPPER_END
@@ -745,7 +745,7 @@ NR_PHP_WRAPPER_END
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 static void predis_executePipeline_handle_stack() {
-  char* predis_ctx = (char*)nr_stack_pop(&NRCTXGLOBAL(predis_ctxs));
+  char* predis_ctx = (char*)nr_stack_pop(&NRPRG_CTX(predis_ctxs));
   nr_free(predis_ctx);
 }
 

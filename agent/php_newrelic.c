@@ -85,7 +85,7 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "current_framework=%d\n", (int)NRPRG_SHARED(current_framework));
 
   fprintf(fp, "execute_count=%d\n", NRTXNGLOBAL(execute_count));
-  fprintf(fp, "php_cur_stack_depth=%d\n", NRCTXGLOBAL(php_cur_stack_depth));
+  fprintf(fp, "php_cur_stack_depth=%d\n", NRPRG_CTX(php_cur_stack_depth));
 
   fprintf(fp, "txn=%p\n", NRPRG(txn));
 
@@ -103,7 +103,7 @@ void nr_print_globals(FILE* fp) {
   fprintf(fp, "ttcustom_where=%d\n", NRPRG_SHARED(ttcustom_where));
 
   fprintf(fp, "deprecated_capture_request_parameters=%d\n",
-          NRCTXGLOBAL(deprecated_capture_request_parameters));
+          NRPRG_CTX(deprecated_capture_request_parameters));
 
   fprintf(fp, "extensions=%p\n", NRPRG_SHARED(extensions));
   fflush(fp);

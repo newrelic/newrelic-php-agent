@@ -40,9 +40,8 @@ NR_PHP_WRAPPER(nr_doctrine2_cache_dql) {
       zval* dql = nr_php_call(this_var, "getDQL");
 
       if (nr_php_is_zval_valid_string(dql)) {
-        nr_free(NRCTXGLOBAL(doctrine_dql));
-        NRCTXGLOBAL(doctrine_dql)
-            = nr_strndup(Z_STRVAL_P(dql), Z_STRLEN_P(dql));
+        nr_free(NRPRG_CTX(doctrine_dql));
+        NRPRG_CTX(doctrine_dql) = nr_strndup(Z_STRVAL_P(dql), Z_STRLEN_P(dql));
       }
 
       nr_php_zval_free(&dql);
@@ -57,7 +56,7 @@ NR_PHP_WRAPPER(nr_doctrine2_cache_dql) {
  */
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_free(NRCTXGLOBAL(doctrine_dql));
+  nr_free(NRPRG_CTX(doctrine_dql));
 #endif /* not OAPI */
 }
 NR_PHP_WRAPPER_END
@@ -66,20 +65,20 @@ NR_PHP_WRAPPER_END
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 NR_PHP_WRAPPER(nr_doctrine2_cache_dql_clean) {
   (void)wraprec;
-  nr_free(NRCTXGLOBAL(doctrine_dql));
+  nr_free(NRPRG_CTX(doctrine_dql));
 }
 NR_PHP_WRAPPER_END
 
 NR_PHP_WRAPPER(nr_doctrine2_cache_dql_after) {
   (void)wraprec;
-  nr_free(NRCTXGLOBAL(doctrine_dql));
+  nr_free(NRPRG_CTX(doctrine_dql));
 }
 NR_PHP_WRAPPER_END
 #endif /* OAPI */
 
 nr_slowsqls_labelled_query_t* nr_doctrine2_lookup_input_query(TSRMLS_D) {
   nr_slowsqls_labelled_query_t* query = NULL;
-  const char* dql = NRCTXGLOBAL(doctrine_dql);
+  const char* dql = NRPRG_CTX(doctrine_dql);
 
   if (NULL == dql) {
     return NULL;

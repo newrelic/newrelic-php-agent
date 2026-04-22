@@ -118,17 +118,15 @@ static void test_remove_datastore_instance(TSRMLS_D) {
    * Test : Bad parameters.
    */
   nr_php_redis_remove_datastore_instance(NULL TSRMLS_CC);
-  tlib_pass_if_size_t_equal(
-      "NULL redis_conn", 1,
-      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("NULL redis_conn", 1,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   /*
    * Test : Normal operation.
    */
   nr_php_redis_remove_datastore_instance(redis TSRMLS_CC);
-  tlib_pass_if_size_t_equal(
-      "valid redis_conn", 0,
-      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("valid redis_conn", 0,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_zval_free(&redis);
   tlib_php_request_end();
@@ -174,9 +172,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
    */
   tlib_pass_if_null("NULL host_or_socket", nr_php_redis_save_datastore_instance(
                                                redis, NULL, 6379 TSRMLS_CC));
-  tlib_pass_if_size_t_equal(
-      "NULL host_or_socket", 0,
-      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("NULL host_or_socket", 0,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   /*
    * Test : Normal operation.
@@ -189,8 +186,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = "6379",
       }),
       nr_php_redis_save_datastore_instance(NULL, "host.name", 6379 TSRMLS_CC));
-  tlib_pass_if_size_t_equal(
-      "NULL instance", 1, nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("NULL instance", 1,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   assert_datastore_instance_equals(
       "new instance",
@@ -200,8 +197,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = "6379",
       }),
       nr_php_redis_save_datastore_instance(redis, "host.name", 6379 TSRMLS_CC));
-  tlib_pass_if_size_t_equal(
-      "new instance", 2, nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("new instance", 2,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   assert_datastore_instance_equals(
       "updated instance",
@@ -211,9 +208,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
           .port_path_or_id = "/foo",
       }),
       nr_php_redis_save_datastore_instance(redis, "/foo", 6379 TSRMLS_CC));
-  tlib_pass_if_size_t_equal(
-      "updated instance", 2,
-      nr_hashmap_count(NRCTXGLOBAL(datastore_connections)));
+  tlib_pass_if_size_t_equal("updated instance", 2,
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_zval_free(&redis);
   tlib_php_request_end();

@@ -520,10 +520,10 @@ static const char nr_php_indentation_spaces[]
  * frames.
  */
 static int nr_php_show_exec_indentation(TSRMLS_D) {
-  if (NRCTXGLOBAL(php_cur_stack_depth) < 0) {
+  if (NRPRG_CTX(php_cur_stack_depth) < 0) {
     return 0;
   }
-  return NRCTXGLOBAL(php_cur_stack_depth) * NR_EXECUTE_INDENTATION_WIDTH;
+  return NRPRG_CTX(php_cur_stack_depth) * NR_EXECUTE_INDENTATION_WIDTH;
 }
 
 /*
@@ -1466,7 +1466,7 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
    * depth is correct. Execution will probably not continue after E_ERROR;
    * that decision may rest on the error handler(s) registered as callbacks.
    */
-  NRCTXGLOBAL(php_cur_stack_depth) = 0;
+  NRPRG_CTX(php_cur_stack_depth) = 0;
 
   nrl_error(NRL_AGENT,
             "The New Relic imposed maximum PHP function nesting level of '%d' "
@@ -1516,10 +1516,10 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
    * exit, maintaining this counter perfectly is not a necessity.
    */
 
-  NRCTXGLOBAL(php_cur_stack_depth) += 1;
+  NRPRG_CTX(php_cur_stack_depth) += 1;
 
   if (((int)NRINI(max_nesting_level) > 0)
-      && (NRCTXGLOBAL(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+      && (NRPRG_CTX(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
     nr_php_max_nesting_level_reached(TSRMLS_C);
   }
 
@@ -1537,7 +1537,7 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
       nr_php_execute_enabled(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
   }
-  NRCTXGLOBAL(php_cur_stack_depth) -= 1;
+  NRPRG_CTX(php_cur_stack_depth) -= 1;
 
   return;
 }
@@ -1782,7 +1782,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
       return;
     }
 
-    nr_php_call_user_func_array_handler(NRCTXGLOBAL(cufa_callback),
+    nr_php_call_user_func_array_handler(NRPRG_CTX(cufa_callback),
                                         execute_data->func,
                                         execute_data->prev_execute_data);
   }
@@ -1802,7 +1802,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   NRTXNGLOBAL(execute_count) += 1;
   txn_start_time = nr_txn_start_time(NRPRG(txn));
 
-  if (NULL != NRCTXGLOBAL(cufa_callback) && NRCTXGLOBAL(check_cufa)) {
+  if (NULL != NRPRG_CTX(cufa_callback) && NRPRG_CTX(check_cufa)) {
     /*
      * For PHP 7+, call_user_func_array() is flattened into an inline by
      * default. Because of this, we must check the opcodes set to see whether we
@@ -2031,10 +2031,10 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
     return;
   }
 
-  NRCTXGLOBAL(php_cur_stack_depth) += 1;
+  NRPRG_CTX(php_cur_stack_depth) += 1;
 
   if ((0 < ((int)NRINI(max_nesting_level)))
-      && (NRCTXGLOBAL(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+      && (NRPRG_CTX(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
     nr_php_max_nesting_level_reached();
   }
 
@@ -2076,7 +2076,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
   }
 
-  NRCTXGLOBAL(php_cur_stack_depth) -= 1;
+  NRPRG_CTX(php_cur_stack_depth) -= 1;
 
   return;
 }
