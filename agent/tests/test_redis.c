@@ -216,6 +216,7 @@ static void test_save_datastore_instance(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
+#define REQUIRED_EXTENSION "redis"
 
   default_database = nr_strdup(nr_php_redis_default_database);
   system_host_name = nr_system_get_hostname();
@@ -223,9 +224,9 @@ void test_main(void* p NRUNUSED) {
   test_create_datastore_instance();
   test_is_unix_socket();
 
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("extension=" REQUIRED_EXTENSION PTSRMLS_CC);
 
-  if (tlib_php_require_extension("redis" TSRMLS_CC)) {
+  if (nr_php_extension_loaded(REQUIRED_EXTENSION)) {
     test_remove_datastore_instance(TSRMLS_C);
     test_retrieve_datastore_instance(TSRMLS_C);
     test_save_datastore_instance(TSRMLS_C);

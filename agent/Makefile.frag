@@ -279,7 +279,7 @@ tests/test_txn.o: ../VERSION
 #
 # Used when linking test binaries.
 #
-TEST_LIBS := $(PHP_EMBED_LIBRARY) $(shell $(PHP_CONFIG) --libs)
+TEST_LIBS := $(PHP_EMBED_LIBRARY) $(shell $(PHP_CONFIG) --libs) -lrt
 TEST_LDFLAGS := $(shell $(PHP_CONFIG) --ldflags) $(EXPORT_DYNAMIC)
 TEST_LDFLAGS += $(USER_LDFLAGS)
 CROSS_AGENT_DIR := $(CURDIR)/../axiom/tests/cross_agent_tests

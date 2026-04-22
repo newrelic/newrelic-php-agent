@@ -931,6 +931,8 @@ set_daemon_location() {
 #   what we detect.
 # pi_php8
 #   True if PHP version is 8.0+
+# pi_php82
+#   True if PHP version is 8.2+
 # pi_mods_avail
 #   On Debian/Ubuntu systems, the path to the mods-available directory
 #   (e.g. /etc/php/8.4/mods-available). Empty if the system does not use
@@ -993,6 +995,7 @@ gather_info() {
   havebin=
   pi_bin=
   pi_php8=
+  pi_php82=
 
   #
   # Get the path to the binary.
@@ -1065,18 +1068,22 @@ for this copy of PHP. We apologize for the inconvenience.
 
     8.2.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;
 
     8.3.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;  
 
     8.4.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;          
 
     8.5.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;
 
     *)
@@ -1305,8 +1312,8 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
-# zts installs are no longer supported
-  if [ "${pi_zts}" = "yes" ]; then
+# zts installs are only supported for PHPs 8.2+
+  if [ "${pi_zts}" = "yes" ] && [ "${pi_php82}" != "yes" ]; then
     msg=$(
     cat << EOF
 
@@ -1476,11 +1483,6 @@ install_agent_here() {
   istat=
   if [ "${pi_zts}" = "yes" ]; then
     zts="-zts"
-
-    # Force copy of zts files as it is EOL so this will
-    # prevent future eraseure of linked to file from
-    # leading to a dangling symlink
-    NR_INSTALL_USE_CP_NOT_LN=1
   fi
   srcf="${ilibdir}/agent/${pi_arch}/newrelic-${pi_modver}${zts}.so"
   destf="${pi_extdir}/newrelic.so"
