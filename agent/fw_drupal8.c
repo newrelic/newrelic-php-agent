@@ -67,7 +67,7 @@ NR_PHP_WRAPPER(nr_drupal_exception) {
   if (NR_SUCCESS
       != nr_php_error_record_exception(NRPRG(txn), exception, priority, true,
                                        NULL,
-                                       &NRSHAREDGLOBAL(exception_filters))) {
+                                       &NRPRG_SHARED(exception_filters))) {
     nrl_verbosedebug(NRL_TXN, "Drupal: unable to record exception");
   }
 

@@ -47,10 +47,10 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
 
-  NRSHAREDGLOBAL(current_framework) = NR_FW_UNSET;
+  NRPRG_SHARED(current_framework) = NR_FW_UNSET;
   NRCTXGLOBAL(php_cur_stack_depth) = 0;
   NRCTXGLOBAL(deprecated_capture_request_parameters) = NRINI(capture_params);
-  NRSHAREDGLOBAL(sapi_headers) = NULL;
+  NRPRG_SHARED(sapi_headers) = NULL;
   NRCTXGLOBAL(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
@@ -62,8 +62,8 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRCTXGLOBAL(drupal_http_request_depth) = 0;
 #endif
 #else
-  NRSHAREDGLOBAL(pid) = nr_getpid();
-  NRSHAREDGLOBAL(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+  NRPRG_SHARED(pid) = nr_getpid();
+  NRPRG_SHARED(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {
@@ -78,8 +78,8 @@ PHP_RINIT_FUNCTION(newrelic) {
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing started");
 
-  nr_php_exception_filters_init(&NRSHAREDGLOBAL(exception_filters));
-  nr_php_exception_filters_add(&NRSHAREDGLOBAL(exception_filters),
+  nr_php_exception_filters_init(&NRPRG_SHARED(exception_filters));
+  nr_php_exception_filters_add(&NRPRG_SHARED(exception_filters),
                                nr_php_ignore_exceptions_ini_filter);
 
   /*
@@ -106,9 +106,9 @@ PHP_RINIT_FUNCTION(newrelic) {
    * happened.
    */
   if ((NR_PHP_PROCESS_GLOBALS(instrument_extensions))
-      && (NULL == NRSHAREDGLOBAL(extensions))) {
-    NRSHAREDGLOBAL(extensions) = nr_php_extension_instrument_create();
-    nr_php_extension_instrument_rescan(NRSHAREDGLOBAL(extensions) TSRMLS_CC);
+      && (NULL == NRPRG_SHARED(extensions))) {
+    NRPRG_SHARED(extensions) = nr_php_extension_instrument_create();
+    nr_php_extension_instrument_rescan(NRPRG_SHARED(extensions) TSRMLS_CC);
   }
 
   NRCTXGLOBAL(check_cufa) = false;

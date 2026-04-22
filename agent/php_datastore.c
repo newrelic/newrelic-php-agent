@@ -67,11 +67,11 @@ static void nr_php_modify_sql_table_name_wordpress(char* tablename) {
 static nr_modify_table_name_fn_t nr_php_modify_table_name_fn(TSRMLS_D) {
   nr_modify_table_name_fn_t modify_table_name_fn = NULL;
 
-  if (NR_FW_WORDPRESS == NRSHAREDGLOBAL(current_framework)) {
+  if (NR_FW_WORDPRESS == NRPRG_SHARED(current_framework)) {
     modify_table_name_fn = &nr_php_modify_sql_table_name_wordpress;
   }
 
-  if (NR_FW_MAGENTO2 == NRSHAREDGLOBAL(current_framework)) {
+  if (NR_FW_MAGENTO2 == NRPRG_SHARED(current_framework)) {
     modify_table_name_fn = &nr_php_modify_sql_table_name_magento2;
   }
 

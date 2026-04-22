@@ -142,7 +142,7 @@ static void nr_php_extension_segment_end(nr_segment_t** segment_ptr,
  */
 static int nr_php_extension_shutdown_wrapper(SHUTDOWN_FUNC_ARGS) {
   nr_php_extension_t* extension
-      = nr_php_extension_find(NRSHAREDGLOBAL(extensions), type, module_number);
+      = nr_php_extension_find(NRPRG_SHARED(extensions), type, module_number);
 
   if (NULL != extension) {
     /*

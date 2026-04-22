@@ -382,7 +382,7 @@ NR_PHP_WRAPPER(nr_laravel_exception_report) {
       st = nr_php_error_record_exception(
           NRPRG(txn), exception, priority, true /* add to segment */,
           NULL /* use default prefix */,
-          &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC);
+          &NRPRG_SHARED(exception_filters) TSRMLS_CC);
 
       if (NR_FAILURE == st) {
         nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception",

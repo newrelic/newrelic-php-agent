@@ -1531,11 +1531,11 @@ static PHP_INI_MH(nr_tt_threshold_mh) {
 
   if (0 == NEW_VALUE_LEN) {
     val = 0;
-    NRSHAREDGLOBAL(tt_threshold_is_apdex_f) = 1;
+    NRPRG_SHARED(tt_threshold_is_apdex_f) = 1;
   } else {
     if (0 == nr_strcmp(NEW_VALUE, "apdex_f")) {
       val = 0;
-      NRSHAREDGLOBAL(tt_threshold_is_apdex_f) = 1;
+      NRPRG_SHARED(tt_threshold_is_apdex_f) = 1;
     } else {
       val = nr_parse_time_from_config(NEW_VALUE);
     }
@@ -1683,7 +1683,7 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
     foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
   }
 
-  NRSHAREDGLOBAL(wtfuncs_where) = stage;
+  NRPRG_SHARED(wtfuncs_where) = stage;
   return SUCCESS;
 }
 
@@ -1697,7 +1697,7 @@ static PHP_INI_MH(nr_ttcustom_mh) {
     foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);
   }
 
-  NRSHAREDGLOBAL(ttcustom_where) = stage;
+  NRPRG_SHARED(ttcustom_where) = stage;
   return SUCCESS;
 }
 
@@ -1948,14 +1948,14 @@ static PHP_INI_MH(nr_wordpress_hooks_options_mh) {
   NR_UNUSED_TSRMLS;
 
   if (0 == nr_strcmp(NEW_VALUE, "all_callbacks")) {
-    NRSHAREDGLOBAL(wordpress_plugins) = true;
-    NRSHAREDGLOBAL(wordpress_core) = true;
+    NRPRG_SHARED(wordpress_plugins) = true;
+    NRPRG_SHARED(wordpress_core) = true;
   } else if (0 == nr_strcmp(NEW_VALUE, "plugin_callbacks")) {
-    NRSHAREDGLOBAL(wordpress_plugins) = true;
-    NRSHAREDGLOBAL(wordpress_core) = false;
+    NRPRG_SHARED(wordpress_plugins) = true;
+    NRPRG_SHARED(wordpress_core) = false;
   } else if (0 == nr_strcmp(NEW_VALUE, "threshold")) {
-    NRSHAREDGLOBAL(wordpress_plugins) = false;
-    NRSHAREDGLOBAL(wordpress_core) = false;
+    NRPRG_SHARED(wordpress_plugins) = false;
+    NRPRG_SHARED(wordpress_core) = false;
   } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",
                 ZEND_STRING_VALUE(entry->name), NEW_VALUE,
@@ -1991,21 +1991,21 @@ static PHP_INI_MH(nr_dt_sampler_remote_parent_mh) {
 
   if (0 == nr_strcmp(NEW_VALUE, "default")) {
     if (parent_sampled) {
-      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = DEFAULT;
+      NRPRG_SHARED(dt_sampler_parent_sampled) = DEFAULT;
     } else {
-      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = DEFAULT;
+      NRPRG_SHARED(dt_sampler_parent_not_sampled) = DEFAULT;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_on")) {
     if (parent_sampled) {
-      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = ALWAYS_KEEP;
+      NRPRG_SHARED(dt_sampler_parent_sampled) = ALWAYS_KEEP;
     } else {
-      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
+      NRPRG_SHARED(dt_sampler_parent_not_sampled) = ALWAYS_KEEP;
     }
   } else if (0 == nr_strcmp(NEW_VALUE, "always_off")) {
     if (parent_sampled) {
-      NRSHAREDGLOBAL(dt_sampler_parent_sampled) = ALWAYS_DROP;
+      NRPRG_SHARED(dt_sampler_parent_sampled) = ALWAYS_DROP;
     } else {
-      NRSHAREDGLOBAL(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
+      NRPRG_SHARED(dt_sampler_parent_not_sampled) = ALWAYS_DROP;
     }
   } else {
     nrl_warning(NRL_INIT, "Invalid %s value \"%s\"; using \"%s\" instead.",

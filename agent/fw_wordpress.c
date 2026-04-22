@@ -81,8 +81,8 @@ static inline char* nr_wordpress_strip_php_suffix(char* filename,
 static nr_matcher_t* nr_wordpress_core_matcher() {
   nr_matcher_t* matcher = NULL;
 
-  if (NRSHAREDGLOBAL(wordpress_core_matcher)) {
-    return NRSHAREDGLOBAL(wordpress_core_matcher);
+  if (NRPRG_SHARED(wordpress_core_matcher)) {
+    return NRPRG_SHARED(wordpress_core_matcher);
   }
 
   matcher = create_matcher_for_constant("WPINC", "");
@@ -91,15 +91,15 @@ static nr_matcher_t* nr_wordpress_core_matcher() {
     nr_matcher_add_prefix(matcher, "/wp-includes");
   }
 
-  NRSHAREDGLOBAL(wordpress_core_matcher) = matcher;
+  NRPRG_SHARED(wordpress_core_matcher) = matcher;
   return matcher;
 }
 
 static nr_matcher_t* nr_wordpress_plugin_matcher() {
   nr_matcher_t* matcher = NULL;
 
-  if (NRSHAREDGLOBAL(wordpress_plugin_matcher)) {
-    return NRSHAREDGLOBAL(wordpress_plugin_matcher);
+  if (NRPRG_SHARED(wordpress_plugin_matcher)) {
+    return NRPRG_SHARED(wordpress_plugin_matcher);
   }
 
   /*
@@ -131,7 +131,7 @@ static nr_matcher_t* nr_wordpress_plugin_matcher() {
     nr_matcher_add_prefix(matcher, "/wp-content/plugins");
   }
 
-  NRSHAREDGLOBAL(wordpress_plugin_matcher) = matcher;
+  NRPRG_SHARED(wordpress_plugin_matcher) = matcher;
   return matcher;
 }
 
@@ -139,8 +139,8 @@ static nr_matcher_t* nr_wordpress_theme_matcher() {
   nr_matcher_t* matcher = NULL;
   zval* roots = NULL;
 
-  if (NRSHAREDGLOBAL(wordpress_theme_matcher)) {
-    return NRSHAREDGLOBAL(wordpress_theme_matcher);
+  if (NRPRG_SHARED(wordpress_theme_matcher)) {
+    return NRPRG_SHARED(wordpress_theme_matcher);
   }
 
   matcher = nr_matcher_create();
@@ -168,7 +168,7 @@ static nr_matcher_t* nr_wordpress_theme_matcher() {
 
   nr_php_zval_free(&roots);
 
-  NRSHAREDGLOBAL(wordpress_theme_matcher) = matcher;
+  NRPRG_SHARED(wordpress_theme_matcher) = matcher;
   return matcher;
 }
 
@@ -178,7 +178,7 @@ char* nr_php_wordpress_plugin_match_matcher(const char* filename) {
   plugin = nr_matcher_match_ex(nr_wordpress_plugin_matcher(), filename,
                                nr_strlen(filename), &plugin_len);
   plugin = nr_wordpress_strip_php_suffix(plugin, plugin_len);
-  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_plugin_matcher));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_plugin_matcher));
   return plugin;
 }
 
@@ -188,7 +188,7 @@ char* nr_php_wordpress_theme_match_matcher(const char* filename) {
   theme = nr_matcher_match_ex(nr_wordpress_theme_matcher(), filename,
                               nr_strlen(filename), &plugin_len);
   theme = nr_wordpress_strip_php_suffix(theme, plugin_len);
-  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_theme_matcher));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_theme_matcher));
   return theme;
 }
 
@@ -198,7 +198,7 @@ char* nr_php_wordpress_core_match_matcher(const char* filename) {
   core = nr_matcher_match_r_ex(nr_wordpress_core_matcher(), filename,
                                nr_strlen(filename), &plugin_len);
   core = nr_wordpress_strip_php_suffix(core, plugin_len);
-  nr_matcher_destroy(&NRSHAREDGLOBAL(wordpress_core_matcher));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_core_matcher));
   return core;
 }
 
@@ -262,8 +262,8 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
   }
   filename_len = nr_php_function_filename_len(func);
 
-  if (NRSHAREDGLOBAL(wordpress_file_metadata)) {
-    if (nr_hashmap_get_into(NRSHAREDGLOBAL(wordpress_file_metadata), filename,
+  if (NRPRG_SHARED(wordpress_file_metadata)) {
+    if (nr_hashmap_get_into(NRPRG_SHARED(wordpress_file_metadata), filename,
                             filename_len, (void**)&plugin)) {
       nrl_verbosedebug(NRL_FRAMEWORK,
                        "Wordpress: found in cache: "
@@ -272,7 +272,7 @@ static char* nr_wordpress_plugin_from_function(zend_function* func TSRMLS_DC) {
       return plugin;
     }
   } else {
-    NRSHAREDGLOBAL(wordpress_file_metadata)
+    NRPRG_SHARED(wordpress_file_metadata)
         = nr_hashmap_create(free_wordpress_metadata);
   }
   nrl_verbosedebug(NRL_FRAMEWORK,
@@ -335,8 +335,8 @@ cache_and_return:
    * Even if plugin is NULL, we'll still cache that. Hooks in WordPress's core
    * will be NULL, and we need not re-run the matchers each time.
    */
-  nr_hashmap_set(NRSHAREDGLOBAL(wordpress_file_metadata), filename,
-                 filename_len, plugin);
+  nr_hashmap_set(NRPRG_SHARED(wordpress_file_metadata), filename, filename_len,
+                 plugin);
   return plugin;
 }
 
@@ -373,7 +373,7 @@ NR_PHP_WRAPPER(nr_wordpress_wrap_hook) {
 #endif
 
   NR_PHP_WRAPPER_CALL;
-  if (NULL != plugin || NRSHAREDGLOBAL(wordpress_core)) {
+  if (NULL != plugin || NRPRG_SHARED(wordpress_core)) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
     nr_wordpress_create_metric(auto_segment, NR_WORDPRESS_HOOK_PREFIX, tag);
@@ -402,7 +402,7 @@ static void nr_wordpress_call_user_func_array(zend_function* func,
    * function, we're instrumenting hooks, and WordPress is currently executing
    * hooks (denoted by the wordpress_tag being set).
    */
-  if ((NR_FW_WORDPRESS != NRSHAREDGLOBAL(current_framework))
+  if ((NR_FW_WORDPRESS != NRPRG_SHARED(current_framework))
       || (0 == NRINI(wordpress_hooks))
       || (NULL == NRCTXGLOBAL(wordpress_tag))) {
     return;
@@ -454,11 +454,11 @@ static char* nr_wordpress_clean_tag(const zval* tag) {
     return NULL;
   }
 
-  if (NULL == NRSHAREDGLOBAL(wordpress_clean_tag_cache)) {
-    NRSHAREDGLOBAL(wordpress_clean_tag_cache) = nr_hashmap_create(free_tag);
+  if (NULL == NRPRG_SHARED(wordpress_clean_tag_cache)) {
+    NRPRG_SHARED(wordpress_clean_tag_cache) = nr_hashmap_create(free_tag);
   }
 
-  if (nr_hashmap_get_into(NRSHAREDGLOBAL(wordpress_clean_tag_cache),
+  if (nr_hashmap_get_into(NRPRG_SHARED(wordpress_clean_tag_cache),
                           Z_STRVAL_P(tag), Z_STRLEN_P(tag),
                           (void**)&clean_tag)) {
     return clean_tag;
@@ -486,7 +486,7 @@ static char* nr_wordpress_clean_tag(const zval* tag) {
 
   nr_regex_substrings_destroy(&ss);
 
-  nr_hashmap_set(NRSHAREDGLOBAL(wordpress_clean_tag_cache), Z_STRVAL_P(tag),
+  nr_hashmap_set(NRPRG_SHARED(wordpress_clean_tag_cache), Z_STRVAL_P(tag),
                  Z_STRLEN_P(tag), clean_tag);
 
   return clean_tag;
@@ -531,7 +531,7 @@ NR_PHP_WRAPPER(nr_wordpress_exec_handle_tag) {
       char* old_tag = NRCTXGLOBAL(wordpress_tag);
       NRCTXGLOBAL(wordpress_tag) = nr_wordpress_clean_tag(tag TSRMLS_CC);
       NR_PHP_WRAPPER_CALL;
-      if (0 == NRSHAREDGLOBAL(wordpress_plugins)) {
+      if (0 == NRPRG_SHARED(wordpress_plugins)) {
         nr_wordpress_hooks_create_metric(auto_segment,
                                          NRCTXGLOBAL(wordpress_tag));
       }
@@ -652,7 +652,7 @@ NR_PHP_WRAPPER(nr_wordpress_apply_filters) {
       NRCTXGLOBAL(wordpress_tag) = nr_wordpress_clean_tag(tag);
 
       NR_PHP_WRAPPER_CALL;
-      if (0 == NRSHAREDGLOBAL(wordpress_plugins)) {
+      if (0 == NRPRG_SHARED(wordpress_plugins)) {
         nr_wordpress_hooks_create_metric(auto_segment,
                                          NRCTXGLOBAL(wordpress_tag));
       }
@@ -680,7 +680,7 @@ NR_PHP_WRAPPER_END
 static void clean_wordpress_tag_stack(nr_segment_t* segment) {
   if ((bool)nr_stack_pop(&NRCTXGLOBAL(wordpress_tag_states))) {
     char* tag = nr_stack_pop(&NRCTXGLOBAL(wordpress_tags));
-    if (0 == NRSHAREDGLOBAL(wordpress_plugins)) {
+    if (0 == NRPRG_SHARED(wordpress_plugins)) {
       nr_wordpress_hooks_create_metric(segment, tag);
     }
   }
@@ -755,7 +755,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
    * function, we're instrumenting hooks, and WordPress is currently executing
    * hooks (denoted by the wordpress_tag being set).
    */
-  if ((NR_FW_WORDPRESS != NRSHAREDGLOBAL(current_framework))
+  if ((NR_FW_WORDPRESS != NRPRG_SHARED(current_framework))
       || (0 == NRINI(wordpress_hooks))) {
     wrap_hook = false;
   }
@@ -777,7 +777,7 @@ NR_PHP_WRAPPER(nr_wordpress_add_filter) {
     zend_function* zf = nr_php_zval_to_function(callback);
     if (NULL != zf) {
       char* wordpress_plugin_theme = nr_wordpress_plugin_from_function(zf);
-      if (NULL != wordpress_plugin_theme || NRSHAREDGLOBAL(wordpress_core)) {
+      if (NULL != wordpress_plugin_theme || NRPRG_SHARED(wordpress_core)) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
         callback_wraprec = nr_php_wrap_callable_before_after_clean(
@@ -859,7 +859,7 @@ void nr_wordpress_enable(TSRMLS_D) {
         NR_PSTR("do_action_ref_array"), nr_wordpress_exec_handle_tag,
         nr_wordpress_handle_tag_stack_after,
         nr_wordpress_handle_tag_stack_clean);
-    if (0 != NRSHAREDGLOBAL(wordpress_plugins)) {
+    if (0 != NRPRG_SHARED(wordpress_plugins)) {
       nr_php_wrap_user_function(NR_PSTR("add_filter"), nr_wordpress_add_filter);
     }
   }
@@ -877,7 +877,7 @@ void nr_wordpress_enable(TSRMLS_D) {
 
     nr_php_wrap_user_function(NR_PSTR("do_action_ref_array"),
                               nr_wordpress_exec_handle_tag TSRMLS_CC);
-    if (0 != NRSHAREDGLOBAL(wordpress_plugins)) {
+    if (0 != NRPRG_SHARED(wordpress_plugins)) {
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
       nr_php_add_call_user_func_array_pre_callback(
           nr_wordpress_call_user_func_array TSRMLS_CC);

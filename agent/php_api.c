@@ -1495,15 +1495,15 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
     return;
   }
 
-  if (nrlikely(NRSHAREDGLOBAL(app))) {
+  if (nrlikely(NRPRG_SHARED(app))) {
     nr_php_add_assoc_string_const(return_value, "entity.name",
-                                  nr_app_get_entity_name(NRSHAREDGLOBAL(app)));
+                                  nr_app_get_entity_name(NRPRG_SHARED(app)));
     nr_php_add_assoc_string_const(return_value, "entity.type",
-                                  nr_app_get_entity_type(NRSHAREDGLOBAL(app)));
+                                  nr_app_get_entity_type(NRPRG_SHARED(app)));
     nr_php_add_assoc_string_const(return_value, "entity.guid",
-                                  nr_app_get_entity_guid(NRSHAREDGLOBAL(app)));
+                                  nr_app_get_entity_guid(NRPRG_SHARED(app)));
     nr_php_add_assoc_string_const(return_value, "hostname",
-                                  nr_app_get_host_name(NRSHAREDGLOBAL(app)));
+                                  nr_app_get_host_name(NRPRG_SHARED(app)));
   }
 
   if (nrlikely(NRPRG(txn))) {

@@ -820,13 +820,13 @@ void nr_php_op_array_set_wraprec(zend_op_array* op_array,
     return;
   }
 
-  if (!nr_vector_push_back(NRSHAREDGLOBAL(user_function_wrappers), func)) {
+  if (!nr_vector_push_back(NRPRG_SHARED(user_function_wrappers), func)) {
     return;
   }
 
-  index = nr_vector_size(NRSHAREDGLOBAL(user_function_wrappers)) - 1;
+  index = nr_vector_size(NRPRG_SHARED(user_function_wrappers)) - 1;
 
-  index |= (NRSHAREDGLOBAL(pid) << 16);
+  index |= (NRPRG_SHARED(pid) << 16);
 
   op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
 }
@@ -849,16 +849,16 @@ nruserfn_t* nr_php_op_array_get_wraprec(
   pid = index >> 16;
   index &= 0xffff;
 
-  if (pid != NRSHAREDGLOBAL(pid)) {
+  if (pid != NRPRG_SHARED(pid)) {
     nrl_verbosedebug(
         NRL_INSTRUMENT,
         "Skipping instrumented function: pid mismatch, got " NR_INT64_FMT
         ", expected " NR_INT64_FMT,
-        pid, NRSHAREDGLOBAL(pid));
+        pid, NRPRG_SHARED(pid));
     return NULL;
   }
 
-  return (nruserfn_t*)nr_vector_get(NRSHAREDGLOBAL(user_function_wrappers),
+  return (nruserfn_t*)nr_vector_get(NRPRG_SHARED(user_function_wrappers),
                                     index);
 }
 #endif /* PHP < 7.4 */

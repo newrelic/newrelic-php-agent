@@ -321,7 +321,7 @@ int nr_php_header_handler(sapi_header_struct* sapi_header,
    * PHP SAPI globals have a different memory layout.
    */
   if (nr_php_sapi_headers_pointer_is_plausible(sapi_headers TSRMLS_CC)) {
-    NRSHAREDGLOBAL(sapi_headers) = sapi_headers;
+    NRPRG_SHARED(sapi_headers) = sapi_headers;
   }
 
   if (NR_PHP_PROCESS_GLOBALS(orig_header_handler)) {
@@ -338,8 +338,8 @@ int nr_php_header_handler(sapi_header_struct* sapi_header,
 }
 
 sapi_headers_struct* nr_php_sapi_headers(TSRMLS_D) {
-  if (NRSHAREDGLOBAL(sapi_headers)) {
-    return NRSHAREDGLOBAL(sapi_headers);
+  if (NRPRG_SHARED(sapi_headers)) {
+    return NRPRG_SHARED(sapi_headers);
   }
   return &SG(sapi_headers);
 }

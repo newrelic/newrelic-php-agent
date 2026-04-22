@@ -273,7 +273,7 @@ PHP_FUNCTION(newrelic_exception_handler) {
 
   nr_php_error_record_exception(
       NRPRG(txn), exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, true,
-      "Uncaught exception ", &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC);
+      "Uncaught exception ", &NRPRG_SHARED(exception_filters) TSRMLS_CC);
   /*
    * Finally, we need to generate an E_ERROR to match what PHP would have done
    * if this handler wasn't installed. Happily, PHP exposes an API function

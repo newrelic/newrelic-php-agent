@@ -60,7 +60,7 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
   if (NR_SUCCESS
       != nr_php_error_record_exception(
           NRPRG(txn), exception, priority, true, NULL,
-          &NRSHAREDGLOBAL(exception_filters) TSRMLS_CC)) {
+          &NRPRG_SHARED(exception_filters) TSRMLS_CC)) {
     nrl_verbosedebug(NRL_TXN, "Symfony 4: unable to record exception");
   }
 

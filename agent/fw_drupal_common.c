@@ -49,7 +49,7 @@ int nr_drupal_is_framework(nrframework_t fw) {
  * Purpose : Wrap a module hook function to generate module and hook metrics.
  */
 NR_PHP_WRAPPER(nr_drupal_wrap_module_hook) {
-  if (!nr_drupal_is_framework(NRSHAREDGLOBAL(current_framework))) {
+  if (!nr_drupal_is_framework(NRPRG_SHARED(current_framework))) {
     NR_PHP_WRAPPER_LEAVE;
   }
 

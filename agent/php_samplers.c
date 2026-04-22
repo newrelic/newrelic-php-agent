@@ -173,15 +173,15 @@ void nr_php_resource_usage_sampler_start(TSRMLS_D) {
     int err = errno;
     nrl_verbosedebug(NRL_MISC, "getrusage() failed with %d (%.16s)", err,
                      nr_errno(err));
-    NRSHAREDGLOBAL(start_sample) = 0;
+    NRPRG_SHARED(start_sample) = 0;
     return;
   }
 
-  NRSHAREDGLOBAL(start_sample) = now;
-  NRSHAREDGLOBAL(start_user_time).tv_sec = rusage.ru_utime.tv_sec;
-  NRSHAREDGLOBAL(start_user_time).tv_usec = rusage.ru_utime.tv_usec;
-  NRSHAREDGLOBAL(start_sys_time).tv_sec = rusage.ru_stime.tv_sec;
-  NRSHAREDGLOBAL(start_sys_time).tv_usec = rusage.ru_stime.tv_usec;
+  NRPRG_SHARED(start_sample) = now;
+  NRPRG_SHARED(start_user_time).tv_sec = rusage.ru_utime.tv_sec;
+  NRPRG_SHARED(start_user_time).tv_usec = rusage.ru_utime.tv_usec;
+  NRPRG_SHARED(start_sys_time).tv_sec = rusage.ru_stime.tv_sec;
+  NRPRG_SHARED(start_sys_time).tv_usec = rusage.ru_stime.tv_usec;
 }
 
 void nr_php_resource_usage_sampler_end(TSRMLS_D) {
@@ -227,7 +227,7 @@ void nr_php_resource_usage_sampler_end(TSRMLS_D) {
   }
 #endif
 
-  if (nrunlikely(0 == NRSHAREDGLOBAL(start_sample))) {
+  if (nrunlikely(0 == NRPRG_SHARED(start_sample))) {
     /* If getrusage failed during the start sampler. */
     return;
   }
@@ -240,7 +240,7 @@ void nr_php_resource_usage_sampler_end(TSRMLS_D) {
     return;
   }
 
-  elapsed_time = now - NRSHAREDGLOBAL(start_sample);
+  elapsed_time = now - NRPRG_SHARED(start_sample);
   if (nrunlikely(elapsed_time <= 0)) {
     nrl_verbosedebug(NRL_MISC,
                      "elapsed time is not positive - no CPU sampler data "
@@ -248,8 +248,8 @@ void nr_php_resource_usage_sampler_end(TSRMLS_D) {
     return;
   }
 
-  start_ums = timeval_to_micros(NRSHAREDGLOBAL(start_user_time));
-  start_sms = timeval_to_micros(NRSHAREDGLOBAL(start_sys_time));
+  start_ums = timeval_to_micros(NRPRG_SHARED(start_user_time));
+  start_sms = timeval_to_micros(NRPRG_SHARED(start_sys_time));
   start_total = start_ums + start_sms;
 
   end_ums = timeval_to_micros(rusage.ru_utime);

@@ -596,13 +596,13 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 #if defined(ZTS)
 #define NRPRG(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, X)
 #define NRINI(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ini.X.value)
-#define NRSHAREDGLOBAL(X) \
+#define NRPRG_SHARED(X) \
   TSRMG(newrelic_globals_id, zend_newrelic_globals*, shared.X)
 #define NRCTXGLOBAL(X) TSRMG(newrelic_globals_id, zend_newrelic_globals*, ctx.X)
 #else
 #define NRPRG(X) (newrelic_globals.X)
 #define NRINI(X) (newrelic_globals.ini.X.value)
-#define NRSHAREDGLOBAL(X) (newrelic_globals.shared.X)
+#define NRPRG_SHARED(X) (newrelic_globals.shared.X)
 #define NRCTXGLOBAL(X) (newrelic_globals.ctx.X)
 #endif
 

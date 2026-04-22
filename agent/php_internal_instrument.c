@@ -2985,7 +2985,7 @@ NR_INNER_WRAPPER(dl) {
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_extensions)) {
-    nr_php_extension_instrument_rescan(NRSHAREDGLOBAL(extensions) TSRMLS_CC);
+    nr_php_extension_instrument_rescan(NRPRG_SHARED(extensions) TSRMLS_CC);
   }
 }
 

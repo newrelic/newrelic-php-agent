@@ -928,7 +928,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   opts.ep_threshold = NRINI(ep_threshold);
   opts.ss_threshold = NRINI(ss_threshold);
   opts.cross_process_enabled = (int)NRINI(cross_process_enabled);
-  opts.tt_is_apdex_f = NRSHAREDGLOBAL(tt_threshold_is_apdex_f);
+  opts.tt_is_apdex_f = NRPRG_SHARED(tt_threshold_is_apdex_f);
   opts.allow_raw_exception_messages = NRINI(allow_raw_exception_messages);
   opts.custom_parameters_enabled = NRINI(custom_parameters_enabled);
   opts.distributed_tracing_enabled = NRINI(distributed_tracing_enabled);
@@ -942,9 +942,9 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = is_cli ? NRINI(tt_max_segments_cli) : NRINI(tt_max_segments_web);
   opts.span_queue_batch_size = NRINI(agent_span_queue_size);
   opts.span_queue_batch_timeout = NRINI(agent_span_queue_timeout);
-  opts.dt_sampler_parent_sampled = NRSHAREDGLOBAL(dt_sampler_parent_sampled);
+  opts.dt_sampler_parent_sampled = NRPRG_SHARED(dt_sampler_parent_sampled);
   opts.dt_sampler_parent_not_sampled
-      = NRSHAREDGLOBAL(dt_sampler_parent_not_sampled);
+      = NRPRG_SHARED(dt_sampler_parent_not_sampled);
   opts.logging_enabled = NRINI(logging_enabled);
   opts.log_decorating_enabled = NRINI(log_decorating_enabled);
   opts.log_forwarding_enabled = NRINI(log_forwarding_enabled);
@@ -1005,7 +1005,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       = NRINI(custom_events_max_samples_stored);
   info.docker_id = nr_strdup(NR_PHP_PROCESS_GLOBALS(docker_id));
 
-  NRSHAREDGLOBAL(app) = nr_agent_find_or_add_app(
+  NRPRG_SHARED(app) = nr_agent_find_or_add_app(
       nr_agent_applist, &info,
       /*
        * Settings are provided through a callback:
@@ -1017,7 +1017,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
       &nr_php_app_settings, NR_PHP_PROCESS_GLOBALS(daemon_app_connect_timeout));
   nr_app_info_destroy_fields(&info);
 
-  if (NULL == NRSHAREDGLOBAL(app)) {
+  if (NULL == NRPRG_SHARED(app)) {
     nrl_debug(NRL_INIT, "unable to begin transaction: app '%.128s' is unknown",
               appnames ? appnames : "");
     return NR_FAILURE;
@@ -1025,10 +1025,10 @@ nr_status_t nr_php_txn_begin(const char* appnames,
 
   attribute_config = nr_php_create_attribute_config(TSRMLS_C);
   log_forwarding_labels
-      = nr_php_txn_get_log_forwarding_labels(NRSHAREDGLOBAL(app)->info.labels);
-  NRPRG(txn) = nr_txn_begin(NRSHAREDGLOBAL(app), &opts, attribute_config,
+      = nr_php_txn_get_log_forwarding_labels(NRPRG_SHARED(app)->info.labels);
+  NRPRG(txn) = nr_txn_begin(NRPRG_SHARED(app), &opts, attribute_config,
                             log_forwarding_labels);
-  nrt_mutex_unlock(&(NRSHAREDGLOBAL(app)->app_lock));
+  nrt_mutex_unlock(&(NRPRG_SHARED(app)->app_lock));
 
   nr_attribute_config_destroy(&attribute_config);
   nro_delete(log_forwarding_labels);

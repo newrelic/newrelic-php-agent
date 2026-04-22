@@ -28,7 +28,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
   /*
    * Invalidate the cached pid.
    */
-  NRSHAREDGLOBAL(pid) -= 1;
+  NRPRG_SHARED(pid) -= 1;
 
   tlib_pass_if_ptr_equal("obtain instrumented function",
                          nr_php_op_array_get_wraprec(&oparray TSRMLS_CC), NULL);
@@ -36,7 +36,7 @@ static void test_op_array_wraprec(TSRMLS_D) {
   /*
    * Restore the cached pid and invalidate the mangled pid/index value.
    */
-  NRSHAREDGLOBAL(pid) += 1;
+  NRPRG_SHARED(pid) += 1;
 
   {
     unsigned long pval;

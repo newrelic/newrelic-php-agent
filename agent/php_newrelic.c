@@ -80,32 +80,32 @@ void nr_print_globals(FILE* fp) {
           NRINI(browser_monitoring_attributes.enabled));
 
   fprintf(fp, "tt_threshold_is_apdex_f=%d\n",
-          NRSHAREDGLOBAL(tt_threshold_is_apdex_f));
+          NRPRG_SHARED(tt_threshold_is_apdex_f));
 
-  fprintf(fp, "current_framework=%d\n", (int)NRSHAREDGLOBAL(current_framework));
+  fprintf(fp, "current_framework=%d\n", (int)NRPRG_SHARED(current_framework));
 
   fprintf(fp, "execute_count=%d\n", NRTXNGLOBAL(execute_count));
   fprintf(fp, "php_cur_stack_depth=%d\n", NRCTXGLOBAL(php_cur_stack_depth));
 
   fprintf(fp, "txn=%p\n", NRPRG(txn));
 
-  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRSHAREDGLOBAL(start_sample));
+  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRPRG_SHARED(start_sample));
 
   fprintf(fp, "start_user_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRSHAREDGLOBAL(start_user_time.tv_sec),
-          (int)NRSHAREDGLOBAL(start_user_time.tv_usec));
+          (nrtime_t)NRPRG_SHARED(start_user_time.tv_sec),
+          (int)NRPRG_SHARED(start_user_time.tv_usec));
   fprintf(fp, "start_sys_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRSHAREDGLOBAL(start_sys_time.tv_sec),
-          (int)NRSHAREDGLOBAL(start_user_time.tv_usec));
+          (nrtime_t)NRPRG_SHARED(start_sys_time.tv_sec),
+          (int)NRPRG_SHARED(start_user_time.tv_usec));
 
-  fprintf(fp, "wtfuncs_where=%d\n", NRSHAREDGLOBAL(wtfuncs_where));
-  fprintf(fp, "wtfiles_where=%d\n", NRSHAREDGLOBAL(wtfiles_where));
-  fprintf(fp, "ttcustom_where=%d\n", NRSHAREDGLOBAL(ttcustom_where));
+  fprintf(fp, "wtfuncs_where=%d\n", NRPRG_SHARED(wtfuncs_where));
+  fprintf(fp, "wtfiles_where=%d\n", NRPRG_SHARED(wtfiles_where));
+  fprintf(fp, "ttcustom_where=%d\n", NRPRG_SHARED(ttcustom_where));
 
   fprintf(fp, "deprecated_capture_request_parameters=%d\n",
           NRCTXGLOBAL(deprecated_capture_request_parameters));
 
-  fprintf(fp, "extensions=%p\n", NRSHAREDGLOBAL(extensions));
+  fprintf(fp, "extensions=%p\n", NRPRG_SHARED(extensions));
   fflush(fp);
 
   nr_print_txn(fp);
