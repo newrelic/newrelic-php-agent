@@ -581,12 +581,15 @@ nr_vector_t* user_function_wrappers;
  */
 nruserfn_t* transient_wraprecs; /* a singly linked list */
 
+#ifdef ZTS
 /*
- * User instrumentation wraprec hashmaps stored at request level for thread
- * safety
+ * User instrumentation wraprec hashmaps stored at request level for ZTS
+ * thread safety. For non-ZTS, these are file-scoped statics in
+ * php_user_instrument_wraprec_hashmap.c (persisting from MINIT to MSHUTDOWN).
  */
 nr_func_hashmap_t* global_funcs_ht; /* hashmap for global functions */
 nr_scope_hashmap_t* scope_ht;       /* hashmap for scoped methods */
+#endif /* ZTS */
 #endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a

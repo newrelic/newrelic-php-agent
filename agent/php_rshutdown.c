@@ -105,8 +105,8 @@ int nr_php_post_deactivate(void) {
 
   nr_php_remove_transient_user_instrumentation();
 
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /* Destroy per-request wraprec hashmaps */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO && defined(ZTS)
+  /* ZTS: destroy per-request hashmaps. Non-ZTS hashmaps persist to MSHUTDOWN. */
   nr_php_user_instrument_wraprec_hashmap_destroy();
   nrl_verbosedebug(NRL_INSTRUMENT, "%s: destroyed wraprec hashmaps", __func__);
 #endif

@@ -29,8 +29,9 @@ static void test_wraprecs_hashmap() {
   scope_name = zend_string_init(NR_PSTR(SCOPE_NAME), 0);
   method_name = zend_string_init(NR_PSTR(METHOD_NAME), 0);
 
-  // user_instrument_wraprec_hashmap is initialized at minit
-  // destroy it to test agent's behavior when it is not initialized
+  // Non-ZTS: wraprec hashmap is initialized at MINIT.
+  // ZTS: wraprec hashmap is initialized per-request at RINIT.
+  // Destroy it here to test agent's behavior when it is not initialized.
   nr_php_user_instrument_wraprec_hashmap_destroy();
 
   // Test valid operations before initializing the hashmap

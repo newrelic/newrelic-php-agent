@@ -596,9 +596,10 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
  */
 void nr_php_reset_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /* No need to do anything at rshutdown:
-   *  - Observer API takes care of resetting user instrumentation for each request
-   *  - All named wraprecs ever created persist in wraprec hashmap until mshutdown
+  /* No wraprec reset needed in this function for PHP 8+:
+   *  - Observer API re-registers instrumentation each request automatically
+   *  - Non-ZTS: named wraprecs persist in hashmap until MSHUTDOWN
+   *  - ZTS: per-request hashmaps are destroyed in nr_php_post_deactivate()
    */
   return;
 #elif ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO

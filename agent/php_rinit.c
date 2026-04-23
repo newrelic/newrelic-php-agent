@@ -73,19 +73,12 @@ PHP_RINIT_FUNCTION(newrelic) {
   nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized transient_wraprecs to NULL",
                    __func__);
 
-  /* initialization of user instrumentation wraprec hashmaps which are per
-   * request globals */
-  if (NRPRG(scope_ht) != NULL) {
-    nrl_verbosedebug(NRL_INSTRUMENT, "%s: scope_ht was not NULL at RINIT",
-                     __func__);
-  }
-  if (NRPRG(global_funcs_ht) != NULL) {
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                     "%s: global_funcs_ht was not NULL at RINIT", __func__);
-  }
+#ifdef ZTS
+  /* ZTS: create per-request hashmaps. Non-ZTS hashmaps persist from MINIT. */
   nr_php_user_instrument_wraprec_hashmap_init();
   nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized wraprec hashmaps",
                    __func__);
+#endif
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {

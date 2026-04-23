@@ -11,6 +11,22 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 
+/*
+ * Storage abstraction for scope_ht and global_funcs_ht:
+ * - ZTS: per-request globals via NRPRG() (created at RINIT, destroyed at
+ *   RSHUTDOWN)
+ * - Non-ZTS: file-scoped statics (created at MINIT, destroyed at MSHUTDOWN)
+ */
+#ifdef ZTS
+#define NR_SCOPE_HT NRPRG(scope_ht)
+#define NR_GLOBAL_FUNCS_HT NRPRG(global_funcs_ht)
+#else
+static nr_scope_hashmap_t* scope_ht = NULL;
+static nr_func_hashmap_t* global_funcs_ht = NULL;
+#define NR_SCOPE_HT scope_ht
+#define NR_GLOBAL_FUNCS_HT global_funcs_ht
+#endif
+
 // -----------------------------------------------------------------------------
 // func hash map
 
@@ -379,11 +395,16 @@ static void nr_php_user_instrument_wraprec_hashmap_name2keys(
 }
 
 void nr_php_user_instrument_wraprec_hashmap_init(void) {
-  if (NULL == NRPRG(scope_ht)) {
-    NRPRG(scope_ht) = nr_scope_hashmap_create_internal(0);
+  if (NULL == NR_SCOPE_HT) {
+    NR_SCOPE_HT = nr_scope_hashmap_create_internal(0);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: scope_ht was not NULL", __func__);
   }
-  if (NULL == NRPRG(global_funcs_ht)) {
-    NRPRG(global_funcs_ht) = nr_func_hashmap_create_internal(0);
+  if (NULL == NR_GLOBAL_FUNCS_HT) {
+    NR_GLOBAL_FUNCS_HT = nr_func_hashmap_create_internal(0);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: global_funcs_ht was not NULL",
+                     __func__);
   }
 }
 
@@ -400,16 +421,16 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
   bool is_new_wraprec = false;
   nruserfn_t* wraprec = NULL;
 
-  if (NULL == NRPRG(scope_ht) || NULL == NRPRG(global_funcs_ht)) {
+  if (NULL == NR_SCOPE_HT || NULL == NR_GLOBAL_FUNCS_HT) {
     return NULL;
   }
 
   nr_php_user_instrument_wraprec_hashmap_name2keys(&func_key, &scope_key, namestr, namestrlen);
 
   if (func_key.is_method) {
-    funcs_ht = nr_scope_hashmap_update_internal(NRPRG(scope_ht), &scope_key);
+    funcs_ht = nr_scope_hashmap_update_internal(NR_SCOPE_HT, &scope_key);
   } else {
-    funcs_ht = NRPRG(global_funcs_ht);
+    funcs_ht = NR_GLOBAL_FUNCS_HT;
   }
 
   if (NULL == funcs_ht) {
@@ -448,7 +469,7 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, z
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
 
-  if (NULL == NRPRG(scope_ht) || NULL == NRPRG(global_funcs_ht)) {
+  if (NULL == NR_SCOPE_HT || NULL == NR_GLOBAL_FUNCS_HT) {
     return NULL;
   }
   if (NULL == func_name) {
@@ -460,9 +481,9 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, z
     scope_key.name = ZSTR_VAL(scope_name);
     scope_key.name_len = ZSTR_LEN(scope_name);
     scope_key.name_hash = ZSTR_HASH(scope_name);
-    funcs_ht = nr_scope_hashmap_lookup_internal(NRPRG(scope_ht), &scope_key);
+    funcs_ht = nr_scope_hashmap_lookup_internal(NR_SCOPE_HT, &scope_key);
   } else {
-    funcs_ht = NRPRG(global_funcs_ht);
+    funcs_ht = NR_GLOBAL_FUNCS_HT;
   }
 
   if (NULL == funcs_ht) {
@@ -477,11 +498,11 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, z
 }
 
 void nr_php_user_instrument_wraprec_hashmap_destroy(void) {
-  if (NULL != NRPRG(scope_ht)) {
-    nr_scope_hashmap_destroy_internal(&NRPRG(scope_ht));
+  if (NULL != NR_SCOPE_HT) {
+    nr_scope_hashmap_destroy_internal(&NR_SCOPE_HT);
   }
-  if (NULL != NRPRG(global_funcs_ht)) {
-    nr_func_hashmap_destroy_internal(&NRPRG(global_funcs_ht));
+  if (NULL != NR_GLOBAL_FUNCS_HT) {
+    nr_func_hashmap_destroy_internal(&NR_GLOBAL_FUNCS_HT);
   }
   return;
 }
