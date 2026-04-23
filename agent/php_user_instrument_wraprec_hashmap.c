@@ -412,25 +412,33 @@ void nr_php_user_instrument_wraprec_hashmap_init(void) {
  * nr_php_user_instrument_is_name_valid() before being passed in.
  * Specifically, it requires that:
  * - namestrlen be greater than 0
- * - namestr must not be NULL and must not end with `:` (colon) . */
+ * - namestr must not be NULL and must not end with `:` (colon) .
+ *
+ * _add_into() takes explicit hashmap pointers so callers can target
+ * different hashmaps (runtime vs INI). _add() is a convenience wrapper
+ * that targets the runtime hashmaps via NR_SCOPE_HT / NR_GLOBAL_FUNCS_HT. */
 
-nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
+static nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add_into(
+    nr_scope_hashmap_t* sht,
+    nr_func_hashmap_t* ght,
+    const char* namestr,
+    size_t namestrlen) {
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
   bool is_new_wraprec = false;
   nruserfn_t* wraprec = NULL;
 
-  if (NULL == NR_SCOPE_HT || NULL == NR_GLOBAL_FUNCS_HT) {
+  if (NULL == sht || NULL == ght) {
     return NULL;
   }
 
   nr_php_user_instrument_wraprec_hashmap_name2keys(&func_key, &scope_key, namestr, namestrlen);
 
   if (func_key.is_method) {
-    funcs_ht = nr_scope_hashmap_update_internal(NR_SCOPE_HT, &scope_key);
+    funcs_ht = nr_scope_hashmap_update_internal(sht, &scope_key);
   } else {
-    funcs_ht = NR_GLOBAL_FUNCS_HT;
+    funcs_ht = ght;
   }
 
   if (NULL == funcs_ht) {
@@ -462,6 +470,11 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
   }
 
   return wraprec;
+}
+
+nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
+  return nr_php_user_instrument_wraprec_hashmap_add_into(
+      NR_SCOPE_HT, NR_GLOBAL_FUNCS_HT, namestr, namestrlen);
 }
 
 nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, zend_string *scope_name) {
