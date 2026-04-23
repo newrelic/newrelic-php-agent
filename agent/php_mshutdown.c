@@ -57,6 +57,9 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
 
   nr_php_remove_opcode_handlers();
   nr_php_destroy_internal_wrap_records();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO && defined(ZTS)
+  nr_php_user_instrument_wraprec_hashmap_ini_destroy();
+#endif
   nr_php_destroy_user_wrap_records();
   nr_php_global_destroy();
   nr_applist_destroy(&nr_agent_applist);

@@ -74,9 +74,9 @@ PHP_RINIT_FUNCTION(newrelic) {
                    __func__);
 
 #ifdef ZTS
-  /* ZTS: create per-request hashmaps. Non-ZTS hashmaps persist from MINIT. */
-  nr_php_user_instrument_wraprec_hashmap_init();
-  nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized wraprec hashmaps",
+  /* ZTS: deep copy INI hashmaps into per-request hashmaps. */
+  nr_php_user_instrument_wraprec_hashmap_replay_ini();
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s: replayed INI wraprec hashmaps",
                    __func__);
 #endif
 #endif

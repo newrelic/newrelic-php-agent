@@ -493,16 +493,15 @@ PHP_MINIT_FUNCTION(newrelic) {
   nr_php_generate_internal_wrap_records();
 
   /*
-   * Non-ZTS: create the wraprec hashmaps now so they exist when INI OnModify
-   * handlers fire during nr_php_register_ini_entries(). These are file-scoped
-   * statics that persist until MSHUTDOWN.
+   * Initialize wraprec hashmaps before INI registration so that INI OnModify
+   * handlers (nr_wtfuncs_mh, nr_ttcustom_mh) can create wraprecs.
    *
-   * ZTS: per-request hashmaps are created at RINIT. INI wraprecs created
-   * here at MINIT are captured in a template list and replayed into each
-   * request's hashmaps at RINIT.
+   * NTS: creates file-scoped statics that persist until MSHUTDOWN.
+   * ZTS: creates process-global ini_scope_ht / ini_global_funcs_ht that are
+   * deep copied into per-request hashmaps at RINIT.
    */
-#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO && !defined(ZTS)
-  nr_php_user_instrument_wraprec_hashmap_init();
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_user_instrument_wraprec_hashmap_ini_init();
 #endif
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
