@@ -275,9 +275,22 @@ static bool nr_scope_hashmap_fetch_internal(nr_scope_hashmap_t* hashmap, size_t 
   return false;
 }
 
+/*
+ * Purpose : Insert a new scope bucket into the scope hashmap.
+ *
+ * Params  : 1. The scope hashmap to insert into.
+ *           2. The pre-computed bucket index for the key.
+ *           3. The scope key (name, length, hash). Copied into the bucket.
+ *           4. The func hashmap to attach to the scope bucket. Caller
+ *              provides an empty hashmap for normal usage, or a
+ *              deep-copied hashmap during RINIT replay.
+ *
+ * Returns : The scoped_funcs_ht attached to the new bucket.
+ */
 static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hashmap,
                              size_t hash_key,
-                             nr_scope_hashmap_key_t* key) {
+                             nr_scope_hashmap_key_t* key,
+                             nr_func_hashmap_t* scoped_funcs_ht) {
   nr_scope_bucket_t* bucket = (nr_scope_bucket_t*)nr_malloc(sizeof(nr_scope_bucket_t));
   bucket->prev = NULL;
   bucket->next = hashmap->buckets[hash_key];
@@ -285,7 +298,7 @@ static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hash
   bucket->key->name = nr_strndup(key->name, key->name_len);
   bucket->key->name_len = key->name_len;
   bucket->key->name_hash = key->name_hash;
-  bucket->scoped_funcs_ht = nr_func_hashmap_create_internal(0);
+  bucket->scoped_funcs_ht = scoped_funcs_ht;
 
   if (hashmap->buckets[hash_key]) {
     hashmap->buckets[hash_key]->prev = bucket;
@@ -326,7 +339,8 @@ static nr_func_hashmap_t* nr_scope_hashmap_update_internal(nr_scope_hashmap_t* h
     return bucket->scoped_funcs_ht;
   }
 
-  return nr_scope_hashmap_add_internal(hashmap, hash, key);
+  return nr_scope_hashmap_add_internal(hashmap, hash, key,
+                                       nr_func_hashmap_create_internal(0));
 }
 
 static void nr_scope_hashmap_destroy_bucket_internal(nr_scope_bucket_t** bucket_ptr) {
@@ -572,8 +586,9 @@ static nr_func_hashmap_t* nr_func_hashmap_deep_copy(
     nr_func_bucket_t* bucket = src->buckets[i];
 
     while (bucket) {
-      nruserfn_t* wraprec
-          = nr_func_hashmap_add_internal(dst, i, bucket->key);
+      nruserfn_t* wraprec = nr_func_hashmap_add_internal(
+          dst, nr_func_hashmap_hash_key(dst->log2_num_buckets, bucket->key),
+          bucket->key);
 
       nr_func_wraprec_copy_fields(wraprec, bucket->wraprec);
       bucket = bucket->next;
@@ -600,25 +615,11 @@ static nr_scope_hashmap_t* nr_scope_hashmap_deep_copy(
     nr_scope_bucket_t* bucket = src->buckets[i];
 
     while (bucket) {
-      nr_scope_bucket_t* new_bucket
-          = (nr_scope_bucket_t*)nr_malloc(sizeof(nr_scope_bucket_t));
-
-      new_bucket->prev = NULL;
-      new_bucket->next = dst->buckets[i];
-      new_bucket->key
-          = (nr_scope_hashmap_key_t*)nr_malloc(sizeof(nr_scope_hashmap_key_t));
-      new_bucket->key->name
-          = nr_strndup(bucket->key->name, bucket->key->name_len);
-      new_bucket->key->name_len = bucket->key->name_len;
-      new_bucket->key->name_hash = bucket->key->name_hash;
-      new_bucket->scoped_funcs_ht
-          = nr_func_hashmap_deep_copy(bucket->scoped_funcs_ht);
-
-      if (dst->buckets[i]) {
-        dst->buckets[i]->prev = new_bucket;
-      }
-      dst->buckets[i] = new_bucket;
-      ++dst->elements;
+      nr_scope_hashmap_add_internal(
+          dst,
+          nr_scope_hashmap_hash_key(dst->log2_num_buckets, bucket->key),
+          bucket->key,
+          nr_func_hashmap_deep_copy(bucket->scoped_funcs_ht));
 
       bucket = bucket->next;
     }
