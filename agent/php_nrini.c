@@ -1714,13 +1714,13 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 #error "ZTS is only supported with PHP 8.0+"
 #endif
+    /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn TSRMLS_CC);
-    } else
-#endif /* ZTS */
-    {
-      foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
     }
+#else
+    foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
+#endif /* ZTS */
   }
 
   NRPRG(wtfuncs_where) = stage;
@@ -1738,13 +1738,13 @@ static PHP_INI_MH(nr_ttcustom_mh) {
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 #error "ZTS is only supported with PHP 8.0+"
 #endif
+    /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer TSRMLS_CC);
-    } else
-#endif /* ZTS */
-    {
-      foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);
     }
+#else
+    foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);
+#endif /* ZTS */
   }
 
   NRPRG(ttcustom_where) = stage;

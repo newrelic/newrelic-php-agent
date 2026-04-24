@@ -501,7 +501,11 @@ PHP_MINIT_FUNCTION(newrelic) {
    * deep copied into per-request hashmaps at RINIT.
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+#ifdef ZTS
   nr_php_user_instrument_wraprec_hashmap_ini_init();
+#else
+  nr_php_user_instrument_wraprec_hashmap_init();
+#endif
 #endif
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
