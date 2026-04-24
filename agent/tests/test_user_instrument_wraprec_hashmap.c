@@ -72,6 +72,7 @@ static void test_wraprecs_hashmap() {
   zend_string_free(method_name);
 }
 
+#ifdef ZTS
 static void test_ini_add_global_function() {
   nruserfn_t* wraprec;
 
@@ -156,10 +157,8 @@ static void test_replay_ini_global_function() {
                          found->is_names_wt_simple);
 
   /* The per-request wraprec should be a copy, not the same pointer */
-#ifdef ZTS
   tlib_pass_if_true("replay: different pointer (deep copy)",
                     found != wraprec, "%p != %p", found, wraprec);
-#endif
 
   nr_php_user_instrument_wraprec_hashmap_destroy();
   nr_php_user_instrument_wraprec_hashmap_ini_destroy();
@@ -223,12 +222,6 @@ static void test_replay_ini_before_init() {
   zend_string_free(func_name);
 }
 
-/*
- * The multi-request cycle (destroy per-request + replay from INI) only applies
- * to ZTS. On NTS, _replay_ini() is a no-op and the hashmaps persist from MINIT
- * to MSHUTDOWN — there is no per-request destroy/recreate cycle.
- */
-#ifdef ZTS
 static void test_replay_ini_multiple_requests() {
   nruserfn_t* wraprec;
   nruserfn_t* found;
@@ -275,13 +268,13 @@ void test_main(void* p NRUNUSED) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   test_wraprecs_hashmap();
+#ifdef ZTS
   test_ini_add_global_function();
   test_ini_add_scoped_method();
   test_ini_add_before_init();
   test_replay_ini_global_function();
   test_replay_ini_scoped_method();
   test_replay_ini_before_init();
-#ifdef ZTS
   test_replay_ini_multiple_requests();
 #endif
 #endif

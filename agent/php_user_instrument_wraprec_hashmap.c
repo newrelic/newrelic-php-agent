@@ -629,54 +629,43 @@ static nr_scope_hashmap_t* nr_scope_hashmap_deep_copy(
 }
 
 /*
- * INI wraprec hashmap functions.
- *
- * NTS: INI handlers write directly into the runtime hashmaps (scope_ht /
- * global_funcs_ht). The _ini_* functions delegate to the regular hashmap
- * functions since the storage is the same.
+ * ZTS-only INI wraprec hashmap functions.
  *
  * ZTS: INI handlers write into process-global ini_scope_ht / ini_global_funcs_ht
  * at MINIT. These are deep copied into per-request hashmaps at RINIT.
+ *
+ * NTS: INI handlers write directly into the runtime hashmaps (scope_ht /
+ * global_funcs_ht) via the regular _init() / _add() functions. No separate
+ * INI storage is needed.
  */
 
-void nr_php_user_instrument_wraprec_hashmap_ini_init(void) {
 #ifdef ZTS
+void nr_php_user_instrument_wraprec_hashmap_ini_init(void) {
   if (NULL == ini_scope_ht) {
     ini_scope_ht = nr_scope_hashmap_create_internal(0);
   }
   if (NULL == ini_global_funcs_ht) {
     ini_global_funcs_ht = nr_func_hashmap_create_internal(0);
   }
-#else
-  nr_php_user_instrument_wraprec_hashmap_init();
-#endif
 }
 
 nruserfn_t* nr_php_user_instrument_wraprec_hashmap_ini_add(
     const char* namestr,
     size_t namestrlen) {
-#ifdef ZTS
   return nr_php_user_instrument_wraprec_hashmap_add_into(
       ini_scope_ht, ini_global_funcs_ht, namestr, namestrlen);
-#else
-  return nr_php_user_instrument_wraprec_hashmap_add_into(
-      NR_SCOPE_HT, NR_GLOBAL_FUNCS_HT, namestr, namestrlen);
-#endif
 }
 
 void nr_php_user_instrument_wraprec_hashmap_ini_destroy(void) {
-#ifdef ZTS
   if (NULL != ini_scope_ht) {
     nr_scope_hashmap_destroy_internal(&ini_scope_ht);
   }
   if (NULL != ini_global_funcs_ht) {
     nr_func_hashmap_destroy_internal(&ini_global_funcs_ht);
   }
-#endif
 }
 
 void nr_php_user_instrument_wraprec_hashmap_replay_ini(void) {
-#ifdef ZTS
   if (NULL == NR_SCOPE_HT) {
     NR_SCOPE_HT = nr_scope_hashmap_deep_copy(ini_scope_ht);
   } else {
@@ -690,7 +679,7 @@ void nr_php_user_instrument_wraprec_hashmap_replay_ini(void) {
                      "%s: global_funcs_ht was not NULL before replay",
                      __func__);
   }
-#endif
 }
+#endif /* ZTS */
 
 #endif /* ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO */
