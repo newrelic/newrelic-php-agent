@@ -96,7 +96,7 @@ void nr_print_globals(FILE* fp) {
           (int)NRPRG_SHARED(start_user_time.tv_usec));
   fprintf(fp, "start_sys_time=" NR_TIME_FMT ".%06d\n",
           (nrtime_t)NRPRG_SHARED(start_sys_time.tv_sec),
-          (int)NRPRG_SHARED(start_user_time.tv_usec));
+          (int)NRPRG_SHARED(start_sys_time.tv_usec));
 
   fprintf(fp, "wtfuncs_where=%d\n", NRPRG_SHARED(wtfuncs_where));
   fprintf(fp, "wtfiles_where=%d\n", NRPRG_SHARED(wtfiles_where));
