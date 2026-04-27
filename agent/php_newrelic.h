@@ -235,7 +235,7 @@ typedef struct _ini_t {
   nrinibool_t
       ignore_user_exception_handler;  // newrelic.error_collector.ignore_user_exception_handler
   nrinibool_t
-      ignore_framework_error_exception_handler;  // newrelic.error_collector.ignore_framework_error_excpetion_handler
+      ignore_framework_error_exception_handler;  // newrelic.error_collector.ignore_framework_error_exception_handler
   nriniint_t ignore_errors;      // newrelic.error_collector.ignore_errors
   nrinistr_t ignore_exceptions;  // newrelic.error_collector.ignore_exceptions
   nrinibool_t
