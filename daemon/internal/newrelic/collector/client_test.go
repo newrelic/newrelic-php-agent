@@ -8,7 +8,7 @@ package collector
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -157,7 +157,7 @@ func TestExecuteWhenMaxPayloadSizeNotExceeded(t *testing.T) {
 					// perform function calls parseResponse which expects
 					// a valid JSON. Providing minimal valid JSON as HTTP
 					// response body.
-					Body: ioutil.NopCloser(strings.NewReader("{}")),
+					Body: io.NopCloser(strings.NewReader("{}")),
 				}, nil
 			}),
 		},

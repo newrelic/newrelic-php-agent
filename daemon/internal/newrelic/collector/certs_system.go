@@ -4,7 +4,6 @@
 //
 
 //go:build use_system_certs
-// +build use_system_certs
 
 package collector
 

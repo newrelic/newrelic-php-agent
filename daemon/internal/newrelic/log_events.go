@@ -98,7 +98,7 @@ func (events *LogEvents) CollectorJSON(id AgentRunID) ([]byte, error) {
 		`"logs": [`)
 
 	nwrit = 0
-	for i := 0; i < len(es); i++ {
+	for i := range es {
 		// if obviously incomplete skip
 		if len(es[i].data) < 4 {
 			continue

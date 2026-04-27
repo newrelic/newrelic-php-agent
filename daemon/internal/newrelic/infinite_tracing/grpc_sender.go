@@ -49,7 +49,7 @@ var (
 	supportabilityCodeErr = "Supportability/InfiniteTracing/Span/gRPC/"
 	codeStrings           = func() map[codes.Code]string {
 		codeStrings := make(map[codes.Code]string, numCodes)
-		for i := 0; i < numCodes; i++ {
+		for i := range numCodes {
 			code := codes.Code(i)
 			codeStrings[code] = strings.ToUpper(code.String())
 		}
@@ -57,7 +57,7 @@ var (
 	}()
 )
 
-func (c *codec) Marshal(v interface{}) ([]byte, error) {
+func (c *codec) Marshal(v any) ([]byte, error) {
 	if batch, ok := v.(encodedSpanBatch); ok {
 		return []byte(batch), nil
 	}
@@ -66,7 +66,7 @@ func (c *codec) Marshal(v interface{}) ([]byte, error) {
 	return proto.Marshal(v.(proto.Message))
 }
 
-func (c *codec) Unmarshal(data []byte, v interface{}) error {
+func (c *codec) Unmarshal(data []byte, v any) error {
 	// Use default proto unmarshal
 	return proto.Unmarshal(data, v.(proto.Message))
 }

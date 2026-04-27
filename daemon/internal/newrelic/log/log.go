@@ -47,13 +47,13 @@ func Init(level Level, location string) error {
 	return nil
 }
 
-func Errorf(format string, a ...interface{})  { logf(LogError, format, a...) }
-func Warnf(format string, a ...interface{})   { logf(LogWarning, format, a...) }
-func Healthf(format string, a ...interface{}) { logf(LogHealthCheck, format, a...) }
-func Infof(format string, a ...interface{})   { logf(LogInfo, format, a...) }
-func Debugf(format string, a ...interface{})  { logf(LogDebug, format, a...) }
+func Errorf(format string, a ...any)  { logf(LogError, format, a...) }
+func Warnf(format string, a ...any)   { logf(LogWarning, format, a...) }
+func Healthf(format string, a ...any) { logf(LogHealthCheck, format, a...) }
+func Infof(format string, a ...any)   { logf(LogInfo, format, a...) }
+func Debugf(format string, a ...any)  { logf(LogDebug, format, a...) }
 
-func logf(level Level, format string, a ...interface{}) {
+func logf(level Level, format string, a ...any) {
 	maxLevel := atomic.LoadInt32((*int32)(&daemonLevel))
 	if int32(level) <= maxLevel {
 		log.Printf(daemonLogPid+" "+level.String()+": "+format, a...)
@@ -82,7 +82,7 @@ func InitAudit(location string) error {
 	return nil
 }
 
-func Audit(format string, a ...interface{}) {
+func Audit(format string, a ...any) {
 	if auditLog != nil {
 		auditLog.Printf(format, a...)
 	}

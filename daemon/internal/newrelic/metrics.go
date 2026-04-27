@@ -230,7 +230,7 @@ func (mt *MetricTable) AddValue(name, scope string, value float64,
 
 type collectorMetric struct {
 	ID   metricID
-	Data interface{}
+	Data any
 }
 
 type collectorMetrics []*collectorMetric
@@ -255,7 +255,7 @@ func (cms collectorMetrics) Less(i, j int) bool {
 }
 
 func (c *collectorMetric) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]interface{}{c.ID, c.Data})
+	return json.Marshal([]any{c.ID, c.Data})
 }
 
 func (data *metricData) collectorData() [6]float64 {
@@ -398,10 +398,10 @@ func (mt *MetricTable) ApplyRules(rules MetricRules) *MetricTable {
 }
 
 type debugMetric struct {
-	Name   string      `json:"name"`
-	Forced bool        `json:"forced"`
-	Data   interface{} `json:"data"`
-	ID     metricID    `json:"-"` // For sorting
+	Name   string   `json:"name"`
+	Forced bool     `json:"forced"`
+	Data   any      `json:"data"`
+	ID     metricID `json:"-"` // For sorting
 }
 
 type debugMetrics []debugMetric
@@ -434,9 +434,9 @@ func (mt *MetricTable) DebugJSON() string {
 	return string(b)
 }
 
-func parseCollectorMetrics(data interface{},
+func parseCollectorMetrics(data any,
 	scrub []*regexp.Regexp) collectorMetrics {
-	metricArr, ok := data.([]interface{})
+	metricArr, ok := data.([]any)
 	if !ok {
 		return nil
 	}
@@ -444,7 +444,7 @@ func parseCollectorMetrics(data interface{},
 	cms := make(collectorMetrics, 0, len(metricArr))
 
 	for _, x := range metricArr {
-		m, ok := x.([]interface{})
+		m, ok := x.([]any)
 		if !ok {
 			return nil
 		}
@@ -452,7 +452,7 @@ func parseCollectorMetrics(data interface{},
 		if len(m) < 2 {
 			return nil
 		}
-		id, ok := (m[0]).(map[string]interface{})
+		id, ok := (m[0]).(map[string]any)
 		if !ok {
 			return nil
 		}
@@ -518,7 +518,7 @@ func OrderScrubMetrics(metrics []byte, scrub []*regexp.Regexp) ([]byte, error) {
 		return nil, errors.New("invalid metrics format")
 	}
 
-	var inner []interface{}
+	var inner []any
 
 	err = json.Unmarshal(arr[3], &inner)
 	if nil != err {

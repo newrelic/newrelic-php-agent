@@ -11,7 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,7 +51,7 @@ func createDaemonFlagSet(cfg *Config) *DaemonFlagSet {
 	flagSet := flag.NewFlagSet("", flag.ContinueOnError)
 	// This prevents parsing errors from being printed. Instead, we'll print
 	// those ourselves.
-	flagSet.SetOutput(ioutil.Discard)
+	flagSet.SetOutput(io.Discard)
 
 	// Print an empty string instead of the default usage if the initial flags
 	// fail to parse. If it failed because of -h or -help flags, we'll print it
@@ -384,7 +384,7 @@ func main() {
 
 func createLegacyFlagSet(cfg *Config) *flag.FlagSet {
 	legacyFlagSet := flag.NewFlagSet("", flag.ContinueOnError)
-	legacyFlagSet.SetOutput(ioutil.Discard)
+	legacyFlagSet.SetOutput(io.Discard)
 	legacyFlagSet.Usage = func() { fmt.Fprint(os.Stderr, "") }
 
 	legacyFlagSet.StringVar(&cfg.ConfigFile, "c", cfg.ConfigFile, "config file location")
@@ -643,7 +643,7 @@ type borkedSyscallError string
 func (e borkedSyscallError) Error() string {
 	version := "unknown"
 	if runtime.GOOS == "linux" {
-		if v, err := ioutil.ReadFile("/proc/sys/kernel/osrelease"); err == nil {
+		if v, err := os.ReadFile("/proc/sys/kernel/osrelease"); err == nil {
 			version = string(v)
 		}
 	}
