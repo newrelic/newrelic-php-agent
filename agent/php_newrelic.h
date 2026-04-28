@@ -34,6 +34,14 @@ extern zend_module_entry newrelic_module_entry;
 #define phpext_newrelic_ptr &newrelic_module_entry
 
 /*
+ * Compile guard for ZTS support for only PHPs that FrankenPHP supports */
+#ifdef ZTS
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
+#error "ZTS is only supported with PHP 8.2+"
+#endif
+#endif
+
+/*
  * PHP 5.5 and 7.0 both introduced a number of changes to the internal
  * representation of execute data state. These macros abstract away the vast
  * majority of those changes so the rest of the code can simply use the macros

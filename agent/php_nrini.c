@@ -1674,9 +1674,6 @@ static PHP_INI_MH(nr_framework_mh) {
 }
 
 #ifdef ZTS
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-#error "ZTS is only supported with PHP 8.0+"
-#endif
 /*
  * ZTS MINIT callbacks for INI wraprec creation. These match the foreach_fn_t
  * signature and route to the INI hashmap instead of the per-request hashmap.
@@ -1711,9 +1708,6 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
 
   if (NEW_VALUE_LEN > 0) {
 #ifdef ZTS
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-#error "ZTS is only supported with PHP 8.0+"
-#endif
     /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn TSRMLS_CC);
@@ -1735,9 +1729,6 @@ static PHP_INI_MH(nr_ttcustom_mh) {
 
   if (0 != NEW_VALUE_LEN) {
 #ifdef ZTS
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-#error "ZTS is only supported with PHP 8.0+"
-#endif
     /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
       foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer TSRMLS_CC);
