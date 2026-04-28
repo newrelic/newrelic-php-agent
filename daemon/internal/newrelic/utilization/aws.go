@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -61,7 +61,7 @@ func getAWSToken(client *http.Client) (token string, err error) {
 		return "", err
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +105,7 @@ func getAWS(client *http.Client) (ret *aws, err error) {
 		return nil, unexpectedAWSErr{e: fmt.Errorf("response code %d", response.StatusCode)}
 	}
 
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, unexpectedAWSErr{e: err}
 	}

@@ -194,7 +194,7 @@ var (
 	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
-			for i := 0; i < times; i++ {
+			for range times {
 				h.TxnEvents.AddTxnEvent([]byte(`[{"x":1},{},{}]`), SamplingPriority(0.8))
 			}
 		})
@@ -553,7 +553,7 @@ func TestUsageHarvestExceedChannel(t *testing.T) {
 
 	// Harvest enough data that the data usage channel overflows and drops data
 	// Make the harvest blocking so that we are guaranteed channel fills before accessing it
-	for i := 0; i < 70; i++ {
+	for range 70 {
 		m.TxnData(t, idOne, txnEventSample1Times(10))
 		m.processorHarvestChan <- ProcessorHarvest{
 			AppHarvest: m.p.harvests[idOne],
@@ -871,14 +871,14 @@ func TestProcessorHarvestZeroErrorEvents(t *testing.T) {
 
 func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	getEventsSeen := func(data []byte) float64 {
-		var dataDec []interface{}
+		var dataDec []any
 
 		err := json.Unmarshal(data, &dataDec)
 		if nil != err {
 			t.Fatal("Invalid JSON:", string(data))
 		}
 
-		metadata := dataDec[1].(map[string]interface{})
+		metadata := dataDec[1].(map[string]any)
 		return metadata["events_seen"].(float64)
 	}
 
@@ -889,7 +889,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	m := NewMockedProcessor(1)
 
 	appInfo := sampleAppInfo
-	appInfo.Settings = map[string]interface{}{"newrelic.distributed_tracing_enabled": false}
+	appInfo.Settings = map[string]any{"newrelic.distributed_tracing_enabled": false}
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 	m.DoConnect(t, &idOne)
@@ -922,7 +922,7 @@ func TestProcessorHarvestSplitTxnEvents(t *testing.T) {
 	m = NewMockedProcessor(2)
 
 	appInfo = sampleAppInfo
-	appInfo.Settings = map[string]interface{}{"newrelic.distributed_tracing_enabled": true}
+	appInfo.Settings = map[string]any{"newrelic.distributed_tracing_enabled": true}
 
 	m.DoAppInfoCustom(t, nil, AppStateUnknown, &appInfo)
 	m.DoConnect(t, &idOne)
@@ -1372,7 +1372,7 @@ var (
 		Appname:           "Application",
 		AgentLanguage:     "c",
 		AgentVersion:      "0.0.1",
-		Settings:          map[string]interface{}{},
+		Settings:          map[string]any{},
 		Environment:       nil,
 		Labels:            nil,
 		RedirectCollector: "collector.newrelic.com",

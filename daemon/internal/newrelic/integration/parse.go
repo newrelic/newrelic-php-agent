@@ -116,7 +116,7 @@ func parseRawSkipIf(t *Test, content []byte) error {
 func parseEnv(t *Test, content []byte) error {
 	env := make(map[string]string)
 
-	for _, line := range bytes.Split(content, []byte("\n")) {
+	for line := range bytes.SplitSeq(content, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)
 		if len(trimmed) == 0 {
 			continue
@@ -144,8 +144,8 @@ func parseEnv(t *Test, content []byte) error {
 func parseHeaders(t *Test, content []byte) error {
 	t.headers = make(http.Header)
 	trimmed := bytes.TrimSpace(content)
-	hs := strings.Fields(string(trimmed))
-	for _, h := range hs {
+	hs := strings.FieldsSeq(string(trimmed))
+	for h := range hs {
 		// must allow: X-Request-Start=t=1368811467146000
 		keyval := strings.SplitN(h, "=", 2)
 		if len(keyval) == 2 {
@@ -159,8 +159,8 @@ func parseHeaders(t *Test, content []byte) error {
 func parseResponseHeaders(t *Test, content []byte) error {
 	t.expectResponseHeaders = make(http.Header)
 	trimmed := bytes.TrimSpace(content)
-	hs := strings.Fields(string(trimmed))
-	for _, h := range hs {
+	hs := strings.FieldsSeq(string(trimmed))
+	for h := range hs {
 		keyval := strings.SplitN(h, "=", 2)
 		if len(keyval) == 2 {
 			t.expectResponseHeaders.Add(keyval[0], keyval[1])

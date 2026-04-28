@@ -124,7 +124,7 @@ func (tp *textPrinter) writeln(s string) {
 	}
 }
 
-func (tp *textPrinter) writef(format string, arg ...interface{}) {
+func (tp *textPrinter) writef(format string, arg ...any) {
 	if tp.Err == nil {
 		_, tp.Err = fmt.Fprintf(tp.w, format, arg...)
 	}

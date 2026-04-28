@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -252,7 +252,7 @@ func NewLimitClient(c Client, max int, timeout time.Duration) Client {
 	//
 	// See Channel Communication in the Go Memory Model for details.
 	// https://golang.org/ref/mem#tmp_7
-	for i := 0; i < max; i++ {
+	for range max {
 		l.semaphore <- true
 	}
 	return l
@@ -379,7 +379,7 @@ func (c *clientImpl) perform(url string, cmd RpmCmd, cs RpmControls) RPMResponse
 
 	r := newRPMResponse(resp.StatusCode)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	// if no previous error (from newRPMResponse based on response status code) then
 	// return any error from the ReadAll()

@@ -25,7 +25,7 @@ type TxnTrace struct {
 	SyntheticsResourceID string
 }
 
-func (t *TxnTrace) collectorData(compressEncode bool) interface{} {
+func (t *TxnTrace) collectorData(compressEncode bool) any {
 	if !compressEncode {
 		return t.Data
 	}
@@ -37,14 +37,14 @@ func (t *TxnTrace) collectorData(compressEncode bool) interface{} {
 	return p
 }
 
-func (t *TxnTrace) collectorJSON(compressEncode bool) []interface{} {
-	var resourceID interface{}
+func (t *TxnTrace) collectorJSON(compressEncode bool) []any {
+	var resourceID any
 
 	if "" != t.SyntheticsResourceID {
 		resourceID = t.SyntheticsResourceID
 	}
 
-	return []interface{}{
+	return []any{
 		t.UnixTimestampMillis, // milliseconds
 		t.DurationMillis,      // milliseconds
 		t.MetricName,
@@ -70,12 +70,12 @@ func NewTxnTraceHeap(max int) *TxnTraceHeap {
 	return &h
 }
 
-func (h TxnTraceHeap) Len() int            { return len(h) }
-func (h TxnTraceHeap) Less(i, j int) bool  { return h[i].DurationMillis < h[j].DurationMillis }
-func (h TxnTraceHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *TxnTraceHeap) Push(x interface{}) { *h = append(*h, x.(*TxnTrace)) }
+func (h TxnTraceHeap) Len() int           { return len(h) }
+func (h TxnTraceHeap) Less(i, j int) bool { return h[i].DurationMillis < h[j].DurationMillis }
+func (h TxnTraceHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *TxnTraceHeap) Push(x any)        { *h = append(*h, x.(*TxnTrace)) }
 
-func (h *TxnTraceHeap) Pop() interface{} {
+func (h *TxnTraceHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]
@@ -142,8 +142,8 @@ func (traces *TxnTraces) AddTxnTrace(t *TxnTrace) {
 	}
 }
 
-func (h *TxnTraceHeap) collectorJSON(compressEncode bool) []interface{} {
-	arr := make([]interface{}, len(*h))
+func (h *TxnTraceHeap) collectorJSON(compressEncode bool) []any {
+	arr := make([]any, len(*h))
 	for i, t := range *h {
 		arr[i] = t.collectorJSON(compressEncode)
 	}
@@ -169,5 +169,5 @@ func (traces *TxnTraces) CollectorJSON(id AgentRunID, compressEncode bool) ([]by
 	inner = append(inner, traces.forcePersisted.collectorJSON(compressEncode)...)
 	inner = append(inner, traces.regular.collectorJSON(compressEncode)...)
 
-	return json.Marshal([]interface{}{id, inner})
+	return json.Marshal([]any{id, inner})
 }

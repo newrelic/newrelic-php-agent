@@ -8,6 +8,7 @@ package utilization
 import (
 	"fmt"
 	"net"
+	"slices"
 )
 
 func nonlocalIPAddressesByInterface() (map[string][]string, error) {
@@ -68,10 +69,8 @@ func utilizationIPs() ([]string, error) {
 		return nil, err
 	}
 	for _, ips := range ipsByInterface {
-		for _, ip := range ips {
-			if ip == outboundIP {
-				return ips, nil
-			}
+		if slices.Contains(ips, outboundIP) {
+			return ips, nil
 		}
 	}
 	return nil, nil

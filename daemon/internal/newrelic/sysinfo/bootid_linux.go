@@ -8,12 +8,12 @@ package sysinfo
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 // BootID returns the boot ID of the executing kernel.
 func BootID() (string, error) {
-	data, err := ioutil.ReadFile("/proc/sys/kernel/random/boot_id")
+	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
 	if err != nil {
 		return "", err
 	}

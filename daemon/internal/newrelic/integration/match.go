@@ -17,7 +17,7 @@ var (
 	WilcardLiteral = "??"
 )
 
-func isWildcard(x interface{}) bool {
+func isWildcard(x any) bool {
 	str, ok := x.(string)
 	if ok && strings.HasPrefix(str, WilcardLiteral) {
 		return true
@@ -46,7 +46,7 @@ func isFuzzyMatchRegex(match, str string) error {
 	return fmt.Errorf("regex %v does not match %v", match, str)
 }
 
-func isFuzzyMatchRecursive(x1, x2 interface{}) error {
+func isFuzzyMatchRecursive(x1, x2 any) error {
 	if isWildcard(x1) || isWildcard(x2) {
 		return nil
 	}
@@ -80,8 +80,8 @@ func isFuzzyMatchRecursive(x1, x2 interface{}) error {
 		if v1 != v2 {
 			return fmt.Errorf("values do not match %v vs %v", v1, v2)
 		}
-	case []interface{}:
-		v2, _ := x2.([]interface{})
+	case []any:
+		v2, _ := x2.([]any)
 		if len(v1) != len(v2) {
 			return fmt.Errorf("arrays do not have same length %v vs %v", len(v1), len(v2))
 		}
@@ -90,8 +90,8 @@ func isFuzzyMatchRecursive(x1, x2 interface{}) error {
 				return err
 			}
 		}
-	case map[string]interface{}:
-		v2, _ := x2.(map[string]interface{})
+	case map[string]any:
+		v2, _ := x2.(map[string]any)
 		if len(v1) != len(v2) {
 			return fmt.Errorf("hashes do not have same size %v vs %v", v1, v2)
 		}
@@ -111,8 +111,8 @@ func isFuzzyMatchRecursive(x1, x2 interface{}) error {
 }
 
 func IsFuzzyMatch(j1, j2 []byte) error {
-	var x1 interface{}
-	var x2 interface{}
+	var x1 any
+	var x2 any
 
 	if err := json.Unmarshal(j1, &x1); nil != err {
 		return fmt.Errorf("unable to parse json for fuzzy matching: %v", err)

@@ -79,7 +79,7 @@ func (f *GCFreq) Record(stats *runtime.MemStats) {
 		f.buckets = make(map[time.Duration]uint32)
 	}
 
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		if stats.PauseEnd[i] > f.pauseEnd {
 			pause := time.Duration(stats.PauseNs[i])
 			f.buckets[pause-(pause%time.Millisecond)]++
