@@ -8,6 +8,7 @@
 #include "php_hash.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 
 #include "nr_commands.h"
 #include "nr_configstrings.h"
