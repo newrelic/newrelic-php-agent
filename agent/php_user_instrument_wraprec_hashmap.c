@@ -20,19 +20,25 @@
 #ifdef ZTS
 #define NR_SCOPE_HT NRPRG(scope_ht)
 #define NR_GLOBAL_FUNCS_HT NRPRG(global_funcs_ht)
-
-/*
- * ZTS: process-global INI wraprec storage. Populated at MINIT when INI
- * OnModify handlers fire, read-only after MINIT. Cloned into per-request
- * hashmaps at RINIT via _replay_ini(). Freed at MSHUTDOWN.
- */
-static nr_scope_hashmap_t* ini_scope_ht = NULL;
-static nr_func_hashmap_t* ini_global_funcs_ht = NULL;
 #else
 static nr_scope_hashmap_t* scope_ht = NULL;
 static nr_func_hashmap_t* global_funcs_ht = NULL;
 #define NR_SCOPE_HT scope_ht
 #define NR_GLOBAL_FUNCS_HT global_funcs_ht
+#endif
+
+/*
+ * ZTS only: process-global staging storage for INI-originated wraprecs.
+ * INI OnModify handlers populate these at MINIT (before any request exists).
+ * At RINIT they are deep-copied into the per-request hashmaps via _replay_ini().
+ * Freed at MSHUTDOWN.
+ *
+ * NTS: no staging needed — INI handlers write directly into the runtime
+ * hashmaps (scope_ht / global_funcs_ht) via the regular _add() path.
+ */
+#ifdef ZTS
+static nr_scope_hashmap_t* ini_scope_ht = NULL;
+static nr_func_hashmap_t* ini_global_funcs_ht = NULL;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -543,6 +549,18 @@ void nr_php_user_instrument_wraprec_hashmap_destroy(void) {
 }
 
 /*
+ * ZTS-only INI wraprec hashmap functions.
+ *
+ * ZTS: INI handlers write into process-global ini_scope_ht / ini_global_funcs_ht
+ * at MINIT. These are deep copied into per-request hashmaps at RINIT.
+ *
+ * NTS: INI handlers write directly into the runtime hashmaps (scope_ht /
+ * global_funcs_ht) via the regular _init() / _add() functions. No separate
+ * INI storage is needed.
+ */
+
+#ifdef ZTS
+/*
  * Deep copy a nruserfn_t's fields into a freshly created wraprec.
  * String fields are duplicated so the copy can be freed independently.
  * Only copies fields relevant to INI-originated wraprecs (naming flags,
@@ -627,19 +645,6 @@ static nr_scope_hashmap_t* nr_scope_hashmap_deep_copy(
 
   return dst;
 }
-
-/*
- * ZTS-only INI wraprec hashmap functions.
- *
- * ZTS: INI handlers write into process-global ini_scope_ht / ini_global_funcs_ht
- * at MINIT. These are deep copied into per-request hashmaps at RINIT.
- *
- * NTS: INI handlers write directly into the runtime hashmaps (scope_ht /
- * global_funcs_ht) via the regular _init() / _add() functions. No separate
- * INI storage is needed.
- */
-
-#ifdef ZTS
 void nr_php_user_instrument_wraprec_hashmap_ini_init(void) {
   if (NULL == ini_scope_ht) {
     ini_scope_ht = nr_scope_hashmap_create_internal(0);
