@@ -39,7 +39,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
   /*
    * Test: Global initialized
    */
-  tlib_pass_if_null("global is null at request start", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global is null at request start",
+                    NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Bad input saves the default instance information
@@ -52,13 +53,13 @@ static void test_save_datastore_instance(TSRMLS_D) {
   nr_php_pgsql_save_datastore_instance(NULL, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "null conn and null conn_info", expected_default,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
-  nr_hashmap_delete(NRPRG(datastore_connections), key, nr_strlen(key));
+  nr_hashmap_delete(NRPRG_CTX(datastore_connections), key, nr_strlen(key));
   nr_php_pgsql_save_datastore_instance(NULL, "" TSRMLS_CC);
   assert_datastore_instance_equals(
       "null conn and empty conn_info", expected_default,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   nr_free(key);
   key = nr_php_datastore_make_key(conn, "pgsql");
@@ -66,13 +67,13 @@ static void test_save_datastore_instance(TSRMLS_D) {
   nr_php_pgsql_save_datastore_instance(conn, NULL TSRMLS_CC);
   assert_datastore_instance_equals(
       "null conn_info", expected_default,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
-  nr_hashmap_delete(NRPRG(datastore_connections), key, nr_strlen(key));
+  nr_hashmap_delete(NRPRG_CTX(datastore_connections), key, nr_strlen(key));
   nr_php_pgsql_save_datastore_instance(conn, "" TSRMLS_CC);
   assert_datastore_instance_equals(
       "empty conn_info", expected_default,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   /*
    * Test: Global updated
@@ -80,7 +81,8 @@ static void test_save_datastore_instance(TSRMLS_D) {
    * Saving an instance should properly update the global with that connection's
    * key.
    */
-  tlib_pass_if_str_equal("global properly set", key, NRPRG(pgsql_last_conn));
+  tlib_pass_if_str_equal("global properly set", key,
+                         NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Normal operation
@@ -89,14 +91,14 @@ static void test_save_datastore_instance(TSRMLS_D) {
       conn, "host=spock port=2345 dbname=kirk" TSRMLS_CC);
   assert_datastore_instance_equals(
       "same conn won't save new instance", expected_default,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
-  nr_hashmap_delete(NRPRG(datastore_connections), key, nr_strlen(key));
+  nr_hashmap_delete(NRPRG_CTX(datastore_connections), key, nr_strlen(key));
   nr_php_pgsql_save_datastore_instance(
       conn, "host=spock port=2345 dbname=kirk" TSRMLS_CC);
   assert_datastore_instance_equals(
       "new conn saves new instance", expected,
-      nr_hashmap_get(NRPRG(datastore_connections), key, nr_strlen(key)));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), key, nr_strlen(key)));
 
   nr_php_zval_free(&conn);
   nr_free(key);
@@ -119,7 +121,8 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
   /*
    * Test: Global initialized
    */
-  tlib_pass_if_null("global is null at request start", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global is null at request start",
+                    NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Unknown non-null connection
@@ -128,7 +131,7 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
                     nr_php_pgsql_retrieve_datastore_instance(conn TSRMLS_CC));
   tlib_pass_if_null(
       "an unknown non-null connection should not update the global",
-      NRPRG(pgsql_last_conn));
+      NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Unknown null connection
@@ -140,12 +143,13 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
       "unknown null connection saves a default instance", expected,
       nr_php_pgsql_retrieve_datastore_instance(NULL TSRMLS_CC));
   key = nr_php_datastore_make_key(NULL, "pgsql");
-  tlib_pass_if_str_equal("global properly set", key, NRPRG(pgsql_last_conn));
+  tlib_pass_if_str_equal("global properly set", key,
+                         NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Normal operation
    */
-  nr_hashmap_update(NRPRG(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_update(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                     nr_php_pgsql_create_datastore_instance(NULL));
   assert_datastore_instance_equals(
       "connection info is found", expected,
@@ -154,7 +158,7 @@ static void test_retrieve_datastore_instance(TSRMLS_D) {
   nr_free(key);
   key = nr_php_datastore_make_key(conn, "pgsql");
 
-  nr_hashmap_set(NRPRG(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_pgsql_create_datastore_instance(NULL));
   assert_datastore_instance_equals(
       "connection info is found", expected,
@@ -176,7 +180,8 @@ static void test_remove_datastore_instance(TSRMLS_D) {
   /*
    * Test: Global initialized
    */
-  tlib_pass_if_null("global is null at request start", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global is null at request start",
+                    NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Unknown connection
@@ -186,17 +191,17 @@ static void test_remove_datastore_instance(TSRMLS_D) {
   nr_php_pgsql_remove_datastore_instance(NULL TSRMLS_CC);
   tlib_pass_if_int_equal("removing unknown connection has no effect", 0,
                          nr_php_datastore_has_conn(key TSRMLS_CC));
-  tlib_pass_if_null("global still null", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global still null", NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: null connection
    */
-  nr_hashmap_set(NRPRG(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_pgsql_create_datastore_instance(NULL));
   nr_php_pgsql_remove_datastore_instance(NULL TSRMLS_CC);
   tlib_pass_if_int_equal("removing known null connection works", 0,
                          nr_php_datastore_has_conn(key TSRMLS_CC));
-  tlib_pass_if_null("global has been reset", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global has been reset", NRPRG_CTX(pgsql_last_conn));
 
   /*
    * Test: Normal operation
@@ -207,14 +212,14 @@ static void test_remove_datastore_instance(TSRMLS_D) {
   nr_php_pgsql_remove_datastore_instance(conn TSRMLS_CC);
   tlib_pass_if_int_equal("removing unknown non-null connection has no effect",
                          0, nr_php_datastore_has_conn(key TSRMLS_CC));
-  tlib_pass_if_null("global still null", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global still null", NRPRG_CTX(pgsql_last_conn));
 
-  nr_hashmap_set(NRPRG(datastore_connections), key, nr_strlen(key),
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), key, nr_strlen(key),
                  nr_php_pgsql_create_datastore_instance(NULL));
   nr_php_pgsql_remove_datastore_instance(conn TSRMLS_CC);
   tlib_pass_if_int_equal("removing known non-null connection works", 0,
                          nr_php_datastore_has_conn(key TSRMLS_CC));
-  tlib_pass_if_null("global properly unset", NRPRG(pgsql_last_conn));
+  tlib_pass_if_null("global properly unset", NRPRG_CTX(pgsql_last_conn));
 
   nr_free(key);
   nr_php_zval_free(&conn);
@@ -280,7 +285,6 @@ static void test_create_datastore_instance() {
 }
 
 void test_main(void* p NRUNUSED) {
-
   system_host_name = nr_system_get_hostname();
   tlib_php_engine_create("" PTSRMLS_CC);
 

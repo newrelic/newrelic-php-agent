@@ -151,8 +151,12 @@ static void nr_php_instrument_delegate(nrinternalfn_t* wraprec,
 int nr_zend_call_old_handler(nrphpfn_t oldhandler,
                              INTERNAL_FUNCTION_PARAMETERS) {
   volatile int zcaught = 0;
-  zend_try { oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU); }
-  zend_catch { zcaught = 1; }
+  zend_try {
+    oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -333,7 +337,8 @@ static void record_mysql_error(TSRMLS_D) {
 
     errdup = nr_strndup(errormsgstr, errormsglen);
     stack_json = nr_php_backtrace_to_json(0 TSRMLS_CC);
-    nr_txn_record_error(NRPRG(txn), errprio, true, errdup, "MysqlError", stack_json);
+    nr_txn_record_error(NRPRG(txn), errprio, true, errdup, "MysqlError",
+                        stack_json);
     nr_free(errdup);
     nr_free(stack_json);
 
@@ -647,17 +652,18 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   bool port_is_null = 1;
-  const char *type_spec = "|s!s!s!s!l!s!";
+  const char* type_spec = "|s!s!s!s!l!s!";
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &host,
           &host_len, &username, &username_len, &password, &password_len,
-          &database, &database_len, &port, &port_is_null, &socket, &socket_len)) {
+          &database, &database_len, &port, &port_is_null, &socket,
+          &socket_len)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
 #else
-  const char *type_spec =  "|ssssls";
+  const char* type_spec = "|ssssls";
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &host,
@@ -811,11 +817,11 @@ NR_INNER_WRAPPER(mysqli_commit) {
   nr_string_len_t name_len = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  const char *proc_type_spec = "o|ls!";
-  const char *oo_type_spec = "|ls!";
+  const char* proc_type_spec = "o|ls!";
+  const char* oo_type_spec = "|ls!";
 #else
-  const char *proc_type_spec = "o|ls";
-  const char *oo_type_spec = "|ls";
+  const char* proc_type_spec = "o|ls";
+  const char* oo_type_spec = "|ls";
 #endif
 
   if (FAILURE
@@ -824,8 +830,8 @@ NR_INNER_WRAPPER(mysqli_commit) {
                                   &mysqli_obj, &flags, &name, &name_len)) {
     if (FAILURE
         == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec, &flags,
-                                    &name, &name_len)) {
+                                    ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec,
+                                    &flags, &name, &name_len)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -883,20 +889,20 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   bool port_is_null = 1;
-  const char *proc_type_spec = "o|s!s!s!s!l!s!l";
-  const char *oo_type_spec = "|s!s!s!s!l!s!l";
+  const char* proc_type_spec = "o|s!s!s!s!l!s!l";
+  const char* oo_type_spec = "|s!s!s!s!l!s!l";
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, proc_type_spec,
           &mysqli_obj, &host, &host_len, &username, &username_len, &password,
-          &password_len, &database, &database_len, &port, &port_is_null, &socket, &socket_len,
-          &flags)) {
+          &password_len, &database, &database_len, &port, &port_is_null,
+          &socket, &socket_len, &flags)) {
     if (FAILURE
         == zend_parse_parameters_ex(
             ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, oo_type_spec,
             &host, &host_len, &username, &username_len, &password,
-            &password_len, &database, &database_len, &port, &port_is_null, &socket,
-            &socket_len, &flags)) {
+            &password_len, &database, &database_len, &port, &port_is_null,
+            &socket, &socket_len, &flags)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -904,8 +910,8 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     }
   }
 #else
-  const char *proc_type_spec = "o|sssslsl";
-  const char *oo_type_spec = "|sssslsl";
+  const char* proc_type_spec = "o|sssslsl";
+  const char* oo_type_spec = "|sssslsl";
   if (FAILURE
       == zend_parse_parameters_ex(
           ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, proc_type_spec,
@@ -1409,14 +1415,14 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
   nr_string_len_t sqlstrlen = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  const char *type_spec = "o|s!";
+  const char* type_spec = "o|s!";
 #else
-  const char *type_spec = "o|s";
+  const char* type_spec = "o|s";
 #endif
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, type_spec, &mysqli_obj,
-                                  &sqlstr, &sqlstrlen)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, type_spec,
+                                  &mysqli_obj, &sqlstr, &sqlstrlen)) {
     nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     return;
   }
@@ -1539,10 +1545,9 @@ NR_INNER_WRAPPER(memcached_add_server) {
   int zcaught = 0;
 
   if (SUCCESS
-      == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "s|ll", &host,
-          &host_len, &port, &weight) &&
-      NULL != host) {
+          == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(),
+                                      "s|ll", &host, &host_len, &port, &weight)
+      && NULL != host) {
     nr_php_memcached_create_instance_metric(host, port);
   }
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1559,15 +1564,16 @@ NR_INNER_WRAPPER(memcached_add_servers) {
   int zcaught = 0;
 
   if (SUCCESS
-      == zend_parse_parameters_ex(
-          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a", &servers)) {
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "a",
+                                  &servers)) {
     if (NULL != servers && Z_TYPE_P(servers) == IS_ARRAY) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(servers), server) {
         zval* host = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 0);
         zval* port = nr_php_zend_hash_index_find(Z_ARRVAL_P(server), 1);
-        if (nr_php_is_zval_valid_string(host) &&
-            nr_php_is_zval_valid_integer(port)) {
-          nr_php_memcached_create_instance_metric(Z_STRVAL_P(host), Z_LVAL_P(port));
+        if (nr_php_is_zval_valid_string(host)
+            && nr_php_is_zval_valid_integer(port)) {
+          nr_php_memcached_create_instance_metric(Z_STRVAL_P(host),
+                                                  Z_LVAL_P(port));
         }
       }
       ZEND_HASH_FOREACH_END();
@@ -2505,7 +2511,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
  * to enable profiling of call_user_func_array
  */
 NR_INNER_WRAPPER(call_user_func_array) {
-  if (NULL != NRPRG(cufa_callback)) {
+  if (NULL != NRPRG_CTX(cufa_callback)) {
     zval* args = NULL;
     zend_fcall_info fci;
     zend_fcall_info_cache fcc;
@@ -2523,7 +2529,7 @@ NR_INNER_WRAPPER(call_user_func_array) {
       goto leave;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
+    nr_php_call_user_func_array_handler(NRPRG_CTX(cufa_callback),
                                         fcc.function_handler, NULL TSRMLS_CC);
   }
 
@@ -2979,7 +2985,7 @@ NR_INNER_WRAPPER(dl) {
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   if (NR_PHP_PROCESS_GLOBALS(instrument_extensions)) {
-    nr_php_extension_instrument_rescan(NRPRG(extensions) TSRMLS_CC);
+    nr_php_extension_instrument_rescan(NRPRG_SHARED(extensions) TSRMLS_CC);
   }
 }
 
@@ -3739,7 +3745,7 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::xclaim", redis_xclaim, redis_function, 0,
                       "xclaim")
   NR_INTERNAL_WRAPREC("redis::xdel", redis_xdel, redis_function, 0, "xdel")
-  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("redis::xgroup", redis_xgroup, redis_function, 0,
                       "xgroup")
   NR_INTERNAL_WRAPREC("redis::xinfo", redis_xinfo, redis_function, 0, "xinfo")
   NR_INTERNAL_WRAPREC("redis::xlen", redis_xlen, redis_function, 0, "xlen")
@@ -3789,7 +3795,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       redis_function, 0, "zrevrangebyscore")
   NR_INTERNAL_WRAPREC("redis::zrevrank", redis_zrevrank, redis_function, 0,
                       "zrevrank")
-  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("redis::zscore", redis_zscore, redis_function, 0,
                       "zscore")
   NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
                       0, "zunionstore")
@@ -3822,11 +3828,16 @@ void nr_php_generate_internal_wrap_records(void) {
 
   NR_INTERNAL_WRAPREC("pdo::__construct", pdo_construct, pdo_construct, 0, 0)
 #if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
-  NR_INTERNAL_WRAPREC("pdo\\firebird::__construct", pdo_construct, pdo_construct, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\mysql::__construct", pdo_construct, pdo_construct, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\odbc::__construct", pdo_construct, pdo_construct, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\pgsql::__construct", pdo_construct, pdo_construct, 0, 0)
-  NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\firebird::__construct", pdo_construct,
+                      pdo_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::__construct", pdo_construct, pdo_construct,
+                      0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::__construct", pdo_construct, pdo_construct, 0,
+                      0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::__construct", pdo_construct, pdo_construct,
+                      0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct,
+                      0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdo::query", pdo_query, pdo_query, 0, 0)
 #if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
@@ -3946,7 +3957,7 @@ void nr_php_add_call_user_func_array_pre_callback(
   nrinternalfn_t* cufa_wraprec = NULL;
   nrinternalfn_t* w = NULL;
 
-  NRPRG(cufa_callback) = callback;
+  NRPRG_CTX(cufa_callback) = callback;
 
   for (w = nr_wrapped_internal_functions; NULL != w; w = w->next) {
     if (0 == nr_strcmp(w->full_name, "call_user_func_array")) {

@@ -59,7 +59,9 @@ int nr_zend_call_orig_execute(NR_EXECUTE_PROTO TSRMLS_DC) {
     NR_PHP_PROCESS_GLOBALS(orig_execute)
     (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -74,7 +76,9 @@ int nr_zend_call_oapi_special_before(nruserfn_t* wraprec,
       wraprec->special_instrumentation_before(wraprec, segment,
                                               NR_EXECUTE_ORIG_ARGS);
     }
-    zend_catch { zcaught = 1; }
+    zend_catch {
+      zcaught = 1;
+    }
     zend_end_try();
   }
 
@@ -91,7 +95,9 @@ int nr_zend_call_oapi_special_clean(nruserfn_t* wraprec,
       wraprec->special_instrumentation_clean(wraprec, segment,
                                              NR_EXECUTE_ORIG_ARGS);
     }
-    zend_catch { zcaught = 1; }
+    zend_catch {
+      zcaught = 1;
+    }
     zend_end_try();
   }
   return zcaught;
@@ -111,7 +117,9 @@ int nr_zend_call_orig_execute_special(nruserfn_t* wraprec,
       (NR_EXECUTE_ORIG_ARGS_OVERWRITE TSRMLS_CC);
     }
   }
-  zend_catch { zcaught = 1; }
+  zend_catch {
+    zcaught = 1;
+  }
   zend_end_try();
   return zcaught;
 }
@@ -136,19 +144,21 @@ static inline void nr_php_wraprec_lookup_set(nruserfn_t* wr,
     return;
   }
   // for situation when wraprec is added after first execution of the function
-  // store the wraprec in the op_array extension for the duration of the request for later lookup
-  // The op_array extension slot for function may not be initialized yet because it is
-  // initialized only on the first call made to the function in that request. This would
-  // mean that run_time_cache is NULL and wraprec cannot be stored yet! It will be stored
-  // on the first call to the function when observer is registered for that function.
+  // store the wraprec in the op_array extension for the duration of the request
+  // for later lookup The op_array extension slot for function may not be
+  // initialized yet because it is initialized only on the first call made to
+  // the function in that request. This would mean that run_time_cache is NULL
+  // and wraprec cannot be stored yet! It will be stored on the first call to
+  // the function when observer is registered for that function.
   zend_init_func_run_time_cache(&zf->op_array);
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
-    ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+    ZEND_OP_ARRAY_EXTENSION(
+        &zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
 }
 
 static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
-  nruserfn_t *wraprec = NULL;
+  nruserfn_t* wraprec = NULL;
 
   // The function cache slots are not available if the function is a trampoline
   if (zf->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
@@ -162,7 +172,8 @@ static inline nruserfn_t* nr_php_wraprec_lookup_get(zend_function* zf) {
   }
 
   if (NULL != RUN_TIME_CACHE(&zf->op_array)) {
-    wraprec = ZEND_OP_ARRAY_EXTENSION(&zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
+    wraprec = ZEND_OP_ARRAY_EXTENSION(
+        &zf->op_array, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
   }
   if (NULL != wraprec && wraprec->magic != NR_USERFN_T_MAGIC) {
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
@@ -275,7 +286,8 @@ static void reset_wraprec(nruserfn_t* wraprec) {
  * Wordpress and predis for custom instrumentation that sets
  * `is_transient`.
  *
- * Transient wrappers get disposed of at the end of each request at RSHUTDOWN lifecycle.
+ * Transient wrappers get disposed of at the end of each request at RSHUTDOWN
+ lifecycle.
  *
  * When overwriting the zend_execute_ex function, every effort was made to
  * reduce performance overhead because until the agent returns control, we are
@@ -458,9 +470,9 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   /* Add the wraprecord to the list. */
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
   if (wraprec->is_transient) {
-    /* Transient (unnamed) wraprecs are not added to wraprec hashmap which only stores named
-     * wraprecs. Keep track of all transient wraprecs so that they can be destroyed at the
-     * end of the request. */
+    /* Transient (unnamed) wraprecs are not added to wraprec hashmap which only
+     * stores named wraprecs. Keep track of all transient wraprecs so that they
+     * can be destroyed at the end of the request. */
     wraprec->next = nr_transient_wraprecs;
     nr_transient_wraprecs = wraprec;
     return;
@@ -470,8 +482,8 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   if (!wraprec->is_transient) {
     /* Non-transient wraprecs are added to both the hashmap and linked list.
      * At request shutdown, the hashmap will free transients, but leave
-     * non-transients to be freed when the linked list is disposed of which is at
-     * module shutdown */
+     * non-transients to be freed when the linked list is disposed of which is
+     * at module shutdown */
     wraprec->next = nr_wrapped_user_functions;
     nr_wrapped_user_functions = wraprec;
     return;
@@ -597,8 +609,10 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
 void nr_php_reset_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /* No need to do anything at rshutdown:
-   *  - Observer API takes care of resetting user instrumentation for each request
-   *  - All named wraprecs ever created persist in wraprec hashmap until mshutdown
+   *  - Observer API takes care of resetting user instrumentation for each
+   * request
+   *  - All named wraprecs ever created persist in wraprec hashmap until
+   * mshutdown
    */
   return;
 #elif ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
@@ -806,13 +820,13 @@ void nr_php_op_array_set_wraprec(zend_op_array* op_array,
     return;
   }
 
-  if (!nr_vector_push_back(NRPRG(user_function_wrappers), func)) {
+  if (!nr_vector_push_back(NRPRG_SHARED(user_function_wrappers), func)) {
     return;
   }
 
-  index = nr_vector_size(NRPRG(user_function_wrappers)) - 1;
+  index = nr_vector_size(NRPRG_SHARED(user_function_wrappers)) - 1;
 
-  index |= (NRPRG(pid) << 16);
+  index |= (NRPRG_SHARED(pid) << 16);
 
   op_array->reserved[NR_PHP_PROCESS_GLOBALS(zend_offset)] = (void*)index;
 }
@@ -835,15 +849,16 @@ nruserfn_t* nr_php_op_array_get_wraprec(
   pid = index >> 16;
   index &= 0xffff;
 
-  if (pid != NRPRG(pid)) {
+  if (pid != NRPRG_SHARED(pid)) {
     nrl_verbosedebug(
         NRL_INSTRUMENT,
         "Skipping instrumented function: pid mismatch, got " NR_INT64_FMT
         ", expected " NR_INT64_FMT,
-        pid, NRPRG(pid));
+        pid, NRPRG_SHARED(pid));
     return NULL;
   }
 
-  return (nruserfn_t*)nr_vector_get(NRPRG(user_function_wrappers), index);
+  return (nruserfn_t*)nr_vector_get(NRPRG_SHARED(user_function_wrappers),
+                                    index);
 }
 #endif /* PHP < 7.4 */
