@@ -111,10 +111,6 @@ extern zend_module_entry newrelic_module_entry;
  */
 #define NR_UNUSED_TSRMLS
 
-/* move include here to avoid circular dependencies */
-#include "php_user_instrument.h"
-#include "php_user_instrument_wraprec_hashmap.h"
-
 typedef enum {
   NR_FW_UNSET = 0,
 
@@ -587,7 +583,7 @@ nr_vector_t* user_function_wrappers;
 /*
  * transient wrappers are stored at request level for thread safety
  */
-nruserfn_t* transient_wraprecs; /* a singly linked list */
+struct _nruserfn_t* transient_wraprecs; /* a singly linked list */
 
 #ifdef ZTS
 /*
@@ -595,8 +591,8 @@ nruserfn_t* transient_wraprecs; /* a singly linked list */
  * thread safety. For non-ZTS, these are file-scoped statics in
  * php_user_instrument_wraprec_hashmap.c (persisting from MINIT to MSHUTDOWN).
  */
-nr_func_hashmap_t* global_funcs_ht; /* hashmap for global functions */
-nr_scope_hashmap_t* scope_ht;       /* hashmap for scoped methods */
+struct _nr_func_hashmap* global_funcs_ht; /* hashmap for global functions */
+struct _nr_scope_hashmap* scope_ht;       /* hashmap for scoped methods */
 #endif /* ZTS */
 #endif
 
