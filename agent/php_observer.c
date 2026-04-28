@@ -182,16 +182,16 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
 
   if (zfc->kind != zend_ce_fiber) {
     /* Fiber context is the Main PHP Process */
-    NRPRG(current_php_context) = NULL;
-    NRPRG(fiber_context_string)[0] = '\0';
+    NRPRG_SHARED(current_php_context) = NULL;
+    NRPRG_SHARED(fiber_context_string)[0] = '\0';
   } else {
-    snprintf(NRPRG(fiber_context_string), sizeof(NRPRG(fiber_context_string)),
-             "%p", zfc);
-    NRPRG(current_php_context) = NRPRG(fiber_context_string);
+    snprintf(NRPRG_SHARED(fiber_context_string),
+             sizeof(NRPRG_SHARED(fiber_context_string)), "%p", zfc);
+    NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
   }
 
-  current_segment
-      = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
+  current_segment = nr_txn_get_current_segment(
+      NRPRG(txn), NRPRG_SHARED(current_php_context));
   if (current_segment) {
     nr_txn_set_current_segment(NRPRG(txn), current_segment);
   }
@@ -216,10 +216,10 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
 static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
   if (zfc->kind != zend_ce_fiber) {
     /* Main process is the parent, set to NULL. */
-    NRPRG(fiber_parent_segment) = NULL;
+    NRPRG_SHARED(fiber_parent_segment) = NULL;
   } else {
     char* parent_fiber_context_string = nr_formatf("%p", zfc);
-    NRPRG(fiber_parent_segment)
+    NRPRG_SHARED(fiber_parent_segment)
         = nr_txn_get_current_segment(NRPRG(txn), parent_fiber_context_string);
     nr_free(parent_fiber_context_string);
   }

@@ -113,8 +113,8 @@ PHP_RINIT_FUNCTION(newrelic) {
 
   NRPRG_CTX(check_cufa) = false;
 
-  NRPRG(current_php_context) = NULL;
-  NRPRG(fiber_parent_segment) = NULL;
+  NRPRG_SHARED(current_php_context) = NULL;
+  NRPRG_SHARED(fiber_parent_segment) = NULL;
 
   /*
    * Pre-OAPI, this variables were kept on the call stack and

@@ -1600,9 +1600,9 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_executes)) {
     nr_php_show_exec_internal(NR_EXECUTE_ORIG_ARGS_OVERWRITE, func TSRMLS_CC);
   }
-  segment = nr_segment_start(NRPRG(txn), NRPRG(fiber_parent_segment),
-                             NRPRG(current_php_context));
-  NRPRG(fiber_parent_segment) = NULL;
+  segment = nr_segment_start(NRPRG(txn), NRPRG_SHARED(fiber_parent_segment),
+                             NRPRG_SHARED(current_php_context));
+  NRPRG_SHARED(fiber_parent_segment) = NULL;
 
   CALL_ORIGINAL;
 
@@ -1910,9 +1910,9 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   }
   wraprec = nr_php_get_wraprec(execute_data->func);
 
-  segment = nr_segment_start(NRPRG(txn), NRPRG(fiber_parent_segment),
-                             NRPRG(current_php_context));
-  NRPRG(fiber_parent_segment) = NULL;
+  segment = nr_segment_start(NRPRG(txn), NRPRG_SHARED(fiber_parent_segment),
+                             NRPRG_SHARED(current_php_context));
+  NRPRG_SHARED(fiber_parent_segment) = NULL;
 
   if (nrunlikely(NULL == segment)) {
     nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
@@ -1985,7 +1985,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   /*
    * Get the current segment and return if null.
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
+  segment = nr_txn_get_current_segment(NRPRG(txn),
+                                       NRPRG_SHARED(current_php_context));
   if (nrunlikely(NULL == segment)) {
     /*
      * Most likely caused by txn ending prematurely and closing all segments. We
@@ -2105,7 +2106,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
    * start and then stop a segment. If that happened, we want to ensure we
    * get the now-current segment
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn), NRPRG(current_php_context));
+  segment = nr_txn_get_current_segment(NRPRG(txn),
+                                       NRPRG_SHARED(current_php_context));
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);

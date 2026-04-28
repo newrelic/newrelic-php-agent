@@ -408,6 +408,22 @@ typedef struct _ini_t {
 } ini_t;
 
 typedef struct _shared_globals_t {
+  /*
+   * Pointer to the current context string.
+   * If NULL, execution is occuring in the main PHP Process.
+   * Otherwise it will point to the fiber context string.
+   */
+  const char* current_php_context;
+
+  /* Contains the fiber address as a string to use as the async_context.*/
+  char fiber_context_string[32];
+  /*
+   * Contains the parent segment of a fiber only when starting a fiber within a
+   * fiber. For all other cases will be null which indicates that the main PHP
+   * process is the parent.
+   */
+  nr_segment_t* fiber_parent_segment;
+
   nrframework_t
       current_framework;   // Current request framework (forced or detected)
   bool wordpress_plugins;  // set based on
