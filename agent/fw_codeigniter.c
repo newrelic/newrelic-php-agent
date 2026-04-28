@@ -37,7 +37,7 @@ static void nr_codeigniter_name_the_wt(zend_function* func,
                                            TSRMLS_DC) {
   zend_op_array* op_array = NULL;
 
-  if ((NR_FW_CODEIGNITER != NRPRG(current_framework) || (NULL == func)
+  if ((NR_FW_CODEIGNITER != NRPRG_SHARED(current_framework) || (NULL == func)
        || (NULL == func->common.scope))) {
     return;
   }

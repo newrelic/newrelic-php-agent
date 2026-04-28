@@ -58,8 +58,9 @@ NR_PHP_WRAPPER(nr_symfony4_exception) {
   }
 
   if (NR_SUCCESS
-      != nr_php_error_record_exception(NRPRG(txn), exception, priority, true, NULL,
-                                       &NRPRG(exception_filters) TSRMLS_CC)) {
+      != nr_php_error_record_exception(
+          NRPRG(txn), exception, priority, true, NULL,
+          &NRPRG_SHARED(exception_filters) TSRMLS_CC)) {
     nrl_verbosedebug(NRL_TXN, "Symfony 4: unable to record exception");
   }
 
@@ -178,8 +179,8 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
           request, "Symfony\\Component\\HttpFoundation\\Request" TSRMLS_CC)) {
     request_attrs = nr_php_get_zval_object_property(request, "attributes");
     if (!nr_php_is_zval_valid_object(request_attrs)) {
-      nrl_verbosedebug(
-          NRL_TXN, "Symfony 4: Request->attributes could not be obtained");
+      nrl_verbosedebug(NRL_TXN,
+                       "Symfony 4: Request->attributes could not be obtained");
       goto end;
     }
 
@@ -197,8 +198,8 @@ NR_PHP_WRAPPER(nr_symfony4_name_the_wt) {
       nr_php_zval_free(&route_rval);
     } else {
       /* No _route. Look for _controller. */
-      controller_rval
-          = nr_symfony_object_get_string(request_attrs, "_controller" TSRMLS_CC);
+      controller_rval = nr_symfony_object_get_string(request_attrs,
+                                                     "_controller" TSRMLS_CC);
 
       if (controller_rval) {
         if (NR_SUCCESS

@@ -520,10 +520,10 @@ static const char nr_php_indentation_spaces[]
  * frames.
  */
 static int nr_php_show_exec_indentation(TSRMLS_D) {
-  if (NRPRG(php_cur_stack_depth) < 0) {
+  if (NRPRG_CTX(php_cur_stack_depth) < 0) {
     return 0;
   }
-  return NRPRG(php_cur_stack_depth) * NR_EXECUTE_INDENTATION_WIDTH;
+  return NRPRG_CTX(php_cur_stack_depth) * NR_EXECUTE_INDENTATION_WIDTH;
 }
 
 /*
@@ -637,7 +637,7 @@ static void nr_framework_log(const char* log_prefix,
 void nr_framework_create_metric(TSRMLS_D) {
   char* metric_name = NULL;
   const char* framework_name = "None";
-  nrframework_t fw = NRPRG(current_framework);
+  nrframework_t fw = NRPRG_SHARED(current_framework);
 
   if (NR_FW_UNSET == fw) {
     return;
@@ -684,7 +684,7 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
                                         size_t num_frameworks,
                                         const char* filename,
                                         const size_t filename_len TSRMLS_DC) {
-  if (NR_FW_UNSET != NRPRG(current_framework)) {
+  if (NR_FW_UNSET != NRPRG_SHARED(current_framework)) {
     return;
   }
 
@@ -694,18 +694,18 @@ static void nr_execute_handle_framework(const nr_framework_table_t frameworks[],
     detected_framework = nr_try_detect_framework(
         frameworks, num_frameworks, filename, filename_len TSRMLS_CC);
     if (NR_FW_UNSET != detected_framework) {
-      NRPRG(current_framework) = detected_framework;
+      NRPRG_SHARED(current_framework) = detected_framework;
     }
   } else if (NR_FW_NONE == NRINI(force_framework)) {
     nr_framework_log("forcing framework", "None");
-    NRPRG(current_framework) = NR_FW_NONE;
+    NRPRG_SHARED(current_framework) = NR_FW_NONE;
   } else {
     nrframework_t forced_framework = NR_FW_UNSET;
 
     forced_framework = nr_try_force_framework(
         frameworks, num_frameworks, NRINI(force_framework), filename TSRMLS_CC);
     if (NR_FW_UNSET != forced_framework) {
-      NRPRG(current_framework) = forced_framework;
+      NRPRG_SHARED(current_framework) = forced_framework;
     }
   }
 }
@@ -1352,7 +1352,7 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
        */
       nr_php_error_record_exception(
           NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
-          "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+          "Uncaught exception ", &NRPRG_SHARED(exception_filters) TSRMLS_CC);
     }
 
     txn_start_time = nr_txn_start_time(NRPRG(txn));
@@ -1411,7 +1411,8 @@ static void nr_php_execute_enabled(NR_EXECUTE_PROTO TSRMLS_DC) {
         exception_zval = &exception;
 
         status = nr_php_error_record_exception_segment(
-            NRPRG(txn), exception_zval, &NRPRG(exception_filters) TSRMLS_CC);
+            NRPRG(txn), exception_zval,
+            &NRPRG_SHARED(exception_filters) TSRMLS_CC);
 
         if (NR_FAILURE == status) {
           nrl_verbosedebug(
@@ -1465,7 +1466,7 @@ static void nr_php_max_nesting_level_reached(TSRMLS_D) {
    * depth is correct. Execution will probably not continue after E_ERROR;
    * that decision may rest on the error handler(s) registered as callbacks.
    */
-  NRPRG(php_cur_stack_depth) = 0;
+  NRPRG_CTX(php_cur_stack_depth) = 0;
 
   nrl_error(NRL_AGENT,
             "The New Relic imposed maximum PHP function nesting level of '%d' "
@@ -1515,10 +1516,10 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
    * exit, maintaining this counter perfectly is not a necessity.
    */
 
-  NRPRG(php_cur_stack_depth) += 1;
+  NRPRG_CTX(php_cur_stack_depth) += 1;
 
   if (((int)NRINI(max_nesting_level) > 0)
-      && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+      && (NRPRG_CTX(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
     nr_php_max_nesting_level_reached(TSRMLS_C);
   }
 
@@ -1536,7 +1537,7 @@ void nr_php_execute(NR_EXECUTE_PROTO_OVERWRITE TSRMLS_DC) {
       nr_php_execute_enabled(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
   }
-  NRPRG(php_cur_stack_depth) -= 1;
+  NRPRG_CTX(php_cur_stack_depth) -= 1;
 
   return;
 }
@@ -1874,7 +1875,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
       return;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG(cufa_callback),
+    nr_php_call_user_func_array_handler(NRPRG_CTX(cufa_callback),
                                         execute_data->func,
                                         execute_data->prev_execute_data);
   }
@@ -1894,7 +1895,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   NRTXNGLOBAL(execute_count) += 1;
   txn_start_time = nr_txn_start_time(NRPRG(txn));
 
-  if (NULL != NRPRG(cufa_callback) && NRPRG(check_cufa)) {
+  if (NULL != NRPRG_CTX(cufa_callback) && NRPRG_CTX(check_cufa)) {
     /*
      * For PHP 7+, call_user_func_array() is flattened into an inline by
      * default. Because of this, we must check the opcodes set to see whether we
@@ -2024,7 +2025,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
         = nr_php_get_user_func_arg(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     nr_php_error_record_exception(
         NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), false,
-        "Uncaught exception ", &NRPRG(exception_filters) TSRMLS_CC);
+        "Uncaught exception ", &NRPRG_SHARED(exception_filters) TSRMLS_CC);
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
     /*
      * Having no return value (and not being an exception handler) indicates
@@ -2034,7 +2035,7 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
     zval exception;
     ZVAL_OBJ(&exception, EG(exception));
     nr_status_t status = nr_php_error_record_exception_segment(
-        NRPRG(txn), &exception, &NRPRG(exception_filters));
+        NRPRG(txn), &exception, &NRPRG_SHARED(exception_filters));
 
     if (NR_FAILURE == status) {
       nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
@@ -2124,10 +2125,10 @@ void nr_php_observer_fcall_begin(zend_execute_data* execute_data) {
     return;
   }
 
-  NRPRG(php_cur_stack_depth) += 1;
+  NRPRG_CTX(php_cur_stack_depth) += 1;
 
   if ((0 < ((int)NRINI(max_nesting_level)))
-      && (NRPRG(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
+      && (NRPRG_CTX(php_cur_stack_depth) >= (int)NRINI(max_nesting_level))) {
     nr_php_max_nesting_level_reached();
   }
 
@@ -2169,7 +2170,7 @@ void nr_php_observer_fcall_end(zend_execute_data* execute_data,
     nr_php_instrument_func_end(NR_EXECUTE_ORIG_ARGS);
   }
 
-  NRPRG(php_cur_stack_depth) -= 1;
+  NRPRG_CTX(php_cur_stack_depth) -= 1;
 
   return;
 }

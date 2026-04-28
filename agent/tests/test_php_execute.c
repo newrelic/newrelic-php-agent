@@ -108,13 +108,13 @@ static void test_php_cur_stack_depth(TSRMLS_D) {
   nr_php_zval_free(&expr);
 
   tlib_pass_if_int_equal("PHP stack depth tracking when recording", 0,
-                         NRPRG(php_cur_stack_depth));
+                         NRPRG_CTX(php_cur_stack_depth));
 
   expr = nr_php_call(NULL, "f2");
   nr_php_zval_free(&expr);
 
   tlib_pass_if_int_equal("PHP stack depth tracking when ignoring", 0,
-                         NRPRG(php_cur_stack_depth));
+                         NRPRG_CTX(php_cur_stack_depth));
 
   tlib_php_request_end();
 }

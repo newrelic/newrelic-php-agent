@@ -41,8 +41,8 @@ void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
   instance = nr_php_pgsql_create_datastore_instance(conn_info);
   nr_php_datastore_instance_save(key, instance TSRMLS_CC);
 
-  nr_free(NRPRG(pgsql_last_conn));
-  NRPRG(pgsql_last_conn) = key;
+  nr_free(NRPRG_CTX(pgsql_last_conn));
+  NRPRG_CTX(pgsql_last_conn) = key;
 }
 
 nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
@@ -55,8 +55,8 @@ nr_datastore_instance_t* nr_php_pgsql_retrieve_datastore_instance(
      * If we have an existing connection, use that as the key. Otherwise,
      * create a default pgsql instance and make a key from the NULL zval.
      */
-    if (NRPRG(pgsql_last_conn)) {
-      key = nr_strdup(NRPRG(pgsql_last_conn));
+    if (NRPRG_CTX(pgsql_last_conn)) {
+      key = nr_strdup(NRPRG_CTX(pgsql_last_conn));
     } else {
       nrl_verbosedebug(NRL_INSTRUMENT,
                        "could not find previous pgsql connection");
@@ -80,16 +80,16 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
    * If the connection is NULL but we have an existing connection, use that as
    * the key. Otherwise, make a key from the connection zval.
    */
-  if ((NULL == pgsql_conn) && (NRPRG(pgsql_last_conn))) {
-    key = nr_strdup(NRPRG(pgsql_last_conn));
+  if ((NULL == pgsql_conn) && (NRPRG_CTX(pgsql_last_conn))) {
+    key = nr_strdup(NRPRG_CTX(pgsql_last_conn));
   } else {
     key = nr_php_datastore_make_key(pgsql_conn, "pgsql");
   }
 
   nr_php_datastore_instance_remove(key TSRMLS_CC);
 
-  if (0 == nr_strcmp(key, NRPRG(pgsql_last_conn))) {
-    nr_free(NRPRG(pgsql_last_conn));
+  if (0 == nr_strcmp(key, NRPRG_CTX(pgsql_last_conn))) {
+    nr_free(NRPRG_CTX(pgsql_last_conn));
   }
 
   nr_free(key);
