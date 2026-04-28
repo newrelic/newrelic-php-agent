@@ -12,6 +12,7 @@
 #include "php_globals.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "nr_agent.h"
 #include "util_logging.h"
