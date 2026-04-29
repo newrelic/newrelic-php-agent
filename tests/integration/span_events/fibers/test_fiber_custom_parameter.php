@@ -4,7 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /*DESCRIPTION
-Tests newrelic_add_span_parameter() on a nested, happy path.
+Tests newrelic_add_span_parameter() on a nested fiber.  Attributes should be added to correct span.
+*/
+
+/*SKIPIF
+<?php
+if (version_compare(PHP_VERSION, "8.1", "<")) {
+  die("skip: PHP 8.1+ required\n");
+}
 */
 
 /*INI
