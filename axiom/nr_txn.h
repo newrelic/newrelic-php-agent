@@ -273,9 +273,12 @@ typedef struct _nrtxn_t {
   nr_hashmap_t* parent_stacks;     /* A hashmap of stacks to track the current
                                       parent in a tree of segments, keyed by async
                                       context */
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
   nr_segment_t* force_current_segment; /* Enforce a current segment for the
                                           default context, overriding the
-                                          default parent stack. */
+                                          default parent stack. Only used with
+                                          PHP < 8.0 */
+#endif
   size_t segment_count; /* A count of segments for this transaction, maintained
                            throughout the life of this transaction */
   nr_minmax_heap_t*
@@ -1088,6 +1091,7 @@ extern const char* nr_txn_get_current_context(nrtxn_t* txn);
 extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
                                                 const char* async_context);
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 /*
  * Purpose : Force the given segment to be the current segment.
  *
@@ -1101,6 +1105,7 @@ extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
  *
  *           This function is useful to temporarily inject segments that don't
  *           use the default allocator.
+ * Note    : This is ONLY ever set with non-OAPI and PHPs less than 8.0.
  */
 inline static void nr_txn_force_current_segment(nrtxn_t* txn,
                                                 nr_segment_t* segment) {
@@ -1108,7 +1113,7 @@ inline static void nr_txn_force_current_segment(nrtxn_t* txn,
     txn->force_current_segment = segment;
   }
 }
-
+#endif
 /*
  * Purpose : Set the current segment for the transaction.
  *

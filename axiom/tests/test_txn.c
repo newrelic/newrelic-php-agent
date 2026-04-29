@@ -7637,6 +7637,7 @@ static void test_parent_stacks(void) {
    * nr_txn_retire_current_segment(). */
 }
 
+#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 static void test_force_current_segment(void) {
   nrapp_t app = {.state = NR_APP_OK};
   nrtxnopt_t opts = {0};
@@ -7709,6 +7710,7 @@ static void test_force_current_segment(void) {
   nr_segment_children_deinit(&segment_stacked.children);
   nr_txn_destroy(&txn);
 }
+#endif
 
 static void test_txn_is_sampled(void) {
   nrtxn_t txn;
@@ -9140,7 +9142,9 @@ void test_main(void* p NRUNUSED) {
   test_root_segment_priority();
   test_should_create_span_events();
   test_parent_stacks();
+  #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO 
   test_force_current_segment();
+  #endif
   test_txn_is_sampled();
   test_get_current_trace_id();
   test_get_current_span_id();
