@@ -131,9 +131,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
 
-#define NR_FIBER_USED_CREATE_METRIC                                            \
-  nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used", \
-                0);
+#define NR_FIBER_USED_CREATE_METRIC                    \
+  if (NULL != NRPRG(txn)) {                            \
+    nrm_force_add(NRPRG(txn)->unscoped_metrics,        \
+                  "Supportability/PHP/Fiber/used", 0); \
+  }
 
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {

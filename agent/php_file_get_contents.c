@@ -511,7 +511,7 @@ PHP_FUNCTION(newrelic_add_headers_to_context) {
     return;
   }
   nr_php_file_get_contents_add_headers(
-      context, nr_txn_get_current_segment(NRPRG(txn), NULL) TSRMLS_CC);
+      context, nr_txn_get_current_segment(NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))) TSRMLS_CC);
 }
 
 /* Test scaffolding */

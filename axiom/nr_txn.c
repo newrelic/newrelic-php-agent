@@ -1599,8 +1599,7 @@ void nr_txn_record_error(nrtxn_t* txn,
   /* Only try to get a span_id in cases where we know spans should be created.
    */
   if (nr_txn_should_create_span_events(txn)) {
-    span_id = nr_txn_get_current_span_id(
-        txn, nr_string_get(txn->trace_strings, txn->current_async_context));
+    span_id = nr_txn_get_current_span_id(txn, nr_txn_get_current_context(txn));
 
     /*
      * The specification says span_id MUST be included so if span events are
@@ -1614,7 +1613,8 @@ void nr_txn_record_error(nrtxn_t* txn,
     }
 
     if (add_to_current_segment) {
-      current_segment = nr_txn_get_current_segment(txn, NULL);
+      current_segment
+          = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
 
       if (current_segment) {
         nr_segment_set_error(current_segment, errmsg, errclass);
@@ -1756,7 +1756,7 @@ nr_status_t nr_txn_add_user_custom_parameter(nrtxn_t* txn,
   }
 
   if (nr_txn_should_create_span_events(txn)) {
-    current = nr_txn_get_current_segment(txn, NULL);
+    current = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
 
     nr_segment_attributes_user_txn_event_add(
         current, NR_ATTRIBUTE_DESTINATION_SPAN, key, value);

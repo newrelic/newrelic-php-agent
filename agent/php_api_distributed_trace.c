@@ -314,7 +314,8 @@ PHP_FUNCTION(newrelic_create_distributed_trace_payload) {
      * explicitly here.
      */
     char* payload = nr_txn_create_distributed_trace_payload(
-        NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
+        NRPRG(txn), nr_txn_get_current_segment(
+                        NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))));
 
     if (payload) {
       zend_update_property_string(
@@ -378,11 +379,14 @@ PHP_FUNCTION(newrelic_insert_distributed_trace_headers) {
    * takes place in nr_txn_create_distributed_trace_payload.
    */
   newrelic = nr_txn_create_distributed_trace_payload(
-      NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
+      NRPRG(txn), nr_txn_get_current_segment(
+                      NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))));
   traceparent = nr_txn_create_w3c_traceparent_header(
-      NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
+      NRPRG(txn), nr_txn_get_current_segment(
+                      NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))));
   tracestate = nr_txn_create_w3c_tracestate_header(
-      NRPRG(txn), nr_txn_get_current_segment(NRPRG(txn), NULL));
+      NRPRG(txn), nr_txn_get_current_segment(
+                      NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))));
 
   SEPARATE_ARRAY(header_array);
 
