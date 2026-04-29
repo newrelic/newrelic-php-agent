@@ -3259,7 +3259,7 @@ void nr_txn_retire_current_segment(nrtxn_t* txn, nr_segment_t* segment) {
     nr_stack_remove_topmost(&txn->default_parent_stack, segment);
   }
 
-  if (txn->span_queue) {
+  if (txn->span_queue && segment->name) {
     if (nr_span_queue_push(txn->span_queue,
                            nr_segment_to_span_event(segment))) {
       nrm_force_add(txn->unscoped_metrics,
