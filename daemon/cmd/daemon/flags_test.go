@@ -40,8 +40,9 @@ func TestParseFlagsWithAll(t *testing.T) {
 		PProfPort:       1,
 		CAPath:          "ca.path",
 		CAFile:          "ca.file",
-		IntegrationMode: true,
-		WaitForPort:     2 * time.Second,
+		IntegrationMode:   true,
+		IntegrationFormat: "seq",
+		WaitForPort:       2 * time.Second,
 	}
 
 	args := []string{
@@ -59,6 +60,7 @@ func TestParseFlagsWithAll(t *testing.T) {
 		"-cafile", "ca.file",
 		"-capath", "ca.path",
 		"-integration",
+		"-integration-format", "seq",
 		"-pprof", "1",
 		"-wait-for-port", "2s",
 	}

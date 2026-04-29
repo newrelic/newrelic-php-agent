@@ -112,10 +112,11 @@ func runWorker(cfg *Config) {
 	}
 
 	p := newrelic.NewProcessor(newrelic.ProcessorConfig{
-		Client:          client,
-		IntegrationMode: cfg.IntegrationMode,
-		UtilConfig:      cfg.MakeUtilConfig(),
-		AppTimeout:      time.Duration(cfg.AppTimeout),
+		Client:            client,
+		IntegrationMode:   cfg.IntegrationMode,
+		IntegrationFormat: cfg.IntegrationFormat,
+		UtilConfig:        cfg.MakeUtilConfig(),
+		AppTimeout:        time.Duration(cfg.AppTimeout),
 	})
 	go processTxnData(errorChan, p)
 
