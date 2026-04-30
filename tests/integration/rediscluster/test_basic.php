@@ -56,6 +56,7 @@ ok - renamenx to an existing key
 ok - verify time command works
 ok - we can EVAL a lua script
 ok - we can EVAL a lua script with an SHA hash
+ok - delete keys
 ok - pfadd reports new elements
 ok - pfadd reports no new elements
 ok - pfcount reports correct cardinality
@@ -94,7 +95,6 @@ Datastore/operation/Redis/publish
 Datastore/operation/Redis/pfadd
 Datastore/operation/Redis/pfcount
 Datastore/operation/Redis/pfmerge
-Datastore/operation/Redis/close
 */
 
 /*EXPECT_METRICS_DONT_EXIST
@@ -202,7 +202,7 @@ function test_basic_cluster() {
   /* cleanup */
   tap_equal(2, $cluster->del([$key1, $key2]), 'delete keys');
 
-  /* close connection — exercised so its metric appears in EXPECT_METRICS_EXIST. */
+  /* close connection */
   $cluster->close();
 }
 
