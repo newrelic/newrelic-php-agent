@@ -1090,7 +1090,6 @@ extern const char* nr_txn_get_current_context(nrtxn_t* txn);
 extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
                                                 const char* async_context);
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
 /*
  * Purpose : Force the given segment to be the current segment.
  *
@@ -1104,7 +1103,8 @@ extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
  *
  *           This function is useful to temporarily inject segments that don't
  *           use the default allocator.
- * Note    : This is ONLY ever set with non-OAPI and PHPs less than 8.0.
+ * Note    : This is ONLY ever set with non-OAPI and PHPs less than 8.0. Do not
+ * use with OAPI; it is not setup to utilize this.
  */
 inline static void nr_txn_force_current_segment(nrtxn_t* txn,
                                                 nr_segment_t* segment) {
@@ -1112,7 +1112,7 @@ inline static void nr_txn_force_current_segment(nrtxn_t* txn,
     txn->force_current_segment = segment;
   }
 }
-#endif
+
 /*
  * Purpose : Set the current segment for the transaction.
  *

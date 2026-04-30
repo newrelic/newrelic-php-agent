@@ -3218,12 +3218,11 @@ nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
         nr_hashmap_index_get(txn->parent_stacks, (uint64_t)async_context_idx));
   }
 
-#if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO
-  /* This is ONLY ever set with non-OAPI and PHPs less than 8. */
+  /* This is ONLY ever set with non-OAPI and PHPs less than 8. Do not assume or
+   * use force_current_segment with PHPs >= 8.0 */
   if (txn->force_current_segment) {
     return txn->force_current_segment;
   }
-#endif
 
   return nr_stack_get_top(&txn->default_parent_stack);
 }
