@@ -1313,8 +1313,6 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
                                   &params)) {
       nrl_warning(NRL_INSTRUMENT,
                   "failed to parse mysqli_stmt_execute params");
-      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-      return;
     }
   }
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
