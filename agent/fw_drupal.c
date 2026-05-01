@@ -261,7 +261,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_before) {
      * after function properly
      */
     NRPRG_CTX(drupal_http_request_segment)
-        = nr_segment_start(NRPRG(txn), NULL, NULL);
+        = nr_segment_start_with_parent_context(NRPRG(txn), auto_segment);
     /*
      * The new segment needs to have the wraprec data attached, so that
      * fcall_end is able to properly dispatch to the after wrapper, as
@@ -412,7 +412,7 @@ NR_PHP_WRAPPER(nr_drupal_http_request_exec) {
     external_params.procedure
         = nr_drupal_http_request_get_method(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
-    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+    segment = nr_segment_start_with_parent_context(NRPRG(txn), auto_segment);
 
     /*
      * Our wrapper for drupal_http_request (which we installed in
