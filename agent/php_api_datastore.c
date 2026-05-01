@@ -145,7 +145,8 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
   }
 
   if (instrument) {
-    segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+    segment = nr_segment_start_with_parent_context(
+        NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)));
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */
     /*

@@ -337,7 +337,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
     goto leave;
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = nr_segment_start_with_parent_context(NRPRG(txn), auto_segment);
 
   /*
    * We have to manually force this segment as the current segment on
@@ -422,6 +422,6 @@ leave:
 NR_PHP_WRAPPER_END
 
 void nr_laminas_http_enable(TSRMLS_D) {
-    nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_L),
-                              nr_zend_http_client_request TSRMLS_CC);
+  nr_php_wrap_user_function(NR_PSTR(HTTP_CLIENT_REQUEST_L),
+                            nr_zend_http_client_request TSRMLS_CC);
 }
