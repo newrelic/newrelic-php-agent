@@ -15,6 +15,7 @@
 #include "php_samplers.h"
 #include "php_user_instrument.h"
 #include "php_stacked_segment.h"
+#include "php_txn.h"
 #include "php_txn_private.h"
 #include "nr_agent.h"
 #include "nr_commands.h"

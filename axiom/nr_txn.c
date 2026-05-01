@@ -1613,8 +1613,7 @@ void nr_txn_record_error(nrtxn_t* txn,
     }
 
     if (add_to_current_segment) {
-      current_segment
-          = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
+      current_segment = nr_txn_get_current_segment_txn_context(txn);
 
       if (current_segment) {
         nr_segment_set_error(current_segment, errmsg, errclass);
@@ -1756,7 +1755,7 @@ nr_status_t nr_txn_add_user_custom_parameter(nrtxn_t* txn,
   }
 
   if (nr_txn_should_create_span_events(txn)) {
-    current = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
+    current = nr_txn_get_current_segment_txn_context(txn);
 
     nr_segment_attributes_user_txn_event_add(
         current, NR_ATTRIBUTE_DESTINATION_SPAN, key, value);

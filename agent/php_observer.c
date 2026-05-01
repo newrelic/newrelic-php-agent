@@ -22,6 +22,7 @@
 #include "php_internal_instrument.h"
 #include "php_observer.h"
 #include "php_samplers.h"
+#include "php_txn.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
@@ -131,9 +132,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
 
-#define NR_FIBER_USED_CREATE_METRIC                                            \
-  nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used", \
-                0);
+#define NR_FIBER_USED_CREATE_METRIC                    \
+  if (NULL != NRPRG(txn)) {                            \
+    nrm_force_add(NRPRG(txn)->unscoped_metrics,        \
+                  "Supportability/PHP/Fiber/used", 0); \
+  }
 
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
@@ -190,8 +193,7 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
     NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
   }
 
-  current_segment = nr_txn_get_current_segment(
-      NRPRG(txn), NRPRG_SHARED(current_php_context));
+  current_segment = nr_php_txn_get_current_segment_php_context(NRPRG(txn));
   if (current_segment) {
     nr_txn_set_current_segment(NRPRG(txn), current_segment);
   }

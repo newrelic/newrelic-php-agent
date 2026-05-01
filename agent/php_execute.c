@@ -25,6 +25,7 @@
 #include "util_metrics.h"
 #include "util_number_converter.h"
 #include "util_strings.h"
+#include "php_txn.h"
 #include "util_url.h"
 #include "util_url.h"
 #include "util_metrics.h"
@@ -1985,8 +1986,8 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   /*
    * Get the current segment and return if null.
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn),
-                                       NRPRG_SHARED(current_php_context));
+  segment = nr_php_txn_get_current_segment_php_context(NRPRG(txn));
+
   if (nrunlikely(NULL == segment)) {
     /*
      * Most likely caused by txn ending prematurely and closing all segments. We
@@ -2104,10 +2105,9 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
   /*
    * Reassign segment to the current segment, as some before/after wraprecs
    * start and then stop a segment. If that happened, we want to ensure we
-   * get the now-current segment
+   * get the current segment with the correct context.
    */
-  segment = nr_txn_get_current_segment(NRPRG(txn),
-                                       NRPRG_SHARED(current_php_context));
+  segment = nr_php_txn_get_current_segment_php_context(NRPRG(txn));
   nr_php_execute_metadata_init(&metadata, NR_OP_ARRAY);
   nr_php_execute_segment_end(segment, &metadata, create_metric);
   nr_php_execute_metadata_release(&metadata);
