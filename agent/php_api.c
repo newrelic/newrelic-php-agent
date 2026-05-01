@@ -1247,7 +1247,7 @@ static nr_status_t nr_php_api_add_custom_span_attribute(const char* keystr,
 
   txn = NRPRG(txn);
 
-  current = nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
+  current = nr_txn_get_current_segment_txn_context(txn);
   if (!current) {
     return NR_FAILURE;
   }
@@ -1503,7 +1503,6 @@ PHP_FUNCTION(newrelic_get_linking_metadata) {
   txn = NRPRG(txn);
 
   if (nrlikely(NRPRG_SHARED(app))) {
-
     nr_php_add_assoc_string_const(return_value, "entity.name",
                                   nr_app_get_entity_name(NRPRG_SHARED(app)));
     nr_php_add_assoc_string_const(return_value, "entity.type",

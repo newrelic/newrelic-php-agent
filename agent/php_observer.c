@@ -22,6 +22,7 @@
 #include "php_internal_instrument.h"
 #include "php_observer.h"
 #include "php_samplers.h"
+#include "php_txn.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
@@ -192,8 +193,7 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
     NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
   }
 
-  current_segment = nr_txn_get_current_segment(
-      NRPRG(txn), NRPRG_SHARED(current_php_context));
+  current_segment = nr_php_txn_get_current_segment_php_context(NRPRG(txn));
   if (current_segment) {
     nr_txn_set_current_segment(NRPRG(txn), current_segment);
   }

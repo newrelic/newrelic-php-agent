@@ -51,8 +51,7 @@ PHP_FUNCTION(newrelic_get_request_metadata) {
 
   array_init(return_value);
   outbound_headers = nr_header_outbound_request_create(
-      NRPRG(txn), nr_txn_get_current_segment(
-                      NRPRG(txn), nr_txn_get_current_context(NRPRG(txn))));
+      NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)));
 
   if (NULL == outbound_headers) {
     return;
