@@ -285,16 +285,37 @@ typedef nr_segment_iter_return_t (*nr_segment_iter_t)(nr_segment_t* segment,
  *           3. The async_context to be applied to the segment, or NULL to
  *              indicate that the segment is not asynchronous.
  *
- * Note    : At the time of this writing, if an explicit parent is supplied
- *           then an async_context must also be supplied.  If parent is NULL
- *           and async is not NULL, or vice-versa, it can lead to undefined
- *           behavior in the agent.
+ * Note    :
+ * If parent is NULL and async is not NULL: If the async context has a
+ * current segment, it will parent the segment to the current segment on the
+ * async context and become the current segment for the context; otherwise it
+ * will be parented to the current of the default context but will not itself
+ * become the current segment.
+ * If async is NULL and parent is not NULL, the segment will be parented to
+ * given parent with the default context, but it will not become the current
+ * segment on the txn or the default context.
+ * If parent is not NULL and async is not NULL, it will parent the segment to
+ * the parent and the segment will become the current segment on the async
+ * context.
  *
  * Returns : A segment.
  */
 extern nr_segment_t* nr_segment_start(nrtxn_t* txn,
                                       nr_segment_t* parent,
                                       const char* async_context);
+
+/*
+ * Purpose : Allocate and start a segment within a transaction's trace using a
+ * given segment's async context.
+ *
+ * Params  : 1. The current transaction.
+ *           2. The segment to use the async_context to be applied to the new
+ * segment.
+ *
+ * Returns : A context string.
+ */
+extern nr_segment_t* nr_segment_start_with_parent_context(nrtxn_t* txn,
+                                                          nr_segment_t* parent);
 
 /*
  * Purpose : Start an already allocated segment.

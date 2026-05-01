@@ -265,6 +265,43 @@ bool nr_segment_init(nr_segment_t* segment,
   return true;
 }
 
+/*
+ * Purpose : Get a the string value of a given segment async context
+ *
+ * Params  : 1. The segment.
+ *
+ * Note    : This will be NULL for default/main, and a string context for async
+ * Returns : A pointer to the string context.
+ */
+static inline const char* nr_segment_get_context(nr_segment_t* segment) {
+  if (NULL == segment || NULL == segment->txn) {
+    return NULL;
+  }
+  if (0 == segment->async_context) {
+    return NULL;
+  }
+  return nr_string_get(segment->txn->trace_strings, segment->async_context);
+}
+/*
+ * Purpose : Allocate and start a segment within a transaction's trace using a
+ * given segment's async context.
+ *
+ * Params  : 1. The current transaction.
+ *           2. The segment to use the async_context to be applied to the new
+ * segment.
+ *
+ * Returns : A context string.
+ */
+extern nr_segment_t* nr_segment_start_with_parent_context(
+    nrtxn_t* txn,
+    nr_segment_t* parent) {
+  if (NULL == txn || NULL == parent) {
+    return NULL;
+  }
+
+  return nr_segment_start(txn, NULL, nr_segment_get_context(parent));
+}
+
 static void nr_populate_datastore_spans(nr_span_event_t* span_event,
                                         const nr_segment_t* segment) {
   const char* port_path_or_id;
