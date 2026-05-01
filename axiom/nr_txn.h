@@ -1089,6 +1089,22 @@ extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
                                                 const char* async_context);
 
 /*
+ * Purpose : Get a pointer to the currently-executing segment for a given
+ *           async context.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : A pointer to the active segment for the currently executing segment
+ * based on the txn async_context. Note : Callers wishing to get the current
+ * segment on a specific context should use nr_txn_get_current_segment() to get
+ * the current segment on any other context they are interested in.
+ */
+static inline nr_segment_t* nr_txn_get_current_segment_txn_context(
+    nrtxn_t* txn) {
+  return nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
+}
+
+/*
  * Purpose : Force the given segment to be the current segment.
  *
  * Params  : 1. The transaction.
