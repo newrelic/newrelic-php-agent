@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2024 New Relic Corporation. All rights reserved.
+ * Copyright 2026 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -104,9 +104,6 @@ Datastore/operation/Redis/open
 Datastore/operation/Redis/popen
 Datastore/operation/Redis/select
 */
-
-
-
 
 require_once(realpath(dirname(__FILE__)) . '/../../include/helpers.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
