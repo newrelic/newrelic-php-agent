@@ -11,6 +11,7 @@ mirroring the coverage of tests/integration/redis/test_bitops.php.
 
 /*SKIPIF
 <?php
+$minimum_extension_version = '6.0.0';
 require("skipif.inc");
 */
 
