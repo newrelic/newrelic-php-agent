@@ -11,6 +11,7 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_wrapper.h"
 #include "php_mysqli.h"
 #include "php_pdo.h"
@@ -103,6 +104,12 @@ int nr_php_post_deactivate(void) {
   }
 
   nr_php_remove_transient_user_instrumentation();
+
+#ifdef ZTS
+  /* ZTS: destroy per-request hashmaps. Non-ZTS hashmaps persist to MSHUTDOWN. */
+  nr_php_user_instrument_wraprec_hashmap_destroy();
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s: destroyed wraprec hashmaps", __func__);
+#endif
 
   nr_php_exception_filters_destroy(&NRPRG(exception_filters));
 

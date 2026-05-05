@@ -8,6 +8,7 @@
 #include "php_hash.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 
 #include "nr_commands.h"
 #include "nr_configstrings.h"
@@ -1673,6 +1674,33 @@ static PHP_INI_MH(nr_framework_mh) {
   return FAILURE;
 }
 
+#ifdef ZTS
+/*
+ * ZTS MINIT callbacks for INI wraprec creation. These match the foreach_fn_t
+ * signature and route to the INI hashmap instead of the per-request hashmap.
+ */
+static void nr_ini_wraprec_add_naming_fn(const char* namestr,
+                                         int namestrlen TSRMLS_DC) {
+  nruserfn_t* wraprec
+      = nr_php_user_instrument_wraprec_hashmap_ini_add(namestr, namestrlen);
+
+  if (NULL != wraprec) {
+    wraprec->is_names_wt_simple = 1;
+  }
+}
+
+static void nr_ini_wraprec_add_custom_tracer(const char* namestr,
+                                             int namestrlen TSRMLS_DC) {
+  nruserfn_t* wraprec
+      = nr_php_user_instrument_wraprec_hashmap_ini_add(namestr, namestrlen);
+
+  if (NULL != wraprec) {
+    wraprec->create_metric = 1;
+    wraprec->is_user_added = 1;
+  }
+}
+#endif /* ZTS */
+
 static PHP_INI_MH(nr_wtfuncs_mh) {
   (void)entry;
   (void)mh_arg1;
@@ -1680,7 +1708,14 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
   (void)mh_arg3;
 
   if (NEW_VALUE_LEN > 0) {
+#ifdef ZTS
+    /* ZTS: INI modifications outside of startup are currently ignored. */
+    if (ZEND_INI_STAGE_STARTUP == stage) {
+      foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn TSRMLS_CC);
+    }
+#else
     foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
+#endif /* ZTS */
   }
 
   NRPRG(wtfuncs_where) = stage;
@@ -1694,7 +1729,14 @@ static PHP_INI_MH(nr_ttcustom_mh) {
   (void)mh_arg3;
 
   if (0 != NEW_VALUE_LEN) {
+#ifdef ZTS
+    /* ZTS: INI modifications outside of startup are currently ignored. */
+    if (ZEND_INI_STAGE_STARTUP == stage) {
+      foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer TSRMLS_CC);
+    }
+#else
     foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);
+#endif /* ZTS */
   }
 
   NRPRG(ttcustom_where) = stage;

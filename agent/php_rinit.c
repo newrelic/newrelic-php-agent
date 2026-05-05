@@ -12,6 +12,7 @@
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "nr_datastore_instance.h"
 #include "nr_txn.h"
 #include "nr_rum.h"
@@ -64,6 +65,20 @@ PHP_RINIT_FUNCTION(newrelic) {
 #else
   NRPRG(pid) = nr_getpid();
   NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+#endif
+
+  /* initialization of transient wraprecs which are per request globals */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  NRPRG(transient_wraprecs) = NULL;
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized transient_wraprecs to NULL",
+                   __func__);
+
+#ifdef ZTS
+  /* ZTS: deep copy INI hashmaps into per-request hashmaps. */
+  nr_php_user_instrument_wraprec_hashmap_replay_ini();
+  nrl_verbosedebug(NRL_INSTRUMENT, "%s: replayed INI wraprec hashmaps",
+                   __func__);
+#endif
 #endif
 
   if ((0 == NR_PHP_PROCESS_GLOBALS(enabled)) || (0 == NRINI(enabled))) {

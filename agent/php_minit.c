@@ -492,16 +492,21 @@ PHP_MINIT_FUNCTION(newrelic) {
    */
   nr_php_generate_internal_wrap_records();
 
+  /*
+   * Initialize wraprec hashmaps before INI registration so that INI OnModify
+   * handlers (nr_wtfuncs_mh, nr_ttcustom_mh) can create wraprecs.
+   *
+   * NTS: creates file-scoped statics that persist until MSHUTDOWN.
+   * ZTS: creates process-global ini_scope_ht / ini_global_funcs_ht that are
+   * deep copied into per-request hashmaps at RINIT.
+   */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /* 
-   * The user function wraprec hashmap must be initialized before INI processing
-   * because INI processing adds wraprecs:
-   *  - newrelic.webtransaction.name.functions
-   *  - newrelic.transaction_tracer.custom
-  */
+#ifdef ZTS
+  nr_php_user_instrument_wraprec_hashmap_ini_init();
+#else
   nr_php_user_instrument_wraprec_hashmap_init();
 #endif
-
+#endif
   nr_php_register_ini_entries(module_number TSRMLS_CC);
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {

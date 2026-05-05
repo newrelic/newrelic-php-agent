@@ -34,6 +34,14 @@ extern zend_module_entry newrelic_module_entry;
 #define phpext_newrelic_ptr &newrelic_module_entry
 
 /*
+ * Compile guard for ZTS support for only PHPs that FrankenPHP supports */
+#ifdef ZTS
+#if ZEND_MODULE_API_NO < ZEND_8_2_X_API_NO
+#error "ZTS is only supported with PHP 8.2+"
+#endif
+#endif
+
+/*
  * PHP 5.5 and 7.0 both introduced a number of changes to the internal
  * representation of execute data state. These macros abstract away the vast
  * majority of those changes so the rest of the code can simply use the macros
@@ -569,6 +577,23 @@ nrinibool_t message_tracer_segment_parameters_enabled; /* newrelic.segment_trace
  */
 uint64_t pid;
 nr_vector_t* user_function_wrappers;
+#endif
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * transient wrappers are stored at request level for thread safety
+ */
+struct _nruserfn_t* transient_wraprecs; /* a singly linked list */
+
+#ifdef ZTS
+/*
+ * User instrumentation wraprec hashmaps stored at request level for ZTS
+ * thread safety. For non-ZTS, these are file-scoped statics in
+ * php_user_instrument_wraprec_hashmap.c (persisting from MINIT to MSHUTDOWN).
+ */
+struct _nr_func_hashmap* global_funcs_ht; /* hashmap for global functions */
+struct _nr_scope_hashmap* scope_ht;       /* hashmap for scoped methods */
+#endif /* ZTS */
 #endif
 
 nrapp_t* app; /* The application used in the last attempt to initialize a
