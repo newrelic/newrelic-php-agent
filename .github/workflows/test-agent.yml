@@ -39,7 +39,7 @@ jobs:
         with:
           path: php-agent
       - name: Setup go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: ./php-agent/daemon/go.mod
           cache: false
@@ -71,7 +71,7 @@ jobs:
           echo "[${toolchain}]"
           echo "go-toolchain-version=${toolchain}" >> $GITHUB_OUTPUT
       - name: Setup go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ steps.get-go-version.outputs.go-toolchain-version }}
           cache-dependency-path: "**/*.sum"
@@ -105,7 +105,7 @@ jobs:
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -122,7 +122,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
@@ -143,7 +143,7 @@ jobs:
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -160,7 +160,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
           $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_test
       - name: Save integration_runner for integration tests
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
@@ -188,7 +188,7 @@ jobs:
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -238,19 +238,19 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
       - name: Save axiom gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom/*.gc*
       - name: Save agent gcov data files (*.gcno, *.gcna)
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           include-hidden-files: true
@@ -276,7 +276,7 @@ jobs:
         with:
           path: php-agent
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -322,7 +322,7 @@ jobs:
           -e ENABLE_COVERAGE=${{matrix.codecov}}
           $IMAGE_NAME:$IMAGE_TAG-${{matrix.php}}-${{matrix.platform}}-$IMAGE_VERSION make agent-${{ steps.get-check-variant.outputs.AGENT_CHECK_VARIANT }}
       - name: Save newrelic.so for integration tests
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules/newrelic.so
@@ -347,24 +347,24 @@ jobs:
         with:
           path: php-agent
       - name: Get integration_runner
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
       - name: Get axiom gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: axiom.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/axiom
       - name: Get agent gcov data files
         if: ${{ matrix.codecov == 1 }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: agent.gcov-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/.libs
@@ -373,7 +373,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -430,7 +430,7 @@ jobs:
           nr-php make gcov
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # 6.0.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
@@ -459,12 +459,12 @@ jobs:
         with:
           path: php-agent
       - name: Get integration_runner
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin
       - name: Get newrelic.so
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           name: newrelic.so-${{matrix.platform}}-${{matrix.arch}}-${{matrix.php}}
           path: php-agent/agent/modules
@@ -478,7 +478,7 @@ jobs:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # 4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
