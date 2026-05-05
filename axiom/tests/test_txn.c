@@ -8250,6 +8250,9 @@ static void test_span_queue(void) {
       .span_queue_batch_timeout = 1 * NR_TIME_DIVISOR,
   };
   nrtxn_t* txn;
+  nr_segment_t* unnamed_segment;
+  nr_segment_t* named_segment_1;
+  nr_segment_t* named_segment_2;
 
   nrt_mutex_init(&app.app_lock, 0);
   p->txns_app = &app;
@@ -8287,6 +8290,40 @@ static void test_span_queue(void) {
 
   tlib_pass_if_time_equal(
       "seen metric must be incremented", 1,
+      nrm_count(nrm_find(txn->unscoped_metrics,
+                         "Supportability/InfiniteTracing/Span/Seen")));
+
+  nr_txn_destroy(&txn);
+
+  /*
+   * Test : Unnamed segments should not be pushed to the span queue
+   */
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+
+  /* Start and retire an unnamed segment (segment->name == 0) */
+  unnamed_segment = nr_segment_start(txn, NULL, NULL);
+  unnamed_segment->stop_time = 1 * NR_TIME_DIVISOR;
+  nr_txn_retire_current_segment(txn, unnamed_segment);
+
+  tlib_pass_if_time_equal(
+      "ensure unnamed segments are not pushed to span queue", 0,
+      nrm_count(nrm_find(txn->unscoped_metrics,
+                         "Supportability/InfiniteTracing/Span/Seen")));
+
+  /* Start and retire a named segment */
+  named_segment_1 = nr_segment_start(txn, NULL, NULL);
+  nr_segment_set_name(named_segment_1, "named_segment_1");
+  named_segment_1->stop_time = 1 * NR_TIME_DIVISOR;
+  nr_txn_retire_current_segment(txn, named_segment_1);
+
+  /* Start and retire another named segment */
+  named_segment_2 = nr_segment_start(txn, NULL, NULL);
+  nr_segment_set_name(named_segment_2, "named_segment_2");
+  named_segment_2->stop_time = 1 * NR_TIME_DIVISOR;
+  nr_txn_retire_current_segment(txn, named_segment_2);
+
+  tlib_pass_if_time_equal(
+      "only named segments should be pushed to span queue", 2,
       nrm_count(nrm_find(txn->unscoped_metrics,
                          "Supportability/InfiniteTracing/Span/Seen")));
 

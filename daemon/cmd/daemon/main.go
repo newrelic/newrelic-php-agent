@@ -75,6 +75,7 @@ func createDaemonFlagSet(cfg *Config) *DaemonFlagSet {
 	flagSet.StringVar(&cfg.CAFile, "cafile", cfg.CAFile, "")
 	flagSet.StringVar(&cfg.CAPath, "capath", cfg.CAPath, "")
 	flagSet.BoolVar(&cfg.IntegrationMode, "integration", cfg.IntegrationMode, "")
+	flagSet.StringVar(&cfg.IntegrationFormat, "integration-format", cfg.IntegrationFormat, "")
 	flagSet.IntVar(&cfg.PProfPort, "pprof", cfg.PProfPort, "")
 	flagSet.BoolVar(&printVersion, "version", false, "")
 	flagSet.BoolVar(&printVersion, "v", false, "")
@@ -249,6 +250,7 @@ type Config struct {
 	CAPath             string         `config:"ssl_ca_path"`                    // Path to a directory of root CA certificates.
 	CAFile             string         `config:"ssl_ca_bundle"`                  // Path to a file containing a bundle of root CA certificates.
 	IntegrationMode    bool           `config:"-"`                              // Whether to log integration test output
+	IntegrationFormat  string         `config:"-"`                              // Format for integration log output ("" or "seq")
 	AppTimeout         config.Timeout `config:"app_timeout"`                    // Inactivity timeout for applications.
 	WaitForPort        time.Duration  `config:"wait_for_port"`                  // How long to wait for the worker process to open a port.
 }
