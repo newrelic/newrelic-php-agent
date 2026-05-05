@@ -9,6 +9,38 @@
 #include "util_memory.h"
 #include "util_strings.h"
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
+/*
+ * Storage abstraction for scope_ht and global_funcs_ht:
+ * - ZTS: per-request globals via NRPRG() (created at RINIT, destroyed at
+ *   RSHUTDOWN)
+ * - Non-ZTS: file-scoped statics (created at MINIT, destroyed at MSHUTDOWN)
+ */
+#ifdef ZTS
+#define NR_SCOPE_HT NRPRG(scope_ht)
+#define NR_GLOBAL_FUNCS_HT NRPRG(global_funcs_ht)
+#else
+static nr_scope_hashmap_t* scope_ht = NULL;
+static nr_func_hashmap_t* global_funcs_ht = NULL;
+#define NR_SCOPE_HT scope_ht
+#define NR_GLOBAL_FUNCS_HT global_funcs_ht
+#endif
+
+/*
+ * ZTS only: process-global staging storage for INI-originated wraprecs.
+ * INI OnModify handlers populate these at MINIT (before any request exists).
+ * At RINIT they are deep-copied into the per-request hashmaps via _replay_ini().
+ * Freed at MSHUTDOWN.
+ *
+ * NTS: no staging needed — INI handlers write directly into the runtime
+ * hashmaps (scope_ht / global_funcs_ht) via the regular _add() path.
+ */
+#ifdef ZTS
+static nr_scope_hashmap_t* ini_scope_ht = NULL;
+static nr_func_hashmap_t* ini_global_funcs_ht = NULL;
+#endif
+
 // -----------------------------------------------------------------------------
 // func hash map
 
@@ -249,9 +281,22 @@ static bool nr_scope_hashmap_fetch_internal(nr_scope_hashmap_t* hashmap, size_t 
   return false;
 }
 
+/*
+ * Purpose : Insert a new scope bucket into the scope hashmap.
+ *
+ * Params  : 1. The scope hashmap to insert into.
+ *           2. The pre-computed bucket index for the key.
+ *           3. The scope key (name, length, hash). Copied into the bucket.
+ *           4. The func hashmap to attach to the scope bucket. Caller
+ *              provides an empty hashmap for normal usage, or a
+ *              deep-copied hashmap during RINIT replay.
+ *
+ * Returns : The scoped_funcs_ht attached to the new bucket.
+ */
 static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hashmap,
                              size_t hash_key,
-                             nr_scope_hashmap_key_t* key) {
+                             nr_scope_hashmap_key_t* key,
+                             nr_func_hashmap_t* scoped_funcs_ht) {
   nr_scope_bucket_t* bucket = (nr_scope_bucket_t*)nr_malloc(sizeof(nr_scope_bucket_t));
   bucket->prev = NULL;
   bucket->next = hashmap->buckets[hash_key];
@@ -259,7 +304,7 @@ static nr_func_hashmap_t* nr_scope_hashmap_add_internal(nr_scope_hashmap_t* hash
   bucket->key->name = nr_strndup(key->name, key->name_len);
   bucket->key->name_len = key->name_len;
   bucket->key->name_hash = key->name_hash;
-  bucket->scoped_funcs_ht = nr_func_hashmap_create_internal(0);
+  bucket->scoped_funcs_ht = scoped_funcs_ht;
 
   if (hashmap->buckets[hash_key]) {
     hashmap->buckets[hash_key]->prev = bucket;
@@ -300,7 +345,8 @@ static nr_func_hashmap_t* nr_scope_hashmap_update_internal(nr_scope_hashmap_t* h
     return bucket->scoped_funcs_ht;
   }
 
-  return nr_scope_hashmap_add_internal(hashmap, hash, key);
+  return nr_scope_hashmap_add_internal(hashmap, hash, key,
+                                       nr_func_hashmap_create_internal(0));
 }
 
 static void nr_scope_hashmap_destroy_bucket_internal(nr_scope_bucket_t** bucket_ptr) {
@@ -340,9 +386,6 @@ static void nr_scope_hashmap_destroy_internal(nr_scope_hashmap_t** hashmap_ptr) 
   nr_realfree((void**)hashmap_ptr);
 }
 
-nr_func_hashmap_t* global_funcs_ht = NULL;
-nr_scope_hashmap_t* scope_ht = NULL;
-
 /* This function expects full_name and full_name_len to be validated with
  * nr_php_user_instrument_is_name_valid() before being passed in.
  * Specifically, it requires that:
@@ -380,11 +423,16 @@ static void nr_php_user_instrument_wraprec_hashmap_name2keys(
 }
 
 void nr_php_user_instrument_wraprec_hashmap_init(void) {
-  if (NULL == scope_ht) {
-    scope_ht = nr_scope_hashmap_create_internal(0);
+  if (NULL == NR_SCOPE_HT) {
+    NR_SCOPE_HT = nr_scope_hashmap_create_internal(0);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: scope_ht was not NULL", __func__);
   }
-  if (NULL == global_funcs_ht) {
-    global_funcs_ht = nr_func_hashmap_create_internal(0);
+  if (NULL == NR_GLOBAL_FUNCS_HT) {
+    NR_GLOBAL_FUNCS_HT = nr_func_hashmap_create_internal(0);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: global_funcs_ht was not NULL",
+                     __func__);
   }
 }
 
@@ -392,26 +440,33 @@ void nr_php_user_instrument_wraprec_hashmap_init(void) {
  * nr_php_user_instrument_is_name_valid() before being passed in.
  * Specifically, it requires that:
  * - namestrlen be greater than 0
- * - namestr must not be NULL and must not end with `:` (colon) . */
+ * - namestr must not be NULL and must not end with `:` (colon) .
+ *
+ * _add_into() takes explicit hashmap pointers so callers can target
+ * different hashmaps (runtime vs INI). _add() is a convenience wrapper
+ * that targets the runtime hashmaps via NR_SCOPE_HT / NR_GLOBAL_FUNCS_HT. */
 
-nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
+static nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add_into(
+    nr_scope_hashmap_t* sht,
+    nr_func_hashmap_t* ght,
+    const char* namestr,
+    size_t namestrlen) {
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
   bool is_new_wraprec = false;
   nruserfn_t* wraprec = NULL;
 
-
-  if (NULL == scope_ht || NULL == global_funcs_ht) {
+  if (NULL == sht || NULL == ght) {
     return NULL;
   }
 
   nr_php_user_instrument_wraprec_hashmap_name2keys(&func_key, &scope_key, namestr, namestrlen);
 
   if (func_key.is_method) {
-    funcs_ht = nr_scope_hashmap_update_internal(scope_ht, &scope_key);
+    funcs_ht = nr_scope_hashmap_update_internal(sht, &scope_key);
   } else {
-    funcs_ht = global_funcs_ht;
+    funcs_ht = ght;
   }
 
   if (NULL == funcs_ht) {
@@ -445,12 +500,17 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size
   return wraprec;
 }
 
+nruserfn_t* nr_php_user_instrument_wraprec_hashmap_add(const char* namestr, size_t namestrlen) {
+  return nr_php_user_instrument_wraprec_hashmap_add_into(
+      NR_SCOPE_HT, NR_GLOBAL_FUNCS_HT, namestr, namestrlen);
+}
+
 nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, zend_string *scope_name) {
   nr_scope_hashmap_key_t scope_key = {0};
   nr_func_hashmap_key_t func_key = {0};
   nr_func_hashmap_t* funcs_ht = NULL;
 
-  if (NULL == scope_ht || NULL == global_funcs_ht) {
+  if (NULL == NR_SCOPE_HT || NULL == NR_GLOBAL_FUNCS_HT) {
     return NULL;
   }
   if (NULL == func_name) {
@@ -462,9 +522,9 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, z
     scope_key.name = ZSTR_VAL(scope_name);
     scope_key.name_len = ZSTR_LEN(scope_name);
     scope_key.name_hash = ZSTR_HASH(scope_name);
-    funcs_ht = nr_scope_hashmap_lookup_internal(scope_ht, &scope_key);
+    funcs_ht = nr_scope_hashmap_lookup_internal(NR_SCOPE_HT, &scope_key);
   } else {
-    funcs_ht = global_funcs_ht;
+    funcs_ht = NR_GLOBAL_FUNCS_HT;
   }
 
   if (NULL == funcs_ht) {
@@ -479,11 +539,152 @@ nruserfn_t* nr_php_user_instrument_wraprec_hashmap_get(zend_string *func_name, z
 }
 
 void nr_php_user_instrument_wraprec_hashmap_destroy(void) {
-  if (NULL != scope_ht) {
-    nr_scope_hashmap_destroy_internal(&scope_ht);
+  if (NULL != NR_SCOPE_HT) {
+    nr_scope_hashmap_destroy_internal(&NR_SCOPE_HT);
   }
-  if (NULL != global_funcs_ht) {
-    nr_func_hashmap_destroy_internal(&global_funcs_ht);
+  if (NULL != NR_GLOBAL_FUNCS_HT) {
+    nr_func_hashmap_destroy_internal(&NR_GLOBAL_FUNCS_HT);
   }
   return;
 }
+
+/*
+ * ZTS-only INI wraprec hashmap functions.
+ *
+ * ZTS: INI handlers write into process-global ini_scope_ht / ini_global_funcs_ht
+ * at MINIT. These are deep copied into per-request hashmaps at RINIT.
+ *
+ * NTS: INI handlers write directly into the runtime hashmaps (scope_ht /
+ * global_funcs_ht) via the regular _init() / _add() functions. No separate
+ * INI storage is needed.
+ */
+
+#ifdef ZTS
+/*
+ * Deep copy a nruserfn_t's fields into a freshly created wraprec.
+ * String fields are duplicated so the copy can be freed independently.
+ * Only copies fields relevant to INI-originated wraprecs (naming flags,
+ * metric flags, function/class names, supportability metric).
+ */
+static void nr_func_wraprec_copy_fields(nruserfn_t* dst,
+                                        const nruserfn_t* src) {
+  if (NULL == dst || NULL == src) {
+    return;
+  }
+
+  dst->funcname = nr_strdup(src->funcname);
+  dst->funcnamelen = src->funcnamelen;
+  dst->funcnameLC = nr_strdup(src->funcnameLC);
+  if (src->is_method) {
+    dst->classname = nr_strdup(src->classname);
+    dst->classnamelen = src->classnamelen;
+    dst->classnameLC = nr_strdup(src->classnameLC);
+    dst->is_method = src->is_method;
+  }
+  dst->supportability_metric = nr_strdup(src->supportability_metric);
+  dst->is_names_wt_simple = src->is_names_wt_simple;
+  dst->create_metric = src->create_metric;
+  dst->is_user_added = src->is_user_added;
+}
+
+static nr_func_hashmap_t* nr_func_hashmap_deep_copy(
+    const nr_func_hashmap_t* src) {
+  nr_func_hashmap_t* dst = NULL;
+  size_t count;
+  size_t i;
+
+  if (NULL == src) {
+    return NULL;
+  }
+
+  dst = nr_func_hashmap_create_internal(src->log2_num_buckets);
+
+  count = (size_t)(1 << src->log2_num_buckets);
+  for (i = 0; i < count; i++) {
+    nr_func_bucket_t* bucket = src->buckets[i];
+
+    while (bucket) {
+      nruserfn_t* wraprec = nr_func_hashmap_add_internal(
+          dst, nr_func_hashmap_hash_key(dst->log2_num_buckets, bucket->key),
+          bucket->key);
+
+      nr_func_wraprec_copy_fields(wraprec, bucket->wraprec);
+      bucket = bucket->next;
+    }
+  }
+
+  return dst;
+}
+
+static nr_scope_hashmap_t* nr_scope_hashmap_deep_copy(
+    const nr_scope_hashmap_t* src) {
+  nr_scope_hashmap_t* dst = NULL;
+  size_t count;
+  size_t i;
+
+  if (NULL == src) {
+    return NULL;
+  }
+
+  dst = nr_scope_hashmap_create_internal(src->log2_num_buckets);
+
+  count = (size_t)(1 << src->log2_num_buckets);
+  for (i = 0; i < count; i++) {
+    nr_scope_bucket_t* bucket = src->buckets[i];
+
+    while (bucket) {
+      nr_scope_hashmap_add_internal(
+          dst,
+          nr_scope_hashmap_hash_key(dst->log2_num_buckets, bucket->key),
+          bucket->key,
+          nr_func_hashmap_deep_copy(bucket->scoped_funcs_ht));
+
+      bucket = bucket->next;
+    }
+  }
+
+  return dst;
+}
+void nr_php_user_instrument_wraprec_hashmap_ini_init(void) {
+  if (NULL == ini_scope_ht) {
+    ini_scope_ht = nr_scope_hashmap_create_internal(0);
+  }
+  if (NULL == ini_global_funcs_ht) {
+    ini_global_funcs_ht = nr_func_hashmap_create_internal(0);
+  }
+}
+
+nruserfn_t* nr_php_user_instrument_wraprec_hashmap_ini_add(
+    const char* namestr,
+    size_t namestrlen) {
+  return nr_php_user_instrument_wraprec_hashmap_add_into(
+      ini_scope_ht, ini_global_funcs_ht, namestr, namestrlen);
+}
+
+void nr_php_user_instrument_wraprec_hashmap_ini_destroy(void) {
+  if (NULL != ini_scope_ht) {
+    nr_scope_hashmap_destroy_internal(&ini_scope_ht);
+  }
+  if (NULL != ini_global_funcs_ht) {
+    nr_func_hashmap_destroy_internal(&ini_global_funcs_ht);
+  }
+}
+
+void nr_php_user_instrument_wraprec_hashmap_replay_ini(void) {
+  if (NULL == NR_SCOPE_HT) {
+    NR_SCOPE_HT = nr_scope_hashmap_deep_copy(ini_scope_ht);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: scope_ht was not NULL before replay",
+                     __func__);
+  }
+  if (NULL == NR_GLOBAL_FUNCS_HT) {
+    NR_GLOBAL_FUNCS_HT = nr_func_hashmap_deep_copy(ini_global_funcs_ht);
+  } else {
+    nrl_verbosedebug(NRL_INSTRUMENT,
+                     "%s: global_funcs_ht was not NULL before replay",
+                     __func__);
+  }
+}
+#endif /* ZTS */
+
+#endif /* ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO */

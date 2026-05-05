@@ -12,6 +12,7 @@
 #include "php_globals.h"
 #include "php_internal_instrument.h"
 #include "php_user_instrument.h"
+#include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
 #include "nr_agent.h"
 #include "util_logging.h"
@@ -57,7 +58,20 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
 
   nr_php_remove_opcode_handlers();
   nr_php_destroy_internal_wrap_records();
+  /*
+   * Mirrors MINIT hashmap creation for teardown.
+   *
+   * ZTS frees the process-global INI staging hashmaps (ini_scope_ht /
+   * ini_global_funcs_ht); per-request copies were already freed at RSHUTDOWN.
+   *
+   * NTS frees persistent wraprecs via nr_php_destroy_user_wrap_records which
+   * handles the PHP < 8.0 linked list and PHP 8+ file-scoped hashmaps.
+   */
+#ifdef ZTS
+  nr_php_user_instrument_wraprec_hashmap_ini_destroy();
+#else
   nr_php_destroy_user_wrap_records();
+#endif
   nr_php_global_destroy();
   nr_applist_destroy(&nr_agent_applist);
 

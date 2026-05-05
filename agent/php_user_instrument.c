@@ -461,7 +461,7 @@ static int nr_php_user_wraprec_is_match(const nruserfn_t* w1,
 #endif
 
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
-static nruserfn_t* nr_transient_wraprecs = NULL; /* a singly linked list */
+/* global nr_transient_wraprecs was removed for ZTS support */
 #else
 static nruserfn_t* nr_wrapped_user_functions = NULL; /* a singly linked list */
 #endif
@@ -470,11 +470,11 @@ static void nr_php_add_custom_tracer_common(nruserfn_t* wraprec) {
   /* Add the wraprecord to the list. */
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
   if (wraprec->is_transient) {
-    /* Transient (unnamed) wraprecs are not added to wraprec hashmap which only
-     * stores named wraprecs. Keep track of all transient wraprecs so that they
-     * can be destroyed at the end of the request. */
-    wraprec->next = nr_transient_wraprecs;
-    nr_transient_wraprecs = wraprec;
+    /* Transient (unnamed) wraprecs are not added to wraprec hashmap which only stores named
+     * wraprecs. Keep track of all transient wraprecs so that they can be destroyed at the
+     * end of the request. */
+    wraprec->next = NRPRG(transient_wraprecs);
+    NRPRG(transient_wraprecs) = wraprec;
     return;
   }
 #endif
@@ -608,11 +608,10 @@ nruserfn_t* nr_php_add_custom_tracer_named(const char* namestr,
  */
 void nr_php_reset_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  /* No need to do anything at rshutdown:
-   *  - Observer API takes care of resetting user instrumentation for each
-   * request
-   *  - All named wraprecs ever created persist in wraprec hashmap until
-   * mshutdown
+  /* No wraprec reset needed in this function for PHP 8+:
+   *  - Observer API re-registers instrumentation each request automatically
+   *  - Non-ZTS: named wraprecs persist in hashmap until MSHUTDOWN
+   *  - ZTS: per-request hashmaps are destroyed in nr_php_post_deactivate()
    */
   return;
 #elif ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
@@ -641,13 +640,13 @@ void nr_php_reset_user_instrumentation(void) {
  */
 void nr_php_remove_transient_user_instrumentation(void) {
 #if ZEND_MODULE_API_NO > ZEND_7_4_X_API_NO
-  nruserfn_t* p = nr_transient_wraprecs;
+  nruserfn_t* p = NRPRG(transient_wraprecs);
   while (p) {
     nruserfn_t* wraprec = p;
     p = wraprec->next;
     nr_php_user_wraprec_destroy(&wraprec);
   }
-  nr_transient_wraprecs = NULL;
+  NRPRG(transient_wraprecs) = NULL;
 #endif
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   nruserfn_t* p = nr_wrapped_user_functions;
