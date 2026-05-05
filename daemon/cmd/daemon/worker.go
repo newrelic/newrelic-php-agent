@@ -72,7 +72,7 @@ func runWorker(cfg *Config) {
 
 		// Publish version info.
 		versionInfo := &struct{ Number, Build string }{version.Number, version.Commit}
-		expvar.Publish("version", expvar.Func(func() interface{} { return versionInfo }))
+		expvar.Publish("version", expvar.Func(func() any { return versionInfo }))
 
 		go func() {
 			err := http.ListenAndServe(addr, nil)
@@ -112,10 +112,11 @@ func runWorker(cfg *Config) {
 	}
 
 	p := newrelic.NewProcessor(newrelic.ProcessorConfig{
-		Client:          client,
-		IntegrationMode: cfg.IntegrationMode,
-		UtilConfig:      cfg.MakeUtilConfig(),
-		AppTimeout:      time.Duration(cfg.AppTimeout),
+		Client:            client,
+		IntegrationMode:   cfg.IntegrationMode,
+		IntegrationFormat: cfg.IntegrationFormat,
+		UtilConfig:        cfg.MakeUtilConfig(),
+		AppTimeout:        time.Duration(cfg.AppTimeout),
 	})
 	go processTxnData(errorChan, p)
 
@@ -359,13 +360,10 @@ func raiseFileLimit(n uint64) {
 		}
 	}
 
-	softLimit = n
-
-	// Ensure softLimit = min(n, hardLimit). We may have failed to raise
-	// the hard limit to be greater than or equal to n above.
-	if softLimit > hardLimit {
-		softLimit = hardLimit
-	}
+	softLimit = min(
+		// Ensure softLimit = min(n, hardLimit). We may have failed to raise
+		// the hard limit to be greater than or equal to n above.
+		n, hardLimit)
 
 	err = setFileLimits(softLimit, hardLimit)
 	if err != nil {

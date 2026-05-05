@@ -104,13 +104,11 @@ func Gather(config Config) *Data {
 	// and wait for them at the end by closing over the wg WaitGroup we
 	// instantiated at the start of the function.
 	goGather := func(gather func(util *Data) error, util *Data) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := gather(util); err != nil {
 				log.Debugf("%s", err)
 			}
-		}()
+		})
 	}
 
 	// System things we gather no matter what.
@@ -147,11 +145,9 @@ func Gather(config Config) *Data {
 		goGather(GatherPCF, uDat)
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		uDat.FullHostname = getFQDN(uDat.Addresses)
-	}()
+	})
 
 	if config.DetectKubernetes {
 		if err_k8s := GatherKubernetes(uDat.Vendors, os.Getenv); err_k8s != nil {

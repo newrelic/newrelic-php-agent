@@ -36,12 +36,12 @@ func (h ErrorHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 // Push appends x to the collection. This method should not be called
 // directly because it does not enforce the maximum capacity. Use AddError
 // instead.
-func (h *ErrorHeap) Push(x interface{}) {
+func (h *ErrorHeap) Push(x any) {
 	*h = append(*h, x.(*Error))
 }
 
 // Pop removes the lowest priority element from the error heap.
-func (h *ErrorHeap) Pop() interface{} {
+func (h *ErrorHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]
@@ -87,7 +87,7 @@ func (h *ErrorHeap) Empty() bool {
 // Data marshals the collection to JSON according to the schema expected
 // by the collector.
 func (h *ErrorHeap) Data(id AgentRunID, harvestStart time.Time) ([]byte, error) {
-	return json.Marshal([]interface{}{id, *h})
+	return json.Marshal([]any{id, *h})
 }
 
 // Audit marshals the collection to JSON according to the schema

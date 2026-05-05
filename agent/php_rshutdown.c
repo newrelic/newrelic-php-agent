@@ -111,49 +111,49 @@ int nr_php_post_deactivate(void) {
   nrl_verbosedebug(NRL_INSTRUMENT, "%s: destroyed wraprec hashmaps", __func__);
 #endif
 
-  nr_php_exception_filters_destroy(&NRPRG(exception_filters));
+  nr_php_exception_filters_destroy(&NRPRG_SHARED(exception_filters));
 
-  nr_matcher_destroy(&NRPRG(wordpress_plugin_matcher));
-  nr_matcher_destroy(&NRPRG(wordpress_core_matcher));
-  nr_matcher_destroy(&NRPRG(wordpress_theme_matcher));
-  nr_hashmap_destroy(&NRPRG(wordpress_file_metadata));
-  nr_hashmap_destroy(&NRPRG(wordpress_clean_tag_cache));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_plugin_matcher));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_core_matcher));
+  nr_matcher_destroy(&NRPRG_SHARED(wordpress_theme_matcher));
+  nr_hashmap_destroy(&NRPRG_SHARED(wordpress_file_metadata));
+  nr_hashmap_destroy(&NRPRG_SHARED(wordpress_clean_tag_cache));
 
-  nr_free(NRPRG(mysql_last_conn));
-  nr_free(NRPRG(pgsql_last_conn));
-  nr_hashmap_destroy(&NRPRG(datastore_connections));
+  nr_free(NRPRG_CTX(mysql_last_conn));
+  nr_free(NRPRG_CTX(pgsql_last_conn));
+  nr_hashmap_destroy(&NRPRG_CTX(datastore_connections));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
-     && !defined OVERWRITE_ZEND_EXECUTE_DATA
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*
    * Pre-OAPI, this variables were kept on the call stack and
    * therefore had no need to be in an nr_stack
    */
-  nr_stack_destroy_fields(&NRPRG(wordpress_tags));
-  nr_stack_destroy_fields(&NRPRG(wordpress_tag_states));
-  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_hooks));
-  nr_stack_destroy_fields(&NRPRG(drupal_invoke_all_states));
+  nr_stack_destroy_fields(&NRPRG_CTX(wordpress_tags));
+  nr_stack_destroy_fields(&NRPRG_CTX(wordpress_tag_states));
+  nr_stack_destroy_fields(&NRPRG_CTX(drupal_invoke_all_hooks));
+  nr_stack_destroy_fields(&NRPRG_CTX(drupal_invoke_all_states));
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_stack_destroy_fields(&NRPRG(predis_ctxs));
+  nr_stack_destroy_fields(&NRPRG_CTX(predis_ctxs));
 #else
-  nr_free(NRPRG(predis_ctx));
+  nr_free(NRPRG_CTX(predis_ctx));
 #endif /* OAPI */
-  nr_hashmap_destroy(&NRPRG(predis_commands));
+  nr_hashmap_destroy(&NRPRG_CTX(predis_commands));
 
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   nr_php_reset_user_instrumentation();
 #else
-  nr_vector_destroy(&NRPRG(user_function_wrappers));
+  nr_vector_destroy(&NRPRG_SHARED(user_function_wrappers));
 #endif
 
-  NRPRG(cufa_callback) = NULL;
+  NRPRG_CTX(cufa_callback) = NULL;
 
-  NRPRG(current_framework) = NR_FW_UNSET;
+  NRPRG_SHARED(current_framework) = NR_FW_UNSET;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(drupal_http_request_segment) = NULL;
+  NRPRG_CTX(drupal_http_request_segment) = NULL;
 #endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");

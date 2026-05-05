@@ -37,7 +37,7 @@ type stateFn func(*Decoder, reflect.Value) (next stateFn, err error)
 
 // ParseFile parses the configuration in the file specified by name and
 // stores the result in the value pointed to by v.
-func ParseFile(name string, v interface{}) error {
+func ParseFile(name string, v any) error {
 	f, err := os.Open(name)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func ParseFile(name string, v interface{}) error {
 
 // ParseString parses the configuration in s and stores the result in
 // the value pointed to by v.
-func ParseString(s string, v interface{}) error {
+func ParseString(s string, v any) error {
 	d := Decoder{r: bufio.NewReader(strings.NewReader(s))}
 	return d.Decode(v)
 }
@@ -72,9 +72,9 @@ func NewDecoder(r io.Reader) *Decoder {
 //	DQUOTED = '"' .* '"'
 //	RAW     = .* EOL
 //	COMMENT = ('#' / ';') .* EOL
-func (d *Decoder) Decode(v interface{}) (err error) {
+func (d *Decoder) Decode(v any) (err error) {
 	val := reflect.ValueOf(v)
-	if val.Kind() != reflect.Ptr {
+	if val.Kind() != reflect.Pointer {
 		return errors.New("non-pointer passed to Decode")
 	}
 	val = val.Elem()
@@ -372,7 +372,7 @@ func getTypeInfo(t reflect.Type) typeInfo {
 		}
 
 		ft := field.Type
-		if ft.Kind() == reflect.Ptr {
+		if ft.Kind() == reflect.Pointer {
 			ft = t.Elem()
 		}
 
@@ -393,11 +393,11 @@ func getTypeInfo(t reflect.Type) typeInfo {
 // FlagParserShim is a flag.Value that unmarshals flag values using
 // ParseString()
 type FlagParserShim struct {
-	v interface{}
+	v any
 }
 
 // NewFlagParserShim creates a FlagParserShim from a pointer.
-func NewFlagParserShim(v interface{}) *FlagParserShim {
+func NewFlagParserShim(v any) *FlagParserShim {
 	return &FlagParserShim{v}
 }
 

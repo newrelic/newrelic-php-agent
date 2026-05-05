@@ -18,8 +18,8 @@
  * - Non-ZTS: file-scoped statics (created at MINIT, destroyed at MSHUTDOWN)
  */
 #ifdef ZTS
-#define NR_SCOPE_HT NRPRG(scope_ht)
-#define NR_GLOBAL_FUNCS_HT NRPRG(global_funcs_ht)
+#define NR_SCOPE_HT NRPRG_SHARED(scope_ht)
+#define NR_GLOBAL_FUNCS_HT NRPRG_SHARED(global_funcs_ht)
 #else
 static nr_scope_hashmap_t* scope_ht = NULL;
 static nr_func_hashmap_t* global_funcs_ht = NULL;

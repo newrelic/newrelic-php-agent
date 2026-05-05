@@ -6,7 +6,7 @@
 package collector
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -124,7 +124,7 @@ func TestCollectorRequest(t *testing.T) {
 				testField("zip", r.Header.Get("zip"), "zap")
 				return &http.Response{
 					StatusCode: 200,
-					Body:       ioutil.NopCloser(strings.NewReader("{\"Body\": 0}")),
+					Body:       io.NopCloser(strings.NewReader("{\"Body\": 0}")),
 				}, nil
 			}),
 		},
@@ -157,7 +157,7 @@ func TestCollectorBadRequest(t *testing.T) {
 			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
-					Body:       ioutil.NopCloser(strings.NewReader("body")),
+					Body:       io.NopCloser(strings.NewReader("body")),
 				}, nil
 			}),
 		},

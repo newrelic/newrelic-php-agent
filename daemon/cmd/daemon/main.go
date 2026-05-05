@@ -11,7 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,7 +51,7 @@ func createDaemonFlagSet(cfg *Config) *DaemonFlagSet {
 	flagSet := flag.NewFlagSet("", flag.ContinueOnError)
 	// This prevents parsing errors from being printed. Instead, we'll print
 	// those ourselves.
-	flagSet.SetOutput(ioutil.Discard)
+	flagSet.SetOutput(io.Discard)
 
 	// Print an empty string instead of the default usage if the initial flags
 	// fail to parse. If it failed because of -h or -help flags, we'll print it
@@ -75,6 +75,7 @@ func createDaemonFlagSet(cfg *Config) *DaemonFlagSet {
 	flagSet.StringVar(&cfg.CAFile, "cafile", cfg.CAFile, "")
 	flagSet.StringVar(&cfg.CAPath, "capath", cfg.CAPath, "")
 	flagSet.BoolVar(&cfg.IntegrationMode, "integration", cfg.IntegrationMode, "")
+	flagSet.StringVar(&cfg.IntegrationFormat, "integration-format", cfg.IntegrationFormat, "")
 	flagSet.IntVar(&cfg.PProfPort, "pprof", cfg.PProfPort, "")
 	flagSet.BoolVar(&printVersion, "version", false, "")
 	flagSet.BoolVar(&printVersion, "v", false, "")
@@ -249,6 +250,7 @@ type Config struct {
 	CAPath             string         `config:"ssl_ca_path"`                    // Path to a directory of root CA certificates.
 	CAFile             string         `config:"ssl_ca_bundle"`                  // Path to a file containing a bundle of root CA certificates.
 	IntegrationMode    bool           `config:"-"`                              // Whether to log integration test output
+	IntegrationFormat  string         `config:"-"`                              // Format for integration log output ("" or "seq")
 	AppTimeout         config.Timeout `config:"app_timeout"`                    // Inactivity timeout for applications.
 	WaitForPort        time.Duration  `config:"wait_for_port"`                  // How long to wait for the worker process to open a port.
 }
@@ -384,7 +386,7 @@ func main() {
 
 func createLegacyFlagSet(cfg *Config) *flag.FlagSet {
 	legacyFlagSet := flag.NewFlagSet("", flag.ContinueOnError)
-	legacyFlagSet.SetOutput(ioutil.Discard)
+	legacyFlagSet.SetOutput(io.Discard)
 	legacyFlagSet.Usage = func() { fmt.Fprint(os.Stderr, "") }
 
 	legacyFlagSet.StringVar(&cfg.ConfigFile, "c", cfg.ConfigFile, "config file location")
@@ -643,7 +645,7 @@ type borkedSyscallError string
 func (e borkedSyscallError) Error() string {
 	version := "unknown"
 	if runtime.GOOS == "linux" {
-		if v, err := ioutil.ReadFile("/proc/sys/kernel/osrelease"); err == nil {
+		if v, err := os.ReadFile("/proc/sys/kernel/osrelease"); err == nil {
 			version = string(v)
 		}
 	}

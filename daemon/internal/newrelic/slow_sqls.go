@@ -132,7 +132,7 @@ func (slows *SlowSQLs) Observe(slow *SlowSQL) {
 	slows.slowSQLs = append(slows.slowSQLs, slow)
 }
 
-func (slow *SlowSQL) collectorParams(compressEncode bool) interface{} {
+func (slow *SlowSQL) collectorParams(compressEncode bool) any {
 	if !compressEncode {
 		return slow.Params
 	}
@@ -140,8 +140,8 @@ func (slow *SlowSQL) collectorParams(compressEncode bool) interface{} {
 	return p
 }
 
-func (slow *SlowSQL) collectorJSON(compressEncode bool) []interface{} {
-	return []interface{}{
+func (slow *SlowSQL) collectorJSON(compressEncode bool) []any {
+	return []any{
 		slow.TxnName,
 		slow.TxnURL,
 		slow.ID,
@@ -163,13 +163,13 @@ func (slow *SlowSQL) collectorJSON(compressEncode bool) []interface{} {
 // its use in the other commands' JSON is admittedly redundant,
 // although required.
 func (slows *SlowSQLs) CollectorJSON(compressEncode bool) ([]byte, error) {
-	inner := make([][]interface{}, len(slows.slowSQLs))
+	inner := make([][]any, len(slows.slowSQLs))
 
 	for i, s := range slows.slowSQLs {
 		inner[i] = s.collectorJSON(compressEncode)
 	}
 
-	outer := [...]interface{}{inner}
+	outer := [...]any{inner}
 
 	return json.Marshal(outer)
 }

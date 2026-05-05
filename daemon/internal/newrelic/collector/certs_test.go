@@ -4,7 +4,6 @@
 //
 
 //go:build collector
-// +build collector
 
 package collector
 

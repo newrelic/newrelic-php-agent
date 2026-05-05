@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 )
 
 func Compress(b []byte) (*bytes.Buffer, error) {
@@ -33,7 +33,7 @@ func Uncompress(b []byte) ([]byte, error) {
 	}
 	defer r.Close()
 
-	return ioutil.ReadAll(r)
+	return io.ReadAll(r)
 }
 
 func CompressEncode(b []byte) (string, error) {

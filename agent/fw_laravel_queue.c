@@ -380,8 +380,10 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_after) {
       ZVAL_OBJ(&exception, EG(exception));
       nr_status_t st;
       st = nr_php_error_record_exception(
-          NRPRG(txn), &exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION, false /* add to segment */,
-          "Unhandled exception within Laravel Queue job: ", &NRPRG(exception_filters));
+          NRPRG(txn), &exception, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
+          false /* add to segment */,
+          "Unhandled exception within Laravel Queue job: ",
+          &NRPRG_SHARED(exception_filters));
 
       if (NR_FAILURE == st) {
         nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception",
@@ -681,7 +683,7 @@ NR_PHP_WRAPPER(nr_laravel_queue_worker_process) {
     nr_php_error_record_exception(
         NRPRG(txn), exception_zval, NR_PHP_ERROR_PRIORITY_UNCAUGHT_EXCEPTION,
         true, "Unhandled exception within Laravel Queue job: ",
-        &NRPRG(exception_filters) TSRMLS_CC);
+        &NRPRG_SHARED(exception_filters) TSRMLS_CC);
   }
 
   nr_php_arg_release(&connection);

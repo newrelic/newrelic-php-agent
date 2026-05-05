@@ -8,7 +8,7 @@ package integration
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -232,7 +232,7 @@ func acceptOneReport(timeout time.Duration) (*valgrind.Report, error) {
 	defer conn.Close()
 	conn.SetReadDeadline(deadline)
 
-	output, err := ioutil.ReadAll(conn)
+	output, err := io.ReadAll(conn)
 	if err != nil {
 		return nil, err
 	}

@@ -48,28 +48,28 @@ PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
 
-  NRPRG(current_framework) = NR_FW_UNSET;
-  NRPRG(php_cur_stack_depth) = 0;
-  NRPRG(deprecated_capture_request_parameters) = NRINI(capture_params);
-  NRPRG(sapi_headers) = NULL;
-  NRPRG(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(current_framework) = NR_FW_UNSET;
+  NRPRG_CTX(php_cur_stack_depth) = 0;
+  NRPRG_CTX(deprecated_capture_request_parameters) = NRINI(capture_params);
+  NRPRG_SHARED(sapi_headers) = NULL;
+  NRPRG_CTX(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(drupal_http_request_segment) = NULL;
-  NRPRG(drupal_http_request_depth) = 0;
+  NRPRG_CTX(drupal_http_request_segment) = NULL;
+  NRPRG_CTX(drupal_http_request_depth) = 0;
 #endif
 #else
-  NRPRG(pid) = nr_getpid();
-  NRPRG(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
+  NRPRG_SHARED(pid) = nr_getpid();
+  NRPRG_SHARED(user_function_wrappers) = nr_vector_create(64, NULL, NULL);
 #endif
 
   /* initialization of transient wraprecs which are per request globals */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
-  NRPRG(transient_wraprecs) = NULL;
+  NRPRG_SHARED(transient_wraprecs) = NULL;
   nrl_verbosedebug(NRL_INSTRUMENT, "%s: initialized transient_wraprecs to NULL",
                    __func__);
 
@@ -93,8 +93,8 @@ PHP_RINIT_FUNCTION(newrelic) {
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing started");
 
-  nr_php_exception_filters_init(&NRPRG(exception_filters));
-  nr_php_exception_filters_add(&NRPRG(exception_filters),
+  nr_php_exception_filters_init(&NRPRG_SHARED(exception_filters));
+  nr_php_exception_filters_add(&NRPRG_SHARED(exception_filters),
                                nr_php_ignore_exceptions_ini_filter);
 
   /*
@@ -121,12 +121,12 @@ PHP_RINIT_FUNCTION(newrelic) {
    * happened.
    */
   if ((NR_PHP_PROCESS_GLOBALS(instrument_extensions))
-      && (NULL == NRPRG(extensions))) {
-    NRPRG(extensions) = nr_php_extension_instrument_create();
-    nr_php_extension_instrument_rescan(NRPRG(extensions) TSRMLS_CC);
+      && (NULL == NRPRG_SHARED(extensions))) {
+    NRPRG_SHARED(extensions) = nr_php_extension_instrument_create();
+    nr_php_extension_instrument_rescan(NRPRG_SHARED(extensions) TSRMLS_CC);
   }
 
-  NRPRG(check_cufa) = false;
+  NRPRG_CTX(check_cufa) = false;
 
   /*
    * Pre-OAPI, this variables were kept on the call stack and
@@ -134,19 +134,20 @@ PHP_RINIT_FUNCTION(newrelic) {
    */
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  NRPRG(check_cufa) = false;
-  nr_stack_init(&NRPRG(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRPRG(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRPRG(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRPRG(drupal_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_init(&NRPRG(drupal_invoke_all_states), NR_STACK_DEFAULT_CAPACITY);
-  NRPRG(predis_ctxs).dtor = str_stack_dtor;
-  NRPRG(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
+  NRPRG_CTX(check_cufa) = false;
+  nr_stack_init(&NRPRG_CTX(predis_ctxs), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(wordpress_tags), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(wordpress_tag_states), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(drupal_invoke_all_hooks), NR_STACK_DEFAULT_CAPACITY);
+  nr_stack_init(&NRPRG_CTX(drupal_invoke_all_states),
+                NR_STACK_DEFAULT_CAPACITY);
+  NRPRG_CTX(predis_ctxs).dtor = str_stack_dtor;
+  NRPRG_CTX(drupal_invoke_all_hooks).dtor = zval_stack_dtor;
 #endif
 
-  NRPRG(mysql_last_conn) = NULL;
-  NRPRG(pgsql_last_conn) = NULL;
-  NRPRG(datastore_connections) = nr_hashmap_create(
+  NRPRG_CTX(mysql_last_conn) = NULL;
+  NRPRG_CTX(pgsql_last_conn) = NULL;
+  NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
 
   nr_php_txn_begin(0, 0 TSRMLS_CC);
