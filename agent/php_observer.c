@@ -133,7 +133,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
-    nrl_warning(NRL_INSTRUMENT,
+    nrl_verbosedebug(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
     nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
                   0);
@@ -145,7 +145,7 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
                                     zend_fiber_context* to) {
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
-    nrl_warning(NRL_INSTRUMENT,
+    nrl_verbosedebug(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
     nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
                   0);
