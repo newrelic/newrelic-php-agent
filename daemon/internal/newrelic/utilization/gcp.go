@@ -8,7 +8,7 @@ package utilization
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -111,7 +111,7 @@ func (g *gcp) Gather() (ret error) {
 		return fmt.Errorf("got response code %d", response.StatusCode)
 	}
 
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

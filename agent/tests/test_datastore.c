@@ -34,7 +34,7 @@ static void test_has_conn(TSRMLS_D) {
                          nr_php_datastore_has_conn("foo" TSRMLS_CC));
 
   instance = nr_datastore_instance_create("host", "port", "database");
-  nr_hashmap_set(NRPRG(datastore_connections), NR_PSTR("foo"), instance);
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), NR_PSTR("foo"), instance);
   tlib_fail_if_int_equal("found key", 0,
                          nr_php_datastore_has_conn("foo" TSRMLS_CC));
 
@@ -47,7 +47,7 @@ static void test_instance_remove(TSRMLS_D) {
   tlib_php_request_start();
 
   instance = nr_datastore_instance_create("host", "port", "database");
-  nr_hashmap_set(NRPRG(datastore_connections), NR_PSTR("foo"), instance);
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), NR_PSTR("foo"), instance);
 
   /*
    * Test : Invalid parameters. In this case, we're just looking for not
@@ -55,26 +55,26 @@ static void test_instance_remove(TSRMLS_D) {
    */
   nr_php_datastore_instance_remove(NULL TSRMLS_CC);
   tlib_pass_if_size_t_equal("invalid parameters", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   /*
    * Test : Normal operation.
    */
   nr_php_datastore_instance_remove("" TSRMLS_CC);
   tlib_pass_if_size_t_equal("blank key", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_datastore_instance_remove("bar" TSRMLS_CC);
   tlib_pass_if_size_t_equal("missing key", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_datastore_instance_remove("foo" TSRMLS_CC);
   tlib_pass_if_size_t_equal("found key", 0,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_datastore_instance_remove("foo" TSRMLS_CC);
   tlib_pass_if_size_t_equal("duplicate call", 0,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   tlib_php_request_end();
 }
@@ -99,7 +99,7 @@ static void test_instance_retrieve(TSRMLS_D) {
                     nr_php_datastore_instance_retrieve("foo" TSRMLS_CC));
 
   instance = nr_datastore_instance_create("host", "port", "database");
-  nr_hashmap_set(NRPRG(datastore_connections), NR_PSTR("foo"), instance);
+  nr_hashmap_set(NRPRG_CTX(datastore_connections), NR_PSTR("foo"), instance);
   tlib_pass_if_ptr_equal("found key", instance,
                          nr_php_datastore_instance_retrieve("foo" TSRMLS_CC));
 
@@ -123,23 +123,24 @@ static void test_instance_save(TSRMLS_D) {
   nr_php_datastore_instance_save(NULL, a TSRMLS_CC);
 
   tlib_pass_if_size_t_equal("invalid parameters", 0,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   /*
    * Test : Normal operation.
    */
   nr_php_datastore_instance_save("foo", a TSRMLS_CC);
   tlib_pass_if_ptr_equal(
-      "set", a, nr_hashmap_get(NRPRG(datastore_connections), NR_PSTR("foo")));
+      "set", a,
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), NR_PSTR("foo")));
   tlib_pass_if_size_t_equal("set", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   nr_php_datastore_instance_save("foo", b TSRMLS_CC);
   tlib_pass_if_ptr_equal(
       "overwrite", b,
-      nr_hashmap_get(NRPRG(datastore_connections), NR_PSTR("foo")));
+      nr_hashmap_get(NRPRG_CTX(datastore_connections), NR_PSTR("foo")));
   tlib_pass_if_size_t_equal("overwrite", 1,
-                            nr_hashmap_count(NRPRG(datastore_connections)));
+                            nr_hashmap_count(NRPRG_CTX(datastore_connections)));
 
   tlib_php_request_end();
 }
@@ -191,7 +192,6 @@ static void test_make_key(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_has_conn(TSRMLS_C);

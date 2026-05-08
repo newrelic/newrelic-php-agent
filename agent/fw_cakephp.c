@@ -88,7 +88,8 @@ NR_PHP_WRAPPER(nr_cakephp_name_the_wt_4) {
   action_zval = nr_php_call(request, "getParam", &action_param);
   zval_dtor(&action_param);
   if (!nr_php_is_zval_non_empty_string(action_zval)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "CakePHP: no action param found in request");
+    nrl_verbosedebug(NRL_FRAMEWORK,
+                     "CakePHP: no action param found in request");
     goto end;
   } else {
     alen = Z_STRLEN_P(action_zval);
@@ -149,13 +150,13 @@ NR_PHP_WRAPPER(nr_cakephp_error_handler_wrapper) {
   if (NR_SUCCESS
       != nr_php_error_record_exception(
           NRPRG(txn), exception, nr_php_error_get_priority(E_ERROR), true,
-          "Uncaught exception ", &NRPRG(exception_filters))) {
+          "Uncaught exception ", &NRPRG_SHARED(exception_filters))) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: unable to record exception", __func__);
   }
 
   if (NULL != request_uri) {
-    nr_txn_set_path("CakePHP Exception", NRPRG(txn), request_uri, NR_PATH_TYPE_URI,
-                    NR_OK_TO_OVERWRITE);
+    nr_txn_set_path("CakePHP Exception", NRPRG(txn), request_uri,
+                    NR_PATH_TYPE_URI, NR_OK_TO_OVERWRITE);
   } else {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: request uri is NULL", __func__);
   }

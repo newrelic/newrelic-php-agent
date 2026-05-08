@@ -61,7 +61,7 @@ type AppInfo struct {
 	AgentLanguage             string
 	AgentVersion              string
 	HostDisplayName           string
-	Settings                  map[string]interface{}
+	Settings                  map[string]any
 	Environment               JSONString
 	HighSecurity              bool
 	Labels                    JSONString
@@ -98,7 +98,7 @@ type RawConnectPayload struct {
 	Version            string                       `json:"agent_version"`
 	Host               string                       `json:"host"`
 	HostDisplayName    string                       `json:"display_host,omitempty"`
-	Settings           map[string]interface{}       `json:"settings"`
+	Settings           map[string]any               `json:"settings"`
 	AppName            []string                     `json:"app_name"`
 	HighSecurity       bool                         `json:"high_security"`
 	Labels             JSONString                   `json:"labels"`
@@ -185,7 +185,7 @@ func NewApp(info *AppInfo) *App {
 	}
 }
 
-func EncodePayload(payload interface{}) ([]byte, error) {
+func EncodePayload(payload any) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	buf.Grow(2048)
 	buf.WriteByte('[')
@@ -282,14 +282,14 @@ func (info *AppInfo) ConnectPayload(util *utilization.Data) *RawConnectPayload {
 }
 
 func (info *AppInfo) initSettings(data []byte) {
-	var dataDec interface{}
+	var dataDec any
 
 	err := json.Unmarshal(data, &dataDec)
 	if err != nil {
 		return
 	}
 
-	dataMap, ok := dataDec.(map[string]interface{})
+	dataMap, ok := dataDec.(map[string]any)
 	if ok {
 		info.Settings = dataMap
 	}
@@ -369,7 +369,7 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 
 	var pkgKey PhpPackagesKey
 	var newPkgs []PhpPackagesKey
-	var x []interface{}
+	var x []any
 
 	err := json.Unmarshal(data, &x)
 	if nil != err {
@@ -378,7 +378,7 @@ func (app *App) filterPhpPackages(data []byte) []byte {
 	}
 
 	for _, pkgJson := range x {
-		pkg, _ := pkgJson.([]interface{})
+		pkg, _ := pkgJson.([]any)
 		if len(pkg) != 3 {
 			log.Errorf("invalid php package json structure: %+v", pkg)
 			return nil

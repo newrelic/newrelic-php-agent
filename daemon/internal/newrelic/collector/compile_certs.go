@@ -4,7 +4,6 @@
 //
 
 //go:build ignore
-// +build ignore
 
 // compile-certs generates the New Relic Root CA Bundle.
 package main
@@ -21,7 +20,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -43,7 +42,7 @@ func main() {
 	}
 
 	//certArchive, err := download(caRootURL)
-	certArchive, err := ioutil.ReadFile(os.Args[1])
+	certArchive, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +73,7 @@ func download(url string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 func extract(data []byte) (string, error) {
@@ -95,7 +94,7 @@ func extract(data []byte) (string, error) {
 			return "", err
 		}
 
-		rawCert, err := ioutil.ReadAll(pemFile)
+		rawCert, err := io.ReadAll(pemFile)
 		if err != nil {
 			pemFile.Close()
 			return "", err
@@ -177,7 +176,7 @@ func generateTests() error {
 		return err
 	}
 
-	return ioutil.WriteFile("certs_test.go", formatted, 0644)
+	return os.WriteFile("certs_test.go", formatted, 0644)
 }
 
 var certBundleTmpl = `

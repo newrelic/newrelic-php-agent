@@ -11,7 +11,7 @@
 /*
  * If we are using OAPI, we do not want to modify any opcodes
  */
-#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO \
+#if ZEND_MODULE_API_NO >= ZEND_7_2_X_API_NO      \
     && !(ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
          && !defined OVERWRITE_ZEND_EXECUTE_DATA) /* PHP 7.2+ and not OAPI */
 
@@ -88,7 +88,7 @@ static void nr_php_set_opcode_handler(zend_uchar opcode,
  *           the Zend Engine should execute the opline normally.
  */
 static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
-  nrphpcufafn_t cufa_callback = NRPRG(cufa_callback);
+  nrphpcufafn_t cufa_callback = NRPRG_CTX(cufa_callback);
   zend_uchar opcode;
   nr_php_opcode_handler_entry_t prev_handler;
   const zend_op* prev_opline;
@@ -117,7 +117,7 @@ static int nr_php_handle_cufa_fcall(zend_execute_data* execute_data) {
    * If we don't have instrumented hooks that require this, skip to the
    * end.
    */
-  if (false == NRPRG(check_cufa)) {
+  if (false == NRPRG_CTX(check_cufa)) {
     goto call_previous_and_return;
   }
 

@@ -268,10 +268,10 @@ func BenchmarkMetricTableCollectorJSON(b *testing.B) {
 	mt.AddRaw(nil, "Datastore/allWeb", "", [6]float64{56260, 26.704100000000004, 26.704100000000004, 2e-05, 0.22667, 0.99884}, Forced)
 	mt.AddRaw(nil, "Datastore/operation/MySQL/insert", "", [6]float64{53000, 23.411430000000006, 23.411430000000006, 4e-05, 0.22667, 0.6342200000000001}, Forced)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		scope := "WebTransaction/Uri/myblog2/" + strconv.Itoa(i)
 
-		for j := 0; j < 20; j++ {
+		for j := range 20 {
 			name := "Datastore/statement/MySQL/City" + strconv.Itoa(j) + "/insert"
 			data := [6]float64{31, 0.8240199999999998, 0.8240199999999998, 8e-05, 0.20662, 0.13516}
 			mt.AddRaw(nil, name, "", data, Forced)
@@ -285,7 +285,7 @@ func BenchmarkMetricTableCollectorJSON(b *testing.B) {
 	}
 
 	if data, err := mt.CollectorJSON(AgentRunID("12345"), time.Now()); err == nil {
-		var v interface{}
+		var v any
 		if err := json.Unmarshal(data, &v); err != nil {
 			b.Fatalf("Unmarshal(CollectorJSON(...)) = %v", err)
 		}

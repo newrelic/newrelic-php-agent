@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"os"
@@ -145,7 +146,7 @@ var (
 		Metadata:          nil,
 		Settings:
 		// Ensure that we get Javascript agent code in the reply
-		map[string]interface{}{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
+		map[string]any{"newrelic.browser_monitoring.debug": false, "newrelic.browser_monitoring.loader": "rum"},
 		SecurityPolicyToken: "",
 		// Set log and customer event limits to non-zero values or else collector will return 0.
 		// Use default value for logging.
@@ -179,12 +180,8 @@ func defaultPort() string {
 
 func merge(a, b map[string]string) map[string]string {
 	merged := make(map[string]string)
-	for k, v := range a {
-		merged[k] = v
-	}
-	for k, v := range b {
-		merged[k] = v
-	}
+	maps.Copy(merged, a)
+	maps.Copy(merged, b)
 	return merged
 }
 
@@ -473,11 +470,9 @@ var (
 func runTests(testsToRun chan *integration.Test, numWorkers int) {
 	var wg sync.WaitGroup
 
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
+	for range numWorkers {
 
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case tc := <-testsToRun:
@@ -491,7 +486,7 @@ func runTests(testsToRun chan *integration.Test, numWorkers int) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -500,11 +495,9 @@ func runTests(testsToRun chan *integration.Test, numWorkers int) {
 func retryTests(testsToRun chan *integration.Test, numWorkers int) {
 	var wg sync.WaitGroup
 
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
+	for range numWorkers {
 
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case tc := <-testsToRun:
@@ -519,7 +512,7 @@ func retryTests(testsToRun chan *integration.Test, numWorkers int) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -668,7 +661,7 @@ func discoverTests(pattern string, searchPaths []string) []string {
 }
 
 func injectIntoConnectReply(reply collector.RPMResponse, newRunID, crossProcessId string) []byte {
-	var x map[string]interface{}
+	var x map[string]any
 
 	json.Unmarshal(reply.Body, &x)
 

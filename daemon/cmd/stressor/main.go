@@ -13,7 +13,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -173,7 +172,7 @@ func fatal(e error) {
 }
 
 func getFileContents(filename string) []byte {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if nil != err {
 		fatal(err)
 	}
@@ -350,11 +349,7 @@ func hammer(bucket *ratelimit.Bucket, stopChan <-chan struct{}, txn flatbuffersd
 
 			// Send spans in batches
 			for numSpans := *flagSpans; numSpans > 0; numSpans -= *flagSpansBatch {
-				batchSize := *flagSpansBatch
-
-				if batchSize > numSpans {
-					batchSize = numSpans
-				}
+				batchSize := min(*flagSpansBatch, numSpans)
 
 				// Protobuf encoded span batch
 				protoSpanBatch, err := proto_testdata.MarshalSpanBatch(uint(batchSize))
@@ -386,7 +381,7 @@ func hammer(bucket *ratelimit.Bucket, stopChan <-chan struct{}, txn flatbuffersd
 func setLogName(name string) error {
 	switch {
 	case name == "":
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	case strings.EqualFold(name, "stdout"):
 		log.SetOutput(os.Stdout)
 	case strings.EqualFold(name, "stderr"):
@@ -432,13 +427,13 @@ func formatNumber(n uint64) string {
 	return strings.TrimLeft(s, "0")
 }
 
-func getDaemonStats(url string, v interface{}) error {
+func getDaemonStats(url string, v any) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 
-	js, err := ioutil.ReadAll(resp.Body)
+	js, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	if err != nil {
@@ -635,10 +630,8 @@ func main() {
 		}()
 	}
 
-	for i := 0; i < nworkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range nworkers {
+		wg.Go(func() {
 
 			totals := &Stats{}
 			for {
@@ -659,7 +652,7 @@ func main() {
 				}
 			}
 			statChan <- totals
-		}()
+		})
 	}
 
 	time.AfterFunc(*flagLifespan, func() { close(stopChan) })

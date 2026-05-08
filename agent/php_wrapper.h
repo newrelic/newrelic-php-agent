@@ -85,7 +85,7 @@
  *    already been called.
  */
 
- /*
+/*
  *    OAPI updates:
  *    There are now before, after, and clean callbacks.
  *    1) before_callback gets called when OAPI triggers the begin function hook.
@@ -308,9 +308,10 @@ extern zval** nr_php_get_return_value_ptr(TSRMLS_D);
   do {                                                                     \
     nrframework_t _required_fw = (fw);                                     \
                                                                            \
-    if (_required_fw != NRPRG(current_framework)) {                        \
+    if (_required_fw != NRPRG_SHARED(current_framework)) {                 \
       nrl_verbosedebug(NRL_FRAMEWORK, "%s: expected framework %d; got %d", \
-                       __func__, _required_fw, NRPRG(current_framework));  \
+                       __func__, _required_fw,                             \
+                       NRPRG_SHARED(current_framework));                   \
       NR_PHP_WRAPPER_LEAVE;                                                \
     }                                                                      \
   } while (0)

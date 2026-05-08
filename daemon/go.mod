@@ -1,11 +1,11 @@
 module github.com/newrelic/newrelic-php-agent/daemon
 
-go 1.24.0
-toolchain go1.26.1
+go 1.25.0
+
+toolchain go1.26.2
 
 require (
-	github.com/golang/protobuf v1.5.4
-	github.com/google/flatbuffers v23.5.26+incompatible
+	github.com/google/flatbuffers v25.12.19+incompatible
 	golang.org/x/net v0.48.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.10

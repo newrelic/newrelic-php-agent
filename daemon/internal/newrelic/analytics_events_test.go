@@ -66,7 +66,7 @@ func TestEmpty(t *testing.T) {
 func sampleAnalyticsEvent(priority SamplingPriority) AnalyticsEvent {
 	return AnalyticsEvent{
 		priority: priority,
-		data:     []byte(fmt.Sprintf(`{"x":%f}`, priority)),
+		data:     fmt.Appendf(nil, `{"x":%f}`, priority),
 	}
 }
 
@@ -225,7 +225,7 @@ func BenchmarkEventsCollectorJSON(b *testing.B) {
 	data := []byte(`[{"zip":"zap","alpha":"beta","pen":"pencil"},{},{}]`)
 	events := NewTxnEvents(limits.MaxTxnEvents)
 
-	for n := 0; n < limits.MaxTxnEvents; n++ {
+	for n := range limits.MaxTxnEvents {
 		events.AddTxnEvent(data, sp[n%len(sp)])
 	}
 

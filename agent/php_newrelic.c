@@ -67,44 +67,45 @@ void nr_print_globals(FILE* fp) {
     fp = stdout;
   }
 
-  fprintf(fp, "attributes=%d\n", NRPRG(attributes).enabled.value);
+  fprintf(fp, "attributes=%d\n", NRINI(attributes.enabled));
   fprintf(fp, "transaction_tracer_attributes=%d\n",
-          NRPRG(transaction_tracer_attributes).enabled.value);
+          NRINI(transaction_tracer_attributes.enabled));
   fprintf(fp, "error_collector_attributes=%d\n",
-          NRPRG(error_collector_attributes).enabled.value);
+          NRINI(error_collector_attributes.enabled));
   fprintf(fp, "transaction_events_attributes=%d\n",
-          NRPRG(transaction_events_attributes).enabled.value);
+          NRINI(transaction_events_attributes.enabled));
   fprintf(fp, "span_events_attributes=%d\n",
-          NRPRG(span_events_attributes).enabled.value);
+          NRINI(span_events_attributes.enabled));
   fprintf(fp, "browser_monitoring_attributes=%d\n",
-          NRPRG(browser_monitoring_attributes).enabled.value);
+          NRINI(browser_monitoring_attributes.enabled));
 
-  fprintf(fp, "tt_threshold_is_apdex_f=%d\n", NRPRG(tt_threshold_is_apdex_f));
+  fprintf(fp, "tt_threshold_is_apdex_f=%d\n",
+          NRPRG_SHARED(tt_threshold_is_apdex_f));
 
-  fprintf(fp, "current_framework=%d\n", (int)NRPRG(current_framework));
+  fprintf(fp, "current_framework=%d\n", (int)NRPRG_SHARED(current_framework));
 
   fprintf(fp, "execute_count=%d\n", NRTXNGLOBAL(execute_count));
-  fprintf(fp, "php_cur_stack_depth=%d\n", NRPRG(php_cur_stack_depth));
+  fprintf(fp, "php_cur_stack_depth=%d\n", NRPRG_CTX(php_cur_stack_depth));
 
   fprintf(fp, "txn=%p\n", NRPRG(txn));
 
-  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRPRG(start_sample));
+  fprintf(fp, "start_sample=" NR_TIME_FMT "\n", NRPRG_SHARED(start_sample));
 
   fprintf(fp, "start_user_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRPRG(start_user_time.tv_sec),
-          (int)NRPRG(start_user_time.tv_usec));
+          (nrtime_t)NRPRG_SHARED(start_user_time.tv_sec),
+          (int)NRPRG_SHARED(start_user_time.tv_usec));
   fprintf(fp, "start_sys_time=" NR_TIME_FMT ".%06d\n",
-          (nrtime_t)NRPRG(start_sys_time.tv_sec),
-          (int)NRPRG(start_user_time.tv_usec));
+          (nrtime_t)NRPRG_SHARED(start_sys_time.tv_sec),
+          (int)NRPRG_SHARED(start_sys_time.tv_usec));
 
-  fprintf(fp, "wtfuncs_where=%d\n", NRPRG(wtfuncs_where));
-  fprintf(fp, "wtfiles_where=%d\n", NRPRG(wtfiles_where));
-  fprintf(fp, "ttcustom_where=%d\n", NRPRG(ttcustom_where));
+  fprintf(fp, "wtfuncs_where=%d\n", NRPRG_SHARED(wtfuncs_where));
+  fprintf(fp, "wtfiles_where=%d\n", NRPRG_SHARED(wtfiles_where));
+  fprintf(fp, "ttcustom_where=%d\n", NRPRG_SHARED(ttcustom_where));
 
   fprintf(fp, "deprecated_capture_request_parameters=%d\n",
-          NRPRG(deprecated_capture_request_parameters));
+          NRPRG_CTX(deprecated_capture_request_parameters));
 
-  fprintf(fp, "extensions=%p\n", NRPRG(extensions));
+  fprintf(fp, "extensions=%p\n", NRPRG_SHARED(extensions));
   fflush(fp);
 
   nr_print_txn(fp);

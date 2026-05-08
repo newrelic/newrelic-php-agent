@@ -13,15 +13,15 @@ import (
 
 type spanEvent struct {
 	TraceID         string
-	Intrinsics      map[string]interface{}
-	UserAttributes  map[string]interface{}
-	AgentAttributes map[string]interface{}
+	Intrinsics      map[string]any
+	UserAttributes  map[string]any
+	AgentAttributes map[string]any
 }
 
 var (
 	sampleSpanEvent = spanEvent{
 		TraceID: "traceid",
-		Intrinsics: map[string]interface{}{
+		Intrinsics: map[string]any{
 			"type":          "Span",
 			"traceId":       "traceid",
 			"guid":          "guid",
@@ -34,8 +34,8 @@ var (
 			"name":          "name",
 			"category":      "http",
 		},
-		UserAttributes:  map[string]interface{}{},
-		AgentAttributes: map[string]interface{}{},
+		UserAttributes:  map[string]any{},
+		AgentAttributes: map[string]any{},
 	}
 )
 
