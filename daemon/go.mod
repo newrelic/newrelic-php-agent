@@ -2,7 +2,7 @@ module github.com/newrelic/newrelic-php-agent/daemon
 
 go 1.25.0
 
-toolchain go1.26.2
+toolchain go1.26.3
 
 require (
 	github.com/google/flatbuffers v25.12.19+incompatible
