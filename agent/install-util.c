@@ -19,23 +19,7 @@
 #define NRUNUSED
 #endif
 
-#ifndef PATH_MAX
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 2048
-#endif
-#endif
-
 typedef int (*cmdfunc_t)(int argc, char* const argv[]);
-
-static char* getrp(const char* fn) {
-  static char fnb[PATH_MAX];
-  char* r;
-
-  r = realpath(fn, fnb);
-  return r;
-}
 
 static int do_stat(int argc NRUNUSED, char* const argv[]) {
   struct stat sb;
@@ -49,11 +33,12 @@ static int do_stat(int argc NRUNUSED, char* const argv[]) {
 }
 
 static int do_realpath(int argc NRUNUSED, char* const argv[]) {
-  char* rp = getrp(argv[2]);
+  char* rp = realpath(argv[2], NULL);
   if (0 == rp) {
     return 1;
   }
   puts(rp);
+  free(rp);
   return 0;
 }
 
