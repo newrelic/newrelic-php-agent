@@ -126,10 +126,10 @@ void nr_rules_sort(nrrules_t* rules) {
         qsort_comparator_for_rules);
 }
 
-void nr_rule_replace_string(const char* repl,
-                            char* dest,
-                            size_t dest_len,
-                            const nr_regex_substrings_t* ss) {
+nr_status_t nr_rule_replace_string(const char* repl,
+                                   char* dest,
+                                   size_t dest_len,
+                                   const nr_regex_substrings_t* ss) {
   int state = 0;
   int ch;
   int num = 0;
@@ -137,11 +137,11 @@ void nr_rule_replace_string(const char* repl,
   int count = nr_regex_substrings_count(ss);
 
   if (0 == dest) {
-    return;
+    return NR_SUCCESS;
   }
 
   if (0 == dest_len) {
-    return;
+    return NR_SUCCESS;
   }
 
   while (0 != (ch = *repl)) {
@@ -168,6 +168,9 @@ void nr_rule_replace_string(const char* repl,
         if (num > count) {
           *dest = 0;
           len = snprintf(dest, dest_len, "\\%d", num);
+          if (len < 0 || len >= (int)dest_len) {
+            return NR_FAILURE;
+          }
           dest += len;
           dest_len -= len;
         } else {
@@ -175,6 +178,10 @@ void nr_rule_replace_string(const char* repl,
 
           if (sub) {
             len = snprintf(dest, dest_len, "%s", sub);
+            if (len < 0 || len >= (int)dest_len) {
+              nr_free(sub);
+              return NR_FAILURE;
+            }
             dest += len;
             dest_len -= len;
           }
@@ -186,6 +193,7 @@ void nr_rule_replace_string(const char* repl,
     repl++;
   }
   *dest = 0;
+  return NR_SUCCESS;
 }
 
 /*
@@ -261,7 +269,10 @@ static nr_rules_result_t nr_rule_apply(char* str,
 
       /* Copy the match replacement. */
       if (rule->rflags & NR_RULE_HAS_CAPTURES) {
-        nr_rule_replace_string(rule->replacement, repl, repl_len, ss);
+        if (NR_FAILURE
+            == nr_rule_replace_string(rule->replacement, repl, repl_len, ss)) {
+          return NR_RULES_RESULT_UNCHANGED;
+        }
         wp = nr_strlcpy(wp, repl, NRULE_BUF_SIZE);
       } else {
         wp = nr_strlcpy(wp, rule->replacement, NRULE_BUF_SIZE);
@@ -294,7 +305,11 @@ static nr_rules_result_t nr_rule_apply(char* str,
       if (ss) {
         changed++;
         if (rule->rflags & NR_RULE_HAS_CAPTURES) {
-          nr_rule_replace_string(rule->replacement, repl, repl_len, ss);
+          if (NR_FAILURE
+              == nr_rule_replace_string(rule->replacement, repl, repl_len,
+                                        ss)) {
+            return NR_RULES_RESULT_UNCHANGED;
+          }
           wp = nr_strcpy(wp, repl);
         } else {
           wp = nr_strcpy(wp, rule->replacement);
@@ -357,7 +372,11 @@ static nr_rules_result_t nr_rule_apply(char* str,
       /* Calculate replacement. */
       if (need_replacement) {
         if (rule->rflags & NR_RULE_HAS_CAPTURES) {
-          nr_rule_replace_string(rule->replacement, repl, repl_len, ss);
+          if (NR_FAILURE
+              == nr_rule_replace_string(rule->replacement, repl, repl_len,
+                                        ss)) {
+            return NR_RULES_RESULT_UNCHANGED;
+          }
         } else {
           nr_strcpy(repl, rule->replacement);
         }
