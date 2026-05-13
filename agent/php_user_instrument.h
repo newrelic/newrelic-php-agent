@@ -110,6 +110,9 @@ typedef struct _nruserfn_t {
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
   char* wordpress_plugin_theme;
 #endif
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  zend_observer_fcall_handlers fcall_handlers;
+#endif
 } nruserfn_t;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
