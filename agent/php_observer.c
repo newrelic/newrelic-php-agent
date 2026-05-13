@@ -144,7 +144,7 @@ static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   }
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
-    nrl_warning(NRL_INSTRUMENT,
+    nrl_verbosedebug(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
     NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
@@ -159,7 +159,7 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
   }
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
-    nrl_warning(NRL_INSTRUMENT,
+    nrl_verbosedebug(NRL_INSTRUMENT,
                 "Transaction is truncated because PHP Fiber use is detected.");
     NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);

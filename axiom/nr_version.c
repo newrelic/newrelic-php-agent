@@ -23,7 +23,6 @@
 /*
  * Current version naming scheme is gemstones
  *
- *   poinsettia         03Oct2023 (10.13)
  *   quince             13Nov2023 (10.14)
  *   rose               20Dec2023 (10.15)
  *   snapdragon         23Jan2024 (10.16)
@@ -50,9 +49,10 @@
  *   nephrite           15Dec2025 (12.3)
  *   obsidian           12Jan2026 (12.4)
  *   peridot            10Feb2026 (12.5)
- *   quartz            31Mar2026 (12.6)
+ *   quartz             31Mar2026 (12.6)
+ *   ruby               12May2026 (12.7)
  */
-#define NR_CODENAME "ruby"
+#define NR_CODENAME "sapphire"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
