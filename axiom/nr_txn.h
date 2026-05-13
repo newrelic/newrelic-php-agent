@@ -275,7 +275,9 @@ typedef struct _nrtxn_t {
                                       context */
   nr_segment_t* force_current_segment; /* Enforce a current segment for the
                                           default context, overriding the
-                                          default parent stack. */
+                                          default parent stack. Only used with
+                                          PHP < 8.0. Do no tuse with OAPI; it is
+                                          not setup to utilize this.*/
   size_t segment_count; /* A count of segments for this transaction, maintained
                            throughout the life of this transaction */
   nr_minmax_heap_t*
@@ -286,6 +288,8 @@ typedef struct _nrtxn_t {
   nrtime_t abs_start_time; /* The absolute start timestamp for this transaction;
                             * all segment start and end times are relative to
                             * this field */
+
+  int current_async_context; /* Execution context (pooled string index) */
 
   nr_error_t* error;            /* Captured error */
   nr_slowsqls_t* slowsqls;      /* Slow SQL statements */
@@ -1059,6 +1063,16 @@ char* nr_txn_create_w3c_tracestate_header(const nrtxn_t* txn,
 extern bool nr_txn_should_create_span_events(const nrtxn_t* txn);
 
 /*
+ * Purpose : Get a the string value of the current txn context
+ *
+ * Params  : 1. The transaction.
+ *
+ * Note    : This will be NULL for default/main, and a string context for async
+ * Returns : A pointer to string context.
+ */
+extern const char* nr_txn_get_current_context(nrtxn_t* txn);
+
+/*
  * Purpose : Get a pointer to the currently-executing segment for a given
  *           async context.
  *
@@ -1077,6 +1091,22 @@ extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
                                                 const char* async_context);
 
 /*
+ * Purpose : Get a pointer to the currently-executing segment for a given
+ *           async context.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : A pointer to the active segment for the currently executing segment
+ * based on the txn async_context. Note : Callers wishing to get the current
+ * segment on a specific context should use nr_txn_get_current_segment() to get
+ * the current segment on any other context they are interested in.
+ */
+static inline nr_segment_t* nr_txn_get_current_segment_txn_context(
+    nrtxn_t* txn) {
+  return nr_txn_get_current_segment(txn, nr_txn_get_current_context(txn));
+}
+
+/*
  * Purpose : Force the given segment to be the current segment.
  *
  * Params  : 1. The transaction.
@@ -1089,6 +1119,8 @@ extern nr_segment_t* nr_txn_get_current_segment(nrtxn_t* txn,
  *
  *           This function is useful to temporarily inject segments that don't
  *           use the default allocator.
+ * Note    : This is ONLY ever set with non-OAPI and PHPs less than 8.0. Do not
+ * use with OAPI; it is not setup to utilize this.
  */
 inline static void nr_txn_force_current_segment(nrtxn_t* txn,
                                                 nr_segment_t* segment) {
@@ -1149,12 +1181,13 @@ extern char* nr_txn_get_current_trace_id(nrtxn_t* txn);
  * Purpose : Return the current span ID or create it if doesn't have one yet.
  *
  * Params  : 1. The transaction.
- *
+ *           2. The async context.
  * Note    : The string returned has to be freed by the caller.
  *
  * Returns : current span ID if the segment is valid, otherwise NULL.
  */
-extern char* nr_txn_get_current_span_id(nrtxn_t* txn);
+extern char* nr_txn_get_current_span_id(nrtxn_t* txn,
+                                        const char* async_context);
 
 /*
  * Purpose : End all currently active segments.
