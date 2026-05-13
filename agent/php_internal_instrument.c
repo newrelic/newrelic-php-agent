@@ -12,6 +12,7 @@
 #include "php_explain.h"
 #include "php_explain_mysqli.h"
 #include "php_file_get_contents.h"
+#include "php_frankenphp.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_httprequest_send.h"
@@ -113,6 +114,28 @@ static void nr_php_instrument_delegate(nrinternalfn_t* wraprec,
   (wraprec->inner_wrapper)(INTERNAL_FUNCTION_PARAM_PASSTHRU, wraprec);
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+/*
+ * This delegate is used for the wrappers, which need to execute its inner
+ * wrapper on every call, even when not recording. This can be used for starting
+ * the transaction and thus needs to execute its inner wrapper to start
+ * recording.
+ */
+static void nr_php_instrument_delegate_always(nrinternalfn_t* wraprec,
+                                              INTERNAL_FUNCTION_PARAMETERS) {
+  if ((NULL == wraprec) || (NULL == wraprec->oldhandler)
+      || (NULL == wraprec->inner_wrapper)) {
+    /*
+     * This conditional should never happen:  The wraprec and its fields
+     * should be properly populated during construction.  Perhaps this should
+     * be changed into some sort of assertion.
+     */
+    return;
+  }
+  (wraprec->inner_wrapper)(INTERNAL_FUNCTION_PARAM_PASSTHRU, wraprec);
+}
+#endif
+
 #define NR_OUTER_WRAPPER_NAME(RAW) _nr_outer_wrapper_function_##RAW
 #define NR_OUTER_GLOBAL_NAME(RAW) _nr_outer_wrapper_global_##RAW
 #define NR_INNER_WRAPPER_NAME(RAW) _nr_inner_wrapper_function_##RAW
@@ -141,6 +164,13 @@ static void nr_php_instrument_delegate(nrinternalfn_t* wraprec,
       INTERNAL_FUNCTION_PARAMETERS) {                             \
     nr_php_instrument_delegate(NR_OUTER_GLOBAL_NAME(RAW),         \
                                INTERNAL_FUNCTION_PARAM_PASSTHRU); \
+  }
+#define NR_OUTER_WRAPPER_DELEGATE_ALWAYS(RAW)                            \
+  static nrinternalfn_t* NR_OUTER_GLOBAL_NAME(RAW) = NULL;               \
+  static void ZEND_FASTCALL NR_OUTER_WRAPPER_NAME(RAW)(                  \
+      INTERNAL_FUNCTION_PARAMETERS) {                                    \
+    nr_php_instrument_delegate_always(NR_OUTER_GLOBAL_NAME(RAW),         \
+                                      INTERNAL_FUNCTION_PARAM_PASSTHRU); \
   }
 #endif /* PHP < 7.3 */
 
@@ -3089,6 +3119,18 @@ NR_INNER_WRAPPER(exception_common) {
   }
 }
 
+#ifdef ZTS
+NR_INNER_WRAPPER(frankenphp_handle_request) {
+  nrl_verbosedebug(NRL_INIT, "frankenphp_handle_request started");
+
+  nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  // Let frankenphp take over
+  nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  nrl_verbosedebug(NRL_INIT, "frankenphp_handle_request done");
+}
+#endif
+
 NR_OUTER_WRAPPER(mysql_select_db)
 NR_OUTER_WRAPPER(mysql_selectdb)
 NR_OUTER_WRAPPER(mysql_close)
@@ -3537,6 +3579,10 @@ NR_OUTER_WRAPPER(dl)
 
 NR_OUTER_WRAPPER(set_exception_handler)
 NR_OUTER_WRAPPER(restore_exception_handler)
+
+#ifdef ZTS
+NR_OUTER_WRAPPER_DELEGATE_ALWAYS(frankenphp_handle_request)
+#endif /* ZTS */
 
 nrinternalfn_t* nr_wrapped_internal_functions = NULL;
 
@@ -4391,6 +4437,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       exception_common, 0, 0)
   NR_INTERNAL_WRAPREC("restore_exception_handler", restore_exception_handler,
                       exception_common, 0, 0)
+#ifdef ZTS
+  NR_INTERNAL_WRAPREC("frankenphp_handle_request", frankenphp_handle_request,
+                      frankenphp_handle_request, 0, 0)
+#endif
 }
 
 /*

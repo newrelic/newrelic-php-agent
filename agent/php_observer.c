@@ -75,6 +75,7 @@
 static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     zend_execute_data* execute_data) {
   zend_observer_fcall_handlers handlers = {NULL, NULL};
+  nruserfn_t* wr = NULL;
   if (NULL == execute_data) {
     return handlers;
   }
@@ -83,7 +84,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
-  if (0 == nr_php_recording()) {
+  if (0 == nr_php_recording()
+#ifdef ZTS
+      && !nr_streq(sapi_module.name, "frankenphp")
+#endif
+  ) {
     return handlers;
   }
 
@@ -110,23 +115,33 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
-  if (!ZEND_OP_ARRAY_EXTENSION(
-          NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))) {
+  // clang-format off
+  wr = ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle));
+  if (NULL == wr) {
     zend_string* func_name = NR_OP_ARRAY->function_name;
-    zend_string* scope_name
-        = OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY) ? NR_OP_ARRAY->scope->name : NULL;
-    nruserfn_t* wr
-        = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
-    // store the wraprec in the op_array extension for the duration of the
-    // request for later lookup
-    ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY,
-                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
-        = wr;
+    zend_string* scope_name = OP_ARRAY_IS_A_METHOD(NR_OP_ARRAY) ? NR_OP_ARRAY->scope->name : NULL;
+    wr = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
+    // store the wraprec in the op_array extension for the duration of the request for later lookup
+    ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
+  } else {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - wraprec already installed", __func__);
+    }
   }
 
+  // use default handlers for all user functions
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;
+
+  // override default handlers with wraprec's custom handlers
+  if (NULL != wr) {
+    if (NULL != wr->fcall_handlers.begin)
+      handlers.begin = wr->fcall_handlers.begin;
+    if (NULL != wr->fcall_handlers.end)
+      handlers.end = wr->fcall_handlers.end;
+  }
   return handlers;
+  // clang-format on
 }
 
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
