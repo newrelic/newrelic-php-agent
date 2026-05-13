@@ -49,10 +49,13 @@ static nr_status_t nr_php_explain_mysqli_add_fields_to_plan(
  * Purpose : Execute a mysqli_stmt.
  *
  * Params  : 1. The statement to execute.
+ *           2. The binding params array,
+ *              optionally null if nothing to bind
+ *              or if already bound
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  */
-static nr_status_t nr_php_explain_mysqli_execute(zval* stmt TSRMLS_DC);
+static nr_status_t nr_php_explain_mysqli_execute(zval* stmt, zval* params TSRMLS_DC);
 
 /*
  * Purpose : Retrieve the result of a mysqli_stmt that executed an EXPLAIN
@@ -73,13 +76,15 @@ static nr_explain_plan_t* nr_php_explain_mysqli_fetch_plan(
  *           2. The handle of the MySQLi statement, or 0 if there was no
  *              statement.
  *           3. The SQL to explain.
+ *           4. Params to be bound in execute
  *
  * Returns : A newly allocated explain plan, or NULL on error.
  */
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     zval* link,
     nr_php_object_handle_t handle,
-    const char* sql TSRMLS_DC);
+    const char* sql,
+    zval* params TSRMLS_DC);
 
 /*
  * Purpose : Prepare an EXPLAIN query.
@@ -120,7 +125,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
   }
 
   query = nr_strndup(sql, sql_len);
-  plan = nr_php_explain_mysqli_issue(link, 0, query TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(link, 0, query, NULL TSRMLS_CC);
   nr_free(query);
 
   return plan;
@@ -128,6 +133,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_query(const nrtxn_t* txn,
 
 nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
                                               nr_php_object_handle_t handle,
+                                              zval* params,
                                               nrtime_t start,
                                               nrtime_t stop TSRMLS_DC) {
   nrtime_t duration;
@@ -155,7 +161,7 @@ nr_explain_plan_t* nr_php_explain_mysqli_stmt(const nrtxn_t* txn,
     return NULL;
   }
 
-  plan = nr_php_explain_mysqli_issue(link, handle, query TSRMLS_CC);
+  plan = nr_php_explain_mysqli_issue(link, handle, query, params TSRMLS_CC);
   nr_free(query);
 
   return plan;
@@ -201,11 +207,15 @@ static nr_status_t nr_php_explain_mysqli_add_fields_to_plan(
   return NR_SUCCESS;
 }
 
-static nr_status_t nr_php_explain_mysqli_execute(zval* stmt TSRMLS_DC) {
+static nr_status_t nr_php_explain_mysqli_execute(zval* stmt, zval* params TSRMLS_DC) {
   zval* retval;
   nr_status_t status;
 
-  retval = nr_php_call(stmt, "execute");
+  if (params) {
+    retval = nr_php_call(stmt, "execute", params);
+  } else {
+    retval = nr_php_call(stmt, "execute");
+  }
   status = nr_php_is_zval_true(retval) ? NR_SUCCESS : NR_FAILURE;
 
   nr_php_zval_free(&retval);
@@ -310,7 +320,8 @@ end:
 static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     zval* link,
     nr_php_object_handle_t handle,
-    const char* sql TSRMLS_DC) {
+    const char* sql,
+    zval* params TSRMLS_DC) {
   int error_reporting;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
@@ -335,7 +346,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
     }
   }
 
-  if (NR_FAILURE == nr_php_explain_mysqli_execute(stmt TSRMLS_CC)) {
+  if (NR_FAILURE == nr_php_explain_mysqli_execute(stmt, params TSRMLS_CC)) {
     goto end;
   }
 
