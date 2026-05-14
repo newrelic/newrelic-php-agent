@@ -216,7 +216,7 @@ nr_mysqli_metadata_t* nr_mysqli_metadata_copy(nr_mysqli_metadata_t* src) {
     return NULL;
   }
 
-  metadata = nr_mysqli_metadata_create();
+  metadata = (nr_mysqli_metadata_t*)nr_malloc(sizeof(nr_mysqli_metadata_t));
   metadata->links = nro_copy(src->links);
   return metadata;
 }
