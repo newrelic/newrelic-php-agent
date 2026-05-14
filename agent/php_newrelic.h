@@ -417,6 +417,9 @@ typedef struct _shared_globals_t {
 
   /* Contains the fiber address as a string to use as the async_context.*/
   char fiber_context_string[32];
+
+  nr_hashmap_t* fiber_globals_map;
+
   /*
    * Contains the parent segment of a fiber only when starting a fiber within a
    * fiber. For all other cases will be null which indicates that the main PHP
@@ -572,6 +575,11 @@ typedef struct _txn_globals_t {
   nr_hashmap_t* curl_multi_metadata;  // curl multi metadata storage
   nr_hashmap_t* prepared_statements;  // Prepared statement storage
 } txn_globals_t;
+
+typedef struct _fiber_globals_t {
+  txn_globals_t* txn_globals;
+  ctx_globals_t* ctx_globals;
+} fiber_globals_t;
 
 /*
  * Globals
