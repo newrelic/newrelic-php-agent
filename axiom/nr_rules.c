@@ -168,7 +168,7 @@ nr_status_t nr_rule_replace_string(const char* repl,
         if (num > count) {
           *dest = 0;
           len = snprintf(dest, dest_len, "\\%d", num);
-          if (len < 0 || len >= (int)dest_len) {
+          if (len < 0 || (size_t)len >= dest_len) {
             return NR_FAILURE;
           }
           dest += len;
@@ -178,7 +178,7 @@ nr_status_t nr_rule_replace_string(const char* repl,
 
           if (sub) {
             len = snprintf(dest, dest_len, "%s", sub);
-            if (len < 0 || len >= (int)dest_len) {
+            if (len < 0 || (size_t)len >= dest_len) {
               nr_free(sub);
               return NR_FAILURE;
             }
