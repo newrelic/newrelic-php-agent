@@ -3123,10 +3123,21 @@ NR_INNER_WRAPPER(exception_common) {
 NR_INNER_WRAPPER(frankenphp_handle_request) {
   nrl_verbosedebug(NRL_INIT, "frankenphp_handle_request started");
 
+  // End the worker transaction
+  nr_txn_set_path("frankenphp_handle_request", NRPRG(txn), "frankenphp/worker/bootstrap",
+                NR_PATH_TYPE_CUSTOM, NR_NOT_OK_TO_OVERWRITE); // this will not overwrite the 'loop' path
+  nr_txn_set_as_background_job(NRPRG(txn), "frankenphp worker");
+  nr_php_txn_end(0, 0);
+
   nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
   // Let frankenphp take over
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  // Start a new transaction for worker loop
+  nr_php_txn_begin(0, 0);
+  nr_txn_set_path("frankenphp_handle_request", NRPRG(txn), "frankenphp/worker/loop",
+                NR_PATH_TYPE_CUSTOM, NR_NOT_OK_TO_OVERWRITE);
   nrl_verbosedebug(NRL_INIT, "frankenphp_handle_request done");
 }
 #endif
