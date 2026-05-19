@@ -124,6 +124,7 @@ OBJS := \
 	nr_span_queue.o \
 	nr_synthetics.o \
 	nr_txn.o \
+	nr_uuid.o \
 	nr_version.o \
 	nr_php_packages.o \
 	util_apdex.o \
@@ -136,6 +137,7 @@ OBJS := \
 	util_hashmap.o \
 	util_json.o \
 	util_logging.o \
+	util_health.o \
 	util_labels.o \
 	util_matcher.o \
 	util_md5.o \
