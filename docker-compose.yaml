@@ -25,6 +25,17 @@ services:
   redisdb:
     image: redis
     restart: always
+  redisclusterdb:
+    image: redis
+    restart: always
+    command: >
+      sh -c '
+        redis-server --port 7000 --cluster-enabled yes --cluster-config-file /tmp/nodes.conf &
+        PID=$$!
+        until redis-cli -p 7000 ping >/dev/null 2>&1; do sleep 0.2; done
+        redis-cli -p 7000 cluster addslotsrange 0 16383
+        wait $$PID
+      '
   memcached:
     image: memcached:latest
     restart: always
@@ -54,6 +65,8 @@ services:
 
       PREDIS_HOME: /usr/src/vendor/predis/predis/
       REDIS_HOST: redisdb
+      REDIS_CLUSTER_HOST: redisclusterdb
+      REDIS_CLUSTER_PORT: 7000
 
     volumes:
        - ${AGENT_CODE:-$PWD}:/usr/local/src/newrelic-php-agent
@@ -84,6 +97,8 @@ services:
 
       PREDIS_HOME: /usr/src/vendor/predis/predis/
       REDIS_HOST: redisdb
+      REDIS_CLUSTER_HOST: redisclusterdb
+      REDIS_CLUSTER_PORT: 7000
 
       PS1: "New Relic > "
       NEWRELIC_COLLECTOR_HOST : ${NEW_RELIC_COLLECTOR_HOST:-collector.newrelic.com}
