@@ -37,6 +37,12 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   zend_function* zf;
   nruserfn_t* wr = NULL;
 
+  // Always end current transaction started when worker was started
+  nr_txn_set_path("frankenphp_handle_request", NRPRG(txn), "frankenphp/worker",
+                NR_PATH_TYPE_CUSTOM, NR_OK_TO_OVERWRITE);
+  nr_txn_set_as_background_job(NRPRG(txn), "frankenphp worker");
+  nr_php_txn_end(0, 0);
+
   zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "z",
                            &function);
   zf = nr_php_zval_to_function(function);
