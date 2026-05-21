@@ -3,6 +3,7 @@
 #
 
 name: trigger-test-suite
+permissions: {}
 
 on:
   pull_request:

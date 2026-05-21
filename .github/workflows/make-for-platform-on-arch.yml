@@ -1,4 +1,5 @@
 name: _make-target
+permissions: {}
 
 on:
   workflow_call:
