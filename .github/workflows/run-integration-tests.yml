@@ -4,6 +4,7 @@
 
 name: run-integration-tests
 run-name: Testing ${{ inputs.origin }}:${{ inputs.ref }} (by @${{ github.actor }})
+permissions: {}
 
 on:
   workflow_dispatch:

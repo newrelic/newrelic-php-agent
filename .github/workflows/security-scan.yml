@@ -1,4 +1,6 @@
 name: Security scan
+permissions: {}
+
 on:
   push:
     branches:
