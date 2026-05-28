@@ -121,6 +121,169 @@ static void test_get(void) {
   nr_stack_destroy_fields(&s);
 }
 
+static void* clone_identity(void* element) {
+  return element;
+}
+
+static int clone_call_count = 0;
+
+static void* clone_counting(void* element) {
+  clone_call_count++;
+  return element;
+}
+
+static void* clone_strdup(void* element) {
+  return nr_strdup((const char*)element);
+}
+
+static int dtor_call_count = 0;
+
+static void dtor_free_string(void* element, void* userdata NRUNUSED) {
+  dtor_call_count++;
+  nr_free(element);
+}
+
+static void test_copy_empty(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+
+  nr_stack_init(&src, 5);
+
+  dest = nr_stack_copy(&src, clone_identity);
+
+  tlib_pass_if_true("Copy of an empty stack must be empty",
+                    nr_stack_is_empty(&dest), "Expected true");
+  tlib_pass_if_size_t_equal("Copy of an empty stack must have size 0", 0,
+                            dest.used);
+  tlib_pass_if_not_null(
+      "Copy of an empty stack must have allocated memory for its elements",
+      dest.elements);
+
+  nr_stack_destroy_fields(&src);
+  nr_stack_destroy_fields(&dest);
+}
+
+static void test_copy_preserves_order(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+
+  nr_stack_init(&src, 5);
+  nr_stack_push(&src, (void*)1);
+  nr_stack_push(&src, (void*)2);
+  nr_stack_push(&src, (void*)3);
+
+  dest = nr_stack_copy(&src, clone_identity);
+
+  tlib_pass_if_size_t_equal("Copy must have the same size as the source", 3,
+                            dest.used);
+  tlib_pass_if_ptr_equal("Copy must preserve order: top element matches",
+                         (void*)3, nr_stack_pop(&dest));
+  tlib_pass_if_ptr_equal("Copy must preserve order: middle element matches",
+                         (void*)2, nr_stack_pop(&dest));
+  tlib_pass_if_ptr_equal("Copy must preserve order: bottom element matches",
+                         (void*)1, nr_stack_pop(&dest));
+
+  tlib_pass_if_size_t_equal("Source must remain unchanged after copy", 3,
+                            src.used);
+  tlib_pass_if_ptr_equal("Source top must remain unchanged after copy",
+                         (void*)3, nr_stack_get_top(&src));
+
+  nr_stack_destroy_fields(&src);
+  nr_stack_destroy_fields(&dest);
+}
+
+static void test_copy_invokes_clone_per_element(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+
+  clone_call_count = 0;
+
+  nr_stack_init(&src, 5);
+  nr_stack_push(&src, (void*)1);
+  nr_stack_push(&src, (void*)2);
+  nr_stack_push(&src, (void*)3);
+  nr_stack_push(&src, (void*)4);
+
+  dest = nr_stack_copy(&src, clone_counting);
+
+  tlib_pass_if_int_equal("Clone callback must be invoked once per element", 4,
+                         clone_call_count);
+
+  nr_stack_destroy_fields(&src);
+  nr_stack_destroy_fields(&dest);
+}
+
+static void test_copy_deep(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+  char* a = nr_strdup("alpha");
+  char* b = nr_strdup("beta");
+  void* dest_top;
+
+  /* Use nr_vector_init directly to install a destructor; the inherited
+     dtor will free the cloned strings when dest is destroyed. */
+  nr_vector_init(&src, 5, dtor_free_string, NULL);
+  nr_stack_push(&src, a);
+  nr_stack_push(&src, b);
+
+  dtor_call_count = 0;
+  dest = nr_stack_copy(&src, clone_strdup);
+
+  tlib_pass_if_size_t_equal("Deep copy must have the same size as the source",
+                            2, dest.used);
+
+  dest_top = nr_stack_get_top(&dest);
+  tlib_pass_if_str_equal("Deep copy contents must equal source contents",
+                         "beta", (const char*)dest_top);
+  tlib_pass_if_true(
+      "Deep copy must produce distinct allocations from the source",
+      dest_top != b, "Expected pointer inequality");
+
+  nr_stack_destroy_fields(&dest);
+
+  tlib_pass_if_int_equal(
+      "Destroying the copy must invoke the inherited dtor on each cloned "
+      "element",
+      2, dtor_call_count);
+
+  nr_stack_destroy_fields(&src);
+
+  tlib_pass_if_int_equal(
+      "Destroying the source must invoke the dtor on the source's own "
+      "elements, leaving cloned-element frees independent",
+      4, dtor_call_count);
+}
+
+static void test_copy_independent_of_source(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+
+  nr_stack_init(&src, 5);
+  nr_stack_push(&src, (void*)10);
+  nr_stack_push(&src, (void*)20);
+
+  dest = nr_stack_copy(&src, clone_identity);
+
+  /* Mutating the source must not affect the copy. */
+  nr_stack_push(&src, (void*)30);
+
+  tlib_pass_if_size_t_equal(
+      "Pushing to the source after copy must not affect the copy", 2,
+      dest.used);
+  tlib_pass_if_ptr_equal("Copy's top must remain the source's top at copy time",
+                         (void*)20, nr_stack_get_top(&dest));
+
+  /* Mutating the copy must not affect the source. */
+  (void)nr_stack_pop(&dest);
+  tlib_pass_if_size_t_equal(
+      "Popping from the copy must not affect the source's size", 3, src.used);
+  tlib_pass_if_ptr_equal("Source's top must remain unchanged after copy pop",
+                         (void*)30, nr_stack_get_top(&src));
+
+  nr_stack_destroy_fields(&src);
+  nr_stack_destroy_fields(&dest);
+}
+
 static void test_remove_topmost(void) {
   nr_stack_t s;
 
@@ -179,4 +342,9 @@ void test_main(void* p NRUNUSED) {
   test_push_pop_extended();
   test_get();
   test_remove_topmost();
+  test_copy_empty();
+  test_copy_preserves_order();
+  test_copy_invokes_clone_per_element();
+  test_copy_deep();
+  test_copy_independent_of_source();
 }
