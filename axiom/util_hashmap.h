@@ -188,6 +188,16 @@ extern void nr_hashmap_update(nr_hashmap_t* hashmap,
 extern nr_vector_t* nr_hashmap_keys(nr_hashmap_t* hashmap);
 
 /*
+ * Purpose : Return a copy of a hashmap.
+ *
+ * Params  : 1. The hashmap to copy.
+ *
+ * Returns : A copy of the provided hashmap. This will have to be freed when no
+ *           longer needed.
+ */
+extern nr_hashmap_t* nr_hashmap_copy(nr_hashmap_t* src);
+
+/*
  * The below functions are simple wrappers for the main functions above that
  * allow uint64_t keys to be used.
  */
