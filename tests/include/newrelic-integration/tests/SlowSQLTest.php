@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\SlowSQL;
 
-class SlowSQLTest extends PHPUnit_Framework_TestCase
+class SlowSQLTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
@@ -37,10 +37,10 @@ class SlowSQLTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider invalidProvider
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(array $slowsql)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new SlowSQL($slowsql);
     }
 

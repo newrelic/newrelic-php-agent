@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\Trace\Segment;
 
-class SegmentTest extends PHPUnit_Framework_TestCase
+class SegmentTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
@@ -38,10 +38,10 @@ class SegmentTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider invalidProvider
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(array $input)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Segment($input);
     }
 

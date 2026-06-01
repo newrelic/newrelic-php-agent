@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\DatastoreInstance;
 
-class DatastoreInstanceTest extends PHPUnit_Framework_TestCase
+class DatastoreInstanceTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
@@ -23,10 +23,10 @@ class DatastoreInstanceTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider invalidInputs
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(stdClass $input)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new DatastoreInstance($input);
     }
 

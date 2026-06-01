@@ -5,7 +5,7 @@ provided by the PHP agent's internal testing API.
 
 ## Requirements
 
-* PHP 5.3.2 or later.
+* PHP 7.2 or later.
 * The New Relic PHP agent with integration test helper functions available.
 
 ## Usage
@@ -54,11 +54,11 @@ if ($metrics['Datastore/operation/SQLite/insert']->count < 4) {
 
 ## Development
 
-This package needs to keep support for PHP 5.3, as
-the PHP agent currently supports PHP 5.3. This is a bit limiting (for 
+This package needs to maintain compatibility with PHP 7.2, as that is the
+minimum PHP version the PHP agent supports. This is a bit limiting (for
 example, the filtering in the `NewRelic\Integration\Trace` class would be
-*much* easier with anonymous classes), but it is necessary to maintain the
-backward compatability.
+*much* easier with anonymous classes), but it is necessary to maintain
+backward compatibility.
 
 ### Contributing
 
@@ -72,12 +72,7 @@ helpers that exist today (`findSegmentsByName()` and
 
 ### Testing
 
-This package is tested using
-[PHPUnit 4.8](https://phpunit.de/manual/4.8/en/index.html), which is dated, 
-but it is the last version of PHPUnit to support PHP
-5.3. It still gets the job done. The main thing we don't get with such an old
-version is easy code coverage, since it doesn't support phpdbg like later
-versions of PHPUnit.
+This package is tested using [PHPUnit 8.5](https://phpunit.de/manual/8.5/en/index.html).
 
 To run the tests:
 
@@ -85,10 +80,6 @@ To run the tests:
 composer install
 ./vendor/bin/phpunit
 ```
-
-One gotcha: you *must* run `composer install` on the oldest version of PHP you
-intend to run the test suite on, as some of PHPUnit's dependencies generate
-code, and they'll generate code for newer versions of PHP if you let them.
 
 If you don't have the PHP agent available in your default PHP, the tests will
 still run, but a few tests will be skipped. You can provide a path to PHP
@@ -103,39 +94,3 @@ You may, of course, also need to provide additional configuration settings if
 required settings like `newrelic.license` aren't set by default within your
 PHP. Effectively, you need to start a transaction just like any other PHP
 transaction.
-
-### Documentation
-
-Documentation is generated with
-[Sami](https://packagist.org/packages/sami/sami).
-
-To generate documentation, you can run Sami as follows (provided you ran
-`composer install` as described in the testing section above):
-
-```bash
-./vendor/bin/sami.php update sami.php
-```
-
-This will generate documentation in the `build` directory, and metadata (which
-is used to speed up subsequent builds) in `cache`.
-
-#### Publishing
-
-The easiest way to publish your documentation is to use the
-[gh-pages](https://www.npmjs.com/package/gh-pages) tool. To use it, you'll need
-[Node.js](https://nodejs.org/en/) available, along with either
-[NPM](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/en/).
-
-Getting the tool is easy enough:
-
-```bash
-yarn install
-```
-
-Actually running it isn't much harder (in this example, we're assuming that
-`origin` is the name of the Git remote, and `gh-pages` is the desired branch),
-provided you've already built the documentation as described above:
-
-```bash
-yarn run gh-pages -d build -b gh-pages -o origin
-```
