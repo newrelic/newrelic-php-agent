@@ -54,6 +54,12 @@ if ($metrics['Datastore/operation/SQLite/insert']->count < 4) {
 
 ## Development
 
+This package needs to maintain compatibility with PHP 7.2, as that is the
+minimum PHP version the PHP agent supports. This is a bit limiting (for
+example, the filtering in the `NewRelic\Integration\Trace` class would be
+*much* easier with anonymous classes), but it is necessary to maintain
+backward compatibility.
+
 ### Contributing
 
 Contributions are welcome. The most likely place that needs expansion is the
