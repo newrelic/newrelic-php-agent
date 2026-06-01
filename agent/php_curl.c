@@ -730,9 +730,16 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
    * curl_multi_exec, the end time of the segment is updated.
    */
   if (!nr_guzzle_in_call_stack(TSRMLS_C)) {
+    /*
+     * Must explicitly be parented to the current segment of the txn context;
+     * otherwise, it will be parented to the main NULL context. In non-fiber
+     * cases, this will be a segment on the default (NULL) context; otherwise,
+     * it will be the current segment on the actively executing fiber.
+     */
     segment = nr_segment_start(
-        NRPRG(txn), NULL,
+        NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)),
         nr_php_curl_multi_md_get_async_context(curlres TSRMLS_CC));
+
     nr_segment_set_name(segment, "curl_multi_exec");
     nr_php_curl_multi_md_set_segment(curlres, segment TSRMLS_CC);
   }

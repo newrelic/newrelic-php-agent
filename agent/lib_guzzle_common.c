@@ -90,7 +90,15 @@ nr_segment_t* nr_guzzle_obj_add(const zval* obj,
   async_context
       = nr_guzzle_create_async_context_name(async_context_prefix, obj);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, async_context);
+  /*
+   * Must explicitly be parented to the current segment of the txn context;
+   * otherwise, it will be parented to the main NULL context. In non-fiber
+   * cases, this will be a segment on the default (NULL) context; otherwise, it
+   * will be the current segment on the actively executing fiber.
+   */
+  segment = nr_segment_start(NRPRG(txn),
+                             nr_txn_get_current_segment_txn_context(NRPRG(txn)),
+                             async_context);
 
   nr_free(async_context);
 
