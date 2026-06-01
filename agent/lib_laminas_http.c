@@ -337,7 +337,7 @@ NR_PHP_WRAPPER_START(nr_zend_http_client_request) {
     goto leave;
   }
 
-  segment = nr_segment_start_with_parent_context(NRPRG(txn), auto_segment);
+  segment = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
 
   /*
    * We have to manually force this segment as the current segment on

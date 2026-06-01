@@ -164,7 +164,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id TSRMLS_CC);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   NR_PHP_WRAPPER_CALL;
   nr_segment_datastore_end(&segment, &params);
 

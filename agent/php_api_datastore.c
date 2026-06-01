@@ -53,7 +53,7 @@ zval* nr_php_api_datastore_validate(const HashTable* params) {
         nr_php_zval_free(&validated_params);
         return NULL;
       } else if (datastore_validators[i].default_value) {
-        nr_php_add_assoc_string(validated_params, key, 
+        nr_php_add_assoc_string(validated_params, key,
                                 (char*)datastore_validators[i].default_value);
       }
     } else {
@@ -142,7 +142,7 @@ PHP_FUNCTION(newrelic_record_datastore_segment) {
   }
 
   if (instrument) {
-    segment = nr_segment_start_with_parent_context(
+    segment = NR_SEGMENT_START_WITH_PARENT_CONTEXT(
         NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)));
 #if ZEND_MODULE_API_NO < ZEND_8_0_X_API_NO \
     || defined OVERWRITE_ZEND_EXECUTE_DATA /* not OAPI */

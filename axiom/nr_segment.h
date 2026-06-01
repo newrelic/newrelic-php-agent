@@ -305,17 +305,27 @@ extern nr_segment_t* nr_segment_start(nrtxn_t* txn,
                                       const char* async_context);
 
 /*
- * Purpose : Allocate and start a segment within a transaction's trace using a
- * given segment's async context.
+ * Purpose : Get a the string value of a given segment async context
  *
- * Params  : 1. The current transaction.
- *           2. The segment to use the async_context to be applied to the new
- * segment.
+ * Params  : 1. The segment.
  *
- * Returns : A context string.
+ * Note    : This will be NULL for default/main, and a string context for async
+ * Returns : A pointer to the string context.
  */
-extern nr_segment_t* nr_segment_start_with_parent_context(nrtxn_t* txn,
-                                                          nr_segment_t* parent);
+extern const char* nr_segment_get_context(nr_segment_t* segment);
+
+/*
+ * Purpose : This is a wrapper to nr_segment_start to automatically start the
+ * segment with the current parent context.
+ */
+#define NR_SEGMENT_START_WITH_PARENT_CONTEXT(txn, parent) \
+  nr_segment_start(txn, NULL, nr_segment_get_context(parent))
+/*
+ * Purpose : This is a wrapper to nr_segment_start to automatically start the
+ * segment with the current txn context.
+ */
+#define NR_SEGMENT_START_WITH_TXN_CONTEXT(txn) \
+  nr_segment_start(txn, NULL, nr_txn_get_current_context(txn))
 
 /*
  * Purpose : Start an already allocated segment.
