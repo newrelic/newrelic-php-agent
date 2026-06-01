@@ -37,10 +37,10 @@ class SlowSQLTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @dataProvider invalidProvider
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(array $slowsql)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new SlowSQL($slowsql);
     }
 

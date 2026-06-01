@@ -23,10 +23,10 @@ class DatastoreInstanceTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @dataProvider invalidInputs
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(stdClass $input)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new DatastoreInstance($input);
     }
 

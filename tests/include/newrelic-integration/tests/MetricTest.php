@@ -33,10 +33,10 @@ class MetricTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @dataProvider invalidMetrics
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid($metric)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Metric($metric);
     }
 

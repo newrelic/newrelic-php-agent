@@ -18,10 +18,10 @@ class TraceTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @dataProvider invalidProvider
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(array $input)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Trace($input);
     }
 
