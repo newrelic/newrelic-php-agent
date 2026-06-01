@@ -10,8 +10,8 @@ The agent should report Redis metrics and spans for Redis basic operations if fi
 
 /*SKIPIF
 <?php
-if (version_compare(phpversion(), '5.4', '<')) {
-    die("skip: PHP > 5.3 required\n");
+if (version_compare(phpversion(), '8.1, '<')) {
+    die("skip: PHP >= 8.1 required\n");
 }
 require("skipif.inc");
 */
