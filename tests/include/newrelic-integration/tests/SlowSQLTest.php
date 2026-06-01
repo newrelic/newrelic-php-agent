@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\SlowSQL;
 
-class SlowSQLTest extends PHPUnit_Framework_TestCase
+class SlowSQLTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {

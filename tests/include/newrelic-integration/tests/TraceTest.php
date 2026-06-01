@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\Trace;
 
-class TraceTest extends PHPUnit_Framework_TestCase
+class TraceTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {

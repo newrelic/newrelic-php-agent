@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\Trace\Segment;
 
-class SegmentTest extends PHPUnit_Framework_TestCase
+class SegmentTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {

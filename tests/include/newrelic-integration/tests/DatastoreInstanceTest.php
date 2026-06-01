@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\DatastoreInstance;
 
-class DatastoreInstanceTest extends PHPUnit_Framework_TestCase
+class DatastoreInstanceTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
