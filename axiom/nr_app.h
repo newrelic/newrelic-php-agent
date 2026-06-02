@@ -21,6 +21,7 @@
 #include "nr_app_harvest.h"
 #include "nr_rules.h"
 #include "nr_segment_terms.h"
+#include "util_hashmap.h"
 #include "util_random.h"
 #include "util_threads.h"
 
@@ -121,7 +122,12 @@ typedef struct _nrapp_t {
   nrobj_t* security_policies; /* from Daemon - full security policies map
                                  obtained from Preconnect */
   nrthread_mutex_t app_lock;  /* Serialization lock */
-  nr_app_harvest_t harvest;   /* Harvest timing and sampling data */
+  nr_app_harvest_config_t adaptive_sampling_config; /* Adaptive sampling config
+                                                       from daemon; updated on
+                                                       every appinfo reply */
+  nr_hashmap_t* harvest_map;                        /* Per-thread harvest stats,
+                                                       keyed by
+                                                       (uint64_t)pthread_self() */
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
@@ -287,5 +293,43 @@ extern const char* nr_app_get_entity_guid(const nrapp_t* app);
  *           application.
  */
 extern const char* nr_app_get_host_name(const nrapp_t* app);
+
+/*
+ * Purpose : Destructor for nr_app_harvest_stats_t values stored in
+ *           harvest_map.  For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The stats pointer to free.
+ */
+extern void nr_app_harvest_stats_dtor(nr_app_harvest_stats_t* stats);
+
+/*
+ * Purpose : Update the harvest config from a daemon connect reply and, if
+ *           connect_timestamp or frequency changed, reset per-thread harvest
+ *           stats in harvest_map so next_harvest is recalculated.  Must be
+ *           called with app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The new connect timestamp.
+ *           3. The new harvest frequency.
+ *           4. The new sampling target.
+ */
+extern void nr_app_update_harvest_config(nrapp_t* app,
+                                          nrtime_t connect_timestamp,
+                                          nrtime_t frequency,
+                                          uint16_t sampling_target);
+
+/*
+ * Purpose : Return the harvest struct for the calling thread, creating an
+ *           entry if this thread has not been seen before.  Must be called
+ *           with app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)pthread_self().
+ *
+ * Returns : Pointer to the per-thread harvest, or NULL on allocation failure.
+ */
+extern nr_app_harvest_stats_t* nr_app_get_or_create_thread_harvest(
+    nrapp_t* app,
+    uint64_t key);
 
 #endif /* NR_APP_HDR */

@@ -13,13 +13,13 @@
 /*
  * Purpose : Calculate the time of the next harvest for the given application.
  *
- * Params  : 1. A pointer to the app harvest.
+ * Params  : 1. A pointer to the harvest config.
  *           2. The current time.
  *
  * Returns : The time of the next harvest.
  */
 extern nrtime_t nr_app_harvest_calculate_next_harvest_time(
-    const nr_app_harvest_t* ah,
+    const nr_app_harvest_config_t* cfg,
     nrtime_t now);
 
 /*
@@ -51,26 +51,46 @@ extern bool nr_app_harvest_compare_harvest_to_now(nrtime_t connect_timestamp,
 /*
  * Purpose : Determine if the current time is after the first sampling period.
  *
- * Params  : 1. The application harvest
+ * Params  : 1. A pointer to the harvest config.
  *           2. The current time.
  *
  * Returns : true if the application is in its first sampling period;
  *           false otherwise.
  */
-extern bool nr_app_harvest_is_first(nr_app_harvest_t* ah, nrtime_t now);
+extern bool nr_app_harvest_is_first(const nr_app_harvest_config_t* cfg,
+                                    nrtime_t now);
 
-/* The following functions shadow the public API in nr_app_harvest.h: the key
- * difference is that the current time is provided as an explicit parameter,
- * rather than coming from nr_get_time(). This is for testing purposes. */
+/* The following functions accept an explicit current time rather than calling
+ * nr_get_time() internally.  This is for testing purposes. */
 
-extern void nr_app_harvest_private_init(nr_app_harvest_t* ah,
+/*
+ * Purpose : Update harvest config and conditionally reset stats if
+ *           connect_timestamp or frequency changed.
+ *
+ * Params  : 1. A pointer to the harvest config.
+ *           2. A pointer to the harvest stats, or NULL to skip stats reset.
+ *           3. The connect timestamp.
+ *           4. The harvest frequency.
+ *           5. The sampling target.
+ *           6. The current time.
+ */
+extern void nr_app_harvest_private_init(nr_app_harvest_config_t* cfg,
+                                        nr_app_harvest_stats_t* ah,
                                         nrtime_t connect_timestamp,
                                         nrtime_t harvest_frequency,
                                         uint16_t sampling_target,
                                         nrtime_t now);
 
-extern bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
-                                                 nr_random_t* rnd,
-                                                 nrtime_t now);
+/*
+ * Params  : 1. A pointer to the harvest config.
+ *           2. A pointer to the harvest stats.
+ *           3. A pointer to a random number generator.
+ *           4. The current time.
+ */
+extern bool nr_app_harvest_private_should_sample(
+    const nr_app_harvest_config_t* cfg,
+    nr_app_harvest_stats_t* ah,
+    nr_random_t* rnd,
+    nrtime_t now);
 
 #endif /* NR_APP_HARVEST_PRIVATE_HDR */

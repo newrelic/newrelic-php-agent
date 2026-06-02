@@ -1727,9 +1727,11 @@ static void test_begin(void) {
   app->info.host_display_name = nr_strdup("foo_host");
   app->info.security_policies_token = nr_strdup("");
 
-  nr_memset(&app->harvest, 0, sizeof(nr_app_harvest_t));
-  app->harvest.frequency = 60;
-  app->harvest.target_transactions_per_cycle = 10;
+  nr_memset(&app->adaptive_sampling_config, 0, sizeof(nr_app_harvest_config_t));
+  app->adaptive_sampling_config.frequency = 60;
+  app->adaptive_sampling_config.target_transactions_per_cycle = 10;
+  app->harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
   app->limits = default_app_limits();
 
   /*
@@ -1924,6 +1926,7 @@ static void test_begin(void) {
   nr_free(app->info.security_policies_token);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
+  nr_hashmap_destroy(&app->harvest_map);
   nr_attribute_config_destroy(&attribute_config);
   nr_random_destroy(&app->rnd);
 }
@@ -2155,9 +2158,11 @@ static void test_end(void) {
   app->info.host_display_name = nr_strdup("foo_host");
   app->info.security_policies_token = nr_strdup("");
 
-  nr_memset(&app->harvest, 0, sizeof(nr_app_harvest_t));
-  app->harvest.frequency = 60;
-  app->harvest.target_transactions_per_cycle = 10;
+  nr_memset(&app->adaptive_sampling_config, 0, sizeof(nr_app_harvest_config_t));
+  app->adaptive_sampling_config.frequency = 60;
+  app->adaptive_sampling_config.target_transactions_per_cycle = 10;
+  app->harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
 
   p->txns_app = app;
 
@@ -2305,6 +2310,7 @@ static void test_end(void) {
   nr_random_destroy(&app->rnd);
   nr_rules_destroy(&app->url_rules);
   nr_rules_destroy(&app->txn_rules);
+  nr_hashmap_destroy(&app->harvest_map);
   nrt_mutex_destroy(&app->app_lock);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);

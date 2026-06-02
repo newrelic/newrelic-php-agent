@@ -31,40 +31,52 @@
 #endif
 #endif
 
-void nr_app_harvest_init(nr_app_harvest_t* ah,
-                         nrtime_t connect_timestamp,
-                         nrtime_t harvest_frequency,
-                         uint16_t sampling_target) {
-  nr_app_harvest_private_init(ah, connect_timestamp, harvest_frequency,
-                              sampling_target, nr_get_time());
+void nr_app_harvest_stats_init(const nr_app_harvest_config_t* cfg,
+                               nr_app_harvest_stats_t* ah) {
+  if (NULL == cfg || NULL == ah) {
+    return;
+  }
+  ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(cfg,
+                                                                 nr_get_time());
+  ah->threshold = 0;
+  ah->prev_transactions_seen = 0;
+  ah->transactions_seen = 0;
+  ah->transactions_sampled = 0;
 }
 
-bool nr_app_harvest_should_sample(nr_app_harvest_t* ah, nr_random_t* rnd) {
-  return nr_app_harvest_private_should_sample(ah, rnd, nr_get_time());
+bool nr_app_harvest_should_sample(const nr_app_harvest_config_t* cfg,
+                                   nr_app_harvest_stats_t* ah,
+                                   nr_random_t* rnd) {
+  return nr_app_harvest_private_should_sample(cfg, ah, rnd, nr_get_time());
 }
 
-nrtime_t nr_app_harvest_calculate_next_harvest_time(const nr_app_harvest_t* ah,
-                                                    nrtime_t now) {
+nrtime_t nr_app_harvest_calculate_next_harvest_time(
+    const nr_app_harvest_config_t* cfg,
+    nrtime_t now) {
   uint64_t cycles;
+
+  if (NULL == cfg) {
+    return 0;
+  }
 
   /* If the current time is before the connect timestamp, we don't really have
    * a sensible answer. Let's just say it'll be the connect timestamp, log a
    * message saying this is a bit odd, and go with it. */
-  if (now < ah->connect_timestamp) {
+  if (now < cfg->connect_timestamp) {
     nrl_info(NRL_DAEMON,
              "cannot calculate next harvest given a connect timestamp in the "
              "future; possible clock skew? now=" NR_TIME_FMT
              " connect_timestamp=" NR_TIME_FMT,
-             now, ah->connect_timestamp);
-    return ah->connect_timestamp;
+             now, cfg->connect_timestamp);
+    return cfg->connect_timestamp;
   }
 
   /* Similarly, if the harvest frequency is zero, then something's gone fairly
    * awry. As above, we'll just return the connect timestamp to avoid a
    * floating point exception. */
-  if (0 == ah->frequency) {
+  if (0 == cfg->frequency) {
     nrl_info(NRL_DAEMON, "harvest frequency is unexpectedly zero");
-    return ah->connect_timestamp;
+    return cfg->connect_timestamp;
   }
 
   /* Otherwise, we calculate how many harvest cycles have occurred since
@@ -73,8 +85,8 @@ nrtime_t nr_app_harvest_calculate_next_harvest_time(const nr_app_harvest_t* ah,
    * harvest would have occurred: in that case, we'll return the timestamp for
    * the next harvest cycle, which is fine for the purposes of estimating
    * sampling. */
-  cycles = (now - ah->connect_timestamp) / ah->frequency;
-  return ah->connect_timestamp + (ah->frequency * (cycles + 1));
+  cycles = (now - cfg->connect_timestamp) / cfg->frequency;
+  return cfg->connect_timestamp + (cfg->frequency * (cycles + 1));
 }
 
 uint64_t nr_app_harvest_calculate_threshold(uint64_t target,
@@ -109,15 +121,17 @@ bool nr_app_harvest_compare_harvest_to_now(nrtime_t connect_timestamp,
   return (now < (connect_timestamp + frequency));
 }
 
-bool nr_app_harvest_is_first(nr_app_harvest_t* ah, nrtime_t now) {
-  if (NULL == ah) {
+bool nr_app_harvest_is_first(const nr_app_harvest_config_t* cfg,
+                              nrtime_t now) {
+  if (NULL == cfg) {
     return false;
   }
-  return nr_app_harvest_compare_harvest_to_now(ah->connect_timestamp,
-                                               ah->frequency, now);
+  return nr_app_harvest_compare_harvest_to_now(cfg->connect_timestamp,
+                                               cfg->frequency, now);
 }
 
-void nr_app_harvest_private_init(nr_app_harvest_t* ah,
+void nr_app_harvest_private_init(nr_app_harvest_config_t* cfg,
+                                 nr_app_harvest_stats_t* ah,
                                  nrtime_t connect_timestamp,
                                  nrtime_t harvest_frequency,
                                  uint16_t sampling_target,
@@ -125,16 +139,16 @@ void nr_app_harvest_private_init(nr_app_harvest_t* ah,
   nrtime_t prev_connect_timestamp;
   nrtime_t prev_frequency;
 
-  if (NULL == ah) {
+  if (NULL == cfg) {
     return;
   }
 
-  prev_connect_timestamp = ah->connect_timestamp;
-  prev_frequency = ah->frequency;
+  prev_connect_timestamp = cfg->connect_timestamp;
+  prev_frequency = cfg->frequency;
 
-  ah->connect_timestamp = connect_timestamp;
-  ah->frequency = harvest_frequency;
-  ah->target_transactions_per_cycle = sampling_target;
+  cfg->connect_timestamp = connect_timestamp;
+  cfg->frequency = harvest_frequency;
+  cfg->target_transactions_per_cycle = sampling_target;
 
   nrl_debug(NRL_AGENT,
             "Adaptive sampling configuration. Connect: " NR_TIME_FMT
@@ -143,20 +157,21 @@ void nr_app_harvest_private_init(nr_app_harvest_t* ah,
 
   /* If the connect timestamp and/or harvest frequency changed, then the
    * previous data we had is now invalid, and we should reset it. */
-  if (ah->connect_timestamp != prev_connect_timestamp
-      || ah->frequency != prev_frequency) {
-    ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(ah, now);
-    ah->threshold = 0.0;
+  if (ah && (cfg->connect_timestamp != prev_connect_timestamp
+             || cfg->frequency != prev_frequency)) {
+    ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(cfg, now);
+    ah->threshold = 0;
     ah->prev_transactions_seen = 0;
     ah->transactions_seen = 0;
     ah->transactions_sampled = 0;
   }
 }
 
-bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
+bool nr_app_harvest_private_should_sample(const nr_app_harvest_config_t* cfg,
+                                          nr_app_harvest_stats_t* ah,
                                           nr_random_t* rnd,
                                           nrtime_t now) {
-  if ((NULL == ah) || (NULL == rnd)) {
+  if ((NULL == cfg) || (NULL == ah) || (NULL == rnd)) {
     return false;
   }
 
@@ -164,7 +179,7 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
    * transaction counters into a new harvest. */
   if (now >= ah->next_harvest) {
     ah->threshold = nr_app_harvest_calculate_threshold(
-        ah->target_transactions_per_cycle, ah->transactions_sampled);
+        cfg->target_transactions_per_cycle, ah->transactions_sampled);
 
     /* To correctly determine the number of transactions seen in the previous
      * harvest, we need to determine whether we are in the immediately
@@ -174,7 +189,7 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
      * harvest i, none were harvested in i+1, and now we are at i+2:
      *
      *    |-- harvest i --|-- harvest i+1 --|-- harvest i+2 --|               */
-    if (now >= ah->next_harvest + ah->frequency) {
+    if (now >= ah->next_harvest + cfg->frequency) {
       ah->prev_transactions_seen = 0;
     } else {
       ah->prev_transactions_seen = ah->transactions_seen;
@@ -182,7 +197,7 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
 
     ah->transactions_seen = 0;
     ah->transactions_sampled = 0;
-    ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(ah, now);
+    ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(cfg, now);
   }
 
   /* This function implies that we've seen a transaction, so let's record that.
@@ -192,8 +207,8 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
   /* If this is the first harvest, then the spec requires
    * us to sample the first n transactions, where n is the target number.
    * Figure that out and we can return early. */
-  if (nr_app_harvest_is_first(ah, now)) {
-    if (ah->transactions_sampled < ah->target_transactions_per_cycle) {
+  if (nr_app_harvest_is_first(cfg, now)) {
+    if (ah->transactions_sampled < cfg->target_transactions_per_cycle) {
       ah->transactions_sampled++;
       return true;
     }
@@ -202,9 +217,9 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
   /* We're still here! If we've not yet sampled the target number, we
    * determine whether this transaction should be sampled based on how many
    * transactions were sampled in the previous harvest cycle. */
-  if (ah->transactions_sampled < ah->target_transactions_per_cycle) {
+  if (ah->transactions_sampled < cfg->target_transactions_per_cycle) {
     if (nr_random_range(rnd, ah->prev_transactions_seen)
-        < ah->target_transactions_per_cycle) {
+        < cfg->target_transactions_per_cycle) {
       ah->transactions_sampled++;
       return true;
     }
@@ -215,7 +230,7 @@ bool nr_app_harvest_private_should_sample(nr_app_harvest_t* ah,
      * sample a transaction.
      */
     ah->threshold = nr_app_harvest_calculate_threshold(
-        ah->target_transactions_per_cycle, ah->transactions_sampled);
+        cfg->target_transactions_per_cycle, ah->transactions_sampled);
 
     if (nr_random_range(rnd, ah->transactions_seen) < ah->threshold) {
       ah->transactions_sampled++;

@@ -124,6 +124,25 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
    * cope with an uninitialised extensions structure.
    */
   nr_php_extension_instrument_destroy(&newrelic_globals->shared.extensions);
+
+  /*
+   * Remove this thread's per-thread harvest stats entry from every app's
+   * harvest_map so it is not left dangling after the thread exits.
+   */
+  if (nr_agent_applist) {
+    uint64_t key = (uint64_t)pthread_self();
+
+    nrt_mutex_lock(&nr_agent_applist->applist_lock);
+    for (int i = 0; i < nr_agent_applist->num_apps; i++) {
+      nrapp_t* app = nr_agent_applist->apps[i];
+      if (app && app->harvest_map) {
+        nrt_mutex_lock(&app->app_lock);
+        nr_hashmap_index_delete(app->harvest_map, key);
+        nrt_mutex_unlock(&app->app_lock);
+      }
+    }
+    nrt_mutex_unlock(&nr_agent_applist->applist_lock);
+  }
 }
 
 #if defined(__GNUC__)
