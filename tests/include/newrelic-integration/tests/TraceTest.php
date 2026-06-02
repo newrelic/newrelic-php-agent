@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\Trace;
 
-class TraceTest extends PHPUnit_Framework_TestCase
+class TraceTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
@@ -18,10 +18,10 @@ class TraceTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider invalidProvider
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid(array $input)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Trace($input);
     }
 
