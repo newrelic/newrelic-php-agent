@@ -9,7 +9,6 @@
 #ifndef PHP_NEWRELIC_HDR
 #define PHP_NEWRELIC_HDR
 
-#include "php_includes.h"
 #include "nr_banner.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_segment.h"

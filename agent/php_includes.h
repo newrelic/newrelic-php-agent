@@ -33,7 +33,6 @@
 #include "php_ini.h"
 #include "php_main.h"
 #include "php_version.h"
-#include "php_compat.h"
 
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/info.h"
