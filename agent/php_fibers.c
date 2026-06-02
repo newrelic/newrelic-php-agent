@@ -5,6 +5,9 @@
  * This file handles fibers instrumentation.
  */
 
+#include "php_includes.h"
+#include "php_compat.h"
+#include "php_newrelic.h"
 #include "php_fibers.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_mysqli_metadata_private.h"

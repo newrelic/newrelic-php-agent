@@ -8,8 +8,6 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
-#include "php_newrelic.h"
-
 /*
  * Purpose : Allocate and deep-copy the current request's transaction globals
  *           into a new txn_globals_t suitable for use by a fiber.
