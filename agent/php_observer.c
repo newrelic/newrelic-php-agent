@@ -182,15 +182,23 @@ static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
 
 static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
   nr_segment_t* current_segment = NULL;
+  nrtxn_t* txn = NRPRG(txn);
 
   if (zfc->kind != zend_ce_fiber) {
-    /* Fiber context is the Main PHP Process */
+    /* Context is the Main PHP Process */
     NRPRG_SHARED(current_php_context) = NULL;
     NRPRG_SHARED(fiber_context_string)[0] = '\0';
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = 0;
+    }
   } else {
     snprintf(NRPRG_SHARED(fiber_context_string),
              sizeof(NRPRG_SHARED(fiber_context_string)), "%p", zfc);
     NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = nr_string_add(
+          txn->trace_strings, NRPRG_SHARED(current_php_context));
+    }
   }
 }
 
