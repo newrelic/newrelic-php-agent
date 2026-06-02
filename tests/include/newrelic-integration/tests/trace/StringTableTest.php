@@ -6,13 +6,11 @@
 
 use NewRelic\Integration\Trace\StringTable;
 
-class StringTableTest extends PHPUnit_Framework_TestCase
+class StringTableTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @expectedException OutOfBoundsException
-     */
     public function testGetOutOfBounds()
     {
+        $this->expectException(\OutOfBoundsException::class);
         $table = new StringTable($this->sampleStringTable());
         $table->get(26);
     }

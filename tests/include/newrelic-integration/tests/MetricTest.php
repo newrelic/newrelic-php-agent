@@ -6,7 +6,7 @@
 
 use NewRelic\Integration\Metric;
 
-class MetricTest extends PHPUnit_Framework_TestCase
+class MetricTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstruct()
     {
@@ -33,10 +33,10 @@ class MetricTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider invalidMetrics
-     * @expectedException InvalidArgumentException
      */
     public function testConstructInvalid($metric)
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Metric($metric);
     }
 
