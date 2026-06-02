@@ -52,6 +52,33 @@ static void test_init(void) {
                               ah.transactions_sampled);
 }
 
+static void test_stats_init(void) {
+  nr_app_harvest_config_t cfg = {.connect_timestamp = 100, .frequency = 60,
+                                 .target_transactions_per_cycle = 10};
+  nr_app_harvest_stats_t ah = {.transactions_seen = 5, .transactions_sampled = 3,
+                               .threshold = 7};
+
+  /*
+   * Test : Bad parameters.
+   */
+  nr_app_harvest_stats_init(NULL, &ah);
+  tlib_pass_if_uint64_t_equal("NULL cfg: ah unchanged", 5, ah.transactions_seen);
+
+  nr_app_harvest_stats_init(&cfg, NULL);
+
+  /*
+   * Test : Normal init resets mutable counters.
+   */
+  nr_app_harvest_stats_init(&cfg, &ah);
+  tlib_pass_if_uint64_t_equal("threshold reset", 0, ah.threshold);
+  tlib_pass_if_uint64_t_equal("prev seen reset", 0, ah.prev_transactions_seen);
+  tlib_pass_if_uint64_t_equal("seen reset", 0, ah.transactions_seen);
+  tlib_pass_if_uint64_t_equal("sampled reset", 0, ah.transactions_sampled);
+  tlib_pass_if_true("next_harvest set", ah.next_harvest > 0,
+                    "expected next_harvest > 0, got " NR_TIME_FMT,
+                    ah.next_harvest);
+}
+
 static void test_calculate_next_harvest_time(void) {
   nr_app_harvest_config_t cfg = {.connect_timestamp = 100, .frequency = 0};
 
@@ -280,6 +307,7 @@ void test_main(void* p NRUNUSED) {
   nr_random_seed(rnd, 345345);
 
   test_init();
+  test_stats_init();
   test_calculate_next_harvest_time();
   test_calculate_threshold();
   test_is_first();

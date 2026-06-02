@@ -161,6 +161,20 @@ static void* sampling_thread(void* arg) {
   return NULL;
 }
 
+static void test_harvest_map_null_inputs(void) {
+  nrapp_t app = {0};
+
+  /* NULL app — should not crash */
+  nr_app_update_harvest_config(NULL, 100, 60 * NR_TIME_DIVISOR, 10);
+
+  /* app with NULL harvest_map — should return NULL */
+  tlib_pass_if_null("NULL harvest_map",
+                    nr_app_get_or_create_thread_harvest(&app, 1));
+
+  /* NULL app — should return NULL */
+  tlib_pass_if_null("NULL app", nr_app_get_or_create_thread_harvest(NULL, 1));
+}
+
 static void test_per_thread_sampling_independence(void) {
   sampling_thread_state_t s = {0};
   nrapp_t app = {0};
@@ -262,6 +276,7 @@ tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1,
 void test_main(void* p NRUNUSED) {
   /* kill the process if the test deadlocks or hangs */
   alarm(10);
+  test_harvest_map_null_inputs();
   test_per_thread_sampling_independence();
   alarm(0);
 }
