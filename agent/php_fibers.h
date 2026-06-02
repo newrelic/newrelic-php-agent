@@ -8,7 +8,6 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
-#include "Zend/zend_fibers.h"
 #include "php_newrelic.h"
 
 /*
