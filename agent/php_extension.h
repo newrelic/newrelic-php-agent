@@ -9,6 +9,8 @@
 #ifndef PHP_MODULE_HDR
 #define PHP_MODULE_HDR
 
+#include "php_includes.h"
+
 /* Declare the opaque extensions structure. */
 struct _nr_php_extensions_t;
 typedef struct _nr_php_extensions_t nr_php_extensions_t;
