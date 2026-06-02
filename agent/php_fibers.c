@@ -7,7 +7,6 @@
 
 #include "php_includes.h"
 #include "php_compat.h"
-#include "php_newrelic.h"
 #include "php_fibers.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_mysqli_metadata_private.h"
@@ -88,22 +87,22 @@ static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
 #undef COPY_STRING
 #undef COPY_BASIC
 
-txn_globals_t* nrf_fiber_copy_txn_globals() {
+txn_globals_t* nrf_fiber_copy_txn_globals(txn_globals_t* src) {
   txn_globals_t* fiber_txn_globals = NULL;
 
   fiber_txn_globals = nr_malloc(sizeof(txn_globals_t));
 
-  nrf_txn_global_deep_copy(fiber_txn_globals, &NRPRG(txn_globals));
+  nrf_txn_global_deep_copy(fiber_txn_globals, src);
 
   return fiber_txn_globals;
 }
 
-ctx_globals_t* nrf_fiber_copy_ctx_globals() {
+ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
   ctx_globals_t* fiber_ctx_globals = NULL;
 
   fiber_ctx_globals = nr_malloc(sizeof(ctx_globals_t));
 
-  nrf_ctx_global_deep_copy(fiber_ctx_globals, &NRPRG(ctx));
+  nrf_ctx_global_deep_copy(fiber_ctx_globals, src);
 
   return fiber_ctx_globals;
 }
@@ -156,8 +155,8 @@ nr_status_t nrf_add_fiber_context_to_global_hashmap(const char* key) {
   }
 
   fg = nr_malloc(sizeof(fiber_globals_t));
-  tg = nrf_fiber_copy_txn_globals();
-  cg = nrf_fiber_copy_ctx_globals();
+  tg = nrf_fiber_copy_txn_globals(&NRPRG(txn_globals));
+  cg = nrf_fiber_copy_ctx_globals(&NRPRG(ctx));
 
   fg->txn_globals = tg;
   fg->ctx_globals = cg;

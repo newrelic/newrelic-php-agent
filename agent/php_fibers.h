@@ -8,25 +8,35 @@
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
+#include "php_newrelic.h"
+
 /*
- * Purpose : Allocate and deep-copy the current request's transaction globals
- *           into a new txn_globals_t suitable for use by a fiber.
+ * Purpose : Allocate and deep-copy the given transaction globals into a new
+ *           txn_globals_t suitable for use by a fiber.
+ *
+ * Params  : 1. A pointer to the source txn_globals_t to copy from. Must be
+ *              non-NULL. The source is not modified and remains owned by
+ *              the caller; typically this is &NRPRG(txn_globals).
  *
  * Returns : A pointer to a newly allocated txn_globals_t. Ownership of the
  *           returned struct (and its contained hashmaps and metadata) is
  *           transferred to the caller, which is responsible for freeing it.
  */
-extern txn_globals_t* nrf_fiber_copy_txn_globals(void);
+extern txn_globals_t* nrf_fiber_copy_txn_globals(txn_globals_t* src);
 
 /*
- * Purpose : Allocate and deep-copy the current request's context globals
- *           into a new ctx_globals_t suitable for use by a fiber.
+ * Purpose : Allocate and deep-copy the given context globals into a new
+ *           ctx_globals_t suitable for use by a fiber.
+ *
+ * Params  : 1. A pointer to the source ctx_globals_t to copy from. Must be
+ *              non-NULL. The source is not modified and remains owned by
+ *              the caller; typically this is &NRPRG(ctx).
  *
  * Returns : A pointer to a newly allocated ctx_globals_t. Ownership of the
  *           returned struct (and its contained strings, hashmaps, and stacks)
  *           is transferred to the caller, which is responsible for freeing it.
  */
-extern ctx_globals_t* nrf_fiber_copy_ctx_globals(void);
+extern ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src);
 
 /*
  * Purpose : Free a fiber_globals_t and all owned resources held by its
