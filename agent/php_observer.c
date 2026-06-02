@@ -192,11 +192,6 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
              sizeof(NRPRG_SHARED(fiber_context_string)), "%p", zfc);
     NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
   }
-
-  current_segment = nr_php_txn_get_current_segment_php_context(NRPRG(txn));
-  if (current_segment) {
-    nr_txn_set_current_segment(NRPRG(txn), current_segment);
-  }
 }
 
 /*
