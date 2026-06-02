@@ -100,6 +100,7 @@ typedef struct {
 static void* sampling_thread(void* arg) {
   sampling_thread_state_t* s = (sampling_thread_state_t*)arg;
   nr_app_harvest_stats_t* th;
+  pthread_t tid;
   int idx;
 
   /* claim a stable result-array index before any other thread can */
@@ -112,7 +113,8 @@ static void* sampling_thread(void* arg) {
    * key — unique per thread, stable for the thread's lifetime.
    */
   nrt_mutex_lock(&s->app->app_lock);
-  th = nr_app_get_or_create_thread_harvest(s->app, (uint64_t)pthread_self());
+  tid = pthread_self();
+  th = nr_app_get_or_create_thread_harvest(s->app, (uint64_t)(uintptr_t)tid);
   nrt_mutex_unlock(&s->app->app_lock);
 
   /* --- Phase 1 ---------------------------------------------------------- */
