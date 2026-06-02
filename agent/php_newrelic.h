@@ -9,6 +9,7 @@
 #ifndef PHP_NEWRELIC_HDR
 #define PHP_NEWRELIC_HDR
 
+#include "php_includes.h"
 #include "nr_banner.h"
 #include "nr_mysqli_metadata.h"
 #include "nr_segment.h"
@@ -418,8 +419,6 @@ typedef struct _shared_globals_t {
   /* Contains the fiber address as a string to use as the async_context.*/
   char fiber_context_string[32];
 
-  nr_hashmap_t* fiber_globals_map;
-
   /*
    * Contains the parent segment of a fiber only when starting a fiber within a
    * fiber. For all other cases will be null which indicates that the main PHP
@@ -594,6 +593,10 @@ ctx_globals_t ctx;  // Context-specific globals
 nrtxn_t* txn;  // The all-important transaction pointer
 
 txn_globals_t txn_globals;  // Transaction Globals
+
+nr_hashmap_t* fiber_globals_map;
+
+fiber_globals_t* fiber_globals;
 
 ZEND_END_MODULE_GLOBALS(newrelic)
 
