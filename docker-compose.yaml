@@ -30,7 +30,7 @@ services:
     restart: always
     command: >
       sh -c '
-        redis-server --port 7000 --cluster-enabled yes --cluster-config-file /tmp/nodes.conf --cluster-announce-ip redisclusterdb &
+        redis-server --port 7000 --cluster-enabled yes --cluster-config-file /tmp/nodes.conf --cluster-announce-ip $$(hostname -i) &
         PID=$$!
         until redis-cli -p 7000 ping >/dev/null 2>&1; do sleep 0.2; done
         redis-cli -p 7000 cluster addslotsrange 0 16383
