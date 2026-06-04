@@ -2419,7 +2419,9 @@ NR_INNER_WRAPPER(curl_exec) {
     return;
   }
 
-  nr_php_curl_exec_pre(curlres, NULL, NULL TSRMLS_CC);
+  nr_php_curl_exec_pre(curlres,
+                       nr_txn_get_current_segment_txn_context(NRPRG(txn)),
+                       nr_txn_get_current_context(NRPRG(txn)) TSRMLS_CC);
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);

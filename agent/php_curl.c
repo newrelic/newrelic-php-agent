@@ -742,6 +742,9 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
 
     nr_segment_set_name(segment, "curl_multi_exec");
     nr_php_curl_multi_md_set_segment(curlres, segment TSRMLS_CC);
+  } else {
+    /* Get the correct parent in case we aren't in the default context. */
+    segment = nr_txn_get_current_segment_txn_context(NRPRG(txn));
   }
 
   /*
