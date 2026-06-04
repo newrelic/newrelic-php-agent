@@ -55,16 +55,35 @@ extern void free_fiber_globals(void* fiber_globals);
  * Purpose : Initialize the per-request hashmap that maps fiber context keys
  *           to their saved fiber_globals_t snapshots.
  *
- *           The hashmap is created with free_fiber_globals as its destructor
- *           so that removed or replaced entries are fully cleaned up.
+ *           If *fiber_globals_map is NULL, a new hashmap is allocated with
+ *           free_fiber_globals as its destructor (so that removed or replaced
+ *           entries are fully cleaned up) and stored back into
+ *           *fiber_globals_map. If *fiber_globals_map already refers to a
+ *           hashmap, it is left unchanged (idempotent).
+ *
+ * Params  : 1. Address of the fiber globals hashmap pointer to initialize;
+ *              typically &NRPRG(fiber_globals_map). Must be non-NULL.
+ *
+ * Returns : NR_SUCCESS if the operation was performed (the parameter was
+ *           non-NULL), NR_FAILURE otherwise.
  */
-extern void nrf_fiber_init_global_hashmap(void);
+extern nr_status_t nrf_fiber_init_global_hashmap(
+    nr_hashmap_t** fiber_globals_map);
 
 /*
  * Purpose : Destroy the per-request fiber globals hashmap, freeing every
- *           fiber_globals_t snapshot it contains via free_fiber_globals.
+ *           fiber_globals_t snapshot it contains via free_fiber_globals, and
+ *           set *fiber_globals_map to NULL.
+ *
+ * Params  : 1. Address of the fiber globals hashmap pointer to destroy;
+ *              typically &NRPRG(fiber_globals_map). Safe to call when
+ *              *fiber_globals_map is NULL.
+ *
+ * Returns : NR_SUCCESS if the operation was performed (the parameter was
+ *           non-NULL), NR_FAILURE otherwise.
  */
-extern void nrf_fiber_destroy_global_hashmap(void);
+extern nr_status_t nrf_fiber_destroy_global_hashmap(
+    nr_hashmap_t** fiber_globals_map);
 
 /*
  * Purpose : Snapshot the current transaction and context globals and store

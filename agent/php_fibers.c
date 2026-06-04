@@ -15,14 +15,15 @@
 #include "util_hashmap.h"
 #include "util_memory.h"
 #include "util_stack.h"
+#include "util_strings.h"
 #include "zend_types.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
 #define COPY_BASIC(x) (dest->x = src->x)
-#define COPY_STRING(x) (nr_strcpy(dest->x, src->x))
+#define COPY_STRING(x) (dest->x = nr_strdup(src->x))
 #define COPY_HASHMAP(x) (dest->x = nr_hashmap_copy(src->x))
-#define COPY_STACK(x, y) (nr_stack_copy(&src->x, y))
+#define COPY_STACK(x, y) (dest->x = nr_stack_copy(&src->x, y))
 
 static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
   COPY_BASIC(execute_count);
@@ -36,7 +37,7 @@ static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
   COPY_HASHMAP(curl_multi_metadata);
   COPY_HASHMAP(prepared_statements);
 
-  dest->mysqli_links = nr_mysqli_metadata_copy(NRTXNGLOBAL(mysqli_links));
+  dest->mysqli_links = nr_mysqli_metadata_copy(src->mysqli_links);
 }
 
 static void* copy_stack_elem_zval(void* elem) {
@@ -129,16 +130,24 @@ void free_fiber_globals(void* fiber_globals) {
   nr_stack_destroy_fields(&f->ctx_globals->predis_ctxs);
 }
 
-void nrf_fiber_init_global_hashmap() {
-  if (NULL == NRPRG(fiber_globals_map)) {
-    NRPRG(fiber_globals_map) = nr_hashmap_create(free_fiber_globals);
+nr_status_t nrf_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
+  if (NULL == fiber_globals_map) {
+    return NR_FAILURE;
   }
+  if (NULL == *fiber_globals_map) {
+    *fiber_globals_map = nr_hashmap_create(free_fiber_globals);
+  }
+  return NR_SUCCESS;
 }
 
-void nrf_fiber_destroy_global_hashmap() {
-  if (NULL != NRPRG(fiber_globals_map)) {
-    nr_hashmap_destroy(&NRPRG(fiber_globals_map));
+nr_status_t nrf_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
+  if (NULL == fiber_globals_map) {
+    return NR_FAILURE;
   }
+  if (NULL != *fiber_globals_map) {
+    nr_hashmap_destroy(fiber_globals_map);
+  }
+  return NR_SUCCESS;
 }
 
 nr_status_t nrf_add_fiber_context_to_global_hashmap(const char* key) {
