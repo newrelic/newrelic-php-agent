@@ -11,6 +11,7 @@
 #include "nr_mysqli_metadata.h"
 #include "nr_mysqli_metadata_private.h"
 #include "php_agent.h"
+#include "php_newrelic.h"
 #include "php_zval.h"
 #include "util_hashmap.h"
 #include "util_memory.h"
@@ -150,60 +151,72 @@ nr_status_t nrf_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   return NR_SUCCESS;
 }
 
-nr_status_t nrf_add_fiber_context_to_global_hashmap(const char* key) {
+nr_status_t nrf_add_fiber_context_to_global_hashmap(
+    nr_hashmap_t* fiber_globals_map,
+    txn_globals_t* src_txn_globals,
+    ctx_globals_t* src_ctx_globals,
+    const char* key) {
   fiber_globals_t* fg = NULL;
   txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
 
-  if (NULL == key || sizeof(key) < 1) {
-    return NR_FAILURE;
-  }
-
-  if (NULL == NRPRG(fiber_globals_map)) {
-    return NR_FAILURE;
-  }
-
-  fg = nr_malloc(sizeof(fiber_globals_t));
-  tg = nrf_fiber_copy_txn_globals(&NRPRG(txn_globals));
-  cg = nrf_fiber_copy_ctx_globals(&NRPRG(ctx));
-
-  fg->txn_globals = tg;
-  fg->ctx_globals = cg;
-
-  nr_hashmap_update(NRPRG(fiber_globals_map), key, sizeof(key), fg);
-
-  return NR_SUCCESS;
-}
-
-nr_status_t nrf_remove_fiber_context_from_global_hashmap(const char* key) {
   if (NULL == key || nr_strlen(key) < 1) {
     return NR_FAILURE;
   }
 
-  if (NULL == NRPRG(fiber_globals_map)) {
+  if (NULL == fiber_globals_map) {
     return NR_FAILURE;
   }
 
-  return nr_hashmap_delete(NRPRG(fiber_globals_map), key, sizeof(key));
+  fg = nr_malloc(sizeof(fiber_globals_t));
+  tg = nrf_fiber_copy_txn_globals(src_txn_globals);
+  cg = nrf_fiber_copy_ctx_globals(src_ctx_globals);
+
+  fg->txn_globals = tg;
+  fg->ctx_globals = cg;
+
+  nr_hashmap_update(fiber_globals_map, key, nr_strlen(key), fg);
+
+  return NR_SUCCESS;
 }
 
-nr_status_t nrf_fiber_switch_global_context(const char* key) {
+nr_status_t nrf_remove_fiber_context_from_global_hashmap(
+    nr_hashmap_t* fiber_globals_map,
+    const char* key) {
+  if (NULL == key || nr_strlen(key) < 1) {
+    return NR_FAILURE;
+  }
+
+  if (NULL == fiber_globals_map) {
+    return NR_FAILURE;
+  }
+
+  return nr_hashmap_delete(fiber_globals_map, key, nr_strlen(key));
+}
+
+nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
+                                            fiber_globals_t** fiber_global_ptr,
+                                            const char* key) {
   fiber_globals_t* fg = NULL;
-  if (NULL == key || sizeof(key) < 1) {
+  if (NULL == key || nr_strlen(key) < 1) {
     return NR_FAILURE;
   }
 
-  if (NULL == NRPRG(fiber_globals_map)) {
+  if (NULL == fiber_globals_map) {
     return NR_FAILURE;
   }
 
-  fg = nr_hashmap_get(NRPRG(fiber_globals_map), key, sizeof(key));
+  if (NULL == fiber_global_ptr) {
+    return NR_FAILURE;
+  }
+
+  fg = nr_hashmap_get(fiber_globals_map, key, nr_strlen(key));
 
   if (NULL == fg) {
     return NR_FAILURE;
   }
 
-  NRPRG(fiber_globals) = fg;
+  *fiber_global_ptr = fg;
 
   return NR_SUCCESS;
 }
