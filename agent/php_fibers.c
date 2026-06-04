@@ -129,6 +129,9 @@ void free_fiber_globals(void* fiber_globals) {
   nr_stack_destroy_fields(&f->ctx_globals->wordpress_tags);
   nr_stack_destroy_fields(&f->ctx_globals->wordpress_tag_states);
   nr_stack_destroy_fields(&f->ctx_globals->predis_ctxs);
+  nr_free(f->txn_globals);
+  nr_free(f->ctx_globals);
+  nr_free(f);
 }
 
 nr_status_t nrf_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
