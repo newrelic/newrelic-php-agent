@@ -664,6 +664,12 @@ func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, mc
 func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
+	pidSetSize := len(harvest.pidSet)
+	if pidSetSize == 0 {
+		pidSetSize = 1
+	}
+	harvest.Metrics.AddCount("Instance/Reporting", "", float64(pidSetSize), Forced)
+
 	considerHarvestPayload(harvest.CustomEvents, args, mc)
 	considerHarvestPayload(harvest.ErrorEvents, args, mc)
 	considerHarvestPayload(harvest.Errors, args, mc)
@@ -675,9 +681,9 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayload(harvest.PhpPackages, args, mc)
 
 	if args.blocking {
-		harvestMetrics(harvest, args, mc, harvestLimits, to, harvest.pidSet)
+		harvestMetrics(harvest, args, mc, harvestLimits, to)
 	} else {
-		go harvestMetrics(harvest, args, mc, harvestLimits, to, harvest.pidSet)
+		go harvestMetrics(harvest, args, mc, harvestLimits, to)
 	}
 }
 
@@ -723,7 +729,11 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		harvest.TxnTraces = NewTxnTraces()
 		harvest.PhpPackages = NewPhpPackages()
 		harvest.commandsProcessed = 0
-		oldPidSet := harvest.pidSet
+		pidSetSize := len(harvest.pidSet)
+		if pidSetSize == 0 {
+			pidSetSize = 1
+		}
+		harvest.Metrics.AddCount("Instance/Reporting", "", float64(pidSetSize), Forced)
 		harvest.pidSet = make(map[int]struct{})
 
 		considerHarvestPayload(errors, args, mc)
@@ -732,9 +742,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(phpPackages, args, mc)
 
 		if args.blocking {
-			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver, oldPidSet)
+			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
 		} else {
-			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver, oldPidSet)
+			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
 		}
 	}
 
@@ -784,7 +794,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 }
 
-func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, oldPidSet map[int]struct{}) {
+func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
 	if !mc.mu.TryLock() {
 		log.Warnf("harvestMetrics skipped: previous cycle still running")
 		return
@@ -800,7 +810,7 @@ func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harves
 	mc.wg.Wait()
 	log.Debugf("harvesting metrics")
 
-	h.createFinalMetrics(harvestLimits, to, mc, oldPidSet)
+	h.createFinalMetrics(harvestLimits, to, mc)
 	harvestDataUsage(h, args, mc)
 
 	h.Metrics = h.Metrics.ApplyRules(args.rules)

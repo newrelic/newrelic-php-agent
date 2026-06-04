@@ -117,11 +117,10 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 	harvest.LogEvents.FailedHarvest(harvest)
 	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 
-	harvest.createFinalMetrics(limits, nil, mc, harvest.pidSet)
+	harvest.createFinalMetrics(limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
+		`[[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/error_event_data/Attempts"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/log_event_data/Attempts"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[3,0,0,0,0,0]],` +
@@ -176,45 +175,14 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 			},
 		},
 	}
-	harvest.createFinalMetrics(limits, nil, mc, harvest.pidSet)
+	harvest.createFinalMetrics(limits, nil, mc)
 
-	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]]]]`
-
-	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
-	if nil != err {
-		t.Fatal(err)
-	}
-	if got := string(json); got != expectedJSON {
-		t.Errorf("got=%q want=%q", got, expectedJSON)
-	}
-}
-
-// TestInstanceReportingUsesOldPidSet guards against a regression where
-// createFinalMetrics read the current pidSet after HarvestDefaultData had
-// already reset it, causing Instance/Reporting to always report 1. The fix
-// passes the pre-reset pidSet explicitly, so reporting must reflect the old set
-// even when the current pidSet is empty.
-func TestInstanceReportingUsesOldPidSet(t *testing.T) {
-	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
-	mc := mockMetricsController()
-
-	harvest.pidSet[1] = struct{}{}
-	harvest.pidSet[2] = struct{}{}
-	harvest.pidSet[3] = struct{}{}
-
-	// Simulate what HarvestDefaultData does: save the old pidSet then reset.
-	oldPidSet := harvest.pidSet
-	harvest.pidSet = make(map[int]struct{})
-
-	harvest.createFinalMetrics(collector.EventHarvestConfig{}, nil, mc, oldPidSet)
+	var expectedJSON = `["12345",1447203720,1417136520,[]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
 		t.Fatal(err)
 	}
-	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[3,0,0,0,0,0]]]]`
 	if got := string(json); got != expectedJSON {
 		t.Errorf("got=%q want=%q", got, expectedJSON)
 	}
