@@ -56,10 +56,10 @@ static nr_stack_t dummy_stack_data_zval() {
   nr_php_zval_str(z, "stackA");
   nr_stack_push(&s, z);
   zz = nr_php_zval_alloc();
-  nr_php_zval_str(z, "stackB");
+  nr_php_zval_str(zz, "stackB");
   nr_stack_push(&s, zz);
   zzz = nr_php_zval_alloc();
-  nr_php_zval_str(z, "stackC");
+  nr_php_zval_str(zzz, "stackC");
   nr_stack_push(&s, zzz);
   return s;
 }
