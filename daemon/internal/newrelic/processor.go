@@ -675,9 +675,9 @@ func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.Eve
 	considerHarvestPayload(harvest.PhpPackages, args, mc)
 
 	if args.blocking {
-		harvestMetrics(harvest, args, mc, harvestLimits, to)
+		harvestMetrics(harvest, args, mc, harvestLimits, to, harvest.pidSet)
 	} else {
-		go harvestMetrics(harvest, args, mc, harvestLimits, to)
+		go harvestMetrics(harvest, args, mc, harvestLimits, to, harvest.pidSet)
 	}
 }
 
@@ -723,6 +723,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		harvest.TxnTraces = NewTxnTraces()
 		harvest.PhpPackages = NewPhpPackages()
 		harvest.commandsProcessed = 0
+		oldPidSet := harvest.pidSet
 		harvest.pidSet = make(map[int]struct{})
 
 		considerHarvestPayload(errors, args, mc)
@@ -731,9 +732,9 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		considerHarvestPayload(phpPackages, args, mc)
 
 		if args.blocking {
-			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+			harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver, oldPidSet)
 		} else {
-			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver)
+			go harvestMetrics(harvest, args, mc, ah.connectReply.EventHarvestConfig, ah.TraceObserver, oldPidSet)
 		}
 	}
 
@@ -783,7 +784,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 
 }
 
-func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver) {
+func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, oldPidSet map[int]struct{}) {
 	if !mc.mu.TryLock() {
 		log.Warnf("harvestMetrics skipped: previous cycle still running")
 		return
@@ -799,7 +800,7 @@ func harvestMetrics(h *Harvest, args *harvestArgs, mc *MetricsController, harves
 	mc.wg.Wait()
 	log.Debugf("harvesting metrics")
 
-	h.createFinalMetrics(harvestLimits, to, mc)
+	h.createFinalMetrics(harvestLimits, to, mc, oldPidSet)
 	harvestDataUsage(h, args, mc)
 
 	h.Metrics = h.Metrics.ApplyRules(args.rules)

@@ -102,8 +102,8 @@ func (h *Harvest) createEndpointAttemptsMetric(endpoint string, val float64) {
 
 }
 
-func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
-	pidSetSize := len(h.pidSet)
+func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController, oldPidSet map[int]struct{}) {
+	pidSetSize := len(oldPidSet)
 
 	if 0 == pidSetSize {
 		// For UI purposes, Instance/Reporting has to be nonzero.
