@@ -120,8 +120,7 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 	harvest.createFinalMetrics(limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]],` +
-		`[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
+		`[[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/error_event_data/Attempts"},[2,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/log_event_data/Attempts"},[4,0,0,0,0,0]],` +
 		`[{"name":"Supportability/Agent/Collector/span_event_data/Attempts"},[3,0,0,0,0,0]],` +
@@ -178,8 +177,7 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 	}
 	harvest.createFinalMetrics(limits, nil, mc)
 
-	var expectedJSON = `["12345",1447203720,1417136520,` +
-		`[[{"name":"Instance/Reporting"},[1,0,0,0,0,0]]]]`
+	var expectedJSON = `["12345",1447203720,1417136520,[]]`
 
 	json, err := harvest.Metrics.CollectorJSONSorted(AgentRunID(`12345`), end)
 	if nil != err {
