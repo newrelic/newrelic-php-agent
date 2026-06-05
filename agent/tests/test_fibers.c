@@ -28,12 +28,18 @@ static nr_hashmap_t* dummy_hashmap_data() {
   return h;
 }
 
-static nr_stack_t dummy_stack_data() {
+static void dtor_free_stack_str(void* e, NRUNUSED void* d) {
+  char* str = (char*)e;
+  nr_free(str);
+}
+
+static nr_stack_t dummy_stack_data_str() {
   nr_stack_t s;
   nr_stack_init(&s, NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_push(&s, "elemA");
-  nr_stack_push(&s, "elemB");
-  nr_stack_push(&s, "elemC");
+  s.dtor = dtor_free_stack_str;
+  nr_stack_push(&s, nr_strdup("elemA"));
+  nr_stack_push(&s, nr_strdup("elemB"));
+  nr_stack_push(&s, nr_strdup("elemC"));
   return s;
 }
 
@@ -46,12 +52,18 @@ static nr_stack_t dummy_stack_data_bool() {
   return s;
 }
 
+static void dtor_free_stack_zval(void* e, NRUNUSED void* d) {
+  zval* zv = (zval*)e;
+  nr_php_zval_free(&zv);
+}
+
 static nr_stack_t dummy_stack_data_zval() {
   nr_stack_t s;
   zval* z = NULL;
   zval* zz = NULL;
   zval* zzz = NULL;
   nr_stack_init(&s, NR_STACK_DEFAULT_CAPACITY);
+  s.dtor = dtor_free_stack_zval;
   z = nr_php_zval_alloc();
   nr_php_zval_str(z, "stackA");
   nr_stack_push(&s, z);
@@ -110,9 +122,9 @@ static ctx_globals_t* dummy_ctx_globals() {
   cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
   cg->drupal_invoke_all_states = dummy_stack_data_bool();
   // TODO: segment handling?
-  cg->wordpress_tags = dummy_stack_data();
+  cg->wordpress_tags = dummy_stack_data_str();
   cg->wordpress_tag_states = dummy_stack_data_bool();
-  cg->predis_ctxs = dummy_stack_data();
+  cg->predis_ctxs = dummy_stack_data_str();
   return cg;
 }
 
