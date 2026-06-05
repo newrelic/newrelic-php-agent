@@ -5,10 +5,7 @@
  */
 
 /*DESCRIPTION
-The agent should generate external metrics for curl_multi_exec when the HTTP
-protocol is used if fibers are involved.
-For curl_exec_multi, the agent creates an intermediary span `curl_multi_exec` that 
-all curl http spans are parented to.
+Test adding curl handle while curl multi exec is in flight if fibers are involved.
 */
 
 /*SKIPIF
@@ -26,12 +23,11 @@ newrelic.fibers.disabled = false
 */
 
 /*EXPECT
-ok - simple hostname
 Starting Func 'a'
-ok - strip query string
-ok - strip fragment
+traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
 Ending Func 'a'
-ok - strip credentials
 */
 
 /*EXPECT_SPAN_EVENTS_LIKE
@@ -61,7 +57,7 @@ ok - strip credentials
       "guid": "??",
       "traceId": "??",
       "transactionId": "??",
-      "name": "Custom\/test_curl",
+      "name": "Custom\/test_curl_multi_exec_add_handles",
       "timestamp": "??",
       "duration": "??",
       "priority": "??",
@@ -83,7 +79,7 @@ ok - strip credentials
       "duration": "??",
       "priority": "??",
       "sampled": true,
-      "parentId": "ENV[GUID_TEST_CURL]"
+      "parentId": "ENV[GUID_TEST_ADD]"
     },
     {},
     {}
@@ -107,7 +103,7 @@ ok - strip credentials
     {},
     {
       "http.method": "GET",
-      "http.url": "http:\/\/ENV[EXTERNAL_HOST]\/",
+      "http.url": "http:\/\/ENV[EXTERNAL_HOST]\/cat",
       "http.statusCode": 200
     }
   ],
@@ -139,13 +135,13 @@ ok - strip credentials
   [
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"},           [4, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"},[4, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                                         [4, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                                    [4, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all"},                               [4, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/TraceContext/Create/Success"},           [3, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"},[3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/all"},                                         [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/allOther"},                                    [3, "??", "??", "??", "??", "??"]],
+    [{"name":"External/127.0.0.1/all"},                               [3, "??", "??", "??", "??", "??"]],
     [{"name":"External/127.0.0.1/all",
-      "scope":"OtherTransaction/php__FILE__"},                        [4, "??", "??", "??", "??", "??"]],
+      "scope":"OtherTransaction/php__FILE__"},                        [3, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/all"},                                 [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransaction/php__FILE__"},                         [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime"},                            [1, "??", "??", "??", "??", "??"]],
@@ -164,69 +160,32 @@ require_once(realpath(dirname(__FILE__)) . '/../../../include/helpers.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 
-function test_multi_url($url, $msg)
+function test_curl_multi_exec_add_handles()
 {
-    $cm = curl_multi_init();
+    env_var_for_expects("GUID_TEST_ADD", newrelic_get_linking_metadata()['span.id'] ?? '');
+    $url = make_tracing_url(realpath(dirname(__FILE__)) . '/../../../include/tracing_endpoint.php');
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_NOBODY, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_multi_add_handle($cm, $ch);
+    $ch1 = curl_init($url);
+    $ch2 = curl_init($url);
+    $ch3 = curl_init($url);
+    $mh = curl_multi_init();
+
+    curl_multi_add_handle($mh, $ch1);
+    curl_multi_add_handle($mh, $ch2);
 
     $active = 0;
+    curl_multi_exec($mh, $active);
 
+    Fiber::suspend();
+    curl_multi_add_handle($mh, $ch3);
+
+    Fiber::suspend();
     do {
-        curl_multi_exec($cm, $active);
+        curl_multi_exec($mh, $active);
         Fiber::suspend($active);
     } while ($active > 0);
 
-    /* No errors */
-    $info = curl_multi_info_read($cm);
-    tap_ok($msg, $info["result"] == 0);
-
-    curl_multi_close($cm);
-}
-
-function test_curl()
-{
-    global $EXTERNAL_HOST;
-
-    env_var_for_expects("GUID_TEST_CURL", newrelic_get_linking_metadata()['span.id'] ?? '');
-
-    $fiber_one = new Fiber('test_multi_url');
-    $fiber_two = new Fiber('test_multi_url');
-    $fiber_three = new Fiber('test_multi_url');
-    $fiber_four = new Fiber('test_multi_url');
-
-    $result = $fiber_one->start('http://' . $EXTERNAL_HOST . '', 'simple hostname');
-    do {
-      $result = $fiber_one->resume();
-    } while ($result > 0);
-    $fiber_one->resume();
-
-    Fiber::suspend();
-
-    $result = $fiber_two->start('http://' . $EXTERNAL_HOST . '?a=1&b=2', 'strip query string');
-    do {
-      $result = $fiber_two->resume();
-    } while ($result > 0);
-    $fiber_two->resume();
-    
-    $result = $fiber_three->start('http://' . $EXTERNAL_HOST . '/#fragment', 'strip fragment');
-    
-    do {
-      $result = $fiber_three->resume();
-    } while ($result > 0);
-    $fiber_three->resume();
-
-    Fiber::suspend();
-
-    $result = $fiber_four->start('http://user:pass@' . $EXTERNAL_HOST . '', 'strip credentials');
-    do {
-      $result = $fiber_four->resume();
-    } while ($result > 0);
-    $fiber_four->resume();
+    curl_multi_close($mh);
 }
 
 function a()
@@ -241,10 +200,13 @@ function a()
 env_var_for_expects("GUID_ROOT", newrelic_get_linking_metadata()['span.id'] ?? '');
 
 $fiber_a = new Fiber('a');
-$fiber_curl_multi = new Fiber('test_curl');
+$fiber_add = new Fiber('test_curl_multi_exec_add_handles');
 
-$fiber_curl_multi->start();
+$fiber_add->start();
 $fiber_a->start();
-$fiber_curl_multi->resume();
+$result = $fiber_add->resume();
+do {
+  $result = $fiber_add->resume();
+} while ($result > 0);
 $fiber_a->resume();
-$fiber_curl_multi->resume();
+$fiber_add->resume();
