@@ -185,8 +185,6 @@ function test_multi_url($url, $msg)
     tap_ok($msg, $info["result"] == 0);
 
     curl_multi_close($cm);
-
-    curl_close($ch);
 }
 
 function test_curl()
