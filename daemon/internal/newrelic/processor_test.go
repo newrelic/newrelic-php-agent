@@ -305,12 +305,14 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 // pidSet count across distinct pids, duplicate inserts, and empty pidSet.
 func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
 	tests := []struct {
-		name  string
-		seed  func(map[int]struct{})
-		wantN int
+		name        string
+		harvestType HarvestType
+		seed        func(map[int]struct{})
+		wantN       int
 	}{
 		{
-			name: "distinct pids",
+			name:        "HarvestDefaultData distinct pids",
+			harvestType: HarvestDefaultData,
 			seed: func(ps map[int]struct{}) {
 				ps[100] = struct{}{}
 				ps[101] = struct{}{}
@@ -319,7 +321,8 @@ func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
 			wantN: 3,
 		},
 		{
-			name: "duplicate inserts count once each",
+			name:        "HarvestDefaultData duplicate inserts count once each",
+			harvestType: HarvestDefaultData,
 			seed: func(ps map[int]struct{}) {
 				ps[100] = struct{}{}
 				ps[100] = struct{}{} // duplicate
@@ -330,9 +333,20 @@ func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
 			wantN: 3,
 		},
 		{
-			name:  "empty pidSet floors to 1",
-			seed:  func(ps map[int]struct{}) {},
-			wantN: 1,
+			name:        "HarvestDefaultData empty pidSet floors to 1",
+			harvestType: HarvestDefaultData,
+			seed:        func(ps map[int]struct{}) {},
+			wantN:       1,
+		},
+		{
+			name:        "HarvestAll distinct pids",
+			harvestType: HarvestAll,
+			seed: func(ps map[int]struct{}) {
+				ps[100] = struct{}{}
+				ps[101] = struct{}{}
+				ps[102] = struct{}{}
+			},
+			wantN: 3,
 		},
 	}
 
@@ -348,7 +362,7 @@ func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
 			m.processorHarvestChan <- ProcessorHarvest{
 				AppHarvest: m.p.harvests[idOne],
 				ID:         idOne,
-				Type:       HarvestDefaultData,
+				Type:       tc.harvestType,
 			}
 
 			m.clientReturn <- ClientReturn{nil, nil, 202}
