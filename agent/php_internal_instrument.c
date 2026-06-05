@@ -2485,6 +2485,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
   zval* multires = NULL;
   zval* curlres = NULL;
   int rv = FAILURE;
+  int old_context = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
@@ -2495,6 +2496,13 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
 #endif /* PHP 8.0+ */
+
+  /*
+   * This is a special case where we don't want the parent context of the newly
+   * discarded segment to be set on the txn because curl segments are tracked
+   * separately. We need to save the actual context so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_remove(multires, curlres TSRMLS_CC)) {
@@ -2507,7 +2515,8 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
       }
     }
   }
-
+  /* The current txn context needs to go back to the old context.*/
+  NRTXN(current_async_context) = old_context;
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
