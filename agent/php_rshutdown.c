@@ -47,10 +47,12 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing started");
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   // Set the fiber_globals pointer to NULL to prevent trying to access the
   // fiber-specific global values when freeing below. Fiber globals are free'd
   // separately in a dedicated function called in nr_php_post_deactivate.
   NRPRG(fiber_globals) = NULL;
+#endif
 
   /* nr_php_txn_shutdown will check for a NULL transaction. */
   nr_php_txn_shutdown(TSRMLS_C);
@@ -90,10 +92,12 @@ int nr_php_post_deactivate(void) {
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing started");
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   // Set the fiber_globals pointer to NULL to prevent trying to access the
   // fiber-specific global values when freeing below. Fiber globals are free'd
   // separately in a dedicated function.
   NRPRG(fiber_globals) = NULL;
+#endif
 
   /*
    * PHP 7 has a singleton trampoline op array that is used for the life of an

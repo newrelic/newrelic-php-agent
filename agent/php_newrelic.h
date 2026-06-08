@@ -627,15 +627,22 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 
 #define NRINI(Y) (NRPRG(ini).Y.value)
 #define NRPRG_SHARED(Y) (NRPRG(shared).Y)
+#define NRTXN(Y) (NRPRG(txn)->Y)
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 #define NRPRG_CTX(Y)                                                 \
   ((NULL != NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals \
                                  : &NRPRG(ctx))                      \
        ->Y)
-#define NRTXN(Y) (NRPRG(txn)->Y)
+
 #define NRTXNGLOBAL(Y)                                               \
   ((NULL != NRPRG(fiber_globals) ? NRPRG(fiber_globals)->txn_globals \
                                  : &NRPRG(txn_globals))              \
        ->Y)
+#else
+#define NRPRG_CTX(Y) (NRPRG(ctx).Y)
+#define NRTXNGLOBAL(Y) (NRPRG(txn_globals).Y)
+#endif
 
 static inline int nr_php_recording(TSRMLS_D) {
   if (nrlikely((0 != NRPRG(txn)) && (0 != NRPRG(txn)->status.recording))) {
