@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 New Relic Corporation. All rights reserved.
+ * Copyright 2026 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * This file handles fibers instrumentation.
