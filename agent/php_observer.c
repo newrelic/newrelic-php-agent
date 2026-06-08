@@ -16,6 +16,7 @@
 #include "php_error.h"
 #include "php_execute.h"
 #include "php_extension.h"
+#include "php_fibers.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_hooks.h"
@@ -120,9 +121,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
         = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
     // store the wraprec in the op_array extension for the duration of the
     // request for later lookup
-    ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY,
-                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
-        = wr;
+    ZEND_OP_ARRAY_EXTENSION(
+        NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
 
   handlers.begin = nr_php_observer_fcall_begin;
@@ -167,16 +167,46 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
 }
 
 static void nr_fiber_init_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
   NR_FIBER_USED_CREATE_METRIC
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
     nr_fiber_show_fiber(zfc, "init");
   }
+  if (NULL == NRPRG(fiber_globals_map)) {
+    // inititalize the fiber global hashmap if it does not already exist
+    nrf_fiber_init_global_hashmap(&NRPRG(fiber_globals_map));
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+
+  // Add the current context to the global hashmap for the new fiber
+  if (NR_FAILURE
+      == nrf_add_fiber_context_to_global_hashmap(NRPRG(fiber_globals_map),
+                                                 &NRPRG(txn_globals),
+                                                 &NRPRG(ctx), zfc_key)) {
+    nrl_warning(NRL_AGENT,
+                "Failed to add fiber context to global hashmap for fiber %s",
+                zfc_key);
+  }
 }
 
 static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
   NR_FIBER_USED_CREATE_METRIC
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
     nr_fiber_show_fiber(zfc, "destroy");
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+
+  // Remove the entry in the fiber global hashmap for this fiber
+  if (NR_FAILURE
+      == nrf_remove_fiber_context_from_global_hashmap(NRPRG(fiber_globals_map),
+                                                      zfc_key)) {
+    nrl_warning(
+        NRL_AGENT,
+        "Failed to remove fiber context from global hashmap for fiber %s",
+        zfc_key);
   }
 }
 
@@ -249,6 +279,14 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
    * to the "from" context. */
   if (ZEND_FIBER_STATUS_INIT == to->status) {
     nr_fiber_set_fiber_parent_segment(from);
+  }
+
+  if (NR_FAILURE
+      == nrf_fiber_switch_global_context(NRPRG(fiber_globals_map),
+                                         &NRPRG(fiber_globals),
+                                         NRPRG_SHARED(current_php_context))) {
+    nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s",
+                NRPRG_SHARED(current_php_context));
   }
 }
 
