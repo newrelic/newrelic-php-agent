@@ -434,13 +434,6 @@ static void test_switch_global_context_bad_input(void) {
   tlib_php_request_start();
 
   /*
-   * Test : NULL key fails when hashmap is uninitialized.
-   */
-  tlib_pass_if_status_failure("NULL key fails when hashmap is uninitialized",
-                              nrf_fiber_switch_global_context(
-                                  test_fiber_global_map, &fiber_globals, NULL));
-
-  /*
    * Test : valid key with uninitialized hashmap fails.
    */
   tlib_pass_if_status_failure(

@@ -201,8 +201,12 @@ nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
                                             fiber_globals_t** fiber_global_ptr,
                                             const char* key) {
   fiber_globals_t* fg = NULL;
-  if (NULL == key || nr_strlen(key) < 1) {
-    return NR_FAILURE;
+  if (NULL == key) {
+    // a NULL key indicates we're in the MAIN php context rather than a fiber.
+    // Set the fiber pointer to NULL to prevent using the fiber-specific
+    // accessors.
+    *fiber_global_ptr = NULL;
+    return NR_SUCCESS;
   }
 
   if (NULL == fiber_globals_map) {
