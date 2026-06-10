@@ -299,6 +299,89 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	m.QuitTestProcessor()
 }
 
+// TestProcessorHarvestDefaultDataInstanceReporting guards against the
+// regression where Instance/Reporting was read after pidSet was reset,
+// causing it to always report 1. Verifies the metric reflects the pre-reset
+// pidSet count across distinct pids, duplicate inserts, and empty pidSet.
+func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
+	tests := []struct {
+		name        string
+		harvestType HarvestType
+		seed        func(map[int]struct{})
+		wantN       int
+	}{
+		{
+			name:        "HarvestDefaultData distinct pids",
+			harvestType: HarvestDefaultData,
+			seed: func(ps map[int]struct{}) {
+				ps[100] = struct{}{}
+				ps[101] = struct{}{}
+				ps[102] = struct{}{}
+			},
+			wantN: 3,
+		},
+		{
+			name:        "HarvestDefaultData duplicate inserts count once each",
+			harvestType: HarvestDefaultData,
+			seed: func(ps map[int]struct{}) {
+				ps[100] = struct{}{}
+				ps[100] = struct{}{} // duplicate
+				ps[101] = struct{}{}
+				ps[101] = struct{}{} // duplicate
+				ps[102] = struct{}{}
+			},
+			wantN: 3,
+		},
+		{
+			name:        "HarvestDefaultData empty pidSet floors to 1",
+			harvestType: HarvestDefaultData,
+			seed:        func(ps map[int]struct{}) {},
+			wantN:       1,
+		},
+		{
+			name:        "HarvestAll distinct pids",
+			harvestType: HarvestAll,
+			seed: func(ps map[int]struct{}) {
+				ps[100] = struct{}{}
+				ps[101] = struct{}{}
+				ps[102] = struct{}{}
+			},
+			wantN: 3,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := NewMockedProcessor(1)
+			m.DoAppInfo(t, nil, AppStateUnknown)
+			m.DoConnect(t, &idOne)
+			m.DoAppInfo(t, nil, AppStateConnected)
+
+			tc.seed(m.p.harvests[idOne].Harvest.pidSet)
+
+			m.processorHarvestChan <- ProcessorHarvest{
+				AppHarvest: m.p.harvests[idOne],
+				ID:         idOne,
+				Type:       tc.harvestType,
+			}
+
+			m.clientReturn <- ClientReturn{nil, nil, 202}
+			cp := <-m.clientParams
+			<-m.p.trackProgress
+
+			time1 := strings.Split(string(cp.data), ",")[1]
+			time2 := strings.Split(string(cp.data), ",")[2]
+			expected := fmt.Sprintf(`["one",%s,%s,[[{"name":"Instance/Reporting"},[%d,0,0,0,0,0]]]]`,
+				time1, time2, tc.wantN)
+			if got, _ := OrderScrubMetrics(cp.data, nil); string(got) != expected {
+				t.Errorf("got=%s", got)
+			}
+
+			m.QuitTestProcessor()
+		})
+	}
+}
+
 // split Php Packages out from DefaultData test - trying to
 // combine the txn trace and php packages data did not work
 // as these goto different endpoints - combining them here
