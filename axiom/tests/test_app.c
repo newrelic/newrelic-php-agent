@@ -1131,6 +1131,113 @@ static void test_app_entity_guid_get(void) {
                          nr_app_get_entity_guid(&app));
 }
 
+static void test_get_or_create_thread_harvest(void) {
+  nrapp_t app = {0};
+  nrapp_t empty = {0};
+  nr_app_harvest_stats_t* h1;
+  nr_app_harvest_stats_t* h2;
+
+  nrt_mutex_init(&app.app_lock, 0);
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  nr_app_update_harvest_config(&app, 1000 * NR_TIME_DIVISOR,
+                               60 * NR_TIME_DIVISOR, 10);
+
+  /* NULL app returns NULL. */
+  tlib_pass_if_null("NULL app", nr_app_get_or_create_thread_harvest(NULL, 1));
+
+  /* NULL harvest_map returns NULL. */
+  tlib_pass_if_null("NULL harvest_map",
+                    nr_app_get_or_create_thread_harvest(&empty, 1));
+
+  /* First call for key 1 creates an entry. */
+  h1 = nr_app_get_or_create_thread_harvest(&app, 1);
+  tlib_pass_if_not_null("first call returns non-NULL", h1);
+
+  /* Stats start zeroed and next_harvest set (non-zero means init ran). */
+  tlib_pass_if_true("next_harvest initialised", h1->next_harvest > 0,
+                    "next_harvest=%" PRIu64, h1->next_harvest);
+
+  /* Stats counters start zeroed. */
+  tlib_pass_if_uint64_t_equal("transactions_seen zeroed", 0,
+                              h1->transactions_seen);
+  tlib_pass_if_uint64_t_equal("transactions_sampled zeroed", 0,
+                              h1->transactions_sampled);
+
+  /* Second call for key 1 returns the same pointer. */
+  h2 = nr_app_get_or_create_thread_harvest(&app, 1);
+  tlib_pass_if_true("same pointer on second call", h1 == h2,
+                    "h1=%p h2=%p", (void*)h1, (void*)h2);
+
+  /* Different key returns a different pointer. */
+  h2 = nr_app_get_or_create_thread_harvest(&app, 2);
+  tlib_pass_if_not_null("key 2 non-NULL", h2);
+  tlib_pass_if_true("different pointer for different key", h1 != h2,
+                    "h1=%p h2=%p", (void*)h1, (void*)h2);
+
+  nr_hashmap_destroy(&app.harvest_map);
+  nrt_mutex_destroy(&app.app_lock);
+}
+
+static void test_sync_harvest_config(void) {
+  nrapp_t app = {0};
+  nr_app_harvest_stats_t* h1;
+  nr_app_harvest_stats_t* h2;
+
+  nrt_mutex_init(&app.app_lock, 0);
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+
+  /* Initial config: connect_timestamp=100, frequency=60, target=10. */
+  nr_app_update_harvest_config(&app, 100, 60, 10);
+
+  /* Create two per-thread entries and advance their stats. */
+  h1 = nr_app_get_or_create_thread_harvest(&app, 1);
+  h2 = nr_app_get_or_create_thread_harvest(&app, 2);
+  h1->transactions_seen = 5;
+  h2->transactions_seen = 7;
+
+  /* NULL app does not crash. */
+  nr_app_update_harvest_config(NULL, 100, 60, 10);
+
+  /* Same config — stats should be preserved. */
+  nr_app_update_harvest_config(&app, 100, 60, 10);
+  tlib_pass_if_uint64_t_equal("key 1 stats preserved after no-change update", 5,
+                              h1->transactions_seen);
+  tlib_pass_if_uint64_t_equal("key 2 stats preserved after no-change update", 7,
+                              h2->transactions_seen);
+
+  /* New connect_timestamp — stats should be reset. */
+  nr_app_update_harvest_config(&app, 200, 60, 10);
+  tlib_pass_if_uint64_t_equal("key 1 stats reset after connect_timestamp change",
+                              0, h1->transactions_seen);
+  tlib_pass_if_uint64_t_equal("key 2 stats reset after connect_timestamp change",
+                              0, h2->transactions_seen);
+
+  /* Advance counters and zero next_harvest to verify both are reset on the
+   * next config change. */
+  h1->transactions_seen = 3;
+  h2->transactions_seen = 8;
+  h1->next_harvest = 0;
+  h2->next_harvest = 0;
+
+  /* Frequency-only change — stats reset and next_harvest recalculated. */
+  nr_app_update_harvest_config(&app, 200, 30, 10);
+  tlib_pass_if_uint64_t_equal("key 1 stats reset after frequency change", 0,
+                              h1->transactions_seen);
+  tlib_pass_if_uint64_t_equal("key 2 stats reset after frequency change", 0,
+                              h2->transactions_seen);
+  tlib_pass_if_true("key 1 next_harvest recalculated after frequency change",
+                    h1->next_harvest > 0,
+                    "next_harvest=%" PRIu64, h1->next_harvest);
+  tlib_pass_if_true("key 2 next_harvest recalculated after frequency change",
+                    h2->next_harvest > 0,
+                    "next_harvest=%" PRIu64, h2->next_harvest);
+
+  nr_hashmap_destroy(&app.harvest_map);
+  nrt_mutex_destroy(&app.app_lock);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1153,4 +1260,6 @@ void test_main(void* p NRUNUSED) {
   test_app_consider_appinfo_first_txn();
   test_app_consider_appinfo_backoff();
   test_app_consider_appinfo_refresh();
+  test_get_or_create_thread_harvest();
+  test_sync_harvest_config();
 }

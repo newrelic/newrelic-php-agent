@@ -75,6 +75,7 @@ type Txn struct {
 	CustomEvents     []json.RawMessage
 	ErrorEvents      []json.RawMessage
 	SpanEvents       []json.RawMessage
+	ThreadID         uint64
 }
 
 type metric struct {
@@ -143,6 +144,7 @@ func (t *Txn) MarshalBinary() ([]byte, error) {
 	protocol.TransactionAddUri(buf, txnURI)
 	protocol.TransactionAddSyntheticsResourceId(buf, syntheticsResourceID)
 	protocol.TransactionAddPid(buf, int32(os.Getpid()))
+	protocol.TransactionAddThreadId(buf, t.ThreadID)
 	protocol.TransactionAddTxnEvent(buf, analyticEvent)
 	protocol.TransactionAddMetrics(buf, metrics)
 	protocol.TransactionAddErrors(buf, errors)

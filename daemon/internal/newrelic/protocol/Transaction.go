@@ -277,8 +277,16 @@ func (rcv *Transaction) LogForwardingLabels(obj *Event) *Event {
 	return nil
 }
 
+func (rcv *Transaction) ThreadId() uint64 {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(36))
+	if o != 0 {
+		return rcv._tab.GetUint64(o + rcv._tab.Pos)
+	}
+	return 0
+}
+
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(16)
+	builder.StartObject(17)
 }
 func TransactionAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
@@ -348,6 +356,9 @@ func TransactionAddPhpPackages(builder *flatbuffers.Builder, phpPackages flatbuf
 }
 func TransactionAddLogForwardingLabels(builder *flatbuffers.Builder, logForwardingLabels flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(15, flatbuffers.UOffsetT(logForwardingLabels), 0)
+}
+func TransactionAddThreadId(builder *flatbuffers.Builder, threadId uint64) {
+	builder.PrependUint64Slot(16, threadId, 0)
 }
 func TransactionEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

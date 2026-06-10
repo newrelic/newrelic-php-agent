@@ -154,7 +154,7 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 	harvest := NewHarvest(time.Date(2015, time.November, 11, 1, 2, 0, 0, time.UTC), collector.NewHarvestLimits(nil))
 	mc := mockMetricsController()
 
-	harvest.pidSet[0] = struct{}{}
+	harvest.pidSet[pidKey{}] = struct{}{}
 	limits := collector.EventHarvestConfig{
 		ReportPeriod: 1234,
 		EventConfigs: collector.EventConfigs{
@@ -198,7 +198,7 @@ func TestHarvestEmpty(t *testing.T) {
 	var h *Harvest
 
 	h = NewHarvest(startTime, collector.NewHarvestLimits(nil))
-	h.pidSet[0] = struct{}{}
+	h.pidSet[pidKey{}] = struct{}{}
 	if h.empty() {
 		t.Errorf("Harvest.empty() = true, want false")
 	}

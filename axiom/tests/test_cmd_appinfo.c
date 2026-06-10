@@ -559,10 +559,10 @@ static void test_process_still_valid_app(void) {
   tlib_pass_if_int_equal(__func__, (int)app.state, (int)NR_APP_OK);
 
   // These fields should be ignored for an APP_STATUS_STILL_VALID reply
-  tlib_pass_if_uint64_t_equal(__func__, 0, app.harvest.connect_timestamp);
-  tlib_pass_if_uint64_t_equal(__func__, 0, app.harvest.frequency);
+  tlib_pass_if_uint64_t_equal(__func__, 0, app.adaptive_sampling_config.connect_timestamp);
+  tlib_pass_if_uint64_t_equal(__func__, 0, app.adaptive_sampling_config.frequency);
   tlib_pass_if_uint64_t_equal(__func__, 0,
-                              app.harvest.target_transactions_per_cycle);
+                              app.adaptive_sampling_config.target_transactions_per_cycle);
   nr_flatbuffers_destroy(&reply);
 }
 
@@ -848,11 +848,11 @@ static void test_process_harvest_timing_connected_app(void) {
 
   /* Test the harvest timing fields. */
   tlib_pass_if_uint64_t_equal(__func__, 1 * NR_TIME_DIVISOR,
-                              app.harvest.connect_timestamp);
+                              app.adaptive_sampling_config.connect_timestamp);
   tlib_pass_if_uint64_t_equal(__func__, 2 * NR_TIME_DIVISOR,
-                              app.harvest.frequency);
+                              app.adaptive_sampling_config.frequency);
   tlib_pass_if_uint64_t_equal(__func__, 3,
-                              app.harvest.target_transactions_per_cycle);
+                              app.adaptive_sampling_config.target_transactions_per_cycle);
 
   /*
    * Perform same test again to make sure that populated fields are freed
@@ -913,9 +913,9 @@ static void test_process_harvest_timing(void) {
                                  nr_flatbuffers_len(fb));
   nr_cmd_appinfo_process_harvest_timing(&table, &app);
   tlib_pass_if_uint64_t_equal("set timestamp", 1234 * NR_TIME_DIVISOR,
-                              app.harvest.connect_timestamp);
+                              app.adaptive_sampling_config.connect_timestamp);
   tlib_pass_if_uint64_t_equal("set frequency", 56 * NR_TIME_DIVISOR,
-                              app.harvest.frequency);
+                              app.adaptive_sampling_config.frequency);
   nr_flatbuffers_destroy(&fb);
 
   /*
@@ -926,9 +926,9 @@ static void test_process_harvest_timing(void) {
                                  nr_flatbuffers_len(fb));
   nr_cmd_appinfo_process_harvest_timing(&table, &app);
   tlib_fail_if_uint64_t_equal("unset timestamp", 0,
-                              app.harvest.connect_timestamp);
+                              app.adaptive_sampling_config.connect_timestamp);
   tlib_pass_if_uint64_t_equal("set frequency", 56 * NR_TIME_DIVISOR,
-                              app.harvest.frequency);
+                              app.adaptive_sampling_config.frequency);
   nr_flatbuffers_destroy(&fb);
 
   /*
@@ -939,9 +939,9 @@ static void test_process_harvest_timing(void) {
                                  nr_flatbuffers_len(fb));
   nr_cmd_appinfo_process_harvest_timing(&table, &app);
   tlib_fail_if_uint64_t_equal("unset timestamp", 0,
-                              app.harvest.connect_timestamp);
+                              app.adaptive_sampling_config.connect_timestamp);
   tlib_pass_if_uint64_t_equal("unset frequency", 60 * NR_TIME_DIVISOR,
-                              app.harvest.frequency);
+                              app.adaptive_sampling_config.frequency);
   nr_flatbuffers_destroy(&fb);
 }
 

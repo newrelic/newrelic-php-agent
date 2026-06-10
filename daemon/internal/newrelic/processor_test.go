@@ -145,7 +145,7 @@ func (m *MockedProcessor) DoConnectConfiguredReply(t *testing.T, reply string) {
 }
 
 func (m *MockedProcessor) TxnData(t *testing.T, id AgentRunID, sample AggregaterInto) {
-	m.p.IncomingTxnData(id, sample)
+	m.p.IncomingTxnData(id, sample, TxnProcessInfo{})
 	<-m.p.trackProgress
 }
 
@@ -307,44 +307,54 @@ func TestProcessorHarvestDefaultDataInstanceReporting(t *testing.T) {
 	tests := []struct {
 		name        string
 		harvestType HarvestType
-		seed        func(map[int]struct{})
+		seed        func(map[pidKey]struct{})
 		wantN       int
 	}{
 		{
 			name:        "HarvestDefaultData distinct pids",
 			harvestType: HarvestDefaultData,
-			seed: func(ps map[int]struct{}) {
-				ps[100] = struct{}{}
-				ps[101] = struct{}{}
-				ps[102] = struct{}{}
+			seed: func(ps map[pidKey]struct{}) {
+				ps[pidKey{pid: 100}] = struct{}{}
+				ps[pidKey{pid: 101}] = struct{}{}
+				ps[pidKey{pid: 102}] = struct{}{}
 			},
 			wantN: 3,
 		},
 		{
 			name:        "HarvestDefaultData duplicate inserts count once each",
 			harvestType: HarvestDefaultData,
-			seed: func(ps map[int]struct{}) {
-				ps[100] = struct{}{}
-				ps[100] = struct{}{} // duplicate
-				ps[101] = struct{}{}
-				ps[101] = struct{}{} // duplicate
-				ps[102] = struct{}{}
+			seed: func(ps map[pidKey]struct{}) {
+				ps[pidKey{pid: 100}] = struct{}{}
+				ps[pidKey{pid: 100}] = struct{}{} // duplicate
+				ps[pidKey{pid: 101}] = struct{}{}
+				ps[pidKey{pid: 101}] = struct{}{} // duplicate
+				ps[pidKey{pid: 102}] = struct{}{}
 			},
 			wantN: 3,
 		},
 		{
 			name:        "HarvestDefaultData empty pidSet floors to 1",
 			harvestType: HarvestDefaultData,
-			seed:        func(ps map[int]struct{}) {},
+			seed:        func(ps map[pidKey]struct{}) {},
 			wantN:       1,
 		},
 		{
 			name:        "HarvestAll distinct pids",
 			harvestType: HarvestAll,
-			seed: func(ps map[int]struct{}) {
-				ps[100] = struct{}{}
-				ps[101] = struct{}{}
-				ps[102] = struct{}{}
+			seed: func(ps map[pidKey]struct{}) {
+				ps[pidKey{pid: 100}] = struct{}{}
+				ps[pidKey{pid: 101}] = struct{}{}
+				ps[pidKey{pid: 102}] = struct{}{}
+			},
+			wantN: 3,
+		},
+		{
+			name:        "HarvestDefaultData ZTS threads same pid",
+			harvestType: HarvestDefaultData,
+			seed: func(ps map[pidKey]struct{}) {
+				ps[pidKey{pid: 100, threadID: 1}] = struct{}{}
+				ps[pidKey{pid: 100, threadID: 2}] = struct{}{}
+				ps[pidKey{pid: 100, threadID: 3}] = struct{}{}
 			},
 			wantN: 3,
 		},
