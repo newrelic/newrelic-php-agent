@@ -183,9 +183,13 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
 
   // Add the current context to the global hashmap for the new fiber
   if (NR_FAILURE
-      == nrf_add_fiber_context_to_global_hashmap(NRPRG(fiber_globals_map),
-                                                 &NRPRG(txn_globals),
-                                                 &NRPRG(ctx), zfc_key)) {
+      == nrf_add_fiber_context_to_global_hashmap(
+          NRPRG(fiber_globals_map),
+          NRPRG(fiber_globals) ? NRPRG(fiber_globals)->txn_globals
+                               : &NRPRG(txn_globals),
+          NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
+                               : &NRPRG(ctx),
+          zfc_key)) {
     nrl_warning(NRL_AGENT,
                 "Failed to add fiber context to global hashmap for fiber %s",
                 zfc_key);

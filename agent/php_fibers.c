@@ -10,11 +10,11 @@
 #include "php_compat.h"
 #include "php_fibers.h"
 #include "nr_mysqli_metadata.h"
-#include "nr_mysqli_metadata_private.h"
 #include "php_agent.h"
 #include "php_newrelic.h"
 #include "php_zval.h"
 #include "util_hashmap.h"
+#include "util_logging.h"
 #include "util_memory.h"
 #include "util_stack.h"
 #include "util_strings.h"
@@ -65,6 +65,10 @@ static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
   COPY_BASIC(generating_explain_plan);
   COPY_BASIC(curl_ignore_setopt);
 
+  // The hashmaps for guzzle_objs, curl_metadata, and curl_multi_metadata are
+  // copied by reference rather than value. They contain complex datatypes
+  // (nr_segment_t*) and should always refer to the "Main" php thread. They MUST
+  // NOT be free'd by a fiber.
   COPY_BASIC(guzzle_objs);
   COPY_HASHMAP(mysqli_queries, copy_elem_zval);
   COPY_HASHMAP(pdo_link_options, copy_elem_zval);
@@ -131,6 +135,12 @@ ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
 
 void free_fiber_globals(void* fiber_globals) {
   fiber_globals_t* f = (fiber_globals_t*)fiber_globals;
+
+  if (NULL == f->txn_globals || NULL == f->ctx_globals) {
+    nrl_warning(NRL_AGENT, "Failed to free fiber globals, target is NULL");
+    return;
+  }
+
   nr_hashmap_destroy(&f->txn_globals->mysqli_queries);
   nr_hashmap_destroy(&f->txn_globals->pdo_link_options);
   nr_hashmap_destroy(&f->txn_globals->prepared_statements);
@@ -218,6 +228,11 @@ nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
                                             fiber_globals_t** fiber_global_ptr,
                                             const char* key) {
   fiber_globals_t* fg = NULL;
+
+  if (NULL == fiber_global_ptr) {
+    return NR_FAILURE;
+  }
+
   if (NULL == key) {
     // a NULL key indicates we're in the MAIN php context rather than a fiber.
     // Set the fiber pointer to NULL to prevent using the fiber-specific
@@ -227,10 +242,6 @@ nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
   }
 
   if (NULL == fiber_globals_map) {
-    return NR_FAILURE;
-  }
-
-  if (NULL == fiber_global_ptr) {
     return NR_FAILURE;
   }
 
