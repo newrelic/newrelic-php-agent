@@ -83,24 +83,40 @@ nr_segment_t* nr_guzzle_obj_add(const zval* obj,
                                 const char* async_context_prefix TSRMLS_DC) {
   nr_segment_t* segment = NULL;
   char* async_context = NULL;
+  int old_context = 0;
 
   /*
    * Create the async context, in case there was parallelism.
    */
   async_context
       = nr_guzzle_create_async_context_name(async_context_prefix, obj);
+  nrl_info(NRL_INSTRUMENT, "amber Guzzle: created async context %s",
+           NRSAFESTR(async_context));
+  /*
+   * This is a special case where we don't want the context of the newly
+   * created segment to be set on the txn because this segment is tracked
+   * separately based off of the unique created guzzle async context. We need to
+   * save the actual context so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   /*
    * Must explicitly be parented to the current segment of the txn context;
    * otherwise, it will be parented to the main NULL context. In non-fiber
    * cases, this will be a segment on the default (NULL) context; otherwise, it
    * will be the current segment on the actively executing fiber.
+   *
+   * Similar to curl_multi_exec curl handle segments, because async guzzle
+   * segments are stored separately in a hashmap, we don't want to this segment
+   * creation to affect the txn context.
    */
+
   segment = nr_segment_start(NRPRG(txn),
                              nr_txn_get_current_segment_txn_context(NRPRG(txn)),
                              async_context);
 
   nr_free(async_context);
+  NRTXN(current_async_context) = old_context;
 
   /*
    * Create the guzzle_objs hash table if we haven't already done so.
@@ -116,6 +132,7 @@ nr_segment_t* nr_guzzle_obj_add(const zval* obj,
    * architecture, and saves us having to transform the object handle into a
    * string to use string keys.
    */
+
   nr_hashmap_index_update(NRTXNGLOBAL(guzzle_objs),
                           (uint64_t)Z_OBJ_HANDLE_P(obj), segment);
 
