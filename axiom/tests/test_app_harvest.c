@@ -5,51 +5,69 @@
 
 #include "nr_axiom.h"
 
+#include "nr_app.h"
 #include "nr_app_harvest.h"
 #include "nr_app_harvest_private.h"
+#include "util_threads.h"
 
 #include "tlib_main.h"
 
-static void test_init(void) {
-  nr_app_harvest_config_t cfg = {0};
-  nr_app_harvest_stats_t ah
-      = {.next_harvest = 0, .transactions_seen = 1, .transactions_sampled = 1};
+
+static void test_update_harvest_config(void) {
+  nrapp_t app = {0};
+  nr_app_harvest_stats_t* stats;
+  const uint64_t key = 42;
+
+  nrt_mutex_init(&app.app_lock, 0);
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
 
   /*
-   * Test : Bad parameters.
+   * Test : NULL app — should not crash.
    */
-  nr_app_harvest_private_init(NULL, NULL, 0, 0, 0, 0);
+  nr_app_update_harvest_config(NULL, 1, 60, 10);
 
   /*
-   * Test : New connection; ensuring that the transaction counters are reset.
+   * Pre-populate one thread's stats entry with non-zero counters.
    */
-  nr_app_harvest_private_init(&cfg, &ah, 1, 60, 10, 1);
-  tlib_pass_if_uint64_t_equal("connect timestamp", 1, cfg.connect_timestamp);
-  tlib_pass_if_uint64_t_equal("frequency", 60, cfg.frequency);
-  tlib_pass_if_uint64_t_equal("target", 10, cfg.target_transactions_per_cycle);
-  tlib_pass_if_uint64_t_equal("next harvest", 61, ah.next_harvest);
-  tlib_pass_if_uint64_t_equal("previous transactions seen", 0,
-                              ah.prev_transactions_seen);
-  tlib_pass_if_uint64_t_equal("transactions seen", 0, ah.transactions_seen);
-  tlib_pass_if_uint64_t_equal("transactions sampled", 0,
-                              ah.transactions_sampled);
+  stats = nr_app_get_or_create_thread_harvest(&app, key);
+  stats->transactions_seen = 5;
+  stats->transactions_sampled = 3;
 
   /*
-   * Test : Same connection; ensuring that the transaction counters are not
-   * reset.
+   * Test : New connection; config change should reset thread stats.
    */
-  ah.transactions_seen = 1;
-  ah.transactions_sampled = 2;
-  nr_app_harvest_private_init(&cfg, &ah, 1, 60, 10, 31);
-  tlib_pass_if_uint64_t_equal("connect timestamp", 1, cfg.connect_timestamp);
-  tlib_pass_if_uint64_t_equal("frequency", 60, cfg.frequency);
-  tlib_pass_if_uint64_t_equal("target", 10, cfg.target_transactions_per_cycle);
-  tlib_pass_if_uint64_t_equal("next harvest", 61, ah.next_harvest);
-  tlib_pass_if_uint64_t_equal("previous transactions seen", 0,
-                              ah.prev_transactions_seen);
-  tlib_pass_if_uint64_t_equal("transactions seen", 1, ah.transactions_seen);
-  tlib_pass_if_uint64_t_equal("transactions sampled", 2,
-                              ah.transactions_sampled);
+  nr_app_update_harvest_config(&app, 1, 60, 10);
+  tlib_pass_if_uint64_t_equal("connect timestamp", 1,
+                              app.adaptive_sampling_config.connect_timestamp);
+  tlib_pass_if_uint64_t_equal("frequency", 60,
+                              app.adaptive_sampling_config.frequency);
+  tlib_pass_if_uint64_t_equal("target", 10,
+                              app.adaptive_sampling_config.target_transactions_per_cycle);
+  stats = nr_app_get_or_create_thread_harvest(&app, key);
+  tlib_pass_if_uint64_t_equal("transactions seen reset", 0,
+                              stats->transactions_seen);
+  tlib_pass_if_uint64_t_equal("transactions sampled reset", 0,
+                              stats->transactions_sampled);
+  tlib_pass_if_uint64_t_equal("prev transactions seen reset", 0,
+                              stats->prev_transactions_seen);
+  tlib_pass_if_true("next harvest set", stats->next_harvest > 0,
+                    "next_harvest=%" PRIu64, stats->next_harvest);
+
+  /*
+   * Test : Same connection; unchanged config should not reset thread stats.
+   */
+  stats->transactions_seen = 1;
+  stats->transactions_sampled = 2;
+  nr_app_update_harvest_config(&app, 1, 60, 10);
+  stats = nr_app_get_or_create_thread_harvest(&app, key);
+  tlib_pass_if_uint64_t_equal("transactions seen preserved", 1,
+                              stats->transactions_seen);
+  tlib_pass_if_uint64_t_equal("transactions sampled preserved", 2,
+                              stats->transactions_sampled);
+
+  nr_hashmap_destroy(&app.harvest_map);
+  nrt_mutex_destroy(&app.app_lock);
 }
 
 static void test_stats_init(void) {
@@ -306,7 +324,7 @@ void test_main(void* p NRUNUSED) {
   rnd = nr_random_create();
   nr_random_seed(rnd, 345345);
 
-  test_init();
+  test_update_harvest_config();
   test_stats_init();
   test_calculate_next_harvest_time();
   test_calculate_threshold();

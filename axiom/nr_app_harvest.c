@@ -130,42 +130,6 @@ bool nr_app_harvest_is_first(const nr_app_harvest_config_t* cfg,
                                                cfg->frequency, now);
 }
 
-void nr_app_harvest_private_init(nr_app_harvest_config_t* cfg,
-                                 nr_app_harvest_stats_t* ah,
-                                 nrtime_t connect_timestamp,
-                                 nrtime_t harvest_frequency,
-                                 uint16_t sampling_target,
-                                 nrtime_t now) {
-  nrtime_t prev_connect_timestamp;
-  nrtime_t prev_frequency;
-
-  if (NULL == cfg) {
-    return;
-  }
-
-  prev_connect_timestamp = cfg->connect_timestamp;
-  prev_frequency = cfg->frequency;
-
-  cfg->connect_timestamp = connect_timestamp;
-  cfg->frequency = harvest_frequency;
-  cfg->target_transactions_per_cycle = sampling_target;
-
-  nrl_debug(NRL_AGENT,
-            "Adaptive sampling configuration. Connect: " NR_TIME_FMT
-            " us. Frequency: " NR_TIME_FMT " us. Target: %d.",
-            connect_timestamp, harvest_frequency, sampling_target);
-
-  /* If the connect timestamp and/or harvest frequency changed, then the
-   * previous data we had is now invalid, and we should reset it. */
-  if (ah && (cfg->connect_timestamp != prev_connect_timestamp
-             || cfg->frequency != prev_frequency)) {
-    ah->next_harvest = nr_app_harvest_calculate_next_harvest_time(cfg, now);
-    ah->threshold = 0;
-    ah->prev_transactions_seen = 0;
-    ah->transactions_seen = 0;
-    ah->transactions_sampled = 0;
-  }
-}
 
 bool nr_app_harvest_private_should_sample(const nr_app_harvest_config_t* cfg,
                                           nr_app_harvest_stats_t* ah,

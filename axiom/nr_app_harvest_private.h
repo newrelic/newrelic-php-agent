@@ -64,24 +64,6 @@ extern bool nr_app_harvest_is_first(const nr_app_harvest_config_t* cfg,
  * nr_get_time() internally.  This is for testing purposes. */
 
 /*
- * Purpose : Update harvest config and conditionally reset stats if
- *           connect_timestamp or frequency changed.
- *
- * Params  : 1. A pointer to the harvest config.
- *           2. A pointer to the harvest stats, or NULL to skip stats reset.
- *           3. The connect timestamp.
- *           4. The harvest frequency.
- *           5. The sampling target.
- *           6. The current time.
- */
-extern void nr_app_harvest_private_init(nr_app_harvest_config_t* cfg,
-                                        nr_app_harvest_stats_t* ah,
-                                        nrtime_t connect_timestamp,
-                                        nrtime_t harvest_frequency,
-                                        uint16_t sampling_target,
-                                        nrtime_t now);
-
-/*
  * Params  : 1. A pointer to the harvest config.
  *           2. A pointer to the harvest stats.
  *           3. A pointer to a random number generator.
