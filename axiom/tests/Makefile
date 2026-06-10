@@ -125,6 +125,7 @@ TESTS := \
   test_apdex \
   test_app \
   test_app_harvest \
+  test_app_harvest_threads \
   test_attributes \
   test_base64 \
   test_buffer \

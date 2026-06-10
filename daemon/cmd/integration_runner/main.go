@@ -679,7 +679,7 @@ type IntegrationDataHandler struct {
 	rawSecurityPolicies []byte                       // policies from connection attempt, needed for AppInfo reply
 }
 
-func (h *IntegrationDataHandler) IncomingTxnData(id newrelic.AgentRunID, sample newrelic.AggregaterInto) {
+func (h *IntegrationDataHandler) IncomingTxnData(id newrelic.AgentRunID, sample newrelic.AggregaterInto, _ newrelic.TxnProcessInfo) {
 	h.Lock()
 	defer h.Unlock()
 
