@@ -127,7 +127,7 @@ typedef struct _nrapp_t {
                                                        every appinfo reply */
   nr_hashmap_t* harvest_map;                        /* Per-thread harvest stats,
                                                        keyed by
-                                                       (uint64_t)pthread_self() */
+                                                       (uint64_t)nr_gettid() */
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
@@ -324,7 +324,7 @@ extern void nr_app_update_harvest_config(nrapp_t* app,
  *           with app->app_lock held.
  *
  * Params  : 1. The application.
- *           2. The thread key: (uint64_t)pthread_self().
+ *           2. The thread key: (uint64_t)nr_gettid().
  *
  * Returns : Pointer to the per-thread harvest, or NULL on allocation failure.
  */

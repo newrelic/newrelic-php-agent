@@ -12,7 +12,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
-#include <pthread.h>
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -635,7 +635,7 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
   uint32_t log_events;
   uint32_t php_packages;
   uint32_t log_labels;
-  pthread_t tid;
+  int tid;
 
   txn_trace = nr_txndata_prepend_trace_to_flatbuffer(fb, txn);
   span_events = nr_txndata_prepend_span_events(fb, txn->final_data.span_events,
@@ -688,9 +688,9 @@ static uint32_t nr_txndata_prepend_transaction(nr_flatbuffer_t* fb,
                                         php_packages, 0);
   nr_flatbuffers_object_prepend_uoffset(fb, TRANSACTION_FIELD_LOG_LABELS,
                                         log_labels, 0);
-  tid = pthread_self();
+  tid = nr_gettid();
   nr_flatbuffers_object_prepend_u64(fb, TRANSACTION_FIELD_THREAD_ID,
-                                    (uint64_t)(uintptr_t)tid, 0);
+                                    (uint64_t)tid, 0);
   return nr_flatbuffers_object_end(fb);
 }
 

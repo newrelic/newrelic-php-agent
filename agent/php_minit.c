@@ -130,7 +130,7 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
    * harvest_map so it is not left dangling after the thread exits.
    */
   if (nr_agent_applist) {
-    uint64_t key = (uint64_t)pthread_self();
+    uint64_t key = (uint64_t)nr_gettid();
 
     nrt_mutex_lock(&nr_agent_applist->applist_lock);
     for (int i = 0; i < nr_agent_applist->num_apps; i++) {

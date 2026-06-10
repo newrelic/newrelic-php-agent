@@ -10,7 +10,7 @@
  * ----------
  * In ZTS builds (e.g. FrankenPHP worker mode), multiple threads share a single
  * nrapp_t.  Each thread maintains its own nr_app_harvest_stats_t entry in
- * app->harvest_map, keyed by pthread_self().  This ensures each thread makes
+ * app->harvest_map, keyed by nr_gettid().  This ensures each thread makes
  * independent sampling decisions targeting adaptive_sampling_config.
  * target_transactions_per_cycle transactions per harvest cycle, rather than
  * all threads competing for one shared quota.
@@ -65,6 +65,7 @@
 #include "nr_app.h"
 #include "nr_app_harvest.h"
 #include "util_memory.h"
+#include "util_syscalls.h"
 #include "util_sleep.h"
 #include "util_threads.h"
 
@@ -100,7 +101,7 @@ typedef struct {
 static void* sampling_thread(void* arg) {
   sampling_thread_state_t* s = (sampling_thread_state_t*)arg;
   nr_app_harvest_stats_t* th;
-  pthread_t tid;
+  int tid;
   int idx;
 
   /* claim a stable result-array index before any other thread can */
@@ -109,12 +110,12 @@ static void* sampling_thread(void* arg) {
   pthread_mutex_unlock(&s->idx_mutex);
 
   /*
-   * Create this thread's map entry under app_lock.  pthread_self() is the
+   * Create this thread's map entry under app_lock.  nr_gettid() is the
    * key — unique per thread, stable for the thread's lifetime.
    */
   nrt_mutex_lock(&s->app->app_lock);
-  tid = pthread_self();
-  th = nr_app_get_or_create_thread_harvest(s->app, (uint64_t)(uintptr_t)tid);
+  tid = nr_gettid();
+  th = nr_app_get_or_create_thread_harvest(s->app, (uint64_t)tid);
   nrt_mutex_unlock(&s->app->app_lock);
 
   /* --- Phase 1 ---------------------------------------------------------- */

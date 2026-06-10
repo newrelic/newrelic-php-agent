@@ -7,7 +7,7 @@
 
 #include <locale.h>
 #include <math.h>
-#include <pthread.h>
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +40,7 @@
 #include "util_random.h"
 #include "util_reply.h"
 #include "util_sampling.h"
+#include "util_syscalls.h"
 #include "util_sql.h"
 #include "util_sleep.h"
 #include "util_strings.h"
@@ -455,7 +456,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_sampling_priority_t priority;
   nr_slab_t* segment_slab;
   nr_app_harvest_stats_t* thread_harvest;
-  pthread_t tid;
+  int tid;
 
   if (NULL == app) {
     return 0;
@@ -656,9 +657,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
                           &err));
 
   priority = nr_generate_initial_priority(app->rnd);
-  tid = pthread_self();
-  thread_harvest = nr_app_get_or_create_thread_harvest(app,
-                                                       (uint64_t)(uintptr_t)tid);
+  tid = nr_gettid();
+  thread_harvest = nr_app_get_or_create_thread_harvest(app, (uint64_t)tid);
   if (nr_app_harvest_should_sample(&app->adaptive_sampling_config,
                                     thread_harvest, app->rnd)) {
     nr_distributed_trace_set_sampled(nt->distributed_trace, true);
