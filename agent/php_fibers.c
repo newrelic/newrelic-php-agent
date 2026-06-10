@@ -5,6 +5,7 @@
  * This file handles fibers instrumentation.
  */
 
+#include "nr_datastore_instance.h"
 #include "php_includes.h"
 #include "php_compat.h"
 #include "php_fibers.h"
@@ -17,42 +18,61 @@
 #include "util_memory.h"
 #include "util_stack.h"
 #include "util_strings.h"
+#include "util_time.h"
 #include "zend_types.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
 #define COPY_BASIC(x) (dest->x = src->x)
 #define COPY_STRING(x) (dest->x = nr_strdup(src->x))
-#define COPY_HASHMAP(x) (dest->x = nr_hashmap_copy(src->x))
+#define COPY_HASHMAP(x, y) (dest->x = nr_hashmap_copy(src->x, y))
 #define COPY_STACK(x, y) (dest->x = nr_stack_copy(&src->x, y))
+
+static void* copy_elem_zval(void* elem) {
+  zval* copy = nr_php_zval_alloc();
+  ZVAL_DUP(copy, elem);
+  return copy;
+}
+
+static void* copy_elem_ident(void* elem) {
+  return elem;
+}
+
+static void* copy_elem_str(void* elem) {
+  return nr_strdup((char*)elem);
+}
+
+static void* copy_elem_time(void* elem) {
+  nrtime_t* t = NULL;
+  nrtime_t* src = (nrtime_t*)elem;
+  t = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
+  *t = *src;
+  return t;
+}
+
+static void* copy_datastore_instance(void* elem) {
+  nr_datastore_instance_t* d = NULL;
+  nr_datastore_instance_t* src = (nr_datastore_instance_t*)elem;
+  d = nr_malloc(sizeof(nr_datastore_instance_t));
+  d->host = nr_strdup(src->host);
+  d->port_path_or_id = nr_strdup(src->port_path_or_id);
+  d->database_name = nr_strdup(src->database_name);
+  return d;
+}
 
 static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
   COPY_BASIC(execute_count);
   COPY_BASIC(generating_explain_plan);
   COPY_BASIC(curl_ignore_setopt);
 
-  COPY_HASHMAP(guzzle_objs);
-  COPY_HASHMAP(mysqli_queries);
-  COPY_HASHMAP(pdo_link_options);
-  COPY_HASHMAP(curl_metadata);
-  COPY_HASHMAP(curl_multi_metadata);
-  COPY_HASHMAP(prepared_statements);
+  COPY_BASIC(guzzle_objs);
+  COPY_HASHMAP(mysqli_queries, copy_elem_zval);
+  COPY_HASHMAP(pdo_link_options, copy_elem_zval);
+  COPY_BASIC(curl_metadata);
+  COPY_BASIC(curl_multi_metadata);
+  COPY_HASHMAP(prepared_statements, copy_elem_str);
 
   dest->mysqli_links = nr_mysqli_metadata_copy(src->mysqli_links);
-}
-
-static void* copy_stack_elem_zval(void* elem) {
-  zval* copy = nr_php_zval_alloc();
-  ZVAL_DUP(copy, elem);
-  return copy;
-}
-
-static void* copy_stack_elem_bool(void* elem) {
-  return elem;
-}
-
-static void* copy_stack_elem_str(void* elem) {
-  return nr_strdup((char*)elem);
 }
 
 static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
@@ -66,22 +86,22 @@ static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
   COPY_STRING(mysql_last_conn);
   COPY_STRING(pgsql_last_conn);
 
-  COPY_HASHMAP(datastore_connections);
+  COPY_HASHMAP(datastore_connections, copy_datastore_instance);
 
   COPY_BASIC(deprecated_capture_request_parameters);
   COPY_BASIC(error_group_user_callback);
   COPY_BASIC(check_cufa);
 
-  COPY_HASHMAP(predis_commands);
+  COPY_HASHMAP(predis_commands, copy_elem_time);
 
-  COPY_STACK(drupal_invoke_all_hooks, copy_stack_elem_zval);
-  COPY_STACK(drupal_invoke_all_states, copy_stack_elem_bool);
+  COPY_STACK(drupal_invoke_all_hooks, copy_elem_zval);
+  COPY_STACK(drupal_invoke_all_states, copy_elem_ident);
 
   dest->drupal_http_request_segment = NULL;
 
-  COPY_STACK(wordpress_tags, copy_stack_elem_str);
-  COPY_STACK(wordpress_tag_states, copy_stack_elem_bool);
-  COPY_STACK(predis_ctxs, copy_stack_elem_str);
+  COPY_STACK(wordpress_tags, copy_elem_str);
+  COPY_STACK(wordpress_tag_states, copy_elem_ident);
+  COPY_STACK(predis_ctxs, copy_elem_str);
 }
 
 #undef COPY_STACK
@@ -111,11 +131,8 @@ ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
 
 void free_fiber_globals(void* fiber_globals) {
   fiber_globals_t* f = (fiber_globals_t*)fiber_globals;
-  nr_hashmap_destroy(&f->txn_globals->guzzle_objs);
   nr_hashmap_destroy(&f->txn_globals->mysqli_queries);
   nr_hashmap_destroy(&f->txn_globals->pdo_link_options);
-  nr_hashmap_destroy(&f->txn_globals->curl_metadata);
-  nr_hashmap_destroy(&f->txn_globals->curl_multi_metadata);
   nr_hashmap_destroy(&f->txn_globals->prepared_statements);
   nr_mysqli_metadata_destroy(&f->txn_globals->mysqli_links);
 

@@ -21,6 +21,7 @@
  * The opaque hashmap type.
  */
 typedef struct _nr_hashmap_t nr_hashmap_t;
+typedef void* (*nr_hashmap_clone_elem_t)(void* element);
 
 /*
  * Type declaration for apply functions.
@@ -191,11 +192,14 @@ extern nr_vector_t* nr_hashmap_keys(nr_hashmap_t* hashmap);
  * Purpose : Return a copy of a hashmap.
  *
  * Params  : 1. The hashmap to copy.
+ *           2. A clone function invoked on each element's value to produce the
+ *              value stored in the copy. Must not be NULL.
  *
  * Returns : A copy of the provided hashmap. This will have to be freed when no
  *           longer needed.
  */
-extern nr_hashmap_t* nr_hashmap_copy(nr_hashmap_t* src);
+extern nr_hashmap_t* nr_hashmap_copy(nr_hashmap_t* src,
+                                     nr_hashmap_clone_elem_t clone_fn);
 
 /*
  * The below functions are simple wrappers for the main functions above that

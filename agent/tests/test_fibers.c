@@ -5,6 +5,7 @@
 
 #include "tlib_php.h"
 
+#include "nr_datastore_instance.h"
 #include "php_agent.h"
 #include "php_fibers.h"
 #include "php_newrelic.h"
@@ -13,6 +14,7 @@
 #include "util_memory.h"
 #include "util_stack.h"
 #include "util_strings.h"
+#include "util_time.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
@@ -25,6 +27,78 @@ static nr_hashmap_t* dummy_hashmap_data() {
   nr_hashmap_set(h, NR_PSTR("a"), "valA");
   nr_hashmap_set(h, NR_PSTR("b"), "valB");
   nr_hashmap_set(h, NR_PSTR("c"), "valC");
+  return h;
+}
+
+static nr_hashmap_t* dummy_hashmap_str() {
+  nr_hashmap_t* h
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_hashmap_dtor_str);
+  nr_hashmap_set(h, NR_PSTR("a"), nr_strdup("strA"));
+  nr_hashmap_set(h, NR_PSTR("b"), nr_strdup("strB"));
+  nr_hashmap_set(h, NR_PSTR("c"), nr_strdup("strC"));
+  return h;
+}
+
+static void dtor_zval(void* val) {
+  zval* zv = (zval*)val;
+  nr_php_zval_free(&zv);
+}
+
+static nr_hashmap_t* dummy_hashmap_zval() {
+  nr_hashmap_t* h = nr_hashmap_create(dtor_zval);
+  zval* za = nr_php_zval_alloc();
+  zval* zb = nr_php_zval_alloc();
+  zval* zc = nr_php_zval_alloc();
+  nr_php_zval_str(za, "zvalA");
+  nr_php_zval_str(zb, "zvalB");
+  nr_php_zval_str(zc, "zvalC");
+  nr_hashmap_set(h, NR_PSTR("a"), za);
+  nr_hashmap_set(h, NR_PSTR("b"), zb);
+  nr_hashmap_set(h, NR_PSTR("c"), zc);
+  return h;
+}
+
+static void dtor_datastore(void* val) {
+  nr_datastore_instance_t* d = (nr_datastore_instance_t*)val;
+  nr_datastore_instance_destroy(&d);
+}
+
+static nr_datastore_instance_t* make_datastore_instance(const char* host,
+                                                        const char* port,
+                                                        const char* db) {
+  nr_datastore_instance_t* d = nr_malloc(sizeof(nr_datastore_instance_t));
+  d->host = nr_strdup(host);
+  d->port_path_or_id = nr_strdup(port);
+  d->database_name = nr_strdup(db);
+  return d;
+}
+
+static nr_hashmap_t* dummy_hashmap_datastore() {
+  nr_hashmap_t* h = nr_hashmap_create(dtor_datastore);
+  nr_hashmap_set(h, NR_PSTR("a"),
+                 make_datastore_instance("hostA", "portA", "dbA"));
+  nr_hashmap_set(h, NR_PSTR("b"),
+                 make_datastore_instance("hostB", "portB", "dbB"));
+  nr_hashmap_set(h, NR_PSTR("c"),
+                 make_datastore_instance("hostC", "portC", "dbC"));
+  return h;
+}
+
+static void dtor_time(void* val) {
+  nr_free(val);
+}
+
+static nr_hashmap_t* dummy_hashmap_time() {
+  nr_hashmap_t* h = nr_hashmap_create(dtor_time);
+  nrtime_t* ta = nr_malloc(sizeof(nrtime_t));
+  nrtime_t* tb = nr_malloc(sizeof(nrtime_t));
+  nrtime_t* tc = nr_malloc(sizeof(nrtime_t));
+  *ta = 1000;
+  *tb = 2000;
+  *tc = 3000;
+  nr_hashmap_set(h, NR_PSTR("a"), ta);
+  nr_hashmap_set(h, NR_PSTR("b"), tb);
+  nr_hashmap_set(h, NR_PSTR("c"), tc);
   return h;
 }
 
@@ -86,12 +160,12 @@ static txn_globals_t* dummy_txn_globals() {
   nr_mysqli_metadata_set_connect(tg->mysqli_links, 1, "db-host", "db-user",
                                  "db-password", "db-database", 3306,
                                  "db-socket", 1);
-  tg->mysqli_queries = dummy_hashmap_data();
-  tg->pdo_link_options = dummy_hashmap_data();
+  tg->mysqli_queries = dummy_hashmap_zval();
+  tg->pdo_link_options = dummy_hashmap_zval();
   tg->curl_ignore_setopt = 1;
   tg->curl_metadata = dummy_hashmap_data();
   tg->curl_multi_metadata = dummy_hashmap_data();
-  tg->prepared_statements = dummy_hashmap_data();
+  tg->prepared_statements = dummy_hashmap_str();
 
   return tg;
 }
@@ -107,6 +181,20 @@ static void free_txn_globals(txn_globals_t* tg) {
   nr_free(tg);
 }
 
+/*
+ * Cleanup for a txn_globals returned by nrf_fiber_copy_txn_globals: skips the
+ * fields that are shallow-copied (guzzle_objs, curl_metadata,
+ * curl_multi_metadata) since those are still owned by the source. Mirrors the
+ * txn_globals section of free_fiber_globals.
+ */
+static void free_txn_globals_copy(txn_globals_t* tg) {
+  nr_mysqli_metadata_destroy(&tg->mysqli_links);
+  nr_hashmap_destroy(&tg->mysqli_queries);
+  nr_hashmap_destroy(&tg->pdo_link_options);
+  nr_hashmap_destroy(&tg->prepared_statements);
+  nr_free(tg);
+}
+
 static ctx_globals_t* dummy_ctx_globals() {
   ctx_globals_t* cg = NULL;
   cg = nr_malloc(sizeof(ctx_globals_t));
@@ -115,13 +203,12 @@ static ctx_globals_t* dummy_ctx_globals() {
   cg->php_cur_stack_depth = 4;
   cg->mysql_last_conn = nr_strdup("mysql_last_conn");
   cg->pgsql_last_conn = nr_strdup("pgsql_last_conn");
-  cg->datastore_connections = dummy_hashmap_data();
+  cg->datastore_connections = dummy_hashmap_datastore();
   cg->deprecated_capture_request_parameters = 1;
   cg->check_cufa = true;
-  cg->predis_commands = dummy_hashmap_data();
+  cg->predis_commands = dummy_hashmap_time();
   cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
   cg->drupal_invoke_all_states = dummy_stack_data_bool();
-  // TODO: segment handling?
   cg->wordpress_tags = dummy_stack_data_str();
   cg->wordpress_tag_states = dummy_stack_data_bool();
   cg->predis_ctxs = dummy_stack_data_str();
@@ -136,7 +223,6 @@ static void free_ctx_globals(ctx_globals_t* cg) {
   nr_hashmap_destroy(&cg->predis_commands);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_hooks);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_states);
-  // TODO: segment handling?
   nr_stack_destroy_fields(&cg->wordpress_tags);
   nr_stack_destroy_fields(&cg->wordpress_tag_states);
   nr_stack_destroy_fields(&cg->predis_ctxs);
@@ -209,7 +295,7 @@ static void test_copy_txn_globals(void) {
   tlib_pass_if_not_null("prepared_statements is copied",
                         copy->prepared_statements);
 
-  free_txn_globals(copy);
+  free_txn_globals_copy(copy);
   free_txn_globals(src);
 
   tlib_php_request_end();
@@ -225,16 +311,41 @@ static void test_copy_txn_globals_with_hashmaps(void) {
 
   copy = nrf_fiber_copy_txn_globals(src);
 
-  tlib_pass_if_not_null("copy contains a guzzle_objs hashmap",
-                        copy->guzzle_objs);
-  tlib_fail_if_int_equal("guzzle_objs is a distinct allocation",
-                         (int)(uintptr_t)src->guzzle_objs,
-                         (int)(uintptr_t)copy->guzzle_objs);
-  tlib_pass_if_size_t_equal("guzzle_objs has the same number of entries",
-                            nr_hashmap_count(src->guzzle_objs),
-                            nr_hashmap_count(copy->guzzle_objs));
+  /*
+   * guzzle_objs, curl_metadata, and curl_multi_metadata are shallow-copied:
+   * the copy must share the same hashmap pointer as the source.
+   */
+  tlib_pass_if_ptr_equal("guzzle_objs is shared with src", src->guzzle_objs,
+                         copy->guzzle_objs);
+  tlib_pass_if_ptr_equal("curl_metadata is shared with src", src->curl_metadata,
+                         copy->curl_metadata);
+  tlib_pass_if_ptr_equal("curl_multi_metadata is shared with src",
+                         src->curl_multi_metadata, copy->curl_multi_metadata);
 
-  free_txn_globals(copy);
+  /*
+   * mysqli_queries, pdo_link_options, and prepared_statements are deep-copied:
+   * the copy must be a distinct allocation with the same number of entries.
+   */
+  tlib_fail_if_ptr_equal("mysqli_queries is a distinct allocation",
+                         src->mysqli_queries, copy->mysqli_queries);
+  tlib_pass_if_size_t_equal("mysqli_queries has the same number of entries",
+                            nr_hashmap_count(src->mysqli_queries),
+                            nr_hashmap_count(copy->mysqli_queries));
+
+  tlib_fail_if_ptr_equal("pdo_link_options is a distinct allocation",
+                         src->pdo_link_options, copy->pdo_link_options);
+  tlib_pass_if_size_t_equal("pdo_link_options has the same number of entries",
+                            nr_hashmap_count(src->pdo_link_options),
+                            nr_hashmap_count(copy->pdo_link_options));
+
+  tlib_fail_if_ptr_equal("prepared_statements is a distinct allocation",
+                         src->prepared_statements, copy->prepared_statements);
+  tlib_pass_if_size_t_equal(
+      "prepared_statements has the same number of entries",
+      nr_hashmap_count(src->prepared_statements),
+      nr_hashmap_count(copy->prepared_statements));
+
+  free_txn_globals_copy(copy);
   free_txn_globals(src);
 
   tlib_php_request_end();
@@ -261,9 +372,21 @@ static void test_copy_ctx_globals(void) {
 
   tlib_pass_if_not_null("datastore_connections hashmap is copied",
                         copy->datastore_connections);
-  tlib_fail_if_int_equal("datastore_connections is a distinct allocation",
-                         (int)(uintptr_t)src->datastore_connections,
-                         (int)(uintptr_t)copy->datastore_connections);
+  tlib_fail_if_ptr_equal("datastore_connections is a distinct allocation",
+                         src->datastore_connections,
+                         copy->datastore_connections);
+  tlib_pass_if_size_t_equal(
+      "datastore_connections has the same number of entries",
+      nr_hashmap_count(src->datastore_connections),
+      nr_hashmap_count(copy->datastore_connections));
+
+  tlib_pass_if_not_null("predis_commands hashmap is copied",
+                        copy->predis_commands);
+  tlib_fail_if_ptr_equal("predis_commands is a distinct allocation",
+                         src->predis_commands, copy->predis_commands);
+  tlib_pass_if_size_t_equal("predis_commands has the same number of entries",
+                            nr_hashmap_count(src->predis_commands),
+                            nr_hashmap_count(copy->predis_commands));
 
   /*
    * drupal_http_request_segment is intentionally reset to NULL in the copy.

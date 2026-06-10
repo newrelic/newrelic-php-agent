@@ -355,24 +355,31 @@ static void test_keys(void) {
   nr_hashmap_destroy(&hashmap);
 }
 
+static void* clone_str(void* elem) {
+  return nr_strdup((char*)elem);
+}
+
 static void test_copy(void) {
-  nr_hashmap_t* src = nr_hashmap_create(NULL);
+  nr_hashmap_t* src
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_hashmap_dtor_str);
   nr_hashmap_t* dest;
   char* value_foo = nr_strdup("testfoo");
   char* value_bar = nr_strdup("testbar");
   char* value_baz = nr_strdup("testbaz");
 
+  tlib_pass_if_null("NULL src returns NULL", nr_hashmap_copy(NULL, clone_str));
+
   nr_hashmap_set(src, NR_PSTR("foo"), value_foo);
   nr_hashmap_set(src, NR_PSTR("bar"), value_bar);
   nr_hashmap_set(src, NR_PSTR("baz"), value_baz);
 
-  dest = nr_hashmap_copy(src);
+  dest = nr_hashmap_copy(src, clone_str);
 
-  tlib_pass_if_not_null("'dest' hashmap is not null", dest)
+  tlib_pass_if_not_null("'dest' hashmap is not null", dest);
 
-      tlib_pass_if_int_equal(
-          "destination hashmap contains the same number of elements as src", 3,
-          nr_hashmap_count(dest));
+  tlib_pass_if_int_equal(
+      "destination hashmap contains the same number of elements as src", 3,
+      nr_hashmap_count(dest));
 
   tlib_pass_if_int_equal("'foo' key exists", 1,
                          nr_hashmap_has(dest, NR_PSTR("foo")));
@@ -388,9 +395,13 @@ static void test_copy(void) {
   tlib_pass_if_str_equal("'baz' key produces 'testbaz' value", "testbaz",
                          nr_hashmap_get(dest, NR_PSTR("baz")));
 
-  nr_free(value_foo);
-  nr_free(value_bar);
-  nr_free(value_baz);
+  tlib_fail_if_ptr_equal("'foo' value is cloned, not aliased", value_foo,
+                         nr_hashmap_get(dest, NR_PSTR("foo")));
+  tlib_fail_if_ptr_equal("'bar' value is cloned, not aliased", value_bar,
+                         nr_hashmap_get(dest, NR_PSTR("bar")));
+  tlib_fail_if_ptr_equal("'baz' value is cloned, not aliased", value_baz,
+                         nr_hashmap_get(dest, NR_PSTR("baz")));
+
   nr_hashmap_destroy(&src);
   nr_hashmap_destroy(&dest);
 }

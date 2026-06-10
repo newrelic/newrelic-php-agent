@@ -144,8 +144,9 @@ static void nr_fiber_disable(zend_fiber_context* fiber_context) {
   }
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
     NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
@@ -159,8 +160,9 @@ static void nr_fiber_switch_disable(zend_fiber_context* from,
   }
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
     NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
@@ -173,7 +175,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
     nr_fiber_show_fiber(zfc, "init");
   }
   if (NULL == NRPRG(fiber_globals_map)) {
-    // inititalize the fiber global hashmap if it does not already exist
+    // initialize the fiber global hashmap if it does not already exist
     nrf_fiber_init_global_hashmap(&NRPRG(fiber_globals_map));
   }
 
