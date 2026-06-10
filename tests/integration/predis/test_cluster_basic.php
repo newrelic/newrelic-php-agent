@@ -48,7 +48,9 @@ function test_cluster_basic() {
   global $REDIS_CLUSTER_HOST, $REDIS_CLUSTER_PORT;
 
   $client = new Predis\Client(
-    array('host' => $REDIS_CLUSTER_HOST, 'port' => $REDIS_CLUSTER_PORT),
+    array(
+      array('host' => $REDIS_CLUSTER_HOST, 'port' => $REDIS_CLUSTER_PORT),
+    ),
     array('cluster' => 'redis')
   );
 
