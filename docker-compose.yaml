@@ -66,7 +66,6 @@ services:
       PREDIS_HOME: /usr/src/vendor/predis/predis/
       REDIS_HOST: redisdb
       REDIS_CLUSTER_HOST: redisclusterdb
-      REDIS_CLUSTER_PORT: 7000
 
     volumes:
        - ${AGENT_CODE:-$PWD}:/usr/local/src/newrelic-php-agent
@@ -98,7 +97,6 @@ services:
       PREDIS_HOME: /usr/src/vendor/predis/predis/
       REDIS_HOST: redisdb
       REDIS_CLUSTER_HOST: redisclusterdb
-      REDIS_CLUSTER_PORT: 7000
 
       PS1: "New Relic > "
       NEWRELIC_COLLECTOR_HOST : ${NEW_RELIC_COLLECTOR_HOST:-collector.newrelic.com}
