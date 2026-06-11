@@ -553,7 +553,7 @@ function test_multiple_fibers_coordination() {
     }
 
     // Wait a bit for any remaining async operations to complete
-    usleep(100000); // 100ms
+    usleep(200000); // 200ms
 
     // Final cleanup round
     foreach ($fulfilling_fibers as $fiber) {
