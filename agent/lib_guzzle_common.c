@@ -90,8 +90,6 @@ nr_segment_t* nr_guzzle_obj_add(const zval* obj,
    */
   async_context
       = nr_guzzle_create_async_context_name(async_context_prefix, obj);
-  nrl_info(NRL_INSTRUMENT, "amber Guzzle: created async context %s",
-           NRSAFESTR(async_context));
   /*
    * This is a special case where we don't want the context of the newly
    * created segment to be set on the txn because this segment is tracked
