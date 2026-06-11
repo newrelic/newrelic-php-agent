@@ -441,6 +441,8 @@ use NewRelic\Integration\Transaction;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 
+newrelic_add_custom_tracer('initiating_fiber');
+
 // Global storage for promises and results
 $promises = [];
 $results = [];
@@ -553,7 +555,7 @@ function test_multiple_fibers_coordination() {
     }
 
     // Wait a bit for any remaining async operations to complete
-    usleep(200000); // 200ms
+    usleep(100000); // 100ms
 
     // Final cleanup round
     foreach ($fulfilling_fibers as $fiber) {
@@ -568,14 +570,15 @@ function test_multiple_fibers_coordination() {
 $main_fiber = new Fiber('test_multiple_fibers_coordination');
 $main_fiber->start();
 
-
-new Transaction;
-
 $txn = new Transaction;
-$middleware_segments = $txn->getTrace()->findSegmentsBySubstring('newrelic\\Guzzle6\\middleware');
+if (version_compare(phpversion(), '8.4', '<')) {
+  $middleware_segments = $txn->getTrace()->findSegmentsBySubstring('closure');
+} else {
+  $middleware_segments = $txn->getTrace()->findSegmentsBySubstring('newrelic\\Guzzle6\\middleware');
+
+}
 $initiating_fiber_segments = $txn->getTrace()->findSegmentsByName('Custom/initiating_fiber');
 
-$fiber_index = 0;
 foreach ($initiating_fiber_segments as $fiber_segment) {
     $fiber_segment_context = $fiber_segment->attributes->async_context;
     $child_index = 0;
