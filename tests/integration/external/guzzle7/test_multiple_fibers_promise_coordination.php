@@ -36,36 +36,26 @@ Fiber 8 fulfilling promises 3
 Fiber 9 fulfilling promises 4
 Fiber 10 fulfilling promises 5
 All promises completed successfully
-Fiber#0 child 0 name: External/url1_1/all
-ok - This External segment has correct Guzzle context.
-Fiber#0 child 1 name: External/url1_2/all
-ok - This External segment has correct Guzzle context.
-Fiber#0 child 2 name: External/url1_3/all
-ok - This External segment has correct Guzzle context.
-Fiber#1 child 0 name: External/url2_1/all
-ok - This External segment has correct Guzzle context.
-Fiber#1 child 1 name: External/url2_2/all
-ok - This External segment has correct Guzzle context.
-Fiber#1 child 2 name: External/url2_3/all
-ok - This External segment has correct Guzzle context.
-Fiber#2 child 0 name: External/url3_1/all
-ok - This External segment has correct Guzzle context.
-Fiber#2 child 1 name: External/url3_2/all
-ok - This External segment has correct Guzzle context.
-Fiber#2 child 2 name: External/url3_3/all
-ok - This External segment has correct Guzzle context.
-Fiber#3 child 0 name: External/url4_1/all
-ok - This External segment has correct Guzzle context.
-Fiber#3 child 1 name: External/url4_2/all
-ok - This External segment has correct Guzzle context.
-Fiber#3 child 2 name: External/url4_3/all
-ok - This External segment has correct Guzzle context.
-Fiber#4 child 0 name: External/url5_1/all
-ok - This External segment has correct Guzzle context.
-Fiber#4 child 1 name: External/url5_2/all
-ok - This External segment has correct Guzzle context.
-Fiber#4 child 2 name: External/url5_3/all
-ok - This External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+Fiber had 3 matching children
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+Fiber had 3 matching children
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+Fiber had 3 matching children
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+Fiber had 3 matching children
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+ok - External segment has correct Guzzle context.
+Fiber had 3 matching children
 */
 
 /*EXPECT_METRICS_EXIST
@@ -589,19 +579,24 @@ $fiber_index = 0;
 foreach ($initiating_fiber_segments as $fiber_segment) {
     $fiber_segment_context = $fiber_segment->attributes->async_context;
     $child_index = 0;
+    $matching_children = true;
+    $prev_child_name = '';
     foreach ($middleware_segments as $parent_segment) {
       $parent_context = $parent_segment->attributes->async_context;
       if ($parent_context === $fiber_segment_context) {
           $children = $parent_segment->children;
           foreach ($children as $child) {
               if (isset($child->attributes->uri)) {
-                  echo "Fiber#$fiber_index child $child_index name: " . $child->name . "\n";
+                  if (!empty($prev_child_name) && strncmp($prev_child_name, $child->name, 5) != 0) {
+                      $matching_children = false;
+                  }
                   $child_index++;
+                  $prev_child_name = $child->name;
                   $child_context = $child->attributes->async_context;
-                  tap_equal(true, str_contains($child_context, "Guzzle"), 'This External segment has correct Guzzle context.');
+                  tap_equal(true, str_contains($child_context, "Guzzle"), 'External segment has correct Guzzle context.');
               }
           }
       }
     }
-    $fiber_index++;
+    echo "Fiber had $child_index " . ($matching_children ? "matching" : "NOT matching") . " children\n";
 }
