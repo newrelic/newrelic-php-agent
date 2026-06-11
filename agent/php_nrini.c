@@ -3272,7 +3272,7 @@ STD_PHP_INI_ENTRY_EX("newrelic.message_tracer.segment_parameters.enabled",
  * request.
  */
 STD_PHP_INI_ENTRY_EX("newrelic.fibers.disabled",
-                     "1",  // default will eventually be false
+                     "0",  // default will eventually be false
                      NR_PHP_REQUEST,
                      nr_boolean_mh,
                      ini.fibers_disabled,
