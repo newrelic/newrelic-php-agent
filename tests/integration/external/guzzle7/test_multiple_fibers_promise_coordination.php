@@ -557,7 +557,7 @@ function test_multiple_fibers_coordination() {
 
     // Final cleanup round
     foreach ($fulfilling_fibers as $fiber) {
-        if (!$fiber->isTerminated()) {
+        while (!$fiber->isTerminated()) {
             $fiber->resume();
         }
     }
