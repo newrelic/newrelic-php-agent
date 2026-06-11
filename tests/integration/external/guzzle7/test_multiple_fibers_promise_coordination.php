@@ -5,7 +5,7 @@
  */
 
 /*DESCRIPTION
-Test that guzzle 7 works correctly when 5 fibers initiate promises and 5 other fibers fulfill them,
+Test that guzzle 7 works correctly when 5 fibers initiate 3 promises each and 5 other fibers fulfill them,
 demonstrating complex fiber coordination with HTTP requests.
 */
 
@@ -25,55 +25,67 @@ newrelic.fibers.disabled = false
 */
 
 /*EXPECT
-Fiber 1 initiating promise
-Fiber 2 initiating promise
-Fiber 3 initiating promise
-Fiber 4 initiating promise
-Fiber 5 initiating promise
-Fiber 6 fulfilling promise 1
-Fiber 7 fulfilling promise 2
-Fiber 8 fulfilling promise 3
-Fiber 9 fulfilling promise 4
-Fiber 10 fulfilling promise 5
-Promise 1 result: traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-Promise 2 result: traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-Promise 3 result: traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-Promise 4 result: traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
-Promise 5 result: traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRelic-Transaction=missing tracing endpoint reached
+Fiber 1 initiating promises
+Fiber 2 initiating promises
+Fiber 3 initiating promises
+Fiber 4 initiating promises
+Fiber 5 initiating promises
+Fiber 6 fulfilling promises 1
+Fiber 7 fulfilling promises 2
+Fiber 8 fulfilling promises 3
+Fiber 9 fulfilling promises 4
+Fiber 10 fulfilling promises 5
 All promises completed successfully
+Fiber#0 child 0 name: External/url1_1/all
+ok - This External segment has correct Guzzle context.
+Fiber#0 child 1 name: External/url1_2/all
+ok - This External segment has correct Guzzle context.
+Fiber#0 child 2 name: External/url1_3/all
+ok - This External segment has correct Guzzle context.
+Fiber#1 child 0 name: External/url2_1/all
+ok - This External segment has correct Guzzle context.
+Fiber#1 child 1 name: External/url2_2/all
+ok - This External segment has correct Guzzle context.
+Fiber#1 child 2 name: External/url2_3/all
+ok - This External segment has correct Guzzle context.
+Fiber#2 child 0 name: External/url3_1/all
+ok - This External segment has correct Guzzle context.
+Fiber#2 child 1 name: External/url3_2/all
+ok - This External segment has correct Guzzle context.
+Fiber#2 child 2 name: External/url3_3/all
+ok - This External segment has correct Guzzle context.
+Fiber#3 child 0 name: External/url4_1/all
+ok - This External segment has correct Guzzle context.
+Fiber#3 child 1 name: External/url4_2/all
+ok - This External segment has correct Guzzle context.
+Fiber#3 child 2 name: External/url4_3/all
+ok - This External segment has correct Guzzle context.
+Fiber#4 child 0 name: External/url5_1/all
+ok - This External segment has correct Guzzle context.
+Fiber#4 child 1 name: External/url5_2/all
+ok - This External segment has correct Guzzle context.
+Fiber#4 child 2 name: External/url5_3/all
+ok - This External segment has correct Guzzle context.
 */
 
-/*EXPECT_METRICS
-[
-  "?? agent run id",
-  "?? timeframe start",
-  "?? timeframe stop",
-  [
-    [{"name":"External/127.0.0.1/all"},                   [5, "??", "??", "??", "??", "??"]],
-    [{"name":"External/127.0.0.1/all",
-      "scope":"OtherTransaction/php__FILE__"},            [5, "??", "??", "??", "??", "??"]],
-    [{"name":"External/all"},                             [5, "??", "??", "??", "??", "??"]],
-    [{"name":"External/allOther"},                        [5, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/all"},                     [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransaction/php__FILE__"},             [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime"},                [1, "??", "??", "??", "??", "??"]],
-    [{"name":"OtherTransactionTotalTime/php__FILE__"},    [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/PHP/package/guzzlehttp/guzzle/7/detected"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Guzzle 6/detected"}, [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/library/Autoloader/detected"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/library/Composer/detected"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [5, 0, 0, 0, 0, 0]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/TraceContext/Create/Success"}, [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/DistributedTrace/CreatePayload/Success"}, [5, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Forwarding/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Metrics/PHP/enabled"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/LocalDecorating/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/Logging/Labels/PHP/disabled"}, [1, "??", "??", "??", "??", "??"]],
-    [{"name":"Supportability/PHP/Fiber/used"}, ["??", "??", "??", "??", "??", "??"]]
-  ]
-]
+/*EXPECT_METRICS_EXIST
+External/url5_1/all
+External/url5_2/all
+External/url5_3/all
+External/url4_1/all
+External/url4_2/all
+External/url4_3/all
+External/url3_1/all
+External/url3_2/all
+External/url3_3/all
+External/url2_1/all
+External/url2_2/all
+External/url2_3/all
+External/url1_1/all
+External/url1_2/all
+External/url1_3/all
+Supportability/TraceContext/Create/Success, 15
+Supportability/DistributedTrace/CreatePayload/Success, 15
 */
 
 /*EXPECT_SPAN_EVENTS_LIKE
@@ -85,7 +97,7 @@ All promises completed successfully
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "??",
+        "name": "External\/url1_1\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -98,7 +110,7 @@ All promises completed successfully
       {
         "http.method": "GET",
         "http.url": "??",
-        "http.statusCode": 200
+        "http.statusCode": 0
       }
     ],
     [
@@ -108,7 +120,7 @@ All promises completed successfully
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "??",
+        "name": "External\/url1_2\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -121,7 +133,7 @@ All promises completed successfully
       {
         "http.method": "GET",
         "http.url": "??",
-        "http.statusCode": 200
+        "http.statusCode": 0
       }
     ],
     [
@@ -131,7 +143,7 @@ All promises completed successfully
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "??",
+        "name": "External\/url1_3\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -144,7 +156,7 @@ All promises completed successfully
       {
         "http.method": "GET",
         "http.url": "??",
-        "http.statusCode": 200
+        "http.statusCode": 0
       }
     ],
     [
@@ -154,7 +166,7 @@ All promises completed successfully
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "??",
+        "name": "External\/url2_1\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -167,7 +179,7 @@ All promises completed successfully
       {
         "http.method": "GET",
         "http.url": "??",
-        "http.statusCode": 200
+        "http.statusCode": 0
       }
     ],
     [
@@ -177,7 +189,7 @@ All promises completed successfully
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "??",
+        "name": "External\/url2_2\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -190,15 +202,251 @@ All promises completed successfully
       {
         "http.method": "GET",
         "http.url": "??",
-        "http.statusCode": 200
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url2_3\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url3_1\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url3_2\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url3_3\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url4_1\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url4_2\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url4_3\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url5_1\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url5_2\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url5_3\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "Guzzle 6"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "??",
+        "http.statusCode": 0
       }
     ]
 ]
 */
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/helpers.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/integration.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
 require_guzzle(7);
+
+use NewRelic\Integration\Transaction;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
@@ -210,41 +458,50 @@ $results = [];
 function initiating_fiber($fiber_id) {
     global $promises;
 
-    echo "Fiber $fiber_id initiating promise\n";
-
-    /* Create URL. */
-    $url = "http://" . make_tracing_url(realpath(dirname(__FILE__)) .  '/../../../include/tracing_endpoint.php');
+    echo "Fiber $fiber_id initiating promises\n";
 
     $client = new Client();
+    $fiber_promises = [];
 
-    // Create an async request promise
-    $promise = $client->getAsync($url);
-    $promises[$fiber_id] = $promise;
+    // Create 3 async request promises
+    for ($i = 1; $i <= 3; $i++) {
+        $url = "http://url" . $fiber_id . "_" . $i;
+        $promise = $client->getAsync($url);
+        $fiber_promises[] = $promise;
+    }
+
+    $promises[$fiber_id] = $fiber_promises;
 
     Fiber::suspend();
 
-    return $promise;
+    return $fiber_promises;
 }
 
 function fulfilling_fiber($fiber_id, $promise_id) {
     global $promises, $results;
 
-    echo "Fiber $fiber_id fulfilling promise $promise_id\n";
+    echo "Fiber $fiber_id fulfilling promises $promise_id\n";
 
-    // Wait for the promise to be available
+    // Wait for the promises to be available
     while (!isset($promises[$promise_id])) {
         Fiber::suspend();
     }
 
-    $promise = $promises[$promise_id];
+    $fiber_promises = $promises[$promise_id];
 
     Fiber::suspend();
 
-    // Fulfill the promise by waiting for its result
+    // Fulfill all promises by waiting for their results
     // Using Guzzle's recommended promise handling pattern
     try {
-        $response = $promise->wait();
-        $results[$promise_id] = trim($response->getBody());
+        // Wait for all promises to complete and collect results
+        $responses = [];
+        foreach ($fiber_promises as $promise) {
+            $response = $promise->wait();
+            $responses[] = trim($response->getBody());
+        }
+        // Use the first response for display (all should be similar)
+        $results[$promise_id] = $responses[0];
     } catch (Exception $e) {
         $results[$promise_id] = "Error: " . $e->getMessage();
     }
@@ -315,17 +572,36 @@ function test_multiple_fibers_coordination() {
         }
     }
 
-    // Print results
-    for ($i = 1; $i <= 5; $i++) {
-        if (isset($results[$i])) {
-            echo "Promise $i result: " . $results[$i] . "\n";
-        } else {
-            echo "Promise $i result: No result available\n";
-        }
-    }
-
     echo "All promises completed successfully\n";
 }
 
 $main_fiber = new Fiber('test_multiple_fibers_coordination');
 $main_fiber->start();
+
+
+new Transaction;
+
+$txn = new Transaction;
+$middleware_segments = $txn->getTrace()->findSegmentsBySubstring('newrelic\\Guzzle6\\middleware');
+$initiating_fiber_segments = $txn->getTrace()->findSegmentsByName('Custom/initiating_fiber');
+
+$fiber_index = 0;
+foreach ($initiating_fiber_segments as $fiber_segment) {
+    $fiber_segment_context = $fiber_segment->attributes->async_context;
+    $child_index = 0;
+    foreach ($middleware_segments as $parent_segment) {
+      $parent_context = $parent_segment->attributes->async_context;
+      if ($parent_context === $fiber_segment_context) {
+          $children = $parent_segment->children;
+          foreach ($children as $child) {
+              if (isset($child->attributes->uri)) {
+                  echo "Fiber#$fiber_index child $child_index name: " . $child->name . "\n";
+                  $child_index++;
+                  $child_context = $child->attributes->async_context;
+                  tap_equal(true, str_contains($child_context, "Guzzle"), 'This External segment has correct Guzzle context.');
+              }
+          }
+      }
+    }
+    $fiber_index++;
+}

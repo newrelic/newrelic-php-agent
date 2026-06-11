@@ -5,13 +5,13 @@
  */
 
 /*DESCRIPTION
-Test that curl_multi_exec works correctly when 5 fibers add curl handles and 5 other fibers execute curl_multi_exec,
+Test that curl_multi_exec works correctly when 5 fibers add 3 curl handles each and 5 other fibers execute curl_multi_exec,
 demonstrating complex fiber coordination with HTTP requests.
-Fiber 6 should execute curl_multi_exec for handle set 1
-Fiber 7 should execute curl_multi_exec for handle set 2
-Fiber 8 should execute curl_multi_exec for handle set 3
-Fiber 9 should execute curl_multi_exec for handle set 4
-Fiber 10 should execute curl_multi_exec for handle set 5
+Fiber 6 should execute curl_multi_exec for handle set 1 (3 handles)
+Fiber 7 should execute curl_multi_exec for handle set 2 (3 handles)
+Fiber 8 should execute curl_multi_exec for handle set 3 (3 handles)
+Fiber 9 should execute curl_multi_exec for handle set 4 (3 handles)
+Fiber 10 should execute curl_multi_exec for handle set 5 (3 handles)
 */
 
 /*SKIPIF
@@ -32,11 +32,11 @@ newrelic.fibers.disabled = false
 */
 
 /*EXPECT
-Fiber 1 adding curl handle
-Fiber 2 adding curl handle
-Fiber 3 adding curl handle
-Fiber 4 adding curl handle
-Fiber 5 adding curl handle
+Fiber 1 adding curl handles
+Fiber 2 adding curl handles
+Fiber 3 adding curl handles
+Fiber 4 adding curl handles
+Fiber 5 adding curl handles
 Fiber 6 executing curl_multi_exec for handle set 1
 Fiber 7 executing curl_multi_exec for handle set 2
 Fiber 8 executing curl_multi_exec for handle set 3
@@ -48,14 +48,59 @@ Handle set 3 result:
 Handle set 4 result: 
 Handle set 5 result: 
 All curl operations completed successfully
+-------------------------
+segment name = curl_multi_exec
+segment context = curl_multi_exec #1
+  child name: External/url1_1_6/all
+  child name: External/url1_2_6/all
+  child name: External/url1_3_6/all
+-------------------------
+-------------------------
+segment name = curl_multi_exec
+segment context = curl_multi_exec #2
+  child name: External/url2_1_7/all
+  child name: External/url2_2_7/all
+  child name: External/url2_3_7/all
+-------------------------
+-------------------------
+segment name = curl_multi_exec
+segment context = curl_multi_exec #3
+  child name: External/url3_1_8/all
+  child name: External/url3_2_8/all
+  child name: External/url3_3_8/all
+-------------------------
+-------------------------
+segment name = curl_multi_exec
+segment context = curl_multi_exec #4
+  child name: External/url4_1_9/all
+  child name: External/url4_2_9/all
+  child name: External/url4_3_9/all
+-------------------------
+-------------------------
+segment name = curl_multi_exec
+segment context = curl_multi_exec #5
+  child name: External/url5_1_10/all
+  child name: External/url5_2_10/all
+  child name: External/url5_3_10/all
+-------------------------
 */
 
 /*EXPECT_METRICS_EXIST
-External/url1_6/all, 1
-External/url2_7/all, 1
-External/url3_8/all, 1
-External/url4_9/all, 1
-External/url5_10/all, 1
+External/url1_1_6/all, 1
+External/url1_2_6/all, 1
+External/url1_3_6/all, 1
+External/url2_1_7/all, 1
+External/url2_2_7/all, 1
+External/url2_3_7/all, 1
+External/url3_1_8/all, 1
+External/url3_2_8/all, 1
+External/url3_3_8/all, 1
+External/url4_1_9/all, 1
+External/url4_2_9/all, 1
+External/url4_3_9/all, 1
+External/url5_1_10/all, 1
+External/url5_2_10/all, 1
+External/url5_3_10/all, 1
 */
 
 /*EXPECT_ERROR_EVENTS
@@ -107,7 +152,7 @@ null
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "External\/url1_6\/all",
+        "name": "External\/url1_1_6\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -119,7 +164,53 @@ null
       {},
       {
         "http.method": "GET",
-        "http.url": "http:\/\/url1_6\/",
+        "http.url": "http:\/\/url1_1_6\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url1_2_6\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url1_2_6\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url1_3_6\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url1_3_6\/",
         "http.statusCode": 0
       }
     ],
@@ -166,7 +257,7 @@ null
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "External\/url2_7\/all",
+        "name": "External\/url2_1_7\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -178,7 +269,53 @@ null
       {},
       {
         "http.method": "GET",
-        "http.url": "http:\/\/url2_7\/",
+        "http.url": "http:\/\/url2_1_7\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url2_2_7\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url2_2_7\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url2_3_7\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url2_3_7\/",
         "http.statusCode": 0
       }
     ],
@@ -225,7 +362,7 @@ null
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "External\/url3_8\/all",
+        "name": "External\/url3_1_8\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -237,7 +374,53 @@ null
       {},
       {
         "http.method": "GET",
-        "http.url": "http:\/\/url3_8\/",
+        "http.url": "http:\/\/url3_1_8\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url3_2_8\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url3_2_8\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url3_3_8\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url3_3_8\/",
         "http.statusCode": 0
       }
     ],
@@ -284,7 +467,7 @@ null
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "External\/url4_9\/all",
+        "name": "External\/url4_1_9\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -296,7 +479,53 @@ null
       {},
       {
         "http.method": "GET",
-        "http.url": "http:\/\/url4_9\/",
+        "http.url": "http:\/\/url4_1_9\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url4_2_9\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url4_2_9\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url4_3_9\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url4_3_9\/",
         "http.statusCode": 0
       }
     ],
@@ -343,7 +572,7 @@ null
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
-        "name": "External\/url5_10\/all",
+        "name": "External\/url5_1_10\/all",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
@@ -355,7 +584,53 @@ null
       {},
       {
         "http.method": "GET",
-        "http.url": "http:\/\/url5_10\/",
+        "http.url": "http:\/\/url5_1_10\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url5_2_10\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url5_2_10\/",
+        "http.statusCode": 0
+      }
+    ],
+    [
+      {
+        "category": "http",
+        "type": "Span",
+        "guid": "??",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "External\/url5_3_10\/all",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "??",
+        "span.kind": "client",
+        "component": "curl"
+      },
+      {},
+      {
+        "http.method": "GET",
+        "http.url": "http:\/\/url5_3_10\/",
         "http.statusCode": 0
       }
     ]
@@ -364,6 +639,11 @@ null
 
 require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
 require_once(realpath(dirname(__FILE__)) . '/../../../include/helpers.php'); 
+require_once(realpath(dirname(__FILE__)) . '/../../../include/integration.php');
+require_once(realpath(dirname(__FILE__)) . '/../../../include/tap.php');
+
+
+use NewRelic\Integration\Transaction;
 
 // Global storage for multi handles and results
 $multi_handles = [];
@@ -373,21 +653,24 @@ $results = [];
 function handle_adding_fiber($fiber_id) {
     global $multi_handles, $curl_handles;
 
-    echo "Fiber $fiber_id adding curl handle\n";
+    echo "Fiber $fiber_id adding curl handles\n";
 
-    /* Create URL. */
-    $url = "url" . $fiber_id;
-
-    // Create curl handle and multi handle
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
+    // Create multi handle
     $mh = curl_multi_init();
-    curl_multi_add_handle($mh, $ch);
+    $handles = [];
+
+    // Create 3 curl handles
+    for ($i = 1; $i <= 3; $i++) {
+        $url = "url" . $fiber_id . "_" . $i;
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_multi_add_handle($mh, $ch);
+        $handles[] = $ch;
+    }
 
     // Store for the executing fiber to use
     $multi_handles[$fiber_id] = $mh;
-    $curl_handles[$fiber_id] = $ch;
+    $curl_handles[$fiber_id] = $handles;
 
     Fiber::suspend();
 
@@ -408,8 +691,13 @@ function executing_fiber($fiber_id, $handle_set_id) {
     }
 
     $mh = $multi_handles[$handle_set_id];
-    $ch = $curl_handles[$handle_set_id];
-    curl_setopt($ch, CURLOPT_URL, curl_getinfo($ch, CURLINFO_EFFECTIVE_URL) . "_" . $fiber_id);
+    $handles = $curl_handles[$handle_set_id];
+
+    // Update URLs for all handles to include the executing fiber ID
+    foreach ($handles as $i => $ch) {
+        $current_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        curl_setopt($ch, CURLOPT_URL, $current_url . "_" . $fiber_id);
+    }
 
     Fiber::suspend();
 
@@ -420,16 +708,18 @@ function executing_fiber($fiber_id, $handle_set_id) {
         Fiber::suspend($active);
     } while ($active > 0);
 
-    // Get the result
+    // Get the results - just take the first handle's result for simplicity
     try {
-        $content = curl_multi_getcontent($ch);
+        $content = curl_multi_getcontent($handles[0]);
         $results[$handle_set_id] = trim($content);
     } catch (Exception $e) {
         $results[$handle_set_id] = "Error: " . $e->getMessage();
     }
 
-    // Clean up
-    curl_multi_remove_handle($mh, $ch);
+    // Clean up all handles
+    foreach ($handles as $ch) {
+        curl_multi_remove_handle($mh, $ch);
+    }
     curl_multi_close($mh);
 
     Fiber::suspend();
@@ -516,3 +806,20 @@ function test_multiple_fibers_coordination() {
 
 $main_fiber = new Fiber('test_multiple_fibers_coordination');
 $main_fiber->start();
+
+
+new Transaction;
+
+$txn = new Transaction;
+$curl_multi_execs = $txn->getTrace()->findSegmentsByName('curl_multi_exec');
+foreach ($curl_multi_execs as $segment) {
+    echo "-------------------------\n";
+    echo "segment name = " . $segment->name . PHP_EOL;
+    echo "segment context = " . $segment->attributes->async_context . PHP_EOL;
+    $children = $segment->children;
+      foreach ($children as $child) {
+        echo "  child name: " . $child->name . "\n";
+
+    }
+        echo "-------------------------\n";
+}
