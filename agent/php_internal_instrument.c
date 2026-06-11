@@ -2419,6 +2419,12 @@ NR_INNER_WRAPPER(curl_exec) {
     return;
   }
 
+  /*
+   * This function creates a segment that is then stored in the
+   * curl_multi_metadata hashmap.  Because it is creating the segment, we need
+   * to ensure it is properly parented with the correct context and parent in
+   * the case of a fiber environment.
+   */
   nr_php_curl_exec_pre(curlres,
                        nr_txn_get_current_segment_txn_context(NRPRG(txn)),
                        nr_txn_get_current_context(NRPRG(txn)) TSRMLS_CC);
