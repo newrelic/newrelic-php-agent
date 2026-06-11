@@ -48,41 +48,21 @@ Handle set 3 result:
 Handle set 4 result: 
 Handle set 5 result: 
 All curl operations completed successfully
--------------------------
-segment name = curl_multi_exec
-segment context = curl_multi_exec #1
-  child name: External/url1_1_6/all
-  child name: External/url1_2_6/all
-  child name: External/url1_3_6/all
--------------------------
--------------------------
-segment name = curl_multi_exec
-segment context = curl_multi_exec #2
-  child name: External/url2_1_7/all
-  child name: External/url2_2_7/all
-  child name: External/url2_3_7/all
--------------------------
--------------------------
-segment name = curl_multi_exec
-segment context = curl_multi_exec #3
-  child name: External/url3_1_8/all
-  child name: External/url3_2_8/all
-  child name: External/url3_3_8/all
--------------------------
--------------------------
-segment name = curl_multi_exec
-segment context = curl_multi_exec #4
-  child name: External/url4_1_9/all
-  child name: External/url4_2_9/all
-  child name: External/url4_3_9/all
--------------------------
--------------------------
-segment name = curl_multi_exec
-segment context = curl_multi_exec #5
-  child name: External/url5_1_10/all
-  child name: External/url5_2_10/all
-  child name: External/url5_3_10/all
--------------------------
+Fiber0 child0 name: External/url1_1_6/all
+Fiber0 child1 name: External/url1_2_6/all
+Fiber0 child2 name: External/url1_3_6/all
+Fiber1 child0 name: External/url2_1_7/all
+Fiber1 child1 name: External/url2_2_7/all
+Fiber1 child2 name: External/url2_3_7/all
+Fiber2 child0 name: External/url3_1_8/all
+Fiber2 child1 name: External/url3_2_8/all
+Fiber2 child2 name: External/url3_3_8/all
+Fiber3 child0 name: External/url4_1_9/all
+Fiber3 child1 name: External/url4_2_9/all
+Fiber3 child2 name: External/url4_3_9/all
+Fiber4 child0 name: External/url5_1_10/all
+Fiber4 child1 name: External/url5_2_10/all
+Fiber4 child2 name: External/url5_3_10/all
 */
 
 /*EXPECT_METRICS_EXIST
@@ -812,14 +792,14 @@ new Transaction;
 
 $txn = new Transaction;
 $curl_multi_execs = $txn->getTrace()->findSegmentsByName('curl_multi_exec');
+$cme_index = 0;
 foreach ($curl_multi_execs as $segment) {
-    echo "-------------------------\n";
-    echo "segment name = " . $segment->name . PHP_EOL;
-    echo "segment context = " . $segment->attributes->async_context . PHP_EOL;
     $children = $segment->children;
+    $child_index = 0;
       foreach ($children as $child) {
-        echo "  child name: " . $child->name . "\n";
-
+        echo "Fiber$cme_index child$child_index name: " . $child->name . "\n";
+        $child_index++;
     }
-        echo "-------------------------\n";
+    $cme_index++;
+
 }
