@@ -47,6 +47,8 @@ void zm_activate_newrelic(void); /* ctags landing pad only */
 PHP_RINIT_FUNCTION(newrelic) {
   (void)type;
   (void)module_number;
+  char* appnames = NULL;
+  char* license = NULL;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
   NRPRG_CTX(php_cur_stack_depth) = 0;
@@ -150,7 +152,17 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
 
-  nr_php_txn_begin(0, 0 TSRMLS_CC);
+#ifdef ZTS
+  if (nr_streq(sapi_module.name, "frankenphp")) {
+    appnames = nr_php_get_server_global("NEW_RELIC_APP_NAME");
+    license = nr_php_get_server_global("NEW_RELIC_LICENSE_KEY");
+  }
+#endif
+
+  nr_php_txn_begin(appnames, license TSRMLS_CC);
+
+  nr_free(appnames);
+  nr_free(license);
 
   nrl_verbosedebug(NRL_INIT, "RINIT processing done");
 
