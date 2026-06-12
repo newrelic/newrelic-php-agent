@@ -15,9 +15,13 @@ static void nr_php_frankenphp_request_handler_fcall_begin(
   nrl_verbosedebug(NRL_INSTRUMENT,
                    "frankenphp_request_handler_fcall_begin started");
   // emulate rinit
-  nr_php_txn_begin(0, 0);
+  char* appnames = nr_php_get_server_global("NEW_RELIC_APP_NAME");
+  char* license = nr_php_get_server_global("NEW_RELIC_LICENSE_KEY");
+  nr_php_txn_begin(appnames, license);
   nrl_verbosedebug(NRL_INSTRUMENT,
                    "frankenphp_request_handler_fcall_begin done");
+  nr_free(appnames);
+  nr_free(license);
 }
 
 static void nr_php_frankenphp_request_handler_fcall_end(
