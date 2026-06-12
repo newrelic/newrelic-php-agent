@@ -2030,18 +2030,20 @@ static void nr_php_instrument_func_end(NR_EXECUTE_PROTO) {
         "Uncaught exception ", &NRPRG_SHARED(exception_filters) TSRMLS_CC);
   } else if (NULL == nr_php_get_return_value(NR_EXECUTE_ORIG_ARGS)) {
     /*
-     * Having no return value (and not being an exception handler) indicates
+     * Having no return value (and not being an exception handler) could indicate
      * that this segment had an uncaught exception. We want to add that
      * exception to the segment.
      */
     zval exception;
-    ZVAL_OBJ(&exception, EG(exception));
-    nr_status_t status = nr_php_error_record_exception_segment(
-        NRPRG(txn), &exception, &NRPRG_SHARED(exception_filters));
+    if (NULL != EG(exception)) {
+      ZVAL_OBJ(&exception, EG(exception));
+      nr_status_t status = nr_php_error_record_exception_segment(
+          NRPRG(txn), &exception, &NRPRG_SHARED(exception_filters));
 
-    if (NR_FAILURE == status) {
-      nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
-                       __func__);
+      if (NR_FAILURE == status) {
+        nrl_verbosedebug(NRL_AGENT, "%s: unable to record exception on segment",
+                         __func__);
+      }
     }
   }
 
