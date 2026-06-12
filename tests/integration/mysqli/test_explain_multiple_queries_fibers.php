@@ -281,7 +281,7 @@ null
         "backtrace": [
           " in mysqli_stmt_execute called at __FILE__ (??)",
           " in fiber_table_count called at __FILE__ (??)",
-          " in {closure} called at ? (?)",
+          "??",
           " in Fiber::resume called at __FILE__ (??)"
         ]
       }

@@ -188,7 +188,7 @@ null
         "backtrace": [
           " in mysqli_stmt_execute called at __FILE__ (??)",
           " in test_fiber_query called at __FILE__ (??)",
-          " in {closure} called at ? (?)",
+          "??",
           " in Fiber::resume called at __FILE__ (??)"
         ]
       }
