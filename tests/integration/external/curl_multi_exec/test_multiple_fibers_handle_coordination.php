@@ -777,9 +777,6 @@ function test_multiple_fibers_coordination() {
 $main_fiber = new Fiber('test_multiple_fibers_coordination');
 $main_fiber->start();
 
-
-new Transaction;
-
 $txn = new Transaction;
 $curl_multi_execs = $txn->getTrace()->findSegmentsByName('curl_multi_exec');
 foreach ($curl_multi_execs as $segment) {

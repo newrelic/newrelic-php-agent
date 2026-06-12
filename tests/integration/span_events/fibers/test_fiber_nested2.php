@@ -21,7 +21,6 @@ if (version_compare(PHP_VERSION, "8.1", "<")) {
 newrelic.distributed_tracing_enabled=1
 newrelic.transaction_tracer.threshold = 0
 newrelic.fibers.disabled = false
-newrelic.loglevel = "verbosedebug"
 */
 
 
