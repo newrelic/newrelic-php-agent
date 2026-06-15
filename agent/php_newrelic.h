@@ -592,9 +592,11 @@ nrtxn_t* txn;  // The all-important transaction pointer
 
 txn_globals_t txn_globals;  // Transaction Globals
 
-nr_hashmap_t* fiber_globals_map;
+nr_hashmap_t*
+    fiber_globals_map;  // Hashmap containing all tracked fiber global contexts
 
-fiber_globals_t* fiber_globals;
+fiber_globals_t* fiber_globals;  // Pointer to the current fiber global context,
+                                 // or NULL if main
 
 ZEND_END_MODULE_GLOBALS(newrelic)
 
