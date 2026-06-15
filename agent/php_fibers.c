@@ -24,11 +24,14 @@
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
 #define COPY_BASIC(x) (dest->x = src->x)
-#define COPY_STRING(x) (dest->x = nr_strdup(src->x))
-#define COPY_HASHMAP(x, y) (dest->x = nr_hashmap_copy(src->x, y))
+#define COPY_POINTER(x) (dest->x = &src->x)
+#define COPY_STRING(x) (dest->x = src->x ? nr_strdup(src->x) : NULL)
 #define COPY_STACK(x, y) (dest->x = nr_stack_copy(&src->x, y))
 
 static void* copy_elem_zval(void* elem) {
+  if (NULL == elem) {
+    return NULL;
+  }
   zval* copy = nr_php_zval_alloc();
   ZVAL_DUP(copy, elem);
   return copy;
@@ -42,61 +45,32 @@ static void* copy_elem_str(void* elem) {
   return nr_strdup((char*)elem);
 }
 
-static void* copy_elem_time(void* elem) {
-  nrtime_t* t = NULL;
-  nrtime_t* src = (nrtime_t*)elem;
-  t = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
-  *t = *src;
-  return t;
-}
-
-static void* copy_datastore_instance(void* elem) {
-  nr_datastore_instance_t* d = NULL;
-  nr_datastore_instance_t* src = (nr_datastore_instance_t*)elem;
-  d = nr_malloc(sizeof(nr_datastore_instance_t));
-  d->host = nr_strdup(src->host);
-  d->port_path_or_id = nr_strdup(src->port_path_or_id);
-  d->database_name = nr_strdup(src->database_name);
-  return d;
-}
-
-static void nrf_txn_global_deep_copy(txn_globals_t* dest, txn_globals_t* src) {
-  COPY_BASIC(execute_count);
-  COPY_BASIC(generating_explain_plan);
-  COPY_BASIC(curl_ignore_setopt);
-
-  // The hashmaps for guzzle_objs, curl_metadata, and curl_multi_metadata are
-  // copied by reference rather than value. They contain complex datatypes
-  // (nr_segment_t*) and should always refer to the "Main" php thread. They MUST
-  // NOT be free'd by a fiber.
-  COPY_BASIC(guzzle_objs);
-  COPY_HASHMAP(mysqli_queries, copy_elem_zval);
-  COPY_HASHMAP(pdo_link_options, copy_elem_zval);
-  COPY_BASIC(curl_metadata);
-  COPY_BASIC(curl_multi_metadata);
-  COPY_HASHMAP(prepared_statements, copy_elem_str);
-
-  dest->mysqli_links = nr_mysqli_metadata_copy(src->mysqli_links);
+static void fiber_str_dtor(void* e, NRUNUSED void* d) {
+  nr_free(e);
 }
 
 static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
+  if (NULL == dest) {
+    return;
+  }
+
   COPY_STRING(doctrine_dql);
 
-  COPY_BASIC(drupal_http_request_depth);
-  COPY_BASIC(php_cur_stack_depth);
+  dest->drupal_http_request_depth = 0;
+  dest->php_cur_stack_depth = 0;  // PHP allocates a new stack for each fiber
 
   COPY_BASIC(cufa_callback);
 
   COPY_STRING(mysql_last_conn);
   COPY_STRING(pgsql_last_conn);
 
-  COPY_HASHMAP(datastore_connections, copy_datastore_instance);
+  COPY_BASIC(datastore_connections);
 
   COPY_BASIC(deprecated_capture_request_parameters);
   COPY_BASIC(error_group_user_callback);
   COPY_BASIC(check_cufa);
 
-  COPY_HASHMAP(predis_commands, copy_elem_time);
+  COPY_BASIC(predis_commands);
 
   COPY_STACK(drupal_invoke_all_hooks, copy_elem_zval);
   COPY_STACK(drupal_invoke_all_states, copy_elem_ident);
@@ -104,27 +78,21 @@ static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
   dest->drupal_http_request_segment = NULL;
 
   COPY_STACK(wordpress_tags, copy_elem_str);
+  dest->wordpress_tags.dtor = fiber_str_dtor;
   COPY_STACK(wordpress_tag_states, copy_elem_ident);
   COPY_STACK(predis_ctxs, copy_elem_str);
 }
 
 #undef COPY_STACK
-#undef COPY_HASHMAP
 #undef COPY_STRING
 #undef COPY_BASIC
 
-txn_globals_t* nrf_fiber_copy_txn_globals(txn_globals_t* src) {
-  txn_globals_t* fiber_txn_globals = NULL;
-
-  fiber_txn_globals = nr_malloc(sizeof(txn_globals_t));
-
-  nrf_txn_global_deep_copy(fiber_txn_globals, src);
-
-  return fiber_txn_globals;
-}
-
 ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
   ctx_globals_t* fiber_ctx_globals = NULL;
+
+  if (NULL == src) {
+    return NULL;
+  }
 
   fiber_ctx_globals = nr_malloc(sizeof(ctx_globals_t));
 
@@ -136,27 +104,25 @@ ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
 void free_fiber_globals(void* fiber_globals) {
   fiber_globals_t* f = (fiber_globals_t*)fiber_globals;
 
-  if (NULL == f->txn_globals || NULL == f->ctx_globals) {
+  if (NULL == fiber_globals) {
     nrl_warning(NRL_AGENT, "Failed to free fiber globals, target is NULL");
     return;
   }
 
-  nr_hashmap_destroy(&f->txn_globals->mysqli_queries);
-  nr_hashmap_destroy(&f->txn_globals->pdo_link_options);
-  nr_hashmap_destroy(&f->txn_globals->prepared_statements);
-  nr_mysqli_metadata_destroy(&f->txn_globals->mysqli_links);
+  if (NULL == f->ctx_globals) {
+    nrl_warning(NRL_AGENT, "Failed to free fiber globals, ctx_globals is NULL");
+    nr_free(f);
+    return;
+  }
 
   nr_free(f->ctx_globals->doctrine_dql);
   nr_free(f->ctx_globals->mysql_last_conn);
   nr_free(f->ctx_globals->pgsql_last_conn);
-  nr_hashmap_destroy(&f->ctx_globals->datastore_connections);
-  nr_hashmap_destroy(&f->ctx_globals->predis_commands);
   nr_stack_destroy_fields(&f->ctx_globals->drupal_invoke_all_hooks);
   nr_stack_destroy_fields(&f->ctx_globals->drupal_invoke_all_states);
   nr_stack_destroy_fields(&f->ctx_globals->wordpress_tags);
   nr_stack_destroy_fields(&f->ctx_globals->wordpress_tag_states);
   nr_stack_destroy_fields(&f->ctx_globals->predis_ctxs);
-  nr_free(f->txn_globals);
   nr_free(f->ctx_globals);
   nr_free(f);
 }
@@ -183,11 +149,9 @@ nr_status_t nrf_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
 
 nr_status_t nrf_add_fiber_context_to_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
-    txn_globals_t* src_txn_globals,
     ctx_globals_t* src_ctx_globals,
     const char* key) {
   fiber_globals_t* fg = NULL;
-  txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
 
   if (NULL == key || nr_strlen(key) < 1) {
@@ -199,10 +163,12 @@ nr_status_t nrf_add_fiber_context_to_global_hashmap(
   }
 
   fg = nr_malloc(sizeof(fiber_globals_t));
-  tg = nrf_fiber_copy_txn_globals(src_txn_globals);
   cg = nrf_fiber_copy_ctx_globals(src_ctx_globals);
+  if (NULL == cg) {
+    nr_free(fg);
+    return NR_FAILURE;
+  }
 
-  fg->txn_globals = tg;
   fg->ctx_globals = cg;
 
   nr_hashmap_update(fiber_globals_map, key, nr_strlen(key), fg);
@@ -242,12 +208,14 @@ nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
   }
 
   if (NULL == fiber_globals_map) {
+    *fiber_global_ptr = NULL;
     return NR_FAILURE;
   }
 
   fg = nr_hashmap_get(fiber_globals_map, key, nr_strlen(key));
 
   if (NULL == fg) {
+    *fiber_global_ptr = NULL;
     return NR_FAILURE;
   }
 

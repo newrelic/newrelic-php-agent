@@ -11,20 +11,6 @@
 #include "php_newrelic.h"
 
 /*
- * Purpose : Allocate and deep-copy the given transaction globals into a new
- *           txn_globals_t suitable for use by a fiber.
- *
- * Params  : 1. A pointer to the source txn_globals_t to copy from. Must be
- *              non-NULL. The source is not modified and remains owned by
- *              the caller; typically this is &NRPRG(txn_globals).
- *
- * Returns : A pointer to a newly allocated txn_globals_t. Ownership of the
- *           returned struct (and its contained hashmaps and metadata) is
- *           transferred to the caller, which is responsible for freeing it.
- */
-extern txn_globals_t* nrf_fiber_copy_txn_globals(txn_globals_t* src);
-
-/*
  * Purpose : Allocate and deep-copy the given context globals into a new
  *           ctx_globals_t suitable for use by a fiber.
  *
@@ -33,15 +19,14 @@ extern txn_globals_t* nrf_fiber_copy_txn_globals(txn_globals_t* src);
  *              the caller; typically this is &NRPRG(ctx).
  *
  * Returns : A pointer to a newly allocated ctx_globals_t. Ownership of the
- *           returned struct (and its contained strings, hashmaps, and stacks)
- *           is transferred to the caller, which is responsible for freeing it.
+ *           returned struct is transferred to the caller, which is responsible
+ *           for freeing it.
  */
 extern ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src);
 
 /*
  * Purpose : Free a fiber_globals_t and all owned resources held by its
- *           contained txn_globals and ctx_globals (hashmaps, mysqli metadata,
- *           strings, and stacks).
+ *           contained  ctx_globals
  *
  *           Intended to be used as the destructor callback registered with
  *           the fiber globals hashmap.
@@ -86,28 +71,24 @@ extern nr_status_t nrf_fiber_destroy_global_hashmap(
     nr_hashmap_t** fiber_globals_map);
 
 /*
- * Purpose : Deep-copy the given transaction and context globals into a new
- *           fiber_globals_t snapshot and store it in the given fiber globals
- *           hashmap under the given key. Used when a fiber is suspended so
+ * Purpose : Deep-copy the given  context globals into a new fiber_globals_t
+ *           snapshot and store it in the given fiber globals hashmap
+ *           under the given key. Used when a fiber is suspended so
  *           its globals can be restored on resume.
  *
  * Params  : 1. The fiber globals hashmap into which the snapshot should be
  *              stored; typically NRPRG(fiber_globals_map). Must be non-NULL
  *              and previously initialized via nrf_fiber_init_global_hashmap.
- *           2. A pointer to the source txn_globals_t to snapshot from;
- *              typically &NRPRG(txn_globals). The source is not modified and
- *              remains owned by the caller.
- *           3. A pointer to the source ctx_globals_t to snapshot from;
+ *           2. A pointer to the source ctx_globals_t to snapshot from;
  *              typically &NRPRG(ctx). The source is not modified and remains
  *              owned by the caller.
- *           4. The key identifying the fiber whose globals are being saved.
+ *           3. The key identifying the fiber whose globals are being saved.
  *
  * Returns : NR_SUCCESS on success, or NR_FAILURE if the key is invalid or
  *           the fiber globals hashmap is NULL.
  */
 extern nr_status_t nrf_add_fiber_context_to_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
-    txn_globals_t* src_txn_globals,
     ctx_globals_t* src_ctx_globals,
     const char* key);
 
@@ -130,7 +111,7 @@ extern nr_status_t nrf_remove_fiber_context_from_global_hashmap(
  * Purpose : Switch the active fiber globals pointer to the snapshot stored
  *           in the given fiber globals hashmap under the given key. Used when
  *           a fiber is resumed so that subsequent instrumentation operates
- *           against that fiber's saved transaction and context state.
+ *           against that fiber's saved context state.
  *
  *           On success, the snapshot retrieved from the hashmap is written
  *           into the caller-supplied destination pointer; typically this is

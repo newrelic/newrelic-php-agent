@@ -185,8 +185,6 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   if (NR_FAILURE
       == nrf_add_fiber_context_to_global_hashmap(
           NRPRG(fiber_globals_map),
-          NRPRG(fiber_globals) ? NRPRG(fiber_globals)->txn_globals
-                               : &NRPRG(txn_globals),
           NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
                                : &NRPRG(ctx),
           zfc_key)) {
@@ -204,6 +202,10 @@ static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
   }
 
   snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+  if (0 == nr_strcmp(NRPRG_SHARED(fiber_context_string), zfc_key)) {
+    // clear the current fiber global ptr if it is the context to be destroyed
+    NRPRG(fiber_globals) = NULL;
+  }
 
   // Remove the entry in the fiber global hashmap for this fiber
   if (NR_FAILURE

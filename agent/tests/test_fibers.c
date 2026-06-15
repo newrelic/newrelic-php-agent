@@ -5,6 +5,8 @@
 
 #include "tlib_php.h"
 
+#include <stdint.h>
+
 #include "nr_datastore_instance.h"
 #include "php_agent.h"
 #include "php_fibers.h"
@@ -20,43 +22,6 @@ tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-
-static nr_hashmap_t* dummy_hashmap_data() {
-  nr_hashmap_t* h = NULL;
-  h = nr_hashmap_create(NULL);
-  nr_hashmap_set(h, NR_PSTR("a"), "valA");
-  nr_hashmap_set(h, NR_PSTR("b"), "valB");
-  nr_hashmap_set(h, NR_PSTR("c"), "valC");
-  return h;
-}
-
-static nr_hashmap_t* dummy_hashmap_str() {
-  nr_hashmap_t* h
-      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_hashmap_dtor_str);
-  nr_hashmap_set(h, NR_PSTR("a"), nr_strdup("strA"));
-  nr_hashmap_set(h, NR_PSTR("b"), nr_strdup("strB"));
-  nr_hashmap_set(h, NR_PSTR("c"), nr_strdup("strC"));
-  return h;
-}
-
-static void dtor_zval(void* val) {
-  zval* zv = (zval*)val;
-  nr_php_zval_free(&zv);
-}
-
-static nr_hashmap_t* dummy_hashmap_zval() {
-  nr_hashmap_t* h = nr_hashmap_create(dtor_zval);
-  zval* za = nr_php_zval_alloc();
-  zval* zb = nr_php_zval_alloc();
-  zval* zc = nr_php_zval_alloc();
-  nr_php_zval_str(za, "zvalA");
-  nr_php_zval_str(zb, "zvalB");
-  nr_php_zval_str(zc, "zvalC");
-  nr_hashmap_set(h, NR_PSTR("a"), za);
-  nr_hashmap_set(h, NR_PSTR("b"), zb);
-  nr_hashmap_set(h, NR_PSTR("c"), zc);
-  return h;
-}
 
 static void dtor_datastore(void* val) {
   nr_datastore_instance_t* d = (nr_datastore_instance_t*)val;
@@ -120,9 +85,9 @@ static nr_stack_t dummy_stack_data_str() {
 static nr_stack_t dummy_stack_data_bool() {
   nr_stack_t s;
   nr_stack_init(&s, NR_STACK_DEFAULT_CAPACITY);
-  nr_stack_push(&s, (void*)!NULL);
+  nr_stack_push(&s, (void*)(uintptr_t)1);
   nr_stack_push(&s, NULL);
-  nr_stack_push(&s, (void*)!NULL);
+  nr_stack_push(&s, (void*)(uintptr_t)1);
   return s;
 }
 
@@ -148,51 +113,6 @@ static nr_stack_t dummy_stack_data_zval() {
   nr_php_zval_str(zzz, "stackC");
   nr_stack_push(&s, zzz);
   return s;
-}
-
-static txn_globals_t* dummy_txn_globals() {
-  txn_globals_t* tg = NULL;
-  tg = nr_malloc(sizeof(txn_globals_t));
-  tg->execute_count = 2;
-  tg->generating_explain_plan = 1;
-  tg->guzzle_objs = dummy_hashmap_data();
-  tg->mysqli_links = nr_mysqli_metadata_create();
-  nr_mysqli_metadata_set_connect(tg->mysqli_links, 1, "db-host", "db-user",
-                                 "db-password", "db-database", 3306,
-                                 "db-socket", 1);
-  tg->mysqli_queries = dummy_hashmap_zval();
-  tg->pdo_link_options = dummy_hashmap_zval();
-  tg->curl_ignore_setopt = 1;
-  tg->curl_metadata = dummy_hashmap_data();
-  tg->curl_multi_metadata = dummy_hashmap_data();
-  tg->prepared_statements = dummy_hashmap_str();
-
-  return tg;
-}
-
-static void free_txn_globals(txn_globals_t* tg) {
-  nr_hashmap_destroy(&tg->guzzle_objs);
-  nr_mysqli_metadata_destroy(&tg->mysqli_links);
-  nr_hashmap_destroy(&tg->mysqli_queries);
-  nr_hashmap_destroy(&tg->pdo_link_options);
-  nr_hashmap_destroy(&tg->curl_metadata);
-  nr_hashmap_destroy(&tg->curl_multi_metadata);
-  nr_hashmap_destroy(&tg->prepared_statements);
-  nr_free(tg);
-}
-
-/*
- * Cleanup for a txn_globals returned by nrf_fiber_copy_txn_globals: skips the
- * fields that are shallow-copied (guzzle_objs, curl_metadata,
- * curl_multi_metadata) since those are still owned by the source. Mirrors the
- * txn_globals section of free_fiber_globals.
- */
-static void free_txn_globals_copy(txn_globals_t* tg) {
-  nr_mysqli_metadata_destroy(&tg->mysqli_links);
-  nr_hashmap_destroy(&tg->mysqli_queries);
-  nr_hashmap_destroy(&tg->pdo_link_options);
-  nr_hashmap_destroy(&tg->prepared_statements);
-  nr_free(tg);
 }
 
 static ctx_globals_t* dummy_ctx_globals() {
@@ -221,6 +141,24 @@ static void free_ctx_globals(ctx_globals_t* cg) {
   nr_free(cg->pgsql_last_conn);
   nr_hashmap_destroy(&cg->datastore_connections);
   nr_hashmap_destroy(&cg->predis_commands);
+  nr_stack_destroy_fields(&cg->drupal_invoke_all_hooks);
+  nr_stack_destroy_fields(&cg->drupal_invoke_all_states);
+  nr_stack_destroy_fields(&cg->wordpress_tags);
+  nr_stack_destroy_fields(&cg->wordpress_tag_states);
+  nr_stack_destroy_fields(&cg->predis_ctxs);
+  nr_free(cg);
+}
+
+/*
+ * Cleanup for a ctx_globals returned by nrf_fiber_copy_ctx_globals: skips the
+ * fields that are shallow-copied (datastore_connections, predis_commands)
+ * since those are still owned by the source. Mirrors the ctx_globals section
+ * of free_fiber_globals.
+ */
+static void free_ctx_globals_copy(ctx_globals_t* cg) {
+  nr_free(cg->doctrine_dql);
+  nr_free(cg->mysql_last_conn);
+  nr_free(cg->pgsql_last_conn);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_hooks);
   nr_stack_destroy_fields(&cg->drupal_invoke_all_states);
   nr_stack_destroy_fields(&cg->wordpress_tags);
@@ -267,90 +205,6 @@ static void test_init_destroy_hashmap(void) {
   tlib_php_request_end();
 }
 
-static void test_copy_txn_globals(void) {
-  txn_globals_t* src;
-  txn_globals_t* copy;
-
-  tlib_php_request_start();
-
-  src = dummy_txn_globals();
-
-  copy = nrf_fiber_copy_txn_globals(src);
-
-  tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
-  tlib_pass_if_int_equal("execute_count is copied", 2, copy->execute_count);
-  tlib_pass_if_int_equal("generating_explain_plan is copied", 1,
-                         copy->generating_explain_plan);
-  tlib_pass_if_int_equal("curl_ignore_setopt is copied", 1,
-                         copy->curl_ignore_setopt);
-
-  tlib_pass_if_not_null("mysqli_links is copied", copy->mysqli_links);
-
-  tlib_pass_if_not_null("guzzle_objs is copied", copy->guzzle_objs);
-  tlib_pass_if_not_null("mysqli_queries is copied", copy->mysqli_queries);
-  tlib_pass_if_not_null("pdo_link_options is copied", copy->pdo_link_options);
-  tlib_pass_if_not_null("curl_metadata is copied", copy->curl_metadata);
-  tlib_pass_if_not_null("curl_multi_metadata is copied",
-                        copy->curl_multi_metadata);
-  tlib_pass_if_not_null("prepared_statements is copied",
-                        copy->prepared_statements);
-
-  free_txn_globals_copy(copy);
-  free_txn_globals(src);
-
-  tlib_php_request_end();
-}
-
-static void test_copy_txn_globals_with_hashmaps(void) {
-  txn_globals_t* src;
-  txn_globals_t* copy;
-
-  tlib_php_request_start();
-
-  src = dummy_txn_globals();
-
-  copy = nrf_fiber_copy_txn_globals(src);
-
-  /*
-   * guzzle_objs, curl_metadata, and curl_multi_metadata are shallow-copied:
-   * the copy must share the same hashmap pointer as the source.
-   */
-  tlib_pass_if_ptr_equal("guzzle_objs is shared with src", src->guzzle_objs,
-                         copy->guzzle_objs);
-  tlib_pass_if_ptr_equal("curl_metadata is shared with src", src->curl_metadata,
-                         copy->curl_metadata);
-  tlib_pass_if_ptr_equal("curl_multi_metadata is shared with src",
-                         src->curl_multi_metadata, copy->curl_multi_metadata);
-
-  /*
-   * mysqli_queries, pdo_link_options, and prepared_statements are deep-copied:
-   * the copy must be a distinct allocation with the same number of entries.
-   */
-  tlib_fail_if_ptr_equal("mysqli_queries is a distinct allocation",
-                         src->mysqli_queries, copy->mysqli_queries);
-  tlib_pass_if_size_t_equal("mysqli_queries has the same number of entries",
-                            nr_hashmap_count(src->mysqli_queries),
-                            nr_hashmap_count(copy->mysqli_queries));
-
-  tlib_fail_if_ptr_equal("pdo_link_options is a distinct allocation",
-                         src->pdo_link_options, copy->pdo_link_options);
-  tlib_pass_if_size_t_equal("pdo_link_options has the same number of entries",
-                            nr_hashmap_count(src->pdo_link_options),
-                            nr_hashmap_count(copy->pdo_link_options));
-
-  tlib_fail_if_ptr_equal("prepared_statements is a distinct allocation",
-                         src->prepared_statements, copy->prepared_statements);
-  tlib_pass_if_size_t_equal(
-      "prepared_statements has the same number of entries",
-      nr_hashmap_count(src->prepared_statements),
-      nr_hashmap_count(copy->prepared_statements));
-
-  free_txn_globals_copy(copy);
-  free_txn_globals(src);
-
-  tlib_php_request_end();
-}
-
 static void test_copy_ctx_globals(void) {
   ctx_globals_t* src;
   ctx_globals_t* copy;
@@ -362,31 +216,31 @@ static void test_copy_ctx_globals(void) {
   copy = nrf_fiber_copy_ctx_globals(src);
 
   tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
-  tlib_pass_if_size_t_equal("drupal_http_request_depth is copied", 3,
+
+  /*
+   * drupal_http_request_depth and php_cur_stack_depth are reset to 0 in the
+   * copy. A fiber gets its own C and PHP stacks (PHP allocates a fresh
+   * zend_execute_data and a fresh C stack per fiber), so it should start each
+   * counter from zero rather than inheriting main's depth.
+   */
+  tlib_pass_if_size_t_equal("drupal_http_request_depth is reset to 0", 0,
                             copy->drupal_http_request_depth);
-  tlib_pass_if_int_equal("php_cur_stack_depth is copied", 4,
+  tlib_pass_if_int_equal("php_cur_stack_depth is reset to 0", 0,
                          copy->php_cur_stack_depth);
+
   tlib_pass_if_int_equal("deprecated_capture_request_parameters is copied", 1,
                          copy->deprecated_capture_request_parameters);
   tlib_pass_if_int_equal("check_cufa is copied", true, copy->check_cufa);
 
-  tlib_pass_if_not_null("datastore_connections hashmap is copied",
-                        copy->datastore_connections);
-  tlib_fail_if_ptr_equal("datastore_connections is a distinct allocation",
+  /*
+   * datastore_connections and predis_commands are shallow-copied: the copy
+   * must share the same hashmap pointer as the source.
+   */
+  tlib_pass_if_ptr_equal("datastore_connections is shared with src",
                          src->datastore_connections,
                          copy->datastore_connections);
-  tlib_pass_if_size_t_equal(
-      "datastore_connections has the same number of entries",
-      nr_hashmap_count(src->datastore_connections),
-      nr_hashmap_count(copy->datastore_connections));
-
-  tlib_pass_if_not_null("predis_commands hashmap is copied",
-                        copy->predis_commands);
-  tlib_fail_if_ptr_equal("predis_commands is a distinct allocation",
+  tlib_pass_if_ptr_equal("predis_commands is shared with src",
                          src->predis_commands, copy->predis_commands);
-  tlib_pass_if_size_t_equal("predis_commands has the same number of entries",
-                            nr_hashmap_count(src->predis_commands),
-                            nr_hashmap_count(copy->predis_commands));
 
   /*
    * drupal_http_request_segment is intentionally reset to NULL in the copy.
@@ -394,8 +248,135 @@ static void test_copy_ctx_globals(void) {
   tlib_pass_if_null("drupal_http_request_segment is reset to NULL",
                     copy->drupal_http_request_segment);
 
-  free_ctx_globals(copy);
+  /*
+   * wordpress_tags is COPY_STACK'd with copy_elem_str (which clones each
+   * string), then the copy's stack dtor is explicitly set so the copy owns
+   * the cloned strings. Without that dtor override, the cloned strings would
+   * leak when the fiber snapshot is destroyed. We can't compare against the
+   * static fiber_str_dtor symbol, but a non-NULL dtor proves the override
+   * line ran.
+   */
+  tlib_pass_if_true("wordpress_tags copy has a dtor set so cloned "
+                    "strings are freed by destroy",
+                    NULL != copy->wordpress_tags.dtor,
+                    "expected non-NULL dtor");
+
+  free_ctx_globals_copy(copy);
   free_ctx_globals(src);
+
+  tlib_php_request_end();
+}
+
+/*
+ * Build a minimal ctx_globals_t with NULL string fields so we can verify
+ * COPY_STRING preserves NULL rather than substituting the empty string ""
+ * via nr_strdup. Callers like php_mysql.c and php_pgsql.c use these pointers
+ * as a "valid last-connection set" sentinel; a copy that turned NULL into ""
+ * would flip those checks truthy in the fiber snapshot.
+ *
+ * Hashmap and stack fields still need to be non-NULL because the COPY_STACK
+ * helpers don't tolerate NULL sources.
+ */
+static ctx_globals_t* dummy_ctx_globals_null_strings() {
+  ctx_globals_t* cg = NULL;
+  cg = nr_malloc(sizeof(ctx_globals_t));
+  cg->doctrine_dql = NULL;
+  cg->drupal_http_request_depth = 0;
+  cg->php_cur_stack_depth = 0;
+  cg->mysql_last_conn = NULL;
+  cg->pgsql_last_conn = NULL;
+  cg->datastore_connections = dummy_hashmap_datastore();
+  cg->deprecated_capture_request_parameters = 0;
+  cg->check_cufa = false;
+  cg->predis_commands = dummy_hashmap_time();
+  cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
+  cg->drupal_invoke_all_states = dummy_stack_data_bool();
+  cg->wordpress_tags = dummy_stack_data_str();
+  cg->wordpress_tag_states = dummy_stack_data_bool();
+  cg->predis_ctxs = dummy_stack_data_str();
+  return cg;
+}
+
+static void test_copy_ctx_globals_null_strings(void) {
+  ctx_globals_t* src;
+  ctx_globals_t* copy;
+
+  tlib_php_request_start();
+
+  src = dummy_ctx_globals_null_strings();
+  copy = nrf_fiber_copy_ctx_globals(src);
+
+  tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
+  tlib_pass_if_null("NULL doctrine_dql copies as NULL, not \"\"",
+                    copy->doctrine_dql);
+  tlib_pass_if_null("NULL mysql_last_conn copies as NULL, not \"\"",
+                    copy->mysql_last_conn);
+  tlib_pass_if_null("NULL pgsql_last_conn copies as NULL, not \"\"",
+                    copy->pgsql_last_conn);
+
+  free_ctx_globals_copy(copy);
+  free_ctx_globals(src);
+
+  tlib_php_request_end();
+}
+
+static void test_copy_ctx_globals_null_src(void) {
+  tlib_php_request_start();
+
+  /*
+   * nrf_fiber_copy_ctx_globals returns NULL on a NULL source so callers can
+   * detect the failure. add_fiber_context relies on this to refuse to insert
+   * a partial entry into the fiber globals hashmap.
+   */
+  tlib_pass_if_null("copy returns NULL when src is NULL",
+                    nrf_fiber_copy_ctx_globals(NULL));
+
+  tlib_php_request_end();
+}
+
+/*
+ * Exercises the free_fiber_globals NULL-tolerance and the partial-wrapper
+ * cleanup path. Without the fix, a wrapper with NULL ctx_globals would be
+ * leaked because the destructor early-returned without freeing f.
+ */
+static void test_free_fiber_globals_null_paths(void) {
+  fiber_globals_t* f = NULL;
+
+  tlib_php_request_start();
+
+  /* NULL fiber_globals must not crash. */
+  free_fiber_globals(NULL);
+
+  /* fiber_globals_t with NULL ctx_globals: f itself must still be freed.
+     If this path leaks, valgrind/asan will surface it. */
+  f = nr_malloc(sizeof(fiber_globals_t));
+  f->ctx_globals = NULL;
+  free_fiber_globals(f);
+
+  tlib_php_request_end();
+}
+
+static void test_add_fiber_context_null_src(void) {
+  nr_hashmap_t* test_fiber_global_map = NULL;
+
+  tlib_php_request_start();
+
+  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+
+  /*
+   * NULL src_ctx_globals must produce NR_FAILURE and must NOT insert a
+   * partial wrapper into the hashmap. Without the guard, the destructor
+   * would later warn-and-leak when the orphan was overwritten or the map
+   * destroyed.
+   */
+  tlib_pass_if_status_failure(
+      "add fails when src_ctx_globals is NULL",
+      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, NULL,
+                                              "fiber-null-src"));
+  tlib_pass_if_size_t_equal("hashmap remains empty after failed add", 0,
+                            nr_hashmap_count(test_fiber_global_map));
+
+  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   tlib_php_request_end();
 }
@@ -414,15 +395,14 @@ static void test_add_fiber_context_bad_input(void) {
    */
   tlib_pass_if_status_failure("NULL key fails when hashmap is uninitialized",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, NULL, NULL, NULL));
+                                  test_fiber_global_map, NULL, NULL));
 
   /*
    * Test : Uninitialized hashmap returns failure even with a valid key.
    */
-  tlib_pass_if_status_failure(
-      "uninitialized hashmap fails",
-      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, NULL, NULL,
-                                              "fiber-key"));
+  tlib_pass_if_status_failure("uninitialized hashmap fails",
+                              nrf_add_fiber_context_to_global_hashmap(
+                                  test_fiber_global_map, NULL, "fiber-key"));
 
   /*
    * Test : NULL key still fails after init.
@@ -430,7 +410,7 @@ static void test_add_fiber_context_bad_input(void) {
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_status_failure("NULL key fails after init",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, NULL, NULL, NULL));
+                                  test_fiber_global_map, NULL, NULL));
 
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
@@ -439,18 +419,16 @@ static void test_add_fiber_context_bad_input(void) {
 
 static void test_add_fiber_context_happy_path(void) {
   nr_hashmap_t* test_fiber_global_map = NULL;
-  txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
   tlib_php_request_start();
 
-  tg = dummy_txn_globals();
   cg = dummy_ctx_globals();
 
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
 
   tlib_pass_if_status_success("adding a fiber context succeeds",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, "fiber-1"));
+                                  test_fiber_global_map, cg, "fiber-1"));
 
   tlib_pass_if_size_t_equal("hashmap has one entry after add", 1,
                             nr_hashmap_count(test_fiber_global_map));
@@ -460,14 +438,13 @@ static void test_add_fiber_context_happy_path(void) {
    */
   tlib_pass_if_status_success("adding a second fiber context succeeds",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, "fiber-2"));
+                                  test_fiber_global_map, cg, "fiber-2"));
 
   tlib_pass_if_size_t_equal("hashmap has two entries", 2,
                             nr_hashmap_count(test_fiber_global_map));
 
   /* free_fiber_globals destructor cleans up the deep-copied snapshots. */
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
-  free_txn_globals(tg);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -514,18 +491,16 @@ static void test_remove_fiber_context_bad_input(void) {
 static void test_remove_fiber_context_happy_path(void) {
   static const char* key = "fiber-remove";
   nr_hashmap_t* test_fiber_global_map = NULL;
-  txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
 
   tlib_php_request_start();
 
-  tg = dummy_txn_globals();
   cg = dummy_ctx_globals();
 
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
-  tlib_pass_if_status_success("add succeeds before remove",
-                              nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, key));
+  tlib_pass_if_status_success(
+      "add succeeds before remove",
+      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
 
   tlib_pass_if_size_t_equal("hashmap has one entry before remove", 1,
                             nr_hashmap_count(test_fiber_global_map));
@@ -545,7 +520,6 @@ static void test_remove_fiber_context_happy_path(void) {
       nrf_remove_fiber_context_from_global_hashmap(test_fiber_global_map, key));
 
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
-  free_txn_globals(tg);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -554,27 +528,59 @@ static void test_remove_fiber_context_happy_path(void) {
 static void test_switch_global_context_bad_input(void) {
   nr_hashmap_t* test_fiber_global_map = NULL;
   fiber_globals_t* fiber_globals = NULL;
+  /*
+   * A non-NULL sentinel value used to detect that the failure paths actively
+   * clear *fiber_global_ptr instead of leaving a stale pointer. The address
+   * itself is never dereferenced.
+   */
+  fiber_globals_t stale_global_ptr;
+
   tlib_php_request_start();
 
   /*
-   * Test : valid key with uninitialized hashmap fails.
+   * Test : NULL fiber_global_ptr fails without crashing.
    */
+  tlib_pass_if_status_failure(
+      "NULL fiber_global_ptr fails",
+      nrf_fiber_switch_global_context(test_fiber_global_map, NULL, "fiber-1"));
+
+  /*
+   * Test : NULL key resolves to "main PHP context" and clears
+   * *fiber_global_ptr to NULL with NR_SUCCESS.
+   */
+  fiber_globals = &stale_global_ptr;
+  tlib_pass_if_status_success(
+      "NULL key succeeds (main context)",
+      nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
+                                      NULL));
+  tlib_pass_if_null("NULL key clears fiber_globals to NULL", fiber_globals);
+
+  /*
+   * Test : valid key with uninitialized hashmap fails AND clears any stale
+   * fiber_globals pointer the caller may have held. Without the fix, a
+   * caller's pointer would keep aliasing whatever fiber's snapshot was last
+   * active, producing silent cross-fiber state corruption.
+   */
+  fiber_globals = &stale_global_ptr;
   tlib_pass_if_status_failure(
       "uninitialized hashmap fails",
       nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
                                       "fiber-1"));
+  tlib_pass_if_null(
+      "uninitialized hashmap failure path clears fiber_globals to NULL",
+      fiber_globals);
 
   /*
-   * Test : switching to a key that has no snapshot fails and does not
-   * mutate fiber_globals.
+   * Test : switching to a key that has no snapshot fails and clears any
+   * stale fiber_globals pointer.
    */
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
-  fiber_globals = NULL;
+  fiber_globals = &stale_global_ptr;
   tlib_pass_if_status_failure(
       "missing key fails",
       nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
                                       "does-not-exist"));
-  tlib_pass_if_null("fiber_globals is unchanged after a failed switch",
+  tlib_pass_if_null("missing key failure path clears fiber_globals to NULL",
                     fiber_globals);
 
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
@@ -586,20 +592,18 @@ static void test_switch_global_context_happy_path(void) {
   static const char* key = "fiber-switch";
   nr_hashmap_t* test_fiber_global_map = NULL;
   fiber_globals_t* fiber_globals = NULL;
-  txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
 
   tlib_php_request_start();
 
-  tg = dummy_txn_globals();
   cg = dummy_ctx_globals();
 
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
   fiber_globals = NULL;
 
-  tlib_pass_if_status_success("add succeeds before switch",
-                              nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, key));
+  tlib_pass_if_status_success(
+      "add succeeds before switch",
+      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
 
   tlib_pass_if_status_success("switch succeeds for an existing key",
                               nrf_fiber_switch_global_context(
@@ -607,8 +611,6 @@ static void test_switch_global_context_happy_path(void) {
 
   tlib_pass_if_not_null("switch sets fiber_globals to a non-NULL snapshot",
                         fiber_globals);
-  tlib_pass_if_not_null("the active snapshot has txn_globals",
-                        fiber_globals->txn_globals);
   tlib_pass_if_not_null("the active snapshot has ctx_globals",
                         fiber_globals->ctx_globals);
 
@@ -618,7 +620,6 @@ static void test_switch_global_context_happy_path(void) {
    */
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
   fiber_globals = NULL;
-  free_txn_globals(tg);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -626,22 +627,20 @@ static void test_switch_global_context_happy_path(void) {
 
 static void test_destroy_frees_entries(void) {
   nr_hashmap_t* test_fiber_global_map = NULL;
-  txn_globals_t* tg = NULL;
   ctx_globals_t* cg = NULL;
 
   tlib_php_request_start();
 
-  tg = dummy_txn_globals();
   cg = dummy_ctx_globals();
 
   nrf_fiber_init_global_hashmap(&test_fiber_global_map);
 
   tlib_pass_if_status_success("add a context",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, "entry-a"));
+                                  test_fiber_global_map, cg, "entry-a"));
   tlib_pass_if_status_success("add another context",
                               nrf_add_fiber_context_to_global_hashmap(
-                                  test_fiber_global_map, tg, cg, "entry-b"));
+                                  test_fiber_global_map, cg, "entry-b"));
 
   /*
    * Destroy invokes free_fiber_globals on every entry. We can't directly
@@ -651,7 +650,6 @@ static void test_destroy_frees_entries(void) {
   nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_null("hashmap is cleared by destroy", test_fiber_global_map);
 
-  free_txn_globals(tg);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -664,10 +662,12 @@ void test_main(void* p NRUNUSED) {
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   test_init_destroy_hashmap();
-  test_copy_txn_globals();
-  test_copy_txn_globals_with_hashmaps();
   test_copy_ctx_globals();
+  test_copy_ctx_globals_null_strings();
+  test_copy_ctx_globals_null_src();
+  test_free_fiber_globals_null_paths();
   test_add_fiber_context_bad_input();
+  test_add_fiber_context_null_src();
   test_add_fiber_context_happy_path();
   test_remove_fiber_context_bad_input();
   test_remove_fiber_context_happy_path();
