@@ -179,7 +179,7 @@ nr_status_t nrf_add_fiber_context_to_global_hashmap(
 nr_status_t nrf_remove_fiber_context_from_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
     const char* key) {
-  if (NULL == key || nr_strlen(key) < 1) {
+  if (nr_strempty(key)) {
     return NR_FAILURE;
   }
 
