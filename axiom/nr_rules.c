@@ -271,6 +271,7 @@ static nr_rules_result_t nr_rule_apply(char* str,
       if (rule->rflags & NR_RULE_HAS_CAPTURES) {
         if (NR_FAILURE
             == nr_rule_replace_string(rule->replacement, repl, repl_len, ss)) {
+          nr_regex_substrings_destroy(&ss);
           return NR_RULES_RESULT_UNCHANGED;
         }
         wp = nr_strlcpy(wp, repl, NRULE_BUF_SIZE);
@@ -308,6 +309,7 @@ static nr_rules_result_t nr_rule_apply(char* str,
           if (NR_FAILURE
               == nr_rule_replace_string(rule->replacement, repl, repl_len,
                                         ss)) {
+            nr_regex_substrings_destroy(&ss);
             return NR_RULES_RESULT_UNCHANGED;
           }
           wp = nr_strcpy(wp, repl);
@@ -375,6 +377,7 @@ static nr_rules_result_t nr_rule_apply(char* str,
           if (NR_FAILURE
               == nr_rule_replace_string(rule->replacement, repl, repl_len,
                                         ss)) {
+            nr_regex_substrings_destroy(&ss);
             return NR_RULES_RESULT_UNCHANGED;
           }
         } else {
