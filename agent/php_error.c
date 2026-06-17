@@ -76,7 +76,10 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
                                                 NR_ATTRIBUTE_DESTINATION_ALL);
 
-  request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI" TSRMLS_CC));
+  request_uri = nr_php_get_server_global("REQUEST_URI" TSRMLS_CC);
+  if (NULL == request_uri) {
+    request_uri = nr_strdup("");
+  }
   path = nr_strdup(txn->path);
   method = nr_strdup(
       nro_get_hash_string(agent_attributes, "request.method", NULL));
