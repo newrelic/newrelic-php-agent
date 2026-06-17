@@ -4003,9 +4003,9 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("rediscluster::georadius_ro", rediscluster_georadius_ro, rediscluster_function,
                       0, "georadius_ro")
   NR_INTERNAL_WRAPREC("rediscluster::georadiusbymember", rediscluster_georadiusbymember,
-                      redis_function, 0, "georadiusbymember")
+                      rediscluster_function, 0, "georadiusbymember")
   NR_INTERNAL_WRAPREC("rediscluster::georadiusbymember_ro", rediscluster_georadiusbymember_ro,
-                      redis_function, 0, "georadiusbymember_ro")
+                      rediscluster_function, 0, "georadiusbymember_ro")
   NR_INTERNAL_WRAPREC("rediscluster::get", rediscluster_get, rediscluster_function, 0, "get")
   NR_INTERNAL_WRAPREC("rediscluster::getbit", rediscluster_getbit, rediscluster_function, 0,
                       "getbit")
@@ -4165,21 +4165,21 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("rediscluster::zrangebylex", rediscluster_zrangebylex, rediscluster_function,
                       0, "zrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zrangebyscore", rediscluster_zrangebyscore,
-                      redis_function, 0, "zrangebyscore")
+                      rediscluster_function, 0, "zrangebyscore")
   NR_INTERNAL_WRAPREC("rediscluster::zrank", rediscluster_zrank, rediscluster_function, 0, "zrank")
   NR_INTERNAL_WRAPREC("rediscluster::zrem", rediscluster_zrem, rediscluster_function, 0, "zrem")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebylex", rediscluster_zremrangebylex,
-                      redis_function, 0, "zremrangebylex")
+                      rediscluster_function, 0, "zremrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebyrank", rediscluster_zremrangebyrank,
-                      redis_function, 0, "zremrangebyrank")
+                      rediscluster_function, 0, "zremrangebyrank")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebyscore", rediscluster_zremrangebyscore,
-                      redis_function, 0, "zremrangebyscore")
+                      rediscluster_function, 0, "zremrangebyscore")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrange", rediscluster_zrevrange, rediscluster_function, 0,
                       "zrevrange")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrangebylex", rediscluster_zrevrangebylex,
-                      redis_function, 0, "zrevrangebylex")
+                      rediscluster_function, 0, "zrevrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrangebyscore", rediscluster_zrevrangebyscore,
-                      redis_function, 0, "zrevrangebyscore")
+                      rediscluster_function, 0, "zrevrangebyscore")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrank", rediscluster_zrevrank, rediscluster_function, 0,
                       "zrevrank")
   NR_INTERNAL_WRAPREC("rediscluster::zscore", rediscluster_zscore, rediscluster_function, 0, 
