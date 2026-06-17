@@ -3324,7 +3324,6 @@ NR_OUTER_WRAPPER(rediscluster_append)
 NR_OUTER_WRAPPER(rediscluster_bitcount)
 NR_OUTER_WRAPPER(rediscluster_bitop)
 NR_OUTER_WRAPPER(rediscluster_bitpos)
-NR_OUTER_WRAPPER(rediscluster_close)
 NR_OUTER_WRAPPER(rediscluster_dbsize)
 NR_OUTER_WRAPPER(rediscluster_decr)
 NR_OUTER_WRAPPER(rediscluster_decrby)
@@ -3964,7 +3963,6 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("redis::zunionstore", redis_zunionstore, redis_function,
                       0, "zunionstore")
 
-  NR_INTERNAL_WRAPREC("rediscluster::close", rediscluster_close, redis_close, 0, "close")
   NR_INTERNAL_WRAPREC("rediscluster::append", rediscluster_append, rediscluster_function, 0,
                       "append")
   NR_INTERNAL_WRAPREC("rediscluster::bitcount", rediscluster_bitcount, rediscluster_function, 0,
