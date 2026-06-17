@@ -1687,6 +1687,19 @@ NR_INNER_WRAPPER(redis_function) {
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
+/*
+ * Handle
+ *   bool rediscluster::*
+ *
+ * Instance information is not recorded for Redis Cluster, so the instance
+ * lookup that redis_function performs is skipped here.
+ */
+NR_INNER_WRAPPER(rediscluster_function) {
+  nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
+                                             nr_wrapper->extra, NULL,
+                                             INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+
 static char* nr_php_prepared_statement_make_pgsql_key(
     const zval* conn,
     const char* stmtname,
@@ -3952,228 +3965,228 @@ void nr_php_generate_internal_wrap_records(void) {
                       0, "zunionstore")
 
   NR_INTERNAL_WRAPREC("rediscluster::close", rediscluster_close, redis_close, 0, "close")
-  NR_INTERNAL_WRAPREC("rediscluster::append", rediscluster_append, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::append", rediscluster_append, rediscluster_function, 0,
                       "append")
-  NR_INTERNAL_WRAPREC("rediscluster::bitcount", rediscluster_bitcount, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::bitcount", rediscluster_bitcount, rediscluster_function, 0,
                       "bitcount")
-  NR_INTERNAL_WRAPREC("rediscluster::bitop", rediscluster_bitop, redis_function, 0, "bitop")
-  NR_INTERNAL_WRAPREC("rediscluster::bitpos", rediscluster_bitpos, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::bitop", rediscluster_bitop, rediscluster_function, 0, "bitop")
+  NR_INTERNAL_WRAPREC("rediscluster::bitpos", rediscluster_bitpos, rediscluster_function, 0,
                       "bitpos")
-  NR_INTERNAL_WRAPREC("rediscluster::decr", rediscluster_decr, redis_function, 0, "decr")
-  NR_INTERNAL_WRAPREC("rediscluster::decrby", rediscluster_decrby, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::decr", rediscluster_decr, rediscluster_function, 0, "decr")
+  NR_INTERNAL_WRAPREC("rediscluster::decrby", rediscluster_decrby, rediscluster_function, 0,
                       "decrby")
-  NR_INTERNAL_WRAPREC("rediscluster::del", rediscluster_del, redis_function, 0, "del")
-  NR_INTERNAL_WRAPREC("rediscluster::dbsize", rediscluster_dbsize, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::del", rediscluster_del, rediscluster_function, 0, "del")
+  NR_INTERNAL_WRAPREC("rediscluster::dbsize", rediscluster_dbsize, rediscluster_function, 0,
                       "dbsize")
-  NR_INTERNAL_WRAPREC("rediscluster::eval", rediscluster_eval, redis_function, 0, "eval")
-  NR_INTERNAL_WRAPREC("rediscluster::evalsha", rediscluster_evalsha, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::eval", rediscluster_eval, rediscluster_function, 0, "eval")
+  NR_INTERNAL_WRAPREC("rediscluster::evalsha", rediscluster_evalsha, rediscluster_function, 0,
                       "evalsha")
-  NR_INTERNAL_WRAPREC("rediscluster::exec", rediscluster_exec, redis_function, 0, "exec")
-  NR_INTERNAL_WRAPREC("rediscluster::exists", rediscluster_exists, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::exec", rediscluster_exec, rediscluster_function, 0, "exec")
+  NR_INTERNAL_WRAPREC("rediscluster::exists", rediscluster_exists, rediscluster_function, 0,
                       "exists")
-  NR_INTERNAL_WRAPREC("rediscluster::expire", rediscluster_expire, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::expire", rediscluster_expire, rediscluster_function, 0,
                       "expire")
-  NR_INTERNAL_WRAPREC("rediscluster::expireat", rediscluster_expireat, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::expireat", rediscluster_expireat, rediscluster_function, 0,
                       "expireat")
-  NR_INTERNAL_WRAPREC("rediscluster::flushall", rediscluster_flushall, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::flushall", rediscluster_flushall, rediscluster_function, 0,
                       "flushall")
-  NR_INTERNAL_WRAPREC("rediscluster::flushdb", rediscluster_flushdb, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::flushdb", rediscluster_flushdb, rediscluster_function, 0,
                       "flushdb")
-  NR_INTERNAL_WRAPREC("rediscluster::geoadd", rediscluster_geoadd, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::geoadd", rediscluster_geoadd, rediscluster_function, 0,
                       "geoadd")
-  NR_INTERNAL_WRAPREC("rediscluster::geodist", rediscluster_geodist, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::geodist", rediscluster_geodist, rediscluster_function, 0,
                       "geodist")
-  NR_INTERNAL_WRAPREC("rediscluster::geohash", rediscluster_geohash, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::geohash", rediscluster_geohash, rediscluster_function, 0,
                       "geohash")
-  NR_INTERNAL_WRAPREC("rediscluster::geopos", rediscluster_geopos, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::geopos", rediscluster_geopos, rediscluster_function, 0,
                       "geopos")
-  NR_INTERNAL_WRAPREC("rediscluster::georadius", rediscluster_georadius, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::georadius", rediscluster_georadius, rediscluster_function, 0,
                       "georadius")
-  NR_INTERNAL_WRAPREC("rediscluster::georadius_ro", rediscluster_georadius_ro, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::georadius_ro", rediscluster_georadius_ro, rediscluster_function,
                       0, "georadius_ro")
   NR_INTERNAL_WRAPREC("rediscluster::georadiusbymember", rediscluster_georadiusbymember,
                       redis_function, 0, "georadiusbymember")
   NR_INTERNAL_WRAPREC("rediscluster::georadiusbymember_ro", rediscluster_georadiusbymember_ro,
                       redis_function, 0, "georadiusbymember_ro")
-  NR_INTERNAL_WRAPREC("rediscluster::get", rediscluster_get, redis_function, 0, "get")
-  NR_INTERNAL_WRAPREC("rediscluster::getbit", rediscluster_getbit, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::get", rediscluster_get, rediscluster_function, 0, "get")
+  NR_INTERNAL_WRAPREC("rediscluster::getbit", rediscluster_getbit, rediscluster_function, 0,
                       "getbit")
-  NR_INTERNAL_WRAPREC("rediscluster::getrange", rediscluster_getrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::getrange", rediscluster_getrange, rediscluster_function, 0,
                       "getrange")
-  NR_INTERNAL_WRAPREC("rediscluster::getset", rediscluster_getset, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::getset", rediscluster_getset, rediscluster_function, 0,
                       "getset")
-  NR_INTERNAL_WRAPREC("rediscluster::hdel", rediscluster_hdel, redis_function, 0, "hdel")
-  NR_INTERNAL_WRAPREC("rediscluster::hexists", rediscluster_hexists, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hdel", rediscluster_hdel, rediscluster_function, 0, "hdel")
+  NR_INTERNAL_WRAPREC("rediscluster::hexists", rediscluster_hexists, rediscluster_function, 0,
                       "hexists")
-  NR_INTERNAL_WRAPREC("rediscluster::hget", rediscluster_hget, redis_function, 0, "hget")
-  NR_INTERNAL_WRAPREC("rediscluster::hgetall", rediscluster_hgetall, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hget", rediscluster_hget, rediscluster_function, 0, "hget")
+  NR_INTERNAL_WRAPREC("rediscluster::hgetall", rediscluster_hgetall, rediscluster_function, 0,
                       "hgetall")
-  NR_INTERNAL_WRAPREC("rediscluster::hincrby", rediscluster_hincrby, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hincrby", rediscluster_hincrby, rediscluster_function, 0,
                       "hincrby")
-  NR_INTERNAL_WRAPREC("rediscluster::hincrbyfloat", rediscluster_hincrbyfloat, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::hincrbyfloat", rediscluster_hincrbyfloat, rediscluster_function,
                       0, "hincrbyfloat")
-  NR_INTERNAL_WRAPREC("rediscluster::hkeys", rediscluster_hkeys, redis_function, 0, "hkeys")
-  NR_INTERNAL_WRAPREC("rediscluster::hlen", rediscluster_hlen, redis_function, 0, "hlen")
-  NR_INTERNAL_WRAPREC("rediscluster::hmget", rediscluster_hmget, redis_function, 0, "hmget")
-  NR_INTERNAL_WRAPREC("rediscluster::hmset", rediscluster_hmset, redis_function, 0, "hmset")
-  NR_INTERNAL_WRAPREC("rediscluster::hset", rediscluster_hset, redis_function, 0, "hset")
-  NR_INTERNAL_WRAPREC("rediscluster::hsetnx", rediscluster_hsetnx, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hkeys", rediscluster_hkeys, rediscluster_function, 0, "hkeys")
+  NR_INTERNAL_WRAPREC("rediscluster::hlen", rediscluster_hlen, rediscluster_function, 0, "hlen")
+  NR_INTERNAL_WRAPREC("rediscluster::hmget", rediscluster_hmget, rediscluster_function, 0, "hmget")
+  NR_INTERNAL_WRAPREC("rediscluster::hmset", rediscluster_hmset, rediscluster_function, 0, "hmset")
+  NR_INTERNAL_WRAPREC("rediscluster::hset", rediscluster_hset, rediscluster_function, 0, "hset")
+  NR_INTERNAL_WRAPREC("rediscluster::hsetnx", rediscluster_hsetnx, rediscluster_function, 0,
                       "hsetnx")
-  NR_INTERNAL_WRAPREC("rediscluster::hstrlen", rediscluster_hstrlen, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hstrlen", rediscluster_hstrlen, rediscluster_function, 0,
                       "hstrlen")
-  NR_INTERNAL_WRAPREC("rediscluster::hvals", rediscluster_hvals, redis_function, 0, "hvals")
-  NR_INTERNAL_WRAPREC("rediscluster::incr", rediscluster_incr, redis_function, 0, "incr")
-  NR_INTERNAL_WRAPREC("rediscluster::incrby", rediscluster_incrby, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::hvals", rediscluster_hvals, rediscluster_function, 0, "hvals")
+  NR_INTERNAL_WRAPREC("rediscluster::incr", rediscluster_incr, rediscluster_function, 0, "incr")
+  NR_INTERNAL_WRAPREC("rediscluster::incrby", rediscluster_incrby, rediscluster_function, 0,
                       "incrby")
-  NR_INTERNAL_WRAPREC("rediscluster::incrbyfloat", rediscluster_incrbyfloat, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::incrbyfloat", rediscluster_incrbyfloat, rediscluster_function,
                       0, "incrbyfloat")
-  NR_INTERNAL_WRAPREC("rediscluster::keys", rediscluster_keys, redis_function, 0, "keys")
-  NR_INTERNAL_WRAPREC("rediscluster::lget", rediscluster_lget, redis_function, 0, "lget")
-  NR_INTERNAL_WRAPREC("rediscluster::lindex", rediscluster_lindex, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::keys", rediscluster_keys, rediscluster_function, 0, "keys")
+  NR_INTERNAL_WRAPREC("rediscluster::lget", rediscluster_lget, rediscluster_function, 0, "lget")
+  NR_INTERNAL_WRAPREC("rediscluster::lindex", rediscluster_lindex, rediscluster_function, 0,
                       "lindex")
-  NR_INTERNAL_WRAPREC("rediscluster::linsert", rediscluster_linsert, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::linsert", rediscluster_linsert, rediscluster_function, 0,
                       "linsert")
-  NR_INTERNAL_WRAPREC("rediscluster::llen", rediscluster_llen, redis_function, 0, "llen")
-  NR_INTERNAL_WRAPREC("rediscluster::lpop", rediscluster_lpop, redis_function, 0, "lpop")
-  NR_INTERNAL_WRAPREC("rediscluster::lpush", rediscluster_lpush, redis_function, 0, "lpush")
-  NR_INTERNAL_WRAPREC("rediscluster::lpushx", rediscluster_lpushx, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::llen", rediscluster_llen, rediscluster_function, 0, "llen")
+  NR_INTERNAL_WRAPREC("rediscluster::lpop", rediscluster_lpop, rediscluster_function, 0, "lpop")
+  NR_INTERNAL_WRAPREC("rediscluster::lpush", rediscluster_lpush, rediscluster_function, 0, "lpush")
+  NR_INTERNAL_WRAPREC("rediscluster::lpushx", rediscluster_lpushx, rediscluster_function, 0,
                       "lpushx")
-  NR_INTERNAL_WRAPREC("rediscluster::lrange", rediscluster_lrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::lrange", rediscluster_lrange, rediscluster_function, 0,
                       "lrange")
-  NR_INTERNAL_WRAPREC("rediscluster::lrem", rediscluster_lrem, redis_function, 0, "lrem")
-  NR_INTERNAL_WRAPREC("rediscluster::lset", rediscluster_lset, redis_function, 0, "lset")
-  NR_INTERNAL_WRAPREC("rediscluster::ltrim", rediscluster_ltrim, redis_function, 0, "ltrim")
-  NR_INTERNAL_WRAPREC("rediscluster::mget", rediscluster_mget, redis_function, 0, "mget")
-  NR_INTERNAL_WRAPREC("rediscluster::mset", rediscluster_mset, redis_function, 0, "mset")
-  NR_INTERNAL_WRAPREC("rediscluster::msetnx", rediscluster_msetnx, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::lrem", rediscluster_lrem, rediscluster_function, 0, "lrem")
+  NR_INTERNAL_WRAPREC("rediscluster::lset", rediscluster_lset, rediscluster_function, 0, "lset")
+  NR_INTERNAL_WRAPREC("rediscluster::ltrim", rediscluster_ltrim, rediscluster_function, 0, "ltrim")
+  NR_INTERNAL_WRAPREC("rediscluster::mget", rediscluster_mget, rediscluster_function, 0, "mget")
+  NR_INTERNAL_WRAPREC("rediscluster::mset", rediscluster_mset, rediscluster_function, 0, "mset")
+  NR_INTERNAL_WRAPREC("rediscluster::msetnx", rediscluster_msetnx, rediscluster_function, 0,
                       "msetnx")
-  NR_INTERNAL_WRAPREC("rediscluster::persist", rediscluster_persist, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::persist", rediscluster_persist, rediscluster_function, 0,
                       "persist")
-  NR_INTERNAL_WRAPREC("rediscluster::pexpire", rediscluster_pexpire, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::pexpire", rediscluster_pexpire, rediscluster_function, 0,
                       "pexpire")
-  NR_INTERNAL_WRAPREC("rediscluster::pexpireat", rediscluster_pexpireat, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::pexpireat", rediscluster_pexpireat, rediscluster_function, 0,
                       "pexpireat")
-  NR_INTERNAL_WRAPREC("rediscluster::pfadd", rediscluster_pfadd, redis_function, 0, "pfadd")
-  NR_INTERNAL_WRAPREC("rediscluster::pfcount", rediscluster_pfcount, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::pfadd", rediscluster_pfadd, rediscluster_function, 0, "pfadd")
+  NR_INTERNAL_WRAPREC("rediscluster::pfcount", rediscluster_pfcount, rediscluster_function, 0,
                       "pfcount")
-  NR_INTERNAL_WRAPREC("rediscluster::pfmerge", rediscluster_pfmerge, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::pfmerge", rediscluster_pfmerge, rediscluster_function, 0,
                       "pfmerge")
-  NR_INTERNAL_WRAPREC("rediscluster::ping", rediscluster_ping, redis_function, 0, "ping")
-  NR_INTERNAL_WRAPREC("rediscluster::psetex", rediscluster_psetex, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::ping", rediscluster_ping, rediscluster_function, 0, "ping")
+  NR_INTERNAL_WRAPREC("rediscluster::psetex", rediscluster_psetex, rediscluster_function, 0,
                       "psetex")
-  NR_INTERNAL_WRAPREC("rediscluster::pttl", rediscluster_pttl, redis_function, 0, "pttl")
-  NR_INTERNAL_WRAPREC("rediscluster::publish", rediscluster_publish, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::pttl", rediscluster_pttl, rediscluster_function, 0, "pttl")
+  NR_INTERNAL_WRAPREC("rediscluster::publish", rediscluster_publish, rediscluster_function, 0,
                       "publish")
-  NR_INTERNAL_WRAPREC("rediscluster::randomkey", rediscluster_randomkey, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::randomkey", rediscluster_randomkey, rediscluster_function, 0,
                       "randomkey")
-  NR_INTERNAL_WRAPREC("rediscluster::rawcommand", rediscluster_rawcommand, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::rawcommand", rediscluster_rawcommand, rediscluster_function, 0,
                       "rawcommand")
-  NR_INTERNAL_WRAPREC("rediscluster::rename", rediscluster_rename, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::rename", rediscluster_rename, rediscluster_function, 0,
                       "rename")
-  NR_INTERNAL_WRAPREC("rediscluster::renamenx", rediscluster_renamenx, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::renamenx", rediscluster_renamenx, rediscluster_function, 0,
                       "renamenx")
-  NR_INTERNAL_WRAPREC("rediscluster::rpop", rediscluster_rpop, redis_function, 0, "rpop")
-  NR_INTERNAL_WRAPREC("rediscluster::rpoplpush", rediscluster_rpoplpush, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::rpop", rediscluster_rpop, rediscluster_function, 0, "rpop")
+  NR_INTERNAL_WRAPREC("rediscluster::rpoplpush", rediscluster_rpoplpush, rediscluster_function, 0,
                       "rpoplpush")
-  NR_INTERNAL_WRAPREC("rediscluster::rpush", rediscluster_rpush, redis_function, 0, "rpush")
-  NR_INTERNAL_WRAPREC("rediscluster::rpushx", rediscluster_rpushx, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::rpush", rediscluster_rpush, rediscluster_function, 0, "rpush")
+  NR_INTERNAL_WRAPREC("rediscluster::rpushx", rediscluster_rpushx, rediscluster_function, 0,
                       "rpushx")
-  NR_INTERNAL_WRAPREC("rediscluster::sadd", rediscluster_sadd, redis_function, 0, "sadd")
-  NR_INTERNAL_WRAPREC("rediscluster::scard", rediscluster_scard, redis_function, 0, "scard")
-  NR_INTERNAL_WRAPREC("rediscluster::sdiff", rediscluster_sdiff, redis_function, 0, "sdiff")
-  NR_INTERNAL_WRAPREC("rediscluster::sdiffstore", rediscluster_sdiffstore, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::sadd", rediscluster_sadd, rediscluster_function, 0, "sadd")
+  NR_INTERNAL_WRAPREC("rediscluster::scard", rediscluster_scard, rediscluster_function, 0, "scard")
+  NR_INTERNAL_WRAPREC("rediscluster::sdiff", rediscluster_sdiff, rediscluster_function, 0, "sdiff")
+  NR_INTERNAL_WRAPREC("rediscluster::sdiffstore", rediscluster_sdiffstore, rediscluster_function, 0,
                       "sdiffstore")
-  NR_INTERNAL_WRAPREC("rediscluster::set", rediscluster_set, redis_function, 0, "set")
-  NR_INTERNAL_WRAPREC("rediscluster::setbit", rediscluster_setbit, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::set", rediscluster_set, rediscluster_function, 0, "set")
+  NR_INTERNAL_WRAPREC("rediscluster::setbit", rediscluster_setbit, rediscluster_function, 0,
                       "setbit")
-  NR_INTERNAL_WRAPREC("rediscluster::setex", rediscluster_setex, redis_function, 0, "setex")
-  NR_INTERNAL_WRAPREC("rediscluster::setnx", rediscluster_setnx, redis_function, 0, "setnx")
-  NR_INTERNAL_WRAPREC("rediscluster::setrange", rediscluster_setrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::setex", rediscluster_setex, rediscluster_function, 0, "setex")
+  NR_INTERNAL_WRAPREC("rediscluster::setnx", rediscluster_setnx, rediscluster_function, 0, "setnx")
+  NR_INTERNAL_WRAPREC("rediscluster::setrange", rediscluster_setrange, rediscluster_function, 0,
                       "setrange")
-  NR_INTERNAL_WRAPREC("rediscluster::sinter", rediscluster_sinter, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::sinter", rediscluster_sinter, rediscluster_function, 0,
                       "sinter")
-  NR_INTERNAL_WRAPREC("rediscluster::sinterstore", rediscluster_sinterstore, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::sinterstore", rediscluster_sinterstore, rediscluster_function,
                       0, "sinterstore")
-  NR_INTERNAL_WRAPREC("rediscluster::sismember", rediscluster_sismember, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::sismember", rediscluster_sismember, rediscluster_function, 0,
                       "sismember")
-  NR_INTERNAL_WRAPREC("rediscluster::smembers", rediscluster_smembers, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::smembers", rediscluster_smembers, rediscluster_function, 0,
                       "smembers")
-  NR_INTERNAL_WRAPREC("rediscluster::smismember", rediscluster_smismember, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::smismember", rediscluster_smismember, rediscluster_function, 0,
                       "smismember")
-  NR_INTERNAL_WRAPREC("rediscluster::smove", rediscluster_smove, redis_function, 0, "smove")
-  NR_INTERNAL_WRAPREC("rediscluster::spop", rediscluster_spop, redis_function, 0, "spop")
-  NR_INTERNAL_WRAPREC("rediscluster::srandmember", rediscluster_srandmember, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::smove", rediscluster_smove, rediscluster_function, 0, "smove")
+  NR_INTERNAL_WRAPREC("rediscluster::spop", rediscluster_spop, rediscluster_function, 0, "spop")
+  NR_INTERNAL_WRAPREC("rediscluster::srandmember", rediscluster_srandmember, rediscluster_function,
                       0, "srandmember")
-  NR_INTERNAL_WRAPREC("rediscluster::srem", rediscluster_srem, redis_function, 0, "srem")
-  NR_INTERNAL_WRAPREC("rediscluster::strlen", rediscluster_strlen, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::srem", rediscluster_srem, rediscluster_function, 0, "srem")
+  NR_INTERNAL_WRAPREC("rediscluster::strlen", rediscluster_strlen, rediscluster_function, 0,
                       "strlen")
-  NR_INTERNAL_WRAPREC("rediscluster::sunion", rediscluster_sunion, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::sunion", rediscluster_sunion, rediscluster_function, 0,
                       "sunion")
-  NR_INTERNAL_WRAPREC("rediscluster::sunionstore", rediscluster_sunionstore, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::sunionstore", rediscluster_sunionstore, rediscluster_function,
                       0, "sunionstore")
-  NR_INTERNAL_WRAPREC("rediscluster::time", rediscluster_time, redis_function, 0, "time")
-  NR_INTERNAL_WRAPREC("rediscluster::ttl", rediscluster_ttl, redis_function, 0, "ttl")
-  NR_INTERNAL_WRAPREC("rediscluster::type", rediscluster_type, redis_function, 0, "type")
-  NR_INTERNAL_WRAPREC("rediscluster::unlink", rediscluster_unlink, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::time", rediscluster_time, rediscluster_function, 0, "time")
+  NR_INTERNAL_WRAPREC("rediscluster::ttl", rediscluster_ttl, rediscluster_function, 0, "ttl")
+  NR_INTERNAL_WRAPREC("rediscluster::type", rediscluster_type, rediscluster_function, 0, "type")
+  NR_INTERNAL_WRAPREC("rediscluster::unlink", rediscluster_unlink, rediscluster_function, 0,
                       "unlink")
-  NR_INTERNAL_WRAPREC("rediscluster::xack", rediscluster_xack, redis_function, 0, "xack")
-  NR_INTERNAL_WRAPREC("rediscluster::xadd", rediscluster_xadd, redis_function, 0, "xadd")
-  NR_INTERNAL_WRAPREC("rediscluster::xclaim", rediscluster_xclaim, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xack", rediscluster_xack, rediscluster_function, 0, "xack")
+  NR_INTERNAL_WRAPREC("rediscluster::xadd", rediscluster_xadd, rediscluster_function, 0, "xadd")
+  NR_INTERNAL_WRAPREC("rediscluster::xclaim", rediscluster_xclaim, rediscluster_function, 0,
                       "xclaim")
-  NR_INTERNAL_WRAPREC("rediscluster::xdel", rediscluster_xdel, redis_function, 0, "xdel")
-  NR_INTERNAL_WRAPREC("rediscluster::xgroup", rediscluster_xgroup, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("rediscluster::xdel", rediscluster_xdel, rediscluster_function, 0, "xdel")
+  NR_INTERNAL_WRAPREC("rediscluster::xgroup", rediscluster_xgroup, rediscluster_function, 0, 
                       "xgroup")
-  NR_INTERNAL_WRAPREC("rediscluster::xinfo", rediscluster_xinfo, redis_function, 0, "xinfo")
-  NR_INTERNAL_WRAPREC("rediscluster::xlen", rediscluster_xlen, redis_function, 0, "xlen")
-  NR_INTERNAL_WRAPREC("rediscluster::xpending", rediscluster_xpending, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xinfo", rediscluster_xinfo, rediscluster_function, 0, "xinfo")
+  NR_INTERNAL_WRAPREC("rediscluster::xlen", rediscluster_xlen, rediscluster_function, 0, "xlen")
+  NR_INTERNAL_WRAPREC("rediscluster::xpending", rediscluster_xpending, rediscluster_function, 0,
                       "xpending")
-  NR_INTERNAL_WRAPREC("rediscluster::xrange", rediscluster_xrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xrange", rediscluster_xrange, rediscluster_function, 0,
                       "xrange")
-  NR_INTERNAL_WRAPREC("rediscluster::xread", rediscluster_xread, redis_function, 0, "xread")
-  NR_INTERNAL_WRAPREC("rediscluster::xreadgroup", rediscluster_xreadgroup, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xread", rediscluster_xread, rediscluster_function, 0, "xread")
+  NR_INTERNAL_WRAPREC("rediscluster::xreadgroup", rediscluster_xreadgroup, rediscluster_function, 0,
                       "xreadgroup")
-  NR_INTERNAL_WRAPREC("rediscluster::xrevrange", rediscluster_xrevrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xrevrange", rediscluster_xrevrange, rediscluster_function, 0,
                       "xrevrange")
-  NR_INTERNAL_WRAPREC("rediscluster::xtrim", rediscluster_xtrim, redis_function, 0, "xtrim")
-  NR_INTERNAL_WRAPREC("rediscluster::zadd", rediscluster_zadd, redis_function, 0, "zadd")
-  NR_INTERNAL_WRAPREC("rediscluster::zcard", rediscluster_zcard, redis_function, 0, "zcard")
-  NR_INTERNAL_WRAPREC("rediscluster::zcount", rediscluster_zcount, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::xtrim", rediscluster_xtrim, rediscluster_function, 0, "xtrim")
+  NR_INTERNAL_WRAPREC("rediscluster::zadd", rediscluster_zadd, rediscluster_function, 0, "zadd")
+  NR_INTERNAL_WRAPREC("rediscluster::zcard", rediscluster_zcard, rediscluster_function, 0, "zcard")
+  NR_INTERNAL_WRAPREC("rediscluster::zcount", rediscluster_zcount, rediscluster_function, 0,
                       "zcount")
-  NR_INTERNAL_WRAPREC("rediscluster::zincrby", rediscluster_zincrby, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zincrby", rediscluster_zincrby, rediscluster_function, 0,
                       "zincrby")
-  NR_INTERNAL_WRAPREC("rediscluster::zinterstore", rediscluster_zinterstore, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::zinterstore", rediscluster_zinterstore, rediscluster_function,
                       0, "zinterstore")
-  NR_INTERNAL_WRAPREC("rediscluster::zlexcount", rediscluster_zlexcount, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zlexcount", rediscluster_zlexcount, rediscluster_function, 0,
                       "zlexcount")
-  NR_INTERNAL_WRAPREC("rediscluster::zpopmax", rediscluster_zpopmax, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zpopmax", rediscluster_zpopmax, rediscluster_function, 0,
                       "zpopmax")
-  NR_INTERNAL_WRAPREC("rediscluster::zpopmin", rediscluster_zpopmin, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zpopmin", rediscluster_zpopmin, rediscluster_function, 0,
                       "zpopmin")
-  NR_INTERNAL_WRAPREC("rediscluster::zrange", rediscluster_zrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zrange", rediscluster_zrange, rediscluster_function, 0,
                       "zrange")
-  NR_INTERNAL_WRAPREC("rediscluster::zrangebylex", rediscluster_zrangebylex, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::zrangebylex", rediscluster_zrangebylex, rediscluster_function,
                       0, "zrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zrangebyscore", rediscluster_zrangebyscore,
                       redis_function, 0, "zrangebyscore")
-  NR_INTERNAL_WRAPREC("rediscluster::zrank", rediscluster_zrank, redis_function, 0, "zrank")
-  NR_INTERNAL_WRAPREC("rediscluster::zrem", rediscluster_zrem, redis_function, 0, "zrem")
+  NR_INTERNAL_WRAPREC("rediscluster::zrank", rediscluster_zrank, rediscluster_function, 0, "zrank")
+  NR_INTERNAL_WRAPREC("rediscluster::zrem", rediscluster_zrem, rediscluster_function, 0, "zrem")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebylex", rediscluster_zremrangebylex,
                       redis_function, 0, "zremrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebyrank", rediscluster_zremrangebyrank,
                       redis_function, 0, "zremrangebyrank")
   NR_INTERNAL_WRAPREC("rediscluster::zremrangebyscore", rediscluster_zremrangebyscore,
                       redis_function, 0, "zremrangebyscore")
-  NR_INTERNAL_WRAPREC("rediscluster::zrevrange", rediscluster_zrevrange, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zrevrange", rediscluster_zrevrange, rediscluster_function, 0,
                       "zrevrange")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrangebylex", rediscluster_zrevrangebylex,
                       redis_function, 0, "zrevrangebylex")
   NR_INTERNAL_WRAPREC("rediscluster::zrevrangebyscore", rediscluster_zrevrangebyscore,
                       redis_function, 0, "zrevrangebyscore")
-  NR_INTERNAL_WRAPREC("rediscluster::zrevrank", rediscluster_zrevrank, redis_function, 0,
+  NR_INTERNAL_WRAPREC("rediscluster::zrevrank", rediscluster_zrevrank, rediscluster_function, 0,
                       "zrevrank")
-  NR_INTERNAL_WRAPREC("rediscluster::zscore", rediscluster_zscore, redis_function, 0, 
+  NR_INTERNAL_WRAPREC("rediscluster::zscore", rediscluster_zscore, rediscluster_function, 0, 
                       "zscore")
-  NR_INTERNAL_WRAPREC("rediscluster::zunionstore", rediscluster_zunionstore, redis_function,
+  NR_INTERNAL_WRAPREC("rediscluster::zunionstore", rediscluster_zunionstore, rediscluster_function,
                       0, "zunionstore")
 
   NR_INTERNAL_WRAPREC("pg_close", pg_close, pg_close, 0, 0)
