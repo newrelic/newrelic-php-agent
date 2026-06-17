@@ -31,9 +31,9 @@ struct _nrrules_t {
 
 extern void nr_rules_process_rule(nrrules_t* rules, const nrobj_t* rule);
 
-extern void nr_rule_replace_string(const char* repl,
-                                   char* dest,
-                                   size_t dest_len,
-                                   const nr_regex_substrings_t* ss);
+extern nr_status_t nr_rule_replace_string(const char* repl,
+                                          char* dest,
+                                          size_t dest_len,
+                                          const nr_regex_substrings_t* ss);
 
 #endif /* NR_RULES_PRIVATE_HDR */
