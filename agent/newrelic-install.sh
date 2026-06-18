@@ -1236,6 +1236,20 @@ for this copy of PHP. We apologize for the inconvenience.
     return 1
   fi
 
+  #
+  # PHP reports the extension directory via ini_get("extension_dir") even when
+  # that directory does not exist on disk yet. Some PHP packages (e.g. the
+  # henderkes static-php / FrankenPHP php-zts-cli / php-zts-embed packages)
+  # only create the module directory when an extension package is installed,
+  # so a base install reports a directory that is not present. Since this is
+  # exactly where PHP will look for the agent's newrelic.so, create it rather
+  # than skipping this PHP. This mirrors how the ini scan directory is handled
+  # above.
+  #
+  if [ ! -d "${pi_extdir}" ]; then
+    logcmd mkdir -p -m 0755 "${pi_extdir}"
+  fi
+
   if [ ! -d "${pi_extdir}" ]; then
     error "computed PHP extension directory:
     ${pi_extdir}
