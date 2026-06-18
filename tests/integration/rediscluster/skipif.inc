@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2024 New Relic Corporation. All rights reserved.
+ * Copyright 2026 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
