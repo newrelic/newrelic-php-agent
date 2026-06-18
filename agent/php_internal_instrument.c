@@ -1692,12 +1692,17 @@ NR_INNER_WRAPPER(redis_function) {
  *   bool rediscluster::*
  *
  * Instance information is not recorded for Redis Cluster, so the instance
- * lookup that redis_function performs is skipped here.
+ * lookup that redis_function performs is skipped here. Instead, host and
+ * port_path_or_id are set to unknown.
  */
 NR_INNER_WRAPPER(rediscluster_function) {
+  nr_datastore_instance_t* instance
+      = nr_datastore_instance_create("unknown", "unknown", NULL);
+
   nr_php_instrument_datastore_operation_call(nr_wrapper, NR_DATASTORE_REDIS,
-                                             nr_wrapper->extra, NULL,
+                                             nr_wrapper->extra, instance,
                                              INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  nr_datastore_instance_destroy(&instance);
 }
 
 static char* nr_php_prepared_statement_make_pgsql_key(
