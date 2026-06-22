@@ -451,6 +451,9 @@ typedef struct _shared_globals_t {
    */
   zend_llist exception_filters;
 
+  nrcallbackfn_t error_group_user_callback;  // The user defined callback for
+                                             // error group naming
+
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /*
    * pid and user_function_wrappers are used to store user function wrappers.
@@ -498,9 +501,6 @@ typedef struct _ctx_globals_t {
    * This value tracks those mechanisms.
    */
   int deprecated_capture_request_parameters;
-
-  nrcallbackfn_t error_group_user_callback;  // The user defined callback for
-                                             // error group naming
 
   bool check_cufa;  // Whether we need to check cufa because we are
                     // instrumenting hooks, or whether we can skip cufa
@@ -614,7 +614,7 @@ static inline int nr_php_recording(TSRMLS_D) {
 }
 
 static inline bool is_error_callback_set() {
-  return NRPRG_CTX(error_group_user_callback).is_set;
+  return NRPRG_SHARED(error_group_user_callback).is_set;
 }
 
 /*

@@ -100,8 +100,8 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_php_add_assoc_string(error_arr, "file", file);
   nr_php_add_assoc_string(error_arr, "stack", stack_json);
 
-  fci = NRPRG_CTX(error_group_user_callback).fci;
-  fcc = NRPRG_CTX(error_group_user_callback).fcc;
+  fci = NRPRG_SHARED(error_group_user_callback).fci;
+  fcc = NRPRG_SHARED(error_group_user_callback).fcc;
 
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
 

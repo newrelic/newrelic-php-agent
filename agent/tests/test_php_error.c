@@ -138,13 +138,13 @@ static void install_error_group_callback(const char* callable_expr TSRMLS_DC) {
       "install_error_group_callback: zend_fcall_info_init succeeds", SUCCESS,
       zend_fcall_info_init(callable_holder, 0, &fci, &fcc, NULL, NULL));
 
-  NRPRG_CTX(error_group_user_callback).fci = fci;
-  NRPRG_CTX(error_group_user_callback).fcc = fcc;
-  NRPRG_CTX(error_group_user_callback).is_set = true;
+  NRPRG_SHARED(error_group_user_callback).fci = fci;
+  NRPRG_SHARED(error_group_user_callback).fcc = fcc;
+  NRPRG_SHARED(error_group_user_callback).is_set = true;
 }
 
 static void uninstall_error_group_callback(void) {
-  NRPRG_CTX(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
   if (NULL != callable_holder) {
     nr_php_zval_free(&callable_holder);
   }
@@ -174,7 +174,7 @@ static void test_error_group_callback_not_set(TSRMLS_D) {
   char* group_name;
 
   tlib_php_request_start();
-  NRPRG_CTX(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
 
   exception = make_exception(TSRMLS_C);
   nr_php_error_record_exception(NRPRG(txn), exception, 50, false, NULL,
@@ -249,8 +249,8 @@ static void test_error_group_callback_returns_null(TSRMLS_D) {
                                 NULL TSRMLS_CC);
 
   group_name = lookup_error_group_name(NRPRG(txn));
-  tlib_pass_if_null(
-      "callback returns null: error.group.name should not be set", group_name);
+  tlib_pass_if_null("callback returns null: error.group.name should not be set",
+                    group_name);
 
   nr_free(group_name);
   nr_php_zval_free(&exception);
@@ -299,8 +299,8 @@ static void test_error_group_callback_truncates_long_string(TSRMLS_D) {
                                 NULL TSRMLS_CC);
 
   group_name = lookup_error_group_name(NRPRG(txn));
-  tlib_pass_if_not_null(
-      "long return value: error.group.name should be set", group_name);
+  tlib_pass_if_not_null("long return value: error.group.name should be set",
+                        group_name);
   if (group_name) {
     len = nr_strlen(group_name);
     tlib_pass_if_size_t_equal(
@@ -353,8 +353,8 @@ static void test_error_group_callback_null_request_uri(TSRMLS_D) {
   tlib_pass_if_not_null("null REQUEST_URI: callback received a value",
                         recorded);
   tlib_pass_if_int_equal(
-      "null REQUEST_URI: callback received a string for request_uri",
-      IS_STRING, Z_TYPE_P(recorded));
+      "null REQUEST_URI: callback received a string for request_uri", IS_STRING,
+      Z_TYPE_P(recorded));
   tlib_pass_if_str_equal(
       "null REQUEST_URI: callback received empty request_uri string", "",
       Z_STRVAL_P(recorded));
