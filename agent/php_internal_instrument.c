@@ -1304,14 +1304,15 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
 
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!", &stmt_obj,
-                                  &params)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!",
+                                  &stmt_obj, &params)) {
     stmt_obj = NR_PHP_INTERNAL_FN_THIS();
     if (FAILURE
-        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
-                                    &params)) {
-      nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
+                                  &params)) {
+      nrl_warning(NRL_INSTRUMENT,
+                  "failed to parse mysqli_stmt_execute params");
     }
   }
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
@@ -1331,7 +1332,8 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
       plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
-                                        params, segment->start_time,
+                                        params,
+                                        segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }
 
