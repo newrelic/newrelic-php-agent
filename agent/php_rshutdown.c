@@ -141,7 +141,7 @@ int nr_php_post_deactivate(void) {
   nr_vector_destroy(&NRPRG_SHARED(user_function_wrappers));
 #endif
 
-  NRPRG_CTX(cufa_callback) = NULL;
+  NRPRG_SHARED(cufa_callback) = NULL;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \

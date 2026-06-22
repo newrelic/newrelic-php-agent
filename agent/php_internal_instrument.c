@@ -1304,15 +1304,14 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
 
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!",
-                                  &stmt_obj, &params)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!", &stmt_obj,
+                                  &params)) {
     stmt_obj = NR_PHP_INTERNAL_FN_THIS();
     if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
-                                  &params)) {
-      nrl_warning(NRL_INSTRUMENT,
-                  "failed to parse mysqli_stmt_execute params");
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
+                                    &params)) {
+      nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
     }
   }
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
@@ -1332,8 +1331,7 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
       plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
-                                        params,
-                                        segment->start_time,
+                                        params, segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }
 
@@ -2522,7 +2520,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
  * to enable profiling of call_user_func_array
  */
 NR_INNER_WRAPPER(call_user_func_array) {
-  if (NULL != NRPRG_CTX(cufa_callback)) {
+  if (NULL != NRPRG_SHARED(cufa_callback)) {
     zval* args = NULL;
     zend_fcall_info fci;
     zend_fcall_info_cache fcc;
@@ -2540,7 +2538,7 @@ NR_INNER_WRAPPER(call_user_func_array) {
       goto leave;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG_CTX(cufa_callback),
+    nr_php_call_user_func_array_handler(NRPRG_SHARED(cufa_callback),
                                         fcc.function_handler, NULL TSRMLS_CC);
   }
 
@@ -3968,7 +3966,7 @@ void nr_php_add_call_user_func_array_pre_callback(
   nrinternalfn_t* cufa_wraprec = NULL;
   nrinternalfn_t* w = NULL;
 
-  NRPRG_CTX(cufa_callback) = callback;
+  NRPRG_SHARED(cufa_callback) = callback;
 
   for (w = nr_wrapped_internal_functions; NULL != w; w = w->next) {
     if (0 == nr_strcmp(w->full_name, "call_user_func_array")) {
