@@ -1,4 +1,6 @@
 name: Security scan
+permissions: {}
+
 on:
   push:
     branches:
@@ -11,6 +13,9 @@ on:
 jobs:
   trivy-scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read          # checkout (harmless to be explicit)
+      security-events: write  # upload-sarif → code scanning API
     steps:
       - name: Checkout newrelic-php-agent code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2

@@ -4,6 +4,7 @@
 
 name: code-coverage-baseline
 run-name: Generating code coverage baseline for ${{ inputs.origin }}:${{ inputs.ref }} with code coverage (by @${{ github.actor }})
+permissions: {}
 
 on:
   workflow_dispatch:
