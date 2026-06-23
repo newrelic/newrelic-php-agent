@@ -111,11 +111,12 @@ bool nr_stack_remove_topmost(nr_stack_t* s, const void* element);
  *           (src->dtor); its destructor userdata is set to NULL.
  *
  * Params  : 1. A pointer to the source stack, src.
- *           2. A clone callback invoked once per element. Must not be NULL.
+ *           2. A clone callback invoked once per element.
  *
  * Returns : A new stack containing the cloned elements of src, in the same
- *           order. The caller is responsible for releasing the returned stack
- *           with nr_stack_destroy_fields().
+ *           order. If src or clone is NULL, an initialized empty stack is
+ *           returned. The caller is responsible for releasing the returned
+ *           stack with nr_stack_destroy_fields().
  */
 nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_t clone);
 
