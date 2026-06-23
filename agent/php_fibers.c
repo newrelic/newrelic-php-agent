@@ -59,15 +59,12 @@ static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
   dest->drupal_http_request_depth = 0;
   dest->php_cur_stack_depth = 0;  // PHP allocates a new stack for each fiber
 
-  COPY_BASIC(cufa_callback);
-
   COPY_STRING(mysql_last_conn);
   COPY_STRING(pgsql_last_conn);
 
   COPY_BASIC(datastore_connections);
 
   COPY_BASIC(deprecated_capture_request_parameters);
-  COPY_BASIC(error_group_user_callback);
   COPY_BASIC(check_cufa);
 
   COPY_BASIC(predis_commands);
