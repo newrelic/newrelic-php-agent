@@ -138,13 +138,13 @@ static void install_error_group_callback(const char* callable_expr TSRMLS_DC) {
       "install_error_group_callback: zend_fcall_info_init succeeds", SUCCESS,
       zend_fcall_info_init(callable_holder, 0, &fci, &fcc, NULL, NULL));
 
-  NRPRG_CTX(error_group_user_callback).fci = fci;
-  NRPRG_CTX(error_group_user_callback).fcc = fcc;
-  NRPRG_CTX(error_group_user_callback).is_set = true;
+  NRPRG_SHARED(error_group_user_callback).fci = fci;
+  NRPRG_SHARED(error_group_user_callback).fcc = fcc;
+  NRPRG_SHARED(error_group_user_callback).is_set = true;
 }
 
 static void uninstall_error_group_callback(void) {
-  NRPRG_CTX(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
   if (NULL != callable_holder) {
     nr_php_zval_free(&callable_holder);
   }
@@ -174,7 +174,7 @@ static void test_error_group_callback_not_set(TSRMLS_D) {
   char* group_name;
 
   tlib_php_request_start();
-  NRPRG_CTX(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
 
   exception = make_exception(TSRMLS_C);
   nr_php_error_record_exception(NRPRG(txn), exception, 50, false, NULL,

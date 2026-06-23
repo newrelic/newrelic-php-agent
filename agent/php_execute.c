@@ -1782,7 +1782,7 @@ static void nr_php_observer_attempt_call_cufa_handler(NR_EXECUTE_PROTO) {
       return;
     }
 
-    nr_php_call_user_func_array_handler(NRPRG_CTX(cufa_callback),
+    nr_php_call_user_func_array_handler(NRPRG_SHARED(cufa_callback),
                                         execute_data->func,
                                         execute_data->prev_execute_data);
   }
@@ -1802,7 +1802,7 @@ static void nr_php_instrument_func_begin(NR_EXECUTE_PROTO) {
   NRTXNGLOBAL(execute_count) += 1;
   txn_start_time = nr_txn_start_time(NRPRG(txn));
 
-  if (NULL != NRPRG_CTX(cufa_callback) && NRPRG_CTX(check_cufa)) {
+  if (NULL != NRPRG_SHARED(cufa_callback) && NRPRG_CTX(check_cufa)) {
     /*
      * For PHP 7+, call_user_func_array() is flattened into an inline by
      * default. Because of this, we must check the opcodes set to see whether we
