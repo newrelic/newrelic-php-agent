@@ -3,6 +3,7 @@
 #
 
 name: issue-comment
+permissions: {}
 
 on:
   workflow_call:
