@@ -392,7 +392,7 @@ nr_segment_iter_return_t nr_segment_traces_stot_iterator_callback(
    * Such segments are skipped, as zero duration segments don't make
    * sense.
    */
-  if (segment->start_time == segment->stop_time) {
+  if ((segment->start_time == segment->stop_time) || (0 == segment->stop_time)) {
     return NR_SEGMENT_NO_POST_ITERATION_CALLBACK;
   }
 
