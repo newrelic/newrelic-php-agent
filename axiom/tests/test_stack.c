@@ -284,6 +284,45 @@ static void test_copy_independent_of_source(void) {
   nr_stack_destroy_fields(&dest);
 }
 
+static void test_copy_null_inputs(void) {
+  nr_stack_t src;
+  nr_stack_t dest;
+
+  clone_call_count = 0;
+
+  dest = nr_stack_copy(NULL, clone_counting);
+  tlib_pass_if_true("Copy of a NULL source must be empty",
+                    nr_stack_is_empty(&dest), "Expected true");
+  tlib_pass_if_not_null(
+      "Copy of a NULL source must be an initialized stack with allocated "
+      "element storage",
+      dest.elements);
+  tlib_pass_if_int_equal(
+      "Copy of a NULL source must not invoke the clone callback", 0,
+      clone_call_count);
+  nr_stack_destroy_fields(&dest);
+
+  nr_stack_init(&src, 5);
+  nr_stack_push(&src, (void*)1);
+  nr_stack_push(&src, (void*)2);
+
+  dest = nr_stack_copy(&src, NULL);
+  tlib_pass_if_true(
+      "Copy with a NULL clone callback must produce an empty stack",
+      nr_stack_is_empty(&dest), "Expected true");
+  tlib_pass_if_not_null(
+      "Copy with a NULL clone callback must produce an initialized stack with "
+      "allocated element storage",
+      dest.elements);
+
+  tlib_pass_if_size_t_equal(
+      "Source must remain unchanged after a copy with a NULL clone", 2,
+      src.used);
+
+  nr_stack_destroy_fields(&dest);
+  nr_stack_destroy_fields(&src);
+}
+
 static void test_remove_topmost(void) {
   nr_stack_t s;
 
@@ -347,4 +386,5 @@ void test_main(void* p NRUNUSED) {
   test_copy_invokes_clone_per_element();
   test_copy_deep();
   test_copy_independent_of_source();
+  test_copy_null_inputs();
 }
