@@ -191,6 +191,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
     nrl_warning(NRL_AGENT,
                 "Failed to add fiber context to global hashmap for fiber %s",
                 zfc_key);
+    nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
 
@@ -295,6 +296,7 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
                                          NRPRG_SHARED(current_php_context))) {
     nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s",
                 NRPRG_SHARED(current_php_context));
+    nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
 
