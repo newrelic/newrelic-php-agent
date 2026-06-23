@@ -176,7 +176,11 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   }
   if (NULL == NRPRG(fiber_globals_map)) {
     // initialize the fiber global hashmap if it does not already exist
-    nrf_fiber_init_global_hashmap(&NRPRG(fiber_globals_map));
+    if (NR_FAILURE
+        == nrf_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
+      nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap");
+      nr_php_txn_end(0, 0 TSRMLS_CC);
+    }
   }
 
   snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);

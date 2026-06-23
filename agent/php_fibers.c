@@ -128,9 +128,11 @@ nr_status_t nrf_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   if (NULL == fiber_globals_map) {
     return NR_FAILURE;
   }
-  if (NULL == *fiber_globals_map) {
-    *fiber_globals_map = nr_hashmap_create(free_fiber_globals);
+  if (NULL != *fiber_globals_map) {
+    return NR_FAILURE;
   }
+
+  *fiber_globals_map = nr_hashmap_create(free_fiber_globals);
   return NR_SUCCESS;
 }
 

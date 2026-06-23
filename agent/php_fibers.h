@@ -44,13 +44,16 @@ extern void free_fiber_globals(void* fiber_globals);
  *           free_fiber_globals as its destructor (so that removed or replaced
  *           entries are fully cleaned up) and stored back into
  *           *fiber_globals_map. If *fiber_globals_map already refers to a
- *           hashmap, it is left unchanged (idempotent).
+ *           hashmap, it is left unchanged and NR_FAILURE is returned so the
+ *           existing hashmap is not overwritten (and leaked).
  *
  * Params  : 1. Address of the fiber globals hashmap pointer to initialize;
- *              typically &NRPRG(fiber_globals_map). Must be non-NULL.
+ *              typically &NRPRG(fiber_globals_map). Must be non-NULL, and
+ *              *fiber_globals_map must be NULL.
  *
- * Returns : NR_SUCCESS if the operation was performed (the parameter was
- *           non-NULL), NR_FAILURE otherwise.
+ * Returns : NR_SUCCESS if a new hashmap was allocated and stored;
+ *           NR_FAILURE if fiber_globals_map is NULL or *fiber_globals_map
+ *           was already non-NULL.
  */
 extern nr_status_t nrf_fiber_init_global_hashmap(
     nr_hashmap_t** fiber_globals_map);
