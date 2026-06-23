@@ -1700,9 +1700,9 @@ PHP_FUNCTION(newrelic_set_error_group_callback) {
   }
 
   // Set global values
-  NRPRG_CTX(error_group_user_callback).fci = fci;
-  NRPRG_CTX(error_group_user_callback).fcc = fcc;
-  NRPRG_CTX(error_group_user_callback).is_set = true;
+  NRPRG_SHARED(error_group_user_callback).fci = fci;
+  NRPRG_SHARED(error_group_user_callback).fcc = fcc;
+  NRPRG_SHARED(error_group_user_callback).is_set = true;
 
   nrl_debug(
       NRL_API,
