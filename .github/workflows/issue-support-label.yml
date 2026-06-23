@@ -3,6 +3,7 @@
 #
 
 name: issue-support-label
+permissions: {}
 
 on:
   issues:
