@@ -49,7 +49,7 @@ static void fiber_str_dtor(void* e, NRUNUSED void* d) {
   nr_free(e);
 }
 
-static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
+static void nr_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
   if (NULL == dest) {
     return;
   }
@@ -84,7 +84,7 @@ static void nrf_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
 #undef COPY_STRING
 #undef COPY_BASIC
 
-ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
+ctx_globals_t* nr_fiber_copy_ctx_globals(ctx_globals_t* src) {
   ctx_globals_t* fiber_ctx_globals = NULL;
 
   if (NULL == src) {
@@ -93,7 +93,7 @@ ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src) {
 
   fiber_ctx_globals = nr_malloc(sizeof(ctx_globals_t));
 
-  nrf_ctx_global_deep_copy(fiber_ctx_globals, src);
+  nr_ctx_global_deep_copy(fiber_ctx_globals, src);
 
   return fiber_ctx_globals;
 }
@@ -124,7 +124,7 @@ void free_fiber_globals(void* fiber_globals) {
   nr_free(f);
 }
 
-nr_status_t nrf_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
+nr_status_t nr_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   if (NULL == fiber_globals_map) {
     return NR_FAILURE;
   }
@@ -136,7 +136,7 @@ nr_status_t nrf_fiber_init_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   return NR_SUCCESS;
 }
 
-nr_status_t nrf_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
+nr_status_t nr_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   if (NULL == fiber_globals_map) {
     return NR_FAILURE;
   }
@@ -146,7 +146,7 @@ nr_status_t nrf_fiber_destroy_global_hashmap(nr_hashmap_t** fiber_globals_map) {
   return NR_SUCCESS;
 }
 
-nr_status_t nrf_add_fiber_context_to_global_hashmap(
+nr_status_t nr_add_fiber_context_to_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
     ctx_globals_t* src_ctx_globals,
     const char* key) {
@@ -162,7 +162,7 @@ nr_status_t nrf_add_fiber_context_to_global_hashmap(
   }
 
   fg = nr_malloc(sizeof(fiber_globals_t));
-  cg = nrf_fiber_copy_ctx_globals(src_ctx_globals);
+  cg = nr_fiber_copy_ctx_globals(src_ctx_globals);
   if (NULL == cg) {
     nr_free(fg);
     return NR_FAILURE;
@@ -175,7 +175,7 @@ nr_status_t nrf_add_fiber_context_to_global_hashmap(
   return NR_SUCCESS;
 }
 
-nr_status_t nrf_remove_fiber_context_from_global_hashmap(
+nr_status_t nr_remove_fiber_context_from_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
     const char* key) {
   if (nr_strempty(key)) {
@@ -189,9 +189,9 @@ nr_status_t nrf_remove_fiber_context_from_global_hashmap(
   return nr_hashmap_delete(fiber_globals_map, key, nr_strlen(key));
 }
 
-nr_status_t nrf_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
-                                            fiber_globals_t** fiber_global_ptr,
-                                            const char* key) {
+nr_status_t nr_fiber_switch_global_context(nr_hashmap_t* fiber_globals_map,
+                                           fiber_globals_t** fiber_global_ptr,
+                                           const char* key) {
   fiber_globals_t* fg = NULL;
 
   if (NULL == fiber_global_ptr) {

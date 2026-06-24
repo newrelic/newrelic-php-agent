@@ -176,8 +176,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   }
   if (NULL == NRPRG(fiber_globals_map)) {
     // initialize the fiber global hashmap if it does not already exist
-    if (NR_FAILURE
-        == nrf_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
+    if (NR_FAILURE == nr_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
       nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap");
       nr_php_txn_end(0, 0 TSRMLS_CC);
     }
@@ -187,7 +186,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
 
   // Add the current context to the global hashmap for the new fiber
   if (NR_FAILURE
-      == nrf_add_fiber_context_to_global_hashmap(
+      == nr_add_fiber_context_to_global_hashmap(
           NRPRG(fiber_globals_map),
           NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
                                : &NRPRG(ctx),
@@ -214,8 +213,8 @@ static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
 
   // Remove the entry in the fiber global hashmap for this fiber
   if (NR_FAILURE
-      == nrf_remove_fiber_context_from_global_hashmap(NRPRG(fiber_globals_map),
-                                                      zfc_key)) {
+      == nr_remove_fiber_context_from_global_hashmap(NRPRG(fiber_globals_map),
+                                                     zfc_key)) {
     nrl_warning(
         NRL_AGENT,
         "Failed to remove fiber context from global hashmap for fiber %s",
@@ -295,9 +294,9 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
   }
 
   if (NR_FAILURE
-      == nrf_fiber_switch_global_context(NRPRG(fiber_globals_map),
-                                         &NRPRG(fiber_globals),
-                                         NRPRG_SHARED(current_php_context))) {
+      == nr_fiber_switch_global_context(NRPRG(fiber_globals_map),
+                                        &NRPRG(fiber_globals),
+                                        NRPRG_SHARED(current_php_context))) {
     nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s",
                 NRPRG_SHARED(current_php_context));
     nr_php_txn_end(0, 0 TSRMLS_CC);

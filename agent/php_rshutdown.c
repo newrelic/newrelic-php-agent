@@ -165,7 +165,7 @@ int nr_php_post_deactivate(void) {
 #endif
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  nrf_fiber_destroy_global_hashmap(&NRPRG(fiber_globals_map));
+  nr_fiber_destroy_global_hashmap(&NRPRG(fiber_globals_map));
 #endif
 
   nrl_verbosedebug(NRL_INIT, "post-deactivate processing done");

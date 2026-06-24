@@ -22,7 +22,7 @@
  *           returned struct is transferred to the caller, which is responsible
  *           for freeing it.
  */
-extern ctx_globals_t* nrf_fiber_copy_ctx_globals(ctx_globals_t* src);
+extern ctx_globals_t* nr_fiber_copy_ctx_globals(ctx_globals_t* src);
 
 /*
  * Purpose : Free a fiber_globals_t and all owned resources held by its
@@ -55,7 +55,7 @@ extern void free_fiber_globals(void* fiber_globals);
  *           NR_FAILURE if fiber_globals_map is NULL or *fiber_globals_map
  *           was already non-NULL.
  */
-extern nr_status_t nrf_fiber_init_global_hashmap(
+extern nr_status_t nr_fiber_init_global_hashmap(
     nr_hashmap_t** fiber_globals_map);
 
 /*
@@ -70,7 +70,7 @@ extern nr_status_t nrf_fiber_init_global_hashmap(
  * Returns : NR_SUCCESS if the operation was performed (the parameter was
  *           non-NULL), NR_FAILURE otherwise.
  */
-extern nr_status_t nrf_fiber_destroy_global_hashmap(
+extern nr_status_t nr_fiber_destroy_global_hashmap(
     nr_hashmap_t** fiber_globals_map);
 
 /*
@@ -81,7 +81,7 @@ extern nr_status_t nrf_fiber_destroy_global_hashmap(
  *
  * Params  : 1. The fiber globals hashmap into which the snapshot should be
  *              stored; typically NRPRG(fiber_globals_map). Must be non-NULL
- *              and previously initialized via nrf_fiber_init_global_hashmap.
+ *              and previously initialized via nr_fiber_init_global_hashmap.
  *           2. A pointer to the source ctx_globals_t to snapshot from;
  *              typically &NRPRG(ctx). The source is not modified and remains
  *              owned by the caller.
@@ -90,7 +90,7 @@ extern nr_status_t nrf_fiber_destroy_global_hashmap(
  * Returns : NR_SUCCESS on success, or NR_FAILURE if the key is invalid or
  *           the fiber globals hashmap is NULL.
  */
-extern nr_status_t nrf_add_fiber_context_to_global_hashmap(
+extern nr_status_t nr_add_fiber_context_to_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
     ctx_globals_t* src_ctx_globals,
     const char* key);
@@ -106,7 +106,7 @@ extern nr_status_t nrf_add_fiber_context_to_global_hashmap(
  * Returns : NR_SUCCESS on success, or NR_FAILURE if the key is invalid, the
  *           hashmap is NULL, or no entry exists for the key.
  */
-extern nr_status_t nrf_remove_fiber_context_from_global_hashmap(
+extern nr_status_t nr_remove_fiber_context_from_global_hashmap(
     nr_hashmap_t* fiber_globals_map,
     const char* key);
 
@@ -132,7 +132,7 @@ extern nr_status_t nrf_remove_fiber_context_from_global_hashmap(
  * Returns : NR_SUCCESS on success, or NR_FAILURE if the key is invalid, the
  *           hashmap is NULL, or no snapshot is stored under the given key.
  */
-extern nr_status_t nrf_fiber_switch_global_context(
+extern nr_status_t nr_fiber_switch_global_context(
     nr_hashmap_t* fiber_globals_map,
     fiber_globals_t** fiber_global_ptr,
     const char* key);

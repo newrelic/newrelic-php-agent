@@ -150,7 +150,7 @@ static void free_ctx_globals(ctx_globals_t* cg) {
 }
 
 /*
- * Cleanup for a ctx_globals returned by nrf_fiber_copy_ctx_globals: skips the
+ * Cleanup for a ctx_globals returned by nr_fiber_copy_ctx_globals: skips the
  * fields that are shallow-copied (datastore_connections, predis_commands)
  * since those are still owned by the source. Mirrors the ctx_globals section
  * of free_fiber_globals.
@@ -174,10 +174,10 @@ static void test_init_destroy_hashmap(void) {
   /*
    * Test : init creates the hashmap when one does not yet exist.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_null("hashmap is NULL after destroy", test_fiber_global_map);
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_not_null("init creates the hashmap", test_fiber_global_map);
 
   /*
@@ -185,7 +185,7 @@ static void test_init_destroy_hashmap(void) {
    */
   {
     nr_hashmap_t* original = test_fiber_global_map;
-    nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+    nr_fiber_init_global_hashmap(&test_fiber_global_map);
     tlib_pass_if_ptr_equal("init does not replace existing hashmap", original,
                            test_fiber_global_map);
   }
@@ -193,13 +193,13 @@ static void test_init_destroy_hashmap(void) {
   /*
    * Test : destroy nulls out the hashmap pointer.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_null("hashmap is NULL after destroy", test_fiber_global_map);
 
   /*
    * Test : destroy is safe to call when hashmap is already NULL.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_null("destroy is null safe", test_fiber_global_map);
 
   tlib_php_request_end();
@@ -213,7 +213,7 @@ static void test_copy_ctx_globals(void) {
 
   src = dummy_ctx_globals();
 
-  copy = nrf_fiber_copy_ctx_globals(src);
+  copy = nr_fiber_copy_ctx_globals(src);
 
   tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
 
@@ -256,10 +256,10 @@ static void test_copy_ctx_globals(void) {
    * static fiber_str_dtor symbol, but a non-NULL dtor proves the override
    * line ran.
    */
-  tlib_pass_if_true("wordpress_tags copy has a dtor set so cloned "
-                    "strings are freed by destroy",
-                    NULL != copy->wordpress_tags.dtor,
-                    "expected non-NULL dtor");
+  tlib_pass_if_true(
+      "wordpress_tags copy has a dtor set so cloned "
+      "strings are freed by destroy",
+      NULL != copy->wordpress_tags.dtor, "expected non-NULL dtor");
 
   free_ctx_globals_copy(copy);
   free_ctx_globals(src);
@@ -304,7 +304,7 @@ static void test_copy_ctx_globals_null_strings(void) {
   tlib_php_request_start();
 
   src = dummy_ctx_globals_null_strings();
-  copy = nrf_fiber_copy_ctx_globals(src);
+  copy = nr_fiber_copy_ctx_globals(src);
 
   tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
   tlib_pass_if_null("NULL doctrine_dql copies as NULL, not \"\"",
@@ -324,12 +324,12 @@ static void test_copy_ctx_globals_null_src(void) {
   tlib_php_request_start();
 
   /*
-   * nrf_fiber_copy_ctx_globals returns NULL on a NULL source so callers can
+   * nr_fiber_copy_ctx_globals returns NULL on a NULL source so callers can
    * detect the failure. add_fiber_context relies on this to refuse to insert
    * a partial entry into the fiber globals hashmap.
    */
   tlib_pass_if_null("copy returns NULL when src is NULL",
-                    nrf_fiber_copy_ctx_globals(NULL));
+                    nr_fiber_copy_ctx_globals(NULL));
 
   tlib_php_request_end();
 }
@@ -361,7 +361,7 @@ static void test_add_fiber_context_null_src(void) {
 
   tlib_php_request_start();
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
 
   /*
    * NULL src_ctx_globals must produce NR_FAILURE and must NOT insert a
@@ -371,12 +371,12 @@ static void test_add_fiber_context_null_src(void) {
    */
   tlib_pass_if_status_failure(
       "add fails when src_ctx_globals is NULL",
-      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, NULL,
-                                              "fiber-null-src"));
+      nr_add_fiber_context_to_global_hashmap(test_fiber_global_map, NULL,
+                                             "fiber-null-src"));
   tlib_pass_if_size_t_equal("hashmap remains empty after failed add", 0,
                             nr_hashmap_count(test_fiber_global_map));
 
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   tlib_php_request_end();
 }
@@ -388,31 +388,31 @@ static void test_add_fiber_context_bad_input(void) {
   /*
    * Ensure the hashmap is not initialized.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   /*
    * Test : NULL key returns failure.
    */
   tlib_pass_if_status_failure("NULL key fails when hashmap is uninitialized",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, NULL, NULL));
 
   /*
    * Test : Uninitialized hashmap returns failure even with a valid key.
    */
   tlib_pass_if_status_failure("uninitialized hashmap fails",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, NULL, "fiber-key"));
 
   /*
    * Test : NULL key still fails after init.
    */
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_status_failure("NULL key fails after init",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, NULL, NULL));
 
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   tlib_php_request_end();
 }
@@ -424,10 +424,10 @@ static void test_add_fiber_context_happy_path(void) {
 
   cg = dummy_ctx_globals();
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
 
   tlib_pass_if_status_success("adding a fiber context succeeds",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, cg, "fiber-1"));
 
   tlib_pass_if_size_t_equal("hashmap has one entry after add", 1,
@@ -437,14 +437,14 @@ static void test_add_fiber_context_happy_path(void) {
    * Test : adding a second context increments the count.
    */
   tlib_pass_if_status_success("adding a second fiber context succeeds",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, cg, "fiber-2"));
 
   tlib_pass_if_size_t_equal("hashmap has two entries", 2,
                             nr_hashmap_count(test_fiber_global_map));
 
   /* free_fiber_globals destructor cleans up the deep-copied snapshots. */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -457,33 +457,33 @@ static void test_remove_fiber_context_bad_input(void) {
   /*
    * Test : NULL key fails when hashmap is uninitialized.
    */
-  tlib_pass_if_status_failure("NULL key fails when hashmap is uninitialized",
-                              nrf_remove_fiber_context_from_global_hashmap(
-                                  test_fiber_global_map, NULL));
+  tlib_pass_if_status_failure(
+      "NULL key fails when hashmap is uninitialized",
+      nr_remove_fiber_context_from_global_hashmap(test_fiber_global_map, NULL));
 
   /*
    * Test : Empty key fails (nr_strlen("") < 1).
    */
   tlib_pass_if_status_failure(
       "empty key fails",
-      nrf_remove_fiber_context_from_global_hashmap(test_fiber_global_map, ""));
+      nr_remove_fiber_context_from_global_hashmap(test_fiber_global_map, ""));
 
   /*
    * Test : valid key with uninitialized hashmap fails.
    */
   tlib_pass_if_status_failure("uninitialized hashmap fails",
-                              nrf_remove_fiber_context_from_global_hashmap(
+                              nr_remove_fiber_context_from_global_hashmap(
                                   test_fiber_global_map, "fiber-1"));
 
   /*
    * Test : removing a nonexistent key from an initialized hashmap fails.
    */
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_status_failure("missing key fails",
-                              nrf_remove_fiber_context_from_global_hashmap(
+                              nr_remove_fiber_context_from_global_hashmap(
                                   test_fiber_global_map, "does-not-exist"));
 
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   tlib_php_request_end();
 }
@@ -497,17 +497,17 @@ static void test_remove_fiber_context_happy_path(void) {
 
   cg = dummy_ctx_globals();
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_status_success(
       "add succeeds before remove",
-      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
+      nr_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
 
   tlib_pass_if_size_t_equal("hashmap has one entry before remove", 1,
                             nr_hashmap_count(test_fiber_global_map));
 
   tlib_pass_if_status_success(
       "remove succeeds for existing key",
-      nrf_remove_fiber_context_from_global_hashmap(test_fiber_global_map, key));
+      nr_remove_fiber_context_from_global_hashmap(test_fiber_global_map, key));
 
   tlib_pass_if_size_t_equal("hashmap is empty after remove", 0,
                             nr_hashmap_count(test_fiber_global_map));
@@ -517,9 +517,9 @@ static void test_remove_fiber_context_happy_path(void) {
    */
   tlib_pass_if_status_failure(
       "remove fails when key has already been removed",
-      nrf_remove_fiber_context_from_global_hashmap(test_fiber_global_map, key));
+      nr_remove_fiber_context_from_global_hashmap(test_fiber_global_map, key));
 
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   free_ctx_globals(cg);
 
   tlib_php_request_end();
@@ -542,17 +542,16 @@ static void test_switch_global_context_bad_input(void) {
    */
   tlib_pass_if_status_failure(
       "NULL fiber_global_ptr fails",
-      nrf_fiber_switch_global_context(test_fiber_global_map, NULL, "fiber-1"));
+      nr_fiber_switch_global_context(test_fiber_global_map, NULL, "fiber-1"));
 
   /*
    * Test : NULL key resolves to "main PHP context" and clears
    * *fiber_global_ptr to NULL with NR_SUCCESS.
    */
   fiber_globals = &stale_global_ptr;
-  tlib_pass_if_status_success(
-      "NULL key succeeds (main context)",
-      nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
-                                      NULL));
+  tlib_pass_if_status_success("NULL key succeeds (main context)",
+                              nr_fiber_switch_global_context(
+                                  test_fiber_global_map, &fiber_globals, NULL));
   tlib_pass_if_null("NULL key clears fiber_globals to NULL", fiber_globals);
 
   /*
@@ -564,8 +563,8 @@ static void test_switch_global_context_bad_input(void) {
   fiber_globals = &stale_global_ptr;
   tlib_pass_if_status_failure(
       "uninitialized hashmap fails",
-      nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
-                                      "fiber-1"));
+      nr_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
+                                     "fiber-1"));
   tlib_pass_if_null(
       "uninitialized hashmap failure path clears fiber_globals to NULL",
       fiber_globals);
@@ -574,16 +573,16 @@ static void test_switch_global_context_bad_input(void) {
    * Test : switching to a key that has no snapshot fails and clears any
    * stale fiber_globals pointer.
    */
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   fiber_globals = &stale_global_ptr;
   tlib_pass_if_status_failure(
       "missing key fails",
-      nrf_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
-                                      "does-not-exist"));
+      nr_fiber_switch_global_context(test_fiber_global_map, &fiber_globals,
+                                     "does-not-exist"));
   tlib_pass_if_null("missing key failure path clears fiber_globals to NULL",
                     fiber_globals);
 
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
 
   tlib_php_request_end();
 }
@@ -598,15 +597,15 @@ static void test_switch_global_context_happy_path(void) {
 
   cg = dummy_ctx_globals();
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
   fiber_globals = NULL;
 
   tlib_pass_if_status_success(
       "add succeeds before switch",
-      nrf_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
+      nr_add_fiber_context_to_global_hashmap(test_fiber_global_map, cg, key));
 
   tlib_pass_if_status_success("switch succeeds for an existing key",
-                              nrf_fiber_switch_global_context(
+                              nr_fiber_switch_global_context(
                                   test_fiber_global_map, &fiber_globals, key));
 
   tlib_pass_if_not_null("switch sets fiber_globals to a non-NULL snapshot",
@@ -618,7 +617,7 @@ static void test_switch_global_context_happy_path(void) {
    * destroy frees the snapshot via free_fiber_globals; clear the dangling
    * pointer first so other code in request shutdown does not dereference it.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   fiber_globals = NULL;
   free_ctx_globals(cg);
 
@@ -633,13 +632,13 @@ static void test_destroy_frees_entries(void) {
 
   cg = dummy_ctx_globals();
 
-  nrf_fiber_init_global_hashmap(&test_fiber_global_map);
+  nr_fiber_init_global_hashmap(&test_fiber_global_map);
 
   tlib_pass_if_status_success("add a context",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, cg, "entry-a"));
   tlib_pass_if_status_success("add another context",
-                              nrf_add_fiber_context_to_global_hashmap(
+                              nr_add_fiber_context_to_global_hashmap(
                                   test_fiber_global_map, cg, "entry-b"));
 
   /*
@@ -647,7 +646,7 @@ static void test_destroy_frees_entries(void) {
    * assert the destructor fired, but we can confirm the hashmap pointer is
    * cleared and the request can complete cleanly with no leaks.
    */
-  nrf_fiber_destroy_global_hashmap(&test_fiber_global_map);
+  nr_fiber_destroy_global_hashmap(&test_fiber_global_map);
   tlib_pass_if_null("hashmap is cleared by destroy", test_fiber_global_map);
 
   free_ctx_globals(cg);
