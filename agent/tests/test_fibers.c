@@ -127,6 +127,7 @@ static ctx_globals_t* dummy_ctx_globals() {
   cg->deprecated_capture_request_parameters = 1;
   cg->check_cufa = true;
   cg->predis_commands = dummy_hashmap_time();
+  cg->context_root = NULL;  // Main ctx root should always be NULL
   cg->drupal_invoke_all_hooks = dummy_stack_data_zval();
   cg->drupal_invoke_all_states = dummy_stack_data_bool();
   cg->wordpress_tags = dummy_stack_data_str();
@@ -318,6 +319,77 @@ static void test_copy_ctx_globals_null_strings(void) {
                     copy->pgsql_last_conn);
 
   free_ctx_globals_copy(copy);
+  free_ctx_globals(src);
+
+  tlib_php_request_end();
+}
+
+/*
+ * Verify context_root is reset to NULL in the fiber snapshot regardless of
+ * what src holds. context_root points to the root segment of the function
+ * that started a fiber; the segment is owned by the segment subsystem and
+ * lives elsewhere, so the copy must not inherit src's pointer. Otherwise
+ * two contexts would alias the same root and the segment subsystem's
+ * cleanup would race with our own.
+ *
+ * dummy_ctx_globals() seeds context_root as NULL (main never holds a root),
+ * so we override it with a non-NULL sentinel here. A future regression that
+ * swapped the explicit reset for COPY_BASIC(context_root) would trip this.
+ */
+static void test_copy_ctx_globals_context_root_reset(void) {
+  ctx_globals_t* src;
+  ctx_globals_t* copy;
+  nr_segment_t sentinel;
+
+  tlib_php_request_start();
+
+  src = dummy_ctx_globals();
+  src->context_root = &sentinel;
+
+  copy = nr_fiber_copy_ctx_globals(src);
+
+  tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
+  tlib_pass_if_null(
+      "context_root is reset to NULL even when src->context_root is non-NULL",
+      copy->context_root);
+
+  free_ctx_globals_copy(copy);
+  src->context_root = NULL;
+  free_ctx_globals(src);
+
+  tlib_php_request_end();
+}
+
+/*
+ * free_fiber_globals must not free ctx_globals->context_root. The pointer
+ * tracks a segment owned by the segment subsystem; freeing it here would
+ * double-free when that subsystem tears the segment down.
+ *
+ * We seed context_root with the address of a stack-local variable: passing
+ * that to free() would abort (it was never malloc'd). If free_fiber_globals
+ * stays in its lane, this test completes cleanly.
+ */
+static void test_free_fiber_globals_does_not_free_context_root(void) {
+  fiber_globals_t* f = NULL;
+  ctx_globals_t* src = NULL;
+  nr_segment_t sentinel;
+
+  tlib_php_request_start();
+
+  src = dummy_ctx_globals();
+
+  f = nr_malloc(sizeof(fiber_globals_t));
+  f->ctx_globals = nr_fiber_copy_ctx_globals(src);
+
+  /*
+   * Simulate the post-copy assignment of context_root by the code that
+   * starts a fiber. The copy itself resets context_root to NULL; here we
+   * stand in for whoever sets it afterward.
+   */
+  f->ctx_globals->context_root = &sentinel;
+
+  free_fiber_globals(f);
+
   free_ctx_globals(src);
 
   tlib_php_request_end();
@@ -666,8 +738,10 @@ void test_main(void* p NRUNUSED) {
   test_init_destroy_hashmap();
   test_copy_ctx_globals();
   test_copy_ctx_globals_null_strings();
+  test_copy_ctx_globals_context_root_reset();
   test_copy_ctx_globals_null_src();
   test_free_fiber_globals_null_paths();
+  test_free_fiber_globals_does_not_free_context_root();
   test_add_fiber_context_bad_input();
   test_add_fiber_context_null_src();
   test_add_fiber_context_happy_path();

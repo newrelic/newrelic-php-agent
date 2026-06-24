@@ -524,6 +524,8 @@ typedef struct _ctx_globals_t {
 
   nr_hashmap_t* predis_commands;
 
+  nr_segment_t* context_root;  // Pointer to the root segment of a fiber
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /* Without OAPI, we are able to utilize the call stack to keep track
    * of the previous hooks. With OAPI, we can no longer do this so

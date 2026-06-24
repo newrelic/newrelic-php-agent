@@ -67,6 +67,8 @@ static void nr_ctx_global_deep_copy(ctx_globals_t* dest, ctx_globals_t* src) {
 
   COPY_BASIC(predis_commands);
 
+  dest->context_root = NULL;
+
   COPY_STACK(drupal_invoke_all_hooks, copy_elem_zval);
   COPY_STACK(drupal_invoke_all_states, copy_elem_ident);
 
