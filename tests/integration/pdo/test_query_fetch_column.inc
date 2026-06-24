@@ -20,12 +20,24 @@
     - ./base-class
     - ./constructor
     - ./factory
+
+    NOTE: The function here can be used as a fiber.  
+    The caller will need 2 fiber resumes to fully exercise the function.
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');
+require_once(dirname(__FILE__).'/../../include/helpers.php');
 
-function test_pdo_query($conn, $want_drop_table_result=1) {
+function test_pdo_query($conn, $want_drop_table_result=1, $is_fiber=false) {
+  if ($is_fiber) {
+    env_var_for_expects("GUID_TEST_PDO_QUERY", newrelic_get_linking_metadata()['span.id'] ?? '');
+  }
+
   tap_equal(0, $conn->exec("CREATE TABLE test (id INT, description VARCHAR(10));"), 'create table');
+
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
 
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (1, 'one');"), 'insert one');
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (2, 'two');"), 'insert two');
@@ -34,6 +46,11 @@ function test_pdo_query($conn, $want_drop_table_result=1) {
   $result = $conn->query('SELECT * FROM test;', PDO::FETCH_COLUMN, 1);
   $actual = $result->fetchAll(PDO::FETCH_ASSOC);
   $result->closeCursor();
+
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
+
   tap_equal(3, count($actual), 'fetch column');
 
   tap_equal($want_drop_table_result, $conn->exec("DROP TABLE test;"), 'drop table');

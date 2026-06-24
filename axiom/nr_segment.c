@@ -163,6 +163,16 @@ static void nr_segment_discard_merge_metrics(nr_segment_t* segment) {
   }
 }
 
+const char* nr_segment_get_context(nr_segment_t* segment) {
+  if (NULL == segment || NULL == segment->txn) {
+    return NULL;
+  }
+  if (0 == segment->async_context) {
+    return NULL;
+  }
+  return nr_string_get(segment->txn->trace_strings, segment->async_context);
+}
+
 nr_segment_t* nr_segment_start(nrtxn_t* txn,
                                nr_segment_t* parent,
                                const char* async_context) {
