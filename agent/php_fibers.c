@@ -5,11 +5,9 @@
  * This file handles fibers instrumentation.
  */
 
-#include "nr_datastore_instance.h"
 #include "php_includes.h"
 #include "php_compat.h"
 #include "php_fibers.h"
-#include "nr_mysqli_metadata.h"
 #include "php_agent.h"
 #include "php_newrelic.h"
 #include "php_zval.h"
@@ -18,7 +16,6 @@
 #include "util_memory.h"
 #include "util_stack.h"
 #include "util_strings.h"
-#include "util_time.h"
 #include "zend_types.h"
 
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
