@@ -218,14 +218,17 @@ static void test_copy_ctx_globals(void) {
   tlib_pass_if_not_null("copy returns a non-NULL pointer", copy);
 
   /*
-   * drupal_http_request_depth and php_cur_stack_depth are reset to 0 in the
-   * copy. A fiber gets its own C and PHP stacks (PHP allocates a fresh
-   * zend_execute_data and a fresh C stack per fiber), so it should start each
-   * counter from zero rather than inheriting main's depth.
+   * drupal_http_request_depth is reset to 0 in the copy; the fiber starts
+   * outside any drupal_http_request invocation regardless of main's depth.
+   *
+   * php_cur_stack_depth is copied from src rather than reset. The agent
+   * tracks the PHP call depth across fiber switches so that exit handlers
+   * pop the same number of frames they pushed; resetting to 0 in the fiber
+   * snapshot caused depth underflow when control returned to main.
    */
   tlib_pass_if_size_t_equal("drupal_http_request_depth is reset to 0", 0,
                             copy->drupal_http_request_depth);
-  tlib_pass_if_int_equal("php_cur_stack_depth is reset to 0", 0,
+  tlib_pass_if_int_equal("php_cur_stack_depth is copied from src", 4,
                          copy->php_cur_stack_depth);
 
   tlib_pass_if_int_equal("deprecated_capture_request_parameters is copied", 1,
