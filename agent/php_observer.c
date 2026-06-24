@@ -192,7 +192,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
                                : &NRPRG(ctx),
           zfc_key)) {
     nrl_warning(NRL_AGENT,
-                "Failed to add fiber context to global hashmap for fiber %s",
+                "Failed to add fiber context to global hashmap for fiber %s needed for a fiber aware transaction and must therefore end the transaction.",
                 zfc_key);
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
