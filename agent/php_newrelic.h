@@ -417,6 +417,7 @@ typedef struct _shared_globals_t {
 
   /* Contains the fiber address as a string to use as the async_context.*/
   char fiber_context_string[32];
+
   /*
    * Contains the parent segment of a fiber only when starting a fiber within a
    * fiber. For all other cases will be null which indicates that the main PHP
@@ -523,6 +524,8 @@ typedef struct _ctx_globals_t {
 
   nr_hashmap_t* predis_commands;
 
+  nr_segment_t* context_root;  // Pointer to the root segment of a fiber
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   /* Without OAPI, we are able to utilize the call stack to keep track
    * of the previous hooks. With OAPI, we can no longer do this so
@@ -573,6 +576,10 @@ typedef struct _txn_globals_t {
   nr_hashmap_t* prepared_statements;  // Prepared statement storage
 } txn_globals_t;
 
+typedef struct _fiber_globals_t {
+  ctx_globals_t* ctx_globals;
+} fiber_globals_t;
+
 /*
  * Globals
  */
@@ -586,6 +593,12 @@ ctx_globals_t ctx;  // Context-specific globals
 nrtxn_t* txn;  // The all-important transaction pointer
 
 txn_globals_t txn_globals;  // Transaction Globals
+
+nr_hashmap_t*
+    fiber_globals_map;  // Hashmap containing all tracked fiber global contexts
+
+fiber_globals_t* fiber_globals;  // Pointer to the current fiber global context,
+                                 // or NULL if main
 
 ZEND_END_MODULE_GLOBALS(newrelic)
 
@@ -617,9 +630,17 @@ extern PHP_GSHUTDOWN_FUNCTION(newrelic);
 
 #define NRINI(Y) (NRPRG(ini).Y.value)
 #define NRPRG_SHARED(Y) (NRPRG(shared).Y)
-#define NRPRG_CTX(Y) (NRPRG(ctx).Y)
 #define NRTXN(Y) (NRPRG(txn)->Y)
 #define NRTXNGLOBAL(Y) (NRPRG(txn_globals).Y)
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+#define NRPRG_CTX(Y)                                                 \
+  ((NULL != NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals \
+                                 : &NRPRG(ctx))                      \
+       ->Y)
+#else
+#define NRPRG_CTX(Y) (NRPRG(ctx).Y)
+#endif
 
 static inline int nr_php_recording(TSRMLS_D) {
   if (nrlikely((0 != NRPRG(txn)) && (0 != NRPRG(txn)->status.recording))) {
