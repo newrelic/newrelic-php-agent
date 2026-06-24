@@ -213,7 +213,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   php_api_distributed_trace.c php_api_internal.c php_autorum.c \
   php_call.c php_curl.c php_curl_md.c php_datastore.c php_environment.c \
   php_error.c php_execute.c php_explain.c php_explain_mysqli.c \
-  php_explain_pdo_mysql.c php_extension.c php_file_get_contents.c \
+  php_explain_pdo_mysql.c php_extension.c php_fibers.c php_file_get_contents.c \
   php_globals.c php_hash.c php_header.c php_httprequest_send.c \
   php_internal_instrument.c php_memcached.c php_minit.c php_mshutdown.c php_mysql.c \
   php_mysqli.c php_newrelic.c php_nrini.c php_observer.c php_output.c php_pdo.c \
@@ -221,7 +221,7 @@ if test "$PHP_NEWRELIC" = "yes"; then
   php_rinit.c php_rshutdown.c php_samplers.c php_stack.c \
   php_stacked_segment.c php_txn.c php_user_instrument.c \
   php_user_instrument_wraprec_hashmap.c \
-  php_user_instrument_hashmap.c php_vm.c php_wrapper.c php_fibers.c"
+  php_user_instrument_hashmap.c php_vm.c php_wrapper.c"
   FRAMEWORKS="fw_cakephp.c fw_codeigniter.c fw_drupal8.c \
   fw_drupal.c fw_drupal_common.c fw_joomla.c \
   fw_laminas3.c fw_laravel.c fw_laravel_queue.c \
