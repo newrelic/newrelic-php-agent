@@ -297,7 +297,7 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
       == nr_fiber_switch_global_context(NRPRG(fiber_globals_map),
                                         &NRPRG(fiber_globals),
                                         NRPRG_SHARED(current_php_context))) {
-    nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s",
+    nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s needed for a fiber aware transaction and must therefore end the transaction.",
                 NRPRG_SHARED(current_php_context));
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
