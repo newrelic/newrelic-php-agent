@@ -56,7 +56,7 @@ bool nr_stack_remove_topmost(nr_stack_t* s, const void* element) {
   return false;
 }
 
-nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_t clone) {
+nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_ptr_t clone) {
   nr_stack_t dest;
   size_t n;
 

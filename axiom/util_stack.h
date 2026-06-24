@@ -20,7 +20,7 @@
 #define NR_STACK_DEFAULT_CAPACITY 32
 
 typedef struct _nr_vector_t nr_stack_t;
-typedef void* (*nr_stack_clone_elem_t)(void* element);
+typedef void* (*nr_stack_clone_elem_ptr_t)(void* element);
 
 /*
  * Purpose : Initialize a stack data type.
@@ -118,6 +118,6 @@ bool nr_stack_remove_topmost(nr_stack_t* s, const void* element);
  *           returned. The caller is responsible for releasing the returned
  *           stack with nr_stack_destroy_fields().
  */
-nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_t clone);
+nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_ptr_t clone);
 
 #endif /* NR_STACK_HDR */
