@@ -177,7 +177,7 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   if (NULL == NRPRG(fiber_globals_map)) {
     // initialize the fiber global hashmap if it does not already exist
     if (NR_FAILURE == nr_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
-      nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap");
+      nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap needed for a fiber aware transaction and must therefore end the transaction.");
       nr_php_txn_end(0, 0 TSRMLS_CC);
     }
   }
