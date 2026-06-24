@@ -113,6 +113,20 @@ class Trace
     }
 
     /**
+     * Finds all segments within the transaction that contain the given name substring.
+     *
+     * @param string $name The substring to search for.
+     * @return Segment[] A traversable object which will yield each segment
+     *                   matching the given name.
+     */
+    public function findSegmentsBySubstring($name)
+    {
+        return $this->findSegments(function (Segment $segment) use ($name) {
+            return strpos($segment->name, $name) !== false;
+        });
+    }
+
+    /**
      * Finds all segments within the transaction that have datastore instance
      * metadata.
      *

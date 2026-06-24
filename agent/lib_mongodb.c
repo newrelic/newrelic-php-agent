@@ -182,7 +182,7 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_mongodb_operation_before) {
   (void)wraprec;
   nr_segment_t* segment = NULL;
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL != segment) {
     segment->wraprec = auto_segment->wraprec;
   }

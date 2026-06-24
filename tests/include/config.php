@@ -30,6 +30,9 @@ $MEMCACHE_PORT = isset_or('MEMCACHE_PORT', '11211');
 $REDIS_HOST = isset_or("REDIS_HOST", "127.0.0.1");
 $REDIS_PORT = isset_or("REDIS_PORT", 6379);
 
+$REDIS_CLUSTER_HOST = isset_or("REDIS_CLUSTER_HOST", "127.0.0.1");
+$REDIS_CLUSTER_PORT = isset_or("REDIS_CLUSTER_PORT", 7000);
+
 $PDO_MYSQL_DSN = 'mysql:';
 $PDO_MYSQL_DSN .= 'host=' . $MYSQL_HOST . ';';
 $PDO_MYSQL_DSN .= 'dbname=' . $MYSQL_DB . ';';
