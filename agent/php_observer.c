@@ -177,7 +177,10 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
   if (NULL == NRPRG(fiber_globals_map)) {
     // initialize the fiber global hashmap if it does not already exist
     if (NR_FAILURE == nr_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
-      nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap needed for a fiber aware transaction and must therefore end the transaction.");
+      nrl_warning(
+          NRL_AGENT,
+          "Failed to initialize the fiber global hashmap needed for a fiber "
+          "aware transaction and must therefore end the transaction.");
       nr_php_txn_end(0, 0 TSRMLS_CC);
     }
   }
@@ -191,9 +194,11 @@ static void nr_fiber_init_observe(zend_fiber_context* zfc) {
           NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
                                : &NRPRG(ctx),
           zfc_key)) {
-    nrl_warning(NRL_AGENT,
-                "Failed to add fiber context to global hashmap for fiber %s needed for a fiber aware transaction and must therefore end the transaction.",
-                zfc_key);
+    nrl_warning(
+        NRL_AGENT,
+        "Failed to add fiber context to global hashmap for fiber %s needed for "
+        "a fiber aware transaction and must therefore end the transaction.",
+        zfc_key);
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
@@ -219,6 +224,35 @@ static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
         NRL_AGENT,
         "Failed to remove fiber context from global hashmap for fiber %s",
         zfc_key);
+  }
+
+  if (NULL == NRPRG(txn)) {
+    return;
+  }
+
+  /*
+   * Remove the entry in the parent_stacks for the fiber.  It should ALWAYS be
+   * empty. To reiterate, there should be no scenario where the fibers stack in
+   * parent_stacks is not empty when we are destroying a fiber.  If it is then
+   * something has gone seriously wrong and we've no recourse but to end the
+   * txn.
+   */
+  uint64_t index = (uint64_t)nr_string_add(NRPRG(txn)->trace_strings, zfc_key);
+  nr_stack_t* stack
+      = (nr_stack_t*)nr_hashmap_index_delete(NRPRG(txn)->parent_stacks, index);
+
+  if (NULL != stack) {
+    if (nrlikely(nr_stack_is_empty(stack))) {
+      nr_stack_destroy_fields(stack);
+      nr_free(stack);
+      nr_hashmap_index_delete(NRPRG(txn)->parent_stacks, index);
+    } else {
+      nrl_warning(
+          NRL_AGENT,
+          "Segments for a destroyed fiber unexpectedly exist and transaction "
+          "must therefore end.");
+      nr_php_txn_end(0, 0 TSRMLS_CC);
+    }
   }
 }
 
@@ -297,7 +331,9 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
       == nr_fiber_switch_global_context(NRPRG(fiber_globals_map),
                                         &NRPRG(fiber_globals),
                                         NRPRG_SHARED(current_php_context))) {
-    nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s needed for a fiber aware transaction and must therefore end the transaction.",
+    nrl_warning(NRL_AGENT,
+                "Failed to switch fiber context to %s needed for a fiber aware "
+                "transaction and must therefore end the transaction.",
                 NRPRG_SHARED(current_php_context));
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
