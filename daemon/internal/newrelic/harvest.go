@@ -102,17 +102,17 @@ func (h *Harvest) createEndpointAttemptsMetric(endpoint string, val float64) {
 
 }
 
-func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
+// NOTE: It is important that this metric be created once per harvest period.
+func (h *Harvest) addInstanceReportingMetric() {
 	pidSetSize := len(h.pidSet)
-
-	if 0 == pidSetSize {
+	if pidSetSize == 0 {
 		// For UI purposes, Instance/Reporting has to be nonzero.
 		pidSetSize = 1
 	}
-
-	// NOTE: It is important that this metric be created once per harvest period.
 	h.Metrics.AddCount("Instance/Reporting", "", float64(pidSetSize), Forced)
+}
 
+func (h *Harvest) createFinalMetrics(harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
 	if len(mc.duc) == 0 && len(mc.mc) == 0 {
 		// No agent data received, do not create derived metrics. This allows
 		// upstream to detect inactivity sooner.

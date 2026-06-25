@@ -3,6 +3,7 @@
 #
 
 name: bug-report-response
+permissions: {}
 
 on:
   issues:

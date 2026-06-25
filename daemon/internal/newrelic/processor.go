@@ -664,6 +664,8 @@ func considerHarvestPayloadTxnEvents(txnEvents *TxnEvents, args *harvestArgs, mc
 func harvestAll(harvest *Harvest, args *harvestArgs, harvestLimits collector.EventHarvestConfig, to *infinite_tracing.TraceObserver, mc *MetricsController) {
 	log.Debugf("harvesting %d commands processed", harvest.commandsProcessed)
 
+	harvest.addInstanceReportingMetric()
+
 	considerHarvestPayload(harvest.CustomEvents, args, mc)
 	considerHarvestPayload(harvest.ErrorEvents, args, mc)
 	considerHarvestPayload(harvest.Errors, args, mc)
@@ -723,6 +725,7 @@ func harvestByType(ah *AppHarvest, args *harvestArgs, ht HarvestType) {
 		harvest.TxnTraces = NewTxnTraces()
 		harvest.PhpPackages = NewPhpPackages()
 		harvest.commandsProcessed = 0
+		harvest.addInstanceReportingMetric()
 		harvest.pidSet = make(map[int]struct{})
 
 		considerHarvestPayload(errors, args, mc)

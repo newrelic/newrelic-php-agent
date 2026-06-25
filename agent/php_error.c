@@ -76,7 +76,7 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   agent_attributes = nr_attributes_agent_to_obj(txn->attributes,
                                                 NR_ATTRIBUTE_DESTINATION_ALL);
 
-  request_uri = nr_strdup(nr_php_get_server_global("REQUEST_URI" TSRMLS_CC));
+  request_uri = nr_php_get_server_global("REQUEST_URI" TSRMLS_CC);
   path = nr_strdup(txn->path);
   method = nr_strdup(
       nro_get_hash_string(agent_attributes, "request.method", NULL));
@@ -89,7 +89,8 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   array_init(txn_arr);
   array_init(error_arr);
 
-  nr_php_add_assoc_string(txn_arr, "request_uri", request_uri);
+  nr_php_add_assoc_string(txn_arr, "request_uri",
+                          request_uri ? request_uri : "");
   nr_php_add_assoc_string(txn_arr, "path", path);
   nr_php_add_assoc_string(txn_arr, "method", method);
   add_assoc_long(txn_arr, "status_code", (zend_long)status_code);
@@ -99,8 +100,8 @@ static void nr_php_error_call_error_group_callback(nrtxn_t* txn,
   nr_php_add_assoc_string(error_arr, "file", file);
   nr_php_add_assoc_string(error_arr, "stack", stack_json);
 
-  fci = NRPRG_CTX(error_group_user_callback).fci;
-  fcc = NRPRG_CTX(error_group_user_callback).fcc;
+  fci = NRPRG_SHARED(error_group_user_callback).fci;
+  fcc = NRPRG_SHARED(error_group_user_callback).fcc;
 
   group_name_zv = nr_php_call_fcall_info(fci, fcc, txn_arr, error_arr);
 

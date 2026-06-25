@@ -301,7 +301,9 @@ static void test_finalise(void) {
 
   size_t trace_limit = NR_TEST_SEGMENT_TREE_SIZE;
   size_t span_limit = 0;
-  char* segment_names[NR_TEST_SEGMENT_TREE_SIZE];
+  char segment_name[1 + 1];  // string representation of segment index in
+                             // segment tree of NR_TEST_SEGMENT_TREE_SIZE,
+                             // plus null terminator
 
   nrtxnfinal_t result;
   nr_segment_t* root;
@@ -323,16 +325,15 @@ static void test_finalise(void) {
   for (i = 0; i < NR_TEST_SEGMENT_TREE_SIZE; i++) {
     nr_segment_t* segment = nr_slab_next(txn.segment_slab);
 
-    segment_names[i] = nr_alloca(5 * sizeof(char));
-    nr_itoa(segment_names[i], 5, i);
+    nr_itoa(segment_name, sizeof(segment_name), i);
 
     segment->start_time = start_time + ((i + 1) * 1000);
     segment->stop_time = stop_time - ((i + 1) * 1000);
-    segment->name = nr_string_add(txn.trace_strings, segment_names[i]);
+    segment->name = nr_string_add(txn.trace_strings, segment_name);
     segment->txn = &txn;
 
-    nr_segment_add_metric(segment, segment_names[i], false);
-    nr_segment_add_metric(segment, segment_names[i], true);
+    nr_segment_add_metric(segment, segment_name, false);
+    nr_segment_add_metric(segment, segment_name, true);
 
     nr_segment_children_init(&current->children);
     nr_segment_add_child(current, segment);
@@ -366,18 +367,19 @@ static void test_finalise(void) {
   for (i = 0; i < NR_TEST_SEGMENT_TREE_SIZE; i++) {
     nrtime_t expected_duration = nr_time_duration(start_time + ((i + 1) * 1000),
                                                   stop_time - ((i + 1) * 1000));
+    nr_itoa(segment_name, sizeof(segment_name), i);
 
     test_metric_created_ex(
         "Traversing the segments of a should-trace transaction must create "
         "unscoped metrics as needed",
         txn.unscoped_metrics, 0, expected_duration, i == 3 ? 1000 : 2000,
-        segment_names[i]);
+        segment_name);
 
     test_metric_created_ex(
         "Traversing the segments of a should-trace transaction must create "
         "scoped metrics as needed",
         txn.scoped_metrics, 0, expected_duration, i == 3 ? 1000 : 2000,
-        segment_names[i]);
+        segment_name);
   }
 
   nro_delete(obj);
@@ -780,7 +782,9 @@ static void test_finalise_with_sampling(void) {
 
   size_t trace_limit = NR_TEST_SEGMENT_TREE_SIZE;
   size_t span_limit = 0;
-  char* segment_names[NR_TEST_SEGMENT_TREE_SIZE];
+  char segment_name[1 + 1];  // string representation of segment index in
+                             // segment tree of NR_TEST_SEGMENT_TREE_SIZE,
+                             // plus null terminator
 
   nrtxnfinal_t result;
   nr_segment_t* root;
@@ -802,16 +806,15 @@ static void test_finalise_with_sampling(void) {
   for (i = 0; i < NR_TEST_SEGMENT_TREE_SIZE; i++) {
     nr_segment_t* segment = nr_slab_next(txn.segment_slab);
 
-    segment_names[i] = nr_alloca(5 * sizeof(char));
-    nr_itoa(segment_names[i], 5, i);
+    nr_itoa(segment_name, sizeof(segment_name), i);
 
     segment->start_time = start_time + ((i + 1) * 1000);
     segment->stop_time = stop_time - ((i + 1) * 1000);
-    segment->name = nr_string_add(txn.trace_strings, segment_names[i]);
+    segment->name = nr_string_add(txn.trace_strings, segment_name);
     segment->txn = &txn;
 
-    nr_segment_add_metric(segment, segment_names[i], false);
-    nr_segment_add_metric(segment, segment_names[i], true);
+    nr_segment_add_metric(segment, segment_name, false);
+    nr_segment_add_metric(segment, segment_name, true);
 
     nr_segment_children_init(&current->children);
     nr_segment_add_child(current, segment);
@@ -848,18 +851,19 @@ static void test_finalise_with_sampling(void) {
   for (i = 0; i < NR_TEST_SEGMENT_TREE_SIZE; i++) {
     nrtime_t expected_duration = nr_time_duration(start_time + ((i + 1) * 1000),
                                                   stop_time - ((i + 1) * 1000));
+    nr_itoa(segment_name, sizeof(segment_name), i);
 
     test_metric_created_ex(
         "Traversing the segments of a should-trace, should-sample transaction "
         "must create unscoped metrics as needed",
         txn.unscoped_metrics, 0, expected_duration, i == 3 ? 1000 : 2000,
-        segment_names[i]);
+        segment_name);
 
     test_metric_created_ex(
         "Traversing the segments of a should-trace, should-sample transaction "
         "must create scoped metrics as needed",
         txn.scoped_metrics, 0, expected_duration, i == 3 ? 1000 : 2000,
-        segment_names[i]);
+        segment_name);
   }
 
   nro_delete(obj);
@@ -881,7 +885,10 @@ static void test_finalise_with_extended_sampling(void) {
   nrtxnfinal_t result;
   nrobj_t* obj;
   nr_segment_t* current;
-  char* segment_names[NR_TEST_SEGMENT_EXTENDED_TREE_SIZE];
+  char segment_name[4 + 1];  // string representation of segment index in
+                             // segment tree of
+                             // NR_TEST_SEGMENT_EXTENDED_TREE_SIZE, plus null
+                             // terminator
 
   nr_segment_t* root;
 
@@ -901,17 +908,15 @@ static void test_finalise_with_extended_sampling(void) {
 
   for (i = 0; i < NR_TEST_SEGMENT_EXTENDED_TREE_SIZE; i++) {
     nr_segment_t* segment = nr_slab_next(txn.segment_slab);
-
-    segment_names[i] = nr_alloca(5 * sizeof(char));
-    nr_itoa(segment_names[i], 5, i);
+    nr_itoa(segment_name, sizeof(segment_name), i);
 
     segment->start_time = i;
     segment->stop_time = i * 10 + 1;
-    segment->name = nr_string_add(txn.trace_strings, segment_names[i]);
+    segment->name = nr_string_add(txn.trace_strings, segment_name);
     segment->txn = &txn;
 
-    nr_segment_add_metric(segment, segment_names[i], false);
-    nr_segment_add_metric(segment, segment_names[i], true);
+    nr_segment_add_metric(segment, segment_name, false);
+    nr_segment_add_metric(segment, segment_name, true);
 
     nr_segment_children_init(&current->children);
     nr_segment_add_child(current, segment);
