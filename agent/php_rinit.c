@@ -25,6 +25,10 @@ static void nr_php_datastore_instance_destroy(
   nr_datastore_instance_destroy(&instance);
 }
 
+static void nr_predis_command_destroy(nrtime_t* time) {
+  nr_free(time);
+}
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
 /* OAPI global stacks (as opposed to call stack used previously)
@@ -137,6 +141,8 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG_CTX(pgsql_last_conn) = NULL;
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
+  NRPRG_CTX(predis_commands)
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
 
   nr_php_txn_begin(0, 0 TSRMLS_CC);
 

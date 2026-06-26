@@ -81,16 +81,7 @@ const zend_long nr_predis_default_port = 6379;
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_readResponse);
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_writeRequest);
 
-static void nr_predis_command_destroy(nrtime_t* time) {
-  nr_free(time);
-}
-
 static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  if (NULL == NRPRG_CTX(predis_commands)) {
-    NRPRG_CTX(predis_commands)
-        = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
-  }
-
   return NRPRG_CTX(predis_commands);
 }
 
