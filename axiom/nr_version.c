@@ -51,8 +51,9 @@
  *   peridot            10Feb2026 (12.5)
  *   quartz             31Mar2026 (12.6)
  *   ruby               12May2026 (12.7)
+ *   sapphire           29Jun2026 (12.8)
  */
-#define NR_CODENAME "sapphire"
+#define NR_CODENAME "topaz"
 
 const char* nr_version(void) {
   return NR_STR2(NR_VERSION);
