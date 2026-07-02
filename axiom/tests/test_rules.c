@@ -540,6 +540,7 @@ static void test_create_from_obj_bad_params(void) {
 static void test_replace_string(void) {
   int study = 1;
   char dest[64];
+  nr_status_t st;
 
   const char* pattern = "^.*(abc).*(stu)";
   nr_regex_t* regex = nr_regex_create(
@@ -555,52 +556,99 @@ static void test_replace_string(void) {
   ss = nr_regex_match_capture(regex, subject, slen);
   nr_regex_destroy(&regex);
 
-  nr_rule_replace_string("QQ\\2RRR\\1STUV", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("QQ\\2RRR\\1STUV", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("basic", st);
   tlib_pass_if_str_equal("basic", "QQstuRRRabcSTUV", dest);
 
-  nr_rule_replace_string("\\2\\1", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\2\\1", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("basic", st);
   tlib_pass_if_str_equal("basic", "stuabc", dest);
 
-  nr_rule_replace_string("\\1\\1\\1", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\1\\1\\1", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("basic", st);
   tlib_pass_if_str_equal("basic", "abcabcabc", dest);
 
-  nr_rule_replace_string("", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("basic", st);
   tlib_pass_if_str_equal("basic", "", dest);
 
   /*
    * Back substitute everything that matched
    */
-  nr_rule_replace_string("\\0", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\0", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("basic", st);
   tlib_pass_if_str_equal("basic", "rrabcbqrstu", dest);
 
   /*
    * Dest is too small to receive the value
    */
-  nr_rule_replace_string("\\1\\1\\1", dest, 2, ss);
-  tlib_pass_if_str_equal("basic", "a", dest);
+  st = nr_rule_replace_string("\\1\\1\\1", dest, 2, ss);
+  tlib_pass_if_status_failure("substring overflow returns failure", st);
 
   /*
    * dest is null
    */
   dest[0] = 0;
-  nr_rule_replace_string("\\1\\1\\1", 0, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\1\\1\\1", 0, sizeof(dest), ss);
+  tlib_pass_if_status_success("null dest is success", st);
   tlib_pass_if_str_equal("basic", "", dest);
 
   dest[0] = 0;
-  nr_rule_replace_string("\\1\\1\\1", dest, 0, ss);
+  st = nr_rule_replace_string("\\1\\1\\1", dest, 0, ss);
+  tlib_pass_if_status_success("zero dest_len is success", st);
   tlib_pass_if_str_equal("basic", "", dest);
 
   /*
    * Out of range selector number
    */
-  nr_rule_replace_string("\\3", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\3", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("out-of-range selector", st);
   tlib_pass_if_str_equal("basic", "\\3", dest);
 
   /*
    * Out of range selector number
    */
-  nr_rule_replace_string("\\13", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\13", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("out-of-range selector", st);
   tlib_pass_if_str_equal("basic", "\\13", dest);
+
+  /*
+   * Out-of-range selector overflows the destination buffer
+   */
+  st = nr_rule_replace_string("\\13", dest, 2, ss);
+  tlib_pass_if_status_failure("out-of-range selector overflow", st);
+
+  /*
+   * Substring replacement fits exactly with room for the trailing NUL
+   */
+  st = nr_rule_replace_string("\\1", dest, 4, ss);
+  tlib_pass_if_status_success("exact fit substring", st);
+  tlib_pass_if_str_equal("exact fit substring", "abc", dest);
+
+  /*
+   * Substring replacement is one byte short of the trailing NUL
+   */
+  st = nr_rule_replace_string("\\1", dest, 3, ss);
+  tlib_pass_if_status_failure("off-by-one substring overflow", st);
+
+  /*
+   * Out-of-range "\\NUM" replacement fits exactly with room for NUL
+   */
+  st = nr_rule_replace_string("\\3", dest, 3, ss);
+  tlib_pass_if_status_success("exact fit out-of-range selector", st);
+  tlib_pass_if_str_equal("exact fit out-of-range selector", "\\3", dest);
+
+  /*
+   * Out-of-range "\\NUM" replacement is one byte short of the trailing NUL
+   */
+  st = nr_rule_replace_string("\\3", dest, 2, ss);
+  tlib_pass_if_status_failure("off-by-one out-of-range selector overflow", st);
+
+  /*
+   * Earlier writes consume the buffer so a later snprintf overflows
+   */
+  st = nr_rule_replace_string("X\\1", dest, 2, ss);
+  tlib_pass_if_status_failure("late substring overflow", st);
 
   nr_regex_substrings_destroy(&ss);
 
@@ -610,7 +658,8 @@ static void test_replace_string(void) {
   subject = "";
   slen = nr_strlen(subject);
   ss = nr_regex_match_capture(regex, subject, slen);
-  nr_rule_replace_string("\\0", dest, sizeof(dest), ss);
+  st = nr_rule_replace_string("\\0", dest, sizeof(dest), ss);
+  tlib_pass_if_status_success("0-length subject", st);
   tlib_pass_if_str_equal("0-length subject", "\\0", dest);
   nr_regex_substrings_destroy(&ss);
 }

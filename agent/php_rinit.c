@@ -52,7 +52,7 @@ PHP_RINIT_FUNCTION(newrelic) {
   NRPRG_CTX(php_cur_stack_depth) = 0;
   NRPRG_CTX(deprecated_capture_request_parameters) = NRINI(capture_params);
   NRPRG_SHARED(sapi_headers) = NULL;
-  NRPRG_CTX(error_group_user_callback).is_set = false;
+  NRPRG_SHARED(error_group_user_callback).is_set = false;
 #if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO
 #if ZEND_MODULE_API_NO == ZEND_7_4_X_API_NO
   nr_php_init_user_instrumentation();
