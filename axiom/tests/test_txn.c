@@ -32,6 +32,7 @@
 #include "util_metrics.h"
 #include "util_metrics_private.h"
 #include "util_random.h"
+#include "util_syscalls.h"
 #include "util_strings.h"
 #include "util_text.h"
 #include "util_url.h"
@@ -1707,8 +1708,13 @@ static void test_begin(void) {
   opts->span_queue_batch_timeout = 1 * NR_TIME_DIVISOR;
   opts->distributed_tracing_pad_trace_id = false;
 
-  app->rnd = nr_random_create();
-  nr_random_seed(app->rnd, 345345);
+  app->rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  {
+    int self = nr_gettid();
+    nr_random_t* rnd = nr_random_create();
+    nr_random_seed(rnd, 345345);
+    nr_hashmap_index_set(app->rnd_map, (uint64_t)self, rnd);
+  }
   app->info.high_security = 0;
   app->connect_reply = nro_new_hash();
   app->security_policies = nro_new_hash();
@@ -1927,8 +1933,8 @@ static void test_begin(void) {
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
   nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
   nr_attribute_config_destroy(&attribute_config);
-  nr_random_destroy(&app->rnd);
 }
 
 static int metric_exists(nrmtable_t* metrics, const char* name) {
@@ -2135,8 +2141,13 @@ static void test_end(void) {
   nrtime_t duration;
   test_txn_state_t* p = (test_txn_state_t*)tlib_getspecific();
 
-  app->rnd = nr_random_create();
-  nr_random_seed(app->rnd, 345345);
+  app->rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  {
+    int self = nr_gettid();
+    nr_random_t* rnd = nr_random_create();
+    nr_random_seed(rnd, 345345);
+    nr_hashmap_index_set(app->rnd_map, (uint64_t)self, rnd);
+  }
   app->info.high_security = 0;
   app->state = NR_APP_OK;
   nrt_mutex_init(&app->app_lock, 0);
@@ -2307,10 +2318,10 @@ static void test_end(void) {
   tlib_pass_if_time_equal("duration is manually retimed", duration, 1000000);
   nr_txn_destroy(&txn);
 
-  nr_random_destroy(&app->rnd);
   nr_rules_destroy(&app->url_rules);
   nr_rules_destroy(&app->txn_rules);
   nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
   nrt_mutex_destroy(&app->app_lock);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
@@ -5144,12 +5155,17 @@ static void test_txn_trace_context_cross_agent_tests(void) {
   nrobj_t* array = 0;
   nrotype_t otype;
   int i;
+  int size;
   nrapp_t app = {
       .state = NR_APP_OK,
       .limits = default_app_limits(),
-      .rnd = nr_random_create(),
   };
-  int size;
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  {
+    int self = nr_gettid();
+    nr_random_t* rnd = nr_random_create();
+    nr_hashmap_index_set(app.rnd_map, (uint64_t)self, rnd);
+  }
 
   json = nr_read_file_contents(CROSS_AGENT_TESTS_DIR
                                "/distributed_tracing/trace_context.json",
@@ -5168,7 +5184,7 @@ static void test_txn_trace_context_cross_agent_tests(void) {
   nr_free(app.info.appname);
   nro_delete(app.connect_reply);
   nro_delete(array);
-  nr_random_destroy(&app.rnd);
+  nr_hashmap_destroy(&app.rnd_map);
   nr_free(json);
 }
 
