@@ -126,8 +126,8 @@ void nr_app_destroy(nrapp_t** app_ptr) {
   nr_segment_terms_destroy(&app->segment_terms);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
-  nr_random_destroy(&app->rnd);
   nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
 
   nrt_mutex_unlock(&app->app_lock);
   nrt_mutex_destroy(&app->app_lock);
@@ -284,8 +284,8 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
   app->info.docker_id = nr_strdup(info->docker_id);
   app->harvest_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
-  app->rnd = nr_random_create();
-  nr_random_seed_from_time(app->rnd);
+  app->rnd_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
 
   nrt_mutex_init(&app->app_lock, 0);
   nrt_mutex_lock(&app->app_lock);

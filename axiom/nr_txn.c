@@ -456,6 +456,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_sampling_priority_t priority;
   nr_slab_t* segment_slab;
   nr_app_harvest_stats_t* thread_harvest;
+  nr_random_t* thread_rnd;
   int tid;
 
   if (NULL == app) {
@@ -484,7 +485,9 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->status.path_is_frozen = 0;
   nt->status.path_type = NR_PATH_TYPE_UNKNOWN;
   nt->agent_run_id = nr_strdup(app->agent_run_id);
-  nt->rnd = app->rnd;
+  tid = nr_gettid();
+  thread_rnd = nr_app_get_or_create_thread_rnd(app, (uint64_t)tid);
+  nt->rnd = thread_rnd;
   nt->segment_slab = segment_slab;
 
   /*
@@ -640,7 +643,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
    * The trace id will be overwritten by accepting an inbound DT
    * payload.
    */
-  guid = nr_guid_create(app->rnd);
+  guid = nr_guid_create(thread_rnd);
   nr_distributed_trace_set_txn_id(nt->distributed_trace, guid);
   nr_distributed_trace_set_trace_id(nt->distributed_trace, guid,
                                     opts->distributed_tracing_pad_trace_id);
@@ -656,11 +659,10 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
       nro_get_hash_string(nt->app_connect_reply, "primary_application_id",
                           &err));
 
-  priority = nr_generate_initial_priority(app->rnd);
-  tid = nr_gettid();
+  priority = nr_generate_initial_priority(thread_rnd);
   thread_harvest = nr_app_get_or_create_thread_harvest(app, (uint64_t)tid);
   if (nr_app_harvest_should_sample(&app->adaptive_sampling_config,
-                                    thread_harvest, app->rnd)) {
+                                    thread_harvest, thread_rnd)) {
     nr_distributed_trace_set_sampled(nt->distributed_trace, true);
     priority += 1.0;
   }

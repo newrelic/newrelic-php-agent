@@ -98,7 +98,6 @@ typedef struct _nr_app_limits_t {
 
 typedef struct _nrapp_t {
   nr_app_info_t info;
-  nr_random_t* rnd;         /* Random number generator */
   int state;                /* Connection state */
   char* plicense;           /* Printable license (abbreviated for security) */
   char* agent_run_id;       /* The collector's agent run ID; assigned from the
@@ -126,6 +125,9 @@ typedef struct _nrapp_t {
                                                        from daemon; updated on
                                                        every appinfo reply */
   nr_hashmap_t* harvest_map;                        /* Per-thread harvest stats,
+                                                       keyed by
+                                                       (uint64_t)nr_gettid() */
+  nr_hashmap_t* rnd_map;                            /* Per-thread RNG state,
                                                        keyed by
                                                        (uint64_t)nr_gettid() */
 
@@ -331,5 +333,26 @@ extern void nr_app_update_harvest_config(nrapp_t* app,
 extern nr_app_harvest_stats_t* nr_app_get_or_create_thread_harvest(
     nrapp_t* app,
     uint64_t key);
+
+/*
+ * Purpose : Destructor for nr_random_t values stored in rnd_map.
+ *           For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The rnd pointer to free.
+ */
+extern void nr_app_rnd_dtor(nr_random_t* rnd);
+
+/*
+ * Purpose : Return the RNG for the calling thread, creating and seeding one
+ *           if this thread has not been seen before.  Must be called with
+ *           app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ *
+ * Returns : Pointer to the per-thread RNG, or NULL on allocation failure.
+ */
+extern nr_random_t* nr_app_get_or_create_thread_rnd(nrapp_t* app,
+                                                     uint64_t key);
 
 #endif /* NR_APP_HDR */

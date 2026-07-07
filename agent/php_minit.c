@@ -128,6 +128,7 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
   /*
    * Remove this thread's per-thread harvest stats entry from every app's
    * harvest_map so it is not left dangling after the thread exits.
+   * Also removes the per-thread RNG state entry from rnd_map.
    */
   if (nr_agent_applist) {
     uint64_t key = (uint64_t)nr_gettid();
@@ -135,9 +136,10 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
     nrt_mutex_lock(&nr_agent_applist->applist_lock);
     for (int i = 0; i < nr_agent_applist->num_apps; i++) {
       nrapp_t* app = nr_agent_applist->apps[i];
-      if (app && app->harvest_map) {
+      if (app && (app->harvest_map || app->rnd_map)) {
         nrt_mutex_lock(&app->app_lock);
         nr_hashmap_index_delete(app->harvest_map, key);
+        nr_hashmap_index_delete(app->rnd_map, key);
         nrt_mutex_unlock(&app->app_lock);
       }
     }
