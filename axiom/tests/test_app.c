@@ -1256,8 +1256,13 @@ static void test_get_or_create_thread_rnd(void) {
   r1 = nr_app_get_or_create_thread_rnd(&app, 1);
   tlib_pass_if_not_null("first call returns non-NULL", r1);
 
-  /* Verify rnd is seeded and functional (not all-zero xsubi). */
-  tlib_pass_if_true("rnd produces in-range value",
+  /*
+   * The "< 1000" pulls little weight -- nr_random_range() is range-bounded for
+   * any seed, so it's near-tautological (would only trip if the range contract
+   * regressed). The real check here is that calling the RNG on the returned
+   * generator does not crash. Seeding is verified in test_random.c:test_range.
+   */
+  tlib_pass_if_true("rnd is usable (RNG call does not crash)",
                     nr_random_range(r1, 1000) < 1000,
                     "rnd=%p", (void*)r1);
 
