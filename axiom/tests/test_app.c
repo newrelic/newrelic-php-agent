@@ -1238,6 +1238,48 @@ static void test_sync_harvest_config(void) {
   nrt_mutex_destroy(&app.app_lock);
 }
 
+static void test_get_or_create_thread_rnd(void) {
+  nrapp_t app = {0};
+  nr_random_t* r1;
+  nr_random_t* r2;
+
+  /* NULL app returns NULL. */
+  tlib_pass_if_null("NULL app", nr_app_get_or_create_thread_rnd(NULL, 1));
+
+  /* NULL rnd_map returns NULL. */
+  tlib_pass_if_null("NULL rnd_map",
+                    nr_app_get_or_create_thread_rnd(&app, 1));
+
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+
+  /* First call for key 1 creates a seeded entry. */
+  r1 = nr_app_get_or_create_thread_rnd(&app, 1);
+  tlib_pass_if_not_null("first call returns non-NULL", r1);
+
+  /*
+   * The "< 1000" pulls little weight -- nr_random_range() is range-bounded for
+   * any seed, so it's near-tautological (would only trip if the range contract
+   * regressed). The real check here is that calling the RNG on the returned
+   * generator does not crash. Seeding is verified in test_random.c:test_range.
+   */
+  tlib_pass_if_true("rnd is usable (RNG call does not crash)",
+                    nr_random_range(r1, 1000) < 1000,
+                    "rnd=%p", (void*)r1);
+
+  /* Second call for key 1 returns the same pointer (no re-seed). */
+  r2 = nr_app_get_or_create_thread_rnd(&app, 1);
+  tlib_pass_if_true("same pointer on second call", r1 == r2,
+                    "r1=%p r2=%p", (void*)r1, (void*)r2);
+
+  /* Different key returns a different pointer. */
+  r2 = nr_app_get_or_create_thread_rnd(&app, 2);
+  tlib_pass_if_not_null("key 2 non-NULL", r2);
+  tlib_pass_if_true("different pointer for different key", r1 != r2,
+                    "r1=%p r2=%p", (void*)r1, (void*)r2);
+
+  nr_hashmap_destroy(&app.rnd_map);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1262,4 +1304,5 @@ void test_main(void* p NRUNUSED) {
   test_app_consider_appinfo_refresh();
   test_get_or_create_thread_harvest();
   test_sync_harvest_config();
+  test_get_or_create_thread_rnd();
 }

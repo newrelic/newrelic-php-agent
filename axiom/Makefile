@@ -89,6 +89,7 @@ OBJS := \
 	nr_app.o \
 	nr_app_harvest.o \
 	nr_app_harvest_map.o \
+	nr_app_rnd_map.o \
 	nr_attributes.o \
 	nr_banner.o \
 	nr_configstrings.o \
