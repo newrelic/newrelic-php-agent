@@ -1,0 +1,33 @@
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-decline-label
+permissions: {}
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  decline-response:
+    if: "github.event.label.name == 'status: declined' && github.event.issue.state == 'open'"
+    uses: ./.github/workflows/issue-comment.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
+    with:
+      issue-number: ${{ github.event.issue.number }}
+      message: >
+        Thank you for your feedback and for taking the time to share this suggestion. After
+        reviewing this with the team, we've determined that this is not something we will be
+        working on at this time as it doesn't align with our current product focus. We'll be
+        closing this issue to keep our backlog manageable, but we appreciate your contribution to the community.
+
+  close-issue:
+    needs: decline-response
+    uses: ./.github/workflows/issue-close.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
+    with:
+      issue-number: ${{ github.event.issue.number }}
