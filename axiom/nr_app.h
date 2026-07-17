@@ -124,12 +124,31 @@ typedef struct _nrapp_t {
   nr_app_harvest_config_t adaptive_sampling_config; /* Adaptive sampling config
                                                        from daemon; updated on
                                                        every appinfo reply */
-  nr_hashmap_t* harvest_map;                        /* Per-thread harvest stats,
-                                                       keyed by
-                                                       (uint64_t)nr_gettid() */
-  nr_hashmap_t* rnd_map;                            /* Per-thread RNG state,
-                                                       keyed by
-                                                       (uint64_t)nr_gettid() */
+
+  /*
+   * The following fields are per-thread state, keyed by (uint64_t)nr_gettid().
+   * Each holds one entry per thread that has touched this app.
+   *
+   * Concurrency contract:
+   *  - app_lock MUST be held around get-or-create (map insert) for all three —
+   *    the hashmap's internal structure is not thread-safe against concurrent
+   *    inserts of *different* keys by *different* threads.
+   *  - Reading/writing an already-fetched entry's VALUE is lock-free IFF no
+   *    code path ever mutates a different thread's entry:
+   *      - rnd_map: lock-free-safe. No cross-thread mutator exists.
+   *      - composer_map: lock-free-safe as of this writing. If a
+   *        reconnect-triggered reset is ever added for this field, this
+   *        breaks — re-audit every access site under app_lock at that point.
+   *      - harvest_map: NOT lock-free-safe. nr_app_update_harvest_config()
+   *        resets every thread's entry on connect/reconnect via
+   *        nr_hashmap_apply(), a cross-thread mutation. Do not add lock-free
+   *        value access for this field without accounting for that reset.
+   *  - Moral: don't copy the lock-free pattern from one field to another
+   *    without checking whether THAT field has a bulk cross-thread mutator.
+   */
+  nr_hashmap_t* harvest_map;
+  nr_hashmap_t* rnd_map;
+  nr_hashmap_t* composer_map;
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
@@ -369,5 +388,37 @@ typedef enum {
   NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED = 4,
   NR_COMPOSER_API_STATUS_INVALID_RESULT = 5,
 } nr_composer_api_status_t;
+
+/*
+ * Purpose : Destructor for nr_composer_api_status_t values stored in
+ *           composer_map. For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The status pointer to free.
+ */
+extern void nr_app_composer_status_dtor(nr_composer_api_status_t* status);
+
+/*
+ * Purpose : Return the Composer detection status for the calling thread,
+ *           creating an entry initialized to NR_COMPOSER_API_STATUS_UNSET
+ *           if this thread has not been seen before. Must be called with
+ *           app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ *
+ * Returns : Pointer to the per-thread status, or NULL on allocation failure.
+ */
+extern nr_composer_api_status_t* nr_app_get_or_create_thread_composer_status(
+    nrapp_t* app,
+    uint64_t key);
+
+/*
+ * Purpose : Remove one thread's entry from harvest_map, rnd_map, and
+ *           composer_map. Call when a thread exits, under app->app_lock.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ */
+extern void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid);
 
 #endif /* NR_APP_HDR */
