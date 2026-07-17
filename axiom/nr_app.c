@@ -286,6 +286,8 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
   app->rnd_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app->composer_map = nr_hashmap_create(
+      (nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
 
   nrt_mutex_init(&app->app_lock, 0);
   nrt_mutex_lock(&app->app_lock);
