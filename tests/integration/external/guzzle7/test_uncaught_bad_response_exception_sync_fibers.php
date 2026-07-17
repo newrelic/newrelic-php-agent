@@ -5,8 +5,9 @@
  */
 
 /*DESCRIPTION
-Test that the span for a sync external request that ends up throwing an uncaught BadResponseException exception
-is marked as http, uri and status code are captured, when using Fibers.
+Test that the span for a sync external request that ends up throwing an uncaught BadResponseException
+is marked as http, uri and status code are captured. Additionally, test that exception is recorded
+as traced error, error event, and the root span has error attributes, when using Fibers.
 */
 
 /*SKIPIF
@@ -24,6 +25,8 @@ newrelic.transaction_tracer.threshold = 0
 newrelic.transaction_tracer.detail = 1
 newrelic.code_level_metrics.enabled = 0
 newrelic.fibers.disabled = false
+log_errors=0
+display_errors=1
 */
 
 /*ENVIRONMENT
@@ -36,6 +39,27 @@ External/ENV[TEST_EXTERNAL_HOST]/all
 
 /*EXPECT_SPAN_EVENTS_LIKE
 [
+  [
+    {
+      "category": "generic",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "OtherTransaction/php__FILE__",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "nr.entryPoint": true,
+      "transaction.name": "OtherTransaction/php__FILE__"
+    },
+    {},
+    {
+      "error.message": "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??",
+      "error.class": "GuzzleHttp\\Exception\\BadResponseException"
+    }
+  ],
   [
     {
       "traceId": "??",
@@ -58,6 +82,39 @@ External/ENV[TEST_EXTERNAL_HOST]/all
       "http.method": "GET",
       "http.statusCode": 404
     }
+  ]
+]
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "GuzzleHttp\\Exception\\BadResponseException",
+        "errorMessage": "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??"
+      }
+    ]
   ]
 ]
 */
@@ -115,6 +172,10 @@ External/ENV[TEST_EXTERNAL_HOST]/all
     ]
   ]
 ]
+*/
+
+/*EXPECT_REGEX
+^\s*Fatal error: Uncaught GuzzleHttp\\Exception\\BadResponseException: ClientException.*
 */
 
 function test_uncaught_sync_bad_response() {
