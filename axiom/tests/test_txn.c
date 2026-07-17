@@ -8899,15 +8899,21 @@ static void test_nr_txn_add_php_package(void) {
       "same package name, different version, add returns same pointer", p1, p2);
   nr_txn_destroy(&txn);
 
-  txn = new_txn(0);
-  // simulate composer api was successfully used
-  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
-  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
-  tlib_pass_if_null(
-      "legacy package information not added to transaction after composer api "
-      "was called successfully",
-      p1);
-  nr_txn_destroy(&txn);
+  {
+    nr_composer_api_status_t composer_status
+        = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    txn = new_txn(0);
+    // simulate composer api was successfully used. new_txn()'s test app has
+    // composer_map == NULL, so txn->composer_info.status is NULL after
+    // begin — point it at a local variable instead of relying on the map.
+    txn->composer_info.status = &composer_status;
+    p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+    tlib_pass_if_null(
+        "legacy package information not added to transaction after composer api "
+        "was called successfully",
+        p1);
+    nr_txn_destroy(&txn);
+  }
 }
 
 static void test_nr_txn_add_php_package_from_source(void) {
@@ -8974,28 +8980,34 @@ static void test_nr_txn_add_php_package_from_source(void) {
 
   nr_txn_destroy(&txn);
 
-  txn = new_txn(0);
-  // simulate composer api was successfully used
-  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_LEGACY);
-  tlib_pass_if_null(
-      "legacy package information not added to transaction after composer api "
-      "was called successfully",
-      p1);
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_SUGGESTION);
-  tlib_pass_if_not_null(
-      "suggestion package information added to transaction even after composer "
-      "api was called successfully",
-      p1);
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
-  tlib_pass_if_not_null(
-      "composer package information added to transaction even after composer "
-      "api was called successfully",
-      p1);
-  nr_txn_destroy(&txn);
+  {
+    nr_composer_api_status_t composer_status
+        = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    txn = new_txn(0);
+    // simulate composer api was successfully used. new_txn()'s test app has
+    // composer_map == NULL, so txn->composer_info.status is NULL after
+    // begin — point it at a local variable instead of relying on the map.
+    txn->composer_info.status = &composer_status;
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_LEGACY);
+    tlib_pass_if_null(
+        "legacy package information not added to transaction after composer api "
+        "was called successfully",
+        p1);
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_SUGGESTION);
+    tlib_pass_if_not_null(
+        "suggestion package information added to transaction even after composer "
+        "api was called successfully",
+        p1);
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_COMPOSER);
+    tlib_pass_if_not_null(
+        "composer package information added to transaction even after composer "
+        "api was called successfully",
+        p1);
+    nr_txn_destroy(&txn);
+  }
 }
 
 static void test_nr_txn_suggest_package_supportability_metric(void) {
