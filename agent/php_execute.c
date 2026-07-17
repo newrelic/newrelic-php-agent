@@ -840,13 +840,25 @@ static void nr_execute_handle_autoload(const char* filename,
     return;
   }
 
-  // clang-format off
-  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection) &&
-      NR_COMPOSER_API_STATUS_UNSET != NR_PHP_PROCESS_GLOBALS(composer_api_status)) {
-    // do nothing if per-process detection is enabled and composer api status is set
-    return;
+  if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
+    /*
+     * This thread's composer detection status was already fetched once,
+     * under app_lock, in nr_txn_begin — see nr_app.h for the locking
+     * contract and nr_txn.c for where the fetch happens. No lock, no
+     * fetch here; just a read of the cached pointer. NULL means the
+     * fetch failed (rare allocation failure) — treated as "unknown",
+     * same as UNSET, so detection is still attempted.
+     */
+    nr_composer_api_status_t* thread_status
+        = NRPRG(txn)->composer_info.status;
+
+    if (NULL != thread_status
+        && NR_COMPOSER_API_STATUS_UNSET != *thread_status) {
+      // do nothing if per-thread detection is enabled and this thread's
+      // composer status is already set
+      return;
+    }
   }
-  // clang-format on
 
   if (!nr_striendswith(STR_AND_LEN(filename), AUTOLOAD_MAGIC_FILE,
                        AUTOLOAD_MAGIC_FILE_LEN)) {
