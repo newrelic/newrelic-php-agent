@@ -3572,9 +3572,8 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
     // don't add packages from legacy source if packages have been detected
     // using composer runtime api. txn->composer_info.status is the same
     // cached pointer nr_execute_handle_autoload and
-    // nr_composer_handle_autoload will use once later commits in this series
-    // wire them up — see nr_app.h for the locking contract and nr_txn_begin
-    // (this file) for where the fetch will be added.
+    // nr_composer_handle_autoload use — see nr_app.h for the locking
+    // contract and nr_txn_begin (this file) for where the fetch happens.
     return NULL;
   }
 
