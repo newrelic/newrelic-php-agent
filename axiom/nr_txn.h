@@ -215,19 +215,18 @@ typedef enum _nr_cpu_usage_t {
   NR_CPU_USAGE_COUNT = 2
 } nr_cpu_usage_t;
 
-typedef enum {
-  NR_COMPOSER_API_STATUS_UNSET = 0,
-  NR_COMPOSER_API_STATUS_INVALID_USE = 1,
-  NR_COMPOSER_API_STATUS_INIT_FAILURE = 2,
-  NR_COMPOSER_API_STATUS_CALL_FAILURE = 3,
-  NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED = 4,
-  NR_COMPOSER_API_STATUS_INVALID_RESULT = 5,
-} nr_composer_api_status_t;
-
 typedef struct _nr_composer_info_t {
   bool autoload_detected;
   bool composer_detected;
-  nr_composer_api_status_t api_status;
+  /*
+   * Borrowed pointer into this thread's entry in the owning nrapp_t's
+   * composer_map — not a copy. Fetched once in nr_txn_begin, alongside
+   * the rnd fetch; see nr_app.h for the locking contract and nr_txn.c for
+   * where the fetch happens. NULL means either the fetch failed (rare
+   * allocation failure) or app was NULL at txn begin — treat as "unknown"
+   * at every read site, not as UNSET.
+   */
+  nr_composer_api_status_t* status;
 } nr_composer_info_t;
 
 /*

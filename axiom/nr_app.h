@@ -355,4 +355,19 @@ extern void nr_app_rnd_dtor(nr_random_t* rnd);
 extern nr_random_t* nr_app_get_or_create_thread_rnd(nrapp_t* app,
                                                      uint64_t key);
 
+/*
+ * Composer package-detection status for a single (app, thread) attempt.
+ * Lives here (not nr_txn.h) because nr_txn.h includes nr_app.h, and this
+ * type is now returned by nr_app_get_or_create_thread_composer_status()
+ * below.
+ */
+typedef enum {
+  NR_COMPOSER_API_STATUS_UNSET = 0,
+  NR_COMPOSER_API_STATUS_INVALID_USE = 1,
+  NR_COMPOSER_API_STATUS_INIT_FAILURE = 2,
+  NR_COMPOSER_API_STATUS_CALL_FAILURE = 3,
+  NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED = 4,
+  NR_COMPOSER_API_STATUS_INVALID_RESULT = 5,
+} nr_composer_api_status_t;
+
 #endif /* NR_APP_HDR */
