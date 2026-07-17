@@ -1407,9 +1407,9 @@ static void test_composer_status_cross_app_isolation(void) {
   /* app_b's thread must be unaffected — this is the bug this fix closes.
    * Under the old process-global design, app_a's write would have latched
    * a single shared flag and app_b would see it as already-set. */
-  tlib_pass_if_true(
-      "app_b unaffected by app_a's completion",
-      NR_COMPOSER_API_STATUS_UNSET == *status_b, "*status_b=%d", *status_b);
+  tlib_pass_if_true("app_b unaffected by app_a's completion",
+                    NR_COMPOSER_API_STATUS_UNSET == *status_b, "*status_b=%d",
+                    *status_b);
 
   /* app_b's thread now independently completes with a different outcome. */
   *status_b = NR_COMPOSER_API_STATUS_INIT_FAILURE;
