@@ -892,11 +892,15 @@ function executing_fiber_inner($fiber_id, $handle_set_id) {
     // Execute the curl_multi_exec
     $active = 0;
     $first_fluff = true;
+    $first_sleep = true;
     do {
         curl_multi_exec($mh, $active);
-        if ($first_fluff) {
+        if ($info = curl_multi_info_read($mh)) {
+            // First time this is not false means we have newly completed handles
+            if ($first_fluff) {
             fluff_func($fiber_id);
             $first_fluff = false;
+          }
         }
         Fiber::suspend($active);
     } while ($active > 0);
