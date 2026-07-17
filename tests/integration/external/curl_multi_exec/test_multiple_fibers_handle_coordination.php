@@ -12,6 +12,17 @@ Fiber 7 should execute curl_multi_exec for handle set 2 (3 handles)
 Fiber 8 should execute curl_multi_exec for handle set 3 (3 handles)
 Fiber 9 should execute curl_multi_exec for handle set 4 (3 handles)
 Fiber 10 should execute curl_multi_exec for handle set 5 (3 handles)
+
+Ensuring parenting is a little tricky.
+Since the agent creates an on the fly segment to parent curl_multi_exec calls, we cannot directly access the 
+particular span_id of each curl_multi_exec segment to ensure the parenting in the EXPECT blocks.
+Additionally, the transaction tracer functionality doesn't record any span attributes, it is Transaction only,
+so we can't pull any span_ids out of that to correlate. Here's what we'll do.
+1. Using EXPECT ensure there is a distinct curl_multi_exec that corresponds to each specific fiber that
+has unique function names associated with each fiber.
+2. Create specific function names to correspond to each curl_multi_exec fiber execution
+3. Using the Transaction trace, verify the distinct urls names called by curl_multi_exec that was called by the expected
+ function name for that fiber.
 */
 
 /*SKIPIF
@@ -48,11 +59,31 @@ Handle set 3 result:
 Handle set 4 result: 
 Handle set 5 result: 
 All curl operations completed successfully
-Fiber had 3 matching children
-Fiber had 3 matching children
-Fiber had 3 matching children
-Fiber had 3 matching children
-Fiber had 3 matching children
+found segment name: Custom/executing_fiber_6
+ok - executing_fiber_6 should have exactly ONE child.
+ok - executing_fiber_6 should have a child named 'Custom/executing_fiber_inner'.
+ok - executing_fiber_6 should have exactly ONE curl_exec_multi child.
+ok - executing_fiber_6 should have match: 3 equal to total count: 3.
+found segment name: Custom/executing_fiber_7
+ok - executing_fiber_7 should have exactly ONE child.
+ok - executing_fiber_7 should have a child named 'Custom/executing_fiber_inner'.
+ok - executing_fiber_7 should have exactly ONE curl_exec_multi child.
+ok - executing_fiber_7 should have match: 3 equal to total count: 3.
+found segment name: Custom/executing_fiber_8
+ok - executing_fiber_8 should have exactly ONE child.
+ok - executing_fiber_8 should have a child named 'Custom/executing_fiber_inner'.
+ok - executing_fiber_8 should have exactly ONE curl_exec_multi child.
+ok - executing_fiber_8 should have match: 3 equal to total count: 3.
+found segment name: Custom/executing_fiber_9
+ok - executing_fiber_9 should have exactly ONE child.
+ok - executing_fiber_9 should have a child named 'Custom/executing_fiber_inner'.
+ok - executing_fiber_9 should have exactly ONE curl_exec_multi child.
+ok - executing_fiber_9 should have match: 3 equal to total count: 3.
+found segment name: Custom/executing_fiber_10
+ok - executing_fiber_10 should have exactly ONE child.
+ok - executing_fiber_10 should have a child named 'Custom/executing_fiber_inner'.
+ok - executing_fiber_10 should have exactly ONE curl_exec_multi child.
+ok - executing_fiber_10 should have match: 3 equal to total count: 3.
 */
 
 /*EXPECT_METRICS_EXIST
@@ -86,12 +117,29 @@ null
         "guid": "ENV[GUID_FIBER_EXEC_6]",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/executing_fiber",
+        "name": "Custom\/executing_fiber_6",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
         "sampled": true,
         "parentId": "??"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FIBER_EXEC_INNER_6]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/executing_fiber_inner",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_6]"
       },
       {
         "fiber_id": 6
@@ -110,7 +158,7 @@ null
         "duration": "??",
         "priority": "??",
         "sampled": true,
-        "parentId": "ENV[GUID_FIBER_EXEC_6]"
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_6]"
       },
       {},
       {}
@@ -191,12 +239,29 @@ null
         "guid": "ENV[GUID_FIBER_EXEC_7]",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/executing_fiber",
+        "name": "Custom\/executing_fiber_7",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
         "sampled": true,
         "parentId": "??"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FIBER_EXEC_INNER_7]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/executing_fiber_inner",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_7]"
       },
       {
         "fiber_id": 7
@@ -215,7 +280,7 @@ null
         "duration": "??",
         "priority": "??",
         "sampled": true,
-        "parentId": "ENV[GUID_FIBER_EXEC_7]"
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_7]"
       },
       {},
       {}
@@ -296,12 +361,29 @@ null
         "guid": "ENV[GUID_FIBER_EXEC_8]",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/executing_fiber",
+        "name": "Custom\/executing_fiber_8",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
         "sampled": true,
         "parentId": "??"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FIBER_EXEC_INNER_8]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/executing_fiber_inner",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_8]"
       },
       {
         "fiber_id": 8
@@ -320,7 +402,7 @@ null
         "duration": "??",
         "priority": "??",
         "sampled": true,
-        "parentId": "ENV[GUID_FIBER_EXEC_8]"
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_8]"
       },
       {},
       {}
@@ -401,12 +483,29 @@ null
         "guid": "ENV[GUID_FIBER_EXEC_9]",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/executing_fiber",
+        "name": "Custom\/executing_fiber_9",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
         "sampled": true,
         "parentId": "??"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FIBER_EXEC_INNER_9]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/executing_fiber_inner",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_9]"
       },
       {
         "fiber_id": 9
@@ -425,7 +524,7 @@ null
         "duration": "??",
         "priority": "??",
         "sampled": true,
-        "parentId": "ENV[GUID_FIBER_EXEC_9]"
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_9]"
       },
       {},
       {}
@@ -506,12 +605,29 @@ null
         "guid": "ENV[GUID_FIBER_EXEC_10]",
         "traceId": "??",
         "transactionId": "??",
-        "name": "Custom\/executing_fiber",
+        "name": "Custom\/executing_fiber_10",
         "timestamp": "??",
         "duration": "??",
         "priority": "??",
         "sampled": true,
         "parentId": "??"
+      },
+      {},
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FIBER_EXEC_INNER_10]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/executing_fiber_inner",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_10]"
       },
       {
         "fiber_id": 10
@@ -530,7 +646,7 @@ null
         "duration": "??",
         "priority": "??",
         "sampled": true,
-        "parentId": "ENV[GUID_FIBER_EXEC_10]"
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_10]"
       },
       {},
       {}
@@ -647,11 +763,13 @@ function handle_adding_fiber($fiber_id) {
     return $mh;
 }
 
-function executing_fiber($fiber_id, $handle_set_id) {
+function executing_fiber_inner($fiber_id, $handle_set_id) {
     global $multi_handles, $curl_handles, $results;
 
     echo "Fiber $fiber_id executing curl_multi_exec for handle set $handle_set_id\n";
-    env_var_for_expects("GUID_FIBER_EXEC_" . $fiber_id, newrelic_get_linking_metadata()['span.id'] ?? '');
+    env_var_for_expects("GUID_FIBER_EXEC_INNER_" . $fiber_id, newrelic_get_linking_metadata()['span.id'] ?? '');
+
+
     newrelic_add_custom_span_parameter("fiber_id", $fiber_id);
 
 
@@ -695,8 +813,22 @@ function executing_fiber($fiber_id, $handle_set_id) {
     Fiber::suspend();
 }
 
+// Create some functions for the executing fibers so we can ensure parentage
+// Create actual functions in the function table
+for ($i = 6; $i <= 10; $i++) {
+
+    $function_code = "
+    function executing_fiber_$i(\$fiber_id, \$handle_set_id) {
+        env_var_for_expects(\"GUID_FIBER_EXEC_\" . \$fiber_id, newrelic_get_linking_metadata()['span.id'] ?? '');
+        return executing_fiber_inner(\$fiber_id, \$handle_set_id);
+    }";
+
+    eval($function_code);
+}
+
 function test_multiple_fibers_coordination() {
     global $results;
+    //global $executing_fiber_functions;
 
     // Create 5 handle-adding fibers
     $adding_fibers = [];
@@ -710,8 +842,17 @@ function test_multiple_fibers_coordination() {
     $executing_fibers = [];
     for ($i = 6; $i <= 10; $i++) {
         $handle_set_id = $i - 5; // Maps fiber 6->handle set 1, fiber 7->handle set 2, etc.
-        $executing_fibers[$i] = new Fiber(function() use ($i, $handle_set_id) {
-            return executing_fiber($i, $handle_set_id);
+        $function_name = "executing_fiber_$i";
+        //${$function_name} = function() use ($i, $handle_set_id) {
+       // $$function_name = function() use ($i, $handle_set_id) {
+         //   return executing_fiber($i, $handle_set_id);
+        //};
+        //$executing_fibers[$i] = new Fiber($$function_name());
+       // echo "function_name:  = $function_name\n";
+        //var_dump($executing_fiber_functions[$i]);
+        //echo "after vardump: " . $function_name . "\n";
+        $executing_fibers[$i] = new Fiber(function() use ($i, $handle_set_id, $function_name) {
+            return $function_name($i, $handle_set_id);
         });
     }
 
@@ -778,17 +919,37 @@ $main_fiber = new Fiber('test_multiple_fibers_coordination');
 $main_fiber->start();
 
 $txn = new Transaction;
-$curl_multi_execs = $txn->getTrace()->findSegmentsByName('curl_multi_exec');
-foreach ($curl_multi_execs as $segment) {
-    $matching_children = true;
-    $children = $segment->children;
-    $child_index = 0;
-    $prev_child_name = '';
-      foreach ($children as $child) {
-        if (!empty($prev_child_name) && strncmp($prev_child_name, $child->name, 5) != 0) {
-          $matching_children = false;
+
+for ($i = 6; $i <= 10; $i++) {
+  $handle_set_id = $i - 5; // Maps fiber 6->handle set 1, fiber 7->handle set 2, etc.
+  $executing_fiber_segments = $txn->getTrace()->findSegmentsByName('Custom/executing_fiber_' . $i);
+  $count = iterator_count($executing_fiber_segments);
+  if ($count != 1) {
+      tap_equal(1, $count, "executing_fiber_$i should have exactly ONE segment with this name.");
+  }
+  foreach ($executing_fiber_segments as $executing_fiber_segment) {
+    echo "found segment name: " . $executing_fiber_segment->name . "\n";
+
+    tap_equal(1, count($executing_fiber_segment->children), "executing_fiber_$i should have exactly ONE child.");
+    tap_equal(0, strcmp("Custom/executing_fiber_inner", $executing_fiber_segment->children[0]->name), "executing_fiber_$i should have a child named 'Custom/executing_fiber_inner'.");
+    $executing_fiber_inner_segment = $executing_fiber_segment->children[0];
+    $curl_multi_exec_children_count = 0;
+    $executing_fiber_inner_segment_children = $executing_fiber_inner_segment->children;
+    foreach ($executing_fiber_inner_segment_children as $executing_fiber_inner_segment_child) {
+      if (strcmp("curl_multi_exec", $executing_fiber_inner_segment_child->name) == 0) {
+        // Found a curl_multi_exec child segment
+        $curl_multi_exec_children_count++;
+        tap_equal(1, $curl_multi_exec_children_count, "executing_fiber_$i should have exactly ONE curl_exec_multi child.");
+        $curl_multi_exec_children = $executing_fiber_inner_segment_child->children;
+        $match_count = 0;
+        $total_children = count($curl_multi_exec_children);
+        foreach ($curl_multi_exec_children as $child) {
+          if (str_starts_with($child->name, 'External/url'. $handle_set_id . '_') && str_ends_with($child->name, "_$i/all")) {
+            $match_count++;
+          }
         }
-        $child_index++;
-    }
-    echo "Fiber had $child_index " . ($matching_children ? "matching" : "NOT matching") . " children\n";
+        tap_equal($match_count, $total_children, "executing_fiber_$i should have match: $match_count equal to total count: $total_children.");
+      }
+    } 
+  }
 }
