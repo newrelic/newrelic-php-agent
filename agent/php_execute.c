@@ -849,11 +849,11 @@ static void nr_execute_handle_autoload(const char* filename,
      * fetch failed (rare allocation failure) — treated as "unknown",
      * same as UNSET, so detection is still attempted.
      */
-    nr_composer_api_status_t* thread_status
+    nr_composer_api_status_t* thread_composer_status
         = NRPRG(txn)->composer_info.status;
 
-    if (NULL != thread_status
-        && NR_COMPOSER_API_STATUS_UNSET != *thread_status) {
+    if (NULL != thread_composer_status
+        && NR_COMPOSER_API_STATUS_UNSET != *thread_composer_status) {
       // do nothing if per-thread detection is enabled and this thread's
       // composer status is already set
       return;
