@@ -1280,6 +1280,51 @@ static void test_get_or_create_thread_rnd(void) {
   nr_hashmap_destroy(&app.rnd_map);
 }
 
+static void test_get_or_create_thread_composer_status(void) {
+  nrapp_t app = {0};
+  nr_composer_api_status_t* s1;
+  nr_composer_api_status_t* s2;
+
+  /* NULL app returns NULL. */
+  tlib_pass_if_null("NULL app",
+                    nr_app_get_or_create_thread_composer_status(NULL, 1));
+
+  /* NULL composer_map returns NULL. */
+  tlib_pass_if_null(
+      "NULL composer_map",
+      nr_app_get_or_create_thread_composer_status(&app, 1));
+
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+
+  /* First call for key 1 creates an entry initialized to UNSET. */
+  s1 = nr_app_get_or_create_thread_composer_status(&app, 1);
+  tlib_pass_if_not_null("first call returns non-NULL", s1);
+  tlib_pass_if_true("initialized to UNSET",
+                    NR_COMPOSER_API_STATUS_UNSET == *s1, "*s1=%d", *s1);
+
+  /* Mutate the value in place to simulate a completed scan. */
+  *s1 = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+
+  /* Second call for key 1 returns the same pointer, value preserved. */
+  s2 = nr_app_get_or_create_thread_composer_status(&app, 1);
+  tlib_pass_if_true("same pointer on second call", s1 == s2,
+                    "s1=%p s2=%p", (void*)s1, (void*)s2);
+  tlib_pass_if_true("value preserved on second call",
+                    NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == *s2,
+                    "*s2=%d", *s2);
+
+  /* Different key returns a different, independently-UNSET pointer. */
+  s2 = nr_app_get_or_create_thread_composer_status(&app, 2);
+  tlib_pass_if_not_null("key 2 non-NULL", s2);
+  tlib_pass_if_true("different pointer for different key", s1 != s2,
+                    "s1=%p s2=%p", (void*)s1, (void*)s2);
+  tlib_pass_if_true("key 2 independently UNSET",
+                    NR_COMPOSER_API_STATUS_UNSET == *s2, "*s2=%d", *s2);
+
+  nr_hashmap_destroy(&app.composer_map);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1305,4 +1350,5 @@ void test_main(void* p NRUNUSED) {
   test_get_or_create_thread_harvest();
   test_sync_harvest_config();
   test_get_or_create_thread_rnd();
+  test_get_or_create_thread_composer_status();
 }
