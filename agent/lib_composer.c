@@ -273,9 +273,14 @@ void nr_composer_handle_autoload(const char* filename) {
   NRPRG(txn)->composer_info.composer_detected = true;
   nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
 
-  NRTXN(composer_info.api_status)
-      = nr_execute_handle_autoload_composer_get_packages_information(
-          vendor_path);
+  {
+    nr_composer_api_status_t result
+        = nr_execute_handle_autoload_composer_get_packages_information(
+            vendor_path);
+    if (NULL != NRPRG(txn)->composer_info.status) {
+      *NRPRG(txn)->composer_info.status = result;
+    }
+  }
 leave:
   nr_free(vendor_path);
 }
