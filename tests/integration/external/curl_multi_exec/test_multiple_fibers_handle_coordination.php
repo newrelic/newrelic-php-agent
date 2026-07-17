@@ -142,7 +142,8 @@ null
         "parentId": "ENV[GUID_FIBER_EXEC_6]"
       },
       {
-        "fiber_id": 6
+        "fiber_id": 6,
+        "fiber_id2": 6
       },
       {}
     ],
@@ -283,7 +284,8 @@ null
         "parentId": "ENV[GUID_FIBER_EXEC_7]"
       },
       {
-        "fiber_id": 7
+        "fiber_id": 7,
+        "fiber_id2": 7
       },
       {}
     ],
@@ -424,7 +426,8 @@ null
         "parentId": "ENV[GUID_FIBER_EXEC_8]"
       },
       {
-        "fiber_id": 8
+        "fiber_id": 8,
+        "fiber_id2": 8
       },
       {}
     ],
@@ -565,7 +568,8 @@ null
         "parentId": "ENV[GUID_FIBER_EXEC_9]"
       },
       {
-        "fiber_id": 9
+        "fiber_id": 9,
+        "fiber_id2": 9
       },
       {}
     ],
@@ -706,7 +710,8 @@ null
         "parentId": "ENV[GUID_FIBER_EXEC_10]"
       },
       {
-        "fiber_id": 10
+        "fiber_id": 10,
+        "fiber_id2": 10
       },
       {}
     ],
@@ -898,6 +903,7 @@ function executing_fiber_inner($fiber_id, $handle_set_id) {
         if ($info = curl_multi_info_read($mh)) {
             // First time this is not false means we have newly completed handles
             if ($first_fluff) {
+            newrelic_add_custom_span_parameter("fiber_id2", $fiber_id);
             fluff_func($fiber_id);
             $first_fluff = false;
           }
