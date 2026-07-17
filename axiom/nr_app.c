@@ -96,6 +96,24 @@ void nr_app_info_destroy_fields(nr_app_info_t* info) {
   nr_free(info->docker_id);
 }
 
+void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid) {
+  if (NULL == app) {
+    return;
+  }
+  nr_hashmap_index_delete(app->harvest_map, tid);
+  nr_hashmap_index_delete(app->rnd_map, tid);
+  nr_hashmap_index_delete(app->composer_map, tid);
+}
+
+void nr_app_tid_maps_destroy(nrapp_t* app) {
+  if (NULL == app) {
+    return;
+  }
+  nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
+  nr_hashmap_destroy(&app->composer_map);
+}
+
 /*
  * Purpose : Destroy an application freeing all of its associated memory.
  *
@@ -126,8 +144,7 @@ void nr_app_destroy(nrapp_t** app_ptr) {
   nr_segment_terms_destroy(&app->segment_terms);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
-  nr_hashmap_destroy(&app->harvest_map);
-  nr_hashmap_destroy(&app->rnd_map);
+  nr_app_tid_maps_destroy(app);
 
   nrt_mutex_unlock(&app->app_lock);
   nrt_mutex_destroy(&app->app_lock);

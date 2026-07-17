@@ -56,6 +56,13 @@
  */
 extern void nr_app_destroy(nrapp_t** app_ptr);
 
+/*
+ * Purpose: White box testing. Do not use except for unit tests — production
+ *          code only reaches this via nr_app_destroy (same translation
+ *          unit, axiom/nr_app.c).
+ */
+extern void nr_app_tid_maps_destroy(nrapp_t* app);
+
 extern int nr_agent_should_do_app_daemon_query(const nrapp_t* app, time_t now);
 
 extern nrapp_t* nr_app_find_or_add_app(nrapplist_t* applist,

@@ -1325,6 +1325,60 @@ static void test_get_or_create_thread_composer_status(void) {
   nr_hashmap_destroy(&app.composer_map);
 }
 
+static void test_app_tid_maps_evict(void) {
+  nrapp_t app = {0};
+
+  nrt_mutex_init(&app.app_lock, 0);
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+
+  nr_app_get_or_create_thread_harvest(&app, 1);
+  nr_app_get_or_create_thread_rnd(&app, 1);
+  nr_app_get_or_create_thread_composer_status(&app, 1);
+
+  tlib_pass_if_not_null("harvest entry present before evict",
+                        nr_hashmap_index_get(app.harvest_map, 1));
+
+  nr_app_tid_maps_evict(&app, 1);
+
+  tlib_pass_if_null("harvest entry evicted",
+                    nr_hashmap_index_get(app.harvest_map, 1));
+  tlib_pass_if_null("rnd entry evicted",
+                    nr_hashmap_index_get(app.rnd_map, 1));
+  tlib_pass_if_null("composer entry evicted",
+                    nr_hashmap_index_get(app.composer_map, 1));
+
+  /* NULL app does not crash. */
+  nr_app_tid_maps_evict(NULL, 1);
+
+  nr_hashmap_destroy(&app.harvest_map);
+  nr_hashmap_destroy(&app.rnd_map);
+  nr_hashmap_destroy(&app.composer_map);
+  nrt_mutex_destroy(&app.app_lock);
+}
+
+static void test_app_tid_maps_destroy(void) {
+  nrapp_t app = {0};
+
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+
+  nr_app_tid_maps_destroy(&app);
+
+  tlib_pass_if_null("harvest_map destroyed", app.harvest_map);
+  tlib_pass_if_null("rnd_map destroyed", app.rnd_map);
+  tlib_pass_if_null("composer_map destroyed", app.composer_map);
+
+  /* NULL app does not crash. */
+  nr_app_tid_maps_destroy(NULL);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1351,4 +1405,6 @@ void test_main(void* p NRUNUSED) {
   test_sync_harvest_config();
   test_get_or_create_thread_rnd();
   test_get_or_create_thread_composer_status();
+  test_app_tid_maps_evict();
+  test_app_tid_maps_destroy();
 }
