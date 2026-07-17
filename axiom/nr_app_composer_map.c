@@ -22,14 +22,14 @@ nr_composer_api_status_t* nr_app_get_or_create_thread_composer_status(
     return NULL;
   }
 
-  status = (nr_composer_api_status_t*)nr_hashmap_index_get(
-      app->composer_map, key);
+  status
+      = (nr_composer_api_status_t*)nr_hashmap_index_get(app->composer_map, key);
   if (status) {
     return status;
   }
 
-  status = (nr_composer_api_status_t*)nr_malloc(
-      sizeof(nr_composer_api_status_t));
+  status
+      = (nr_composer_api_status_t*)nr_malloc(sizeof(nr_composer_api_status_t));
   *status = NR_COMPOSER_API_STATUS_UNSET;
 
   if (NR_SUCCESS != nr_hashmap_index_set(app->composer_map, key, status)) {
