@@ -78,7 +78,6 @@ typedef struct _nrphpglobals_t {
   int composer_api_per_process_detection;  /* Enables per-process VM package
                                               detection when Composer API is also
                                               enabled */
-  nr_composer_api_status_t composer_api_status; /* Composer API's status */
   char* docker_id; /* 64 byte hex docker ID parsed from /proc/self/mountinfo */
   bool laravel_horizon_worker_used; /* Set to true if Laravel Horizon is used */
 

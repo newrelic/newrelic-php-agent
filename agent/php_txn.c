@@ -1170,8 +1170,6 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
-  NRTXN(composer_info.api_status) = NR_PHP_PROCESS_GLOBALS(composer_api_status);
-
   return NR_SUCCESS;
 }
 
@@ -1361,8 +1359,6 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       if (NR_FAILURE == ret) {
         nrl_debug(NRL_TXN, "failed to send txn");
       }
-      NR_PHP_PROCESS_GLOBALS(composer_api_status)
-          = NRTXN(composer_info.api_status);
     }
   }
 
