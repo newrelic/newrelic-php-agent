@@ -1379,6 +1379,71 @@ static void test_app_tid_maps_destroy(void) {
   nr_app_tid_maps_destroy(NULL);
 }
 
+static void test_composer_status_cross_app_isolation(void) {
+  nrapp_t app_a = {0};
+  nrapp_t app_b = {0};
+  nr_composer_api_status_t* status_a;
+  nr_composer_api_status_t* status_b;
+
+  app_a.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+  app_b.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+
+  /* Both apps' thread (same tid, different app — the FrankenPHP worker-mode
+   * scenario: one process, per-app thread pools) start UNSET. */
+  status_a = nr_app_get_or_create_thread_composer_status(&app_a, 42);
+  status_b = nr_app_get_or_create_thread_composer_status(&app_b, 42);
+  tlib_pass_if_true("app_a starts UNSET",
+                    NR_COMPOSER_API_STATUS_UNSET == *status_a, "*status_a=%d",
+                    *status_a);
+  tlib_pass_if_true("app_b starts UNSET",
+                    NR_COMPOSER_API_STATUS_UNSET == *status_b, "*status_b=%d",
+                    *status_b);
+
+  /* app_a's thread completes detection (success). */
+  *status_a = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+
+  /* app_b's thread must be unaffected — this is the bug this fix closes.
+   * Under the old process-global design, app_a's write would have latched
+   * a single shared flag and app_b would see it as already-set. */
+  tlib_pass_if_true(
+      "app_b unaffected by app_a's completion",
+      NR_COMPOSER_API_STATUS_UNSET == *status_b, "*status_b=%d", *status_b);
+
+  /* app_b's thread now independently completes with a different outcome. */
+  *status_b = NR_COMPOSER_API_STATUS_INIT_FAILURE;
+  tlib_pass_if_true("app_a unaffected by app_b's completion",
+                    NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == *status_a,
+                    "*status_a=%d", *status_a);
+
+  nr_hashmap_destroy(&app_a.composer_map);
+  nr_hashmap_destroy(&app_b.composer_map);
+}
+
+static void test_composer_status_same_app_multi_thread_isolation(void) {
+  nrapp_t app = {0};
+  nr_composer_api_status_t* status_thread1;
+  nr_composer_api_status_t* status_thread2;
+
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+
+  /* Two threads of the SAME app, both starting UNSET. */
+  status_thread1 = nr_app_get_or_create_thread_composer_status(&app, 1);
+  status_thread2 = nr_app_get_or_create_thread_composer_status(&app, 2);
+
+  /* Thread 1 completes successfully. */
+  *status_thread1 = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+
+  /* Thread 2's entry is untouched — free to attempt on its own. */
+  tlib_pass_if_true("thread 2 still UNSET after thread 1 completes",
+                    NR_COMPOSER_API_STATUS_UNSET == *status_thread2,
+                    "*status_thread2=%d", *status_thread2);
+
+  nr_hashmap_destroy(&app.composer_map);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1407,4 +1472,6 @@ void test_main(void* p NRUNUSED) {
   test_get_or_create_thread_composer_status();
   test_app_tid_maps_evict();
   test_app_tid_maps_destroy();
+  test_composer_status_cross_app_isolation();
+  test_composer_status_same_app_multi_thread_isolation();
 }
