@@ -1715,6 +1715,8 @@ static void test_begin(void) {
     nr_random_seed(rnd, 345345);
     nr_hashmap_index_set(app->rnd_map, (uint64_t)self, rnd);
   }
+  app->composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
   app->info.high_security = 0;
   app->connect_reply = nro_new_hash();
   app->security_policies = nro_new_hash();
@@ -1765,6 +1767,14 @@ static void test_begin(void) {
 
   rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("options provided", rv, &correct);
+  tlib_pass_if_not_null("composer_info.status populated by nr_txn_begin",
+                        rv->composer_info.status);
+  tlib_pass_if_true(
+      "composer_info.status points at this thread's composer_map entry",
+      rv->composer_info.status
+          == nr_app_get_or_create_thread_composer_status(app,
+                                                         (uint64_t)nr_gettid()),
+      "status=%p", (void*)rv->composer_info.status);
   json = nr_attributes_debug_json(rv->attributes);
   tlib_pass_if_str_equal("display host attribute created", json,
                          "{\"user\":[],\"agent\":["
@@ -1934,6 +1944,7 @@ static void test_begin(void) {
   nro_delete(app->security_policies);
   nr_hashmap_destroy(&app->harvest_map);
   nr_hashmap_destroy(&app->rnd_map);
+  nr_hashmap_destroy(&app->composer_map);
   nr_attribute_config_destroy(&attribute_config);
 }
 

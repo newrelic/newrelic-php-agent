@@ -457,6 +457,7 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_slab_t* segment_slab;
   nr_app_harvest_stats_t* thread_harvest;
   nr_random_t* thread_rnd;
+  nr_composer_api_status_t* thread_composer_status;
   int tid;
 
   if (NULL == app) {
@@ -486,8 +487,17 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->status.path_type = NR_PATH_TYPE_UNKNOWN;
   nt->agent_run_id = nr_strdup(app->agent_run_id);
   tid = nr_gettid();
+  /*
+   * Both fetched once per request, under the app_lock this function's
+   * caller already holds (agent/php_txn.c) — not a new acquisition. Cached
+   * here for lock-free reuse for the rest of the transaction. See
+   * nr_app.h for the full per-thread-map locking contract.
+   */
   thread_rnd = nr_app_get_or_create_thread_rnd(app, (uint64_t)tid);
   nt->rnd = thread_rnd;
+  thread_composer_status
+      = nr_app_get_or_create_thread_composer_status(app, (uint64_t)tid);
+  nt->composer_info.status = thread_composer_status;
   nt->segment_slab = segment_slab;
 
   /*
