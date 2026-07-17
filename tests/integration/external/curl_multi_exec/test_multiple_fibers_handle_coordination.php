@@ -150,6 +150,25 @@ null
       {
         "category": "generic",
         "type": "Span",
+        "guid": "ENV[GUID_FLUFF_FUNC_6]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/fluff_func",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_6]"
+      },
+      {
+        "fiber_id": 6
+      },
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
@@ -272,6 +291,25 @@ null
       {
         "category": "generic",
         "type": "Span",
+        "guid": "ENV[GUID_FLUFF_FUNC_7]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/fluff_func",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_7]"
+      },
+      {
+        "fiber_id": 7
+      },
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
         "guid": "??",
         "traceId": "??",
         "transactionId": "??",
@@ -384,6 +422,25 @@ null
         "priority": "??",
         "sampled": true,
         "parentId": "ENV[GUID_FIBER_EXEC_8]"
+      },
+      {
+        "fiber_id": 8
+      },
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FLUFF_FUNC_8]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/fluff_func",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_8]"
       },
       {
         "fiber_id": 8
@@ -531,6 +588,25 @@ null
     ],
     [
       {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FLUFF_FUNC_9]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/fluff_func",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_9]"
+      },
+      {
+        "fiber_id": 9
+      },
+      {}
+    ],
+    [
+      {
         "category": "http",
         "type": "Span",
         "guid": "??",
@@ -628,6 +704,25 @@ null
         "priority": "??",
         "sampled": true,
         "parentId": "ENV[GUID_FIBER_EXEC_10]"
+      },
+      {
+        "fiber_id": 10
+      },
+      {}
+    ],
+    [
+      {
+        "category": "generic",
+        "type": "Span",
+        "guid": "ENV[GUID_FLUFF_FUNC_10]",
+        "traceId": "??",
+        "transactionId": "??",
+        "name": "Custom\/fluff_func",
+        "timestamp": "??",
+        "duration": "??",
+        "priority": "??",
+        "sampled": true,
+        "parentId": "ENV[GUID_FIBER_EXEC_INNER_10]"
       },
       {
         "fiber_id": 10
@@ -763,6 +858,11 @@ function handle_adding_fiber($fiber_id) {
     return $mh;
 }
 
+function fluff_func($fiber_id) {
+    env_var_for_expects("GUID_FLUFF_FUNC_" . $fiber_id, newrelic_get_linking_metadata()['span.id'] ?? '');
+    newrelic_add_custom_span_parameter("fiber_id", $fiber_id);
+}
+
 function executing_fiber_inner($fiber_id, $handle_set_id) {
     global $multi_handles, $curl_handles, $results;
 
@@ -791,8 +891,13 @@ function executing_fiber_inner($fiber_id, $handle_set_id) {
 
     // Execute the curl_multi_exec
     $active = 0;
+    $first_fluff = true;
     do {
         curl_multi_exec($mh, $active);
+        if ($first_fluff) {
+            fluff_func($fiber_id);
+            $first_fluff = false;
+        }
         Fiber::suspend($active);
     } while ($active > 0);
 
