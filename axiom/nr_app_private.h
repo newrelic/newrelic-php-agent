@@ -57,9 +57,9 @@
 extern void nr_app_destroy(nrapp_t** app_ptr);
 
 /*
- * Purpose: White box testing. Do not use except for unit tests — production
- *          code only reaches this via nr_app_destroy (same translation
- *          unit, axiom/nr_app.c).
+ * Purpose: Destroy harvest_map, rnd_map, and composer_map. White box
+ *          testing only — production code only reaches this via
+ *          nr_app_destroy (same translation unit, axiom/nr_app.c).
  */
 extern void nr_app_tid_maps_destroy(nrapp_t* app);
 
