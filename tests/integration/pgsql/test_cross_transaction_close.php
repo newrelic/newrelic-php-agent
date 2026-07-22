@@ -32,6 +32,7 @@ ok - pg_query failed without an open connection
 */
 
 /*EXPECT_METRICS_EXIST
+Datastore/instance/Postgres/__HOST__//tmp, 1
 Datastore/statement/Postgres/pg_user/select, 1
 Datastore/operation/Postgres/select, 1
 Supportability/api/start_transaction, 1
