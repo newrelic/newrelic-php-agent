@@ -111,7 +111,8 @@ void nr_lib_aws_sdk_php_kinesis_handle(nr_segment_t* auto_segment,
    * only create the segment now, grab the parent segment start time, add our
    * special segment attributes/metrics then close the newly created segment.
    */
-  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  message_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL == message_segment) {
     return;
   }
@@ -395,7 +396,8 @@ void nr_lib_aws_sdk_php_sqs_handle(nr_segment_t* auto_segment,
    * only create the segment now, grab the parent segment start time, add our
    * special segment attributes/metrics then close the newly created segment.
    */
-  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  message_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL == message_segment) {
     return;
   }
@@ -601,7 +603,8 @@ void nr_lib_aws_sdk_php_lambda_handle(nr_segment_t* auto_segment,
    * only create the segment now, grab the parent segment start time, add our
    * special segment attributes/metrics then close the newly created segment.
    */
-  external_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  external_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL == external_segment) {
     nr_free(cloud_attrs.cloud_resource_id);
     return;
@@ -925,7 +928,8 @@ void nr_lib_aws_sdk_php_dynamodb_handle(nr_segment_t* auto_segment,
    * start time, add the special segment attributes/metrics then close the newly
    * created segment.
    */
-  datastore_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  datastore_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL != datastore_segment) {
     /* re-use start time from auto_segment started in func_begin */
     datastore_segment->start_time = auto_segment->start_time;

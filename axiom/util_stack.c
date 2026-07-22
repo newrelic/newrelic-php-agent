@@ -55,3 +55,23 @@ bool nr_stack_remove_topmost(nr_stack_t* s, const void* element) {
 
   return false;
 }
+
+nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_ptr_t clone) {
+  nr_stack_t dest;
+  size_t n;
+
+  if (NULL == src || NULL == clone) {
+    nr_vector_init(&dest, NR_STACK_DEFAULT_CAPACITY, NULL, NULL);
+    return dest;
+  }
+
+  n = nr_vector_size(src);
+  nr_vector_init(&dest, n ? n : NR_STACK_DEFAULT_CAPACITY, src->dtor, NULL);
+
+  for (size_t i = 0; i < n; i++) {
+    void* orig = nr_vector_get(src, i);
+    nr_stack_push(&dest, clone(orig));
+  }
+
+  return dest;
+}

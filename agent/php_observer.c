@@ -16,12 +16,14 @@
 #include "php_error.h"
 #include "php_execute.h"
 #include "php_extension.h"
+#include "php_fibers.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_hooks.h"
 #include "php_internal_instrument.h"
 #include "php_observer.h"
 #include "php_samplers.h"
+#include "php_txn.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
@@ -119,9 +121,8 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
         = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
     // store the wraprec in the op_array extension for the duration of the
     // request for later lookup
-    ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY,
-                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
-        = wr;
+    ZEND_OP_ARRAY_EXTENSION(
+        NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
 
   handlers.begin = nr_php_observer_fcall_begin;
@@ -130,28 +131,179 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 }
 
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
+
+#define NR_FIBER_USED_CREATE_METRIC                    \
+  if (NULL != NRPRG(txn)) {                            \
+    nrm_force_add(NRPRG(txn)->unscoped_metrics,        \
+                  "Supportability/PHP/Fiber/used", 0); \
+  }
+
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(fiber_context, "init/destroy");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
-    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
-                  0);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
 
 static void nr_fiber_switch_disable(zend_fiber_context* from,
                                     zend_fiber_context* to) {
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
-    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
-                  0);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
+
+static void nr_fiber_init_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
+  NR_FIBER_USED_CREATE_METRIC
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "init");
+  }
+  if (NULL == NRPRG(fiber_globals_map)) {
+    // initialize the fiber global hashmap if it does not already exist
+    if (NR_FAILURE == nr_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
+      nrl_warning(NRL_AGENT, "Failed to initialize the fiber global hashmap needed for a fiber aware transaction and must therefore end the transaction.");
+      nr_php_txn_end(0, 0 TSRMLS_CC);
+      return;
+    }
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+
+  // Add the current context to the global hashmap for the new fiber
+  if (NR_FAILURE
+      == nr_add_fiber_context_to_global_hashmap(
+          NRPRG(fiber_globals_map),
+          NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
+                               : &NRPRG(ctx),
+          zfc_key)) {
+    nrl_warning(NRL_AGENT,
+                "Failed to add fiber context to global hashmap for fiber %s needed for a fiber aware transaction and must therefore end the transaction.",
+                zfc_key);
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+
+static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
+  NR_FIBER_USED_CREATE_METRIC
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "destroy");
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+  if (0 == nr_strcmp(NRPRG_SHARED(fiber_context_string), zfc_key)) {
+    // clear the current fiber global ptr if it is the context to be destroyed
+    NRPRG(fiber_globals) = NULL;
+  }
+
+  // Remove the entry in the fiber global hashmap for this fiber
+  if (NR_FAILURE
+      == nr_remove_fiber_context_from_global_hashmap(NRPRG(fiber_globals_map),
+                                                     zfc_key)) {
+    nrl_warning(
+        NRL_AGENT,
+        "Failed to remove fiber context from global hashmap for fiber %s",
+        zfc_key);
+  }
+}
+
+static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
+  nr_segment_t* current_segment = NULL;
+  nrtxn_t* txn = NRPRG(txn);
+
+  if (zfc->kind != zend_ce_fiber) {
+    /* Context is the Main PHP Process */
+    NRPRG_SHARED(current_php_context) = NULL;
+    NRPRG_SHARED(fiber_context_string)[0] = '\0';
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = 0;
+    }
+  } else {
+    snprintf(NRPRG_SHARED(fiber_context_string),
+             sizeof(NRPRG_SHARED(fiber_context_string)), "%p", zfc);
+    NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = nr_string_add(
+          txn->trace_strings, NRPRG_SHARED(current_php_context));
+    }
+  }
+}
+
+/*
+ * The fiber_parent_segment is only set to non-NULL when starting a fiber within
+ a fiber.
+ * For all other cases it will be null which indicates that the main PHP process
+ is the parent.
+ * In the case of end/start txn happening within fibers, this can also be null
+ due to the following
+ * current agent behavior when a txn ends/starts:
+ * 1) when a segment is discarded, its children get re-parented to its parent
+ * 2) when a txn is ended, all segments (even those that haven't completed yet)
+ are closed
+ * 3) For subsequent children of a calling segment that was closed by the txn
+ end, since the calling segment no longer exists, the main process becomes the
+ parent.
+ *
+ */
+static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
+  if (zfc->kind != zend_ce_fiber) {
+    /* Main process is the parent, set to NULL. */
+    NRPRG_SHARED(fiber_parent_segment) = NULL;
+  } else {
+    char* parent_fiber_context_string = nr_formatf("%p", zfc);
+    NRPRG_SHARED(fiber_parent_segment)
+        = nr_txn_get_current_segment(NRPRG(txn), parent_fiber_context_string);
+    nr_free(parent_fiber_context_string);
+  }
+}
+
+static void nr_fiber_switch_observe(zend_fiber_context* from,
+                                    zend_fiber_context* to) {
+  NR_FIBER_USED_CREATE_METRIC
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
+
+  /*
+   * If kind != zend_ce_fiber that means the fiber context is the MAIN php
+   * context not an actual fiber.
+   */
+
+  nr_fiber_set_contexts(to);
+
+  /* If we are starting a new fiber.  We need to ensure it is properly parented
+   * to the "from" context. */
+  if (ZEND_FIBER_STATUS_INIT == to->status) {
+    nr_fiber_set_fiber_parent_segment(from);
+  }
+
+  if (NR_FAILURE
+      == nr_fiber_switch_global_context(NRPRG(fiber_globals_map),
+                                        &NRPRG(fiber_globals),
+                                        NRPRG_SHARED(current_php_context))) {
+    nrl_warning(NRL_AGENT, "Failed to switch fiber context to %s needed for a fiber aware transaction and must therefore end the transaction.",
+                NRPRG_SHARED(current_php_context));
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+
 #endif /* PHP 8.1+ */
 
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED) {};
@@ -175,11 +327,31 @@ void nr_php_observer_minit() {
    * Register the Observer API fiber handlers.
    */
 
-  /* Currently only register if we are disabling instrumentation. */
+  /*
+   * Life cycle of a fiber:
+   * 1) fiber->start which triggers
+   *    a) fiber init
+   *    b) fiber switch from calling context to fiber context
+   * 2) fiber->resume which triggers
+   *    a) fiber switch from calling context to fiber context
+   * 3) fiber->suspend which triggers
+   *    a) fiber switch from fiber context to calling context
+   * 4) fiber exits/completes which triggers
+   *    a) fiber switch from fiber context to calling context
+   *    b) fiber destroy
+   * 5) calling function exits without calling fiber->resume which triggers
+   *    a) fiber switch from calling context to fiber context
+   *    b) fiber switch from fiber context to calling context
+   *    c) fiber destroy
+   */
   if (NRINI(fibers_disabled)) {
     zend_observer_fiber_init_register(nr_fiber_disable);
     zend_observer_fiber_switch_register(nr_fiber_switch_disable);
     zend_observer_fiber_destroy_register(nr_fiber_disable);
+  } else {
+    zend_observer_fiber_init_register(nr_fiber_init_observe);
+    zend_observer_fiber_switch_register(nr_fiber_switch_observe);
+    zend_observer_fiber_destroy_register(nr_fiber_destroy_observe);
   }
 
 #endif /* PHP 8.1+ */

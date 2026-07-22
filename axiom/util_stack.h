@@ -20,6 +20,7 @@
 #define NR_STACK_DEFAULT_CAPACITY 32
 
 typedef struct _nr_vector_t nr_stack_t;
+typedef void* (*nr_stack_clone_elem_ptr_t)(void* element);
 
 /*
  * Purpose : Initialize a stack data type.
@@ -97,5 +98,26 @@ void nr_stack_destroy_fields(nr_stack_t* s);
  *           error.
  */
 bool nr_stack_remove_topmost(nr_stack_t* s, const void* element);
+
+/*
+ * Purpose : Create a copy of a stack. Each element of src is passed through
+ *           the supplied clone callback to produce the corresponding element
+ *           in the returned stack, so the depth of the copy is determined by
+ *           the callback (return the input pointer for a shallow copy, or
+ *           allocate and populate a duplicate for a deep copy). The source
+ *           stack's contents and order are preserved.
+ *
+ *           The destination stack inherits the source stack's destructor
+ *           (src->dtor); its destructor userdata is set to NULL.
+ *
+ * Params  : 1. A pointer to the source stack, src.
+ *           2. A clone callback invoked once per element.
+ *
+ * Returns : A new stack containing the cloned elements of src, in the same
+ *           order. If src or clone is NULL, an initialized empty stack is
+ *           returned. The caller is responsible for releasing the returned
+ *           stack with nr_stack_destroy_fields().
+ */
+nr_stack_t nr_stack_copy(nr_stack_t* src, nr_stack_clone_elem_ptr_t clone);
 
 #endif /* NR_STACK_HDR */
