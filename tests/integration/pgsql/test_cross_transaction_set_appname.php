@@ -37,6 +37,11 @@ Datastore/operation/Postgres/select, 1
 Supportability/api/set_appname/after, 1
 */
 
+/*EXPECT_METRICS_DONT_EXIST
+Supportability/api/set_appname/before
+Datastore/instance/Postgres/__HOST__//tmp
+*/
+
 /*EXPECT_SPAN_EVENTS_LIKE
 [
   [
