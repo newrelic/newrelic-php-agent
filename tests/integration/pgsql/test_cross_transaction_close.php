@@ -115,7 +115,7 @@ function test_cross_transaction_close() {
     // PHP 7.x return false on failure, so assert that the query failed.
     tap_assert(false === $result, "pg_query failed without an open connection");
   }
-  catch (\Throwable $e) {
+  catch (\Throwable $e) { // $e unused, required for PHP 7.4 catch syntax
     // PHP 8.0+ throws a fatal error instead returning false, so
     // catch it and assert that the query failed.
     tap_ok("pg_query failed without an open connection");
