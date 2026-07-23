@@ -170,6 +170,7 @@ static void test_max_segments_config_values(TSRMLS_D) {
 
 #define PHP_VERSION_METRIC_BASE "Supportability/PHP/Version"
 #define AGENT_VERSION_METRIC_BASE "Supportability/PHP/AgentVersion"
+#define SAPI_METRIC_BASE "Supportability/PHP/SAPI"
 
 static void test_create_php_version_metric() {
   nrtxn_t* txn;
@@ -292,8 +293,51 @@ static void test_create_agent_php_version_metrics() {
   tlib_php_request_end();
 }
 
+static void test_create_sapi_metric() {
+  nrtxn_t* txn;
+  int count;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+
+  count = nrm_table_size(txn->unscoped_metrics);
+
+  /* Test invalid values are properly handled */
+  nr_php_txn_create_sapi_metric(NULL, NULL);
+  tlib_pass_if_int_equal("SAPI metric shouldnt be created 1", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_sapi_metric(txn, NULL);
+  tlib_pass_if_int_equal("SAPI metric shouldnt be created 2", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_sapi_metric(NULL, "fpm-fcgi");
+  tlib_pass_if_int_equal("SAPI metric shouldnt be created 3", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  nr_php_txn_create_sapi_metric(txn, "");
+  tlib_pass_if_int_equal("SAPI metric shouldnt be created 4", count,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  /* test valid values */
+  nr_php_txn_create_sapi_metric(txn, "fpm-fcgi");
+  tlib_pass_if_int_equal("SAPI metric should be created", count + 1,
+                         nrm_table_size(txn->unscoped_metrics));
+
+  const nrmetric_t* metric
+      = nrm_find(txn->unscoped_metrics, SAPI_METRIC_BASE "/fpm-fcgi");
+  const char* metric_name = nrm_get_name(txn->unscoped_metrics, metric);
+
+  tlib_pass_if_not_null("SAPI metric found", metric);
+  tlib_pass_if_str_equal("SAPI metric name check", metric_name,
+                         SAPI_METRIC_BASE "/fpm-fcgi");
+
+  tlib_php_request_end();
+}
+
 #undef PHP_VERSION_METRIC_BASE
 #undef AGENT_VERSION_METRIC_BASE
+#undef SAPI_METRIC_BASE
 
 static void test_create_log_forwarding_labels(TSRMLS_D) {
   nrobj_t* labels = NULL;
@@ -375,6 +419,7 @@ void test_main(void* p NRUNUSED) {
   test_create_php_version_metric();
   test_create_agent_version_metric();
   test_create_agent_php_version_metrics();
+  test_create_sapi_metric();
   test_create_log_forwarding_labels();
 
   tlib_php_engine_destroy();
