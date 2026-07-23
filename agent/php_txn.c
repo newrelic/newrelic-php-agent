@@ -791,6 +791,22 @@ void nr_php_txn_create_php_version_metric(nrtxn_t* txn, const char* version) {
   nr_free(metric_name);
 }
 
+void nr_php_txn_create_sapi_metric(nrtxn_t* txn, const char* sapi_name) {
+  char* metric_name = NULL;
+
+  if (NULL == txn) {
+    return;
+  }
+
+  if (nr_strempty(sapi_name)) {
+    return;
+  }
+
+  metric_name = nr_formatf("Supportability/PHP/SAPI/%s", sapi_name);
+  nrm_force_add(NRTXN(unscoped_metrics), metric_name, 0);
+  nr_free(metric_name);
+}
+
 void nr_php_txn_create_agent_php_version_metrics(nrtxn_t* txn) {
   char* version = NULL;
 
@@ -1315,6 +1331,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
 
     /* Agent and PHP version metrics*/
     nr_php_txn_create_agent_php_version_metrics(txn);
+
+    /* SAPI name metric */
+    nr_php_txn_create_sapi_metric(txn, sapi_module.name);
 
     /* PHP packages major version metrics */
     nr_php_txn_create_packages_major_metrics(txn);
