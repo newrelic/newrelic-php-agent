@@ -1332,6 +1332,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     /* Agent and PHP version metrics*/
     nr_php_txn_create_agent_php_version_metrics(txn);
 
+    /* SAPI name metric */
+    nr_php_txn_create_sapi_metric(txn, sapi_module.name);
+
     /* PHP packages major version metrics */
     nr_php_txn_create_packages_major_metrics(txn);
 
