@@ -307,21 +307,28 @@ static void test_create_sapi_metric() {
   tlib_pass_if_int_equal("SAPI metric shouldnt be created 1", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_php_txn_create_sapi_metric(txn, NULL);
+  nr_php_txn_create_sapi_metric(NULL, "fpm-fcgi");
   tlib_pass_if_int_equal("SAPI metric shouldnt be created 2", count,
                          nrm_table_size(txn->unscoped_metrics));
 
-  nr_php_txn_create_sapi_metric(NULL, "fpm-fcgi");
-  tlib_pass_if_int_equal("SAPI metric shouldnt be created 3", count,
+  /* A NULL/empty sapi_name with a valid txn falls back to "unknown" */
+  nr_php_txn_create_sapi_metric(txn, NULL);
+  tlib_pass_if_int_equal("SAPI unknown metric should be created", count + 1,
                          nrm_table_size(txn->unscoped_metrics));
 
   nr_php_txn_create_sapi_metric(txn, "");
-  tlib_pass_if_int_equal("SAPI metric shouldnt be created 4", count,
-                         nrm_table_size(txn->unscoped_metrics));
+  tlib_pass_if_int_equal(
+      "SAPI unknown metric count unchanged for empty sapi_name", count + 1,
+      nrm_table_size(txn->unscoped_metrics));
+
+  const nrmetric_t* unknown_metric
+      = nrm_find(txn->unscoped_metrics, SAPI_METRIC_BASE "/unknown");
+
+  tlib_pass_if_not_null("SAPI unknown metric found", unknown_metric);
 
   /* test valid values */
   nr_php_txn_create_sapi_metric(txn, "fpm-fcgi");
-  tlib_pass_if_int_equal("SAPI metric should be created", count + 1,
+  tlib_pass_if_int_equal("SAPI metric should be created", count + 2,
                          nrm_table_size(txn->unscoped_metrics));
 
   const nrmetric_t* metric

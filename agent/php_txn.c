@@ -799,7 +799,7 @@ void nr_php_txn_create_sapi_metric(nrtxn_t* txn, const char* sapi_name) {
   }
 
   if (nr_strempty(sapi_name)) {
-    return;
+    sapi_name = "unknown";
   }
 
   metric_name = nr_formatf("Supportability/PHP/SAPI/%s", sapi_name);
