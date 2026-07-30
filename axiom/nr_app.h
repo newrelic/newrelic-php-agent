@@ -409,10 +409,18 @@ typedef enum {
 /*
  * Per-(app, thread) Composer detection state, stored in composer_map.
  * status/packages/epoch/last_sent_epoch are only safe to mutate under
- * app->app_lock. One lock-free exception: a txn's own read/mark-sent of
- * its own entry's epoch/packages/last_sent_epoch via
- * nr_txn_pull_composer_packages()/nr_txn_mark_composer_packages_sent() —
- * see nr_txn.h for why that same-owning-thread path needs no lock.
+ * app->app_lock. Two lock-free exceptions, both resting on the same
+ * same-owning-thread-only invariant (an entry is keyed by
+ * (uint64_t)nr_gettid(), so no thread other than the one that owns it ever
+ * touches it):
+ *   1. A txn's own read/mark-sent of its own entry's epoch/packages/
+ *      last_sent_epoch via nr_txn_pull_composer_packages()/
+ *      nr_txn_mark_composer_packages_sent() — see nr_txn.h for why that
+ *      path needs no lock.
+ *   2. The Composer-scan write in nr_composer_handle_autoload()
+ *      (agent/lib_composer.c), which mutates status/packages/epoch once it
+ *      has resolved the entry (with or without a txn) — see the comment at
+ *      that write site for why that path needs no lock either.
  */
 typedef struct {
   nr_composer_api_status_t status; /* unchanged semantics: gates whether a
