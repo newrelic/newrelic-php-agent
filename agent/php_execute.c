@@ -828,32 +828,38 @@ static void nr_execute_handle_autoload(const char* filename,
   }
 
   /*
-   *  There is a possibility of the txn being NULL if nr_php_end_txn has been
-   * called. Verify txn is not null before dereferencing and continuing on.
+   *  A NULL txn no longer means "give up" — that used to lose this thread's
+   *  Composer scan whenever autoload ran before a txn existed yet.
+   *  composer_info.autoload_detected and composer_info.entry are both
+   *  per-txn/per-thread caches that don't exist without a txn; skip those
+   *  checks rather than bailing, and let nr_composer_handle_autoload
+   *  (agent/lib_composer.c) resolve the (app, thread) entry itself via the
+   *  no-txn path when needed.
    */
-  if (NULL == NRPRG(txn)) {
-    return;
-  }
-
-  if (NRPRG(txn)->composer_info.autoload_detected) {
-    // autoload already handled
-    return;
+  if (NULL != NRPRG(txn)) {
+    if (NRPRG(txn)->composer_info.autoload_detected) {
+      // autoload already handled for this txn
+      return;
+    }
   }
 
   if (NR_PHP_PROCESS_GLOBALS(composer_api_per_process_detection)) {
-    /*
-     * This thread's composer detection status was already fetched once,
-     * under app_lock, in nr_txn_begin — see nr_app.h for the locking
-     * contract and nr_txn.c for where the fetch happens. No lock, no
-     * fetch here; just a read of the cached pointer. NULL means the
-     * fetch failed (rare allocation failure) — treated as "unknown",
-     * same as UNSET, so detection is still attempted.
-     */
-    nr_composer_api_status_t* thread_composer_status
-        = NRPRG(txn)->composer_info.status;
+    nr_composer_thread_entry_t* thread_composer_entry = NULL;
 
-    if (NULL != thread_composer_status
-        && NR_COMPOSER_API_STATUS_UNSET != *thread_composer_status) {
+    if (NULL != NRPRG(txn)) {
+      thread_composer_entry = NRPRG(txn)->composer_info.entry;
+    }
+    /*
+     * No-txn case: there's no cached entry pointer to check here without
+     * doing a fresh lookup, and a fresh lookup on every autoload event would
+     * defeat the point of a cheap short-circuit. Skip the short-circuit and
+     * fall through — nr_composer_handle_autoload's own destroy-if-rescan
+     * write path is safe to run redundantly, so the worst case on this
+     * narrow, rare bootstrap-race path is one extra scan attempt, not a
+     * correctness problem.
+     */
+    if (NULL != thread_composer_entry
+        && NR_COMPOSER_API_STATUS_UNSET != thread_composer_entry->status) {
       // do nothing if per-thread detection is enabled and this thread's
       // composer status is already set
       return;
@@ -868,8 +874,10 @@ static void nr_execute_handle_autoload(const char* filename,
 
   nrl_debug(NRL_FRAMEWORK, "detected autoload with %s, which ends with %s",
             filename, AUTOLOAD_MAGIC_FILE);
-  NRPRG(txn)->composer_info.autoload_detected = true;
-  nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
+  if (NULL != NRPRG(txn)) {
+    NRPRG(txn)->composer_info.autoload_detected = true;
+    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Autoloader");
+  }
 
   nr_composer_handle_autoload(filename);
 }
