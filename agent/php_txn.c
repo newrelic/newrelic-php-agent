@@ -1319,6 +1319,8 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       nr_php_txn_do_shutdown(txn TSRMLS_CC);
     }
 
+    nr_txn_pull_composer_packages(txn);
+
     nrm_force_add(txn->unscoped_metrics,
                   "Supportability/execute/user/call_count",
                   NRTXNGLOBAL(execute_count));
@@ -1356,6 +1358,7 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
        * Check status.ignore again in case it has changed during nr_txn_end.
        */
       ret = nr_cmd_txndata_tx(nr_get_daemon_fd(), txn);
+      nr_txn_mark_composer_packages_sent(txn);
       if (NR_FAILURE == ret) {
         nrl_debug(NRL_TXN, "failed to send txn");
       }
