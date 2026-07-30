@@ -3579,6 +3579,74 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
   return nr_php_packages_add_package(txn->php_packages, p);
 }
 
+/*
+ * Callback for nr_php_packages_iterate(), used by
+ * nr_txn_pull_composer_packages() below to copy each package from the
+ * per-thread composer entry into the transaction's own php_packages.
+ */
+static void nr_txn_pull_composer_package_callback(void* value,
+                                                  const char* name NRUNUSED,
+                                                  size_t name_len NRUNUSED,
+                                                  void* user_data) {
+  nr_php_package_t* p = (nr_php_package_t*)value;
+  nrtxn_t* txn = (nrtxn_t*)user_data;
+
+  if (NULL == p) {
+    return;
+  }
+
+  nr_txn_add_php_package_from_source(txn, p->package_name, p->package_version,
+                                     NR_PHP_PACKAGE_SOURCE_COMPOSER);
+}
+
+/*
+ * Assumed to run only on the entry's owning thread, as part of that
+ * thread's own request lifecycle -- no locking is taken here. See the doc
+ * comment in nr_txn.h for the rationale.
+ */
+void nr_txn_pull_composer_packages(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  if (entry->epoch == entry->last_sent_epoch) {
+    /* nothing new since the last successful send */
+    return;
+  }
+
+  /* iterate-and-re-add, never a raw pointer swap — protects any
+   * independent legacy/suggestion entries already in txn->php_packages
+   * from this same request */
+  nr_php_packages_iterate(entry->packages,
+                          nr_txn_pull_composer_package_callback, txn);
+  txn->composer_info.composer_pull_epoch = entry->epoch;
+}
+
+/*
+ * Assumed to run only on the entry's owning thread, for the same reason as
+ * nr_txn_pull_composer_packages() above -- no locking is taken here. See
+ * the doc comment in nr_txn.h for the rationale.
+ */
+void nr_txn_mark_composer_packages_sent(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  if (txn->composer_info.composer_pull_epoch == entry->epoch) {
+    entry->last_sent_epoch = entry->epoch;
+  }
+  /* else: a newer scan overwrote entry->packages after this txn pulled but
+   * before it reached transmit — leave last_sent_epoch alone; the newer
+   * epoch is correctly still unsent and will be picked up by a future
+   * pull */
+}
+
 nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
                                          char* package_name,
                                          char* package_version) {

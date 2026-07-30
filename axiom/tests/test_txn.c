@@ -9023,6 +9023,124 @@ static void test_nr_txn_add_php_package_from_source(void) {
   }
 }
 
+static nrtxn_t* build_txn_with_composer_entry(
+    nr_composer_thread_entry_t* entry) {
+  nrtxn_t* txn = (nrtxn_t*)nr_zalloc(sizeof(nrtxn_t));
+  txn->php_packages = nr_php_packages_create();
+  txn->composer_info.entry = entry;
+  return txn;
+}
+
+static void test_txn_pull_composer_packages(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+  nr_php_package_t* p;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_pull_composer_packages(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_pull_composer_packages(txn);
+  nr_txn_destroy(&txn);
+
+  /* Nothing new: epoch == last_sent_epoch, nothing pulled */
+  entry.epoch = 1;
+  entry.last_sent_epoch = 1;
+  entry.packages = nr_php_packages_create();
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("no-op: pull epoch stays 0", 0,
+                              txn->composer_info.composer_pull_epoch);
+  tlib_pass_if_null("no-op: nothing merged",
+                    nr_php_packages_get_package(txn->php_packages, "foo/bar"));
+
+  nr_txn_destroy(&txn);
+
+  /* Something new: epoch != last_sent_epoch, gets pulled */
+  entry.epoch = 2;
+  entry.last_sent_epoch = 1;
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "foo/bar", "1.2.3", NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("pull epoch now matches entry epoch", 2,
+                              txn->composer_info.composer_pull_epoch);
+  p = nr_php_packages_get_package(txn->php_packages, "foo/bar");
+  tlib_pass_if_not_null("package merged into txn", p);
+  if (p) {
+    tlib_pass_if_str_equal("version correct", "1.2.3", p->package_version);
+    tlib_pass_if_true("pulled package sourced as composer",
+                      NR_PHP_PACKAGE_SOURCE_COMPOSER == p->source_priority,
+                      "source_priority=%d", (int)p->source_priority);
+  }
+
+  nr_txn_destroy(&txn);
+
+  /* Pre-existing (e.g. legacy) package already in txn->php_packages must
+   * survive the pull: nr_txn_pull_composer_packages() iterates and re-adds
+   * composer packages one at a time, it never swaps the whole map, so an
+   * unrelated entry from this same request should be untouched. */
+  entry.epoch = 3;
+  entry.last_sent_epoch = 2;
+  txn = build_txn_with_composer_entry(&entry);
+  nr_txn_add_php_package_from_source(txn, "baz/qux", "9.9.9",
+                                     NR_PHP_PACKAGE_SOURCE_LEGACY);
+
+  nr_txn_pull_composer_packages(txn);
+  p = nr_php_packages_get_package(txn->php_packages, "baz/qux");
+  tlib_pass_if_not_null("pre-existing legacy package not clobbered by pull", p);
+  if (p) {
+    tlib_pass_if_str_equal("pre-existing package version untouched", "9.9.9",
+                           p->package_version);
+  }
+  p = nr_php_packages_get_package(txn->php_packages, "foo/bar");
+  tlib_pass_if_not_null("composer package still pulled alongside it", p);
+
+  nr_txn_destroy(&txn);
+  nr_php_packages_destroy(&entry.packages);
+}
+
+static void test_txn_mark_composer_packages_sent(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_mark_composer_packages_sent(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_mark_composer_packages_sent(txn);
+  nr_txn_destroy(&txn);
+
+  /* Matching case: this txn's pulled epoch is still current -> marks sent */
+  entry.epoch = 3;
+  entry.last_sent_epoch = 1;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_pull_epoch = 3;
+
+  nr_txn_mark_composer_packages_sent(txn);
+  tlib_pass_if_uint64_t_equal("last_sent_epoch caught up", 3,
+                              entry.last_sent_epoch);
+  nr_txn_destroy(&txn);
+
+  /* Race case: a newer scan overwrote entry after this txn pulled ->
+   * leave last_sent_epoch alone */
+  entry.epoch = 4;
+  entry.last_sent_epoch = 1;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_pull_epoch
+      = 3; /* stale relative to entry.epoch */
+
+  nr_txn_mark_composer_packages_sent(txn);
+  tlib_pass_if_uint64_t_equal("last_sent_epoch NOT advanced on race", 1,
+                              entry.last_sent_epoch);
+  nr_txn_destroy(&txn);
+}
+
 static void test_nr_txn_suggest_package_supportability_metric(void) {
   char* json;
   char* package_name1 = "Laravel";
@@ -9179,5 +9297,7 @@ void test_main(void* p NRUNUSED) {
   test_txn_log_configuration();
   test_nr_txn_add_php_package();
   test_nr_txn_add_php_package_from_source();
+  test_txn_pull_composer_packages();
+  test_txn_mark_composer_packages_sent();
   test_nr_txn_suggest_package_supportability_metric();
 }

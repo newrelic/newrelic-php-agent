@@ -1239,6 +1239,42 @@ extern nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
                                                 char* package_version);
 
 /*
+ * Purpose : Pull any Composer packages newly scanned into this txn's
+ *           per-thread composer entry (txn->composer_info.entry) into the
+ *           transaction's own php_packages, if the entry's epoch has moved
+ *           on since this txn last pulled.
+ *
+ *           Assumed to run only on the entry's owning thread, as part of
+ *           that thread's own request lifecycle -- no locking is taken
+ *           here, matching the fact that only that thread ever touches its
+ *           own entry (see nr_app.h for the app_lock contract, which
+ *           governs the composer_map structure and a separate cross-thread
+ *           read path, not this same-thread pull).
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_pull_composer_packages(nrtxn_t* txn);
+
+/*
+ * Purpose : Mark this txn's pulled Composer packages as sent by advancing
+ *           the per-thread entry's last_sent_epoch to match the epoch this
+ *           txn pulled, provided no newer scan has overwritten the entry
+ *           since then (otherwise left alone, so a future pull picks up
+ *           the newer epoch).
+ *
+ *           Assumed to run only on the entry's owning thread, for the same
+ *           reason as nr_txn_pull_composer_packages above -- no locking is
+ *           taken here.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_mark_composer_packages_sent(nrtxn_t* txn);
+
+/*
  * Purpose : Add php package suggestion to transaction. This function
  * can be used when Vulnerability Management is not enabled.  It will
  * add the package to the transaction's

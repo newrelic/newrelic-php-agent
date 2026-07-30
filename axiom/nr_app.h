@@ -409,7 +409,10 @@ typedef enum {
 /*
  * Per-(app, thread) Composer detection state, stored in composer_map.
  * status/packages/epoch/last_sent_epoch are only safe to mutate under
- * app->app_lock.
+ * app->app_lock. One lock-free exception: a txn's own read/mark-sent of
+ * its own entry's epoch/packages/last_sent_epoch via
+ * nr_txn_pull_composer_packages()/nr_txn_mark_composer_packages_sent() —
+ * see nr_txn.h for why that same-owning-thread path needs no lock.
  */
 typedef struct {
   nr_composer_api_status_t status; /* unchanged semantics: gates whether a
