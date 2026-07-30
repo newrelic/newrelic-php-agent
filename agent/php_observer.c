@@ -311,7 +311,7 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
     fiber_segment = nr_txn_get_current_segment(
         NRPRG(txn), NRPRG_SHARED(current_php_context));
 
-    if (NULL != fiber_segment) {
+    if (NULL != fiber_segment && 0 == fiber_segment->stop_time) {
       fiber_segment->stop_time = nr_txn_now_rel(NRPRG(txn));
     }
   }
