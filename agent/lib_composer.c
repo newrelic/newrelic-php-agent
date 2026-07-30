@@ -7,6 +7,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "nr_txn.h"
+#include "nr_version.h"
 #include "php_globals.h"
 #include "util_logging.h"
 #include "util_memory.h"
@@ -67,6 +68,86 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
   }
 
   return NR_SUCCESS;
+}
+
+/*
+ * Purpose : Find (never create) the nrapp_t for the current (app, thread)
+ *           when no txn exists to supply one, by building a throwaway
+ *           nr_app_info_t search key from process-global/SAPI-global state.
+ *           Mirrors agent/php_txn.c:893,971-973's fallback logic for
+ *           appname/license (order between the two independent
+ *           appname/license computations doesn't matter — only that each
+ *           resolves to the same value RINIT would have used), so this
+ *           always resolves to the same nr_app_info_t identity fields
+ *           RINIT already used to create/find the app — otherwise
+ *           nr_app_match cannot match.
+ *
+ *           nr_app_find_locked() rejects the search key outright unless
+ *           nr_app_info_valid() passes, which requires appname, license,
+ *           environment, lang, version, and redirect_collector to all be
+ *           non-NULL (axiom/nr_app.c). Of those, only license, appname,
+ *           trace_observer_host, and trace_observer_port are actually
+ *           compared by nr_app_match(); environment/lang/version/
+ *           redirect_collector are set below purely to satisfy that
+ *           non-NULL gate, mirroring agent/php_txn.c:979,983-984,986's
+ *           equivalent assignments.
+ *
+ * Returns : The matching nrapp_t, with app->app_lock held (caller must
+ *           unlock), or NULL if no match exists yet.
+ */
+static nrapp_t* nr_composer_find_app_no_txn(TSRMLS_D) {
+  nr_app_info_t info;
+  nrapp_t* app;
+  char* appnames = NULL;
+  char* raw_license = NULL;
+  const char* lic_to_use;
+
+  nr_memset(&info, 0, sizeof(info));
+
+#ifdef ZTS
+  if (nr_streq(sapi_module.name, "frankenphp")) {
+    appnames = nr_php_get_server_global("NEW_RELIC_APP_NAME" TSRMLS_CC);
+    raw_license = nr_php_get_server_global("NEW_RELIC_LICENSE_KEY" TSRMLS_CC);
+  }
+#endif
+
+  /* appname fallback, ownership-equivalent to agent/php_txn.c:971-973 (that
+   * code reassigns the pointer and strdup's once, later, unconditionally;
+   * this does the strdup inline in the fallback branch instead — same end
+   * state, different structure, since this function has no later
+   * unconditional strdup point to defer to) */
+  if ((NULL == appnames) || (0 == appnames[0])) {
+    nr_free(appnames);
+    appnames = nr_strdup(NRINI(appnames));
+  }
+  info.appname = appnames; /* ownership transferred; freed by
+                              nr_app_info_destroy_fields below */
+
+  /* license fallback, matching agent/php_txn.c:893 exactly (same helper) */
+  lic_to_use = nr_php_use_license(raw_license TSRMLS_CC);
+  info.license = (NULL != lic_to_use) ? nr_strdup(lic_to_use) : NULL;
+  nr_free(raw_license);
+
+  info.high_security = NR_PHP_PROCESS_GLOBALS(high_security);
+
+  /* Non-NULL-only fields required by nr_app_info_valid(); see the doc
+   * comment above. */
+  info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
+  info.lang = nr_strdup("php");
+  info.version = nr_strdup(nr_version());
+  info.redirect_collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
+
+  if (NRINI(distributed_tracing_enabled)) {
+    info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  } else {
+    info.trace_observer_host = nr_strdup("");
+  }
+  info.trace_observer_port = NRINI(trace_observer_port);
+
+  app = nr_app_find_locked(nr_agent_applist, &info);
+
+  nr_app_info_destroy_fields(&info);
+  return app; /* still locked if non-NULL */
 }
 
 static nr_composer_api_status_t
