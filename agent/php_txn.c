@@ -849,6 +849,20 @@ void nr_php_txn_php_package_create_major_metric(void* value,
   actual
       = nr_php_packages_get_package(txn->php_packages, suggested->package_name);
 
+  /* txn->php_packages might not have this package yet even though this
+   * thread's own Composer scan cache already does, so fall back to that
+   * cache to get a better "actual version" for the metric below. This is
+   * a read-only lookup: it never writes into txn->php_packages or into
+   * the cache entry, so it can't affect any of the gating, serialization,
+   * or send-once logic elsewhere that relies on those being left alone.
+   * It's also safe without a lock, since composer_info.entry belongs to
+   * and is only ever accessed by the thread that owns this txn.
+   */
+  if ((NULL == actual) && (NULL != txn->composer_info.entry)) {
+    actual = nr_php_packages_get_package(txn->composer_info.entry->packages,
+                                         suggested->package_name);
+  }
+
   nrl_verbosedebug(
       NRL_INSTRUMENT,
       "Creating PHP Package Supportability Metric for package "

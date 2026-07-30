@@ -88,6 +88,7 @@ static void test_nr_php_txn_create_packages_major_metrics() {
   txn->unscoped_metrics = nrm_table_create(10);
   txn->php_packages = nr_php_packages_create();
   txn->php_package_major_version_metrics_suggestions = nr_php_packages_create();
+  txn->composer_info.entry = NULL;
 
   tlib_php_request_start();
 
@@ -250,6 +251,44 @@ static void test_nr_php_txn_create_packages_major_metrics() {
       nrm_find(txn->unscoped_metrics,
                PACKAGE_METRIC "/" LIBRARY_MAJOR_VERSION "/detected"));
 
+  /* reset everything */
+  nrm_table_destroy(&txn->unscoped_metrics);
+  txn->unscoped_metrics = nrm_table_create(10);
+  nr_php_packages_destroy(&txn->php_packages);
+  txn->php_packages = nr_php_packages_create();
+  nr_php_packages_destroy(&txn->php_package_major_version_metrics_suggestions);
+  txn->php_package_major_version_metrics_suggestions = nr_php_packages_create();
+
+  /* 10. package missing from txn->php_packages but present in this
+   * thread's own composer scan cache (txn->composer_info.entry->packages):
+   * the metric should fall back to the cache's version instead of the
+   * suggestion's
+   */
+  {
+    nr_composer_thread_entry_t composer_entry = {0};
+
+    composer_entry.packages = nr_php_packages_create();
+    nr_php_packages_add_package(composer_entry.packages,
+                                nr_php_package_create_with_source(
+                                    LIBRARY_NAME, COMPOSER_PACKAGE_VERSION,
+                                    NR_PHP_PACKAGE_SOURCE_COMPOSER));
+    txn->composer_info.entry = &composer_entry;
+
+    nr_txn_suggest_package_supportability_metric(txn, LIBRARY_NAME,
+                                                 LIBRARY_VERSION);
+    nr_php_txn_create_packages_major_metrics(txn);
+    tlib_pass_if_int_equal(
+        "package only in composer scan cache, metric created", 1,
+        nrm_table_size(txn->unscoped_metrics));
+    tlib_pass_if_not_null(
+        "composer scan cache's version is used for 'detected' metric when "
+        "txn->php_packages does not have the package",
+        nrm_find(txn->unscoped_metrics,
+                 PACKAGE_METRIC "/" COMPOSER_MAJOR_VERSION "/detected"));
+
+    txn->composer_info.entry = NULL;
+    nr_php_packages_destroy(&composer_entry.packages);
+  }
 
   /* cleanup */
   nr_php_packages_destroy(&txn->php_packages);
