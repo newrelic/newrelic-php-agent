@@ -19,6 +19,7 @@
 #include <sys/types.h>
 
 #include "nr_app_harvest.h"
+#include "nr_php_packages.h"
 #include "nr_rules.h"
 #include "nr_segment_terms.h"
 #include "util_hashmap.h"
@@ -234,6 +235,22 @@ extern nrapp_t* nr_agent_find_or_add_app(nrapplist_t* applist,
                                          nrtime_t timeout);
 
 /*
+ * Purpose : Search for an existing application matching the given app
+ *           info, without creating one if no match is found.
+ *
+ * Params  : 1. The application list unlocked.
+ *           2. The application information.
+ *
+ * Returns : A pointer to the locked matching application, or NULL if no
+ *           match was found or the parameters were invalid.
+ *
+ * Locking : Returns the application locked, if one is returned; the caller
+ *           must unlock it.
+ */
+extern nrapp_t* nr_app_find_locked(nrapplist_t* applist,
+                                   const nr_app_info_t* info);
+
+/*
  * Purpose : Create and return a sanitized/obfuscated version of the license
  *           for use in the phpinfo and log files.
  *
@@ -377,8 +394,8 @@ extern nr_random_t* nr_app_get_or_create_thread_rnd(nrapp_t* app,
 /*
  * Composer package-detection status for a single (app, thread) attempt.
  * Lives here (not nr_txn.h) because nr_txn.h includes nr_app.h, and this
- * type is now returned by nr_app_get_or_create_thread_composer_status()
- * below.
+ * type is now embedded in nr_composer_thread_entry_t, returned by
+ * nr_app_get_or_create_thread_composer_entry() below.
  */
 typedef enum {
   NR_COMPOSER_API_STATUS_UNSET = 0,
@@ -390,25 +407,49 @@ typedef enum {
 } nr_composer_api_status_t;
 
 /*
- * Purpose : Destructor for nr_composer_api_status_t values stored in
- *           composer_map. For use as nr_hashmap_create dtor argument.
- *
- * Params  : 1. The status pointer to free.
+ * Per-(app, thread) Composer detection state, stored in composer_map.
+ * status/packages/epoch/last_sent_epoch are only safe to mutate under
+ * app->app_lock.
  */
-extern void nr_app_composer_status_dtor(nr_composer_api_status_t* status);
+typedef struct {
+  nr_composer_api_status_t status; /* unchanged semantics: gates whether a
+                                       scan is attempted at all */
+  nr_php_packages_t* packages;     /* latest known snapshot; NULL until
+                                       first successful scan; never
+                                       destroyed as part of send/consume,
+                                       only on rescan-overwrite or eviction */
+  uint64_t epoch;                  /* bumped every time `packages` is
+                                       overwritten by a scan */
+  uint64_t last_sent_epoch;        /* epoch as of the last txn that reached
+                                       the transmit call with this epoch
+                                       still current (i.e. no newer scan had
+                                       overwritten `packages` since that txn
+                                       pulled); bumped unconditionally at
+                                       that point regardless of transmit
+                                       success/failure -- NOT gated on
+                                       confirmed delivery */
+} nr_composer_thread_entry_t;
 
 /*
- * Purpose : Return the Composer detection status for the calling thread,
- *           creating an entry initialized to NR_COMPOSER_API_STATUS_UNSET
- *           if this thread has not been seen before. Must be called with
- *           app->app_lock held.
+ * Purpose : Destructor for nr_composer_thread_entry_t values stored in
+ *           composer_map. For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The entry pointer to free.
+ */
+extern void nr_app_composer_entry_dtor(nr_composer_thread_entry_t* entry);
+
+/*
+ * Purpose : Return the Composer detection entry for the calling thread,
+ *           creating one initialized to NR_COMPOSER_API_STATUS_UNSET (with
+ *           no packages, epoch 0, last_sent_epoch 0) if this thread has not
+ *           been seen before. Must be called with app->app_lock held.
  *
  * Params  : 1. The application.
  *           2. The thread key: (uint64_t)nr_gettid().
  *
- * Returns : Pointer to the per-thread status, or NULL on allocation failure.
+ * Returns : Pointer to the per-thread entry, or NULL on allocation failure.
  */
-extern nr_composer_api_status_t* nr_app_get_or_create_thread_composer_status(
+extern nr_composer_thread_entry_t* nr_app_get_or_create_thread_composer_entry(
     nrapp_t* app,
     uint64_t key);
 

@@ -457,7 +457,6 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nr_slab_t* segment_slab;
   nr_app_harvest_stats_t* thread_harvest;
   nr_random_t* thread_rnd;
-  nr_composer_api_status_t* thread_composer_status;
   int tid;
 
   if (NULL == app) {
@@ -495,9 +494,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
    */
   thread_rnd = nr_app_get_or_create_thread_rnd(app, (uint64_t)tid);
   nt->rnd = thread_rnd;
-  thread_composer_status
-      = nr_app_get_or_create_thread_composer_status(app, (uint64_t)tid);
-  nt->composer_info.status = thread_composer_status;
+  nt->composer_info.entry
+      = nr_app_get_or_create_thread_composer_entry(app, (uint64_t)tid);
   nt->segment_slab = segment_slab;
 
   /*
@@ -3566,12 +3564,12 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
   }
 
   if (NR_PHP_PACKAGE_SOURCE_LEGACY == source
-      && NULL != txn->composer_info.status
+      && NULL != txn->composer_info.entry
       && NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED
-             == *txn->composer_info.status) {
+             == txn->composer_info.entry->status) {
     // don't add packages from legacy source if packages have been detected
-    // using composer runtime api. txn->composer_info.status is the same
-    // cached pointer nr_execute_handle_autoload and
+    // using composer runtime api. txn->composer_info.entry->status is the
+    // same cached entry->status nr_execute_handle_autoload and
     // nr_composer_handle_autoload use — see nr_app.h for the locking
     // contract and nr_txn_begin (this file) for where the fetch happens.
     return NULL;

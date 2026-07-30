@@ -220,13 +220,14 @@ typedef struct _nr_composer_info_t {
   bool composer_detected;
   /*
    * Borrowed pointer into this thread's entry in the owning nrapp_t's
-   * composer_map — not a copy. Fetched once in nr_txn_begin, alongside
-   * the rnd fetch; see nr_app.h for the locking contract and nr_txn.c for
-   * where the fetch happens. NULL means either the fetch failed (rare
+   * composer_map — not a copy. Fetched once in nr_txn_begin; see nr_app.h
+   * for the locking contract. NULL means either the fetch failed (rare
    * allocation failure) or app was NULL at txn begin — treat as "unknown"
    * at every read site, not as UNSET.
    */
-  nr_composer_api_status_t* status;
+  nr_composer_thread_entry_t* entry;
+  uint64_t composer_pull_epoch; /* epoch value this txn pulled at its pull
+                                    point, if any; 0 if never pulled */
 } nr_composer_info_t;
 
 /*

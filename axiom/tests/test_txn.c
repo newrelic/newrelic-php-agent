@@ -1716,7 +1716,7 @@ static void test_begin(void) {
     nr_hashmap_index_set(app->rnd_map, (uint64_t)self, rnd);
   }
   app->composer_map
-      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_status_dtor);
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
   app->info.high_security = 0;
   app->connect_reply = nro_new_hash();
   app->security_policies = nro_new_hash();
@@ -1767,14 +1767,16 @@ static void test_begin(void) {
 
   rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("options provided", rv, &correct);
-  tlib_pass_if_not_null("composer_info.status populated by nr_txn_begin",
-                        rv->composer_info.status);
+  tlib_pass_if_not_null("composer_info.entry populated by nr_txn_begin",
+                        rv->composer_info.entry);
   tlib_pass_if_true(
-      "composer_info.status points at this thread's composer_map entry",
-      rv->composer_info.status
-          == nr_app_get_or_create_thread_composer_status(app,
-                                                         (uint64_t)nr_gettid()),
-      "status=%p", (void*)rv->composer_info.status);
+      "composer_info.entry points at this thread's composer_map entry",
+      rv->composer_info.entry
+          == nr_app_get_or_create_thread_composer_entry(app,
+                                                        (uint64_t)nr_gettid()),
+      "entry=%p", (void*)rv->composer_info.entry);
+  tlib_pass_if_uint64_t_equal("composer_pull_epoch starts at 0", 0,
+                              rv->composer_info.composer_pull_epoch);
   json = nr_attributes_debug_json(rv->attributes);
   tlib_pass_if_str_equal("display host attribute created", json,
                          "{\"user\":[],\"agent\":["
@@ -8911,13 +8913,13 @@ static void test_nr_txn_add_php_package(void) {
   nr_txn_destroy(&txn);
 
   {
-    nr_composer_api_status_t composer_status
-        = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    nr_composer_thread_entry_t composer_entry = {0};
+    composer_entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
     txn = new_txn(0);
     // simulate composer api was successfully used. new_txn()'s test app has
-    // composer_map == NULL, so txn->composer_info.status is NULL after
+    // composer_map == NULL, so txn->composer_info.entry is NULL after
     // begin — point it at a local variable instead of relying on the map.
-    txn->composer_info.status = &composer_status;
+    txn->composer_info.entry = &composer_entry;
     p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
     tlib_pass_if_null(
         "legacy package information not added to transaction after composer api "
@@ -8992,13 +8994,13 @@ static void test_nr_txn_add_php_package_from_source(void) {
   nr_txn_destroy(&txn);
 
   {
-    nr_composer_api_status_t composer_status
-        = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    nr_composer_thread_entry_t composer_entry = {0};
+    composer_entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
     txn = new_txn(0);
     // simulate composer api was successfully used. new_txn()'s test app has
-    // composer_map == NULL, so txn->composer_info.status is NULL after
+    // composer_map == NULL, so txn->composer_info.entry is NULL after
     // begin — point it at a local variable instead of relying on the map.
-    txn->composer_info.status = &composer_status;
+    txn->composer_info.entry = &composer_entry;
     p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
                                             NR_PHP_PACKAGE_SOURCE_LEGACY);
     tlib_pass_if_null(
