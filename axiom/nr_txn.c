@@ -3661,6 +3661,10 @@ void nr_txn_discard_composer_packages(nrtxn_t* txn) {
   }
 
   entry = txn->composer_info.entry;
+  if (entry->epoch != entry->last_sent_epoch) {
+    nr_php_packages_destroy(&entry->packages);
+    entry->status = NR_COMPOSER_API_STATUS_UNSET;
+  }
   entry->last_sent_epoch = entry->epoch;
 }
 

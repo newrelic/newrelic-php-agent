@@ -9156,9 +9156,18 @@ static void test_txn_discard_composer_packages(void) {
   /* Discard after a scan: pull never ran (composer_pull_epoch still 0),
    * entry has a newer epoch than last_sent_epoch -- unlike
    * nr_txn_mark_composer_packages_sent, this must still advance
-   * last_sent_epoch unconditionally, with no epoch-match gate. */
+   * last_sent_epoch unconditionally, with no epoch-match gate. Since there
+   * was genuinely unsent data (epoch != last_sent_epoch going in), the
+   * entry's packages/status must also be reset back to as if the scan
+   * never happened. */
   entry.epoch = 5;
   entry.last_sent_epoch = 2;
+  entry.packages = nr_php_packages_create();
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "doctrine/orm", "2.5.0",
+                          NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
   txn = build_txn_with_composer_entry(&entry);
   /* composer_pull_epoch intentionally left at 0 -- pull never happened */
 
@@ -9166,19 +9175,40 @@ static void test_txn_discard_composer_packages(void) {
   tlib_pass_if_uint64_t_equal(
       "discard advances last_sent_epoch even though pull never ran", 5,
       entry.last_sent_epoch);
+  tlib_pass_if_null("discard of unsent data destroys entry->packages",
+                    entry.packages);
+  tlib_pass_if_true(
+      "discard of unsent data resets entry->status to UNSET",
+      NR_COMPOSER_API_STATUS_UNSET == entry.status, "status=%d",
+      (int)entry.status);
 
   nr_txn_destroy(&txn);
 
-  /* Already caught up: no-op but harmless */
+  /* Already caught up: no-op beyond the (already-matching) epoch write --
+   * an unrelated discard on an already-sent thread must not destroy
+   * legitimate packages/status history. */
   entry.epoch = 5;
   entry.last_sent_epoch = 5;
+  entry.packages = nr_php_packages_create();
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "doctrine/orm", "2.5.0",
+                          NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
   txn = build_txn_with_composer_entry(&entry);
 
   nr_txn_discard_composer_packages(txn);
   tlib_pass_if_uint64_t_equal("already caught up, stays caught up", 5,
                               entry.last_sent_epoch);
+  tlib_pass_if_not_null(
+      "already caught up: entry->packages left untouched", entry.packages);
+  tlib_pass_if_true(
+      "already caught up: entry->status left untouched",
+      NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == entry.status, "status=%d",
+      (int)entry.status);
 
   nr_txn_destroy(&txn);
+  nr_php_packages_destroy(&entry.packages);
 }
 
 static void test_nr_txn_suggest_package_supportability_metric(void) {

@@ -1283,6 +1283,19 @@ extern void nr_txn_mark_composer_packages_sent(nrtxn_t* txn);
  *           inherited and re-reported by the next transaction on this
  *           thread.
  *
+ *           If entry->epoch != entry->last_sent_epoch going in (i.e. there
+ *           was a genuinely unsent scan to swallow), also destroys
+ *           entry->packages and resets entry->status to
+ *           NR_COMPOSER_API_STATUS_UNSET, so the entry reads back exactly
+ *           as if the scan had never happened -- this is what lets the
+ *           legacy-detection suppression guard in
+ *           nr_txn_add_php_package_from_source() correctly re-arm for the
+ *           next transaction on this thread, instead of staying
+ *           permanently suppressed by a stale COLLECTED status. If the
+ *           entry was already fully sent (epoch == last_sent_epoch), this
+ *           is a no-op beyond the epoch write -- an unrelated discard on an
+ *           already-sent thread must not destroy legitimate history.
+ *
  *           Unlike nr_txn_mark_composer_packages_sent(), this does not
  *           gate on composer_pull_epoch == entry->epoch, because the pull
  *           never ran on this path -- composer_pull_epoch is still 0 (or
