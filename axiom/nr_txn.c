@@ -3647,6 +3647,23 @@ void nr_txn_mark_composer_packages_sent(nrtxn_t* txn) {
    * pull */
 }
 
+/*
+ * Assumed to run only on the entry's owning thread, for the same reason as
+ * nr_txn_pull_composer_packages()/nr_txn_mark_composer_packages_sent()
+ * above -- no locking is taken here. See the doc comment in nr_txn.h for
+ * the rationale.
+ */
+void nr_txn_discard_composer_packages(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  entry->last_sent_epoch = entry->epoch;
+}
+
 nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
                                          char* package_name,
                                          char* package_version) {

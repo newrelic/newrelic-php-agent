@@ -1379,6 +1379,23 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
     }
   }
 
+  if (0 != ignoretxn) {
+    /*
+     * This transaction is being ignored -- the pull/send/mark-sent path
+     * above was skipped entirely, so entry->last_sent_epoch never
+     * advanced. Advance it directly so the next transaction on this
+     * thread doesn't inherit and re-report this discarded scan. Known
+     * limitation: if this transaction's own Composer scan is what's being
+     * discarded, that scan is lost -- permanently in a persistent-worker
+     * context (no future autoload event can re-scan), harmlessly
+     * elsewhere (a traditional per-request context gets another chance
+     * next request). Accepted tradeoff -- matches how baseline already
+     * treats a discarded transaction's data uniformly, with no
+     * special-casing for Composer.
+     */
+    nr_txn_discard_composer_packages(NRPRG(txn));
+  }
+
   nr_txn_destroy(&NRPRG(txn));
 
   nr_hashmap_destroy(&NRTXNGLOBAL(guzzle_objs));

@@ -9141,6 +9141,46 @@ static void test_txn_mark_composer_packages_sent(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_txn_discard_composer_packages(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_discard_composer_packages(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_discard_composer_packages(txn);
+  nr_txn_destroy(&txn);
+
+  /* Discard after a scan: pull never ran (composer_pull_epoch still 0),
+   * entry has a newer epoch than last_sent_epoch -- unlike
+   * nr_txn_mark_composer_packages_sent, this must still advance
+   * last_sent_epoch unconditionally, with no epoch-match gate. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 2;
+  txn = build_txn_with_composer_entry(&entry);
+  /* composer_pull_epoch intentionally left at 0 -- pull never happened */
+
+  nr_txn_discard_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal(
+      "discard advances last_sent_epoch even though pull never ran", 5,
+      entry.last_sent_epoch);
+
+  nr_txn_destroy(&txn);
+
+  /* Already caught up: no-op but harmless */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 5;
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_discard_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("already caught up, stays caught up", 5,
+                              entry.last_sent_epoch);
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_nr_txn_suggest_package_supportability_metric(void) {
   char* json;
   char* package_name1 = "Laravel";
@@ -9299,5 +9339,6 @@ void test_main(void* p NRUNUSED) {
   test_nr_txn_add_php_package_from_source();
   test_txn_pull_composer_packages();
   test_txn_mark_composer_packages_sent();
+  test_txn_discard_composer_packages();
   test_nr_txn_suggest_package_supportability_metric();
 }

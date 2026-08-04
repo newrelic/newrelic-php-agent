@@ -1275,6 +1275,39 @@ extern void nr_txn_pull_composer_packages(nrtxn_t* txn);
 extern void nr_txn_mark_composer_packages_sent(nrtxn_t* txn);
 
 /*
+ * Purpose : Unconditionally advance this txn's per-thread composer entry's
+ *           last_sent_epoch to match entry->epoch, without going through
+ *           the normal pull/mark-sent path above (which nr_php_txn_end
+ *           skips entirely whenever a transaction ends up ignored). Used
+ *           so that a discarded transaction's pending Composer scan isn't
+ *           inherited and re-reported by the next transaction on this
+ *           thread.
+ *
+ *           Unlike nr_txn_mark_composer_packages_sent(), this does not
+ *           gate on composer_pull_epoch == entry->epoch, because the pull
+ *           never ran on this path -- composer_pull_epoch is still 0 (or
+ *           stale). The write happens regardless.
+ *
+ *           Assumed to run only on the entry's owning thread, for the same
+ *           reason as nr_txn_pull_composer_packages/
+ *           nr_txn_mark_composer_packages_sent above -- no locking is
+ *           taken here.
+ *
+ *           Known limitation: if a Composer scan and this discard land in
+ *           the same transaction, that scan's data is lost -- permanently
+ *           in a persistent-worker context (no future autoload event will
+ *           re-scan), harmlessly in traditional per-request contexts
+ *           (which get another chance next request). This matches how a
+ *           discarded transaction's data is already treated everywhere
+ *           else, with no special-casing for Composer.
+ *
+ * Params  : 1. The transaction.
+ *
+ * Returns : Nothing.
+ */
+extern void nr_txn_discard_composer_packages(nrtxn_t* txn);
+
+/*
  * Purpose : Add php package suggestion to transaction. This function
  * can be used when Vulnerability Management is not enabled.  It will
  * add the package to the transaction's
