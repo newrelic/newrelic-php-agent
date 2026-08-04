@@ -261,8 +261,8 @@ static void test_nr_php_txn_create_packages_major_metrics() {
 
   /* 10. package missing from txn->php_packages but present in this
    * thread's own composer scan cache (txn->composer_info.entry->packages):
-   * the metric should fall back to the cache's version instead of the
-   * suggestion's
+   * the cache is never consulted for this, so the metric falls back to the
+   * suggestion's own version instead of the cache's
    */
   {
     nr_composer_thread_entry_t composer_entry = {0};
@@ -281,10 +281,10 @@ static void test_nr_php_txn_create_packages_major_metrics() {
         "package only in composer scan cache, metric created", 1,
         nrm_table_size(txn->unscoped_metrics));
     tlib_pass_if_not_null(
-        "composer scan cache's version is used for 'detected' metric when "
-        "txn->php_packages does not have the package",
+        "composer scan cache is not consulted, so the suggestion's own "
+        "version is used for 'detected' metric",
         nrm_find(txn->unscoped_metrics,
-                 PACKAGE_METRIC "/" COMPOSER_MAJOR_VERSION "/detected"));
+                 PACKAGE_METRIC "/" LIBRARY_MAJOR_VERSION "/detected"));
 
     txn->composer_info.entry = NULL;
     nr_php_packages_destroy(&composer_entry.packages);
