@@ -1,0 +1,25 @@
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-close
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      issue-number:
+        type: number
+        required: true
+    secrets:
+      token:
+        required: true
+
+jobs:
+  close-issue:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.token }}
+    steps:
+      - name: close issue
+        run: gh issue -R ${{ github.repository }} close ${{ inputs.issue-number }}

@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: "gomod"    
     directory: "/daemon"                
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: "chore(deps):"      
   - package-ecosystem: github-actions

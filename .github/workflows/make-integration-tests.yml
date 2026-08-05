@@ -48,7 +48,7 @@ jobs:
         php: ${{ fromJson(needs.get-php-versions.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
           repository: ${{ inputs.origin }}/newrelic-php-agent
@@ -74,7 +74,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Enable amd64 emulation
         if: ${{ inputs.arch == 'arm64' }}
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # 4.1.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # 4.2.0
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64

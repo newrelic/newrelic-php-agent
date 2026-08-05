@@ -35,11 +35,11 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Setup go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: ./php-agent/daemon/go.mod
           cache: false
@@ -60,7 +60,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Get go version
@@ -71,7 +71,7 @@ jobs:
           echo "[${toolchain}]"
           echo "go-toolchain-version=${toolchain}" >> $GITHUB_OUTPUT
       - name: Setup go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: ${{ steps.get-go-version.outputs.go-toolchain-version }}
           cache-dependency-path: "**/*.sum"
@@ -101,7 +101,7 @@ jobs:
         arch: [amd64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Login to Docker Hub
@@ -139,7 +139,7 @@ jobs:
         arch: [arm64]
     steps:
       - name: Checkout newrelic-php-agent code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Login to Docker Hub
@@ -184,7 +184,7 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Login to Docker Hub
@@ -272,7 +272,7 @@ jobs:
           - codecov: 0
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Login to Docker Hub
@@ -343,7 +343,7 @@ jobs:
             codecov: 1
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Get integration_runner
@@ -430,7 +430,7 @@ jobs:
           nr-php make gcov
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # 6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # 7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
@@ -455,7 +455,7 @@ jobs:
         php: ${{ fromJson(needs.get-php-versions-arm64.outputs.php-versions) }}
     steps:
       - name: Checkout integration tests
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
         with:
           path: php-agent
       - name: Get integration_runner
@@ -473,7 +473,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Emable amd64 emulation
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # 4.1.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # 4.2.0
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64

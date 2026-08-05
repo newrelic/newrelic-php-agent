@@ -1,0 +1,33 @@
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-roadmap-label
+permissions: {}
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  roadmap-response:
+    if: "github.event.label.name == 'status: on-roadmap' && github.event.issue.state == 'open'"
+    uses: ./.github/workflows/issue-comment.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
+    with:
+      issue-number: ${{ github.event.issue.number }}
+      message: >
+        Thank you for the feedback! We've reviewed this request and added it to our long-term
+        roadmap. While we don't have a specific time commitment for implementation yet, we have
+        created an internal ticket to track this and have linked it to this issue for context.
+        We will close this GitHub issue for now and provide updates here if it moves into active development.
+
+  close-issue:
+    needs: roadmap-response
+    uses: ./.github/workflows/issue-close.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
+    with:
+      issue-number: ${{ github.event.issue.number }}

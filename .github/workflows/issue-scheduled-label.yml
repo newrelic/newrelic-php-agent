@@ -1,0 +1,25 @@
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: issue-scheduled-label
+permissions: {}
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  scheduled-response:
+    if: "github.event.label.name == 'status: scheduled' && github.event.issue.state == 'open'"
+    uses: ./.github/workflows/issue-comment.yml
+    secrets:
+      token: ${{ secrets.ISSUE_BOT_TOKEN }}
+    with:
+      issue-number: ${{ github.event.issue.number }}
+      message: >
+        Thank you for your feedback! We are happy to share that this has been added to our roadmap.
+        We are currently aiming to address this in the next 1-2 quarters. We will update this GitHub
+        issue as we make progress. Please note that these windows are subject to change based on development
+        priorities. We will keep this issue open as we move toward implementation.
