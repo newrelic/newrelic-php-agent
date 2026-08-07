@@ -67,6 +67,15 @@ extern void nr_php_txn_create_php_version_metric(nrtxn_t* txn,
                                                  const char* version);
 
 /*
+ * Purpose : Create and record metric for the current PHP SAPI name.
+ *
+ * Params  : 1. The current transaction.
+ *           2. The PHP SAPI name.
+ */
+extern void nr_php_txn_create_sapi_metric(nrtxn_t* txn,
+                                          const char* sapi_name);
+
+/*
  * Purpose : Callback for nr_php_packages_iterate to create major
  *           version metrics.
  *
