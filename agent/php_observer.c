@@ -274,9 +274,9 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
 
 /*
  * Purpose: Update the current segment of a fiber context when a fiber has
- * been suspended.
+ * been suspended.  The php_current_context is context to use.
  *
- * Params:  zend_fiber_context* zfc
+ * Params:  zend_fiber_context* zfc of the "from" fiber in a switch
  *
  * Returns : Void
  * Note: caller is responsible for verifying zfc is not NULL.
@@ -286,7 +286,9 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
  * Fiber::suspend(), since ONLY ONE fiber can run at a time, any fiber that
  * calls another will automatically be suspended.
  *
- * Note: We need to handle both types of suspension, but it is possible to
+ * Note: We need to handle both types of suspension.
+ *
+ * If in the future, we ever need to differentiate, it is possible to
  * differentiate. To detect that the fiber suspended itself using
  * Fiber::suspend(), check:
  *
@@ -297,7 +299,6 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
  */
 static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
   nr_segment_t* fiber_segment = NULL;
-  zend_fiber* zfc_fiber = NULL;
 
   if (NULL == NRPRG(txn)) {
     /* nothing to do if the txn is NULL */
@@ -305,8 +306,6 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
   }
 
   if (ZEND_FIBER_STATUS_RUNNING == zfc->status) {
-    zfc_fiber = zend_fiber_from_context(zfc);
-
     fiber_segment = nr_txn_get_current_segment(
         NRPRG(txn), NRPRG_SHARED(current_php_context));
 
@@ -345,7 +344,7 @@ static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
   fiber_segment = nr_txn_get_current_segment(NRPRG(txn),
                                              NRPRG_SHARED(current_php_context));
 
-  if (NULL != fiber_segment) {
+  if (NULL == fiber_segment) {
     return; /* Valid case - ex: will happen if there was a txn stop. */
   }
 
