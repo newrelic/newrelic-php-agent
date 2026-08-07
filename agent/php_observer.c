@@ -344,7 +344,12 @@ static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
 
   fiber_segment = nr_txn_get_current_segment(NRPRG(txn),
                                              NRPRG_SHARED(current_php_context));
-  if (NULL != fiber_segment && 0 != fiber_segment->stop_time) {
+
+  if (NULL != fiber_segment) {
+    return; /* Valid case - ex: will happen if there was a txn stop. */
+  }
+
+  if (nrlikely(0 != fiber_segment->stop_time)) {
     nr_exclusive_time_ensure(&fiber_segment->exclusive_time,
                              NR_PHP_DEFAULT_SUSPEND_TIMES,
                              fiber_segment->start_time, current_time);
@@ -355,6 +360,14 @@ static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
                                 fiber_segment->stop_time, current_time);
     /* reset the stop_time now that the fiber is resumed. */
     fiber_segment->stop_time = 0;
+  } else {
+    /*
+     * Shouldn't get to this case, but doublechecking so as not to overwrite a
+     * time that something else wrote.
+     */
+    nrl_verbosedebug(
+        NRL_AGENT, "Current segment time was already set for fiber context %p",
+        zfc);
   }
 }
 
