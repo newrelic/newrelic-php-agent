@@ -279,7 +279,10 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
  * Params:  zend_fiber_context* zfc of the "from" fiber in a switch
  *
  * Returns : Void
- * Note: caller is responsible for verifying zfc is not NULL.
+ * Note: caller is responsible for:
+ *              1) verifying zfc is not NULL.
+ *              2) calling this before nr_fiber_set_contexts has been called
+ *                so we don't have to calculate the context twice
  *
  * Ensure we don't count fiber suspend time in the segment's exclusive time
  * duration. In addition to a fiber being able to suspend itself via
@@ -318,19 +321,20 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
 /*
  * Purpose: Update the exclusive current segment of a fiber context when a
  * fiber is reanimated (via resume or caller ending or called fiber
- * ending/suspending) after being suspended
+ * ending/suspending) after being suspended; the "to" in a switch.
  *
- * Params:  zend_fiber_context* zfc of the "to" context in a switch
+ * Params:  none
  *
  * Returns : Void
  * Note: caller is responsible for:
  *              1) verifying zfc is not NULL.
  *              2) ensuring the "to" fiber is ZEND_FIBER_STATUS_SUSPENDED
- *
+ *              3) calling this after nr_fiber_set_contexts has been called
+ *                so we don't have to calculate the context twice
  * During a fiber switch, update the exclusive time of a the "to" fiber context
  *
  */
-static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
+static inline void nr_fiber_handle_exclusive_time() {
   nr_segment_t* fiber_segment = NULL;
   nrtime_t current_time = 0;
 
@@ -365,8 +369,8 @@ static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
      * time that something else wrote.
      */
     nrl_verbosedebug(
-        NRL_AGENT, "Current segment time was already set for fiber context %p",
-        zfc);
+        NRL_AGENT, "Current segment time was already set for fiber context %s",
+        NRPRG_SHARED(current_php_context));
   }
 }
 
