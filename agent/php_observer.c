@@ -122,8 +122,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     // store the wraprec in the op_array extension for the duration of the
     // request for later lookup
     ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY,
-                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
-        = wr;
+                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
   }
 
   handlers.begin = nr_php_observer_fcall_begin;
@@ -322,16 +321,14 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
  * fiber is reanimated (via resume or caller ending or called fiber
  * ending/suspending) after being suspended
  *
- * Params:  zend_fiber_context* zfc
+ * Params:  zend_fiber_context* zfc of the "to" context in a switch
  *
  * Returns : Void
- * Note: caller is responsible for verifying zfc is not NULL.
+ * Note: caller is responsible for:
+ *              1) verifying zfc is not NULL.
+ *              2) ensuring the "to" fiber is ZEND_FIBER_STATUS_SUSPENDED
  *
- * During a fiber switch, update the exclusive time of a the fiber context
- * being switched "to" if:
- * 1) The "to" field is ZEND_FIBER_STATUS_SUSPENDED
- * 2) The segment stop time for the current on that fiber context is not
- * zero
+ * During a fiber switch, update the exclusive time of a the "to" fiber context
  *
  */
 static inline void nr_fiber_handle_exclusive_time(zend_fiber_context* zfc) {
