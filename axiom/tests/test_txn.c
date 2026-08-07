@@ -9101,6 +9101,58 @@ static void test_txn_pull_composer_packages(void) {
   tlib_pass_if_not_null("composer package still pulled alongside it", p);
 
   nr_txn_destroy(&txn);
+
+  /* Same-txn scan already fired: composer_detected/autoload_detected are
+   * already true on this txn (as scan-time code would leave them), so the
+   * "detected" metric fallback below must not fire a second time even
+   * though real pull work is pending. */
+  entry.epoch = 4;
+  entry.last_sent_epoch = 3;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_detected = true;
+  txn->composer_info.autoload_detected = true;
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_int_equal(
+      "already-detected: no fallback metric added",
+      0, nrm_table_size(txn->unscoped_metrics));
+
+  nr_txn_destroy(&txn);
+
+  /* Bootstrap loss: composer_detected/autoload_detected are false (the
+   * scan ran with no live txn, so scan-time code never set them), and
+   * real pull work is pending -- the fallback must fire both metrics
+   * exactly once on this txn. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 4;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  test_txn_metric_is("fallback: Composer/detected fires once",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Supportability/library/Composer/detected", 1, 0, 0, 0,
+                     0, 0);
+  test_txn_metric_is("fallback: Autoloader/detected fires once",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Supportability/library/Autoloader/detected", 1, 0, 0, 0,
+                     0, 0);
+
+  nr_txn_destroy(&txn);
+
+  /* No real work: epoch == last_sent_epoch, so the early return happens
+   * before the fallback is ever reached, regardless of the flags' state. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 5;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_int_equal("no real work: fallback not reached", 0,
+                        nrm_table_size(txn->unscoped_metrics));
+
+  nr_txn_destroy(&txn);
   nr_php_packages_destroy(&entry.packages);
 }
 

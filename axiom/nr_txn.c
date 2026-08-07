@@ -3623,6 +3623,27 @@ void nr_txn_pull_composer_packages(nrtxn_t* txn) {
   nr_php_packages_iterate(entry->packages,
                           nr_txn_pull_composer_package_callback, txn);
   txn->composer_info.composer_pull_epoch = entry->epoch;
+
+  /*
+   * The scan that produced this data may have run with no live txn
+   * (FrankenPHP worker-mode bootstrap), in which case its own inline
+   * "detected" metric attempts (agent/lib_composer.c,
+   * agent/php_execute.c) silently no-opped. Fire whichever is still
+   * false on *this* txn -- already-true means this same scan invocation
+   * already fired it earlier in this same request. The epoch gate above
+   * already ensures only one txn per scan reaches this point, so this is
+   * exactly-once-per-scan with no new state. Deliberately read-only on
+   * these flags -- nothing downstream reads them after this point in the
+   * request, so there's nothing to update.
+   */
+  if (false == txn->composer_info.composer_detected) {
+    nrm_force_add(txn->unscoped_metrics,
+                  "Supportability/library/Composer/detected", 0);
+  }
+  if (false == txn->composer_info.autoload_detected) {
+    nrm_force_add(txn->unscoped_metrics,
+                  "Supportability/library/Autoloader/detected", 0);
+  }
 }
 
 /*
