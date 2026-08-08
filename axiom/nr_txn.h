@@ -276,7 +276,7 @@ typedef struct _nrtxn_t {
   nr_segment_t* force_current_segment; /* Enforce a current segment for the
                                           default context, overriding the
                                           default parent stack. Only used with
-                                          PHP < 8.0. Do no tuse with OAPI; it is
+                                          PHP < 8.0. Do not use with OAPI; it is
                                           not setup to utilize this.*/
   size_t segment_count; /* A count of segments for this transaction, maintained
                            throughout the life of this transaction */

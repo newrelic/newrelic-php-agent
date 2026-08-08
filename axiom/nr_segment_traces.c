@@ -551,7 +551,7 @@ void nr_segment_traces_create_data(
     nr_string_pool_destroy(&segment_names);
     nr_buffer_destroy(&buf);
     if (span_events) {
-          nr_vector_destroy(&span_events);
+      nr_vector_destroy(&span_events);
     }
     return;
   }

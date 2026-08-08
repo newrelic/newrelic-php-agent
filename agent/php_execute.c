@@ -27,7 +27,6 @@
 #include "util_strings.h"
 #include "php_txn.h"
 #include "util_url.h"
-#include "util_url.h"
 #include "util_metrics.h"
 #include "util_number_converter.h"
 #include "fw_support.h"

@@ -251,8 +251,22 @@ static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
 }
 
 static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
-  nr_segment_t* current_segment = NULL;
   nrtxn_t* txn = NRPRG(txn);
+
+  /*
+   * Directly updating current_async_context to reflect which PHP context we
+   * are switching into. This intentionally bypasses nr_txn_set_current_segment
+   * because a fiber switch does not start or end a segment — it only moves
+   * PHP execution from one already-active context to another. The per-context
+   * segment stacks are left untouched.
+   *
+   * nr_txn_set_current_segment and nr_txn_retire_current_segment also maintain
+   * current_async_context as a side effect of segment push/pop. Those functions
+   * must remain the owners of current_async_context within a single context.
+   * This is the one callsite where the field is written outside that contract,
+   * and it is safe here because the stacks themselves are already correct —
+   * only the "which context is PHP currently running in" pointer needs updating.
+   */
 
   if (zfc->kind != zend_ce_fiber) {
     /* Context is the Main PHP Process */
@@ -421,6 +435,7 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
         "PHP failed to provide a non-null fiber context needed for a "
         "fiber aware transaction and must therefore end the transaction.");
     nr_php_txn_end(0, 0 TSRMLS_CC);
+    return;
   }
 
   if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
@@ -450,7 +465,7 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
   if (ZEND_FIBER_STATUS_INIT == to->status) {
     nr_fiber_set_fiber_parent_segment(from);
   } else if (ZEND_FIBER_STATUS_SUSPENDED == to->status) {
-    nr_fiber_handle_exclusive_time(to);
+    nr_fiber_handle_exclusive_time();
   }
 
   if (NR_FAILURE
