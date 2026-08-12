@@ -1378,6 +1378,18 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
      * next request). Accepted tradeoff -- matches how baseline already
      * treats a discarded transaction's data uniformly, with no
      * special-casing for Composer.
+     *
+     * Note this gate reads the ignoretxn local, not txn->status.ignore,
+     * and that is deliberate: an ignore-type url or transaction_name rule
+     * applied inside nr_txn_end sets status.ignore after the local was
+     * computed, so such a transaction has already pulled and falls
+     * through here without discarding. That is the wanted behaviour --
+     * nothing was handed to the daemon, and a thread typically only scans
+     * once in its lifetime, so leaving the unsent scan in the entry lets
+     * the next transaction on this thread re-pull and report it instead
+     * of losing it for the thread's remaining life. Only a transaction
+     * ignored before nr_txn_end runs skipped the pull, and only that one
+     * needs the entry reset.
      */
     nr_txn_discard_composer_packages(NRPRG(txn));
   }

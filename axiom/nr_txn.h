@@ -1278,10 +1278,19 @@ extern void nr_txn_mark_composer_packages_sent(nrtxn_t* txn);
  * Purpose : Unconditionally advance this txn's per-thread composer entry's
  *           last_sent_epoch to match entry->epoch, without going through
  *           the normal pull/mark-sent path above (which nr_php_txn_end
- *           skips entirely whenever a transaction ends up ignored). Used
- *           so that a discarded transaction's pending Composer scan isn't
- *           inherited and re-reported by the next transaction on this
- *           thread.
+ *           skips entirely when a transaction is already known to be
+ *           ignored before nr_txn_end runs). Used so that a discarded
+ *           transaction's pending Composer scan isn't inherited and
+ *           re-reported by the next transaction on this thread.
+ *
+ *           That invariant is scoped to callers on this route only. A
+ *           transaction that is only marked ignored during nr_txn_end --
+ *           by an ignore-type url or transaction_name rule -- has already
+ *           pulled, never reaches this function, and deliberately leaves
+ *           the entry alone so the next transaction on the thread re-pulls
+ *           and reports the scan. Both routes report a given scan at most
+ *           once; they differ in whether it is swallowed or deferred. See
+ *           nr_php_txn_end for why that difference is intentional.
  *
  *           If entry->epoch != entry->last_sent_epoch going in (i.e. there
  *           was a genuinely unsent scan to swallow), also destroys
