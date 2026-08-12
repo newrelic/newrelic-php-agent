@@ -74,8 +74,8 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
  * Purpose : Find (never create) the nrapp_t for the current (app, thread)
  *           when no txn exists to supply one, by building a throwaway
  *           nr_app_info_t search key from process-global/SAPI-global state.
- *           Mirrors agent/php_txn.c:893,971-973's fallback logic for
- *           appname/license (order between the two independent
+ *           Mirrors nr_php_txn_begin()'s (agent/php_txn.c) fallback logic
+ *           for appname/license (order between the two independent
  *           appname/license computations doesn't matter — only that each
  *           resolves to the same value RINIT would have used), so this
  *           always resolves to the same nr_app_info_t identity fields
@@ -89,8 +89,8 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
  *           trace_observer_host, and trace_observer_port are actually
  *           compared by nr_app_match(); environment/lang/version/
  *           redirect_collector are set below purely to satisfy that
- *           non-NULL gate, mirroring agent/php_txn.c:979,983-984,986's
- *           equivalent assignments.
+ *           non-NULL gate, mirroring nr_php_txn_begin()'s equivalent
+ *           nr_app_info_t assignments.
  *
  * Returns : The matching nrapp_t, with app->app_lock held (caller must
  *           unlock), or NULL if no match exists yet.
@@ -111,11 +111,11 @@ static nrapp_t* nr_composer_find_app_no_txn(TSRMLS_D) {
   }
 #endif
 
-  /* appname fallback, ownership-equivalent to agent/php_txn.c:971-973 (that
-   * code reassigns the pointer and strdup's once, later, unconditionally;
-   * this does the strdup inline in the fallback branch instead — same end
-   * state, different structure, since this function has no later
-   * unconditional strdup point to defer to) */
+  /* appname fallback, ownership-equivalent to the appname fallback in
+   * nr_php_txn_begin() (that code reassigns the pointer and strdup's once,
+   * later, unconditionally; this does the strdup inline in the fallback
+   * branch instead — same end state, different structure, since this
+   * function has no later unconditional strdup point to defer to) */
   if ((NULL == appnames) || (0 == appnames[0])) {
     nr_free(appnames);
     appnames = nr_strdup(NRINI(appnames));
@@ -123,7 +123,7 @@ static nrapp_t* nr_composer_find_app_no_txn(TSRMLS_D) {
   info.appname = appnames; /* ownership transferred; freed by
                               nr_app_info_destroy_fields below */
 
-  /* license fallback, matching agent/php_txn.c:893 exactly (same helper) */
+  /* license fallback, matching nr_php_txn_begin() exactly (same helper) */
   lic_to_use = nr_php_use_license(raw_license TSRMLS_CC);
   info.license = (NULL != lic_to_use) ? nr_strdup(lic_to_use) : NULL;
   nr_free(raw_license);
