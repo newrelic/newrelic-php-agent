@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"testing"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,6 +27,7 @@ type testGrpcServer struct {
 	port                 uint16
 	spansReceivedChan    chan *v1.SpanBatch
 	metadataReceivedChan chan metadata.MD
+	closeAfterOneMessage bool
 }
 
 func (s *testGrpcServer) RecordSpanBatch(stream v1.IngestService_RecordSpanBatchServer) error {
@@ -41,6 +43,9 @@ func (s *testGrpcServer) RecordSpanBatch(stream v1.IngestService_RecordSpanBatch
 			return err
 		}
 		s.spansReceivedChan <- batch
+		if s.closeAfterOneMessage {
+			return nil
+		}
 	}
 }
 
@@ -326,5 +331,49 @@ func TestErrToCodeString(t *testing.T) {
 					actual, test.expect)
 			}
 		})
+	}
+}
+
+func TestServerClosesWithOK(t *testing.T) {
+	srv := newTestObsServer(t)
+	srv.closeAfterOneMessage = true
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	responseError := sender.response()
+
+	err, _ = sender.connect()
+	if err != nil {
+		t.Fatalf("unexpected error during connect: %v", err)
+	}
+
+	s := &v1.Span{TraceId: "trace_id"}
+	b := &v1.SpanBatch{Spans: []*v1.Span{s}}
+	bs, _ := proto.Marshal(b)
+
+	err, _ = sender.send(encodedSpanBatch(bs))
+	if err != nil {
+		t.Fatalf("unexpected error during sending: %v", err)
+	}
+
+	select {
+	case status := <-responseError:
+		if status.code != statusImmediateRestart {
+			t.Fatalf("expected statusImmediateRestart on responseError, got %v", status.code)
+		}
+		if status.metric != "" {
+			t.Fatalf("expected no supportability metric for a graceful close, got %q", status.metric)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timed out waiting for responseError after OK close")
 	}
 }

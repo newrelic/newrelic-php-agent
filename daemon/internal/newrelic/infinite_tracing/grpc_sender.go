@@ -137,6 +137,7 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 				log.Debugf("grpc endpoint messages seen: %d", in.MessagesSeen)
 			case io.EOF:
 				log.Debugf("received EOF from grpc endpoint")
+				s.responseError <- spanBatchSenderStatus{code: statusImmediateRestart}
 				return
 			default:
 				log.Errorf("unexpected error from grpc endpoint:  %v", err)
