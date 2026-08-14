@@ -348,6 +348,15 @@ func TestInvalidSpan(t *testing.T) {
 	if status.metric != "Supportability/InfiniteTracing/Span/gRPC/INTERNAL" {
 		t.Fatalf("expected the INTERNAL supportability metric, got %q", status.metric)
 	}
+
+	// The receive goroutine must push exactly once and return - not loop
+	// back into Recv() and refill the channel. Fix 5's drain at the top of
+	// connect() depends on every exit path behaving this way.
+	select {
+	case extra := <-responseError:
+		t.Fatalf("receive goroutine kept pushing after a genuine error: %v", extra)
+	case <-time.After(100 * time.Millisecond):
+	}
 }
 
 func TestErrToCodeString(t *testing.T) {
@@ -605,5 +614,54 @@ func TestConcurrentRecvOnReassignedStream(t *testing.T) {
 
 	if atomic.LoadInt32(&violated) != 0 {
 		t.Fatalf("concurrent Recv() calls observed on a reassigned stream")
+	}
+}
+
+// eofOnSendStream stubs just enough of
+// v1.IngestService_RecordSpanBatchClient to make SendMsg return io.EOF.
+// Every other method is left to panic if ever called - send()'s fallback
+// path under test never reaches them, and no receive goroutine is started
+// against this stream (it's assigned directly to s.stream, bypassing
+// connect()), so there is nothing to push onto s.responseError.
+type eofOnSendStream struct {
+	v1.IngestService_RecordSpanBatchClient
+}
+
+func (e *eofOnSendStream) SendMsg(m any) error {
+	return io.EOF
+}
+
+// TestSendEofGracePeriodTimeout exercises send()'s fallback branch: when
+// SendMsg returns io.EOF and nothing arrives on s.responseError within
+// sendEofStatusGracePeriod, send() must fall through to classifying the
+// bare io.EOF itself rather than hang or return early.
+func TestSendEofGracePeriodTimeout(t *testing.T) {
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   "localhost",
+		Port:   10999,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	sender.stream = &eofOnSendStream{}
+
+	start := time.Now()
+	sendErr, status := sender.send(encodedSpanBatch([]byte{1, 2, 3}))
+	elapsed := time.Since(start)
+
+	if elapsed < 900*time.Millisecond {
+		t.Fatalf("send() returned after %v, expected it to wait out the ~%v grace period", elapsed, sendEofStatusGracePeriod)
+	}
+	if sendErr != io.EOF {
+		t.Fatalf("expected send() to return io.EOF, got %v", sendErr)
+	}
+	if status.code != statusRestart {
+		t.Fatalf("expected statusRestart, got %v", status.code)
+	}
+	if status.metric != "Supportability/InfiniteTracing/Span/gRPC/UNKNOWN" {
+		t.Fatalf("expected the UNKNOWN supportability metric, got %q", status.metric)
 	}
 }

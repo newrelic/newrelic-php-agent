@@ -419,11 +419,16 @@ func TestOkCloseReconnectsWithoutBackoff(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error initializing sender: %v", err)
 	}
+	defer sender.conn.Close()
 
 	to, worker := newTraceObserverWithWorker(&Config{
 		QueueSize: 100,
 	})
-	defer to.Shutdown(10 * time.Millisecond)
+	defer func() {
+		if err := to.Shutdown(10 * time.Millisecond); err != nil {
+			t.Logf("Shutdown returned an error (likely just the tight 10ms timeout): %v", err)
+		}
+	}()
 	go func() {
 		to.sender = sender
 		worker()

@@ -117,9 +117,18 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	// Drain any status left over from a previous stream generation.
 	// s.responseError is never recreated across statusRestart/
 	// statusImmediateRestart reconnects (only clone(), on statusReconnect,
-	// gets a fresh one), so anything still buffered here can only be a
-	// leftover from a goroutine that has already terminated - the new
-	// generation's goroutine doesn't exist yet.
+	// gets a fresh one), and the new generation's goroutine doesn't exist
+	// yet, so anything still buffered here can only be a leftover push.
+	// That leftover is guaranteed to come from an already-terminated
+	// goroutine only because of a caller-side precondition, not anything
+	// intrinsic to connect(): the only caller, doStreaming() in
+	// trace_observer.go, calls connect() only after the previous stream
+	// has already terminated (a send error, a responseError push, or
+	// shutdown). A caller that reconnects while a prior stream is still
+	// live could still leave a push arriving after this drain -
+	// TestConcurrentRecvOnReassignedStream forces exactly that
+	// interleaving to prove Fix 4's stream-binding is what makes this
+	// safe in practice.
 	for {
 		select {
 		case <-s.responseError:
@@ -143,6 +152,9 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	s.stream = stream
 
 	log.Debugf("connected to grpc endpoint %s", s.Host)
+	// stream is taken as a parameter (not a closure over the local above)
+	// so the binding is structural: nothing inside this goroutine can
+	// accidentally read s.stream, which is reassigned on every reconnect.
 	go func(stream v1.IngestService_RecordSpanBatchClient) {
 		for {
 			in, err := stream.Recv()
