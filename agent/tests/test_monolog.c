@@ -13,6 +13,7 @@
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 static void setup_logrecord() {
   const char* log_record_class
       = "namespace Monolog;"
@@ -26,6 +27,256 @@ static void setup_logrecord() {
 
   tlib_php_request_eval(log_record_class);
 }
+
+static void test_context_extra_merge_behavior(TSRMLS_D) {
+  zval* record;
+  nr_attributes_t* attributes;
+  tlib_php_request_start();
+
+  nrtxn_t* txn = NRPRG(txn);
+  txn->options.log_forwarding_context_data_enabled = 1;
+  nr_attribute_config_enable_destinations(txn->attribute_config,
+                                          NR_ATTRIBUTE_DESTINATION_LOG);
+
+  /* Test: Direct testing of context/extra merge using exposed function */
+  /* Create a record with both context and extra data, including collision */
+
+  setup_logrecord();
+
+  /* Create a record with both context and extra data, including collision */
+  record = tlib_php_request_eval_expr(
+      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
+      "'from_context', 'shared_key' => 'old'], extra: ['extra_key' => "
+      "'metadata', 'shared_key' => 'new']);");
+
+  /* Test the actual merge function directly */
+  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
+  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
+
+  if (attributes) {
+    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
+        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    /* Verify both context and extra attributes exist */
+    tlib_pass_if_not_null(
+        "Context attribute exists",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "from_context",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_not_null(
+        "Extra attribute exists",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+    tlib_pass_if_str_equal(
+        "Extra key/var exist", "metadata",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+
+    /* Test key collision behavior - extra should overwrite context for same key
+     */
+    tlib_pass_if_str_equal(
+        "Extra overwrites context for same key", "new",
+        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
+
+    nro_delete(log_attributes);
+    nr_attributes_destroy(&attributes);
+  }
+
+  nr_php_zval_free(&record);
+
+  /* Create a record with only context and no extra data*/
+  record = tlib_php_request_eval_expr(
+      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
+      "'from_context', 'shared_key' => 'old']);");
+
+  /* Test the actual merge function directly */
+  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
+  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
+
+  if (attributes) {
+    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
+        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    /* Verify only context and no extra attributes exist */
+    tlib_pass_if_not_null(
+        "Context attribute exists",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "from_context",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_null(
+        "Extra attribute exists",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+    tlib_pass_if_str_equal(
+        "Another attribute", "old",
+        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
+
+    nro_delete(log_attributes);
+    nr_attributes_destroy(&attributes);
+  }
+
+  nr_php_zval_free(&record);
+
+  /* Create a record with only extra and no context data*/
+  record = tlib_php_request_eval_expr(
+      "new Monolog\\LogRecord(message: 'error', extra: ['extra_key' => "
+      "'metadata', 'shared_key' => 'new']);");
+
+  /* Test the actual merge function directly */
+  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
+  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
+
+  if (attributes) {
+    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
+        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    /* Verify only extra attributes exist */
+    tlib_pass_if_null(
+        "Context attribute exists",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_not_null(
+        "Extra attribute exists",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "metadata",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+    tlib_pass_if_str_equal(
+        "Another attribute", "new",
+        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
+
+    nro_delete(log_attributes);
+    nr_attributes_destroy(&attributes);
+  }
+
+  nr_php_zval_free(&record);
+
+  /* Create a record with only context and no extra data*/
+  record
+      = tlib_php_request_eval_expr("new Monolog\\LogRecord(message: 'error');");
+
+  /* Test the actual merge function directly */
+  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
+  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
+
+  if (attributes) {
+    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
+        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    /* Verify no attributes exist */
+    tlib_pass_if_null(
+        "Context attribute exists",
+        nro_get_hash_string(log_attributes, "context.context_key", NULL));
+    tlib_pass_if_null(
+        "Extra attribute exists",
+        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
+
+    nro_delete(log_attributes);
+    nr_attributes_destroy(&attributes);
+  }
+
+  nr_php_zval_free(&record);
+
+  tlib_php_request_end();
+}
+
+static void test_monolog_version_format_differences(TSRMLS_D) {
+  zval* v2_record;
+  zval* v3_record;
+  nr_attributes_t* v2_attributes;
+  nr_attributes_t* v3_attributes;
+  tlib_php_request_start();
+
+  nrtxn_t* txn = NRPRG(txn);
+  txn->options.log_forwarding_context_data_enabled = 1;
+  nr_attribute_config_enable_destinations(txn->attribute_config,
+                                          NR_ATTRIBUTE_DESTINATION_LOG);
+
+  /* Test: Monolog v2 format (array with 'context' and 'extra' keys) */
+
+  char* valid_array_args
+      = "array("
+        "    'context' => array("
+        "        'v2_user_name' => 'MyName'"
+        "    ),"
+        "    'extra' => array("
+        "        'v2_processor' => 'metadata'"
+        "    )"
+        ")";
+  v2_record = tlib_php_request_eval_expr(valid_array_args);
+
+  /* Test v2 record processing through the main function */
+  v2_attributes = nr_monolog_get_postprocessed_attributes(v2_record TSRMLS_CC);
+  tlib_pass_if_not_null("V2 record processed", v2_attributes);
+
+  if (v2_attributes) {
+    nrobj_t* v2_log_attrs = nr_attributes_logcontext_to_obj(
+        v2_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    tlib_pass_if_not_null(
+        "V2 context attribute exists",
+        nro_get_hash_string(v2_log_attrs, "context.v2_user_name", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "MyName",
+        nro_get_hash_string(v2_log_attrs, "context.v2_user_name", NULL));
+    tlib_pass_if_not_null(
+        "V2 extra attribute exists",
+        nro_get_hash_string(v2_log_attrs, "context.v2_processor", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "metadata",
+        nro_get_hash_string(v2_log_attrs, "context.v2_processor", NULL));
+
+    nro_delete(v2_log_attrs);
+    nr_attributes_destroy(&v2_attributes);
+  }
+
+  /* Test: Monolog v3 format (object with context/extra properties) */
+  /* Create a mocked LogRecord PHP object with context and extra properties */
+
+  setup_logrecord();
+  v3_record = tlib_php_request_eval_expr(
+      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
+      "'from_context', 'shared_key' => 'old'], extra: ['extra_key' => "
+      "'metadata', 'shared_key' => 'new']);");
+
+  /* Test v3 record processing through the main function */
+  v3_attributes = nr_monolog_get_postprocessed_attributes(v3_record TSRMLS_CC);
+  tlib_pass_if_not_null("V3 record processed", v3_attributes);
+
+  if (v3_attributes) {
+    nrobj_t* v3_log_attrs = nr_attributes_logcontext_to_obj(
+        v3_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
+
+    tlib_pass_if_not_null(
+        "Context attribute exists",
+        nro_get_hash_string(v3_log_attrs, "context.context_key", NULL));
+    tlib_pass_if_str_equal(
+        "Context key/var exist", "from_context",
+        nro_get_hash_string(v3_log_attrs, "context.context_key", NULL));
+    tlib_pass_if_not_null(
+        "Extra attribute exists",
+        nro_get_hash_string(v3_log_attrs, "context.extra_key", NULL));
+    tlib_pass_if_str_equal(
+        "Extra key/var exist", "metadata",
+        nro_get_hash_string(v3_log_attrs, "context.extra_key", NULL));
+
+    nro_delete(v3_log_attrs);
+    nr_attributes_destroy(&v3_attributes);
+    nr_php_zval_free(&v3_record);
+    nr_php_zval_free(&v2_record);
+  }
+
+  /* Test: Invalid record (neither array nor object with properties) */
+  zval* invalid_record
+      = tlib_php_request_eval_expr("'just a string';" TSRMLS_CC);
+  nr_attributes_t* invalid_attributes
+      = nr_monolog_get_postprocessed_attributes(invalid_record TSRMLS_CC);
+  tlib_pass_if_null("Invalid record returns null", invalid_attributes);
+
+  nr_php_zval_free(&v2_record);
+  nr_php_zval_free(&v3_record);
+  nr_php_zval_free(&invalid_record);
+  tlib_php_request_end();
+}
+#endif
 
 static void test_convert_zval_to_attribute_obj(TSRMLS_D) {
   zval* obj;
@@ -528,255 +779,6 @@ static void test_json_encoding_failure_handling(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-static void test_context_extra_merge_behavior(TSRMLS_D) {
-  zval* record;
-  nr_attributes_t* attributes;
-  tlib_php_request_start();
-
-  nrtxn_t* txn = NRPRG(txn);
-  txn->options.log_forwarding_context_data_enabled = 1;
-  nr_attribute_config_enable_destinations(txn->attribute_config,
-                                          NR_ATTRIBUTE_DESTINATION_LOG);
-
-  /* Test: Direct testing of context/extra merge using exposed function */
-  /* Create a record with both context and extra data, including collision */
-
-  setup_logrecord();
-
-  /* Create a record with both context and extra data, including collision */
-  record = tlib_php_request_eval_expr(
-      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
-      "'from_context', 'shared_key' => 'old'], extra: ['extra_key' => "
-      "'metadata', 'shared_key' => 'new']);");
-
-  /* Test the actual merge function directly */
-  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
-  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
-
-  if (attributes) {
-    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
-        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    /* Verify both context and extra attributes exist */
-    tlib_pass_if_not_null(
-        "Context attribute exists",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "from_context",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_not_null(
-        "Extra attribute exists",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-    tlib_pass_if_str_equal(
-        "Extra key/var exist", "metadata",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-
-    /* Test key collision behavior - extra should overwrite context for same key
-     */
-    tlib_pass_if_str_equal(
-        "Extra overwrites context for same key", "new",
-        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
-
-    nro_delete(log_attributes);
-    nr_attributes_destroy(&attributes);
-  }
-
-  nr_php_zval_free(&record);
-
-  /* Create a record with only context and no extra data*/
-  record = tlib_php_request_eval_expr(
-      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
-      "'from_context', 'shared_key' => 'old']);");
-
-  /* Test the actual merge function directly */
-  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
-  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
-
-  if (attributes) {
-    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
-        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    /* Verify only context and no extra attributes exist */
-    tlib_pass_if_not_null(
-        "Context attribute exists",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "from_context",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_null(
-        "Extra attribute exists",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-    tlib_pass_if_str_equal(
-        "Another attribute", "old",
-        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
-
-    nro_delete(log_attributes);
-    nr_attributes_destroy(&attributes);
-  }
-
-  nr_php_zval_free(&record);
-
-  /* Create a record with only extra and no context data*/
-  record = tlib_php_request_eval_expr(
-      "new Monolog\\LogRecord(message: 'error', extra: ['extra_key' => "
-      "'metadata', 'shared_key' => 'new']);");
-
-  /* Test the actual merge function directly */
-  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
-  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
-
-  if (attributes) {
-    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
-        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    /* Verify only extra attributes exist */
-    tlib_pass_if_null(
-        "Context attribute exists",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_not_null(
-        "Extra attribute exists",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "metadata",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-    tlib_pass_if_str_equal(
-        "Another attribute", "new",
-        nro_get_hash_string(log_attributes, "context.shared_key", NULL));
-
-    nro_delete(log_attributes);
-    nr_attributes_destroy(&attributes);
-  }
-
-  nr_php_zval_free(&record);
-
-  /* Create a record with only context and no extra data*/
-  record
-      = tlib_php_request_eval_expr("new Monolog\\LogRecord(message: 'error');");
-
-  /* Test the actual merge function directly */
-  attributes = nr_monolog_get_postprocessed_attributes(record TSRMLS_CC);
-  tlib_pass_if_not_null("Postprocessed attributes created", attributes);
-
-  if (attributes) {
-    nrobj_t* log_attributes = nr_attributes_logcontext_to_obj(
-        attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    /* Verify no attributes exist */
-    tlib_pass_if_null(
-        "Context attribute exists",
-        nro_get_hash_string(log_attributes, "context.context_key", NULL));
-    tlib_pass_if_null(
-        "Extra attribute exists",
-        nro_get_hash_string(log_attributes, "context.extra_key", NULL));
-
-    nro_delete(log_attributes);
-    nr_attributes_destroy(&attributes);
-  }
-
-  nr_php_zval_free(&record);
-
-  tlib_php_request_end();
-}
-
-static void test_monolog_version_format_differences(TSRMLS_D) {
-  zval* v2_record;
-  zval* v3_record;
-  nr_attributes_t* v2_attributes;
-  nr_attributes_t* v3_attributes;
-  tlib_php_request_start();
-
-  nrtxn_t* txn = NRPRG(txn);
-  txn->options.log_forwarding_context_data_enabled = 1;
-  nr_attribute_config_enable_destinations(txn->attribute_config,
-                                          NR_ATTRIBUTE_DESTINATION_LOG);
-
-  /* Test: Monolog v2 format (array with 'context' and 'extra' keys) */
-
-  char* valid_array_args
-      = "array("
-        "    'context' => array("
-        "        'v2_user_name' => 'MyName'"
-        "    ),"
-        "    'extra' => array("
-        "        'v2_processor' => 'metadata'"
-        "    )"
-        ")";
-  v2_record = tlib_php_request_eval_expr(valid_array_args);
-
-  /* Test v2 record processing through the main function */
-  v2_attributes = nr_monolog_get_postprocessed_attributes(v2_record TSRMLS_CC);
-  tlib_pass_if_not_null("V2 record processed", v2_attributes);
-
-  if (v2_attributes) {
-    nrobj_t* v2_log_attrs = nr_attributes_logcontext_to_obj(
-        v2_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    tlib_pass_if_not_null(
-        "V2 context attribute exists",
-        nro_get_hash_string(v2_log_attrs, "context.v2_user_name", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "MyName",
-        nro_get_hash_string(v2_log_attrs, "context.v2_user_name", NULL));
-    tlib_pass_if_not_null(
-        "V2 extra attribute exists",
-        nro_get_hash_string(v2_log_attrs, "context.v2_processor", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "metadata",
-        nro_get_hash_string(v2_log_attrs, "context.v2_processor", NULL));
-
-    nro_delete(v2_log_attrs);
-    nr_attributes_destroy(&v2_attributes);
-  }
-
-  /* Test: Monolog v3 format (object with context/extra properties) */
-  /* Create a mocked LogRecord PHP object with context and extra properties */
-
-  setup_logrecord();
-  v3_record = tlib_php_request_eval_expr(
-      "new Monolog\\LogRecord(message: 'error',context: ['context_key' => "
-      "'from_context', 'shared_key' => 'old'], extra: ['extra_key' => "
-      "'metadata', 'shared_key' => 'new']);");
-
-  /* Test v3 record processing through the main function */
-  v3_attributes = nr_monolog_get_postprocessed_attributes(v3_record TSRMLS_CC);
-  tlib_pass_if_not_null("V3 record processed", v3_attributes);
-
-  if (v3_attributes) {
-    nrobj_t* v3_log_attrs = nr_attributes_logcontext_to_obj(
-        v3_attributes, NR_ATTRIBUTE_DESTINATION_LOG);
-
-    tlib_pass_if_not_null(
-        "Context attribute exists",
-        nro_get_hash_string(v3_log_attrs, "context.context_key", NULL));
-    tlib_pass_if_str_equal(
-        "Context key/var exist", "from_context",
-        nro_get_hash_string(v3_log_attrs, "context.context_key", NULL));
-    tlib_pass_if_not_null(
-        "Extra attribute exists",
-        nro_get_hash_string(v3_log_attrs, "context.extra_key", NULL));
-    tlib_pass_if_str_equal(
-        "Extra key/var exist", "metadata",
-        nro_get_hash_string(v3_log_attrs, "context.extra_key", NULL));
-
-    nro_delete(v3_log_attrs);
-    nr_attributes_destroy(&v3_attributes);
-    nr_php_zval_free(&v3_record);
-    nr_php_zval_free(&v2_record);
-  }
-
-  /* Test: Invalid record (neither array nor object with properties) */
-  zval* invalid_record
-      = tlib_php_request_eval_expr("'just a string';" TSRMLS_CC);
-  nr_attributes_t* invalid_attributes
-      = nr_monolog_get_postprocessed_attributes(invalid_record TSRMLS_CC);
-  tlib_pass_if_null("Invalid record returns null", invalid_attributes);
-
-  nr_php_zval_free(&v2_record);
-  nr_php_zval_free(&v3_record);
-  nr_php_zval_free(&invalid_record);
-  tlib_php_request_end();
-}
-
 static void test_attribute_key_collision_handling(TSRMLS_D) {
   zval* context_data;
   nr_attributes_t* attributes = NULL;
@@ -831,10 +833,13 @@ void test_main(void* p NRUNUSED) {
   test_convert_context_type_edge_cases();
   test_convert_context_with_special_characters();
   test_json_encoding_failure_handling();
-  test_context_extra_merge_behavior();
   test_postprocessed_attributes_null_handling();
-  test_monolog_version_format_differences();
   test_attribute_key_collision_handling();
+
+  #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  test_context_extra_merge_behavior();
+  test_monolog_version_format_differences();
+  #endif
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
