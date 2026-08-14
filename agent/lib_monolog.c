@@ -13,6 +13,7 @@
 #include "fw_hooks.h"
 #include "fw_support.h"
 #include "lib_monolog_private.h"
+#include "nr_attributes_private.h"
 #include "nr_datastore_instance.h"
 #include "nr_segment_datastore.h"
 #include "nr_txn.h"
@@ -157,12 +158,13 @@ static char* nr_monolog_get_message(NR_EXECUTE_PROTO TSRMLS_DC) {
  *           NULL otherwise
  *
  * Notes   : Only scalar and string types are supported.
- *           Nested arrays are not converted and are ignored.
+ *           Nested arrays are converted to a json string.
  *           Other zval types are also ignored.
  */
 nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
     const zval* z TSRMLS_DC) {
   nrobj_t* retobj = NULL;
+  zval* json_zval = NULL;
 
   if (NULL == z) {
     return NULL;
@@ -196,6 +198,20 @@ nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
         retobj = NULL;
       } else {
         retobj = nro_new_string(Z_STRVAL_P(z));
+      }
+      break;
+
+    case IS_ARRAY:
+      /* In this case, the best we can do is flatten it to a json string. */
+      json_zval = nr_php_json_encode((zval*)z TSRMLS_CC);
+
+      if (json_zval != NULL) {
+        if (!nr_php_is_zval_valid_string(json_zval)) {
+          retobj = NULL;
+        } else {
+          retobj = nro_new_string(Z_STRVAL_P(json_zval));
+        }
+        nr_php_zval_free(&json_zval);
       }
       break;
 
@@ -252,32 +268,35 @@ return_context:
 
 /*
  * Purpose : Convert $context array of Monolog\Logger::addRecord to
- * attributes
+ * attributes. If attributes is NULL, it will create a new one; otherwise, it
+ * will add the context attributes to the existing attributse.
  *
  * Params  : zval* for context array from Monolog
+ *           nr_attributes_t* for attributes to populate
  *
- * Returns : nr_attributes representation of $context on success
+ * Returns : modifies $context on success
  *           NULL otherwise
  *
  */
 nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
-    zval* context_data TSRMLS_DC) {
+    zval* context_data,
+    nr_attributes_t* attributes TSRMLS_DC) {
   zend_string* key;
   zval* val;
 
-  nr_attributes_t* attributes = NULL;
-
   if (NULL == context_data || !nr_php_is_zval_valid_array(context_data)) {
-    return NULL;
+    return attributes;
   }
 
-  attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
   if (NULL == attributes) {
-    return NULL;
+    attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
+  }
+  if (NULL == attributes) {
+    return attributes;
   }
 
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
-    if (NULL == key) {
+    if ((NULL == key) || (NULL == val)) {
       continue;
     }
 
@@ -340,6 +359,129 @@ static nrtime_t nr_monolog_get_timestamp(const int monolog_api,
   return timestamp;
 }
 
+/*
+ * Purpose : Convert $message property of $record to a string.
+ *
+ * Params  : $record : the zval* of a CV of the Monolog\Logger::addRecord method
+ * https://github.com/Seldaek/monolog/blob/main/src/Monolog/LogRecord.php
+ * For Monolog v3: `$record` is a Monolog\LogRecord object
+ * For Monolog v1/v2:  `$record` php array
+ * Returns : A new string with Monolog's log message; caller must free
+ */
+
+static char* nr_monolog_get_postprocessed_message(zval* record) {
+  char* message = NULL;
+  zval* record_message_string = NULL;
+
+  if (NULL == record) {
+    return NULL;
+  }
+
+  /* For monolog 3, $record is a Monolog\LogRecord object */
+  if (nr_php_is_zval_valid_object(record)) {
+    nr_php_object_instanceof_class(record, "Monolog\\LogRecord" TSRMLS_CC);
+    record_message_string = nr_php_get_zval_object_property(record, "message");
+  }
+
+  /* For monolog 2, $record is a simple array*/
+  if (record_message_string == NULL && nr_php_is_zval_valid_array(record)) {
+    record_message_string
+        = nr_php_zend_hash_find(Z_ARRVAL_P(record), "message");
+  }
+
+  if (NULL == record_message_string) {
+    return NULL;
+  }
+
+  if (!(nr_php_is_zval_non_empty_string(record_message_string))) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected $message be a valid string.",
+                     __func__);
+    return NULL;
+  }
+
+  message = nr_strdup(Z_STRVAL_P(record_message_string));
+  return message;
+}
+
+/*
+ * Purpose : Convert $context property of $record to context attributes.
+ *
+ * Params  : $record : the zval* of a CV of the Monolog\Logger::addRecord method
+ * https://github.com/Seldaek/monolog/blob/main/src/Monolog/LogRecord.php
+ * For Monolog v3: `$record` is a Monolog\LogRecord object
+ * For Monolog v1/v2:  `$record` php array
+ *
+ *  Context: Event-specific data from calling code (can be modified by
+ * processors to sanitize, enhance, or normalize)
+ *
+ * Extra: Processor-added metadata
+ *
+ * Returns : nr_attributes representation of $context on success
+ *           NULL otherwise
+ */
+
+nr_attributes_t* nr_monolog_get_postprocessed_attributes(
+    zval* record TSRMLS_DC) {
+  nr_attributes_t* attributes = NULL;
+  zval* record_context_array = NULL;
+  zval* record_extra_array = NULL;
+
+  if (NULL == record) {
+    return NULL;
+  }
+
+  /* For monolog 3, $record is a Monolog\LogRecord object */
+  if (nr_php_is_zval_valid_object(record)) {
+    nr_php_object_instanceof_class(record, "Monolog\\LogRecord" TSRMLS_CC);
+    record_context_array = nr_php_get_zval_object_property(record, "context");
+    record_extra_array = nr_php_get_zval_object_property(record, "extra");
+  }
+
+  /* For monolog 2, $record is a simple array*/
+  if (record_context_array == NULL && nr_php_is_zval_valid_array(record)) {
+    record_context_array = nr_php_zend_hash_find(Z_ARRVAL_P(record), "context");
+    record_extra_array = nr_php_zend_hash_find(Z_ARRVAL_P(record), "extra");
+  }
+
+  if (!(nr_php_is_zval_valid_array(record_context_array))) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected $context be a valid array.",
+                     __func__);
+
+  } else {
+    attributes = nr_monolog_convert_context_data_to_attributes(
+        record_context_array, attributes);
+  }
+
+  if (!(nr_php_is_zval_valid_array(record_extra_array))) {
+    nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected $extra be a valid array.",
+                     __func__);
+  } else {
+    attributes = nr_monolog_convert_context_data_to_attributes(
+        record_extra_array, attributes);
+  }
+
+  return attributes;
+}
+
+/*
+ * Flow
+ *
+ * 1. Log method called: $logger->info('message', ['context' => 'data'])
+ * 2. LogRecord created with message, context, level, etc.
+ * 3. Processors run in order, each can modify the LogRecord
+ * 4. Handlers process the final LogRecord (format, write to file, etc.)
+ *
+ * Processors are callable functions that receive a LogRecord and return a
+ * modified version. Theoretically, they are supposed to modify `extra` but in
+ * practice, they often modify context.
+ *
+ * Placeholder syntax: Uses {variableName} format. Processors replace variables
+ * in braces with values from the context array.
+ *
+ * Using the args passed into addRecord misses out on all the postprocessing
+ * info. Attempt to use the compiled variable $record in the addRecord function
+ * to extract the postprocesed info, then use the args as fallbacks.
+ */
 NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   (void)wraprec;
 
@@ -351,6 +493,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   /* This code executes when at least one logging feature is enabled and
    * log level is neeeded in both features so agent will always need
    * to get the log level value */
+  zval* record_var = NULL;
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   char* level_name
       = nr_monolog_get_level_name(this_var, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
@@ -363,15 +506,42 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
   /* Values of $message and $timestamp arguments are needed only if log
    * forwarding is enabled so agent will get them conditionally */
   if (nr_txn_log_forwarding_enabled(NRPRG(txn))) {
-    argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-    message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP8.0+ */
+    /*
+     * If we are using PHP 8+, we can attempt to extract the $record variable
+     * because we enter this wrapper at func end after everything has processed.
+     * It won't extract for PHP 7.x because all of the logic happens BEFORE the
+     * NR_WRAPPER_CALL function (so before the processing happens).  We can't
+     * move the logic later since we can't depend on anything from
+     * zend_execute_data after the wrapper call and the var only exists by the
+     * end of the function.
+     * $record is a compiled variable of the wrapped function
+     * Monolog\Logger::addRecord For Monolog 2 is an array For Monolog 3 $record
+     * is a Monolog\LogRecord
+     * https://github.com/Seldaek/monolog/blob/main/src/Monolog/LogRecord.php
+     */
+
+    record_var = nr_get_func_cv_by_name(execute_data, "record" TSRMLS_CC);
+#endif
+
+    message = nr_monolog_get_postprocessed_message(record_var);
+
+    if (NULL == message) {
+      argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+      message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+    }
 
     if (nr_txn_log_forwarding_context_data_enabled(NRPRG(txn))) {
-      zval* context_data = nr_monolog_extract_context_data(
-          argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
       context_attributes
-          = nr_monolog_convert_context_data_to_attributes(context_data);
-      nr_php_arg_release(&context_data);
+          = nr_monolog_get_postprocessed_attributes(record_var TSRMLS_CC);
+      if (NULL == context_attributes
+          || 0 == context_attributes->num_user_attributes) {
+        zval* context_data = nr_monolog_extract_context_data(
+            argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+        context_attributes = nr_monolog_convert_context_data_to_attributes(
+            context_data, context_attributes);
+        nr_php_arg_release(&context_data);
+      }
     }
     api = nr_monolog_version(this_var TSRMLS_CC);
     timestamp

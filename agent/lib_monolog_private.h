@@ -25,5 +25,15 @@ extern nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
  *
  */
 extern nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
-    zval* context_data TSRMLS_DC);
+    zval* context_data,
+    nr_attributes_t* attributes TSRMLS_DC);
+
+/*
+ * Purpose : ONLY for testing to verify postprocessed attribute extraction
+ *           from Monolog records (handles both v2 array and v3 object formats)
+ *
+ * Returns : Caller takes ownership of attributes struct
+ */
+extern nr_attributes_t* nr_monolog_get_postprocessed_attributes(
+    zval* record TSRMLS_DC);
 #endif /* LIB_MONOLOG_PRIVATE_HDR */
