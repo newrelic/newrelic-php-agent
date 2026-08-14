@@ -428,3 +428,41 @@ func TestSendAfterServerOkCloseGetsCorrectStatus(t *testing.T) {
 		t.Fatalf("expected statusImmediateRestart after OK close, got %v", status.code)
 	}
 }
+
+func TestConnectDrainsStaleResponseError(t *testing.T) {
+	srv := newTestObsServer(t)
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	if err, _ := sender.connect(); err != nil {
+		t.Fatalf("unexpected error during first connect: %v", err)
+	}
+
+	// Simulate a stale push left over from a previous generation: something
+	// the old generation's receive goroutine pushed after send()'s grace
+	// period had already timed out and moved on without consuming it.
+	sender.responseError <- spanBatchSenderStatus{code: statusRestart, metric: "stale"}
+
+	if err, _ := sender.connect(); err != nil {
+		t.Fatalf("unexpected error during second connect: %v", err)
+	}
+
+	// The server never closes or errors (closeAfterOneMessage is unset), so
+	// the new generation's own goroutine has no reason to push anything by
+	// the time connect() returns - this check is deterministic, not a race
+	// against the new goroutine.
+	select {
+	case status := <-sender.responseError:
+		t.Fatalf("expected the stale status to have been drained, got %v", status)
+	default:
+	}
+}

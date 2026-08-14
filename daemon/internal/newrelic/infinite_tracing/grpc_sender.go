@@ -114,6 +114,21 @@ func (s *grpcSpanBatchSender) clone() (spanBatchSender, error) {
 }
 
 func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
+	// Drain any status left over from a previous stream generation.
+	// s.responseError is never recreated across statusRestart/
+	// statusImmediateRestart reconnects (only clone(), on statusReconnect,
+	// gets a fresh one), so anything still buffered here can only be a
+	// leftover from a goroutine that has already terminated - the new
+	// generation's goroutine doesn't exist yet.
+	for {
+		select {
+		case <-s.responseError:
+			continue
+		default:
+		}
+		break
+	}
+
 	md := newMetadata(s.RunId, s.License, s.RequestHeadersMap)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
