@@ -6,9 +6,11 @@
 package infinite_tracing
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,12 +30,19 @@ type testGrpcServer struct {
 	spansReceivedChan    chan *v1.SpanBatch
 	metadataReceivedChan chan metadata.MD
 	closeAfterOneMessage bool
+	ackThenWait          bool
+	ackStreamCalls       int32
+	firstAckSent         chan struct{}
+	proceedWithSecondAck chan struct{}
 }
 
 func (s *testGrpcServer) RecordSpanBatch(stream v1.IngestService_RecordSpanBatchServer) error {
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if ok {
 		s.metadataReceivedChan <- md
+	}
+	if s.ackThenWait {
+		return s.recordSpanBatchAckThenWait(stream)
 	}
 	for {
 		batch, err := stream.Recv()
@@ -47,6 +56,24 @@ func (s *testGrpcServer) RecordSpanBatch(stream v1.IngestService_RecordSpanBatch
 			return nil
 		}
 	}
+}
+
+// recordSpanBatchAckThenWait handles the FIRST RecordSpanBatch call by
+// sending one ack, signalling the test, then waiting to be told to send a
+// second ack. Every later call (a second connect() on the same sender)
+// just idles until the client disconnects, so it never interferes.
+func (s *testGrpcServer) recordSpanBatchAckThenWait(stream v1.IngestService_RecordSpanBatchServer) error {
+	if atomic.AddInt32(&s.ackStreamCalls, 1) == 1 {
+		if err := stream.Send(&v1.RecordStatus{MessagesSeen: 1}); err != nil {
+			return err
+		}
+		close(s.firstAckSent)
+		<-s.proceedWithSecondAck
+		stream.Send(&v1.RecordStatus{MessagesSeen: 2})
+		return nil
+	}
+	<-stream.Context().Done()
+	return nil
 }
 
 func (s *testGrpcServer) RecordSpan(stream v1.IngestService_RecordSpanServer) error {
@@ -118,6 +145,32 @@ func newInvalidObsServer(t *testing.T) *testGrpcServer {
 		spansReceivedChan:    make(chan *v1.SpanBatch, 10),
 		metadataReceivedChan: make(chan metadata.MD, 10),
 	}
+}
+
+func newAckThenWaitObsServer(t *testing.T) *testGrpcServer {
+	lis, port, err := getPortListener()
+	if err != nil {
+		t.Fatalf("Cannot start grpc test server: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+
+	s := &testGrpcServer{
+		host:                 "localhost",
+		port:                 port,
+		server:               grpcServer,
+		spansReceivedChan:    make(chan *v1.SpanBatch, 10),
+		metadataReceivedChan: make(chan metadata.MD, 10),
+		ackThenWait:          true,
+		firstAckSent:         make(chan struct{}),
+		proceedWithSecondAck: make(chan struct{}),
+	}
+
+	v1.RegisterIngestServiceServer(s.server, s)
+
+	go grpcServer.Serve(*lis)
+
+	return s
 }
 
 func TestInvalidHost(t *testing.T) {
@@ -467,5 +520,90 @@ func TestConnectDrainsStaleResponseError(t *testing.T) {
 	case status := <-sender.responseError:
 		t.Fatalf("expected the stale status to have been drained, got %v", status)
 	default:
+	}
+}
+
+// guardedRecordSpanBatchClient wraps a real stream and flags it if Recv()
+// is ever called by more than one goroutine at a time - the exact
+// violation defect 4 makes possible once a stream generation is shared.
+type guardedRecordSpanBatchClient struct {
+	v1.IngestService_RecordSpanBatchClient
+	recvInFlight int32
+	violated     *int32
+}
+
+func (g *guardedRecordSpanBatchClient) Recv() (*v1.RecordStatus, error) {
+	if !atomic.CompareAndSwapInt32(&g.recvInFlight, 0, 1) {
+		atomic.StoreInt32(g.violated, 1)
+	}
+	defer atomic.StoreInt32(&g.recvInFlight, 0)
+	return g.IngestService_RecordSpanBatchClient.Recv()
+}
+
+// guardedIngestServiceClient wraps every stream RecordSpanBatch returns in
+// a guardedRecordSpanBatchClient, sharing one violated flag across all of
+// them.
+type guardedIngestServiceClient struct {
+	v1.IngestServiceClient
+	violated *int32
+}
+
+func (g *guardedIngestServiceClient) RecordSpanBatch(ctx context.Context, opts ...grpc.CallOption) (v1.IngestService_RecordSpanBatchClient, error) {
+	stream, err := g.IngestServiceClient.RecordSpanBatch(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &guardedRecordSpanBatchClient{IngestService_RecordSpanBatchClient: stream, violated: g.violated}, nil
+}
+
+func TestConcurrentRecvOnReassignedStream(t *testing.T) {
+	srv := newAckThenWaitObsServer(t)
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	var violated int32
+	sender.client = &guardedIngestServiceClient{IngestServiceClient: sender.client, violated: &violated}
+
+	// Generation 1: the receive goroutine takes case nil on the first ack
+	// and loops back into Recv(), where it blocks waiting for the second.
+	if err, _ := sender.connect(); err != nil {
+		t.Fatalf("unexpected error during first connect: %v", err)
+	}
+
+	select {
+	case <-srv.firstAckSent:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timed out waiting for the first ack to be sent")
+	}
+
+	// Give the receive goroutine a moment to process the ack and re-enter
+	// Recv() before the field it reads gets reassigned under it.
+	time.Sleep(50 * time.Millisecond)
+
+	// Generation 2: reconnect on the SAME sender - simulating a
+	// send-failure-triggered reconnect racing the still-looping
+	// generation-1 goroutine.
+	if err, _ := sender.connect(); err != nil {
+		t.Fatalf("unexpected error during second connect: %v", err)
+	}
+
+	// Release the second ack on stream 1. If defect 4 is present, the
+	// generation-1 goroutine reads the reassigned s.stream field and calls
+	// Recv() on stream 2, concurrently with generation 2's own goroutine.
+	close(srv.proceedWithSecondAck)
+
+	time.Sleep(200 * time.Millisecond)
+
+	if atomic.LoadInt32(&violated) != 0 {
+		t.Fatalf("concurrent Recv() calls observed on a reassigned stream")
 	}
 }

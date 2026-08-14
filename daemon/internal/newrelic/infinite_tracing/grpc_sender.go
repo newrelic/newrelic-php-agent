@@ -143,9 +143,9 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	s.stream = stream
 
 	log.Debugf("connected to grpc endpoint %s", s.Host)
-	go func() {
+	go func(stream v1.IngestService_RecordSpanBatchClient) {
 		for {
-			in, err := s.stream.Recv()
+			in, err := stream.Recv()
 
 			switch err {
 			case nil:
@@ -160,7 +160,7 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 				return
 			}
 		}
-	}()
+	}(stream)
 
 	return nil, spanBatchSenderStatus{code: statusOk}
 }
