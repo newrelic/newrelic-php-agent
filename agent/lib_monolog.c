@@ -379,8 +379,11 @@ static char* nr_monolog_get_postprocessed_message(zval* record) {
 
   /* For monolog 3, $record is a Monolog\LogRecord object */
   if (nr_php_is_zval_valid_object(record)) {
-    nr_php_object_instanceof_class(record, "Monolog\\LogRecord" TSRMLS_CC);
-    record_message_string = nr_php_get_zval_object_property(record, "message");
+    if (nr_php_object_instanceof_class(record,
+                                       "Monolog\\LogRecord" TSRMLS_CC)) {
+      record_message_string
+          = nr_php_get_zval_object_property(record, "message");
+    }
   }
 
   /* For monolog 2, $record is a simple array*/
@@ -432,9 +435,11 @@ nr_attributes_t* nr_monolog_get_postprocessed_attributes(
 
   /* For monolog 3, $record is a Monolog\LogRecord object */
   if (nr_php_is_zval_valid_object(record)) {
-    nr_php_object_instanceof_class(record, "Monolog\\LogRecord" TSRMLS_CC);
-    record_context_array = nr_php_get_zval_object_property(record, "context");
-    record_extra_array = nr_php_get_zval_object_property(record, "extra");
+    if (nr_php_object_instanceof_class(record,
+                                       "Monolog\\LogRecord" TSRMLS_CC)) {
+      record_context_array = nr_php_get_zval_object_property(record, "context");
+      record_extra_array = nr_php_get_zval_object_property(record, "extra");
+    }
   }
 
   /* For monolog 2, $record is a simple array*/
@@ -526,8 +531,9 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
 
     message = nr_monolog_get_postprocessed_message(record_var);
 
+    argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+
     if (NULL == message) {
-      argc = nr_php_get_user_func_arg_count(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
       message = nr_monolog_get_message(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
     }
 
