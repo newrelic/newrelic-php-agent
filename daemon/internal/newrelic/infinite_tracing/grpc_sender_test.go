@@ -377,3 +377,54 @@ func TestServerClosesWithOK(t *testing.T) {
 		t.Fatalf("timed out waiting for responseError after OK close")
 	}
 }
+
+func TestSendAfterServerOkCloseGetsCorrectStatus(t *testing.T) {
+	srv := newTestObsServer(t)
+	srv.closeAfterOneMessage = true
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	err, _ = sender.connect()
+	if err != nil {
+		t.Fatalf("unexpected error during connect: %v", err)
+	}
+
+	s := &v1.Span{TraceId: "trace_id"}
+	b := &v1.SpanBatch{Spans: []*v1.Span{s}}
+	bs, _ := proto.Marshal(b)
+
+	// First send triggers the server's graceful OK close after one message.
+	if err, _ := sender.send(encodedSpanBatch(bs)); err != nil {
+		t.Fatalf("unexpected error during first send: %v", err)
+	}
+
+	// The transport doesn't guarantee exactly when a subsequent SendMsg
+	// discovers the closed stream, so poll rather than assume the first
+	// retry hits it.
+	deadline := time.Now().Add(2 * time.Second)
+	var sendErr error
+	var status spanBatchSenderStatus
+	for time.Now().Before(deadline) {
+		sendErr, status = sender.send(encodedSpanBatch(bs))
+		if sendErr != nil {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if sendErr == nil {
+		t.Fatalf("expected send to eventually observe the closed stream")
+	}
+	if status.code != statusImmediateRestart {
+		t.Fatalf("expected statusImmediateRestart after OK close, got %v", status.code)
+	}
+}

@@ -156,8 +156,24 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	return nil, spanBatchSenderStatus{code: statusOk}
 }
 
+// sendEofStatusGracePeriod bounds how long send() waits for the receive
+// goroutine's classification after an EOF from SendMsg. Not tuned to any
+// measured EOF-detection latency - chosen defensively, well above what a
+// healthy local transport should ever take, so the common case resolves in
+// well under a millisecond and this only matters in already-degraded
+// conditions.
+const sendEofStatusGracePeriod = 1 * time.Second
+
 func (s *grpcSpanBatchSender) send(batch encodedSpanBatch) (error, spanBatchSenderStatus) {
 	if err := s.stream.SendMsg(batch); err != nil {
+		if err == io.EOF {
+			select {
+			case status := <-s.responseError:
+				return err, status
+			case <-time.After(sendEofStatusGracePeriod):
+				log.Errorf("timed out waiting for grpc stream status after EOF from SendMsg")
+			}
+		}
 		return err, newSpanBatchStatusFromGrpcErr(err)
 	}
 	return nil, spanBatchSenderStatus{code: statusOk}

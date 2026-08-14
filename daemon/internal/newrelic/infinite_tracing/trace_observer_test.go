@@ -10,6 +10,10 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/proto"
+
+	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 )
 
 type mockSpanBatchSender struct {
@@ -399,5 +403,64 @@ func TestReconnect(t *testing.T) {
 
 	if sender.cloneAttempts != 2 {
 		t.Errorf("expected 2 clone attempts, got %v", sender.cloneAttempts)
+	}
+}
+
+func TestOkCloseReconnectsWithoutBackoff(t *testing.T) {
+	srv := newTestObsServer(t)
+	srv.closeAfterOneMessage = true
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+
+	to, worker := newTraceObserverWithWorker(&Config{
+		QueueSize: 100,
+	})
+	defer to.Shutdown(10 * time.Millisecond)
+	go func() {
+		to.sender = sender
+		worker()
+	}()
+
+	batch1, _ := proto.Marshal(&v1.SpanBatch{Spans: []*v1.Span{{TraceId: "first"}}})
+	to.QueueBatch(1, batch1)
+
+	select {
+	case <-srv.spansReceivedChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("didn't receive first span batch")
+	}
+
+	// srv.spansReceivedChan fires the instant the server's handler receives
+	// the first message - before that handler returns and the OK close
+	// trailer actually reaches the client over the socket. Without this
+	// pause, queuing batch2 races the close notification: if it loses,
+	// SendMsg can succeed locally on the already-server-closed stream
+	// (the message is silently dropped, no error at all - the same
+	// transport quirk TestSendAfterServerOkCloseGetsCorrectStatus polls
+	// around), and the batch is gone before send() ever gets a chance to
+	// classify anything. This isn't a fixed EOF-detection latency either -
+	// it's comfortably longer than a loopback close round-trip should ever
+	// take, so the pause resolves before it's noticed in the common case.
+	time.Sleep(50 * time.Millisecond)
+
+	// The server closes the stream with OK after that first message. A
+	// second batch should still land quickly - well under the 15s
+	// recordSpanBackoff - if the OK close is handled as an immediate
+	// reconnect instead of a generic error.
+	batch2, _ := proto.Marshal(&v1.SpanBatch{Spans: []*v1.Span{{TraceId: "second"}}})
+	to.QueueBatch(1, batch2)
+
+	select {
+	case <-srv.spansReceivedChan:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("second batch didn't arrive within 2s - looks like it hit the 15s backoff")
 	}
 }
