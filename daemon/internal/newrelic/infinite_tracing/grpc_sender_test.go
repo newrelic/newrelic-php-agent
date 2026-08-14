@@ -289,8 +289,11 @@ func TestInvalidSpan(t *testing.T) {
 
 	status := <-responseError
 
-	if status.code != statusOk {
-		t.Fatalf("expected statusOk on responseError")
+	if status.code != statusRestart {
+		t.Fatalf("expected statusRestart on responseError, got %v", status.code)
+	}
+	if status.metric != "Supportability/InfiniteTracing/Span/gRPC/INTERNAL" {
+		t.Fatalf("expected the INTERNAL supportability metric, got %q", status.metric)
 	}
 }
 
