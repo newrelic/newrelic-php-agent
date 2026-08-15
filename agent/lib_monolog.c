@@ -396,7 +396,7 @@ static char* nr_monolog_get_postprocessed_message(zval* record) {
     return NULL;
   }
 
-  if (!(nr_php_is_zval_non_empty_string(record_message_string))) {
+  if (!(nr_php_is_zval_valid_string(record_message_string))) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected $message be a valid string.",
                      __func__);
     return NULL;
@@ -540,8 +540,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
     if (nr_txn_log_forwarding_context_data_enabled(NRPRG(txn))) {
       context_attributes
           = nr_monolog_get_postprocessed_attributes(record_var TSRMLS_CC);
-      if (NULL == context_attributes
-          || 0 == context_attributes->num_user_attributes) {
+      if (NULL == context_attributes) {
         zval* context_data = nr_monolog_extract_context_data(
             argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
         context_attributes = nr_monolog_convert_context_data_to_attributes(
