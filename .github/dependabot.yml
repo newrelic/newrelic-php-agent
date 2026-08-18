@@ -1,15 +1,15 @@
 version: 2
 updates:
-  - package-ecosystem: "gomod"    
-    directory: "/daemon"                
+  - package-ecosystem: "gomod"
+    directory: "/daemon"
     schedule:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps):"      
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: monthly
+      interval: "monthly"
     commit-message:
       prefix: "chore(deps):"
     groups:
