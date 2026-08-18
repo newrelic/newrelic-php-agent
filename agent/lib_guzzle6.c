@@ -438,75 +438,12 @@ end:
 NR_PHP_WRAPPER_END
 
 void nr_guzzle6_enable(TSRMLS_D) {
-  int retval;
-
   if (0 == NRINI(guzzle_enabled)) {
     return;
   }
 
-  /*
-   * Here's something new: we're going to evaluate PHP code to build our
-   * middleware in PHP, rather than doing it in C. This is mostly because it's
-   * fairly difficult to return a higher-order function from C; while possible,
-   * the code to do so is horrible enough that this actually feels cleaner.
-   *
-   * We'll do it when the library is detected because that should only happen
-   * once, but we'll also be careful to put guards around the function
-   * declaration just in case.
-   *
-   * On the bright side, zend_eval_string() effectively treats the string given
-   * as a standalone file, so we can use a normal namespace declaration to
-   * avoid possible clashes.
-   */
-  retval = zend_eval_string(
-      "namespace newrelic\\Guzzle6;"
-
-      "use Psr\\Http\\Message\\RequestInterface;"
-      "use GuzzleHttp\\Promise\\PromiseInterface;"
-
-      "if (!function_exists('newrelic\\Guzzle6\\middleware')) {"
-      "  function middleware(callable $handler) {"
-      "    return function (RequestInterface $request, array $options) use "
-      "($handler) {"
-
-      /*
-       * Start by adding the outbound CAT/DT/Synthetics headers to the request.
-       */
-      "      foreach (newrelic_get_request_metadata('Guzzle 6') as $k => $v) {"
-      "        $request = $request->withHeader($k, $v);"
-      "      }"
-
-      /*
-       * Set up the RequestHandler object and attach it to the promise so that
-       * we create an external node and deal with the CAT headers coming back
-       * from the far end.
-       */
-      "      $rh = new RequestHandler($request);"
-      "      $promise = $handler($request, $options);"
-      "      if (PromiseInterface::REJECTED == $promise->getState()) {"
-      /*
-                Special case for sync request. When sync requests is rejected,
-                onRejected callback is not called via `PromiseInterface::then`
-                and needs to be called manually.
-       */
-      "        $rh->onRejected($promise);"
-      "      } else {"
-      "        $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
-      "      }"
-      "      return $promise;"
-      "    };"
-      "  }"
-      "}",
-      NULL, "newrelic/Guzzle6" TSRMLS_CC);
-
-  if (SUCCESS == retval) {
-    nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
+  nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
                               nr_guzzle_client_construct TSRMLS_CC);
-  } else {
-    nrl_warning(NRL_FRAMEWORK,
-                "%s: error evaluating PHP code; not installing handler",
-                __func__);
-  }
 }
 
 void nr_guzzle6_minit(TSRMLS_D) {
