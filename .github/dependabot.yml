@@ -7,6 +7,10 @@ updates:
     target-branch: "dev"
     commit-message:
       prefix: "chore(daemon):"
+    groups:
+      gomod:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
