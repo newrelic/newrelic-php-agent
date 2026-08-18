@@ -7,6 +7,7 @@ package infinite_tracing
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -467,5 +468,63 @@ func TestOkCloseReconnectsWithoutBackoff(t *testing.T) {
 	case <-srv.spansReceivedChan:
 	case <-time.After(2 * time.Second):
 		t.Fatalf("second batch didn't arrive within 2s - looks like it hit the 15s backoff")
+	}
+}
+
+func TestSpanBatchSenderCodeString(t *testing.T) {
+	testcases := []struct {
+		code   spanBatchSenderCode
+		expect string
+	}{
+		{code: statusOk, expect: "0 - statusOk"},
+		{code: statusShutdown, expect: "1 - statusShutdown"},
+		{code: statusRestart, expect: "2 - statusRestart"},
+		{code: statusReconnect, expect: "3 - statusReconnect"},
+		{code: statusImmediateRestart, expect: "4 - statusImmediateRestart"},
+		// one past the last defined code, to catch an unhandled value if a
+		// new status is ever added without updating String()
+		{code: spanBatchSenderCode(5), expect: "5 - unknown"},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.expect, func(t *testing.T) {
+			actual := test.code.String()
+			if actual != test.expect {
+				t.Errorf("wrong string returned: actual=%s expected=%s", actual, test.expect)
+			}
+		})
+	}
+}
+
+func TestSpanBatchSenderStatusString(t *testing.T) {
+	testcases := []struct {
+		name   string
+		status spanBatchSenderStatus
+		expect string
+	}{
+		{
+			name:   "no metric",
+			status: spanBatchSenderStatus{code: statusImmediateRestart},
+			expect: "{4 - statusImmediateRestart }",
+		},
+		{
+			name:   "with metric",
+			status: spanBatchSenderStatus{code: statusRestart, metric: "Supportability/InfiniteTracing/Span/gRPC/UNKNOWN"},
+			expect: "{2 - statusRestart Supportability/InfiniteTracing/Span/gRPC/UNKNOWN}",
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			// Exercise the exact call sites that motivated this: %v on the
+			// status struct directly, not just calling String() by hand -
+			// this is what caught that fmt won't invoke a Stringer through
+			// an unexported field without a String() method on the struct
+			// itself.
+			actual := fmt.Sprintf("%v", test.status)
+			if actual != test.expect {
+				t.Errorf("wrong string returned: actual=%s expected=%s", actual, test.expect)
+			}
+		})
 	}
 }
