@@ -5,13 +5,13 @@ updates:
     schedule:
       interval: "weekly"
     commit-message:
-      prefix: "chore(deps):"      
+      prefix: "chore(daemon):"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "chore(deps):"
+      prefix: "ci:"
     groups:
       github-actions:
         patterns:
