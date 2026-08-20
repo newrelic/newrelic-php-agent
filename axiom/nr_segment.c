@@ -163,6 +163,16 @@ static void nr_segment_discard_merge_metrics(nr_segment_t* segment) {
   }
 }
 
+const char* nr_segment_get_context(nr_segment_t* segment) {
+  if (NULL == segment || NULL == segment->txn) {
+    return NULL;
+  }
+  if (0 == segment->async_context) {
+    return NULL;
+  }
+  return nr_string_get(segment->txn->trace_strings, segment->async_context);
+}
+
 nr_segment_t* nr_segment_start(nrtxn_t* txn,
                                nr_segment_t* parent,
                                const char* async_context) {
@@ -218,9 +228,30 @@ bool nr_segment_init(nr_segment_t* segment,
   if (parent) {
     segment->parent = parent;
     nr_segment_children_add(&parent->children, segment);
-  } /* Otherwise, the parent of this new segment is the current segment on the
-       transaction */
-  else {
+    /*
+     * Special case: if the new async context stack does not exist and the async
+     * context is not NULL, then this indicates that the new segment is the root
+     * of a new async context. In that case, we'll parent it to the requested
+     * parent and set it as current for that async context. (Users who want to
+     * have their new context be parented to current on main should not provide
+     * a parent which handles that case.) */
+    if (NULL != async_context
+        && NULL
+               == (nr_stack_t*)nr_hashmap_index_get(txn->parent_stacks,
+                                                    segment->async_context)) {
+      /*
+       * This means this IS the first segment in the async context that is the
+       * child of a parent of another async context and so it will need to be
+       * set as current on the new context.
+       */
+      nr_txn_set_current_segment(txn, segment);
+    }
+
+  } else {
+    /*
+     * Otherwise, the parent of this new segment is the current segment on the
+     * transaction
+     */
     nr_segment_t* current_segment
         = nr_txn_get_current_segment(txn, async_context);
 

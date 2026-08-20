@@ -30,6 +30,13 @@
 extern void nr_php_execute_file(const zend_op_array* op_array,
                                 NR_EXECUTE_PROTO TSRMLS_DC);
 
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+/*
+ * Purpose: Log information about the fiber for a given fiber context
+ */
+extern void nr_fiber_show_fiber(zend_fiber_context* zfc,
+                                const char* fiber_action);
+#endif /* PHP 8.1+ */
 /*
  * Purpose: Log information about the execute data in a given execution
  * context - either 'execute' (zend_execute) or 'observe' (fcall_init).

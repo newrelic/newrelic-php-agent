@@ -18,6 +18,8 @@
 
 #include "Zend/zend_observer.h"
 
+#define NR_PHP_DEFAULT_SUSPEND_TIMES 10
+
 /*
  * Purpose: There are a few various places, aside from the php_execute_* family
  * that will call NR_PHP_PROCESS_GLOBALS(orig_execute) so make it a noop to

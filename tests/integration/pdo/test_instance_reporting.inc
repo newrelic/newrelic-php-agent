@@ -23,11 +23,25 @@
     - ./base-class
     - ./constructor
     - ./factory
+
+    NOTE: The function here can be used as a fiber.  
+    The caller will need 2 fiber resumes to fully exercise the function.
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');
+require_once(dirname(__FILE__).'/../../include/helpers.php');
 
-function test_instance_reporting($conn, $want_drop_table_result=1) {
+function test_instance_reporting($conn, $want_drop_table_result=1, $is_fiber=false) {
+  if ($is_fiber) {
+    env_var_for_expects("GUID_TEST_INSTANCE_REPORTING", newrelic_get_linking_metadata()['span.id'] ?? '');
+  }
+
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
   tap_equal(0, $conn->exec("CREATE TABLE test (id INT, description VARCHAR(10));"), 'create table');
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
   tap_equal($want_drop_table_result, $conn->exec("DROP TABLE test;"), 'drop table');
 }

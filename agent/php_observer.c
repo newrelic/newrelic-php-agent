@@ -16,12 +16,14 @@
 #include "php_error.h"
 #include "php_execute.h"
 #include "php_extension.h"
+#include "php_fibers.h"
 #include "php_globals.h"
 #include "php_header.h"
 #include "php_hooks.h"
 #include "php_internal_instrument.h"
 #include "php_observer.h"
 #include "php_samplers.h"
+#include "php_txn.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
 #include "php_vm.h"
@@ -145,28 +147,355 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
 }
 
 #if ZEND_MODULE_API_NO > ZEND_8_0_X_API_NO /* PHP8.1+ */
+
+#define NR_FIBER_USED_CREATE_METRIC                    \
+  if (NULL != NRPRG(txn)) {                            \
+    nrm_force_add(NRPRG(txn)->unscoped_metrics,        \
+                  "Supportability/PHP/Fiber/used", 0); \
+  }
+
 static void nr_fiber_disable(zend_fiber_context* fiber_context) {
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(fiber_context, "init/destroy");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber init/destroy detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
-    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
-                  0);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
 
 static void nr_fiber_switch_disable(zend_fiber_context* from,
                                     zend_fiber_context* to) {
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
   if (NULL != NRPRG(txn)) {
     /* Fiber switch detected, end and keep the transaction. */
-    nrl_verbosedebug(NRL_INSTRUMENT,
-                "Transaction is truncated because PHP Fiber use is detected.");
-    nrm_force_add(NRPRG(txn)->unscoped_metrics, "Supportability/PHP/Fiber/used",
-                  0);
+    nrl_verbosedebug(
+        NRL_INSTRUMENT,
+        "Transaction is truncated because PHP Fiber use is detected.");
+    NR_FIBER_USED_CREATE_METRIC
     nr_php_txn_end(0, 0 TSRMLS_CC);
   }
 }
+
+static void nr_fiber_init_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
+  NR_FIBER_USED_CREATE_METRIC
+
+  if (NULL == zfc) {
+    nrl_warning(
+        NRL_AGENT,
+        "PHP failed to provide a non-null fiber context needed for a "
+        "fiber aware transaction and must therefore end the transaction.");
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+    return;
+  }
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "init");
+  }
+  if (NULL == NRPRG(fiber_globals_map)) {
+    // initialize the fiber global hashmap if it does not already exist
+    if (NR_FAILURE == nr_fiber_init_global_hashmap(&NRPRG(fiber_globals_map))) {
+      nrl_warning(
+          NRL_AGENT,
+          "Failed to initialize the fiber global hashmap needed for a fiber "
+          "aware transaction and must therefore end the transaction.");
+      nr_php_txn_end(0, 0 TSRMLS_CC);
+      return;
+    }
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+
+  // Add the current context to the global hashmap for the new fiber
+  if (NR_FAILURE
+      == nr_add_fiber_context_to_global_hashmap(
+          NRPRG(fiber_globals_map),
+          NRPRG(fiber_globals) ? NRPRG(fiber_globals)->ctx_globals
+                               : &NRPRG(ctx),
+          zfc_key)) {
+    nrl_warning(
+        NRL_AGENT,
+        "Failed to add fiber context to global hashmap for fiber %s needed "
+        "for a fiber aware transaction and must therefore end the "
+        "transaction.",
+        zfc_key);
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+
+static void nr_fiber_destroy_observe(zend_fiber_context* zfc) {
+  char zfc_key[32];
+
+  NR_FIBER_USED_CREATE_METRIC
+
+  if (NULL == zfc) {
+    nrl_warning(
+        NRL_AGENT,
+        "PHP failed to provide a non-null fiber context needed for a "
+        "fiber aware transaction and must therefore end the transaction.");
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+    return;
+  }
+
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(zfc, "destroy");
+  }
+
+  snprintf(zfc_key, sizeof(zfc_key), "%p", zfc);
+  if (0 == nr_strcmp(NRPRG_SHARED(fiber_context_string), zfc_key)) {
+    // clear the current fiber global ptr if it is the context to be
+    // destroyed
+    NRPRG(fiber_globals) = NULL;
+  }
+
+  // Remove the entry in the fiber global hashmap for this fiber
+  if (NR_FAILURE
+      == nr_remove_fiber_context_from_global_hashmap(NRPRG(fiber_globals_map),
+                                                     zfc_key)) {
+    nrl_warning(
+        NRL_AGENT,
+        "Failed to remove fiber context from global hashmap for fiber %s",
+        zfc_key);
+  }
+}
+
+static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
+  nrtxn_t* txn = NRPRG(txn);
+
+  /*
+   * Directly updating current_async_context to reflect which PHP context we
+   * are switching into. This intentionally bypasses nr_txn_set_current_segment
+   * because a fiber switch does not start or end a segment — it only moves
+   * PHP execution from one already-active context to another. The per-context
+   * segment stacks are left untouched.
+   *
+   * nr_txn_set_current_segment and nr_txn_retire_current_segment also maintain
+   * current_async_context as a side effect of segment push/pop. Those functions
+   * must remain the owners of current_async_context within a single context.
+   * This is the one callsite where the field is written outside that contract,
+   * and it is safe here because the stacks themselves are already correct —
+   * only the "which context is PHP currently running in" pointer needs updating.
+   */
+
+  if (zfc->kind != zend_ce_fiber) {
+    /* Context is the Main PHP Process */
+    NRPRG_SHARED(current_php_context) = NULL;
+    NRPRG_SHARED(fiber_context_string)[0] = '\0';
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = 0;
+    }
+  } else {
+    snprintf(NRPRG_SHARED(fiber_context_string),
+             sizeof(NRPRG_SHARED(fiber_context_string)), "%p", zfc);
+    NRPRG_SHARED(current_php_context) = NRPRG_SHARED(fiber_context_string);
+    if (nrlikely(NULL != txn)) {
+      txn->current_async_context = nr_string_add(
+          txn->trace_strings, NRPRG_SHARED(current_php_context));
+    }
+  }
+}
+
+/*
+ * Purpose: Update the current segment of a fiber context when a fiber has
+ * been suspended.  The php_current_context is context to use.
+ *
+ * Params:  zend_fiber_context* zfc of the "from" fiber in a switch
+ *
+ * Returns : Void
+ * Note: caller is responsible for:
+ *              1) verifying zfc is not NULL.
+ *              2) calling this before nr_fiber_set_contexts has been called
+ *                so we don't have to calculate the context twice
+ *
+ * Ensure we don't count fiber suspend time in the segment's exclusive time
+ * duration. In addition to a fiber being able to suspend itself via
+ * Fiber::suspend(), since ONLY ONE fiber can run at a time, any fiber that
+ * calls another will automatically be suspended.
+ *
+ * Note: We need to handle both types of suspension.
+ *
+ * If in the future, we ever need to differentiate, it is possible to
+ * differentiate. To detect that the fiber suspended itself using
+ * Fiber::suspend(), check:
+ *
+ * 1) the "from" fiber context status is ZEND_FIBER_STATUS_RUNNING
+ * 2) the fiber in the "from" fiber context, has a fiber->caller value of
+ * NULL
+ *
+ */
+static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
+  nr_segment_t* fiber_segment = NULL;
+
+  if (NULL == NRPRG(txn)) {
+    /* nothing to do if the txn is NULL */
+    return;
+  }
+
+  if (ZEND_FIBER_STATUS_RUNNING == zfc->status) {
+    fiber_segment = nr_txn_get_current_segment(
+        NRPRG(txn), NRPRG_SHARED(current_php_context));
+
+    if (NULL != fiber_segment && 0 == fiber_segment->stop_time) {
+      fiber_segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+    }
+  }
+}
+
+/*
+ * Purpose: Update the exclusive current segment of a fiber context when a
+ * fiber is reanimated (via resume or caller ending or called fiber
+ * ending/suspending) after being suspended; the "to" in a switch.
+ *
+ * Params:  none
+ *
+ * Returns : Void
+ * Note: caller is responsible for:
+ *              1) verifying zfc is not NULL.
+ *              2) ensuring the "to" fiber is ZEND_FIBER_STATUS_SUSPENDED
+ *              3) calling this after nr_fiber_set_contexts has been called
+ *                so we don't have to calculate the context twice
+ * During a fiber switch, update the exclusive time of a the "to" fiber context
+ *
+ */
+static inline void nr_fiber_handle_exclusive_time() {
+  nr_segment_t* fiber_segment = NULL;
+  nrtime_t current_time = 0;
+
+  if (NULL == NRPRG(txn)) {
+    /* nothing to do if the txn is NULL */
+    return;
+  }
+
+  current_time = nr_txn_now_rel(NRPRG(txn));
+
+  fiber_segment = nr_txn_get_current_segment(NRPRG(txn),
+                                             NRPRG_SHARED(current_php_context));
+
+  if (NULL == fiber_segment) {
+    return; /* Valid case - ex: will happen if there was a txn stop. */
+  }
+
+  if (nrlikely(0 != fiber_segment->stop_time)) {
+    nr_exclusive_time_ensure(&fiber_segment->exclusive_time,
+                             NR_PHP_DEFAULT_SUSPEND_TIMES,
+                             fiber_segment->start_time, current_time);
+    /* Add the suspension which existed from the previous stop time to the
+     * current time. */
+
+    nr_exclusive_time_add_child(fiber_segment->exclusive_time,
+                                fiber_segment->stop_time, current_time);
+    /* reset the stop_time now that the fiber is resumed. */
+    fiber_segment->stop_time = 0;
+  } else {
+    /*
+     * Shouldn't get to this case, but doublechecking so as not to overwrite a
+     * time that something else wrote.
+     */
+    nrl_verbosedebug(
+        NRL_AGENT, "Current segment time was already set for fiber context %s",
+        NRPRG_SHARED(current_php_context));
+  }
+}
+
+/*
+ * Purpose: Determine the parent for a new, given fiber context and set the
+ fiber_parent_segment global accordingly.
+ *
+ * Params:  zend_fiber_context* zfc
+ *
+ * Returns : Void
+ * Note: caller is responsible for verifying zfc is not NULL.
+ *
+ * The fiber_parent_segment is only set to non-NULL when starting a fiber
+ within a fiber.
+ * For all other cases it will be null which indicates that the main PHP
+ process is the parent.
+ * In the case of end/start txn happening within fibers, this can also be
+ null due to the following
+ * current agent behavior when a txn ends/starts:
+ * 1) when a segment is discarded, its children get re-parented to its
+ parent
+ * 2) when a txn is ended, all segments (even those that haven't completed
+ yet) are closed
+ * 3) For subsequent children of a calling segment that was closed by the
+ txn end, since the calling segment no longer exists, the main process
+ becomes the parent.
+ *
+ */
+static inline void nr_fiber_set_fiber_parent_segment(zend_fiber_context* zfc) {
+  if (zfc->kind != zend_ce_fiber) {
+    /* Main fiber is the parent, set to NULL. */
+    NRPRG_SHARED(fiber_parent_segment) = NULL;
+  } else {
+    char* parent_fiber_context_string = nr_formatf("%p", zfc);
+    NRPRG_SHARED(fiber_parent_segment)
+        = nr_txn_get_current_segment(NRPRG(txn), parent_fiber_context_string);
+    nr_free(parent_fiber_context_string);
+  }
+}
+
+static void nr_fiber_switch_observe(zend_fiber_context* from,
+                                    zend_fiber_context* to) {
+  NR_FIBER_USED_CREATE_METRIC
+
+  if (NULL == from || NULL == to) {
+    nrl_warning(
+        NRL_AGENT,
+        "PHP failed to provide a non-null fiber context needed for a "
+        "fiber aware transaction and must therefore end the transaction.");
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+    return;
+  }
+
+  if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_fibers)) {
+    nr_fiber_show_fiber(from, "switch from");
+    nr_fiber_show_fiber(to, "switch to");
+  }
+
+  /*
+   * If kind != zend_ce_fiber that means the fiber context is the MAIN php
+   * context not an actual fiber.
+   */
+
+  /* We are switching between fibers that already exist.  Check if it's
+   * because the "from" fiber suspended itself using Fiber::suspend vs
+   * other things like resuming a child fiber or completing an exiting to
+   * a parent fiber.
+   */
+
+  nr_fiber_handle_fiber_suspend(from);
+
+  /* Set the proper context for the fiber context we are switching into. */
+
+  nr_fiber_set_contexts(to);
+
+  /* If we are starting a new fiber.  We need to ensure it is properly
+   * parented to the "from" context. */
+  if (ZEND_FIBER_STATUS_INIT == to->status) {
+    nr_fiber_set_fiber_parent_segment(from);
+  } else if (ZEND_FIBER_STATUS_SUSPENDED == to->status) {
+    nr_fiber_handle_exclusive_time();
+  }
+
+  if (NR_FAILURE
+      == nr_fiber_switch_global_context(NRPRG(fiber_globals_map),
+                                        &NRPRG(fiber_globals),
+                                        NRPRG_SHARED(current_php_context))) {
+    nrl_warning(NRL_AGENT,
+                "Failed to switch fiber context to %s needed for a fiber aware "
+                "transaction and must therefore end the transaction.",
+                NRPRG_SHARED(current_php_context));
+    nr_php_txn_end(0, 0 TSRMLS_CC);
+  }
+}
+
 #endif /* PHP 8.1+ */
 
 void nr_php_observer_no_op(zend_execute_data* execute_data NRUNUSED) {};
@@ -179,8 +508,8 @@ void nr_php_observer_minit() {
 
   /*
    * For Observer API with PHP 8+, we no longer need to ovewrwrite the zend
-   * execute hook.  orig_execute is called various ways in various places, so
-   * turn it into a no_op when using OAPI.
+   * execute hook.  orig_execute is called various ways in various places,
+   * so turn it into a no_op when using OAPI.
    */
   NR_PHP_PROCESS_GLOBALS(orig_execute) = nr_php_observer_no_op;
 
@@ -190,11 +519,31 @@ void nr_php_observer_minit() {
    * Register the Observer API fiber handlers.
    */
 
-  /* Currently only register if we are disabling instrumentation. */
+  /*
+   * Life cycle of a fiber:
+   * 1) fiber->start which triggers
+   *    a) fiber init
+   *    b) fiber switch from calling context to fiber context
+   * 2) fiber->resume which triggers
+   *    a) fiber switch from calling context to fiber context
+   * 3) fiber->suspend which triggers
+   *    a) fiber switch from fiber context to calling context
+   * 4) fiber exits/completes which triggers
+   *    a) fiber switch from fiber context to calling context
+   *    b) fiber destroy
+   * 5) calling function exits without calling fiber->resume which triggers
+   *    a) fiber switch from calling context to fiber context
+   *    b) fiber switch from fiber context to calling context
+   *    c) fiber destroy
+   */
   if (NRINI(fibers_disabled)) {
     zend_observer_fiber_init_register(nr_fiber_disable);
     zend_observer_fiber_switch_register(nr_fiber_switch_disable);
     zend_observer_fiber_destroy_register(nr_fiber_disable);
+  } else {
+    zend_observer_fiber_init_register(nr_fiber_init_observe);
+    zend_observer_fiber_switch_register(nr_fiber_switch_observe);
+    zend_observer_fiber_destroy_register(nr_fiber_destroy_observe);
   }
 
 #endif /* PHP 8.1+ */

@@ -2526,6 +2526,94 @@ static void test_json_print_segments_extremely_short(void) {
   nr_vector_destroy(&span_events);
 }
 
+/*
+ * Segments with stop_time == 0 are segments that were never explicitly ended
+ * (e.g., a fiber was abandoned mid-flight when the transaction ended). The
+ * iterator must skip them just like zero-duration segments. This tests the
+ * || (0 == segment->stop_time) guard added to the iterator callback.
+ */
+static void test_json_print_segments_zero_stop_time(void) {
+  bool rv;
+  nrbuf_t* buf;
+  nr_vector_t* span_events;
+  nrpool_t* segment_names;
+
+  nrtxn_t txn = {.abs_start_time = 1000};
+
+  nr_span_event_t* evt_root;
+  nr_span_event_t* evt_a;
+  nr_span_event_t* evt_c;
+
+  // clang-format off
+  nr_segment_t root = {.txn = &txn, .start_time = 0, .stop_time = 9000};
+  nr_segment_t A    = {.txn = &txn, .start_time = 1000, .stop_time = 6000};
+  nr_segment_t B    = {.txn = &txn, .start_time = 2000, .stop_time = 0};
+  nr_segment_t C    = {.txn = &txn, .start_time = 3000, .stop_time = 4000};
+  // clang-format on
+
+  buf = nr_buffer_create(4096, 4096);
+  span_events = nr_vector_create(9, nr_vector_span_event_dtor, NULL);
+  segment_names = nr_string_pool_create();
+
+  mock_txn(&txn, &root);
+  txn.segment_count = 4;
+
+  /*    ------root-------
+   *       ----A----
+   *        ---B--- (stop_time == 0: never ended)
+   *         --C--
+   */
+  nr_segment_children_init(&root.children);
+  nr_segment_children_init(&A.children);
+  nr_segment_children_init(&B.children);
+
+  nr_segment_add_child(&root, &A);
+  nr_segment_add_child(&A, &B);
+  nr_segment_add_child(&B, &C);
+
+  root.name = nr_string_add(txn.trace_strings, "WebTransaction/*");
+  A.name = nr_string_add(txn.trace_strings, "A");
+  B.name = nr_string_add(txn.trace_strings, "B");
+  C.name = nr_string_add(txn.trace_strings, "C");
+
+  rv = nr_segment_traces_json_print_segments(buf, span_events, NULL, NULL, &txn,
+                                             &root, segment_names);
+  tlib_pass_if_bool_equal(
+      "A segment with zero stop_time must not appear in the transaction trace",
+      true, rv);
+  test_buffer_contents("segment B with stop_time 0 omitted", buf,
+                       "[0,9,\"`0\",{},[[1,6,\"`1\",{},[[3,4,\"`2\",{},"
+                       "[]]]]]]");
+
+  tlib_pass_if_uint_equal("span event count excludes the zero-stop_time segment",
+                          3, nr_vector_size(span_events));
+
+  evt_root = (nr_span_event_t*)nr_vector_get(span_events, 0);
+  evt_a = (nr_span_event_t*)nr_vector_get(span_events, 1);
+  evt_c = (nr_span_event_t*)nr_vector_get(span_events, 2);
+
+  SPAN_EVENT_COMPARE(evt_root, "WebTransaction/*", NR_SPAN_GENERIC, NULL, 1000,
+                     9000);
+  SPAN_EVENT_COMPARE(evt_a, "A", NR_SPAN_GENERIC, evt_root, 2000, 5000);
+  SPAN_EVENT_COMPARE(evt_c, "C", NR_SPAN_GENERIC, evt_a, 4000, 1000);
+
+  nr_segment_children_deinit(&root.children);
+  nr_segment_destroy_fields(&root);
+
+  nr_segment_children_deinit(&A.children);
+  nr_segment_children_deinit(&B.children);
+
+  nr_segment_destroy_fields(&A);
+  nr_segment_destroy_fields(&B);
+  nr_segment_destroy_fields(&C);
+
+  cleanup_mock_txn(&txn);
+  nr_string_pool_destroy(&segment_names);
+
+  nr_buffer_destroy(&buf);
+  nr_vector_destroy(&span_events);
+}
+
 static void test_trace_create_data_bad_parameters(void) {
   nrtxn_t txn = {.abs_start_time = 1000};
   uintptr_t i;
@@ -2913,6 +3001,7 @@ void test_main(void* p NRUNUSED) {
   test_json_print_segments_invalid_typed_attributes();
 
   test_json_print_segments_extremely_short();
+  test_json_print_segments_zero_stop_time();
 
   test_trace_create_data_bad_parameters();
   test_trace_create_data();
