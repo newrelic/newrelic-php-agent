@@ -438,6 +438,7 @@ end:
 NR_PHP_WRAPPER_END
 
 void nr_guzzle6_enable(TSRMLS_D) {
+  zend_result retval;
   zend_function* middleware_func = NULL;
   if (0 == NRINI(guzzle_enabled)) {
     return;
