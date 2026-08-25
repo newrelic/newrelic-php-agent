@@ -6,6 +6,7 @@
 #include "tlib_php.h"
 
 #include "php_agent.h"
+#include "php_globals.h"
 #include "php_txn_private.h"
 
 #define LIBRARY_NAME "vendor_name/package_name"
@@ -16,6 +17,10 @@
 #define COMPOSER_MAJOR_VERSION "2"
 #define PACKAGE_METRIC_PREFIX "Supportability/PHP/package/"
 #define PACKAGE_METRIC PACKAGE_METRIC_PREFIX LIBRARY_NAME
+/* nr_php_use_license() requires exactly NR_LICENSE_SIZE (40) characters or
+ * it returns NULL regardless of input -- this is a valid-length stand-in,
+ * not a real license. */
+#define TEST_LICENSE "0123456789012345678901234567890123456789"
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
@@ -299,9 +304,81 @@ static void test_nr_php_txn_create_packages_major_metrics() {
 }
 
 
+static void test_nr_php_txn_populate_app_info_identity() {
+  nr_app_info_t info;
+
+  tlib_php_request_start();
+
+  /* Test : NULL info doesn't crash. */
+  nr_php_txn_populate_app_info_identity(NULL, "myapp", TEST_LICENSE);
+
+  /* Test : explicit non-empty appnames/license pass through unchanged. */
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "myapp", TEST_LICENSE);
+  tlib_pass_if_str_equal("explicit appname used", "myapp", info.appname);
+  tlib_pass_if_str_equal("explicit license used", TEST_LICENSE, info.license);
+  nr_app_info_destroy_fields(&info);
+
+  /* Test : NULL/empty appnames falls back to NRINI(appnames). */
+  NRINI(appnames) = "inidefault";
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, NULL, TEST_LICENSE);
+  tlib_pass_if_str_equal("appname falls back to INI", "inidefault",
+                        info.appname);
+  nr_app_info_destroy_fields(&info);
+
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "", TEST_LICENSE);
+  tlib_pass_if_str_equal("empty appname falls back to INI", "inidefault",
+                        info.appname);
+  nr_app_info_destroy_fields(&info);
+
+  /* Test : unresolvable license leaves info.license NULL, but the other
+   * required fields are still all populated -- the regression guard for
+   * the historical bug this whole extraction is named after. */
+  NRINI(license) = NULL;
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "myapp", NULL);
+  tlib_pass_if_null("unresolvable license is NULL", info.license);
+  tlib_pass_if_not_null("environment still populated", info.environment);
+  tlib_pass_if_not_null("lang still populated", info.lang);
+  tlib_pass_if_not_null("version still populated", info.version);
+  tlib_pass_if_not_null("redirect_collector still populated",
+                       info.redirect_collector);
+  nr_app_info_destroy_fields(&info);
+
+  /* Test : high_security is copied through. */
+  NR_PHP_PROCESS_GLOBALS(high_security) = 1;
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "myapp", TEST_LICENSE);
+  tlib_pass_if_true("high_security copied through", info.high_security,
+                    "expected high_security to be set");
+  NR_PHP_PROCESS_GLOBALS(high_security) = 0;
+  nr_app_info_destroy_fields(&info);
+
+  /* Test : trace_observer_host is DT-gated. */
+  NRINI(distributed_tracing_enabled) = 1;
+  NRINI(trace_observer_host) = "observer.example.com";
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "myapp", TEST_LICENSE);
+  tlib_pass_if_str_equal("trace_observer_host copied when DT enabled",
+                        "observer.example.com", info.trace_observer_host);
+  nr_app_info_destroy_fields(&info);
+
+  NRINI(distributed_tracing_enabled) = 0;
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, "myapp", TEST_LICENSE);
+  tlib_pass_if_str_equal("trace_observer_host empty when DT disabled", "",
+                        info.trace_observer_host);
+  nr_app_info_destroy_fields(&info);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   test_nr_php_txn_php_package_create_major_metric();
   test_nr_php_txn_create_packages_major_metrics();
+  test_nr_php_txn_populate_app_info_identity();
   tlib_php_engine_destroy();
 }

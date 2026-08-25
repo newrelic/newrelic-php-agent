@@ -868,6 +868,38 @@ void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn) {
                           nr_php_txn_php_package_create_major_metric, txn);
 }
 
+void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
+                                           const char* appnames,
+                                           const char* license TSRMLS_DC) {
+  const char* lic_to_use;
+
+  if (NULL == info) {
+    return;
+  }
+
+  if ((NULL == appnames) || ('\0' == appnames[0])) {
+    appnames = NRINI(appnames);
+  }
+  lic_to_use = nr_php_use_license(license TSRMLS_CC);
+
+  info->high_security = NR_PHP_PROCESS_GLOBALS(high_security);
+  info->license = (NULL != lic_to_use) ? nr_strdup(lic_to_use) : NULL;
+  info->environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
+  info->lang = nr_strdup("php");
+  info->version = nr_strdup(nr_version());
+  info->appname = nr_strdup(appnames);
+  info->redirect_collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
+
+  /* If DT is disabled we cannot stream 8T events, so disable the observer
+   * host; the port setting does not depend on DT being enabled. */
+  if (NRINI(distributed_tracing_enabled)) {
+    info->trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  } else {
+    info->trace_observer_host = nr_strdup("");
+  }
+  info->trace_observer_port = NRINI(trace_observer_port);
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -989,27 +1021,14 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   nr_memset(&info, 0, sizeof(info));
-  info.high_security = NR_PHP_PROCESS_GLOBALS(high_security);
-  info.license = nr_strdup(lic_to_use);
+  nr_php_txn_populate_app_info_identity(&info, appnames, license TSRMLS_CC);
   info.settings = NULL; /* Populated through callback. */
-  info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
   info.labels = nr_php_txn_get_labels();
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
-  info.lang = nr_strdup("php");
-  info.version = nr_strdup(nr_version());
-  info.appname = nr_strdup(appnames);
-  info.redirect_collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
   info.security_policies_token = nr_strdup(NRINI(security_policies_token));
   info.supported_security_policies
       = nr_php_txn_get_supported_security_policy_settings(&opts);
-  /* if DT is disabled we cannot stream 8T events so disable observer host */
-  if (NRINI(distributed_tracing_enabled))
-    info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
-  else
-    info.trace_observer_host = nr_strdup("");
-  /* observer port setting does not really depend on DT being enabled */
-  info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
 
