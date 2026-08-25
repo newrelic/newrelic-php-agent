@@ -438,12 +438,95 @@ end:
 NR_PHP_WRAPPER_END
 
 void nr_guzzle6_enable(TSRMLS_D) {
+  zend_function* middleware_func = NULL;
   if (0 == NRINI(guzzle_enabled)) {
     return;
   }
+  middleware_func = nr_php_find_function("newrelic\\Guzzle6\\middleware");
+  if (NULL != middleware_func) {
+    return;
+  }
 
-  nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
+  /*
+   * Here's something new: we're going to evaluate PHP code to build our
+   * middleware in PHP, rather than doing it in C. This is mostly because it's
+   * fairly difficult to return a higher-order function from C; while possible,
+   * the code to do so is horrible enough that this actually feels cleaner.
+   *
+   * We'll do it when the library is detected because that should only happen
+   * once, but we'll also be careful to put guards around the function
+   * declaration just in case.
+   *
+   * On the bright side, zend_eval_string() effectively treats the string given
+   * as a standalone file, so we can use a normal namespace declaration to
+   * avoid possible clashes.
+   */
+  retval = zend_eval_string(
+      "namespace newrelic\\Guzzle6;"
+
+      "use Psr\\Http\\Message\\RequestInterface;"
+      "use GuzzleHttp\\Promise\\PromiseInterface;"
+
+      "if (!function_exists('newrelic\\Guzzle6\\middleware')) {"
+      "  function middleware(callable $handler) {"
+      "    return function (RequestInterface $request, array $options) use "
+      "($handler) {"
+
+      /*
+       * Start by adding the outbound CAT/DT/Synthetics headers to the request.
+       */
+      "      foreach (newrelic_get_request_metadata('Guzzle 6') as $k => $v) {"
+      "        $request = $request->withHeader($k, $v);"
+      "      }"
+
+      /*
+       * Set up the RequestHandler object and attach it to the promise so that
+       * we create an external node and deal with the CAT headers coming back
+       * from the far end.
+       */
+      "      $rh = new RequestHandler($request);"
+      "      $promise = $handler($request, $options);"
+      "      if (PromiseInterface::REJECTED == $promise->getState()) {"
+      /*
+                Special case for sync request. When sync requests is rejected,
+                onRejected callback is not called via `PromiseInterface::then`
+                and needs to be called manually.
+       */
+      "        $rh->onRejected($promise);"
+      "      } else {"
+      "        $promise->then([$rh, 'onFulfilled'], [$rh, 'onRejected']);"
+      "      }"
+      "      return $promise;"
+      "    };"
+      "  }"
+      "}",
+      NULL, "newrelic/Guzzle6" TSRMLS_CC);
+
+  if (SUCCESS == retval) {
+    nr_php_wrap_user_function(NR_PSTR("GuzzleHttp\\Client::__construct"),
                               nr_guzzle_client_construct TSRMLS_CC);
+  } else {
+    nrl_warning(NRL_FRAMEWORK,
+                "%s: error evaluating PHP code; not installing handler",
+                __func__);
+  }
+}
+
+void nr_guzzle8_enable(TSRMLS_D) {
+  /*
+   * The Guzzle 8 magic file is detected on all lower versions of Guzzle.
+   * The PHP version check prevents all Guzzle 5 from running the code,
+   * as Guzzle 8 and 5 are mutually exclusive in supported PHP versions.
+   * The middleware_func check ensures that for Guzzle 6-7 we only install
+   * the middleware a single time.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO /* PHP 7.4+ */
+  zend_function* middleware_func = NULL;
+  middleware_func = nr_php_find_function("newrelic\\Guzzle6\\middleware");
+  if (NULL == middleware_func) {
+    nr_guzzle6_enable();
+  }
+#endif /* PHP 7.4+ */
 }
 
 void nr_guzzle6_minit(TSRMLS_D) {

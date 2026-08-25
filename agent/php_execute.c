@@ -434,9 +434,15 @@ static nr_library_table_t libraries[] = {
     /* Doctrine 2.18 reworked the directory structure */
     {"Doctrine 2", NR_PSTR("doctrine/orm/src/query.php"), nr_doctrine2_enable},
 
+    /*
+     * When Guzzle 5 support is removed, Guzzle 6+ magic files should be consolidated
+     * into just using client.php
+     */
     {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
-    {"Guzzle 6", NR_PSTR("guzzle/src/client.php"),
+    {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"),
      nr_guzzle6_enable},
+    {"Guzzle 8", NR_PSTR("guzzle/src/client.php"),
+     nr_guzzle8_enable},
 
     {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},
 
