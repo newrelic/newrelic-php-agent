@@ -383,10 +383,8 @@ static char* nr_monolog_get_postprocessed_message(zval* record) {
       record_message_string
           = nr_php_get_zval_object_property(record, "message");
     }
-  }
-
-  /* For monolog 2, $record is a simple array*/
-  if (record_message_string == NULL && nr_php_is_zval_valid_array(record)) {
+  } else if (nr_php_is_zval_valid_array(record)) {
+    /* For monolog 2, $record is a simple array*/
     record_message_string
         = nr_php_zend_hash_find(Z_ARRVAL_P(record), "message");
   }
