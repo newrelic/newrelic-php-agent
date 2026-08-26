@@ -246,6 +246,7 @@ char* nr_guzzle_response_get_header(const char* header,
 
 NR_PHP_WRAPPER_START(nr_guzzle_client_construct) {
   int is_guzzle_45 = 0;
+
   zval* this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
 
   (void)wraprec;
