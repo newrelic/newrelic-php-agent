@@ -452,8 +452,12 @@ NR_PHP_WRAPPER_END
 
 void nr_guzzle6_enable(TSRMLS_D) {
   int retval;
-
+  zend_function* middleware_func = NULL;
   if (0 == NRINI(guzzle_enabled)) {
+    return;
+  }
+  middleware_func = nr_php_find_function("newrelic\\Guzzle6\\middleware");
+  if (NULL != middleware_func) {
     return;
   }
 
@@ -520,6 +524,23 @@ void nr_guzzle6_enable(TSRMLS_D) {
                 "%s: error evaluating PHP code; not installing handler",
                 __func__);
   }
+}
+
+void nr_guzzle8_enable(TSRMLS_D) {
+  /*
+   * The Guzzle 8 magic file is detected on all lower versions of Guzzle.
+   * The PHP version check prevents all Guzzle 5 from running the code,
+   * as Guzzle 8 and 5 are mutually exclusive in supported PHP versions.
+   * The middleware_func check ensures that for Guzzle 6-7 we only install
+   * the middleware a single time.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_7_4_X_API_NO /* PHP 7.4+ */
+  zend_function* middleware_func = NULL;
+  middleware_func = nr_php_find_function("newrelic\\Guzzle6\\middleware");
+  if (NULL == middleware_func) {
+    nr_guzzle6_enable();
+  }
+#endif /* PHP 7.4+ */
 }
 
 void nr_guzzle6_minit(TSRMLS_D) {
