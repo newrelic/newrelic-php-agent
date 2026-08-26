@@ -21,12 +21,13 @@ extern nrobj_t* nr_monolog_context_data_zval_to_attribute_obj(
  * Purpose : ONLY for testing to verify that the appropriate behavior of
  *           the conversion of a Monolog context array to attributes.
  *
- * Returns : Caller takes ownership of attributes struct
+ * Returns : Nothing; populates/mutates *attributes. Caller takes ownership
+ *           of the attributes struct left in *attributes.
  *
  */
-extern nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
+extern void nr_monolog_convert_context_data_to_attributes(
     zval* context_data,
-    nr_attributes_t* attributes TSRMLS_DC);
+    nr_attributes_t** attributes TSRMLS_DC);
 
 /*
  * Purpose : ONLY for testing to verify postprocessed attribute extraction

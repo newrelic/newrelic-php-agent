@@ -419,9 +419,9 @@ static void test_convert_zval_to_attribute_obj(TSRMLS_D) {
 #define TEST_ATTRIBUTES_CREATION(CONTEXT_DATA, EXPECTED_JSON)              \
   do {                                                                     \
     char* actual_json;                                                     \
-    nr_attributes_t* attributes                                            \
-        = nr_monolog_convert_context_data_to_attributes(context_data,      \
-                                                        NULL TSRMLS_CC);   \
+    nr_attributes_t* attributes = NULL;                                    \
+    nr_monolog_convert_context_data_to_attributes(context_data,            \
+                                                  &attributes TSRMLS_CC);  \
                                                                            \
     tlib_fail_if_null("attributes is not NULL", attributes);               \
                                                                            \
@@ -560,8 +560,8 @@ static void test_convert_context_data_to_attributes_bad_params(TSRMLS_D) {
   nr_attribute_config_enable_destinations(txn->attribute_config,
                                           NR_ATTRIBUTE_DESTINATION_LOG);
 
-  nr_attributes_t* attributes
-      = nr_monolog_convert_context_data_to_attributes(NULL, NULL TSRMLS_CC);
+  nr_attributes_t* attributes = NULL;
+  nr_monolog_convert_context_data_to_attributes(NULL, &attributes TSRMLS_CC);
 
   tlib_pass_if_null("NULL context yields attributes is NULL", attributes);
 
@@ -571,7 +571,7 @@ static void test_convert_context_data_to_attributes_bad_params(TSRMLS_D) {
   tlib_pass_if_equal("zval is undefined type", IS_UNDEF, Z_TYPE_P(z), int,
                      "%d");
 
-  attributes = nr_monolog_convert_context_data_to_attributes(z, NULL TSRMLS_CC);
+  nr_monolog_convert_context_data_to_attributes(z, &attributes TSRMLS_CC);
 
   tlib_pass_if_null("zval of undefined type yields attributes is NULL",
                     attributes);
@@ -582,7 +582,7 @@ static void test_convert_context_data_to_attributes_bad_params(TSRMLS_D) {
 
 static void test_convert_context_nested_arrays(TSRMLS_D) {
   zval* context_data;
-  nr_attributes_t* attributes;
+  nr_attributes_t* attributes = NULL;
   tlib_php_request_start();
 
   nrtxn_t* txn = NRPRG(txn);
@@ -597,8 +597,8 @@ static void test_convert_context_nested_arrays(TSRMLS_D) {
       "'simple' => 'string'"
       ");" TSRMLS_CC);
 
-  attributes = nr_monolog_convert_context_data_to_attributes(context_data,
-                                                             NULL TSRMLS_CC);
+  nr_monolog_convert_context_data_to_attributes(context_data,
+                                                &attributes TSRMLS_CC);
 
   tlib_pass_if_not_null("Nested arrays converted to attributes", attributes);
 
@@ -663,7 +663,7 @@ static void test_convert_context_type_edge_cases(TSRMLS_D) {
 
 static void test_convert_context_with_special_characters(TSRMLS_D) {
   zval* context_data;
-  nr_attributes_t* attributes;
+  nr_attributes_t* attributes = NULL;
   tlib_php_request_start();
 
   nrtxn_t* txn = NRPRG(txn);
@@ -679,8 +679,8 @@ static void test_convert_context_with_special_characters(TSRMLS_D) {
       "'control_chars' => \"\\n\\r\\t\\b\\f\""
       ");" TSRMLS_CC);
 
-  attributes = nr_monolog_convert_context_data_to_attributes(context_data,
-                                                             NULL TSRMLS_CC);
+  nr_monolog_convert_context_data_to_attributes(context_data,
+                                                &attributes TSRMLS_CC);
 
   tlib_pass_if_not_null("Special characters converted to attributes",
                         attributes);
@@ -798,8 +798,8 @@ static void test_attribute_key_collision_handling(TSRMLS_D) {
       "'normal_key' => 'normal_value'"
       ");" TSRMLS_CC);
 
-  attributes = nr_monolog_convert_context_data_to_attributes(context_data,
-                                                             NULL TSRMLS_CC);
+  nr_monolog_convert_context_data_to_attributes(context_data,
+                                                &attributes TSRMLS_CC);
   tlib_pass_if_not_null("Attributes with potential conflicts created",
                         attributes);
 

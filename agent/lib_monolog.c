@@ -268,28 +268,32 @@ return_context:
 
 /*
  * Purpose : Convert $context array of Monolog\Logger::addRecord to
- * attributes. If attributes is NULL, it will create a new one; otherwise, it
- * will add the context attributes to the existing attributse.
+ * attributes, adding them into *attributes. *attributes is read, never
+ * written to $context itself. If *attributes is NULL, one is created via
+ * nr_attributes_create() and left there for the caller to use/destroy;
+ * otherwise the existing *attributes is added to in place.
  *
- * Params  : zval* for context array from Monolog
- *           nr_attributes_t* for attributes to populate
+ * Params  : 1. zval* for context array from Monolog (read-only)
+ *           2. nr_attributes_t** for attributes to populate; *attributes may
+ *              be NULL on entry, in which case one is created here and
+ *              handed back through this pointer. If context_data is NULL or
+ *              not a valid array, *attributes is left unchanged, which means
+ *              it can still be NULL after this call if it was NULL on entry.
  *
- * Returns : modifies $context on success
- *           NULL otherwise
- *
+ * Returns : Nothing. See *attributes above.
  */
-nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
+void nr_monolog_convert_context_data_to_attributes(
     zval* context_data,
-    nr_attributes_t* attributes TSRMLS_DC) {
+    nr_attributes_t** attributes TSRMLS_DC) {
   zend_string* key;
   zval* val;
 
   if (NULL == context_data || !nr_php_is_zval_valid_array(context_data)) {
-    return attributes;
+    return;
   }
 
-  if (NULL == attributes) {
-    attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
+  if (NULL == *attributes) {
+    *attributes = nr_attributes_create(NRPRG(txn)->attribute_config);
   }
 
   ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARR_P(context_data), key, val) {
@@ -300,7 +304,7 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
     nrobj_t* obj = nr_monolog_context_data_zval_to_attribute_obj(val);
 
     if (NULL != obj) {
-      nr_attributes_user_add(attributes, NR_ATTRIBUTE_DESTINATION_LOG,
+      nr_attributes_user_add(*attributes, NR_ATTRIBUTE_DESTINATION_LOG,
                              ZSTR_VAL(key), obj);
       nro_delete(obj);
     } else {
@@ -311,8 +315,6 @@ nr_attributes_t* nr_monolog_convert_context_data_to_attributes(
     }
   }
   ZEND_HASH_FOREACH_END();
-
-  return attributes;
 }
 
 /*
@@ -450,16 +452,16 @@ nr_attributes_t* nr_monolog_get_postprocessed_attributes(
                      __func__);
 
   } else {
-    attributes = nr_monolog_convert_context_data_to_attributes(
-        record_context_array, attributes);
+    nr_monolog_convert_context_data_to_attributes(record_context_array,
+                                                   &attributes);
   }
 
   if (!(nr_php_is_zval_valid_array(record_extra_array))) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: expected $extra be a valid array.",
                      __func__);
   } else {
-    attributes = nr_monolog_convert_context_data_to_attributes(
-        record_extra_array, attributes);
+    nr_monolog_convert_context_data_to_attributes(record_extra_array,
+                                                   &attributes);
   }
 
   return attributes;
@@ -540,8 +542,8 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
       if (NULL == context_attributes) {
         zval* context_data = nr_monolog_extract_context_data(
             argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-        context_attributes = nr_monolog_convert_context_data_to_attributes(
-            context_data, context_attributes);
+        nr_monolog_convert_context_data_to_attributes(context_data,
+                                                       &context_attributes);
         nr_php_arg_release(&context_data);
       }
     }
