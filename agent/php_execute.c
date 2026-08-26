@@ -441,7 +441,7 @@ static nr_library_table_t libraries[] = {
     {"Guzzle 4-5", NR_PSTR("hasemitterinterface.php"), nr_guzzle4_enable},
     {"Guzzle 6", NR_PSTR("guzzle/src/functions_include.php"),
      nr_guzzle6_enable},
-    {"Guzzle 8", NR_PSTR("guzzle/src/client.php"),
+    {"Guzzle", NR_PSTR("guzzle/src/client.php"),
      nr_guzzle8_enable},
 
     {"MongoDB", NR_PSTR("mongodb/src/client.php"), nr_mongodb_enable},

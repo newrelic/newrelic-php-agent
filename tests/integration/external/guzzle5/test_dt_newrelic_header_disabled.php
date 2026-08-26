@@ -42,7 +42,7 @@ traceparent=found tracestate=found X-NewRelic-ID=missing X-NewRelic-Transaction=
     [{"name":"OtherTransactionTotalTime"},                          [1, "??", "??", "??", "??", "??"]],
     [{"name":"OtherTransactionTotalTime/php__FILE__"},              [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 4-5/detected"},         [1, 0, 0, 0, 0, 0]],
-    [{"name":"Supportability/library/Guzzle 8/detected"},           [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/library/Guzzle/detected"},           [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/library/Autoloader/detected"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [1, 0, 0, 0, 0, 0]],
     [{"name":"DurationByCaller/Unknown/Unknown/Unknown/Unknown/all"}, [1, "??", "??", "??", "??", "??"]],
