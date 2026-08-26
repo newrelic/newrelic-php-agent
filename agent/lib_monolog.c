@@ -282,9 +282,9 @@ return_context:
  *
  * Returns : Nothing. See *attributes above.
  */
-void nr_monolog_convert_context_data_to_attributes(
-    zval* context_data,
-    nr_attributes_t** attributes TSRMLS_DC) {
+void nr_monolog_convert_context_data_to_attributes(zval* context_data,
+                                                   nr_attributes_t** attributes
+                                                       TSRMLS_DC) {
   zend_string* key;
   zval* val;
 
@@ -439,10 +439,8 @@ nr_attributes_t* nr_monolog_get_postprocessed_attributes(
       record_context_array = nr_php_get_zval_object_property(record, "context");
       record_extra_array = nr_php_get_zval_object_property(record, "extra");
     }
-  }
-
-  /* For monolog 2, $record is a simple array*/
-  if (record_context_array == NULL && nr_php_is_zval_valid_array(record)) {
+  } else if (nr_php_is_zval_valid_array(record)) {
+    /* For monolog 2, $record is a simple array*/
     record_context_array = nr_php_zend_hash_find(Z_ARRVAL_P(record), "context");
     record_extra_array = nr_php_zend_hash_find(Z_ARRVAL_P(record), "extra");
   }
@@ -453,7 +451,7 @@ nr_attributes_t* nr_monolog_get_postprocessed_attributes(
 
   } else {
     nr_monolog_convert_context_data_to_attributes(record_context_array,
-                                                   &attributes);
+                                                  &attributes);
   }
 
   if (!(nr_php_is_zval_valid_array(record_extra_array))) {
@@ -461,7 +459,7 @@ nr_attributes_t* nr_monolog_get_postprocessed_attributes(
                      __func__);
   } else {
     nr_monolog_convert_context_data_to_attributes(record_extra_array,
-                                                   &attributes);
+                                                  &attributes);
   }
 
   return attributes;
@@ -543,7 +541,7 @@ NR_PHP_WRAPPER(nr_monolog_logger_addrecord) {
         zval* context_data = nr_monolog_extract_context_data(
             argc, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
         nr_monolog_convert_context_data_to_attributes(context_data,
-                                                       &context_attributes);
+                                                      &context_attributes);
         nr_php_arg_release(&context_data);
       }
     }
