@@ -51,6 +51,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"Supportability/TraceContext/Create/Success"},                             [3, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/PHP/package/guzzlehttp/guzzle/7/detected"},                [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 6/detected"},                               [1, "??", "??", "??", "??", "??"]],
+    [{"name":"Supportability/library/Guzzle/detected"},                               [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"},  ["??", "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Logging/Forwarding/PHP/enabled"},                          [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/Logging/Metrics/PHP/enabled"},                             [1, 0, 0, 0, 0, 0]],
