@@ -342,13 +342,27 @@ void nr_composer_handle_autoload(const char* filename) {
         = nr_execute_handle_autoload_composer_get_packages_information(
             vendor_path, fresh_packages);
 
-    /* Steps 2-4: destroy-if-rescan, install fresh collection, bump epoch */
-    if (NULL != entry->packages) {
-      nr_php_packages_destroy(&entry->packages);
+    if (NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == result) {
+      /* A successful rescan always replaces whatever was there before. */
+      if (NULL != entry->packages) {
+        nr_php_packages_destroy(&entry->packages);
+      }
+      entry->packages = fresh_packages;
+      entry->epoch += 1;
+      entry->status = result;
+    } else {
+      /* A failed rescan never touches entry->packages/epoch, regardless
+       * of what was there -- there's nothing worth installing. Only
+       * entry->status needs a decision: leave it alone if it's already
+       * PACKAGES_COLLECTED (protects existing good data's status
+       * invariant), otherwise record this attempt's failure code so the
+       * default gate still closes on a never-yet-successful entry,
+       * matching today's/main's give-up-after-failure behavior. */
+      nr_php_packages_destroy(&fresh_packages);
+      if (NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED != entry->status) {
+        entry->status = result;
+      }
     }
-    entry->packages = fresh_packages;
-    entry->epoch += 1;
-    entry->status = result;
   }
 leave:
   nr_free(vendor_path);
