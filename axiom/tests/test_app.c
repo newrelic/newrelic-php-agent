@@ -469,6 +469,54 @@ static void test_find_or_add_app_high_security_mismatch(void) {
   nr_app_info_destroy_fields(&info);
 }
 
+static void test_find_locked_high_security_mismatch(void) {
+  nrapp_t* app;
+  nr_app_info_t info;
+  nrapplist_t* applist = nr_applist_create();
+
+  nr_memset(&info, 0, sizeof(info));
+  info.license = nr_strdup("1234500000000000000000000000000000006789");
+  info.version = nr_strdup("my_version");
+  info.lang = nr_strdup("my_language");
+  info.appname = nr_strdup("test-app");
+  info.environment = nro_create_from_json("[\"my_environment\"]");
+  info.trace_observer_host = nr_strdup("");
+  info.redirect_collector = nr_strdup("collector.newrelic.com");
+  info.high_security = 0;
+
+  /*
+   * Add the app without high security.
+   */
+  app = nr_app_find_or_add_app(applist, &info);
+  tlib_pass_if_not_null("app added", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
+
+  /*
+   * Finding the same app with high security on fails -- before the fix,
+   * nr_app_find_locked() never checked high_security at all and would
+   * have returned the mismatched app.
+   */
+  info.high_security = 1;
+  app = nr_app_find_locked(applist, &info);
+  tlib_pass_if_null("mismatched high security not found", app);
+
+  /*
+   * Finding the same app with matching high security still succeeds --
+   * confirms the check doesn't false-positive.
+   */
+  info.high_security = 0;
+  app = nr_app_find_locked(applist, &info);
+  tlib_pass_if_not_null("matching high security found", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
+
+  nr_applist_destroy(&applist);
+  nr_app_info_destroy_fields(&info);
+}
+
 /*
  * This global variable allows us to control the app state
  * set by the local nr_cmd_appinfo_tx mock function.
@@ -1490,6 +1538,7 @@ void test_main(void* p NRUNUSED) {
   test_find_or_add_app();
   test_app_find_locked();
   test_find_or_add_app_high_security_mismatch();
+  test_find_locked_high_security_mismatch();
   test_agent_should_do_app_daemon_query();
   test_agent_find_or_add_app();
   test_verify_id();

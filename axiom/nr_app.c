@@ -336,6 +336,24 @@ static void nr_app_log_high_security_mismatch(const char* appname) {
   }
 }
 
+static void nr_app_log_high_security_mismatch_on_find(const char* appname) {
+  static int last_warn = 0;
+  time_t now = time(0);
+
+  if ((now - last_warn) > NR_APP_LOG_HIGH_SECURITY_MISMATCH_BACKOFF_SECONDS) {
+    last_warn = now;
+    nrl_error(
+        NRL_DAEMON,
+        "found app=" NRP_FMT
+        " but it has a different high security "
+        "setting than an existing app with the same name.  "
+        "Please ensure that all of your PHP ini files have the same "
+        "newrelic.high_security value then restart your web servers and the "
+        "newrelic-daemon.",
+        NRP_APPNAME(appname ? appname : "<unknown>"));
+  }
+}
+
 static int nr_app_info_valid(const nr_app_info_t* info) {
   if (NULL == info) {
     return 0;
@@ -397,6 +415,15 @@ nrapp_t* nr_app_find_locked(nrapplist_t* applist, const nr_app_info_t* info) {
   nrt_mutex_lock(&applist->applist_lock);
   app = nr_app_find_matching_locked(applist, info);
   nrt_mutex_unlock(&applist->applist_lock);
+
+  if (NULL != app && info->high_security != app->info.high_security) {
+    /* Mirrors the check in nr_app_find_or_add_app(): a license+appname
+     * match with a different high_security setting means this is a
+     * different app, not this one. */
+    nr_app_log_high_security_mismatch_on_find(info->appname);
+    nrt_mutex_unlock(&app->app_lock);
+    app = NULL;
+  }
 
   return app; /* app->app_lock still held if non-NULL; caller must unlock */
 }
