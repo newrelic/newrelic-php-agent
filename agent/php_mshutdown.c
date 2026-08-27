@@ -27,6 +27,7 @@ PHP_MSHUTDOWN_FUNCTION(newrelic) {
   NR_UNUSED_TSRMLS;
 
   if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
+    nr_php_global_destroy();
     return SUCCESS;
   }
 
