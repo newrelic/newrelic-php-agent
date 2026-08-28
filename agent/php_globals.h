@@ -50,10 +50,11 @@ typedef struct _nrphpglobals_t {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO /* PHP 8.1+ */
   zend_long zend_offset;                    /* Zend extension offset */
 #else
-  int zend_offset;          /* Zend extension offset */
+  int zend_offset; /* Zend extension offset */
 #endif
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
-  int op_array_extension_handle; /* Zend op_array extension handle to attach agent's data to function */
+  int op_array_extension_handle; /* Zend op_array extension handle to attach
+                                    agent's data to function */
 #endif
   int done_instrumentation;  /* Set to true if we have installed instrumentation
                                 handlers */
@@ -100,6 +101,7 @@ typedef struct _nrphpglobals_t {
     uint8_t show_execute_stack;
     uint8_t show_execute_returns;
     uint8_t show_executes_untrimmed;
+    uint8_t show_fibers;
     uint8_t no_exception_handler;
     uint8_t no_signal_handler;
     uint8_t debug_autorum;

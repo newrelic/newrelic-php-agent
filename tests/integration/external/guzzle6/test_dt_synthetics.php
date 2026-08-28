@@ -67,6 +67,7 @@ traceparent=found tracestate=found newrelic=found X-NewRelic-ID=missing X-NewRel
     [{"name":"HttpDispatcher"},                                     [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/PHP/package/guzzlehttp/guzzle/6/detected"}, [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Guzzle 6/detected"},           [1, 0, 0, 0, 0, 0]],
+    [{"name":"Supportability/library/Guzzle/detected"},           [1, 0, 0, 0, 0, 0]],
     [{"name":"Supportability/library/Autoloader/detected"},         [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/library/Composer/detected"},           [1, "??", "??", "??", "??", "??"]],
     [{"name":"Supportability/Unsupported/curl_setopt/CURLOPT_HEADERFUNCTION/closure"}, [3, 0, 0, 0, 0, 0]],

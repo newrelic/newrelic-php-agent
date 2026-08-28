@@ -132,4 +132,15 @@ extern nr_status_t nr_mysqli_metadata_set_option(
     long option,
     const char* value);
 
+/*
+ * Purpose : Copy an existing metadata object.
+ *
+ * Params  : 1. The metadata object to be copied
+ *
+ * Returns : A copy of the metadata object. This object will need to be freed
+ *           when no longer needed.
+ */
+extern nr_mysqli_metadata_t* nr_mysqli_metadata_copy(
+    nr_mysqli_metadata_t* metadata);
+
 #endif /* NR_MYSQLI_METADATA_HDR */

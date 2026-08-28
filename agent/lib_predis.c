@@ -81,16 +81,7 @@ const zend_long nr_predis_default_port = 6379;
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_readResponse);
 static NR_PHP_WRAPPER_PROTOTYPE(nr_predis_connection_writeRequest);
 
-static void nr_predis_command_destroy(nrtime_t* time) {
-  nr_free(time);
-}
-
 static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
-  if (NULL == NRPRG_CTX(predis_commands)) {
-    NRPRG_CTX(predis_commands)
-        = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_predis_command_destroy);
-  }
-
   return NRPRG_CTX(predis_commands);
 }
 
@@ -561,7 +552,13 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
     async_context = nr_formatf("%s." NR_UINT64_FMT, ctx, index);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, async_context);
+  /*
+   * Must explicitly be parented to the parent segment; otherwise, it will
+   * parent to the main NULL context. In non-fiber cases, this will be a segment
+   * on the default (NULL) context; otherwise, it will be the current segment on
+   * the actively executing fiber.
+   */
+  segment = nr_segment_start(NRPRG(txn), auto_segment, async_context);
   nr_segment_set_timing(segment, *start, duration);
   nr_segment_datastore_end(&segment, &params);
 
@@ -765,7 +762,12 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_before) {
   (void)wraprec;
 
   nr_segment_t* segment = NULL;
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  /*
+   * Must be started in the context of its parent.
+   * In non-fiber cases, the context will be NULL(default context); otherwise,
+   * it will be the the context of the parent in an actively executing fiber.
+   */
+  segment = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL != segment) {
     segment->wraprec = auto_segment->wraprec;
   }
@@ -799,7 +801,7 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand_after) {
 }
 NR_PHP_WRAPPER_END
 
-#else
+#else  /* NON-OAPI, non-Fiber cases*/
 
 NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
   char* operation = NULL;
@@ -819,7 +821,9 @@ NR_PHP_WRAPPER(nr_predis_webdisconnection_executeCommand) {
 
   operation = nr_predis_get_operation_name_from_object(command_obj TSRMLS_CC);
   params.operation = operation;
-
+  /*
+   * This segment start can remain untouched since it is a non-fiber scenario.
+   */
   segment = nr_segment_start(NRPRG(txn), NULL, NULL);
 
   NR_PHP_WRAPPER_CALL;

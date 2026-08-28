@@ -880,6 +880,7 @@ var (
 		regexp.MustCompile(`^Supportability/C/NewrelicVersion/.*`),
 		regexp.MustCompile(`^Supportability/PHP/Version/.*`),
 		regexp.MustCompile(`^Supportability/PHP/AgentVersion/.*`),
+		regexp.MustCompile(`^Supportability/PHP/SAPI/.*`),
 	}
 )
 
