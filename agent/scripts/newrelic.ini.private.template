@@ -44,6 +44,7 @@
 ;            show_execute_stack
 ;            show_execute_returns
 ;            show_executes_untrimmed
+;            show_fibers
 ;            no_exception_handler
 ;            no_signal_handler
 ;            debug_autorum
@@ -209,8 +210,8 @@
 ; Setting: newrelic.fibers.disabled
 ; Type   : bool
 ; Scope  : per-directory
-; Default: true
+; Default: false
 ; Info   : If set to true, the agent, on detecting fiber activity, will end the txn,
 ;          send the recorded telementry, and disable instrumentation for the remainder of the request.
 ;
-;newrelic.fibers.disabled = true
+;newrelic.fibers.disabled = false
