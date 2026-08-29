@@ -14,6 +14,7 @@
 #include "php_curl.h"
 #include "php_error.h"
 #include "php_execute.h"
+#include "php_execute_private.h"
 #include "php_globals.h"
 #include "php_hash.h"
 #include "php_hooks.h"
@@ -95,22 +96,6 @@
 
 static void nr_php_show_exec_return(NR_EXECUTE_PROTO TSRMLS_DC);
 static int nr_php_show_exec_indentation(TSRMLS_D);
-
-/*
- * Purpose: Enable monitoring on specific functions in the framework.
- */
-typedef void (*nr_framework_enable_fn_t)(TSRMLS_D);
-
-/*
- * Purpose: Enable monitoring on specific functions for a detected library.
- */
-typedef void (*nr_library_enable_fn_t)(TSRMLS_D);
-
-/*
- * Purpose: Enable monitoring on specific functions for a detected vulnerability
- *          management package.
- */
-typedef void (*nr_vuln_mgmt_enable_fn_t)();
 
 /*
  * This code is used for function call debugging.
@@ -295,19 +280,6 @@ static void nr_show_execute_params(NR_EXECUTE_PROTO, char* pbuf TSRMLS_DC) {
 }
 
 /*
- * Framework handling, definition and callbacks.
- */
-typedef struct _nr_framework_table_t {
-  const char* framework_name;
-  const char* config_name;
-  const char* file_to_check;
-  size_t file_to_check_len;
-  nr_framework_special_fn_t special;
-  nr_framework_enable_fn_t enable;
-  nrframework_t detected;
-} nr_framework_table_t;
-
-/*
  * Note that the maximum length of framework and library names is presently 31
  * bytes due to the use of a 64 byte static buffer when constructing
  * supportability metrics.
@@ -315,7 +287,7 @@ typedef struct _nr_framework_table_t {
  * Note that all paths should be in lowercase.
  */
 // clang-format: off
-static const nr_framework_table_t all_frameworks[] = {
+const nr_framework_table_t all_frameworks[] = {
     {"CakePHP", "cakephp", NR_PSTR("cakephp/src/core/functions.php"), 0,
      nr_cakephp_enable, NR_FW_CAKEPHP},
 
@@ -370,7 +342,7 @@ static const nr_framework_table_t all_frameworks[] = {
      NR_FW_YII2},
 };
 // clang-format: on
-static const int num_all_frameworks
+const int num_all_frameworks
     = sizeof(all_frameworks) / sizeof(nr_framework_table_t);
 
 nrframework_t nr_php_framework_from_config(const char* config_name) {
@@ -413,18 +385,11 @@ nrframework_t nr_php_framework_from_config(const char* config_name) {
  * current framework is FW_UNSET, the callback will still be called.
  */
 
-typedef struct _nr_library_table_t {
-  const char* library_name;
-  const char* file_to_check;
-  size_t file_to_check_len;
-  nr_library_enable_fn_t enable;
-} nr_library_table_t;
-
 /*
  * Note that all paths should be in lowercase.
  */
 // clang-format: off
-static nr_library_table_t libraries[] = {
+const nr_library_table_t libraries[] = {
     /* AWS-SDK-PHP 3 */
     {"AWS-SDK-PHP", NR_PSTR("aws-sdk-php/src/awsclient.php"),
      nr_aws_sdk_php_enable},
@@ -463,10 +428,10 @@ static nr_library_table_t libraries[] = {
 };
 // clang-format: on
 
-static size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
+const size_t num_libraries = sizeof(libraries) / sizeof(nr_library_table_t);
 
 // clang-format: off
-static nr_library_table_t logging_frameworks[] = {
+const nr_library_table_t logging_frameworks[] = {
     /* Monolog - Logging for PHP */
     {"Monolog", NR_PSTR("monolog/logger.php"), nr_monolog_enable},
     /* Consolidation/Log - Logging for PHP */
@@ -477,27 +442,21 @@ static nr_library_table_t logging_frameworks[] = {
 };
 // clang-format: on
 
-static size_t num_logging_frameworks
+const size_t num_logging_frameworks
     = sizeof(logging_frameworks) / sizeof(nr_library_table_t);
 
 /* Package handling for Vulnerability Management */
-typedef struct _nr_vuln_mgmt_table_t {
-  const char* package_name;
-  const char* file_to_check;
-  size_t file_to_check_len;
-  nr_vuln_mgmt_enable_fn_t enable;
-} nr_vuln_mgmt_table_t;
 
 /* Note that all paths should be in lowercase. */
 // clang-format: off
-static const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
+const nr_vuln_mgmt_table_t vuln_mgmt_packages[] = {
     {"Drupal", NR_PSTR("drupal/component/dependencyinjection/container.php"),
      nr_drupal_version},
     {"Wordpress", NR_PSTR("wp-includes/version.php"), nr_wordpress_version},
 };
 // clang-format: on
 
-static const size_t num_packages
+const size_t num_packages
     = sizeof(vuln_mgmt_packages) / sizeof(nr_vuln_mgmt_table_t);
 
 /*
@@ -919,9 +878,8 @@ static void nr_execute_handle_package(const char* filename,
  *
  * Params  : 1. Full name of a PHP file.
  */
-static void nr_php_user_instrumentation_from_file(const char* filename,
-                                                  const size_t filename_len
-                                                      TSRMLS_DC) {
+void nr_php_user_instrumentation_from_file(const char* filename,
+                                           const size_t filename_len) {
   /* short circuit if filename_len is 0; a single place short circuit */
   if (0 == filename_len) {
     nrl_verbosedebug(NRL_AGENT,
