@@ -240,8 +240,7 @@ extern nr_status_t nr_php_txn_begin(const char* appnames,
  */
 extern void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
                                                    const char* appnames,
-                                                   const char* license
-                                                       TSRMLS_DC);
+                                                   const char* license);
 
 /*
  * Purpose : Perform the transaction ending tasks that have to be performed at

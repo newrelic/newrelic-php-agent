@@ -870,7 +870,7 @@ void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn) {
 
 void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
                                            const char* appnames,
-                                           const char* license TSRMLS_DC) {
+                                           const char* license) {
   const char* lic_to_use;
 
   if (NULL == info) {
@@ -880,7 +880,7 @@ void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
   if ((NULL == appnames) || ('\0' == appnames[0])) {
     appnames = NRINI(appnames);
   }
-  lic_to_use = nr_php_use_license(license TSRMLS_CC);
+  lic_to_use = nr_php_use_license(license);
 
   info->high_security = NR_PHP_PROCESS_GLOBALS(high_security);
   info->license = (NULL != lic_to_use) ? nr_strdup(lic_to_use) : NULL;
@@ -1021,7 +1021,7 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   nr_memset(&info, 0, sizeof(info));
-  nr_php_txn_populate_app_info_identity(&info, appnames, license TSRMLS_CC);
+  nr_php_txn_populate_app_info_identity(&info, appnames, license);
   info.settings = NULL; /* Populated through callback. */
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
   info.labels = nr_php_txn_get_labels();

@@ -1680,7 +1680,7 @@ static PHP_INI_MH(nr_framework_mh) {
  * signature and route to the INI hashmap instead of the per-request hashmap.
  */
 static void nr_ini_wraprec_add_naming_fn(const char* namestr,
-                                         int namestrlen TSRMLS_DC) {
+                                         int namestrlen) {
   nruserfn_t* wraprec
       = nr_php_user_instrument_wraprec_hashmap_ini_add(namestr, namestrlen);
 
@@ -1690,7 +1690,7 @@ static void nr_ini_wraprec_add_naming_fn(const char* namestr,
 }
 
 static void nr_ini_wraprec_add_custom_tracer(const char* namestr,
-                                             int namestrlen TSRMLS_DC) {
+                                             int namestrlen) {
   nruserfn_t* wraprec
       = nr_php_user_instrument_wraprec_hashmap_ini_add(namestr, namestrlen);
 
@@ -1711,7 +1711,7 @@ static PHP_INI_MH(nr_wtfuncs_mh) {
 #ifdef ZTS
     /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
-      foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn TSRMLS_CC);
+      foreach_list(NEW_VALUE, nr_ini_wraprec_add_naming_fn);
     }
 #else
     foreach_list(NEW_VALUE, nr_php_add_transaction_naming_function TSRMLS_CC);
@@ -1732,7 +1732,7 @@ static PHP_INI_MH(nr_ttcustom_mh) {
 #ifdef ZTS
     /* ZTS: INI modifications outside of startup are currently ignored. */
     if (ZEND_INI_STAGE_STARTUP == stage) {
-      foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer TSRMLS_CC);
+      foreach_list(NEW_VALUE, nr_ini_wraprec_add_custom_tracer);
     }
 #else
     foreach_list(NEW_VALUE, nr_php_add_custom_tracer TSRMLS_CC);

@@ -79,13 +79,13 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
  * Returns : The matching nrapp_t, with app->app_lock held (caller must
  *           unlock), or NULL if no match exists yet.
  */
-static nrapp_t* nr_composer_find_app_no_txn(TSRMLS_D) {
+static nrapp_t* nr_composer_find_app_no_txn() {
   nr_app_info_t info;
   nrapp_t* app;
 
   nr_memset(&info, 0, sizeof(info));
 
-  nr_php_txn_populate_app_info_identity(&info, NULL, NULL TSRMLS_CC);
+  nr_php_txn_populate_app_info_identity(&info, NULL, NULL);
 
   app = nr_app_find_locked(nr_agent_applist, &info);
 
@@ -308,7 +308,7 @@ void nr_composer_handle_autoload(const char* filename) {
   if (NULL != NRPRG(txn)) {
     entry = NRPRG(txn)->composer_info.entry;
   } else {
-    nrapp_t* app = nr_composer_find_app_no_txn(TSRMLS_C);
+    nrapp_t* app = nr_composer_find_app_no_txn();
     if (NULL != app) {
       entry = nr_app_get_or_create_thread_composer_entry(app,
                                                          (uint64_t)nr_gettid());
