@@ -656,6 +656,15 @@ void nr_php_curl_exec_pre(zval* curlres,
                           const char* async_context TSRMLS_DC) {
   nr_segment_t* segment = NULL;
   char* uri = NULL;
+  int old_context = 0;
+
+  /*
+   * This is a special case where we don't want the context of the newly
+   * created segment to be set on the txn because this segment is tracked
+   * separately based off of the curlres. We need to save the actual context
+   * so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   uri = nr_php_curl_get_url(curlres TSRMLS_CC);
 
@@ -671,6 +680,8 @@ void nr_php_curl_exec_pre(zval* curlres,
    * not instrumenting this particular call.
    */
   nr_php_curl_exec_set_httpheaders(curlres, segment TSRMLS_CC);
+
+  NRTXN(current_async_context) = old_context;
 
   nr_free(uri);
 }
@@ -717,6 +728,7 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
   zval* handle = NULL;
   nr_vector_t* handles = NULL;
   const char* async_context = NULL;
+  int old_context = 0;
 
   if (nr_php_curl_multi_md_is_initialized(curlres TSRMLS_CC)) {
     return;
@@ -730,11 +742,34 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
    * curl_multi_exec, the end time of the segment is updated.
    */
   if (!nr_guzzle_in_call_stack(TSRMLS_C)) {
+    /*
+     * Must explicitly be parented to the current segment of the txn context. In
+     * non-fiber cases, this will be a segment on the default (NULL) context;
+     * otherwise, it will become the current segment on the actively executing
+     * fiber.
+     */
+
+    /*
+     * This is a special case where we don't want the context of the newly
+     * created segment to be set on the txn because this segment is tracked
+     * separately based off of the curlres. We need to save the actual context
+     * so we can restore it later.
+     */
+    old_context = NRTXN(current_async_context);
+
     segment = nr_segment_start(
-        NRPRG(txn), NULL,
+        NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)),
         nr_php_curl_multi_md_get_async_context(curlres TSRMLS_CC));
+
     nr_segment_set_name(segment, "curl_multi_exec");
     nr_php_curl_multi_md_set_segment(curlres, segment TSRMLS_CC);
+
+    /* The current txn context needs to go back to the old context.*/
+    NRTXN(current_async_context) = old_context;
+
+  } else {
+    /* Get the correct parent in case we aren't in the default context. */
+    segment = nr_txn_get_current_segment_txn_context(NRPRG(txn));
   }
 
   /*

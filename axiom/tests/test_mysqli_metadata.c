@@ -9,6 +9,7 @@
 
 #include "nr_mysqli_metadata.h"
 #include "nr_mysqli_metadata_private.h"
+#include "util_object.h"
 #include "util_strings.h"
 
 #include "tlib_main.h"
@@ -228,6 +229,41 @@ static void test_id(void) {
   tlib_pass_if_str_equal("1", "1", id);
 }
 
+static void test_copy(void) {
+  nr_mysqli_metadata_t* src = NULL;
+  nr_mysqli_metadata_t* dest = NULL;
+  const nrobj_t* link = NULL;
+
+  src = nr_mysqli_metadata_create();
+
+  nr_mysqli_metadata_set_connect(src, 1, "db-host", "db-user", "db-password",
+                                 "db-database", 3306, "db-socket", 1);
+
+  dest = nr_mysqli_metadata_copy(src);
+
+  tlib_pass_if_not_null("'dest' metadata is not NULL", dest);
+
+  link = nro_get_hash_value(dest->links, "1", NULL);
+
+  tlib_pass_if_not_null("link", link);
+  tlib_pass_if_str_equal("host", "db-host",
+                         nro_get_hash_string(link, "host", NULL));
+  tlib_pass_if_str_equal("user", "db-user",
+                         nro_get_hash_string(link, "user", NULL));
+  tlib_pass_if_str_equal("password", "db-password",
+                         nro_get_hash_string(link, "password", NULL));
+  tlib_pass_if_str_equal("database", "db-database",
+                         nro_get_hash_string(link, "database", NULL));
+  tlib_pass_if_str_equal("socket", "db-socket",
+                         nro_get_hash_string(link, "socket", NULL));
+  tlib_pass_if_int_equal("port", 3306, nro_get_hash_int(link, "port", NULL));
+  tlib_pass_if_int64_t_equal("flags", 1,
+                             nro_get_hash_long(link, "flags", NULL));
+
+  nr_mysqli_metadata_destroy(&src);
+  nr_mysqli_metadata_destroy(&dest);
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -238,4 +274,5 @@ void test_main(void* p NRUNUSED) {
   test_set_database();
   test_set_option();
   test_id();
+  test_copy();
 }

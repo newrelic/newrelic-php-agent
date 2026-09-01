@@ -139,9 +139,9 @@ static void test_get_set(void) {
 
   tlib_pass_if_status_failure("NULL hashmap",
                               nr_hashmap_set(NULL, NR_PSTR("foo"), NULL));
-  tlib_pass_if_status_failure("NULL hashmap",
+  tlib_pass_if_status_failure("NULL key",
                               nr_hashmap_set(hashmap, NULL, 1, NULL));
-  tlib_pass_if_status_failure("NULL hashmap",
+  tlib_pass_if_status_failure("NULL value",
                               nr_hashmap_set(hashmap, NR_PSTR(""), NULL));
 
   tlib_pass_if_size_t_equal("NULL hashmap", 0, nr_hashmap_count(NULL));
@@ -355,6 +355,57 @@ static void test_keys(void) {
   nr_hashmap_destroy(&hashmap);
 }
 
+static void* clone_str(void* elem) {
+  return nr_strdup((char*)elem);
+}
+
+static void test_copy(void) {
+  nr_hashmap_t* src
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_hashmap_dtor_str);
+  nr_hashmap_t* dest;
+  char* value_foo = nr_strdup("testfoo");
+  char* value_bar = nr_strdup("testbar");
+  char* value_baz = nr_strdup("testbaz");
+
+  tlib_pass_if_null("NULL src returns NULL", nr_hashmap_copy(NULL, clone_str));
+
+  nr_hashmap_set(src, NR_PSTR("foo"), value_foo);
+  nr_hashmap_set(src, NR_PSTR("bar"), value_bar);
+  nr_hashmap_set(src, NR_PSTR("baz"), value_baz);
+
+  dest = nr_hashmap_copy(src, clone_str);
+
+  tlib_pass_if_not_null("'dest' hashmap is not null", dest);
+
+  tlib_pass_if_int_equal(
+      "destination hashmap contains the same number of elements as src", 3,
+      nr_hashmap_count(dest));
+
+  tlib_pass_if_int_equal("'foo' key exists", 1,
+                         nr_hashmap_has(dest, NR_PSTR("foo")));
+  tlib_pass_if_int_equal("'bar' key exists", 1,
+                         nr_hashmap_has(dest, NR_PSTR("bar")));
+  tlib_pass_if_int_equal("'baz' key exists", 1,
+                         nr_hashmap_has(dest, NR_PSTR("baz")));
+
+  tlib_pass_if_str_equal("'foo' key produces 'testfoo' value", "testfoo",
+                         nr_hashmap_get(dest, NR_PSTR("foo")));
+  tlib_pass_if_str_equal("'bar' key produces 'testbar' value", "testbar",
+                         nr_hashmap_get(dest, NR_PSTR("bar")));
+  tlib_pass_if_str_equal("'baz' key produces 'testbaz' value", "testbaz",
+                         nr_hashmap_get(dest, NR_PSTR("baz")));
+
+  tlib_fail_if_ptr_equal("'foo' value is cloned, not aliased", value_foo,
+                         nr_hashmap_get(dest, NR_PSTR("foo")));
+  tlib_fail_if_ptr_equal("'bar' value is cloned, not aliased", value_bar,
+                         nr_hashmap_get(dest, NR_PSTR("bar")));
+  tlib_fail_if_ptr_equal("'baz' value is cloned, not aliased", value_baz,
+                         nr_hashmap_get(dest, NR_PSTR("baz")));
+
+  nr_hashmap_destroy(&src);
+  nr_hashmap_destroy(&dest);
+}
+
 void test_main(void* p NRUNUSED) {
   test_create_destroy();
   test_apply();
@@ -365,4 +416,5 @@ void test_main(void* p NRUNUSED) {
   test_keys();
   test_stress();
   test_update();
+  test_copy();
 }
