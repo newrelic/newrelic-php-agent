@@ -34,7 +34,7 @@ static void reset_entry_between_scenarios(void) {
   nrapp_t* app;
 
   nr_memset(&info, 0, sizeof(info));
-  nr_php_txn_populate_app_info_identity(&info, NULL, NULL TSRMLS_CC);
+  nr_php_txn_populate_app_info_identity(&info, NULL, NULL);
 
   app = nr_app_find_locked(nr_agent_applist, &info);
   if (NULL != app) {
@@ -50,7 +50,7 @@ static void reset_entry_between_scenarios(void) {
  * fresh composer entry, asserting whichever precondition failed.
  * Returns the entry, or NULL if any assertion failed.
  */
-static nr_composer_thread_entry_t* require_live_entry(TSRMLS_D) {
+static nr_composer_thread_entry_t* require_live_entry() {
   nr_composer_thread_entry_t* entry;
 
   tlib_pass_if_not_null("request start produced a live txn", NRPRG(txn));
@@ -176,13 +176,13 @@ static char* autoload_filename(void) {
  */
 
 /* Scenario 1: a fresh (never-scanned) entry, one successful scan. */
-static void test_scenario_1_fresh_entry_success(TSRMLS_D) {
+static void test_scenario_1_fresh_entry_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
@@ -205,7 +205,7 @@ static void test_scenario_1_fresh_entry_success(TSRMLS_D) {
       "  public static function getRootPackage() {"
       "    return array('name' => 'root/package');"
       "  }"
-      "}" TSRMLS_CC);
+      "}");
 
   filename = autoload_filename();
   nr_composer_handle_autoload(filename);
@@ -244,14 +244,14 @@ end:
  * the failure code (closing the once-per-thread gate for a
  * never-yet-successful entry).
  */
-static void test_scenario_2_fresh_entry_init_failure(TSRMLS_D) {
+static void test_scenario_2_fresh_entry_init_failure() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
   reset_entry_between_scenarios();
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
@@ -278,14 +278,14 @@ end:
  * the latest scan, same as today's unconditional-overwrite behavior on the
  * success path.
  */
-static void test_scenario_3_collected_then_success(TSRMLS_D) {
+static void test_scenario_3_collected_then_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
   reset_entry_between_scenarios();
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
@@ -308,7 +308,7 @@ static void test_scenario_3_collected_then_success(TSRMLS_D) {
       "  public static function getRootPackage() {"
       "    return array('name' => 'root/package');"
       "  }"
-      "}" TSRMLS_CC);
+      "}");
 
   filename = autoload_filename();
 
@@ -372,7 +372,7 @@ end:
  * catch (Throwable) turns into a non-array return (NULL), i.e.
  * INVALID_RESULT.
  */
-static void test_scenario_4_collected_then_invalid_result(TSRMLS_D) {
+static void test_scenario_4_collected_then_invalid_result() {
   char* filename;
   nr_composer_thread_entry_t* entry;
   nr_php_packages_t* packages_after_call1;
@@ -380,7 +380,7 @@ static void test_scenario_4_collected_then_invalid_result(TSRMLS_D) {
   reset_entry_between_scenarios();
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
@@ -401,7 +401,7 @@ static void test_scenario_4_collected_then_invalid_result(TSRMLS_D) {
       "  public static function getRootPackage() {"
       "    return array('name' => 'root/package');"
       "  }"
-      "}" TSRMLS_CC);
+      "}");
 
   filename = autoload_filename();
 
@@ -467,14 +467,14 @@ end:
  * write logic does if a second call happens anyway, not whether the
  * gate would allow one.
  */
-static void test_scenario_5_failure_then_success(TSRMLS_D) {
+static void test_scenario_5_failure_then_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
   reset_entry_between_scenarios();
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
@@ -504,7 +504,7 @@ static void test_scenario_5_failure_then_success(TSRMLS_D) {
       "  public static function getRootPackage() {"
       "    return array('name' => 'root/package');"
       "  }"
-      "}" TSRMLS_CC);
+      "}");
 
   /* Call 2: succeeds now that the class exists. */
   nr_composer_handle_autoload(filename);
@@ -543,21 +543,21 @@ end:
  * write logic does if a second call happens anyway, not whether the
  * gate would allow one.
  */
-static void test_scenario_6_repeated_failure(TSRMLS_D) {
+static void test_scenario_6_repeated_failure() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
   reset_entry_between_scenarios();
   tlib_php_request_start();
 
-  entry = require_live_entry(TSRMLS_C);
+  entry = require_live_entry();
   if (NULL == entry) {
     goto end;
   }
 
   tlib_php_request_eval(
       "namespace Composer;"
-      "class InstalledVersions {}" TSRMLS_CC);
+      "class InstalledVersions {}");
 
   filename = autoload_filename();
 
@@ -587,16 +587,379 @@ end:
   tlib_php_request_end();
 }
 
+/*
+ * The 4 scenarios below cover a different route into the same entry:
+ * newrelic_ignore_transaction() and newrelic_set_appname()'s default
+ * (no $xmit) discard, both of which drive nr_php_txn_end()'s ignoretxn
+ * branch and thus nr_txn_discard_composer_packages(). Each API is tested
+ * against both halves of that function's behavior: destroying a scan that
+ * never got pulled/sent, and leaving an already-sent scan alone.
+ *
+ * #   API                   original entry before   packages after   status after
+ * 7   ignore_transaction    new, unsent             destroyed        UNSET
+ * 8   set_appname           new, unsent             destroyed        UNSET
+ * 9   ignore_transaction    already sent            unchanged        COLLECTED
+ * 10  set_appname           already sent            unchanged        COLLECTED
+ *
+ * (Rows 8 and 10 also create a second, new entry via set_appname's app
+ * switch -- separately verified in each scenario to start fresh: UNSET, no
+ * packages, epoch 0. This table describes only the original entry's fate,
+ * not the new one's.)
+ *
+ * All four scenarios keep dereferencing their saved `entry` pointer after
+ * calling tlib_php_request_end() (which destroys the current txn) or after
+ * newrelic_set_appname() swaps NRPRG(txn) to a new one. That's safe because
+ * the entry lives on the app's composer_map, keyed by (app, tid) -- not on
+ * the txn object -- so it outlives whichever txn happened to be looking at
+ * it when the scan ran.
+ */
+
+static const char* const one_package_stub
+    = "namespace Composer;"
+      "class InstalledVersions {"
+      "  public static function getAllRawData() {"
+      "    return array(array('versions' => array("
+      "      'vendor/package' => array('pretty_version' => 'v1.2.3'),"
+      "    )));"
+      "  }"
+      "  public static function getRootPackage() {"
+      "    return array('name' => 'root/package');"
+      "  }"
+      "}";
+
+/*
+ * Scenario 7: a scan happens, then newrelic_ignore_transaction() is called
+ * before the request ends. Ignoring sets status.ignore before
+ * nr_php_txn_end's ignoretxn snapshot is taken, so the normal pull/send path
+ * is skipped entirely -- the scan is genuinely unsent when RSHUTDOWN runs
+ * the discard.
+ */
+static void test_ignore_transaction_discards_unsent_scan() {
+  char* filename;
+  nr_composer_thread_entry_t* entry;
+
+  reset_entry_between_scenarios();
+  tlib_php_request_start();
+
+  entry = require_live_entry();
+  if (NULL == entry) {
+    tlib_php_request_end();
+    return;
+  }
+
+  /* Precondition: scan, then confirm it produced new, unsent data. */
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  tlib_pass_if_int_equal("scan collects successfully before ignoring",
+                        (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                        (int)entry->status);
+  tlib_pass_if_not_null("scan installs packages before ignoring",
+                        entry->packages);
+  tlib_pass_if_uint64_t_equal("scan bumps epoch to 1 before ignoring", 1,
+                             entry->epoch);
+  tlib_pass_if_uint64_t_equal(
+      "scan's data is still unsent before ignoring (epoch != "
+      "last_sent_epoch)",
+      0, entry->last_sent_epoch);
+
+  /* Action under test: ignore the transaction, then confirm the discard. */
+  tlib_php_request_eval("newrelic_ignore_transaction();");
+  tlib_php_request_end();
+
+  tlib_pass_if_int_equal(
+      "ignore_transaction resets status to UNSET when scan was unsent",
+      (int)NR_COMPOSER_API_STATUS_UNSET, (int)entry->status);
+  tlib_pass_if_null(
+      "ignore_transaction destroys packages when scan was unsent",
+      entry->packages);
+  tlib_pass_if_uint64_t_equal(
+      "ignore_transaction still advances last_sent_epoch to match epoch", 1,
+      entry->last_sent_epoch);
+}
+
+/*
+ * Scenario 8: same as 7, but via newrelic_set_appname()'s default discard.
+ * That call fires nr_php_txn_end synchronously, before nr_php_txn_begin
+ * swaps NRPRG(txn) to the new app -- so the discard is already visible on
+ * the saved entry pointer by the time the eval call returns.
+ */
+static void test_set_appname_discards_unsent_scan() {
+  char* filename;
+  nr_composer_thread_entry_t* entry;
+
+  reset_entry_between_scenarios();
+  tlib_php_request_start();
+
+  entry = require_live_entry();
+  if (NULL == entry) {
+    tlib_php_request_end();
+    return;
+  }
+
+  /* Precondition: scan, then confirm it produced new, unsent data. */
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  tlib_pass_if_int_equal("scan collects successfully before switching apps",
+                        (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                        (int)entry->status);
+  tlib_pass_if_not_null("scan installs packages before switching apps",
+                        entry->packages);
+  tlib_pass_if_uint64_t_equal("scan bumps epoch to 1 before switching apps",
+                             1, entry->epoch);
+  tlib_pass_if_uint64_t_equal(
+      "scan's data is still unsent before switching apps (epoch != "
+      "last_sent_epoch)",
+      0, entry->last_sent_epoch);
+
+  /* Action under test: switch apps, then confirm the discard. */
+  tlib_php_request_eval(
+      "newrelic_set_appname('SoakScratchAppUnsent');");
+
+  /*
+   * Confirms the switch landed on a genuinely different, genuinely fresh
+   * entry -- not just a different pointer that happens to carry stale
+   * state through some other path. This is a sanity check on the switch
+   * itself, not on the discard behavior under test below.
+   */
+  tlib_pass_if_true(
+      "set_appname moves NRPRG(txn) to a different composer entry",
+      NRPRG(txn)->composer_info.entry != entry,
+      "NRPRG(txn)->composer_info.entry != entry");
+  tlib_pass_if_int_equal("new app's entry starts fresh (UNSET)",
+                        (int)NR_COMPOSER_API_STATUS_UNSET,
+                        (int)NRPRG(txn)->composer_info.entry->status);
+  tlib_pass_if_null("new app's entry starts fresh (no packages)",
+                    NRPRG(txn)->composer_info.entry->packages);
+  tlib_pass_if_uint64_t_equal("new app's entry starts fresh (epoch 0)", 0,
+                             NRPRG(txn)->composer_info.entry->epoch);
+
+  tlib_pass_if_int_equal(
+      "set_appname resets the old app's status to UNSET when scan was "
+      "unsent",
+      (int)NR_COMPOSER_API_STATUS_UNSET, (int)entry->status);
+  tlib_pass_if_null(
+      "set_appname destroys the old app's packages when scan was unsent",
+      entry->packages);
+  tlib_pass_if_uint64_t_equal(
+      "set_appname still advances the old app's last_sent_epoch to match "
+      "epoch",
+      1, entry->last_sent_epoch);
+
+  tlib_php_request_end();
+}
+
+/*
+ * Scenario 9: a scan happens and is allowed to complete a normal (non-
+ * ignored) request, so the ordinary pull/mark-sent path in nr_php_txn_end
+ * catches it up (last_sent_epoch == epoch). A second request on the same
+ * thread then calls newrelic_ignore_transaction() with nothing new to
+ * discard -- the already-sent data must be left completely alone.
+ */
+static void test_ignore_transaction_preserves_already_sent_scan() {
+  char* filename;
+  nr_composer_thread_entry_t* entry;
+  nr_php_packages_t* packages_after_first_send;
+
+  reset_entry_between_scenarios();
+
+  /* Request 1: plain scan, plain (non-ignored) end -- pull + mark-sent run
+   * normally. */
+  tlib_php_request_start();
+  entry = require_live_entry();
+  if (NULL == entry) {
+    tlib_php_request_end();
+    return;
+  }
+
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+  tlib_php_request_end();
+
+  tlib_pass_if_uint64_t_equal("first request's scan bumps epoch to 1", 1,
+                             entry->epoch);
+  tlib_pass_if_uint64_t_equal(
+      "first request's normal end marks it fully sent", 1,
+      entry->last_sent_epoch);
+  packages_after_first_send = entry->packages;
+  tlib_pass_if_not_null("packages survive the first request's normal end",
+                        packages_after_first_send);
+
+  /* Request 2: same thread, same (default) app -- nothing new has scanned,
+   * so ignoring this request must be a no-op on the entry. */
+  tlib_php_request_start();
+  tlib_pass_if_true("second request reuses the same composer entry",
+                    NRPRG(txn)->composer_info.entry == entry,
+                    "NRPRG(txn)->composer_info.entry == entry");
+
+  tlib_php_request_eval("newrelic_ignore_transaction();");
+  tlib_php_request_end();
+
+  tlib_pass_if_true(
+      "already-sent packages pointer is untouched by a later discard",
+      entry->packages == packages_after_first_send,
+      "entry->packages == packages_after_first_send");
+  {
+    nr_php_package_t* package
+        = nr_php_packages_get_package(entry->packages, "vendor/package");
+    tlib_pass_if_not_null("already-sent package is still present", package);
+    tlib_pass_if_str_equal(
+        "already-sent package version is unchanged", "1.2.3",
+        NULL == package ? NULL : package->package_version);
+    tlib_pass_if_size_t_equal("already-sent packages count is unchanged", 1,
+                              nr_php_packages_count(entry->packages));
+  }
+  tlib_pass_if_int_equal("already-sent status stays COLLECTED",
+                        (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                        (int)entry->status);
+  tlib_pass_if_uint64_t_equal("already-sent epoch is unchanged", 1,
+                             entry->epoch);
+  tlib_pass_if_uint64_t_equal("already-sent last_sent_epoch is unchanged", 1,
+                             entry->last_sent_epoch);
+}
+
+/*
+ * Scenario 10: same setup as 9, but the second request calls
+ * newrelic_set_appname() instead of newrelic_ignore_transaction(). Nothing
+ * new has scanned since the first request's normal send, so switching apps
+ * must leave the original app's already-sent entry alone.
+ */
+static void test_set_appname_preserves_already_sent_scan() {
+  char* filename;
+  nr_composer_thread_entry_t* entry;
+  nr_php_packages_t* packages_after_first_send;
+
+  reset_entry_between_scenarios();
+
+  /* Request 1: plain scan, plain (non-ignored) end. */
+  tlib_php_request_start();
+  entry = require_live_entry();
+  if (NULL == entry) {
+    tlib_php_request_end();
+    return;
+  }
+
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+  tlib_php_request_end();
+
+  tlib_pass_if_uint64_t_equal("first request's scan bumps epoch to 1", 1,
+                             entry->epoch);
+  tlib_pass_if_uint64_t_equal(
+      "first request's normal end marks it fully sent", 1,
+      entry->last_sent_epoch);
+  packages_after_first_send = entry->packages;
+
+  /* Request 2: same thread, same (default) app at start -- switch away via
+   * set_appname with nothing new pending. */
+  tlib_php_request_start();
+  tlib_pass_if_true(
+      "second request reuses the same composer entry before switching",
+      NRPRG(txn)->composer_info.entry == entry,
+      "NRPRG(txn)->composer_info.entry == entry");
+
+  tlib_php_request_eval(
+      "newrelic_set_appname('SoakScratchAppSent');");
+
+  /*
+   * Confirms the switch landed on a genuinely different, genuinely fresh
+   * entry -- not just a different pointer that happens to carry stale
+   * state through some other path. This is a sanity check on the switch
+   * itself, not on the preserve behavior under test below.
+   */
+  tlib_pass_if_true(
+      "set_appname moves NRPRG(txn) to a different composer entry",
+      NRPRG(txn)->composer_info.entry != entry,
+      "NRPRG(txn)->composer_info.entry != entry");
+  tlib_pass_if_int_equal("new app's entry starts fresh (UNSET)",
+                        (int)NR_COMPOSER_API_STATUS_UNSET,
+                        (int)NRPRG(txn)->composer_info.entry->status);
+  tlib_pass_if_null("new app's entry starts fresh (no packages)",
+                    NRPRG(txn)->composer_info.entry->packages);
+  tlib_pass_if_uint64_t_equal("new app's entry starts fresh (epoch 0)", 0,
+                             NRPRG(txn)->composer_info.entry->epoch);
+
+  /*
+   * Scan the new app too, using a distinct package name -- not just to
+   * confirm the bare act of switching leaves the original entry alone
+   * (already covered), but to positively confirm that real activity on
+   * the new app afterward doesn't bleed back into it either. A distinct
+   * package name means any accidental cross-app bleed-through would be
+   * unmistakable in the assertions below, not just a stale-looking match.
+   */
+  tlib_php_request_eval(
+      "namespace Composer;"
+      "class InstalledVersions {"
+      "  public static function getAllRawData() {"
+      "    return array(array('versions' => array("
+      "      'vendor/new-app-package' => array('pretty_version' => "
+      "'v9.9.9'),"
+      "    )));"
+      "  }"
+      "  public static function getRootPackage() {"
+      "    return array('name' => 'root/package');"
+      "  }"
+      "}");
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  tlib_pass_if_int_equal("new app's own scan succeeds independently",
+                        (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                        (int)NRPRG(txn)->composer_info.entry->status);
+  tlib_pass_if_null(
+      "new app's scan doesn't leak into the original entry's packages",
+      nr_php_packages_get_package(entry->packages, "vendor/new-app-package"));
+
+  tlib_pass_if_true(
+      "already-sent packages pointer is untouched by set_appname's discard",
+      entry->packages == packages_after_first_send,
+      "entry->packages == packages_after_first_send");
+  {
+    nr_php_package_t* package
+        = nr_php_packages_get_package(entry->packages, "vendor/package");
+    tlib_pass_if_not_null("already-sent package is still present", package);
+    tlib_pass_if_str_equal(
+        "already-sent package version is unchanged", "1.2.3",
+        NULL == package ? NULL : package->package_version);
+    tlib_pass_if_size_t_equal("already-sent packages count is unchanged", 1,
+                              nr_php_packages_count(entry->packages));
+  }
+  tlib_pass_if_int_equal("already-sent status stays COLLECTED",
+                        (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                        (int)entry->status);
+  tlib_pass_if_uint64_t_equal("already-sent epoch is unchanged", 1,
+                             entry->epoch);
+  tlib_pass_if_uint64_t_equal("already-sent last_sent_epoch is unchanged", 1,
+                             entry->last_sent_epoch);
+
+  tlib_php_request_end();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   create_vendor_dir();
 
-  test_scenario_1_fresh_entry_success(TSRMLS_C);
-  test_scenario_2_fresh_entry_init_failure(TSRMLS_C);
-  test_scenario_3_collected_then_success(TSRMLS_C);
-  test_scenario_4_collected_then_invalid_result(TSRMLS_C);
-  test_scenario_5_failure_then_success(TSRMLS_C);
-  test_scenario_6_repeated_failure(TSRMLS_C);
+  test_scenario_1_fresh_entry_success();
+  test_scenario_2_fresh_entry_init_failure();
+  test_scenario_3_collected_then_success();
+  test_scenario_4_collected_then_invalid_result();
+  test_scenario_5_failure_then_success();
+  test_scenario_6_repeated_failure();
+
+  test_ignore_transaction_discards_unsent_scan();
+  test_set_appname_discards_unsent_scan();
+  test_ignore_transaction_preserves_already_sent_scan();
+  test_set_appname_preserves_already_sent_scan();
 
   remove_vendor_dir();
   tlib_php_engine_destroy();
