@@ -486,8 +486,16 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
   nt->status.path_type = NR_PATH_TYPE_UNKNOWN;
   nt->agent_run_id = nr_strdup(app->agent_run_id);
   tid = nr_gettid();
+  /*
+   * Both fetched once per request, under the app_lock this function's
+   * caller already holds (agent/php_txn.c) — not a new acquisition. Cached
+   * here for lock-free reuse for the rest of the transaction. See
+   * nr_app.h for the full per-thread-map locking contract.
+   */
   thread_rnd = nr_app_get_or_create_thread_rnd(app, (uint64_t)tid);
   nt->rnd = thread_rnd;
+  nt->composer_info.entry
+      = nr_app_get_or_create_thread_composer_entry(app, (uint64_t)tid);
   nt->segment_slab = segment_slab;
 
   /*
@@ -3582,15 +3590,129 @@ nr_php_package_t* nr_txn_add_php_package_from_source(
   }
 
   if (NR_PHP_PACKAGE_SOURCE_LEGACY == source
+      && NULL != txn->composer_info.entry
       && NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED
-             == txn->composer_info.api_status) {
+             == txn->composer_info.entry->status) {
     // don't add packages from legacy source if packages have been detected
-    // using composer runtime api
+    // using composer runtime api. txn->composer_info.entry->status is the
+    // same cached entry->status nr_execute_handle_autoload and
+    // nr_composer_handle_autoload use — see nr_app.h for the locking
+    // contract and nr_txn_begin (this file) for where the fetch happens.
     return NULL;
   }
 
   p = nr_php_package_create_with_source(package_name, package_version, source);
   return nr_php_packages_add_package(txn->php_packages, p);
+}
+
+/*
+ * Callback for nr_php_packages_iterate(), used by
+ * nr_txn_pull_composer_packages() below to copy each package from the
+ * per-thread composer entry into the transaction's own php_packages.
+ */
+static void nr_txn_pull_composer_package_callback(void* value,
+                                                  const char* name NRUNUSED,
+                                                  size_t name_len NRUNUSED,
+                                                  void* user_data) {
+  nr_php_package_t* p = (nr_php_package_t*)value;
+  nrtxn_t* txn = (nrtxn_t*)user_data;
+
+  if (NULL == p) {
+    return;
+  }
+
+  nr_txn_add_php_package_from_source(txn, p->package_name, p->package_version,
+                                     NR_PHP_PACKAGE_SOURCE_COMPOSER);
+}
+
+/*
+ * Assumed to run only on the entry's owning thread, as part of that
+ * thread's own request lifecycle -- no locking is taken here. See the doc
+ * comment in nr_txn.h for the rationale.
+ */
+void nr_txn_pull_composer_packages(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  if (entry->epoch == entry->last_sent_epoch) {
+    /* nothing new since the last successful send */
+    return;
+  }
+
+  /* iterate-and-re-add, never a raw pointer swap — protects any
+   * independent legacy/suggestion entries already in txn->php_packages
+   * from this same request */
+  nr_php_packages_iterate(entry->packages,
+                          nr_txn_pull_composer_package_callback, txn);
+  txn->composer_info.composer_pull_epoch = entry->epoch;
+
+  /*
+   * The scan that produced this data may have run with no live txn
+   * (FrankenPHP worker-mode bootstrap), in which case its own inline
+   * "detected" metric attempts (agent/lib_composer.c,
+   * agent/php_execute.c) silently no-opped. Fire whichever is still
+   * false on *this* txn -- already-true means this same scan invocation
+   * already fired it earlier in this same request. The epoch gate above
+   * already ensures only one txn per scan reaches this point, so this is
+   * exactly-once-per-scan with no new state. Deliberately read-only on
+   * these flags -- nothing downstream reads them after this point in the
+   * request, so there's nothing to update.
+   */
+  if (false == txn->composer_info.composer_detected) {
+    nrm_force_add(txn->unscoped_metrics,
+                  "Supportability/library/Composer/detected", 0);
+  }
+  if (false == txn->composer_info.autoload_detected) {
+    nrm_force_add(txn->unscoped_metrics,
+                  "Supportability/library/Autoloader/detected", 0);
+  }
+}
+
+/*
+ * Assumed to run only on the entry's owning thread, for the same reason as
+ * nr_txn_pull_composer_packages() above -- no locking is taken here. See
+ * the doc comment in nr_txn.h for the rationale.
+ */
+void nr_txn_mark_composer_packages_sent(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  if (txn->composer_info.composer_pull_epoch == entry->epoch) {
+    entry->last_sent_epoch = entry->epoch;
+  }
+  /* else: a newer scan overwrote entry->packages after this txn pulled but
+   * before it reached transmit — leave last_sent_epoch alone; the newer
+   * epoch is correctly still unsent and will be picked up by a future
+   * pull */
+}
+
+/*
+ * Assumed to run only on the entry's owning thread, for the same reason as
+ * nr_txn_pull_composer_packages()/nr_txn_mark_composer_packages_sent()
+ * above -- no locking is taken here. See the doc comment in nr_txn.h for
+ * the rationale.
+ */
+void nr_txn_discard_composer_packages(nrtxn_t* txn) {
+  nr_composer_thread_entry_t* entry;
+
+  if (NULL == txn || NULL == txn->composer_info.entry) {
+    return;
+  }
+
+  entry = txn->composer_info.entry;
+  if (entry->epoch != entry->last_sent_epoch) {
+    nr_php_packages_destroy(&entry->packages);
+    entry->status = NR_COMPOSER_API_STATUS_UNSET;
+  }
+  entry->last_sent_epoch = entry->epoch;
 }
 
 nr_php_package_t* nr_txn_add_php_package(nrtxn_t* txn,
