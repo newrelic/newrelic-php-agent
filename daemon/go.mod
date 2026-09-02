@@ -7,7 +7,7 @@ toolchain go1.26.6
 require (
 	github.com/google/flatbuffers v25.12.19+incompatible
 	golang.org/x/net v0.58.0
-	google.golang.org/grpc v1.83.1
+	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 )
 
