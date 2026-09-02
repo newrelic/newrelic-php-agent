@@ -22,6 +22,25 @@ tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 static char* vendor_path = NULL;
 
 /*
+ * Finds and locks the nrapp_t matching the given appname's identity, or
+ * NULL if none is registered yet -- the same find-only identity
+ * resolution nr_composer_find_app_no_txn() itself uses. NULL falls back
+ * to NRINI(appnames), matching every production caller that doesn't pass
+ * an explicit override. Caller must unlock app->app_lock if non-NULL.
+ */
+static nrapp_t* find_app_by_name(const char* appname) {
+  nr_app_info_t info;
+  nrapp_t* app;
+
+  nr_memset(&info, 0, sizeof(info));
+  nr_php_txn_populate_app_info_identity(&info, appname, NULL);
+  app = nr_app_find_locked(nr_agent_applist, &info);
+  nr_app_info_destroy_fields(&info);
+
+  return app;
+}
+
+/*
  * Every scenario in this file uses the same default ("PHP Application")
  * app, since none of them override newrelic.appname/license -- so the same
  * (app, tid) composer_map entry persists across scenarios unless reset.
@@ -30,19 +49,12 @@ static char* vendor_path = NULL;
  * creation.
  */
 static void reset_entry_between_scenarios(void) {
-  nr_app_info_t info;
-  nrapp_t* app;
+  nrapp_t* app = find_app_by_name(NULL);
 
-  nr_memset(&info, 0, sizeof(info));
-  nr_php_txn_populate_app_info_identity(&info, NULL, NULL);
-
-  app = nr_app_find_locked(nr_agent_applist, &info);
   if (NULL != app) {
     nr_app_tid_maps_evict(app, (uint64_t)nr_gettid());
     nrt_mutex_unlock(&app->app_lock);
   }
-
-  nr_app_info_destroy_fields(&info);
 }
 
 /*
@@ -69,6 +81,27 @@ static nr_composer_thread_entry_t* require_live_entry() {
                         (int)NR_COMPOSER_API_STATUS_UNSET, (int)entry->status);
   tlib_pass_if_null("fresh entry starts with no packages", entry->packages);
   tlib_pass_if_uint64_t_equal("fresh entry starts at epoch 0", 0, entry->epoch);
+
+  return entry;
+}
+
+/*
+ * Common opening for every scenario below: reset the default app's
+ * per-tid entry, start a fresh request, and confirm it produced a live,
+ * genuinely fresh composer entry. Returns the entry, or NULL if any
+ * precondition failed -- the request has already been ended in that
+ * case, so the caller should return immediately with no further cleanup.
+ */
+static nr_composer_thread_entry_t* start_fresh_request(void) {
+  nr_composer_thread_entry_t* entry;
+
+  reset_entry_between_scenarios();
+  tlib_php_request_start();
+
+  entry = require_live_entry();
+  if (NULL == entry) {
+    tlib_php_request_end();
+  }
 
   return entry;
 }
@@ -147,17 +180,11 @@ static char* autoload_filename(void) {
  */
 
 /*
- * None of these scenarios call nr_composer_handle_autoload() with no live
- * txn (the FrankenPHP worker-bootstrap case, where the app hasn't yet been
- * acknowledged by the daemon) -- every scenario here runs through
- * tlib_php_request_start()'s live NRPRG(txn). That's adequate today only
- * because, once the (app, thread) entry is resolved, the function's write
- * logic never reads NRPRG(txn) again -- the with-txn and no-txn resolution
- * paths both hand it the same kind of entry pointer, and everything
- * downstream operates on that pointer alone, not on the txn. If the write
- * logic ever starts referencing NRPRG(txn) directly, this file's coverage
- * would no longer stand in for the no-txn case, and a real no-txn scenario
- * would need to be added.
+ * Scenarios 1-10 below all run through tlib_php_request_start()'s live
+ * NRPRG(txn), so they only exercise nr_composer_handle_autoload()'s
+ * with-txn entry resolution. The no-txn resolution path (no live
+ * NRPRG(txn), e.g. a FrankenPHP worker-bootstrap autoload event before
+ * any transaction exists) is covered separately, further down.
  */
 
 /*
@@ -180,11 +207,9 @@ static void test_scenario_1_fresh_entry_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   /*
@@ -231,7 +256,6 @@ static void test_scenario_1_fresh_entry_success() {
                               nr_php_packages_count(entry->packages));
   }
 
-end:
   tlib_php_request_end();
 }
 
@@ -248,12 +272,9 @@ static void test_scenario_2_fresh_entry_init_failure() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   filename = autoload_filename();
@@ -268,7 +289,6 @@ static void test_scenario_2_fresh_entry_init_failure() {
   tlib_pass_if_uint64_t_equal("failed scan never bumps epoch", 0,
                              entry->epoch);
 
-end:
   tlib_php_request_end();
 }
 
@@ -282,12 +302,9 @@ static void test_scenario_3_collected_then_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   tlib_php_request_eval(
@@ -355,7 +372,6 @@ static void test_scenario_3_collected_then_success() {
 
   nr_free(filename);
 
-end:
   tlib_php_request_end();
 }
 
@@ -377,12 +393,9 @@ static void test_scenario_4_collected_then_invalid_result() {
   nr_composer_thread_entry_t* entry;
   nr_php_packages_t* packages_after_call1;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   tlib_php_request_eval(
@@ -452,7 +465,6 @@ static void test_scenario_4_collected_then_invalid_result() {
 
   nr_free(filename);
 
-end:
   tlib_php_request_end();
 }
 
@@ -471,12 +483,9 @@ static void test_scenario_5_failure_then_success() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   filename = autoload_filename();
@@ -525,7 +534,6 @@ static void test_scenario_5_failure_then_success() {
 
   nr_free(filename);
 
-end:
   tlib_php_request_end();
 }
 
@@ -547,12 +555,9 @@ static void test_scenario_6_repeated_failure() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    goto end;
+    return;
   }
 
   tlib_php_request_eval(
@@ -583,7 +588,6 @@ static void test_scenario_6_repeated_failure() {
 
   nr_free(filename);
 
-end:
   tlib_php_request_end();
 }
 
@@ -638,12 +642,8 @@ static void test_ignore_transaction_discards_unsent_scan() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    tlib_php_request_end();
     return;
   }
 
@@ -690,12 +690,8 @@ static void test_set_appname_discards_unsent_scan() {
   char* filename;
   nr_composer_thread_entry_t* entry;
 
-  reset_entry_between_scenarios();
-  tlib_php_request_start();
-
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    tlib_php_request_end();
     return;
   }
 
@@ -766,14 +762,10 @@ static void test_ignore_transaction_preserves_already_sent_scan() {
   nr_composer_thread_entry_t* entry;
   nr_php_packages_t* packages_after_first_send;
 
-  reset_entry_between_scenarios();
-
   /* Request 1: plain scan, plain (non-ignored) end -- pull + mark-sent run
    * normally. */
-  tlib_php_request_start();
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    tlib_php_request_end();
     return;
   }
 
@@ -836,13 +828,9 @@ static void test_set_appname_preserves_already_sent_scan() {
   nr_composer_thread_entry_t* entry;
   nr_php_packages_t* packages_after_first_send;
 
-  reset_entry_between_scenarios();
-
   /* Request 1: plain scan, plain (non-ignored) end. */
-  tlib_php_request_start();
-  entry = require_live_entry();
+  entry = start_fresh_request();
   if (NULL == entry) {
-    tlib_php_request_end();
     return;
   }
 
@@ -945,6 +933,132 @@ static void test_set_appname_preserves_already_sent_scan() {
   tlib_php_request_end();
 }
 
+/*
+ * Scenarios 11 and 12 both drive nr_composer_handle_autoload()'s no-txn
+ * branch by directly controlling the one condition it actually checks
+ * (NULL != NRPRG(txn)), rather than reverse-engineering a real RINIT
+ * failure to produce it. The latter was tried first and worked, but
+ * depended on internal call-ordering inside nr_php_txn_begin()/
+ * nr_agent_find_or_add_app() (e.g. which validation check runs before
+ * which) that isn't a documented contract -- a future reordering there
+ * could silently invalidate the setup without touching anything this
+ * file is actually meant to cover. Temporarily nulling NRPRG(txn) around
+ * the call under test has no such dependency: the request itself is
+ * completely normal (real txn, real already-connected default app);
+ * only the one pointer the function under test reads is hidden from it,
+ * for exactly the duration of that call, then restored before the
+ * request ends so RSHUTDOWN tears down the real txn correctly.
+ */
+
+/*
+ * Scenario 11: the no-txn lookup finds an app, exercising
+ * nr_composer_find_app_no_txn() and the immediate lock/unlock around
+ * nr_app_get_or_create_thread_composer_entry() in
+ * nr_composer_handle_autoload()'s no-txn branch. The default app is
+ * already registered by this same request's own (untouched) RINIT, so
+ * nr_composer_find_app_no_txn()'s identity resolution (NULL appnames ->
+ * NRINI(appnames)) finds it the same way any already-known app would be
+ * found in production -- connection state plays no part in that lookup.
+ */
+static void test_no_txn_scan_finds_app() {
+  char* filename;
+  nrtxn_t* saved_txn;
+  nr_composer_thread_entry_t* entry;
+
+  entry = start_fresh_request();
+  if (NULL == entry) {
+    return;
+  }
+
+  saved_txn = NRPRG(txn);
+  NRPRG(txn) = NULL;
+
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  NRPRG(txn) = saved_txn;
+  tlib_php_request_end();
+
+  /* entry lives on the app's composer_map, keyed by (app, tid) -- not on
+   * the txn object -- so it's still the exact same entry the no-txn call
+   * above just wrote to, whether reached via NRPRG(txn)->composer_info.entry
+   * (before it was nulled) or via nr_composer_find_app_no_txn() (during
+   * the call itself). */
+  tlib_pass_if_int_equal(
+      "no-txn scan collects successfully via nr_composer_find_app_no_txn",
+      (int)NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED, (int)entry->status);
+  tlib_pass_if_not_null("no-txn scan installs packages", entry->packages);
+  tlib_pass_if_uint64_t_equal("no-txn scan bumps epoch to 1", 1, entry->epoch);
+  {
+    nr_php_package_t* package
+        = nr_php_packages_get_package(entry->packages, "vendor/package");
+    tlib_pass_if_not_null("the no-txn-scanned package is present", package);
+    tlib_pass_if_str_equal(
+        "the no-txn-scanned package's version is captured", "1.2.3",
+        NULL == package ? NULL : package->package_version);
+  }
+}
+
+/*
+ * Scenario 12: the no-txn lookup finds nothing -- nr_composer_find_app_no_txn()
+ * returns NULL, so nr_composer_handle_autoload() must hit its NULL-entry
+ * no-op (logs at debug, frees vendor_path, returns) rather than crash or
+ * fabricate an entry from nothing.
+ *
+ * NRINI(appnames) is temporarily overridden to a never-before-used name
+ * for the duration of the call under test -- nr_composer_find_app_no_txn()
+ * falls back to NRINI(appnames) when given no explicit override, same as
+ * production. Since that identity has never been registered by any
+ * create_new_app() call, nr_app_find_locked() finds nothing -- the same
+ * outcome as a real request whose nr_php_txn_begin() bails before ever
+ * reaching app creation (e.g. a per-request newrelic.enabled=0, or no
+ * daemon connection yet) on a thread where no other request has resolved
+ * this identity either.
+ */
+static char* const no_txn_scratch_appname = "NoTxnScratchApp";
+
+static void test_no_txn_scan_finds_no_app() {
+  char* filename;
+  char* original_appnames;
+  nrtxn_t* saved_txn;
+  nr_composer_thread_entry_t* entry;
+
+  entry = start_fresh_request();
+  if (NULL == entry) {
+    return;
+  }
+
+  original_appnames = NRINI(appnames);
+  NRINI(appnames) = no_txn_scratch_appname;
+
+  saved_txn = NRPRG(txn);
+  NRPRG(txn) = NULL;
+
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  NRPRG(txn) = saved_txn;
+  NRINI(appnames) = original_appnames;
+  tlib_php_request_end();
+
+  /* No crash getting here, plus the default app's own entry (captured
+   * above, before the no-txn call) being completely untouched, is this
+   * scenario's whole point -- the no-txn lookup above resolved a
+   * different, nonexistent identity and never found anything to write
+   * into. */
+  tlib_pass_if_int_equal(
+      "the default app's entry is untouched by the failed lookup",
+      (int)NR_COMPOSER_API_STATUS_UNSET, (int)entry->status);
+  tlib_pass_if_null("the default app's entry still has no packages",
+                    entry->packages);
+  tlib_pass_if_uint64_t_equal("the default app's entry is still at epoch 0",
+                             0, entry->epoch);
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   create_vendor_dir();
@@ -960,6 +1074,9 @@ void test_main(void* p NRUNUSED) {
   test_set_appname_discards_unsent_scan();
   test_ignore_transaction_preserves_already_sent_scan();
   test_set_appname_preserves_already_sent_scan();
+
+  test_no_txn_scan_finds_app();
+  test_no_txn_scan_finds_no_app();
 
   remove_vendor_dir();
   tlib_php_engine_destroy();
