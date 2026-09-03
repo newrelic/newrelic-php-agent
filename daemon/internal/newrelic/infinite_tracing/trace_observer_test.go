@@ -7,9 +7,14 @@ package infinite_tracing
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/proto"
+
+	v1 "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1"
 )
 
 type mockSpanBatchSender struct {
@@ -399,5 +404,127 @@ func TestReconnect(t *testing.T) {
 
 	if sender.cloneAttempts != 2 {
 		t.Errorf("expected 2 clone attempts, got %v", sender.cloneAttempts)
+	}
+}
+
+func TestOkCloseReconnectsWithoutBackoff(t *testing.T) {
+	srv := newTestObsServer(t)
+	srv.closeAfterOneMessage = true
+	defer srv.Close()
+
+	sender, err := newGrpcSpanBatchSender(&Config{
+		Host:   srv.host,
+		Port:   srv.port,
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatalf("error initializing sender: %v", err)
+	}
+	defer sender.conn.Close()
+
+	to, worker := newTraceObserverWithWorker(&Config{
+		QueueSize: 100,
+	})
+	defer func() {
+		if err := to.Shutdown(10 * time.Millisecond); err != nil {
+			t.Logf("Shutdown returned an error (likely just the tight 10ms timeout): %v", err)
+		}
+	}()
+	go func() {
+		to.sender = sender
+		worker()
+	}()
+
+	batch1, _ := proto.Marshal(&v1.SpanBatch{Spans: []*v1.Span{{TraceId: "first"}}})
+	to.QueueBatch(1, batch1)
+
+	select {
+	case <-srv.spansReceivedChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("didn't receive first span batch")
+	}
+
+	// srv.spansReceivedChan fires the instant the server's handler receives
+	// the first message - before that handler returns and the OK close
+	// trailer actually reaches the client over the socket. Without this
+	// pause, queuing batch2 races the close notification: if it loses,
+	// SendMsg can succeed locally on the already-server-closed stream
+	// (the message is silently dropped, no error at all - the same
+	// transport quirk TestSendAfterServerOkCloseGetsCorrectStatus polls
+	// around), and the batch is gone before send() ever gets a chance to
+	// classify anything. This isn't a fixed EOF-detection latency either -
+	// it's comfortably longer than a loopback close round-trip should ever
+	// take, so the pause resolves before it's noticed in the common case.
+	time.Sleep(50 * time.Millisecond)
+
+	// The server closes the stream with OK after that first message. A
+	// second batch should still land quickly - well under the 15s
+	// recordSpanBackoff - if the OK close is handled as an immediate
+	// reconnect instead of a generic error.
+	batch2, _ := proto.Marshal(&v1.SpanBatch{Spans: []*v1.Span{{TraceId: "second"}}})
+	to.QueueBatch(1, batch2)
+
+	select {
+	case <-srv.spansReceivedChan:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("second batch didn't arrive within 2s - looks like it hit the 15s backoff")
+	}
+}
+
+func TestSpanBatchSenderCodeString(t *testing.T) {
+	testcases := []struct {
+		code   spanBatchSenderCode
+		expect string
+	}{
+		{code: statusOk, expect: "0 - statusOk"},
+		{code: statusShutdown, expect: "1 - statusShutdown"},
+		{code: statusRestart, expect: "2 - statusRestart"},
+		{code: statusReconnect, expect: "3 - statusReconnect"},
+		{code: statusImmediateRestart, expect: "4 - statusImmediateRestart"},
+		// one past the last defined code, to catch an unhandled value if a
+		// new status is ever added without updating String()
+		{code: spanBatchSenderCode(5), expect: "5 - unknown"},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.expect, func(t *testing.T) {
+			actual := test.code.String()
+			if actual != test.expect {
+				t.Errorf("wrong string returned: actual=%s expected=%s", actual, test.expect)
+			}
+		})
+	}
+}
+
+func TestSpanBatchSenderStatusString(t *testing.T) {
+	testcases := []struct {
+		name   string
+		status spanBatchSenderStatus
+		expect string
+	}{
+		{
+			name:   "no metric",
+			status: spanBatchSenderStatus{code: statusImmediateRestart},
+			expect: "{4 - statusImmediateRestart }",
+		},
+		{
+			name:   "with metric",
+			status: spanBatchSenderStatus{code: statusRestart, metric: "Supportability/InfiniteTracing/Span/gRPC/UNKNOWN"},
+			expect: "{2 - statusRestart Supportability/InfiniteTracing/Span/gRPC/UNKNOWN}",
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			// Exercise the exact call sites that motivated this: %v on the
+			// status struct directly, not just calling String() by hand -
+			// this is what caught that fmt won't invoke a Stringer through
+			// an unexported field without a String() method on the struct
+			// itself.
+			actual := fmt.Sprintf("%v", test.status)
+			if actual != test.expect {
+				t.Errorf("wrong string returned: actual=%s expected=%s", actual, test.expect)
+			}
+		})
 	}
 }
