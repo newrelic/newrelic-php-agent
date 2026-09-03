@@ -350,7 +350,7 @@ func TestInvalidSpan(t *testing.T) {
 	}
 
 	// The receive goroutine must push exactly once and return - not loop
-	// back into Recv() and refill the channel. Fix 5's drain at the top of
+	// back into Recv() and refill the channel. The drain at the top of
 	// connect() depends on every exit path behaving this way.
 	select {
 	case extra := <-responseError:
@@ -534,7 +534,8 @@ func TestConnectDrainsStaleResponseError(t *testing.T) {
 
 // guardedRecordSpanBatchClient wraps a real stream and flags it if Recv()
 // is ever called by more than one goroutine at a time - the exact
-// violation defect 4 makes possible once a stream generation is shared.
+// is ever called by more than one goroutine at a time to validate 
+// stream generation does not share streams between goroutines.
 type guardedRecordSpanBatchClient struct {
 	v1.IngestService_RecordSpanBatchClient
 	recvInFlight int32

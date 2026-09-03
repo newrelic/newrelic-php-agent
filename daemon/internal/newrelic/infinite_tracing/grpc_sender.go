@@ -127,7 +127,7 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	// shutdown). A caller that reconnects while a prior stream is still
 	// live could still leave a push arriving after this drain -
 	// TestConcurrentRecvOnReassignedStream forces exactly that
-	// interleaving to prove Fix 4's stream-binding is what makes this
+	// interleaving to prove stream-binding is what makes this
 	// safe in practice.
 	for {
 		select {
