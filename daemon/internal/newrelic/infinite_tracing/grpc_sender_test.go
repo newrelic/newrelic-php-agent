@@ -533,8 +533,7 @@ func TestConnectDrainsStaleResponseError(t *testing.T) {
 }
 
 // guardedRecordSpanBatchClient wraps a real stream and flags it if Recv()
-// is ever called by more than one goroutine at a time - the exact
-// is ever called by more than one goroutine at a time to validate 
+// is ever called by more than one goroutine at a time to validate
 // stream generation does not share streams between goroutines.
 type guardedRecordSpanBatchClient struct {
 	v1.IngestService_RecordSpanBatchClient
