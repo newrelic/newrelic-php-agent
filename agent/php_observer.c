@@ -85,7 +85,7 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
-  if (0 == nr_php_recording()) {
+  if (0 == NR_PHP_PROCESS_GLOBALS(enabled)) {
     return handlers;
   }
 
