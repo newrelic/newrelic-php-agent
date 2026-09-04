@@ -350,6 +350,7 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
  */
 static inline void nr_fiber_handle_exclusive_time() {
   nr_segment_t* fiber_segment = NULL;
+  nr_segment_t* suspend_segment = NULL;
   nrtime_t current_time = 0;
 
   if (NULL == NRPRG(txn)) {
@@ -377,8 +378,8 @@ static inline void nr_fiber_handle_exclusive_time() {
     //                             fiber_segment->stop_time, current_time);
 
     /* Create a segment that is then discarded so time won't show as uninstrumented. */
-    suspend_segment = nr_segment_start(NRPRG(txn), NRPRG_SHARED(fiber_segment),
-                             NRPRG_SHARED(current_php_context));
+    suspend_segment = nr_segment_start(NRPRG(txn), fiber_segment,
+                                       NRPRG_SHARED(current_php_context));
     if (nrunlikely(NULL == suspend_segment)) {
      nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
       return;
