@@ -367,14 +367,28 @@ static inline void nr_fiber_handle_exclusive_time() {
   }
 
   if (nrlikely(0 != fiber_segment->stop_time)) {
-    nr_exclusive_time_ensure(&fiber_segment->exclusive_time,
-                             NR_PHP_DEFAULT_SUSPEND_TIMES,
-                             fiber_segment->start_time, current_time);
+    //nr_exclusive_time_ensure(&fiber_segment->exclusive_time,
+    //                         NR_PHP_DEFAULT_SUSPEND_TIMES,
+    //                         fiber_segment->start_time, current_time);
     /* Add the suspension which existed from the previous stop time to the
      * current time. */
 
-    nr_exclusive_time_add_child(fiber_segment->exclusive_time,
-                                fiber_segment->stop_time, current_time);
+    //nr_exclusive_time_add_child(fiber_segment->exclusive_time,
+    //                             fiber_segment->stop_time, current_time);
+
+    /* Create a segment that is then discarded so time won't show as uninstrumented. */
+    suspend_segment = nr_segment_start(NRPRG(txn), NRPRG_SHARED(fiber_segment),
+                             NRPRG_SHARED(current_php_context));
+    if (nrunlikely(NULL == suspend_segment)) {
+     nrl_verbosedebug(NRL_AGENT, "Error starting segment.");
+      return;
+    }
+    suspend_segment->start_time = fiber_segment->stop_time;
+    suspend_segment->stop_time = current_time;
+    /* create a metric so it won't show as uninstrumented*/
+    nr_segment_add_metric(suspend_segment, "FiberSuspend", true);
+    nr_segment_discard(&suspend_segment);
+
     /* reset the stop_time now that the fiber is resumed. */
     fiber_segment->stop_time = 0;
   } else {
