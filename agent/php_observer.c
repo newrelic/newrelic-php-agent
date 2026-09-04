@@ -387,8 +387,8 @@ static inline void nr_fiber_handle_exclusive_time() {
     suspend_segment->start_time = fiber_segment->stop_time;
     suspend_segment->stop_time = current_time;
     /* create a metric so it won't show as uninstrumented*/
-    nr_segment_add_metric(suspend_segment, "Custom/FiberSuspend", true);
-    nr_segment_set_name(suspend_segment, "Custom/FiberSuspend");
+    nr_segment_add_metric(suspend_segment, "FiberSuspend", true);
+//    nr_segment_set_name(suspend_segment, "Custom/FiberSuspend");
     nr_segment_discard(&suspend_segment);
 
     /* reset the stop_time now that the fiber is resumed. */
