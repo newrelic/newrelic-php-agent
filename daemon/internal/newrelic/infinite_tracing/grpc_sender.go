@@ -114,6 +114,30 @@ func (s *grpcSpanBatchSender) clone() (spanBatchSender, error) {
 }
 
 func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
+	// Drain any status left over from a previous stream generation.
+	// s.responseError is never recreated across statusRestart/
+	// statusImmediateRestart reconnects (only clone(), on statusReconnect,
+	// gets a fresh one), and the new generation's goroutine doesn't exist
+	// yet, so anything still buffered here can only be a leftover push.
+	// That leftover is guaranteed to come from an already-terminated
+	// goroutine only because of a caller-side precondition, not anything
+	// intrinsic to connect(): the only caller, doStreaming() in
+	// trace_observer.go, calls connect() only after the previous stream
+	// has already terminated (a send error, a responseError push, or
+	// shutdown). A caller that reconnects while a prior stream is still
+	// live could still leave a push arriving after this drain -
+	// TestConcurrentRecvOnReassignedStream forces exactly that
+	// interleaving to prove stream-binding is what makes this
+	// safe in practice.
+	for {
+		select {
+		case <-s.responseError:
+			continue
+		default:
+		}
+		break
+	}
+
 	md := newMetadata(s.RunId, s.License, s.RequestHeadersMap)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
@@ -128,35 +152,49 @@ func (s *grpcSpanBatchSender) connect() (error, spanBatchSenderStatus) {
 	s.stream = stream
 
 	log.Debugf("connected to grpc endpoint %s", s.Host)
-	go func() {
+	// stream is taken as a parameter (not a closure over the local above)
+	// so the binding is structural: nothing inside this goroutine can
+	// accidentally read s.stream, which is reassigned on every reconnect.
+	go func(stream v1.IngestService_RecordSpanBatchClient) {
 		for {
-			in, err := s.stream.Recv()
+			in, err := stream.Recv()
 
 			switch err {
 			case nil:
 				log.Debugf("grpc endpoint messages seen: %d", in.MessagesSeen)
 			case io.EOF:
 				log.Debugf("received EOF from grpc endpoint")
+				s.responseError <- spanBatchSenderStatus{code: statusImmediateRestart}
 				return
 			default:
 				log.Errorf("unexpected error from grpc endpoint:  %v", err)
-				status := newSpanBatchStatusFromGrpcErr(err)
-				if status.code == statusShutdown || status.code == statusReconnect {
-					s.responseError <- status
-					return
-				} else {
-					status.code = statusOk
-					s.responseError <- status
-				}
+				s.responseError <- newSpanBatchStatusFromGrpcErr(err)
+				return
 			}
 		}
-	}()
+	}(stream)
 
 	return nil, spanBatchSenderStatus{code: statusOk}
 }
 
+// sendEofStatusGracePeriod bounds how long send() waits for the receive
+// goroutine's classification after an EOF from SendMsg. Not tuned to any
+// measured EOF-detection latency - chosen defensively, well above what a
+// healthy local transport should ever take, so the common case resolves in
+// well under a millisecond and this only matters in already-degraded
+// conditions.
+const sendEofStatusGracePeriod = 1 * time.Second
+
 func (s *grpcSpanBatchSender) send(batch encodedSpanBatch) (error, spanBatchSenderStatus) {
 	if err := s.stream.SendMsg(batch); err != nil {
+		if err == io.EOF {
+			select {
+			case status := <-s.responseError:
+				return err, status
+			case <-time.After(sendEofStatusGracePeriod):
+				log.Errorf("timed out waiting for grpc stream status after EOF from SendMsg")
+			}
+		}
 		return err, newSpanBatchStatusFromGrpcErr(err)
 	}
 	return nil, spanBatchSenderStatus{code: statusOk}
