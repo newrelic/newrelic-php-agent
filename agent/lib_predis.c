@@ -559,6 +559,7 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    * the actively executing fiber.
    */
   segment = nr_segment_start(NRPRG(txn), auto_segment, async_context);
+  segment->consider_for_blocking = true;
   nr_segment_set_timing(segment, *start, duration);
   nr_segment_datastore_end(&segment, &params);
 

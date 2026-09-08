@@ -25,6 +25,7 @@ typedef struct _nrtxn_t nrtxn_t;
 #include "nr_segment_children.h"
 #include "nr_span_event.h"
 #include "nr_txn.h"
+#include "util_logging.h"
 #include "util_metrics.h"
 #include "util_minmax_heap.h"
 #include "util_object.h"
@@ -214,6 +215,10 @@ typedef struct _nr_segment_t {
                           the transaction. */
   nrtime_t stop_time;  /* Stop time for node, relative to the start of the
                           transaction. */
+  nrtime_t suspend_time;  /* blocking, non-actionable time */
+  bool consider_for_blocking; /* Is not automatically considered blocking,
+                                  but can be considered for it when using 
+                                  discount_main_context_blocking. */
 
   int name;             /* Node name (pooled string index) */
   int async_context;    /* Execution context (pooled string index) */
@@ -491,6 +496,45 @@ extern bool nr_segment_set_parent(nr_segment_t* segment, nr_segment_t* parent);
 extern bool nr_segment_set_timing(nr_segment_t* segment,
                                   nrtime_t start,
                                   nrtime_t duration);
+
+/*
+ * Purpose: Shrink stop_time by suspend_time, excluding suspended time from
+ *          duration/exclusive-time math.
+ *
+ * Params:  1. start_time, 2. stop_time (raw), 3. suspend_time.
+ *
+ * Returns: Amended stop time, for local duration/exclusive-time use only -
+ *          does not write back to the segment. Clamped to start_time so a
+ *          bad suspend_time can't produce a negative duration; a
+ *          suspend_time too large for the segment's real span still trips
+ *          the "impossible" clamp in nr_exclusive_time_calculate().
+ *
+ * Caller is responsible for ensuring segment is not NULL
+ */
+static inline nrtime_t nr_segment_amend_stop_with_suspend_time(nrtime_t start_time,nrtime_t stop_time, nrtime_t suspend_time) {
+
+  nrtime_t amended_stop_time = 0;
+
+
+  /*
+  * Spec says the agent MAY choose to subtract blocking, non-actionable time from the total time.
+  * This is done here by adjusting the stop time that is used to calculate total time
+  */
+  amended_stop_time = stop_time - suspend_time;
+
+  /* Only clamp when suspend_time is what caused the underflow, i.e. the
+   * raw (pre-amendment) span was valid. If stop_time was already before
+   * start_time, that's an invalid span on its own terms - leave it alone
+   * so callers' own start_time-vs-stop_time checks still catch it. */
+  if (nrunlikely(stop_time >= start_time && 0 != amended_stop_time
+                 && amended_stop_time < start_time)) {
+    nrl_verbosedebug(NRL_API, "nr_segment_stop_time: segment suspend time is larger than duration");
+    return start_time;
+  } else {
+    return amended_stop_time;
+  }
+}
+
 
 /*
  * Purpose  : Add a user attribute to a segment.

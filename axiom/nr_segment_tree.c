@@ -59,7 +59,7 @@ nrtxnfinal_t nr_segment_tree_finalise(nrtxn_t* txn,
    */
   if (txn->options.discount_main_context_blocking) {
     first_pass_metadata.main_context
-        = nr_exclusive_time_create(txn->segment_count, 0, duration);
+        = nr_exclusive_time_create(txn->segment_count, 0, duration,0);
   }
 
   /*
