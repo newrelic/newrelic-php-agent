@@ -7637,6 +7637,114 @@ static void test_parent_stacks(void) {
    * nr_txn_retire_current_segment(). */
 }
 
+static void test_get_current_context(void) {
+  nrapp_t app = {.state = NR_APP_OK};
+  nrtxnopt_t opts = {0};
+  nrtxn_t* txn;
+  nr_segment_t* default_seg;
+  nr_segment_t* async_seg;
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_null("NULL txn returns NULL context",
+                    nr_txn_get_current_context(NULL));
+
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+
+  /*
+   * Test : Fresh txn is in the default (NULL) context.
+   */
+  tlib_pass_if_null("Fresh txn is in default (NULL) context",
+                    nr_txn_get_current_context(txn));
+
+  /*
+   * Test : Starting a segment on the default context does not change the
+   *        current context.
+   */
+  default_seg = nr_segment_start(txn, NULL, NULL);
+  tlib_pass_if_null("After starting default segment, context is still NULL",
+                    nr_txn_get_current_context(txn));
+
+  /*
+   * Test : Starting an async segment with an explicit parent on a new context
+   *        updates the current context.
+   */
+  async_seg = nr_segment_start(txn, default_seg, "async_ctx");
+  tlib_pass_if_str_equal(
+      "After starting async segment, context matches async context",
+      "async_ctx", nr_txn_get_current_context(txn));
+
+  /*
+   * Test : Retiring the async segment restores context to the parent's context.
+   */
+  nr_segment_end(&async_seg);
+  tlib_pass_if_null(
+      "After retiring async segment, context reverts to parent's (NULL)",
+      nr_txn_get_current_context(txn));
+
+  nr_txn_destroy(&txn);
+}
+
+static void test_current_async_context_tracking(void) {
+  nrapp_t app = {.state = NR_APP_OK};
+  nrtxnopt_t opts = {0};
+  nrtxn_t* txn;
+  nr_segment_t* seg_root;
+  nr_segment_t* seg_fiber1;
+  nr_segment_t* seg_fiber2;
+
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+  seg_root = txn->segment_root;
+
+  /*
+   * Test : Starting a segment on a new async context (fiber1) sets the
+   *        txn's current context to fiber1.
+   */
+  seg_fiber1 = nr_segment_start(txn, seg_root, "fiber1");
+  tlib_pass_if_str_equal(
+      "After starting fiber1 segment, txn context is fiber1", "fiber1",
+      nr_txn_get_current_context(txn));
+  tlib_pass_if_ptr_equal(
+      "nr_txn_get_current_segment_txn_context returns the fiber1 segment",
+      seg_fiber1, nr_txn_get_current_segment_txn_context(txn));
+
+  /*
+   * Test : Starting a segment on a second async context (fiber2) with fiber1
+   *        as explicit parent switches the txn context to fiber2.
+   */
+  seg_fiber2 = nr_segment_start(txn, seg_fiber1, "fiber2");
+  tlib_pass_if_str_equal(
+      "After starting fiber2 segment, txn context is fiber2", "fiber2",
+      nr_txn_get_current_context(txn));
+  tlib_pass_if_ptr_equal(
+      "nr_txn_get_current_segment_txn_context returns the fiber2 segment",
+      seg_fiber2, nr_txn_get_current_segment_txn_context(txn));
+
+  /*
+   * Test : Retiring the fiber2 segment restores the txn context to fiber1
+   *        (fiber2's parent context).
+   */
+  nr_segment_end(&seg_fiber2);
+  tlib_pass_if_str_equal(
+      "After retiring fiber2, txn context restores to fiber1", "fiber1",
+      nr_txn_get_current_context(txn));
+  tlib_pass_if_ptr_equal(
+      "After retiring fiber2, current segment on txn context is fiber1 segment",
+      seg_fiber1, nr_txn_get_current_segment_txn_context(txn));
+
+  /*
+   * Test : Retiring the fiber1 segment restores the txn context to the
+   *        default (NULL) context.
+   */
+  nr_segment_end(&seg_fiber1);
+  tlib_pass_if_null(
+      "After retiring fiber1, txn context restores to default (NULL)",
+      nr_txn_get_current_context(txn));
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_force_current_segment(void) {
   nrapp_t app = {.state = NR_APP_OK};
   nrtxnopt_t opts = {0};
@@ -7807,10 +7915,16 @@ static void test_get_current_trace_id(void) {
 static void test_get_current_span_id(void) {
   nrapp_t app;
   nrtxnopt_t opts;
-  nr_segment_t* segment;
-  char* span_id;
-  nrtxn_t* txn;
+  nr_segment_t* segment = NULL;
+  nr_segment_t* segment_async = NULL;
+  char* span_id = NULL;
+  char* span_id_async = NULL;
+  nrtxn_t* txn = NULL;
   uint32_t priority;
+  const char* async_context = "sunshine";
+  nr_segment_t* parent;
+  nr_segment_t* first_born;
+  nr_segment_t* async_grandchild;
 
   /* start txn and segment */
   nr_memset(&app, 0, sizeof(app));
@@ -7818,29 +7932,35 @@ static void test_get_current_span_id(void) {
   app.state = NR_APP_OK;
   opts.distributed_tracing_enabled = 1;
   txn = nr_txn_begin(&app, &opts, NULL, NULL);
-  segment = nr_segment_start(txn, txn->segment_root, NULL);
+  segment = nr_segment_start(txn, NULL, NULL);
   nr_distributed_trace_set_sampled(txn->distributed_trace, true);
-  nr_txn_set_current_segment(txn, segment);
 
   /*
    * Test : Bad parameters
    */
   tlib_pass_if_null("no span id. txn is null",
-                    nr_txn_get_current_span_id(NULL));
+                    nr_txn_get_current_span_id(NULL, NULL));
 
   /*
    * Test : disabled span events
    */
   txn->options.span_events_enabled = 0;
-  tlib_pass_if_null("span events disabled", nr_txn_get_current_span_id(txn));
+  tlib_pass_if_null("span events disabled",
+                    nr_txn_get_current_span_id(txn, NULL));
 
   /*
-   * Test : span id is created
+   * Test : span id is created for default (NULL) context
    */
   txn->options.span_events_enabled = 1;
-  span_id = nr_txn_get_current_span_id(txn);
-  tlib_fail_if_null("span id is created", span_id);
+  span_id = nr_txn_get_current_span_id(txn, NULL);
+  tlib_fail_if_null("span id is created for default (NULL) context", span_id);
   nr_free(span_id);
+
+  /*
+   * Test : non-existent context returns NULL
+   */
+  tlib_pass_if_null("span id for non-existent context is NULL",
+                    nr_txn_get_current_span_id(txn, "no_such_context"));
 
   /*
    * Test : segment priority is set correctly
@@ -7848,6 +7968,67 @@ static void test_get_current_span_id(void) {
   priority = segment->priority;
   tlib_pass_if_true("log segment priority", priority & NR_SEGMENT_PRIORITY_LOG,
                     "priority=0x%08x", priority);
+
+  /*
+   * Test : span id is created for a segment with async context
+   */
+
+  segment_async = nr_segment_start(txn, segment, async_context);
+  parent = nr_segment_start(txn, NULL, NULL);
+  first_born = nr_segment_start(txn, NULL, NULL);
+  tlib_pass_if_not_null("parent should not be null", parent);
+
+  async_grandchild = nr_segment_start(txn, first_born, "another_async");
+  tlib_pass_if_not_null(
+      "Starting a segment on a valid txn and an implicit parent must succeed",
+      async_grandchild);
+
+  tlib_pass_if_int_equal(
+      "grandchild segment has initialized async context",
+      async_grandchild->async_context,
+      nr_string_find(async_grandchild->txn->trace_strings, "another_async"));
+
+  tlib_pass_if_int_equal(
+      "grandchild has initialized async context",
+      nr_string_find(txn->trace_strings, "another_async"),
+      nr_string_find(async_grandchild->txn->trace_strings, "another_async"));
+
+  tlib_pass_if_ptr_equal(
+      "The most recently started, implicitly-parented segment must not alter "
+      "the NULL context's current segment",
+      nr_txn_get_current_segment(txn, NULL), first_born);
+
+  tlib_pass_if_ptr_equal(
+      "The most recently started, implicitly-parented segment must set the "
+      "current segment for the new context",
+      nr_txn_get_current_segment(txn, "another_async"), async_grandchild);
+
+  tlib_pass_if_not_null("Default Segment should not be null", segment);
+  tlib_pass_if_not_null("Async Segment should not be null", segment_async);
+  tlib_pass_if_int_equal(
+      "Async segment has initialized async context",
+      segment_async->async_context,
+      nr_string_find(segment_async->txn->trace_strings, async_context));
+  tlib_pass_if_ptr_equal(
+      "should be able to retrieve current of an async context",
+      nr_txn_get_current_segment(txn, async_context), segment_async);
+
+  span_id_async = nr_txn_get_current_span_id(txn, async_context);
+  tlib_fail_if_null("span id is created for segment with async context",
+                    span_id_async);
+  nr_free(span_id_async);
+
+  /*
+   * Test : default segment and async segment are different.
+   * And span ids are also different.
+   */
+  span_id_async = nr_txn_get_current_span_id(txn, async_context);
+  span_id = nr_txn_get_current_span_id(txn, NULL);
+  tlib_pass_if_str_equal(
+      "async current span id should not equal default current span id",
+      span_id_async, span_id);
+  nr_free(span_id);
+  nr_free(span_id_async);
 
   nr_txn_destroy(&txn);
 }
@@ -8372,6 +8553,101 @@ static void test_segment_record_error(void) {
                          segment->error->error_class,
                          nr_error_get_klass(txn->error));
 
+  nr_txn_destroy(&txn);
+}
+
+/*
+ * Verify that nr_txn_record_error targets the current segment for the
+ * txn's current context (fiber-context-aware), not always the default
+ * context's segment. Before the fiber changes, the code used
+ * nr_txn_get_current_segment(txn, NULL) which always targeted the default
+ * context. The fix changes it to nr_txn_get_current_segment_txn_context(txn).
+ */
+static void test_segment_record_error_async_context(void) {
+  nrapp_t app = {
+      .state = NR_APP_OK,
+      .limits = {
+        .analytics_events = NR_MAX_ANALYTIC_EVENTS,
+        .span_events = NR_DEFAULT_SPAN_EVENTS_MAX_SAMPLES_STORED,
+      },
+  };
+  nrtxnopt_t opts;
+  nr_segment_t* default_seg;
+  nr_segment_t* async_seg;
+  nrtxn_t* txn;
+
+  nr_memset(&opts, 0, sizeof(opts));
+  opts.distributed_tracing_enabled = 1;
+  opts.span_events_enabled = 1;
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+  /* nr_txn_enforce_security_settings resets err_enabled to 0 when
+   * connect_reply is NULL; set it directly after txn_begin. */
+  txn->options.err_enabled = 1;
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+  txn->options.allow_raw_exception_messages = 1;
+
+  default_seg = nr_segment_start(txn, NULL, NULL);
+  async_seg = nr_segment_start(txn, default_seg, "fiber_ctx");
+
+  /*
+   * Test : With an async context active, the error must be recorded on the
+   *        async segment, not the default segment.
+   */
+  nr_txn_record_error(txn, 1, true, "async error", "async class",
+                      "[\"A\",\"B\"]");
+
+  tlib_pass_if_not_null("Error recorded on async segment", async_seg->error);
+  tlib_pass_if_null("No error on default segment when async context is active",
+                    default_seg->error);
+  tlib_pass_if_str_equal("Async segment error message is correct", "async error",
+                         async_seg->error->error_message);
+  tlib_pass_if_str_equal("Async segment error class is correct", "async class",
+                         async_seg->error->error_class);
+
+  nr_txn_destroy(&txn);
+}
+
+/*
+ * Verify that nr_txn_add_user_custom_parameter targets the current segment
+ * for the txn's current context (fiber-context-aware). Before the fiber
+ * changes, the code used nr_txn_get_current_segment(txn, NULL) which always
+ * targeted the default context's segment.
+ */
+static void test_custom_parameters_segment_async_context(void) {
+  nrapp_t app = {.state = NR_APP_OK};
+  nrtxnopt_t opts = {.custom_parameters_enabled = true};
+  nrtxn_t* txn;
+  nr_segment_t* default_seg;
+  nr_segment_t* async_seg;
+  nrobj_t* obj = nro_new_int(42);
+  nrobj_t* out;
+
+  txn = nr_txn_begin(&app, &opts, NULL, NULL);
+  txn->options.span_events_enabled = true;
+  txn->options.distributed_tracing_enabled = true;
+  nr_distributed_trace_set_sampled(txn->distributed_trace, true);
+
+  default_seg = nr_segment_start(txn, NULL, NULL);
+  async_seg = nr_segment_start(txn, default_seg, "fiber_ctx");
+
+  /*
+   * Test : With an async context active, the custom parameter must be added
+   *        to the async segment, not the default segment.
+   */
+  nr_txn_add_user_custom_parameter(txn, "fiber_key", obj);
+
+  out = nr_attributes_user_to_obj(async_seg->attributes_txn_event,
+                                  NR_ATTRIBUTE_DESTINATION_ALL);
+  test_obj_as_json("attribute added to async segment", out, "{\"fiber_key\":42}");
+  nro_delete(out);
+
+  out = nr_attributes_user_to_obj(default_seg->attributes_txn_event,
+                                  NR_ATTRIBUTE_DESTINATION_ALL);
+  tlib_pass_if_null("No attribute on default segment when async context active",
+                    out);
+  nro_delete(out);
+
+  nro_delete(obj);
   nr_txn_destroy(&txn);
 }
 
@@ -9110,6 +9386,8 @@ void test_main(void* p NRUNUSED) {
   test_root_segment_priority();
   test_should_create_span_events();
   test_parent_stacks();
+  test_get_current_context();
+  test_current_async_context_tracking();
   test_force_current_segment();
   test_txn_is_sampled();
   test_get_current_trace_id();
@@ -9127,6 +9405,8 @@ void test_main(void* p NRUNUSED) {
   test_txn_accept_distributed_trace_payload_w3c_and_nr();
   test_span_queue();
   test_segment_record_error();
+  test_segment_record_error_async_context();
+  test_custom_parameters_segment_async_context();
   test_log_level_verify();
   test_record_log_event();
   test_txn_log_configuration();

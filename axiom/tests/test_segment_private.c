@@ -462,6 +462,25 @@ static void test_destroy_fields(void) {
   nr_segment_destroy_fields(&s);
 }
 
+static void test_destroy_fields_with_children(void) {
+  nr_segment_t parent = {0};
+  nr_segment_t child1 = {0};
+  nr_segment_t child2 = {0};
+
+  nr_segment_children_init(&parent.children);
+  nr_segment_children_add(&parent.children, &child1);
+  nr_segment_children_add(&parent.children, &child2);
+
+  tlib_pass_if_size_t_equal("Parent has two children before destroy", 2,
+                            nr_segment_children_size(&parent.children));
+
+  /*
+   * nr_segment_destroy_fields must call nr_segment_children_deinit on an
+   * initialized children array without crashing or leaking.
+   */
+  nr_segment_destroy_fields(&parent);
+}
+
 static void test_destroy_metric(void) {
   nr_segment_metric_t sm = {
       .name = nr_strdup("Custom/Metric/To/Be/Destroyed"),
@@ -484,5 +503,6 @@ void test_main(void* p NRUNUSED) {
   test_set_destroy_message_fields();
   test_destroy_typed_attributes();
   test_destroy_fields();
+  test_destroy_fields_with_children();
   test_destroy_metric();
 }

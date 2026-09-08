@@ -813,7 +813,7 @@ nr_status_t nr_php_error_record_exception_segment(nrtxn_t* txn,
     error_message = nr_formatf("%s'%s'", prefix, klass);
   }
 
-  nr_segment_record_exception(nr_txn_get_current_segment(NRPRG(txn), NULL),
+  nr_segment_record_exception(nr_txn_get_current_segment_txn_context(txn),
                               error_message, klass);
 
   nr_free(file);

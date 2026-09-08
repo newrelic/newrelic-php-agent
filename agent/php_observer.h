@@ -19,6 +19,16 @@
 #include "Zend/zend_observer.h"
 
 /*
+ * nr_exclusive_time_ensure needs an integer number to start out allocating
+ * exlusive time slots. For use with fiber suspensions, a reasonable number was
+ * chosen. It doesn't limit the number of exclusive time slots to 10. If the
+ * number of unused slots is less than 10, it will expand the exclusive time.
+ * It's just a starter amount. It is simply a baseline starter declared here so
+ * it can be easily changed if needed in the future.
+ */
+#define NR_PHP_DEFAULT_SUSPEND_TIMES 10
+
+/*
  * Purpose: There are a few various places, aside from the php_execute_* family
  * that will call NR_PHP_PROCESS_GLOBALS(orig_execute) so make it a noop to
  * handle all cases.

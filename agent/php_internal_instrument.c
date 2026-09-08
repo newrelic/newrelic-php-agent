@@ -531,7 +531,7 @@ NR_INNER_WRAPPER(mysql_query) {
     return;
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -582,7 +582,7 @@ NR_INNER_WRAPPER(mysql_db_query) {
     return;
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -790,7 +790,7 @@ static void nr_php_instrument_datastore_operation_call(
       },
   };
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
@@ -1051,8 +1051,7 @@ NR_INNER_WRAPPER(mysqli_general_query) {
     }
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
-
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
@@ -1176,7 +1175,7 @@ NR_INNER_WRAPPER(pdostatement_execute) {
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "pdo" TSRMLS_CC);
   sqlstrlen = nr_strlen(sqlstr);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -1304,21 +1303,20 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
 
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!",
-                                  &stmt_obj, &params)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "o|a!", &stmt_obj,
+                                  &params)) {
     stmt_obj = NR_PHP_INTERNAL_FN_THIS();
     if (FAILURE
-      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
-                                  &params)) {
-      nrl_warning(NRL_INSTRUMENT,
-                  "failed to parse mysqli_stmt_execute params");
+        == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "|a!",
+                                    &params)) {
+      nrl_warning(NRL_INSTRUMENT, "failed to parse mysqli_stmt_execute params");
     }
   }
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "mysqli" TSRMLS_CC);
   sqlstrlen = nr_strlen(sqlstr);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -1332,8 +1330,7 @@ NR_INNER_WRAPPER(mysqli_stmt_execute) {
         && nr_php_mysqli_zval_is_stmt(stmt_obj TSRMLS_CC)
         && !nr_php_is_zval_null(return_value)) {
       plan = nr_php_explain_mysqli_stmt(NRPRG(txn), Z_OBJ_HANDLE_P(stmt_obj),
-                                        params,
-                                        segment->start_time,
+                                        params, segment->start_time,
                                         segment->stop_time TSRMLS_CC);
     }
 
@@ -1857,7 +1854,8 @@ NR_INNER_WRAPPER(pg_execute) {
     query = NR_PHP_PREPARED_STATEMENT_UNKNOWN;
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_php_txn_end_segment_sql(&segment, query, nr_strlen(query), NULL,
@@ -1970,7 +1968,8 @@ NR_INNER_WRAPPER(pg_query) {
    */
   instance = nr_php_pgsql_retrieve_datastore_instance(pgsql_link TSRMLS_CC);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
@@ -2033,7 +2032,7 @@ NR_INNER_WRAPPER(pg_query_params) {
     }
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2087,7 +2086,7 @@ NR_INNER_WRAPPER(sqlite_query_function) {
     }
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2139,7 +2138,7 @@ NR_INNER_WRAPPER(sqlite_exec_or_query) {
     }
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2172,7 +2171,7 @@ NR_INNER_WRAPPER(sqlite3) {
     sqlstrlen = nr_strlen(sqlstr);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2207,7 +2206,7 @@ NR_INNER_WRAPPER(sqlite3_querysingle) {
     sqlstrlen = nr_strlen(sqlstr);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2288,7 +2287,7 @@ NR_INNER_WRAPPER(pdo_exec) {
     sqlstrlen = nr_strlen(sqlstr);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2332,7 +2331,7 @@ NR_INNER_WRAPPER(pdo_query) {
     sqlstrlen = nr_strlen(sqlstr);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2440,7 +2439,15 @@ NR_INNER_WRAPPER(curl_exec) {
     return;
   }
 
-  nr_php_curl_exec_pre(curlres, NULL, NULL TSRMLS_CC);
+  /*
+   * This function creates a segment that is then stored in the
+   * curl_multi_metadata hashmap.  Because it is creating the segment, we need
+   * to ensure it is properly parented with the correct context and parent in
+   * the case of a fiber environment.
+   */
+  nr_php_curl_exec_pre(curlres,
+                       nr_txn_get_current_segment_txn_context(NRPRG(txn)),
+                       nr_txn_get_current_context(NRPRG(txn)) TSRMLS_CC);
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2504,6 +2511,7 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
   zval* multires = NULL;
   zval* curlres = NULL;
   int rv = FAILURE;
+  int old_context = 0;
 
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO /* PHP 8.0+ */
   rv = zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
@@ -2514,6 +2522,13 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
                                 ZEND_NUM_ARGS() TSRMLS_CC, "rr", &multires,
                                 &curlres);
 #endif /* PHP 8.0+ */
+
+  /*
+   * This is a special case where we don't want the parent context of the newly
+   * discarded segment to be set on the txn because curl segments are tracked
+   * separately. We need to save the actual context so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   if (SUCCESS == rv) {
     if (nr_php_curl_multi_md_remove(multires, curlres TSRMLS_CC)) {
@@ -2526,7 +2541,8 @@ NR_INNER_WRAPPER(curl_multi_remove_handle) {
       }
     }
   }
-
+  /* The current txn context needs to go back to the old context.*/
+  NRTXN(current_async_context) = old_context;
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
@@ -2593,7 +2609,7 @@ NR_INNER_WRAPPER(mssql_query) {
     return;
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2653,7 +2669,8 @@ NR_INNER_WRAPPER(mongocollection_15) {
 
   params.collection = collection_name;
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_segment_datastore_end(&segment, &params);
@@ -2745,7 +2762,7 @@ NR_INNER_WRAPPER(oci_execute) {
   sqlstr = nr_php_prepared_statement_find(stmt_obj, "oci" TSRMLS_CC);
   sqlstrlen = nr_strlen(sqlstr);
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -2829,7 +2846,7 @@ NR_INNER_WRAPPER(file_get_contents) {
   external_params.uri
       = nr_strndup(Z_STRVAL_P(file_zval), Z_STRLEN_P(file_zval));
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   nr_php_file_get_contents_add_headers(context, segment TSRMLS_CC);
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -2937,7 +2954,7 @@ NR_INNER_WRAPPER(httprequest_send) {
 
   this_var = NR_PHP_INTERNAL_FN_THIS();
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
 
   nr_php_httprequest_send_request_headers(this_var, segment TSRMLS_CC);
   external_params.uri = nr_php_httprequest_send_get_url(this_var TSRMLS_CC);
@@ -2994,7 +3011,8 @@ NR_INNER_WRAPPER(soapclient_dorequest) {
     external_params.uri = nr_strndup(loc, loc_len);
   }
 
-  segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  segment = NR_SEGMENT_START_WITH_TXN_CONTEXT(NRPRG(txn));
+
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
   nr_segment_external_end(&segment, &external_params);

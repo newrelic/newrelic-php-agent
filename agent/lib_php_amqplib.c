@@ -621,7 +621,8 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_publish) {
     goto end;
   }
 
-  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  message_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
   if (NULL != message_segment) {
     /* re-use start time from auto_segment started in func_begin */
     message_segment->start_time = auto_segment->start_time;
@@ -749,7 +750,8 @@ NR_PHP_WRAPPER(nr_rabbitmq_basic_get) {
    * time, add our message segment attributes/metrics then close the newly
    * created message segment.
    */
-  message_segment = nr_segment_start(NRPRG(txn), NULL, NULL);
+  message_segment
+      = NR_SEGMENT_START_WITH_PARENT_CONTEXT(NRPRG(txn), auto_segment);
 
   if (NULL == message_segment) {
     goto end;

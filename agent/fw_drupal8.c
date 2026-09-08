@@ -937,6 +937,7 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_drupal8_name_the_wt_via_symfony) {
   zval* event = NULL;
   zval* request = NULL;
+  zval* request_attrs = NULL;
   zval* controller = NULL;
 
   /* Warning avoidance. */
@@ -970,7 +971,16 @@ NR_PHP_WRAPPER(nr_drupal8_name_the_wt_via_symfony) {
     goto end;
   }
 
-  controller = nr_symfony_object_get_string(request, "_controller" TSRMLS_CC);
+  request_attrs = nr_php_get_zval_object_property(request, "attributes");
+  if (!nr_php_is_zval_valid_object(request_attrs)) {
+    nrl_verbosedebug(
+        NRL_TXN,
+        "Drupal 8 via Symfony: Request->attributes could not be obtained");
+    goto end;
+  }
+
+  controller
+      = nr_symfony_object_get_string(request_attrs, "_controller" TSRMLS_CC);
 
   if (nrlikely(nr_php_is_zval_non_empty_string(controller))) {
     nr_txn_set_path("Drupal8", NRPRG(txn), Z_STRVAL_P(controller),

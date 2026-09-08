@@ -1,0 +1,213 @@
+<?php
+/*
+ * Copyright 2020 New Relic Corporation. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*DESCRIPTION
+Test that the span for a sync external request that ends up throwing an uncaught BadResponseException
+is marked as http, uri and status code are captured. Additionally, test that exception is recorded
+as traced error, error event, and the root span has error attributes, when using Fibers.
+*/
+
+/*SKIPIF
+<?php
+require("skipif.inc");
+if (version_compare(phpversion(), '8.1', '<')) {
+    die("skip: PHP >= 8.1 required\n");
+}
+?>
+*/
+
+/*INI
+newrelic.distributed_tracing_enabled = true
+newrelic.transaction_tracer.threshold = 0
+newrelic.transaction_tracer.detail = 1
+newrelic.code_level_metrics.enabled = 0
+newrelic.fibers.disabled = false
+log_errors=0
+display_errors=1
+*/
+
+/*ENVIRONMENT
+TEST_EXTERNAL_HOST=example.com
+*/
+
+/*EXPECT_METRICS_EXIST
+External/ENV[TEST_EXTERNAL_HOST]/all
+*/
+
+/*EXPECT_SPAN_EVENTS_LIKE
+[
+  [
+    {
+      "category": "generic",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "OtherTransaction/php__FILE__",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "nr.entryPoint": true,
+      "transaction.name": "OtherTransaction/php__FILE__"
+    },
+    {},
+    {
+      "error.message": "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??",
+      "error.class": "GuzzleHttp\\Exception\\BadResponseException"
+    }
+  ],
+  [
+    {
+      "traceId": "??",
+      "duration": "??",
+      "transactionId": "??",
+      "name": "External/ENV[TEST_EXTERNAL_HOST]/all",
+      "guid": "??",
+      "type": "Span",
+      "category": "http",
+      "priority": "??",
+      "sampled": true,
+      "timestamp": "??",
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Guzzle 6"
+    },
+    {},
+    {
+      "http.url": "http://ENV[TEST_EXTERNAL_HOST]/resource",
+      "http.method": "GET",
+      "http.statusCode": 404
+    }
+  ]
+]
+*/
+
+/*EXPECT_ANALYTICS_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": 50,
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "Transaction",
+        "name": "OtherTransaction\/php__FILE__",
+        "timestamp": "??",
+        "duration": "??",
+        "totalTime": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "error": true
+      },
+      {},
+      {
+        "errorType": "GuzzleHttp\\Exception\\BadResponseException",
+        "errorMessage": "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??"
+      }
+    ]
+  ]
+]
+*/
+
+/*EXPECT_ERROR_EVENTS
+[
+  "?? agent run id",
+  {
+    "reservoir_size": "??",
+    "events_seen": 1
+  },
+  [
+    [
+      {
+        "type": "TransactionError",
+        "timestamp": "??",
+        "error.class": "GuzzleHttp\\Exception\\BadResponseException",
+        "error.message": "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??",
+        "transactionName": "OtherTransaction\/php__FILE__",
+        "duration": "??",
+        "externalDuration": "??",
+        "externalCallCount": 1,
+        "nr.transactionGuid": "??",
+        "guid": "??",
+        "sampled": true,
+        "priority": "??",
+        "traceId": "??",
+        "spanId": "??"
+      },
+      {},
+      {}
+    ]
+  ]
+]
+*/
+
+/*EXPECT_TRACED_ERRORS
+[
+  "?? agent run id",
+  [
+    [
+      "?? when",
+      "OtherTransaction/php__FILE__",
+      "Uncaught exception 'GuzzleHttp\\Exception\\BadResponseException' with message 'ClientException' in __FILE__:??",
+      "GuzzleHttp\\Exception\\BadResponseException",
+      {
+        "stack_trace": [
+          " in test_uncaught_sync_bad_response called at ? (?)",
+          " in Fiber::start called at __FILE__ (??)"
+        ],
+        "agentAttributes": "??",
+        "intrinsics": "??"
+      },
+      "?? transaction ID"
+    ]
+  ]
+]
+*/
+
+/*EXPECT_REGEX
+^\s*Fatal error: Uncaught GuzzleHttp\\Exception\\BadResponseException: ClientException.*
+*/
+
+function test_uncaught_sync_bad_response() {
+    require_once(realpath(dirname(__FILE__)) . '/../../../include/config.php');
+    require_once(realpath(dirname(__FILE__)) . '/../../../include/unpack_guzzle.php');
+    require_guzzle(7);
+
+    $TEST_EXTERNAL_HOST=getenv('TEST_EXTERNAL_HOST');
+
+    $request = new \GuzzleHttp\Psr7\Request('GET', "http://$TEST_EXTERNAL_HOST/resource");
+    $response = new \GuzzleHttp\Psr7\Response(404, [], "Not found!");
+
+    $stack = GuzzleHttp\HandlerStack::create(
+      new GuzzleHttp\Handler\MockHandler([
+        new \GuzzleHttp\Exception\BadResponseException(
+          "ClientException",
+          $request,
+          $response
+          )
+      ]));
+
+    $client = new GuzzleHttp\Client([
+      'handler' => $stack,
+
+    ]);
+
+    Fiber::suspend();
+
+    // This will throw an uncaught exception
+    $response = $client->send($request);
+}
+
+$fiber = new Fiber('test_uncaught_sync_bad_response');
+$fiber->start();
+$fiber->resume();

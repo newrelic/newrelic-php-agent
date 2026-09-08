@@ -432,6 +432,80 @@ static void test_segment_start_async(void) {
   nr_txn_destroy(&txn);
 }
 
+static void test_segment_get_context(void) {
+  nrtxn_t* txn = new_txn(0);
+  nr_segment_t no_txn_seg = {.txn = NULL, .async_context = 0};
+  nr_segment_t* default_seg;
+  nr_segment_t* async_seg;
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_null("NULL segment returns NULL context",
+                    nr_segment_get_context(NULL));
+
+  /* Segment with NULL txn returns NULL */
+  tlib_pass_if_null("Segment with NULL txn returns NULL context",
+                    nr_segment_get_context(&no_txn_seg));
+
+  /*
+   * Test : Normal operation.
+   */
+
+  /* Default-context segment (async_context == 0) returns NULL */
+  default_seg = nr_segment_start(txn, NULL, NULL);
+  tlib_pass_if_null("Default-context segment has NULL async context",
+                    nr_segment_get_context(default_seg));
+
+  /* Async-context segment returns the context string */
+  async_seg = nr_segment_start(txn, default_seg, "fiber_ctx");
+  tlib_pass_if_str_equal("Async segment returns its context string",
+                         "fiber_ctx", nr_segment_get_context(async_seg));
+
+  nr_txn_destroy(&txn);
+}
+
+static void test_segment_start_with_context_macros(void) {
+  nrtxn_t* txn = new_txn(0);
+  nr_segment_t* default_seg;
+  nr_segment_t* async_seg;
+  nr_segment_t* child;
+
+  default_seg = nr_segment_start(txn, NULL, NULL);
+  async_seg = nr_segment_start(txn, default_seg, "fiber_ctx");
+
+  /*
+   * Test : NR_SEGMENT_START_WITH_PARENT_CONTEXT with a default-context parent.
+   * The child should inherit NULL context from the parent.
+   */
+  child = NR_SEGMENT_START_WITH_PARENT_CONTEXT(txn, default_seg);
+  tlib_pass_if_not_null("PARENT_CONTEXT macro creates a segment", child);
+  tlib_pass_if_null("Child inherits NULL context from default parent",
+                    nr_segment_get_context(child));
+
+  /*
+   * Test : NR_SEGMENT_START_WITH_PARENT_CONTEXT with an async-context parent.
+   * The child should inherit the parent's async context.
+   */
+  child = NR_SEGMENT_START_WITH_PARENT_CONTEXT(txn, async_seg);
+  tlib_pass_if_not_null(
+      "PARENT_CONTEXT macro creates a segment with async parent", child);
+  tlib_pass_if_str_equal("Child inherits async context from async parent",
+                         "fiber_ctx", nr_segment_get_context(child));
+
+  /*
+   * Test : NR_SEGMENT_START_WITH_TXN_CONTEXT inherits the txn's current
+   * context. After the last nr_segment_start on "fiber_ctx", the txn context
+   * is "fiber_ctx".
+   */
+  child = NR_SEGMENT_START_WITH_TXN_CONTEXT(txn);
+  tlib_pass_if_not_null("TXN_CONTEXT macro creates a segment", child);
+  tlib_pass_if_str_equal("TXN_CONTEXT macro uses current txn context",
+                         "fiber_ctx", nr_segment_get_context(child));
+
+  nr_txn_destroy(&txn);
+}
+
 static void test_set_name(void) {
   nrtxn_t txnv = {0};
   nr_segment_t segment
@@ -3178,6 +3252,8 @@ void test_main(void* p NRUNUSED) {
   test_segment_new_txn_with_segment_root();
   test_segment_start();
   test_segment_start_async();
+  test_segment_get_context();
+  test_segment_start_with_context_macros();
   test_set_name();
   test_add_child();
   test_add_metric();

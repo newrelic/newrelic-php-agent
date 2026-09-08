@@ -21,12 +21,26 @@
     - ./base-class
     - ./constructor
     - ./factory
+
+    NOTE: The function here can be used as a fiber.  
+    The caller will need 2 fiber resumes to fully exercise the function.
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');
+require_once(dirname(__FILE__).'/../../include/helpers.php');
 
-function test_prepared_stmt($conn, $query) {
+function test_prepared_stmt($conn, $query, $is_fiber=false) {
+  if ($is_fiber) {
+    env_var_for_expects("GUID_TEST_PREPARED_STMT", newrelic_get_linking_metadata()['span.id'] ?? '');
+  }
+  
   $stmt = $conn->prepare($query);
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
   $stmt->bindValue(1, "missing");
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
   tap_assert($stmt->execute(), 'execute prepared statement');
 }

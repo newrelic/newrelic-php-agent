@@ -89,6 +89,7 @@ void nr_segment_destroy_fields(nr_segment_t* segment) {
   nr_segment_destroy_typed_attributes(segment->type,
                                       &segment->typed_attributes);
   nr_segment_error_destroy_fields(segment->error);
+  nr_segment_children_deinit(&segment->children);
 }
 
 void nr_segment_metric_destroy_fields(nr_segment_metric_t* sm) {

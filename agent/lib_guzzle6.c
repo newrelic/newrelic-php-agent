@@ -112,11 +112,21 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
   zval* request;
   zval* method;
   zval* status = NULL;
+  int old_context = 0;
 
   if (NR_FAILURE
       == nr_guzzle_obj_find_and_remove(handler, &segment TSRMLS_CC)) {
     return;
   }
+
+  /*
+   * This is a special case because guzzle stores all the external segments in
+   * the NRTXN(guzzle_objs) hashmap. When the extracted segment is ended, we
+   * don't want the context of this segment's parent to be set on the txn
+   * because for guzzle that is a special newrelic guzzle middleware segment.
+   * Save it now so we can restore it later.
+   */
+  old_context = NRTXN(current_async_context);
 
   request = nr_guzzle6_requesthandler_get_request(handler TSRMLS_CC);
   if (NULL == request) {
@@ -137,16 +147,17 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
 
   if (NULL != response && nr_php_psr7_is_response(response TSRMLS_CC)) {
     /*
-    * Get the X-NewRelic-App-Data response header. If there isn't one, NULL is
-    * returned, and everything still works just fine.
-    */
-    external_params.encoded_response_header
-        = nr_php_psr7_message_get_header(response, X_NEWRELIC_APP_DATA TSRMLS_CC);
+     * Get the X-NewRelic-App-Data response header. If there isn't one, NULL is
+     * returned, and everything still works just fine.
+     */
+    external_params.encoded_response_header = nr_php_psr7_message_get_header(
+        response, X_NEWRELIC_APP_DATA TSRMLS_CC);
 
     if (NRPRG(txn) && NRTXN(special_flags.debug_cat)) {
       nrl_verbosedebug(
           NRL_CAT, "CAT: outbound response: transport='Guzzle 6' %s=" NRP_FMT,
-          X_NEWRELIC_APP_DATA, NRP_CAT(external_params.encoded_response_header));
+          X_NEWRELIC_APP_DATA,
+          NRP_CAT(external_params.encoded_response_header));
     }
 
     status = nr_php_call(response, "getStatusCode");
@@ -157,6 +168,8 @@ static void nr_guzzle6_requesthandler_handle_response(zval* handler,
   }
 
   nr_segment_external_end(&segment, &external_params);
+
+  NRTXN(current_async_context) = old_context;
 
   nr_free(external_params.encoded_response_header);
   nr_free(external_params.uri);

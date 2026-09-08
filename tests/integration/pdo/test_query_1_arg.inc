@@ -21,16 +21,28 @@
     - ./constructor
     - ./factory
 
+    NOTE: The function here can be used as a fiber.  
+    The caller will need 2 fiber resumes to fully exercise the function.
 */
 
 require_once(dirname(__FILE__).'/../../include/tap.php');
+require_once(dirname(__FILE__).'/../../include/helpers.php');
 
-function test_pdo_query($conn, $want_drop_table_result=1) {
+function test_pdo_query($conn, $want_drop_table_result=1, $is_fiber=false) {
+
+  if ($is_fiber) {
+    env_var_for_expects("GUID_TEST_PDO_QUERY", newrelic_get_linking_metadata()['span.id'] ?? '');
+  }
+
   tap_equal(0, $conn->exec("CREATE TABLE test (id INT, description VARCHAR(10));"), 'create table');
 
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (1, 'one');"), 'insert one');
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (2, 'two');"), 'insert two');
   tap_equal(1, $conn->exec("INSERT INTO test VALUES (3, 'three');"), 'insert three');
+
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
 
   $expected = array(
     array('id' => 1, 'description' => 'one'),
@@ -46,6 +58,10 @@ function test_pdo_query($conn, $want_drop_table_result=1) {
     $row['id'] = intval($row['id']);
   });
   tap_equal($expected, $actual, 'query (1-arg)');
+
+  if ($is_fiber) {
+    Fiber::suspend();
+  }
 
   tap_equal($want_drop_table_result, $conn->exec("DROP TABLE test;"), 'drop table');
 }
