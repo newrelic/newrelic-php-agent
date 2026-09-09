@@ -73,19 +73,139 @@ Supportability/library/Predis/detected
 
 /*EXPECT_TRACED_ERRORS null */
 
+/*EXPECT_SPAN_EVENTS_LIKE
+[
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Redis\/exists",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Redis"
+    },
+    {},
+    {
+      "peer.hostname": "ENV[REDIS_HOST]",
+      "peer.address": "ENV[REDIS_HOST]:6379",
+      "db.instance": "0"
+    }
+  ],
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Redis\/set",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Redis"
+    },
+    {},
+    {
+      "peer.hostname": "ENV[REDIS_HOST]",
+      "peer.address": "ENV[REDIS_HOST]:6379",
+      "db.instance": "0"
+    }
+  ],
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Redis\/incr",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Redis"
+    },
+    {},
+    {
+      "peer.hostname": "ENV[REDIS_HOST]",
+      "peer.address": "ENV[REDIS_HOST]:6379",
+      "db.instance": "0"
+    }
+  ],
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Redis\/get",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Redis"
+    },
+    {},
+    {
+      "peer.hostname": "ENV[REDIS_HOST]",
+      "peer.address": "ENV[REDIS_HOST]:6379",
+      "db.instance": "0"
+    }
+  ],
+  [
+    {
+      "category": "datastore",
+      "type": "Span",
+      "guid": "??",
+      "traceId": "??",
+      "transactionId": "??",
+      "name": "Datastore\/operation\/Redis\/del",
+      "timestamp": "??",
+      "duration": "??",
+      "priority": "??",
+      "sampled": true,
+      "parentId": "??",
+      "span.kind": "client",
+      "component": "Redis"
+    },
+    {},
+    {
+      "peer.hostname": "ENV[REDIS_HOST]",
+      "peer.address": "ENV[REDIS_HOST]:6379",
+      "db.instance": "0"
+    }
+  ]
+]
+*/
+
 newrelic_ignore_transaction(); // turn recording off for this New Relic transaction
 // zend_observer_fcall_init's callback is invoked for predis/src/client.php;
 // it is the only chance to execute the library detection code and create
 // predis wraprecs in nr_predis_enable(). This under normal circumstances
 // would generate Supportability/library/Predis/detected which is listed
 // under EXPECT_METRICS_DONT_EXIST because the transaction is not recording.
-require_once realpath(getenv("PREDIS_HOME") . '/../../../').'/vendor/autoload.php';
+require_once realpath(getenv("PREDIS_HOME") . '/../../../') . '/vendor/autoload.php';
 newrelic_end_transaction(); // end New Relic transaction, which is not recording
 newrelic_start_transaction(ini_get("newrelic.appname")); // Start New Relic transaction, recording is back on
-require_once(__DIR__.'/../../include/config.php');
-require_once(__DIR__.'/../../include/helpers.php');
-require_once(__DIR__.'/../../include/tap.php');
-require_once(__DIR__.'/../../include/integration.php');
+require_once(__DIR__ . '/../../include/config.php');
+require_once(__DIR__ . '/../../include/helpers.php');
+require_once(__DIR__ . '/../../include/tap.php');
+require_once(__DIR__ . '/../../include/integration.php');
 
 global $REDIS_HOST, $REDIS_PORT;
 $client = new Predis\Client(array('host' => $REDIS_HOST, 'port' => $REDIS_PORT, 'database' => 0));
