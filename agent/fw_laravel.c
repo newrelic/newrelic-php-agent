@@ -525,22 +525,29 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
   const char* class_name = NULL;
   size_t class_name_len;
   zend_function* function = NULL;
+  const zend_class_entry* def_ce = NULL;
 
   if (NULL == ce) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: class entry is NULL", __func__);
     return;
   }
 
-  class_name = nr_php_class_entry_name(ce);
-  class_name_len = nr_php_class_entry_name_length(ce);
-
   function = nr_php_find_class_method(ce, method);
   if (NULL == function) {
     nrl_verbosedebug(NRL_FRAMEWORK, "cannot get function entry for %.*s::%.*s",
-                     NRSAFELEN(class_name_len), class_name,
-                     NRSAFELEN(method_len), method);
+                     NRSAFELEN(nr_php_class_entry_name_length(ce)),
+                     nr_php_class_entry_name(ce), NRSAFELEN(method_len),
+                     method);
     return;
   }
+
+  /*
+   * Wrap the method on the class where it is defined, not the concrete
+   * subclass that may merely inherit it
+   */
+  def_ce = (NULL != function->common.scope) ? function->common.scope : ce;
+  class_name = nr_php_class_entry_name(def_ce);
+  class_name_len = nr_php_class_entry_name_length(def_ce);
 
   char* class_method = nr_formatf("%.*s::%.*s", NRSAFELEN(class_name_len),
                                   class_name, NRSAFELEN(method_len), method);
