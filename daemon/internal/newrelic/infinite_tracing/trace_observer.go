@@ -7,6 +7,7 @@ package infinite_tracing
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -54,6 +55,30 @@ const (
 	// immediately.
 	statusImmediateRestart
 )
+
+// String is needed because spanBatchSenderStatus.code is unexported: fmt won't call
+// spanBatchSenderCode's own String() through a reflected unexported field.
+func (s spanBatchSenderStatus) String() string {
+	return fmt.Sprintf("{%v %s}", s.code, s.metric)
+}
+
+// String prints the code's name alongside its number.
+func (c spanBatchSenderCode) String() string {
+	name := "unknown"
+	switch c {
+	case statusOk:
+		name = "statusOk"
+	case statusShutdown:
+		name = "statusShutdown"
+	case statusRestart:
+		name = "statusRestart"
+	case statusReconnect:
+		name = "statusReconnect"
+	case statusImmediateRestart:
+		name = "statusImmediateRestart"
+	}
+	return fmt.Sprintf("%d - %s", int(c), name)
+}
 
 // The sender is split out via an interface. This is not strictly necessary,
 // but makes it easier to test things.

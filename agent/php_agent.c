@@ -350,6 +350,33 @@ const zend_function* nr_php_get_caller(NR_EXECUTE_PROTO,
   return ped->func;
 }
 
+zval* nr_get_func_cv_by_name(zend_execute_data* execute_data,
+                             const char* target_name TSRMLS_DC) {
+  zend_function* zf = execute_data->func;
+
+  if (!zf || !ZEND_USER_CODE(zf->type)) {
+    return NULL;
+  }
+
+  zend_op_array* op_array = &zf->op_array;
+
+  for (int i = op_array->num_args; i < op_array->last_var; i++) {
+    zend_string* var_name = op_array->vars[i];
+    if (var_name && strcmp(ZSTR_VAL(var_name), target_name) == 0) {
+      /* This retrieves the modern zval directly from the VM stack slot */
+      zval* var_val = ZEND_CALL_VAR_NUM(execute_data, i);
+
+      if (Z_TYPE_P(var_val) != IS_UNDEF) {
+        return var_val;
+      }
+      break;
+    }
+  }
+
+  return NULL;
+}
+
+
 zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC) {
   HashTable* table;
 
