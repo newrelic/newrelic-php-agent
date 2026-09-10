@@ -1628,14 +1628,112 @@ void nr_php_execute_internal(zend_execute_data* execute_data,
   nr_segment_end(&segment);
 }
 
-void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
-  zval* status = NULL;
-  zval* scripts = NULL;
+static nr_status_t nr_php_user_instrumentation_from_opcache_scripts(
+    const zval* status) {
   zend_ulong key_num = 0;
   nr_php_string_hash_key_t* key_str = NULL;
   zval* val = NULL;
   const char* filename;
   size_t filename_len;
+  zval* scripts = nr_php_zend_hash_find(Z_ARRVAL_P(status), "scripts");
+
+  if (NULL == scripts) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: missing 'scripts' key in "
+                "status information");
+    return NR_FAILURE;
+  }
+
+  if (IS_ARRAY != Z_TYPE_P(scripts)) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: 'scripts' value in status "
+                "information is not an array");
+    return NR_FAILURE;
+  }
+
+  nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: started");
+
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(scripts), key_num, key_str, val) {
+    (void)key_num;
+    (void)val;
+
+    filename = ZEND_STRING_VALUE(key_str);
+    filename_len = ZEND_STRING_LEN(key_str);
+
+    if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
+      nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT, NRP_FILENAME(filename));
+    }
+
+    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
+  }
+  ZEND_HASH_FOREACH_END();
+
+  nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: done");
+  return NR_SUCCESS;
+}
+
+static void nr_php_user_instrumentation_from_opcache_preload_statistics(
+    const zval* status) {
+  zval* val = NULL;
+  zval* scripts = NULL;
+  zval* preload_statistics = NULL;
+
+  preload_statistics
+      = nr_php_zend_hash_find(Z_ARRVAL_P(status), "preload_statistics");
+  if (NULL == preload_statistics) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: missing "
+                "'preload_statistics' key in "
+                "status information");
+    return;
+  }
+  if (IS_ARRAY != Z_TYPE_P(preload_statistics)) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: 'preload_statistics' value "
+                "in status information is not an array");
+    return;
+  }
+
+  scripts = nr_php_zend_hash_find(Z_ARRVAL_P(preload_statistics), "scripts");
+
+  if (NULL == scripts) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: missing 'scripts' key in "
+                "'preload_statistics' status information");
+    return;
+  }
+
+  if (IS_ARRAY != Z_TYPE_P(scripts)) {
+    nrl_warning(NRL_INSTRUMENT,
+                "User instrumentation from opcache: 'scripts' value in "
+                "'preload_statistics' status information is not an array");
+    return;
+  }
+
+  nrl_debug(NRL_INSTRUMENT,
+            "User instrumentation from opcache preload_statistics: started");
+
+  ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(scripts), val) {
+    if (!nr_php_is_zval_valid_string(val)) {
+      nrl_warning(NRL_INSTRUMENT,
+                  "User instrumentation from opcache: invalid script name in "
+                  "'scripts' array");
+      continue;
+    }
+    if (nrunlikely(NR_PHP_PROCESS_GLOBALS(special_flags).show_loaded_files)) {
+      nrl_debug(NRL_AGENT, "loaded file=" NRP_FMT,
+                NRP_FILENAME(Z_STRVAL_P(val)));
+    }
+    nr_php_user_instrumentation_from_file(Z_STRVAL_P(val), Z_STRLEN_P(val));
+  }
+  ZEND_HASH_FOREACH_END();
+
+  nrl_debug(NRL_INSTRUMENT,
+            "User instrumentation from opcache preload_statistics: done");
+}
+
+void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
+  zval* status = NULL;
 
   status = nr_php_call(NULL, "opcache_get_status");
 
@@ -1657,36 +1755,11 @@ void nr_php_user_instrumentation_from_opcache(TSRMLS_D) {
     goto end;
   }
 
-  scripts = nr_php_zend_hash_find(Z_ARRVAL_P(status), "scripts");
-
-  if (NULL == scripts) {
-    nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: missing 'scripts' key in "
-                "status information");
-    goto end;
+  // Scan 'scripts' key in opcache status array first:
+  if (NR_FAILURE == nr_php_user_instrumentation_from_opcache_scripts(status)) {
+    // If that fails, scan 'scripts' key in 'preload_statistics' array:
+    nr_php_user_instrumentation_from_opcache_preload_statistics(status);
   }
-
-  if (IS_ARRAY != Z_TYPE_P(scripts)) {
-    nrl_warning(NRL_INSTRUMENT,
-                "User instrumentation from opcache: 'scripts' value in status "
-                "information is not an array");
-    goto end;
-  }
-
-  nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: started");
-
-  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(scripts), key_num, key_str, val) {
-    (void)key_num;
-    (void)val;
-
-    filename = ZEND_STRING_VALUE(key_str);
-    filename_len = ZEND_STRING_LEN(key_str);
-
-    nr_php_user_instrumentation_from_file(filename, filename_len TSRMLS_CC);
-  }
-  ZEND_HASH_FOREACH_END();
-
-  nrl_debug(NRL_INSTRUMENT, "User instrumentation from opcache: done");
 
 end:
   nr_php_zval_free(&status);
