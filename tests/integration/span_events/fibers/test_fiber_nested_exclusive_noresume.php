@@ -7,6 +7,18 @@
 /*DESCRIPTION
 Test should show proper exclusive time in metrics generated for fibers
 even when a fiber isn't resumed.
+
+total - exclusive for a segment is exactly the amount subtracted for its
+children; suspend_time shifts total and exclusive by the same amount, so it
+cancels out of their difference. fiber two has no nested custom-traced
+children, so its total and exclusive are always equal (diff 0) - this holds
+even though fiber two is never resumed after its second suspend and its
+segment is force-closed at its last known suspend point rather than ended
+normally. fiber one's diff instead reflects the one real, uninterrupted
+block of active work its child (fiber two) did between its two suspends -
+here fiber two's single completed time_nanosleep(0.1s); the sleep fiber two
+never reaches (0.2s) after its second, never-resumed suspend contributes
+nothing.
 */
 
 /*SKIPIF
@@ -84,14 +96,14 @@ $metrics = $txn->getScopedMetrics();
 tap_assert(isset($metrics["Custom/two"]), 'metric for fiber two exists');
 tap_assert(isset($metrics["Custom/one"]), 'metric for fiber one exists');
 
-// The diff should be approx equal to the time it's child spent sleeping (0.1) before the second suspend
-// plus the time spent suspended (0.3) 
-// Since two's second sleep time never got called (non-resume) it doesn't get added.
+// The diff should be approx equal to the time its child (fiber two) spent
+// sleeping between its two suspends (0.1); fiber one's own Fiber::suspend()
+// (0.3s) cancels out of the diff regardless.
 $round_one = round($metrics["Custom/one"]->total - $metrics["Custom/one"]->exclusive, 1);
-tap_assert($round_one === 0.4, 'fiber one: total - exclusive diff is as expected');
+tap_assert($round_one === 0.1, 'fiber one: total - exclusive diff is as expected');
 
-// The diff should be approx equal to the time spent suspended for the first suspend(0.1)
-// plus the time `one` slept after the first `two` resume (0.2) 
-// plus the time `one` spent suspended (0.3)
+// fiber two has no nested custom-traced children, so total == exclusive,
+// even though it's never resumed after its second suspend and its segment
+// is force-closed rather than ended normally.
 $round_two = round($metrics["Custom/two"]->total - $metrics["Custom/two"]->exclusive, 1);
-tap_assert($round_two === 0.6, 'fiber two: total - exclusive diff is as expected');
+tap_assert($round_two === 0.0, 'fiber two: total - exclusive diff is as expected');

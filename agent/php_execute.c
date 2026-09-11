@@ -1254,7 +1254,10 @@ static inline void nr_php_execute_segment_end(
     stacked->stop_time = nr_txn_now_rel(NRPRG(txn));
   }
 
-  duration = nr_time_duration(stacked->start_time, stacked->stop_time);
+  duration = nr_time_duration(
+      stacked->start_time,
+      nr_segment_amend_stop_with_suspend_time(
+          stacked->start_time, stacked->stop_time, stacked->suspend_time));
   if (create_metric || (duration >= NR_PHP_PROCESS_GLOBALS(expensive_min))
       || nr_vector_size(stacked->metrics) || stacked->id || stacked->attributes
       || stacked->error) {

@@ -24,6 +24,7 @@ typedef struct _nr_exclusive_time_transition_t {
 struct _nr_exclusive_time_t {
   nrtime_t start_time;
   nrtime_t stop_time;
+  nrtime_t suspend_time;
   struct {
     size_t capacity;
     size_t used;

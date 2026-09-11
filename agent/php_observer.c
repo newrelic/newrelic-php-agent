@@ -265,7 +265,8 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
    * must remain the owners of current_async_context within a single context.
    * This is the one callsite where the field is written outside that contract,
    * and it is safe here because the stacks themselves are already correct —
-   * only the "which context is PHP currently running in" pointer needs updating.
+   * only the "which context is PHP currently running in" pointer needs
+   * updating.
    */
 
   if (zfc->kind != zend_ce_fiber) {
@@ -299,35 +300,62 @@ static inline void nr_fiber_set_contexts(zend_fiber_context* zfc) {
  *                so we don't have to calculate the context twice
  *
  * Ensure we don't count fiber suspend time in the segment's exclusive time
- * duration. In addition to a fiber being able to suspend itself via
+ * or duration. In addition to a fiber being able to suspend itself via
  * Fiber::suspend(), since ONLY ONE fiber can run at a time, any fiber that
- * calls another will automatically be suspended.
+ * calls another will automatically be marked ZEND_FIBER_STATUS_SUSPENDED.
  *
- * Note: We need to handle both types of suspension.
+ * We deliberately only mark suspend_time for the self-suspend case
+ * (fiber->caller == NULL). An earlier version handled both cases and got
+ * exact timings to subtract from the exclusive time, but the reclaimed suspend
+ * time then showed up as an
+ * uninstrumented gap on the response time breakdown graph, since PHP is
+ * displayed there as a remainder and any unattributed gap makes PHP look
+ * like it was missing.
+ * The spec says as an alternative to subtracting from exclusive time, an agent
+ * MAY choose to subtract blocking, non-actionable times directly from the
+ * duration.
+ * Those subtractions are done when the metric is generated.
  *
- * If in the future, we ever need to differentiate, it is possible to
- * differentiate. To detect that the fiber suspended itself using
- * Fiber::suspend(), check:
- *
+ * To detect self-suspend via Fiber::suspend(), check:
  * 1) the "from" fiber context status is ZEND_FIBER_STATUS_RUNNING
  * 2) the fiber in the "from" fiber context, has a fiber->caller value of
  * NULL
- *
+
  */
 static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
   nr_segment_t* fiber_segment = NULL;
+  zend_fiber* zfc_fiber = NULL;
 
   if (NULL == NRPRG(txn)) {
     /* nothing to do if the txn is NULL */
     return;
   }
+  if (zfc->kind != zend_ce_fiber) {
+    /* Context is the Main PHP Process and can't suspend itself and
+     * `main` is not a real zend_fiber,
+     * so calling zend_fiber_from_context()/reading ->caller on it is reading
+     * off a non-Fiber context.
+     */
+    return;
+  }
 
   if (ZEND_FIBER_STATUS_RUNNING == zfc->status) {
-    fiber_segment = nr_txn_get_current_segment(
-        NRPRG(txn), NRPRG_SHARED(current_php_context));
+    zfc_fiber = zend_fiber_from_context(zfc);
 
-    if (NULL != fiber_segment && 0 == fiber_segment->stop_time) {
-      fiber_segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+    if (nrunlikely(NULL == zfc_fiber)) {
+      nrl_verbosedebug(
+          NRL_INSTRUMENT,
+          "PHP Issue: The Fiber associated with %p is unexpectedly NULL.", zfc);
+      return;
+    }
+    if (NULL == zfc_fiber->caller) {
+      /* This fiber has suspended itself.*/
+      fiber_segment = nr_txn_get_current_segment(
+          NRPRG(txn), NRPRG_SHARED(current_php_context));
+
+      if (NULL != fiber_segment && 0 == fiber_segment->stop_time) {
+        fiber_segment->stop_time = nr_txn_now_rel(NRPRG(txn));
+      }
     }
   }
 }
@@ -347,10 +375,18 @@ static inline void nr_fiber_handle_fiber_suspend(zend_fiber_context* zfc) {
  *                so we don't have to calculate the context twice
  * During a fiber switch, update the exclusive time of a the "to" fiber context
  *
+ * The "to" segment's stop_time is nonzero only if
+ * nr_fiber_handle_fiber_suspend() marked it as self-suspended on a prior
+ * switch; that's the only case suspend_time accumulates here. If stop_time
+ * is 0 (see the else branch below), this resume was not preceded by a
+ * tracked self-suspend - e.g. it called/resumed a nested fiber instead -
+ * and is intentionally left uncorrected (see nr_fiber_handle_fiber_suspend
+ * above for why).
  */
-static inline void nr_fiber_handle_exclusive_time() {
+static inline void nr_fiber_handle_suspend_time() {
   nr_segment_t* fiber_segment = NULL;
   nrtime_t current_time = 0;
+  nrtime_t current_suspend_time = 0;
 
   if (NULL == NRPRG(txn)) {
     /* nothing to do if the txn is NULL */
@@ -366,31 +402,36 @@ static inline void nr_fiber_handle_exclusive_time() {
     return; /* Valid case - ex: will happen if there was a txn stop. */
   }
 
+  /*
+    * Check if the stop time was set.
+    * if stop_time is 0, this segment was never marked self-suspended.
+    */
   if (nrlikely(0 != fiber_segment->stop_time)) {
-    nr_exclusive_time_ensure(&fiber_segment->exclusive_time,
-                             NR_PHP_DEFAULT_SUSPEND_TIMES,
-                             fiber_segment->start_time, current_time);
     /* Add the suspension which existed from the previous stop time to the
-     * current time. */
+     * current time.
+     *
+     * Check the operands before subtracting, not the subtraction's result:
+     * nrtime_t is unsigned, so if current_time were ever less than
+     * fiber_segment->stop_time, current_time - fiber_segment->stop_time
+     * would underflow into a huge wrapped value rather than something
+     * negative/zero, and a post-hoc "> 0" check on that result can't
+     * reliably detect it (a wrapped value is still > 0 too). */
+    if (nrlikely(current_time > fiber_segment->stop_time)) {
+      current_suspend_time = current_time - fiber_segment->stop_time;
+      fiber_segment->suspend_time += current_suspend_time;
+    } else {
+      /* This case should not happen.*/
+      nrl_verbosedebug(NRL_AGENT, "Cannot have stop_time greater than current time.");
+    }
 
-    nr_exclusive_time_add_child(fiber_segment->exclusive_time,
-                                fiber_segment->stop_time, current_time);
     /* reset the stop_time now that the fiber is resumed. */
     fiber_segment->stop_time = 0;
-  } else {
-    /*
-     * Shouldn't get to this case, but doublechecking so as not to overwrite a
-     * time that something else wrote.
-     */
-    nrl_verbosedebug(
-        NRL_AGENT, "Current segment time was already set for fiber context %s",
-        NRPRG_SHARED(current_php_context));
   }
 }
 
 /*
  * Purpose: Determine the parent for a new, given fiber context and set the
- fiber_parent_segment global accordingly.
+ * fiber_parent_segment global accordingly.
  *
  * Params:  zend_fiber_context* zfc
  *
@@ -465,7 +506,7 @@ static void nr_fiber_switch_observe(zend_fiber_context* from,
   if (ZEND_FIBER_STATUS_INIT == to->status) {
     nr_fiber_set_fiber_parent_segment(from);
   } else if (ZEND_FIBER_STATUS_SUSPENDED == to->status) {
-    nr_fiber_handle_exclusive_time();
+    nr_fiber_handle_suspend_time();
   }
 
   if (NR_FAILURE

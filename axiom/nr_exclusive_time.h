@@ -23,12 +23,17 @@ typedef struct _nr_exclusive_time_t nr_exclusive_time_t;
  * Params  : 1. The number of child segments within the parent segment.
  *           2. The start time of the parent segment.
  *           3. The stop time of the parent segment.
+ *           4. The suspend time of the parent segment (0 if it never
+ *              self-suspended); subtracted from stop_time before duration
+ *              is computed. See nr_segment.h's suspend_time field comment.
  *
  * Returns : A pointer to the exclusive time structure, or NULL on error.
  */
 extern nr_exclusive_time_t* nr_exclusive_time_create(size_t child_segments,
                                                      nrtime_t start_time,
-                                                     nrtime_t stop_time);
+                                                     nrtime_t stop_time,
+                                                     nrtime_t suspend_time
+                                                    );
 
 /*
  * Purpose : Destroy an exclusive time structure.
@@ -48,12 +53,16 @@ extern bool nr_exclusive_time_destroy(nr_exclusive_time_t** et_ptr);
  * Params  : 1. A pointer to the exclusive time structure.
  *           2. The start time of the child segment.
  *           3. The stop time of the child segment.
+ *           4. The suspend time of the child segment; stop_time is amended
+ *              by this before the period is removed, so a self-suspended
+ *              child only removes the time it was actually active.
  *
  * Returns : True on success; false otherwise.
  */
 extern bool nr_exclusive_time_add_child(nr_exclusive_time_t* parent_et,
                                         nrtime_t start_time,
-                                        nrtime_t stop_time);
+                                        nrtime_t stop_time,
+                                        nrtime_t suspend_time);
 
 /*
  * Purpose : Calculate how much exclusive time the parent segment actually had.
@@ -61,7 +70,11 @@ extern bool nr_exclusive_time_add_child(nr_exclusive_time_t* parent_et,
  * Params  : 1. A pointer to the exclusive time structure.
  *
  * Returns : The amount of exclusive time. On error, 0 is returned, but note
- *           that 0 may also be a valid value.
+ *           that 0 may also be a valid value. Also returns 0 if a child's
+ *           duration exceeds the parent's remaining exclusive-time budget -
+ *           logged as "this should be impossible" - which only happens if
+ *           a suspend_time fed into this structure was wrong (see
+ *           nr_segment.h's suspend_time field comment).
  */
 extern nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et);
 
@@ -72,8 +85,7 @@ extern nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et);
  *           This function does the following:
  *            - If the first parameter is NULL, a new exclusive time structure
  *              with the given parameters is allocated.
- *            - If the first parameter is given, start and stop times are set
- *              the start and stop times given as parameters.
+ *            - If the first parameter is given, start, stop and suspend times are set
  *            - If the first paramester is given and the exclusive time
  *              structure is not large enough to accomodate adding the given
  *              number of children, then it is resized.
@@ -84,6 +96,7 @@ extern nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et);
  *              time structure.
  *           3. The start time of the parent segment.
  *           4. The stop time of the parent segment.
+ *           5. The suspend time of the parent segment.
  *
  * Returns : true if the exclusive time structure fits the given parameters or
  *           could be resized/changed to fit them.
@@ -91,6 +104,7 @@ extern nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et);
 extern bool nr_exclusive_time_ensure(nr_exclusive_time_t** et_ptr,
                                      size_t child_segments,
                                      nrtime_t start_time,
-                                     nrtime_t stop_time);
+                                     nrtime_t stop_time,
+                                     nrtime_t suspend_time);
 
 #endif /* NR_EXCLUSIVE_TIME_HDR */
