@@ -4,9 +4,11 @@
  */
 #include "tlib_php.h"
 
+#include "nr_commands.h"
 #include "php_agent.h"
 #include "php_call.h"
 #include "php_execute.h"
+#include "php_execute_private.h"
 #include "php_globals.h"
 #include "php_wrapper.h"
 
@@ -119,11 +121,137 @@ static void test_php_cur_stack_depth(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+static nr_status_t mock_cmd_appinfo_unknown(int daemon_fd NRUNUSED,
+                                            nrapp_t* app) {
+  app->state = NR_APP_UNKNOWN;
+  return NR_SUCCESS;
+}
+
+/*
+ * The gate this PR relaxed (nr_php_fcall_register_handlers now gates on
+ * NR_PHP_PROCESS_GLOBALS(enabled) instead of nr_php_recording()) means
+ * library/framework/logging-framework detection can now run for the first
+ * time on a given op_array while NRPRG(txn) is NULL. The most direct way to
+ * reach that state is the very first request in a process: RINIT calls
+ * appinfo, and until the daemon confirms the app, NRPRG(txn) is never
+ * created at all. mock_cmd_appinfo_unknown reproduces exactly that by
+ * forcing app->state = NR_APP_UNKNOWN on every appinfo call.
+ *
+ * nr_fw_support_add_*_supportability_metric() are NULL-txn-safe, but every
+ * enable() callback in these tables is third-party code we don't control
+ * call-by-call; this test walks every table entry through the real
+ * dispatcher to catch a future enable() callback that dereferences the txn
+ * directly.
+ *
+ * nr_php_user_instrumentation_from_file (not nr_php_execute_file) is the
+ * right target here: nr_php_execute_file also re-executes the file's real
+ * op array via orig_execute, which a fabricated filename can't do safely.
+ * The dispatcher just string-matches, so passing a table's file_to_check
+ * value AS the filename trivially self-matches - no fixture files needed.
+ *
+ * The libraries/logging_frameworks/vuln_mgmt_packages tables are walked once
+ * per all_frameworks[] entry, not once overall: in a real request, a
+ * framework's file loads first and sets NRPRG_SHARED(current_framework) for
+ * the rest of that request, and libraries are detected afterward within
+ * that context. A library's enable() shouldn't depend on which framework is
+ * active, but nothing stops one from starting to, so this mirrors the real
+ * per-request sequence (each framework x the full library/logging/package
+ * set) instead of testing library detection in isolation from framework
+ * context.
+ */
+static void test_user_instrumentation_from_file_app_unknown() {
+  tlib_php_engine_create("");
+
+  // Emulate the very first request in a process: appinfo hasn't confirmed
+  // the app yet, so RINIT never creates a transaction. This is a valid
+  // state for the agent to be in.
+  nr_cmd_appinfo_hook = mock_cmd_appinfo_unknown;
+
+  for (int i = 0; i < num_all_frameworks; i++) {
+    size_t ii;
+    tlib_php_request_start();
+    tlib_pass_if_null("NRPRG(txn) was not created", NRPRG(txn));
+    tlib_pass_if_true("Transaction is not being recorded", !nr_php_recording(),
+                      "Expected transaction to be ignored");
+    nr_php_user_instrumentation_from_file(NR_PSTR("vendor/autoload.php"));
+    nr_php_user_instrumentation_from_file(all_frameworks[i].file_to_check,
+                                          all_frameworks[i].file_to_check_len);
+
+    for (ii = 0; ii < num_libraries; ii++) {
+      nr_php_user_instrumentation_from_file(libraries[ii].file_to_check,
+                                            libraries[ii].file_to_check_len);
+    }
+
+    for (ii = 0; ii < num_logging_frameworks; ii++) {
+      nr_php_user_instrumentation_from_file(
+          logging_frameworks[ii].file_to_check,
+          logging_frameworks[ii].file_to_check_len);
+    }
+
+    for (ii = 0; ii < num_packages; ii++) {
+      nr_php_user_instrumentation_from_file(
+          vuln_mgmt_packages[ii].file_to_check,
+          vuln_mgmt_packages[ii].file_to_check_len);
+    }
+
+    tlib_php_request_end();
+  }
+  tlib_php_engine_destroy();
+}
+
+/*
+ * Complementary to test_user_instrumentation_from_file_app_unknown above:
+ * here NRPRG(txn) exists, but newrelic_ignore_transaction() has marked it
+ * as not recording. This can't exercise the NULL-txn dereference risk that
+ * test covers - the fw_support NULL guards only check for NULL, and an
+ * ignored-but-alive txn sails through them - but it does confirm detection
+ * dispatch still runs correctly, without crashing or leaking, while the
+ * transaction isn't recording, which the same gate relaxation also newly
+ * allows.
+ */
+static void test_user_instrumentation_from_file_txn_ignored() {
+  tlib_php_engine_create("");
+
+  for (int i = 0; i < num_all_frameworks; i++) {
+    size_t ii;
+    tlib_php_request_start();
+    tlib_php_request_eval("newrelic_ignore_transaction();");
+    tlib_pass_if_not_null("NRPRG(txn) was created", NRPRG(txn));
+    tlib_pass_if_true("Transaction is not being recorded", !nr_php_recording(),
+                      "Expected transaction to be ignored");
+
+    nr_php_user_instrumentation_from_file(NR_PSTR("vendor/autoload.php"));
+    nr_php_user_instrumentation_from_file(all_frameworks[i].file_to_check,
+                                          all_frameworks[i].file_to_check_len);
+
+    for (ii = 0; ii < num_libraries; ii++) {
+      nr_php_user_instrumentation_from_file(libraries[ii].file_to_check,
+                                            libraries[ii].file_to_check_len);
+    }
+
+    for (ii = 0; ii < num_logging_frameworks; ii++) {
+      nr_php_user_instrumentation_from_file(
+          logging_frameworks[ii].file_to_check,
+          logging_frameworks[ii].file_to_check_len);
+    }
+
+    for (ii = 0; ii < num_packages; ii++) {
+      nr_php_user_instrumentation_from_file(
+          vuln_mgmt_packages[ii].file_to_check,
+          vuln_mgmt_packages[ii].file_to_check_len);
+    }
+
+    tlib_php_request_end();
+  }
+  tlib_php_engine_destroy();
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
   test_add_segment_metric(TSRMLS_C);
   test_txn_restart_in_callstack(TSRMLS_C);
   test_php_cur_stack_depth(TSRMLS_C);
-
   tlib_php_engine_destroy(TSRMLS_C);
+  test_user_instrumentation_from_file_app_unknown();
+  test_user_instrumentation_from_file_txn_ignored();
 }
