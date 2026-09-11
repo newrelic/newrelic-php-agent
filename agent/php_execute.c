@@ -877,6 +877,13 @@ static void nr_execute_handle_package(const char* filename,
  *           defined as a key file for this library or framework.
  *
  * Params  : 1. Full name of a PHP file.
+ *
+ * Note    : The callbacks dispatched from here run under looser conditions
+ *           than this call site alone suggests - NRPRG(txn) may be NULL, the
+ *           transaction may not be recording, and the same file may be offered
+ *           more than once per process. See "Contract for magic-file
+ *           callbacks" in php_execute_private.h before writing or changing
+ *           one.
  */
 void nr_php_user_instrumentation_from_file(const char* filename,
                                            const size_t filename_len) {
