@@ -2108,6 +2108,56 @@ static void test_segment_tree_to_heap_consider_for_blocking(void) {
   nr_free(child);
 }
 
+static void test_segment_amend_stop_with_suspend_time(void) {
+  /*
+   * Test : No suspend time is a no-op.
+   */
+  tlib_pass_if_time_equal("no suspend time is a no-op", 50,
+                          nr_segment_amend_stop_with_suspend_time(10, 50, 0));
+
+  /*
+   * Test : suspend_time within the segment's own span is simply subtracted.
+   */
+  tlib_pass_if_time_equal("suspend_time within the segment's span", 35,
+                          nr_segment_amend_stop_with_suspend_time(10, 50, 15));
+
+  /*
+   * Test : suspend_time exactly equal to the duration clamps to start_time.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time equal to duration clamps to start_time", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 40));
+
+  /*
+   * Test : suspend_time moderately larger than the duration, but still
+   *        less than stop_time, clamps to start_time. This case already
+   *        worked before this fix.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time moderately larger than duration clamps", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 45));
+
+  /*
+   * Test : suspend_time larger than stop_time itself. Regression test:
+   *        stop_time - suspend_time underflows nrtime_t (unsigned), which
+   *        used to produce a huge wrapped value that evaded the old
+   *        post-subtraction clamp check instead of clamping to
+   *        start_time.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time larger than stop_time clamps, no underflow", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 60));
+
+  /*
+   * Test : An already-invalid raw span (stop_time before start_time) is
+   *        left untouched by suspend_time, so callers' own
+   *        start_time-vs-stop_time checks still catch it.
+   */
+  tlib_pass_if_time_equal(
+      "an already-invalid raw span is left untouched by suspend_time", 5,
+      nr_segment_amend_stop_with_suspend_time(10, 5, 3));
+}
+
 static void test_segment_set(void) {
   nr_set_t* set;
 
@@ -3364,6 +3414,7 @@ void test_main(void* p NRUNUSED) {
   test_segment_discard_keep_metrics_no_exclusive();
   test_segment_tree_to_heap();
   test_segment_tree_to_heap_consider_for_blocking();
+  test_segment_amend_stop_with_suspend_time();
   test_segment_set();
   test_segment_heap_to_set();
   test_segment_set_parent_cycle();

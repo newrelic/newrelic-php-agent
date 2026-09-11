@@ -509,30 +509,37 @@ extern bool nr_segment_set_timing(nr_segment_t* segment,
  *          suspend_time too large for the segment's real span still trips
  *          the "impossible" clamp in nr_exclusive_time_calculate().
  *
+ *          If stop_time is already before start_time, that's an invalid
+ *          span on its own terms, independent of suspend_time - it's
+ *          returned untouched so callers' own start_time-vs-stop_time
+ *          checks still catch it and log the right diagnostic.
+ *
  * Caller is responsible for ensuring segment is not NULL
  */
 static inline nrtime_t nr_segment_amend_stop_with_suspend_time(nrtime_t start_time,nrtime_t stop_time, nrtime_t suspend_time) {
-
-  nrtime_t amended_stop_time = 0;
-
+  if (nrunlikely(stop_time < start_time)) {
+    return stop_time;
+  }
 
   /*
-  * Spec says the agent MAY choose to subtract blocking, non-actionable time from the total time.
-  * This is done here by adjusting the stop time that is used to calculate total time
-  */
-  amended_stop_time = stop_time - suspend_time;
-
-  /* Only clamp when suspend_time is what caused the underflow, i.e. the
-   * raw (pre-amendment) span was valid. If stop_time was already before
-   * start_time, that's an invalid span on its own terms - leave it alone
-   * so callers' own start_time-vs-stop_time checks still catch it. */
-  if (nrunlikely(stop_time >= start_time && 0 != amended_stop_time
-                 && amended_stop_time < start_time)) {
+   * Spec says the agent MAY choose to subtract blocking, non-actionable time
+   * from the total time. This is done here by adjusting the stop time that
+   * is used to calculate total time.
+   *
+   * Clamp against the segment's own duration (stop_time - start_time),
+   * which we already know is safe to compute, rather than subtracting
+   * suspend_time from stop_time first and inspecting the result: nrtime_t
+   * is unsigned, so if suspend_time > stop_time that subtraction
+   * underflows into a huge wrapped value instead of a small/negative one,
+   * and a post-hoc check against start_time can't reliably detect that.
+   * Checking against the duration up front avoids the underflow entirely.
+   */
+  if (nrunlikely(suspend_time > stop_time - start_time)) {
     nrl_verbosedebug(NRL_API, "nr_segment_stop_time: segment suspend time is larger than duration");
     return start_time;
-  } else {
-    return amended_stop_time;
   }
+
+  return stop_time - suspend_time;
 }
 
 
