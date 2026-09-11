@@ -408,9 +408,16 @@ static inline void nr_fiber_handle_suspend_time() {
     */
   if (nrlikely(0 != fiber_segment->stop_time)) {
     /* Add the suspension which existed from the previous stop time to the
-     * current time. */
-    current_suspend_time = current_time - fiber_segment->stop_time;
-    if (nrlikely(current_suspend_time > 0)) {
+     * current time.
+     *
+     * Check the operands before subtracting, not the subtraction's result:
+     * nrtime_t is unsigned, so if current_time were ever less than
+     * fiber_segment->stop_time, current_time - fiber_segment->stop_time
+     * would underflow into a huge wrapped value rather than something
+     * negative/zero, and a post-hoc "> 0" check on that result can't
+     * reliably detect it (a wrapped value is still > 0 too). */
+    if (nrlikely(current_time > fiber_segment->stop_time)) {
+      current_suspend_time = current_time - fiber_segment->stop_time;
       fiber_segment->suspend_time += current_suspend_time;
     } else {
       /* This case should not happen.*/
