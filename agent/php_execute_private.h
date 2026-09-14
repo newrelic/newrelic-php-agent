@@ -50,11 +50,11 @@
  *
  *   - with NRPRG(txn) == NULL (call site (a) only). This is not an error path.
  *     It happens when the magic file is first executed before any transaction
- *     exists for the current PHP request - e.g. during a persistent worker's
- *     bootstrap/warm-up before its first logical request (FrankenPHP worker
- *     mode serves many HTTP requests inside one PHP request) - or after
- *     newrelic_end_transaction() has destroyed the request's transaction
- *     (nr_php_txn_end() frees it and leaves NRPRG(txn) NULL);
+ *     exists for the current PHP request - e.g. application is still unknown
+ *     to the daemon during a persistent worker's bootstrap/warm-up before its
+ *     first logical request (queue worker script handles many jobs inside one
+ *     PHP request) - or after newrelic_end_transaction() has destroyed the
+ *     request's transaction.
  *   - with a transaction that exists but is not recording
  *     (nr_php_recording() == 0), which is what newrelic_ignore_transaction()
  *     leaves behind: nr_txn_ignore() clears status.recording but keeps the
@@ -105,7 +105,12 @@
  *     do not stash it for "later" unless the state is genuinely process-scoped
  *     (S1), because the transaction that would have received it is never
  *     coming back. Any new helper taking a txn should get the same
- *     NULL-tolerant contract at its own top.
+ *     NULL-tolerant contract at its own top. Also mind performance side effects
+ *     when NRPRG(txn) is NULL. In some cases attempting a transaction-scope
+ *     effect on a NULL txn is a no-ops so attempting it is free. But in other
+ *     cases real work, e.g. executing userland code, can be attempted. With no
+ *     transaction to use it, weigh whether such an effect should be attempted
+ *     at all.
  *
  * Rules
  * -----
