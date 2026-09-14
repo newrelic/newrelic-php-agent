@@ -869,6 +869,38 @@ void nr_php_txn_create_packages_major_metrics(nrtxn_t* txn) {
                           nr_php_txn_php_package_create_major_metric, txn);
 }
 
+void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
+                                           const char* appnames,
+                                           const char* license) {
+  const char* lic_to_use;
+
+  if (NULL == info) {
+    return;
+  }
+
+  if ((NULL == appnames) || ('\0' == appnames[0])) {
+    appnames = NRINI(appnames);
+  }
+  lic_to_use = nr_php_use_license(license);
+
+  info->high_security = NR_PHP_PROCESS_GLOBALS(high_security);
+  info->license = (NULL != lic_to_use) ? nr_strdup(lic_to_use) : NULL;
+  info->environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
+  info->lang = nr_strdup("php");
+  info->version = nr_strdup(nr_version());
+  info->appname = nr_strdup(appnames);
+  info->redirect_collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
+
+  /* If DT is disabled we cannot stream 8T events, so disable the observer
+   * host; the port setting does not depend on DT being enabled. */
+  if (NRINI(distributed_tracing_enabled)) {
+    info->trace_observer_host = nr_strdup(NRINI(trace_observer_host));
+  } else {
+    info->trace_observer_host = nr_strdup("");
+  }
+  info->trace_observer_port = NRINI(trace_observer_port);
+}
+
 nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
@@ -990,27 +1022,14 @@ nr_status_t nr_php_txn_begin(const char* appnames,
   }
 
   nr_memset(&info, 0, sizeof(info));
-  info.high_security = NR_PHP_PROCESS_GLOBALS(high_security);
-  info.license = nr_strdup(lic_to_use);
+  nr_php_txn_populate_app_info_identity(&info, appnames, license);
   info.settings = NULL; /* Populated through callback. */
-  info.environment = nro_copy(NR_PHP_PROCESS_GLOBALS(appenv));
   info.metadata = nro_copy(NR_PHP_PROCESS_GLOBALS(metadata));
   info.labels = nr_php_txn_get_labels();
   info.host_display_name = nr_strdup(NRINI(process_host_display_name));
-  info.lang = nr_strdup("php");
-  info.version = nr_strdup(nr_version());
-  info.appname = nr_strdup(appnames);
-  info.redirect_collector = nr_strdup(NR_PHP_PROCESS_GLOBALS(collector));
   info.security_policies_token = nr_strdup(NRINI(security_policies_token));
   info.supported_security_policies
       = nr_php_txn_get_supported_security_policy_settings(&opts);
-  /* if DT is disabled we cannot stream 8T events so disable observer host */
-  if (NRINI(distributed_tracing_enabled))
-    info.trace_observer_host = nr_strdup(NRINI(trace_observer_host));
-  else
-    info.trace_observer_host = nr_strdup("");
-  /* observer port setting does not really depend on DT being enabled */
-  info.trace_observer_port = NRINI(trace_observer_port);
   info.span_queue_size = NRINI(span_queue_size);
   info.span_events_max_samples_stored = NRINI(span_events_max_samples_stored);
 
@@ -1171,8 +1190,6 @@ nr_status_t nr_php_txn_begin(const char* appnames,
     }
   }
 
-  NRTXN(composer_info.api_status) = NR_PHP_PROCESS_GLOBALS(composer_api_status);
-
   return NR_SUCCESS;
 }
 
@@ -1318,6 +1335,8 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       nr_php_txn_do_shutdown(txn TSRMLS_CC);
     }
 
+    nr_txn_pull_composer_packages(txn);
+
     nrm_force_add(txn->unscoped_metrics,
                   "Supportability/execute/user/call_count",
                   NRTXNGLOBAL(execute_count));
@@ -1355,12 +1374,40 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
        * Check status.ignore again in case it has changed during nr_txn_end.
        */
       ret = nr_cmd_txndata_tx(nr_get_daemon_fd(), txn);
+      nr_txn_mark_composer_packages_sent(txn);
       if (NR_FAILURE == ret) {
         nrl_debug(NRL_TXN, "failed to send txn");
       }
-      NR_PHP_PROCESS_GLOBALS(composer_api_status)
-          = NRTXN(composer_info.api_status);
     }
+  }
+
+  if (0 != ignoretxn) {
+    /*
+     * This transaction is being ignored -- the pull/send/mark-sent path
+     * above was skipped entirely, so entry->last_sent_epoch never
+     * advanced. Advance it directly so the next transaction on this
+     * thread doesn't inherit and re-report this discarded scan. Known
+     * limitation: if this transaction's own Composer scan is what's being
+     * discarded, that scan is lost -- permanently in a persistent-worker
+     * context (no future autoload event can re-scan), harmlessly
+     * elsewhere (a traditional per-request context gets another chance
+     * next request). Accepted tradeoff -- matches how baseline already
+     * treats a discarded transaction's data uniformly, with no
+     * special-casing for Composer.
+     *
+     * Note this gate reads the ignoretxn local, not txn->status.ignore,
+     * and that is deliberate: an ignore-type url or transaction_name rule
+     * applied inside nr_txn_end sets status.ignore after the local was
+     * computed, so such a transaction has already pulled and falls
+     * through here without discarding. That is the wanted behaviour --
+     * nothing was handed to the daemon, and a thread typically only scans
+     * once in its lifetime, so leaving the unsent scan in the entry lets
+     * the next transaction on this thread re-pull and report it instead
+     * of losing it for the thread's remaining life. Only a transaction
+     * ignored before nr_txn_end runs skipped the pull, and only that one
+     * needs the entry reset.
+     */
+    nr_txn_discard_composer_packages(NRPRG(txn));
   }
 
   nr_txn_destroy(&NRPRG(txn));

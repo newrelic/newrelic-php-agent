@@ -96,6 +96,24 @@ void nr_app_info_destroy_fields(nr_app_info_t* info) {
   nr_free(info->docker_id);
 }
 
+void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid) {
+  if (NULL == app) {
+    return;
+  }
+  nr_hashmap_index_delete(app->harvest_map, tid);
+  nr_hashmap_index_delete(app->rnd_map, tid);
+  nr_hashmap_index_delete(app->composer_map, tid);
+}
+
+void nr_app_tid_maps_destroy(nrapp_t* app) {
+  if (NULL == app) {
+    return;
+  }
+  nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
+  nr_hashmap_destroy(&app->composer_map);
+}
+
 /*
  * Purpose : Destroy an application freeing all of its associated memory.
  *
@@ -126,8 +144,7 @@ void nr_app_destroy(nrapp_t** app_ptr) {
   nr_segment_terms_destroy(&app->segment_terms);
   nro_delete(app->connect_reply);
   nro_delete(app->security_policies);
-  nr_hashmap_destroy(&app->harvest_map);
-  nr_hashmap_destroy(&app->rnd_map);
+  nr_app_tid_maps_destroy(app);
 
   nrt_mutex_unlock(&app->app_lock);
   nrt_mutex_destroy(&app->app_lock);
@@ -286,6 +303,8 @@ static nrapp_t* create_new_app(const nr_app_info_t* info) {
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
   app->rnd_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app->composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
 
   nrt_mutex_init(&app->app_lock, 0);
   nrt_mutex_lock(&app->app_lock);
@@ -310,6 +329,24 @@ static void nr_app_log_high_security_mismatch(const char* appname) {
         " as there already "
         "exists an app with the same name but a different high security "
         "setting.  "
+        "Please ensure that all of your PHP ini files have the same "
+        "newrelic.high_security value then restart your web servers and the "
+        "newrelic-daemon.",
+        NRP_APPNAME(appname ? appname : "<unknown>"));
+  }
+}
+
+static void nr_app_log_high_security_mismatch_on_find(const char* appname) {
+  static int last_warn = 0;
+  time_t now = time(0);
+
+  if ((now - last_warn) > NR_APP_LOG_HIGH_SECURITY_MISMATCH_BACKOFF_SECONDS) {
+    last_warn = now;
+    nrl_error(
+        NRL_DAEMON,
+        "found app=" NRP_FMT
+        " but it has a different high security "
+        "setting than an existing app with the same name.  "
         "Please ensure that all of your PHP ini files have the same "
         "newrelic.high_security value then restart your web servers and the "
         "newrelic-daemon.",
@@ -342,6 +379,55 @@ static int nr_app_info_valid(const nr_app_info_t* info) {
   return 1;
 }
 
+/* internal, assumes applist->applist_lock already held by caller */
+static nrapp_t* nr_app_find_matching_locked(nrapplist_t* applist,
+                                            const nr_app_info_t* info) {
+  int i;
+  int num_apps;
+
+  if (NULL == applist) {
+    return NULL;
+  }
+
+  num_apps = applist->num_apps;
+
+  for (i = 0; i < num_apps; i++) {
+    nrapp_t* test_app = applist->apps[i];
+
+    if (NULL != test_app) {
+      nrt_mutex_lock(&test_app->app_lock);
+      if (NR_SUCCESS == nr_app_match(test_app, info)) {
+        return test_app; /* returned locked */
+      }
+      nrt_mutex_unlock(&test_app->app_lock);
+    }
+  }
+  return NULL;
+}
+
+nrapp_t* nr_app_find_locked(nrapplist_t* applist, const nr_app_info_t* info) {
+  nrapp_t* app;
+
+  if (0 == nr_app_info_valid(info) || NULL == applist) {
+    return NULL;
+  }
+
+  nrt_mutex_lock(&applist->applist_lock);
+  app = nr_app_find_matching_locked(applist, info);
+  nrt_mutex_unlock(&applist->applist_lock);
+
+  if (NULL != app && info->high_security != app->info.high_security) {
+    /* Mirrors the check in nr_app_find_or_add_app(): a license+appname
+     * match with a different high_security setting means this is a
+     * different app, not this one. */
+    nr_app_log_high_security_mismatch_on_find(info->appname);
+    nrt_mutex_unlock(&app->app_lock);
+    app = NULL;
+  }
+
+  return app; /* app->app_lock still held if non-NULL; caller must unlock */
+}
+
 nrapp_t* nr_app_find_or_add_app(nrapplist_t* applist,
                                 const nr_app_info_t* info) {
   nrapp_t* app = 0;
@@ -355,30 +441,12 @@ nrapp_t* nr_app_find_or_add_app(nrapplist_t* applist,
 
   nrt_mutex_lock(&applist->applist_lock);
   {
-    int i;
     int num_apps = applist->num_apps;
 
     /*
      * Search for the application.
      */
-    app = 0;
-    for (i = 0; i < num_apps; i++) {
-      nrapp_t* test_app = applist->apps[i];
-
-      if (0 != test_app) {
-        nrt_mutex_lock(&test_app->app_lock);
-        {
-          if (NR_SUCCESS == nr_app_match(test_app, info)) {
-            /*
-             * The app is returned locked.
-             */
-            app = test_app;
-            break;
-          }
-        }
-        nrt_mutex_unlock(&test_app->app_lock);
-      }
-    }
+    app = nr_app_find_matching_locked(applist, info);
 
     if (app) {
       /*

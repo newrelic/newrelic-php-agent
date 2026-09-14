@@ -335,6 +335,60 @@ static void test_find_or_add_app(void) {
   nr_applist_destroy(&applist);
 }
 
+static void test_app_find_locked(void) {
+  nrapplist_t* applist = nr_applist_create();
+  nrapp_t* app = NULL;
+  nr_app_info_t info;
+  nr_app_info_t search_info;
+
+  nr_memset(&info, 0, sizeof(info));
+  info.license = nr_strdup("0123456789012345678901234567890123456789");
+  info.appname = nr_strdup("Test App");
+  info.trace_observer_host = nr_strdup("");
+  /* nr_app_info_valid() requires these to be non-NULL as well. */
+  info.environment = nro_create_from_json("[]");
+  info.lang = nr_strdup("php");
+  info.version = nr_strdup("1.0");
+  info.redirect_collector = nr_strdup("collector.newrelic.com");
+
+  /* Bad parameters */
+  tlib_pass_if_null("NULL applist", nr_app_find_locked(NULL, &info));
+  tlib_pass_if_null("NULL info", nr_app_find_locked(applist, NULL));
+
+  /* No match yet: does not create */
+  tlib_pass_if_null("no match, empty applist",
+                    nr_app_find_locked(applist, &info));
+  tlib_pass_if_int_equal("no creation side effect", 0, applist->num_apps);
+
+  /* Create the app via the existing creating path, then find it */
+  app = nr_app_find_or_add_app(applist, &info);
+  tlib_pass_if_not_null("app created", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
+
+  nr_memset(&search_info, 0, sizeof(search_info));
+  search_info.license = nr_strdup(info.license);
+  search_info.appname = nr_strdup(info.appname);
+  search_info.trace_observer_host = nr_strdup("");
+  search_info.environment = nro_create_from_json("[]");
+  search_info.lang = nr_strdup("php");
+  search_info.version = nr_strdup("1.0");
+  search_info.redirect_collector = nr_strdup("collector.newrelic.com");
+
+  app = nr_app_find_locked(applist, &search_info);
+  tlib_pass_if_not_null("match found", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
+  tlib_pass_if_int_equal("still just one app, no duplicate creation", 1,
+                         applist->num_apps);
+
+  nr_app_info_destroy_fields(&info);
+  nr_app_info_destroy_fields(&search_info);
+  nr_applist_destroy(&applist);
+}
+
 static void test_find_or_add_app_high_security_mismatch(void) {
   nrapp_t* app;
   nr_app_info_t info;
@@ -410,6 +464,54 @@ static void test_find_or_add_app_high_security_mismatch(void) {
   info.high_security = 0;
   app = nr_app_find_or_add_app(applist, &info);
   tlib_pass_if_null("app added", app);
+
+  nr_applist_destroy(&applist);
+  nr_app_info_destroy_fields(&info);
+}
+
+static void test_find_locked_high_security_mismatch(void) {
+  nrapp_t* app;
+  nr_app_info_t info;
+  nrapplist_t* applist = nr_applist_create();
+
+  nr_memset(&info, 0, sizeof(info));
+  info.license = nr_strdup("1234500000000000000000000000000000006789");
+  info.version = nr_strdup("my_version");
+  info.lang = nr_strdup("my_language");
+  info.appname = nr_strdup("test-app");
+  info.environment = nro_create_from_json("[\"my_environment\"]");
+  info.trace_observer_host = nr_strdup("");
+  info.redirect_collector = nr_strdup("collector.newrelic.com");
+  info.high_security = 0;
+
+  /*
+   * Add the app without high security.
+   */
+  app = nr_app_find_or_add_app(applist, &info);
+  tlib_pass_if_not_null("app added", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
+
+  /*
+   * Finding the same app with high security on fails -- before the fix,
+   * nr_app_find_locked() never checked high_security at all and would
+   * have returned the mismatched app.
+   */
+  info.high_security = 1;
+  app = nr_app_find_locked(applist, &info);
+  tlib_pass_if_null("mismatched high security not found", app);
+
+  /*
+   * Finding the same app with matching high security still succeeds --
+   * confirms the check doesn't false-positive.
+   */
+  info.high_security = 0;
+  app = nr_app_find_locked(applist, &info);
+  tlib_pass_if_not_null("matching high security found", app);
+  if (app) {
+    nrt_mutex_unlock(&app->app_lock);
+  }
 
   nr_applist_destroy(&applist);
   nr_app_info_destroy_fields(&info);
@@ -1280,6 +1382,152 @@ static void test_get_or_create_thread_rnd(void) {
   nr_hashmap_destroy(&app.rnd_map);
 }
 
+static void test_get_or_create_thread_composer_entry(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* e1;
+  nr_composer_thread_entry_t* e2;
+  nr_composer_thread_entry_t* e_same_key;
+
+  tlib_pass_if_null("NULL app",
+                    nr_app_get_or_create_thread_composer_entry(NULL, 1));
+
+  app.composer_map = NULL;
+  tlib_pass_if_null("NULL composer_map",
+                    nr_app_get_or_create_thread_composer_entry(&app, 1));
+
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+
+  e1 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_not_null("entry created", e1);
+  tlib_pass_if_int_equal("starts UNSET", NR_COMPOSER_API_STATUS_UNSET,
+                         e1->status);
+  tlib_pass_if_null("starts with no packages", e1->packages);
+  tlib_pass_if_uint64_t_equal("starts at epoch 0", 0, e1->epoch);
+  tlib_pass_if_uint64_t_equal("starts at last_sent_epoch 0", 0,
+                              e1->last_sent_epoch);
+
+  e1->status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  e1->epoch = 7;
+  e_same_key = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_true("same pointer for same key", e1 == e_same_key,
+                    "e1=%p e_same_key=%p", (void*)e1, (void*)e_same_key);
+  tlib_pass_if_int_equal("mutation preserved",
+                         NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED,
+                         e_same_key->status);
+  tlib_pass_if_uint64_t_equal("epoch preserved", 7, e_same_key->epoch);
+
+  e2 = nr_app_get_or_create_thread_composer_entry(&app, 2);
+  tlib_pass_if_not_null("different key, different entry", e2);
+  tlib_pass_if_true("different pointer for different key", e1 != e2,
+                    "e1=%p e2=%p", (void*)e1, (void*)e2);
+  tlib_pass_if_int_equal("independent, still UNSET",
+                         NR_COMPOSER_API_STATUS_UNSET, e2->status);
+
+  nr_hashmap_destroy(&app.composer_map);
+}
+
+static void test_app_tid_maps_evict(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* entry;
+
+  nrt_mutex_init(&app.app_lock, 0);
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+
+  nr_app_get_or_create_thread_rnd(&app, 1);
+  entry = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  entry->packages = nr_php_packages_create();
+  nr_app_get_or_create_thread_harvest(&app, 1);
+
+  nr_app_tid_maps_evict(NULL, 1); /* must not crash */
+
+  nr_app_tid_maps_evict(&app, 1);
+  tlib_pass_if_null("rnd evicted", nr_hashmap_index_get(app.rnd_map, 1));
+  tlib_pass_if_null("composer entry evicted (and its packages destroyed)",
+                    nr_hashmap_index_get(app.composer_map, 1));
+  tlib_pass_if_null("harvest evicted",
+                    nr_hashmap_index_get(app.harvest_map, 1));
+
+  nr_hashmap_destroy(&app.harvest_map);
+  nr_hashmap_destroy(&app.rnd_map);
+  nr_hashmap_destroy(&app.composer_map);
+  nrt_mutex_destroy(&app.app_lock);
+}
+
+static void test_app_tid_maps_destroy(void) {
+  nrapp_t app = {0};
+
+  app.harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+
+  nr_app_tid_maps_destroy(NULL); /* must not crash */
+
+  nr_app_tid_maps_destroy(&app);
+  tlib_pass_if_null("harvest_map nulled", app.harvest_map);
+  tlib_pass_if_null("rnd_map nulled", app.rnd_map);
+  tlib_pass_if_null("composer_map nulled", app.composer_map);
+}
+
+static void test_composer_entry_cross_app_isolation(void) {
+  nrapp_t app_a = {0};
+  nrapp_t app_b = {0};
+  nr_composer_thread_entry_t* entry_a;
+  nr_composer_thread_entry_t* entry_b;
+
+  /*
+   * Simulates FrankenPHP worker mode: one OS process, per-app thread pools,
+   * so the SAME tid can legitimately show up under two different nrapp_t
+   * instances. This is the bug the per-(app,thread) map closes relative to
+   * the old process-global design: writes to one app's entry must never
+   * leak into another app's entry for the identical tid.
+   */
+  app_a.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+  app_b.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+
+  entry_a = nr_app_get_or_create_thread_composer_entry(&app_a, 42);
+  entry_b = nr_app_get_or_create_thread_composer_entry(&app_b, 42);
+
+  entry_a->status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  entry_a->epoch = 1;
+
+  tlib_pass_if_int_equal("app_b's entry for same tid unaffected",
+                         NR_COMPOSER_API_STATUS_UNSET, entry_b->status);
+  tlib_pass_if_uint64_t_equal("app_b's epoch unaffected", 0, entry_b->epoch);
+
+  nr_hashmap_destroy(&app_a.composer_map);
+  nr_hashmap_destroy(&app_b.composer_map);
+}
+
+static void test_composer_entry_same_app_multi_thread_isolation(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* entry_1;
+  nr_composer_thread_entry_t* entry_2;
+
+  app.composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+
+  entry_1 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  entry_2 = nr_app_get_or_create_thread_composer_entry(&app, 2);
+
+  entry_1->status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  entry_1->epoch = 3;
+
+  tlib_pass_if_int_equal("thread 2 unaffected by thread 1's completion",
+                         NR_COMPOSER_API_STATUS_UNSET, entry_2->status);
+  tlib_pass_if_uint64_t_equal("thread 2 epoch unaffected", 0, entry_2->epoch);
+
+  nr_hashmap_destroy(&app.composer_map);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1288,7 +1536,9 @@ void test_main(void* p NRUNUSED) {
 
   test_app_match();
   test_find_or_add_app();
+  test_app_find_locked();
   test_find_or_add_app_high_security_mismatch();
+  test_find_locked_high_security_mismatch();
   test_agent_should_do_app_daemon_query();
   test_agent_find_or_add_app();
   test_verify_id();
@@ -1305,4 +1555,9 @@ void test_main(void* p NRUNUSED) {
   test_get_or_create_thread_harvest();
   test_sync_harvest_config();
   test_get_or_create_thread_rnd();
+  test_get_or_create_thread_composer_entry();
+  test_app_tid_maps_evict();
+  test_app_tid_maps_destroy();
+  test_composer_entry_cross_app_isolation();
+  test_composer_entry_same_app_multi_thread_isolation();
 }

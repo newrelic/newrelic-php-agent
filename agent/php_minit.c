@@ -128,7 +128,8 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
   /*
    * Remove this thread's per-thread harvest stats entry from every app's
    * harvest_map so it is not left dangling after the thread exits.
-   * Also removes the per-thread RNG state entry from rnd_map.
+   * Also removes the per-thread RNG state entry from rnd_map and the
+   * per-thread Composer detection status entry from composer_map.
    */
   if (nr_agent_applist) {
     uint64_t key = (uint64_t)nr_gettid();
@@ -136,10 +137,9 @@ PHP_GSHUTDOWN_FUNCTION(newrelic) {
     nrt_mutex_lock(&nr_agent_applist->applist_lock);
     for (int i = 0; i < nr_agent_applist->num_apps; i++) {
       nrapp_t* app = nr_agent_applist->apps[i];
-      if (app && (app->harvest_map || app->rnd_map)) {
+      if (app && (app->harvest_map || app->rnd_map || app->composer_map)) {
         nrt_mutex_lock(&app->app_lock);
-        nr_hashmap_index_delete(app->harvest_map, key);
-        nr_hashmap_index_delete(app->rnd_map, key);
+        nr_app_tid_maps_evict(app, key);
         nrt_mutex_unlock(&app->app_lock);
       }
     }
@@ -476,7 +476,6 @@ PHP_MINIT_FUNCTION(newrelic) {
       = nr_php_check_for_upgrade_license_key();
   NR_PHP_PROCESS_GLOBALS(high_security) = 0;
   NR_PHP_PROCESS_GLOBALS(preload_framework_library_detection) = 1;
-  NR_PHP_PROCESS_GLOBALS(composer_api_status) = NR_COMPOSER_API_STATUS_UNSET;
   nr_php_populate_apache_process_globals();
   nr_php_api_distributed_trace_register_userland_class(TSRMLS_C);
   /*

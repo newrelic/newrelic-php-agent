@@ -1715,6 +1715,8 @@ static void test_begin(void) {
     nr_random_seed(rnd, 345345);
     nr_hashmap_index_set(app->rnd_map, (uint64_t)self, rnd);
   }
+  app->composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
   app->info.high_security = 0;
   app->connect_reply = nro_new_hash();
   app->security_policies = nro_new_hash();
@@ -1765,6 +1767,16 @@ static void test_begin(void) {
 
   rv = nr_txn_begin(app, opts, attribute_config, NULL);
   test_created_txn("options provided", rv, &correct);
+  tlib_pass_if_not_null("composer_info.entry populated by nr_txn_begin",
+                        rv->composer_info.entry);
+  tlib_pass_if_true(
+      "composer_info.entry points at this thread's composer_map entry",
+      rv->composer_info.entry
+          == nr_app_get_or_create_thread_composer_entry(app,
+                                                        (uint64_t)nr_gettid()),
+      "entry=%p", (void*)rv->composer_info.entry);
+  tlib_pass_if_uint64_t_equal("composer_pull_epoch starts at 0", 0,
+                              rv->composer_info.composer_pull_epoch);
   json = nr_attributes_debug_json(rv->attributes);
   tlib_pass_if_str_equal("display host attribute created", json,
                          "{\"user\":[],\"agent\":["
@@ -1934,6 +1946,7 @@ static void test_begin(void) {
   nro_delete(app->security_policies);
   nr_hashmap_destroy(&app->harvest_map);
   nr_hashmap_destroy(&app->rnd_map);
+  nr_hashmap_destroy(&app->composer_map);
   nr_attribute_config_destroy(&attribute_config);
 }
 
@@ -9175,15 +9188,21 @@ static void test_nr_txn_add_php_package(void) {
       "same package name, different version, add returns same pointer", p1, p2);
   nr_txn_destroy(&txn);
 
-  txn = new_txn(0);
-  // simulate composer api was successfully used
-  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
-  p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
-  tlib_pass_if_null(
-      "legacy package information not added to transaction after composer api "
-      "was called successfully",
-      p1);
-  nr_txn_destroy(&txn);
+  {
+    nr_composer_thread_entry_t composer_entry = {0};
+    composer_entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    txn = new_txn(0);
+    // simulate composer api was successfully used. new_txn()'s test app has
+    // composer_map == NULL, so txn->composer_info.entry is NULL after
+    // begin — point it at a local variable instead of relying on the map.
+    txn->composer_info.entry = &composer_entry;
+    p1 = nr_txn_add_php_package(txn, package_name1, package_version1);
+    tlib_pass_if_null(
+        "legacy package information not added to transaction after composer api "
+        "was called successfully",
+        p1);
+    nr_txn_destroy(&txn);
+  }
 }
 
 static void test_nr_txn_add_php_package_from_source(void) {
@@ -9250,28 +9269,274 @@ static void test_nr_txn_add_php_package_from_source(void) {
 
   nr_txn_destroy(&txn);
 
-  txn = new_txn(0);
-  // simulate composer api was successfully used
-  txn->composer_info.api_status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_LEGACY);
-  tlib_pass_if_null(
-      "legacy package information not added to transaction after composer api "
-      "was called successfully",
-      p1);
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_SUGGESTION);
-  tlib_pass_if_not_null(
-      "suggestion package information added to transaction even after composer "
-      "api was called successfully",
-      p1);
-  p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
-                                          NR_PHP_PACKAGE_SOURCE_COMPOSER);
-  tlib_pass_if_not_null(
-      "composer package information added to transaction even after composer "
-      "api was called successfully",
-      p1);
+  {
+    nr_composer_thread_entry_t composer_entry = {0};
+    composer_entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+    txn = new_txn(0);
+    // simulate composer api was successfully used. new_txn()'s test app has
+    // composer_map == NULL, so txn->composer_info.entry is NULL after
+    // begin — point it at a local variable instead of relying on the map.
+    txn->composer_info.entry = &composer_entry;
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_LEGACY);
+    tlib_pass_if_null(
+        "legacy package information not added to transaction after composer api "
+        "was called successfully",
+        p1);
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_SUGGESTION);
+    tlib_pass_if_not_null(
+        "suggestion package information added to transaction even after composer "
+        "api was called successfully",
+        p1);
+    p1 = nr_txn_add_php_package_from_source(txn, package_name1, package_version1,
+                                            NR_PHP_PACKAGE_SOURCE_COMPOSER);
+    tlib_pass_if_not_null(
+        "composer package information added to transaction even after composer "
+        "api was called successfully",
+        p1);
+    nr_txn_destroy(&txn);
+  }
+}
+
+static nrtxn_t* build_txn_with_composer_entry(
+    nr_composer_thread_entry_t* entry) {
+  nrtxn_t* txn = (nrtxn_t*)nr_zalloc(sizeof(nrtxn_t));
+  txn->php_packages = nr_php_packages_create();
+  txn->composer_info.entry = entry;
+  return txn;
+}
+
+static void test_txn_pull_composer_packages(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+  nr_php_package_t* p;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_pull_composer_packages(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_pull_composer_packages(txn);
   nr_txn_destroy(&txn);
+
+  /* Nothing new: epoch == last_sent_epoch, nothing pulled */
+  entry.epoch = 1;
+  entry.last_sent_epoch = 1;
+  entry.packages = nr_php_packages_create();
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("no-op: pull epoch stays 0", 0,
+                              txn->composer_info.composer_pull_epoch);
+  tlib_pass_if_null("no-op: nothing merged",
+                    nr_php_packages_get_package(txn->php_packages, "foo/bar"));
+
+  nr_txn_destroy(&txn);
+
+  /* Something new: epoch != last_sent_epoch, gets pulled */
+  entry.epoch = 2;
+  entry.last_sent_epoch = 1;
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "foo/bar", "1.2.3", NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("pull epoch now matches entry epoch", 2,
+                              txn->composer_info.composer_pull_epoch);
+  p = nr_php_packages_get_package(txn->php_packages, "foo/bar");
+  tlib_pass_if_not_null("package merged into txn", p);
+  if (p) {
+    tlib_pass_if_str_equal("version correct", "1.2.3", p->package_version);
+    tlib_pass_if_true("pulled package sourced as composer",
+                      NR_PHP_PACKAGE_SOURCE_COMPOSER == p->source_priority,
+                      "source_priority=%d", (int)p->source_priority);
+  }
+
+  nr_txn_destroy(&txn);
+
+  /* Pre-existing (e.g. legacy) package already in txn->php_packages must
+   * survive the pull: nr_txn_pull_composer_packages() iterates and re-adds
+   * composer packages one at a time, it never swaps the whole map, so an
+   * unrelated entry from this same request should be untouched. */
+  entry.epoch = 3;
+  entry.last_sent_epoch = 2;
+  txn = build_txn_with_composer_entry(&entry);
+  nr_txn_add_php_package_from_source(txn, "baz/qux", "9.9.9",
+                                     NR_PHP_PACKAGE_SOURCE_LEGACY);
+
+  nr_txn_pull_composer_packages(txn);
+  p = nr_php_packages_get_package(txn->php_packages, "baz/qux");
+  tlib_pass_if_not_null("pre-existing legacy package not clobbered by pull", p);
+  if (p) {
+    tlib_pass_if_str_equal("pre-existing package version untouched", "9.9.9",
+                           p->package_version);
+  }
+  p = nr_php_packages_get_package(txn->php_packages, "foo/bar");
+  tlib_pass_if_not_null("composer package still pulled alongside it", p);
+
+  nr_txn_destroy(&txn);
+
+  /* Same-txn scan already fired: composer_detected/autoload_detected are
+   * already true on this txn (as scan-time code would leave them), so the
+   * "detected" metric fallback below must not fire a second time even
+   * though real pull work is pending. */
+  entry.epoch = 4;
+  entry.last_sent_epoch = 3;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_detected = true;
+  txn->composer_info.autoload_detected = true;
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_int_equal(
+      "already-detected: no fallback metric added",
+      0, nrm_table_size(txn->unscoped_metrics));
+
+  nr_txn_destroy(&txn);
+
+  /* Bootstrap loss: composer_detected/autoload_detected are false (the
+   * scan ran with no live txn, so scan-time code never set them), and
+   * real pull work is pending -- the fallback must fire both metrics
+   * exactly once on this txn. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 4;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  test_txn_metric_is("fallback: Composer/detected fires once",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Supportability/library/Composer/detected", 1, 0, 0, 0,
+                     0, 0);
+  test_txn_metric_is("fallback: Autoloader/detected fires once",
+                     txn->unscoped_metrics, MET_FORCED,
+                     "Supportability/library/Autoloader/detected", 1, 0, 0, 0,
+                     0, 0);
+
+  nr_txn_destroy(&txn);
+
+  /* No real work: epoch == last_sent_epoch, so the early return happens
+   * before the fallback is ever reached, regardless of the flags' state. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 5;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->unscoped_metrics = nrm_table_create(2);
+
+  nr_txn_pull_composer_packages(txn);
+  tlib_pass_if_int_equal("no real work: fallback not reached", 0,
+                        nrm_table_size(txn->unscoped_metrics));
+
+  nr_txn_destroy(&txn);
+  nr_php_packages_destroy(&entry.packages);
+}
+
+static void test_txn_mark_composer_packages_sent(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_mark_composer_packages_sent(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_mark_composer_packages_sent(txn);
+  nr_txn_destroy(&txn);
+
+  /* Matching case: this txn's pulled epoch is still current -> marks sent */
+  entry.epoch = 3;
+  entry.last_sent_epoch = 1;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_pull_epoch = 3;
+
+  nr_txn_mark_composer_packages_sent(txn);
+  tlib_pass_if_uint64_t_equal("last_sent_epoch caught up", 3,
+                              entry.last_sent_epoch);
+  nr_txn_destroy(&txn);
+
+  /* Race case: a newer scan overwrote entry after this txn pulled ->
+   * leave last_sent_epoch alone */
+  entry.epoch = 4;
+  entry.last_sent_epoch = 1;
+  txn = build_txn_with_composer_entry(&entry);
+  txn->composer_info.composer_pull_epoch
+      = 3; /* stale relative to entry.epoch */
+
+  nr_txn_mark_composer_packages_sent(txn);
+  tlib_pass_if_uint64_t_equal("last_sent_epoch NOT advanced on race", 1,
+                              entry.last_sent_epoch);
+  nr_txn_destroy(&txn);
+}
+
+static void test_txn_discard_composer_packages(void) {
+  nr_composer_thread_entry_t entry = {0};
+  nrtxn_t* txn;
+
+  /*
+   * NULL parameters: ensure it does not crash
+   */
+  nr_txn_discard_composer_packages(NULL);
+  txn = build_txn_with_composer_entry(NULL);
+  nr_txn_discard_composer_packages(txn);
+  nr_txn_destroy(&txn);
+
+  /* Discard after a scan: pull never ran (composer_pull_epoch still 0),
+   * entry has a newer epoch than last_sent_epoch -- unlike
+   * nr_txn_mark_composer_packages_sent, this must still advance
+   * last_sent_epoch unconditionally, with no epoch-match gate. Since there
+   * was genuinely unsent data (epoch != last_sent_epoch going in), the
+   * entry's packages/status must also be reset back to as if the scan
+   * never happened. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 2;
+  entry.packages = nr_php_packages_create();
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "doctrine/orm", "2.5.0",
+                          NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  txn = build_txn_with_composer_entry(&entry);
+  /* composer_pull_epoch intentionally left at 0 -- pull never happened */
+
+  nr_txn_discard_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal(
+      "discard advances last_sent_epoch even though pull never ran", 5,
+      entry.last_sent_epoch);
+  tlib_pass_if_null("discard of unsent data destroys entry->packages",
+                    entry.packages);
+  tlib_pass_if_true(
+      "discard of unsent data resets entry->status to UNSET",
+      NR_COMPOSER_API_STATUS_UNSET == entry.status, "status=%d",
+      (int)entry.status);
+
+  nr_txn_destroy(&txn);
+
+  /* Already caught up: no-op beyond the (already-matching) epoch write --
+   * an unrelated discard on an already-sent thread must not destroy
+   * legitimate packages/status history. */
+  entry.epoch = 5;
+  entry.last_sent_epoch = 5;
+  entry.packages = nr_php_packages_create();
+  nr_php_packages_add_package(
+      entry.packages, nr_php_package_create_with_source(
+                          "doctrine/orm", "2.5.0",
+                          NR_PHP_PACKAGE_SOURCE_COMPOSER));
+  entry.status = NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED;
+  txn = build_txn_with_composer_entry(&entry);
+
+  nr_txn_discard_composer_packages(txn);
+  tlib_pass_if_uint64_t_equal("already caught up, stays caught up", 5,
+                              entry.last_sent_epoch);
+  tlib_pass_if_not_null(
+      "already caught up: entry->packages left untouched", entry.packages);
+  tlib_pass_if_true(
+      "already caught up: entry->status left untouched",
+      NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == entry.status, "status=%d",
+      (int)entry.status);
+
+  nr_txn_destroy(&txn);
+  nr_php_packages_destroy(&entry.packages);
 }
 
 static void test_nr_txn_suggest_package_supportability_metric(void) {
@@ -9434,5 +9699,8 @@ void test_main(void* p NRUNUSED) {
   test_txn_log_configuration();
   test_nr_txn_add_php_package();
   test_nr_txn_add_php_package_from_source();
+  test_txn_pull_composer_packages();
+  test_txn_mark_composer_packages_sent();
+  test_txn_discard_composer_packages();
   test_nr_txn_suggest_package_supportability_metric();
 }
