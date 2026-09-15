@@ -85,7 +85,20 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     return handlers;
   }
 
-  if (0 == nr_php_recording()) {
+  if (nrunlikely(0 == NR_PHP_PROCESS_GLOBALS(enabled))) {
+    // This should not happen - fcall_init callback is registered in MINIT,
+    // which does not execute if agent is globally disabled. Regardless of the
+    // unlikelihood, agent should not instrument anything when it is disabled.
+    return handlers;
+  }
+
+  if (0 == NRINI(enabled)) {
+    // Agent is globally enabled but disabled for this PHP request. In this
+    // case the agent should not do anything during this PHP request. This
+    // is safe because Zend caches whatever handlers returned here for the
+    // current PHP request only. New PHP request gets a fresh cache without
+    // inheriting anything from the previous request, i.e. fcall_init callback
+    // will be called again.
     return handlers;
   }
 
