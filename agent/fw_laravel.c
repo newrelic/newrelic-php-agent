@@ -522,10 +522,7 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
                                            const char* method,
                                            size_t method_len,
                                            nrspecialfn_t callback TSRMLS_DC) {
-  const char* class_name = NULL;
-  size_t class_name_len;
   zend_function* function = NULL;
-  const zend_class_entry* def_ce = NULL;
 
   if (NULL == ce) {
     nrl_verbosedebug(NRL_FRAMEWORK, "%s: class entry is NULL", __func__);
@@ -540,27 +537,12 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
                      method);
     return;
   }
-
-  /*
-   * Wrap the method on the class where it is defined, not the concrete
-   * subclass that may merely inherit it
-   */
-  def_ce = (NULL != function->common.scope) ? function->common.scope : ce;
-  class_name = nr_php_class_entry_name(def_ce);
-  class_name_len = nr_php_class_entry_name_length(def_ce);
-
-  char* class_method = nr_formatf("%.*s::%.*s", NRSAFELEN(class_name_len),
-                                  class_name, NRSAFELEN(method_len), method);
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      class_method, nr_strlen(class_method), callback, NULL, NULL);
+  nr_php_wrap_callable_before_after_clean(function, callback, NULL, NULL);
 #else
-  nr_php_wrap_user_function(class_method, nr_strlen(class_method),
-                            callback TSRMLS_CC);
+  nr_php_wrap_callable(function, callback);
 #endif
-  nr_free(class_method);
 }
 
 NR_PHP_WRAPPER(nr_laravel_application_boot) {
