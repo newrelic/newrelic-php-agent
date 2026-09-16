@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	codecproto "google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -79,7 +80,7 @@ func newGrpcSpanBatchSender(cfg *Config) (*grpcSpanBatchSender, error) {
 	if cfg.Secure {
 		cred = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	} else {
-		cred = grpc.WithInsecure()
+		cred = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
 	connectParams := grpc.ConnectParams{
@@ -90,7 +91,7 @@ func newGrpcSpanBatchSender(cfg *Config) (*grpcSpanBatchSender, error) {
 		},
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		cred,
 		grpc.WithConnectParams(connectParams),
