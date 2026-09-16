@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "nr_agent.h"
 #include "nr_commands.h"
@@ -444,6 +445,43 @@ end:
   return rv;
 }
 
+/*
+ * PROTOTYPE ONLY - soakmon detection-power calibration knob, not for
+ * shipping. Burns a fixed amount of actual CPU time (measured via
+ * CLOCK_THREAD_CPUTIME_ID, not wall clock) once per transaction, so a
+ * known synthetic overhead can be injected and used to check whether the
+ * soakmon sample-size-vs-noise formula predicts detection thresholds that
+ * hold up in a real run. A sleep()-based delay would inflate CPU-per-event
+ * only by shrinking the request-rate denominator, without spending any
+ * real CPU - this spins instead, so it costs actual CPU cycles the same
+ * way a real code change would.
+ *
+ * Hardcoded rather than env-var-driven to avoid needing a docker-compose /
+ * php-fpm env passthrough for this one-off calibration branch - baseline
+ * CPE measured at ~2,000,000 ns/request (8core/bookworm), so 20000ns ~= 1%,
+ * 100000ns ~= 5%. Edit this constant directly to switch which effect size
+ * is being calibrated for a given dispatch.
+ */
+#define NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS 100000L /* ~5% of baseline CPE */
+
+static void nr_test_burn_synthetic_cpu_overhead(void) {
+  long target_ns = NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS;
+  struct timespec start, now;
+  volatile unsigned long busywork = 1;
+
+  if (target_ns <= 0) {
+    return;
+  }
+
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
+  do {
+    busywork = busywork * 2654435761UL + 1;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &now);
+  } while (((now.tv_sec - start.tv_sec) * 1000000000L
+            + (now.tv_nsec - start.tv_nsec))
+           < target_ns);
+}
+
 nrtxn_t* nr_txn_begin(nrapp_t* app,
                       const nrtxnopt_t* opts,
                       const nr_attribute_config_t* attribute_config,
@@ -659,6 +697,8 @@ nrtxn_t* nr_txn_begin(nrapp_t* app,
     priority += 1.0;
   }
   nr_distributed_trace_set_priority(nt->distributed_trace, priority);
+
+  nr_test_burn_synthetic_cpu_overhead();
 
   nr_free(guid);
 
