@@ -459,10 +459,10 @@ end:
  * Hardcoded rather than env-var-driven to avoid needing a docker-compose /
  * php-fpm env passthrough for this one-off calibration branch - baseline
  * CPE measured at ~2,000,000 ns/request (8core/bookworm), so 20000ns ~= 1%,
- * 100000ns ~= 5%. Edit this constant directly to switch which effect size
- * is being calibrated for a given dispatch.
+ * 100000ns ~= 5%, 200000ns ~= 10%. Edit this constant directly to switch
+ * which effect size is being calibrated for a given dispatch.
  */
-#define NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS 100000L /* ~5% of baseline CPE */
+#define NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS 200000L /* ~10% of baseline CPE */
 
 static void nr_test_burn_synthetic_cpu_overhead(void) {
   long target_ns = NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS;
