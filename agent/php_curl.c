@@ -671,6 +671,9 @@ void nr_php_curl_exec_pre(zval* curlres,
   if (nr_php_curl_should_instrument_proto(uri)
       && (0 == nr_guzzle_in_call_stack(TSRMLS_C))) {
     segment = nr_segment_start(NRPRG(txn), parent, async_context);
+    if (NULL != segment) {
+      segment->consider_for_blocking = true;
+    }
     nr_php_curl_md_set_segment(curlres, segment TSRMLS_CC);
   }
 
@@ -760,7 +763,9 @@ void nr_php_curl_multi_exec_pre(zval* curlres TSRMLS_DC) {
     segment = nr_segment_start(
         NRPRG(txn), nr_txn_get_current_segment_txn_context(NRPRG(txn)),
         nr_php_curl_multi_md_get_async_context(curlres TSRMLS_CC));
-
+    if (NULL != segment) {
+      segment->consider_for_blocking = true;
+    }
     nr_segment_set_name(segment, "curl_multi_exec");
     nr_php_curl_multi_md_set_segment(curlres, segment TSRMLS_CC);
 

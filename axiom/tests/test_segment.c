@@ -2024,6 +2024,140 @@ static void test_segment_tree_to_heap(void) {
   nr_free(maxi);
 }
 
+static void test_segment_tree_to_heap_consider_for_blocking(void) {
+  nr_segment_tree_to_heap_metadata_t heaps
+      = {.trace_heap = NULL, .span_heap = NULL};
+  nr_segment_t* root;
+  nr_segment_t* child;
+
+  /*
+   * Test : A child on a different async_context than its parent, with
+   * consider_for_blocking left at its default (false), should still be
+   * subtracted from the parent's exclusive time - i.e. treated like an
+   * ordinary same-context (blocking) child.
+   */
+  root = nr_zalloc(sizeof(nr_segment_t));
+  child = nr_zalloc(sizeof(nr_segment_t));
+
+  root->start_time = 0;
+  root->stop_time = 100;
+  root->async_context = 0;
+
+  child->start_time = 10;
+  child->stop_time = 50;
+  child->async_context = 99;
+
+  nr_segment_children_init(&root->children);
+  nr_segment_add_child(root, child);
+
+  heaps.trace_heap
+      = nr_segment_heap_create(2, nr_segment_wrapped_duration_comparator);
+  heaps.span_heap
+      = nr_segment_heap_create(2, nr_segment_wrapped_duration_comparator);
+  nr_segment_tree_to_heap(root, &heaps);
+
+  tlib_pass_if_time_equal(
+      "a cross-async_context child with consider_for_blocking=false "
+      "(default) should still be subtracted from its parent's exclusive "
+      "time",
+      60, nr_exclusive_time_calculate(root->exclusive_time));
+
+  nr_minmax_heap_destroy(&heaps.trace_heap);
+  nr_minmax_heap_destroy(&heaps.span_heap);
+  nr_segment_destroy_tree(root);
+  nr_free(root);
+  nr_free(child);
+
+  /*
+   * Test : The same cross-async_context child, but with
+   * consider_for_blocking explicitly set true, should NOT be subtracted
+   * from the parent's exclusive time - this is what curl_multi, Guzzle,
+   * and Predis rely on for segments representing genuinely concurrent
+   * work.
+   */
+  root = nr_zalloc(sizeof(nr_segment_t));
+  child = nr_zalloc(sizeof(nr_segment_t));
+
+  root->start_time = 0;
+  root->stop_time = 100;
+  root->async_context = 0;
+
+  child->start_time = 10;
+  child->stop_time = 50;
+  child->async_context = 99;
+  child->consider_for_blocking = true;
+
+  nr_segment_children_init(&root->children);
+  nr_segment_add_child(root, child);
+
+  heaps.trace_heap
+      = nr_segment_heap_create(2, nr_segment_wrapped_duration_comparator);
+  heaps.span_heap
+      = nr_segment_heap_create(2, nr_segment_wrapped_duration_comparator);
+  nr_segment_tree_to_heap(root, &heaps);
+
+  tlib_pass_if_time_equal(
+      "a cross-async_context child with consider_for_blocking=true should "
+      "NOT be subtracted from its parent's exclusive time",
+      100, nr_exclusive_time_calculate(root->exclusive_time));
+
+  nr_minmax_heap_destroy(&heaps.trace_heap);
+  nr_minmax_heap_destroy(&heaps.span_heap);
+  nr_segment_destroy_tree(root);
+  nr_free(root);
+  nr_free(child);
+}
+
+static void test_segment_amend_stop_with_suspend_time(void) {
+  /*
+   * Test : No suspend time is a no-op.
+   */
+  tlib_pass_if_time_equal("no suspend time is a no-op", 50,
+                          nr_segment_amend_stop_with_suspend_time(10, 50, 0));
+
+  /*
+   * Test : suspend_time within the segment's own span is simply subtracted.
+   */
+  tlib_pass_if_time_equal("suspend_time within the segment's span", 35,
+                          nr_segment_amend_stop_with_suspend_time(10, 50, 15));
+
+  /*
+   * Test : suspend_time exactly equal to the duration clamps to start_time.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time equal to duration clamps to start_time", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 40));
+
+  /*
+   * Test : suspend_time moderately larger than the duration, but still
+   *        less than stop_time, clamps to start_time. This case already
+   *        worked before this fix.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time moderately larger than duration clamps", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 45));
+
+  /*
+   * Test : suspend_time larger than stop_time itself. Regression test:
+   *        stop_time - suspend_time underflows nrtime_t (unsigned), which
+   *        used to produce a huge wrapped value that evaded the old
+   *        post-subtraction clamp check instead of clamping to
+   *        start_time.
+   */
+  tlib_pass_if_time_equal(
+      "suspend_time larger than stop_time clamps, no underflow", 10,
+      nr_segment_amend_stop_with_suspend_time(10, 50, 60));
+
+  /*
+   * Test : An already-invalid raw span (stop_time before start_time) is
+   *        left untouched by suspend_time, so callers' own
+   *        start_time-vs-stop_time checks still catch it.
+   */
+  tlib_pass_if_time_equal(
+      "an already-invalid raw span is left untouched by suspend_time", 5,
+      nr_segment_amend_stop_with_suspend_time(10, 5, 3));
+}
+
 static void test_segment_set(void) {
   nr_set_t* set;
 
@@ -3279,6 +3413,8 @@ void test_main(void* p NRUNUSED) {
   test_segment_discard_keep_metrics_while_running();
   test_segment_discard_keep_metrics_no_exclusive();
   test_segment_tree_to_heap();
+  test_segment_tree_to_heap_consider_for_blocking();
+  test_segment_amend_stop_with_suspend_time();
   test_segment_set();
   test_segment_heap_to_set();
   test_segment_set_parent_cycle();

@@ -7,6 +7,7 @@
 #include "nr_exclusive_time_private.h"
 
 #include "nr_axiom.h"
+#include "nr_segment.h"
 #include "util_logging.h"
 #include "util_memory.h"
 #include "util_sort.h"
@@ -15,7 +16,8 @@
 bool nr_exclusive_time_ensure(nr_exclusive_time_t** et_ptr,
                               size_t child_segments,
                               nrtime_t start_time,
-                              nrtime_t stop_time) {
+                              nrtime_t stop_time,
+                              nrtime_t suspend_time) {
   nr_exclusive_time_t* et;
   size_t unused;
 
@@ -28,7 +30,7 @@ bool nr_exclusive_time_ensure(nr_exclusive_time_t** et_ptr,
    * new one.
    */
   if (NULL == *et_ptr) {
-    (*et_ptr) = nr_exclusive_time_create(child_segments, start_time, stop_time);
+    (*et_ptr) = nr_exclusive_time_create(child_segments, start_time, stop_time, suspend_time);
     return (NULL != *et_ptr);
   }
 
@@ -39,6 +41,8 @@ bool nr_exclusive_time_ensure(nr_exclusive_time_t** et_ptr,
    */
   et->start_time = start_time;
   et->stop_time = stop_time;
+  et->suspend_time = suspend_time;
+
 
   /*
    * Ensure the given number of children can be added to the exclusive
@@ -66,15 +70,18 @@ bool nr_exclusive_time_ensure(nr_exclusive_time_t** et_ptr,
 
 nr_exclusive_time_t* nr_exclusive_time_create(size_t child_segments,
                                               nrtime_t start_time,
-                                              nrtime_t stop_time) {
+                                              nrtime_t stop_time,
+                                              nrtime_t suspend_time) {
   nr_exclusive_time_t* et;
 
   et = nr_malloc(sizeof(nr_exclusive_time_t)
                  + sizeof(nr_exclusive_time_transition_t) * child_segments * 2);
   et->start_time = start_time;
   et->stop_time = stop_time;
+  et->suspend_time = suspend_time;
   et->transitions.capacity = child_segments * 2;
   et->transitions.used = 0;
+
 
   return et;
 }
@@ -91,12 +98,15 @@ bool nr_exclusive_time_destroy(nr_exclusive_time_t** et_ptr) {
 
 bool nr_exclusive_time_add_child(nr_exclusive_time_t* parent_et,
                                  nrtime_t start_time,
-                                 nrtime_t stop_time) {
+                                 nrtime_t stop_time,
+                                 nrtime_t suspend_time) {
   if (nrunlikely(NULL == parent_et
                  || (parent_et->transitions.used + 2)
                         > parent_et->transitions.capacity)) {
     return false;
   }
+
+  stop_time = nr_segment_amend_stop_with_suspend_time(start_time, stop_time, suspend_time);
 
   if (start_time > stop_time) {
     nrl_verbosedebug(NRL_TXN,
@@ -168,6 +178,8 @@ nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et) {
   nrtime_t exclusive_time;
   size_t i;
   nrtime_t last_start = 0;
+  nrtime_t amended_stop_time = 0;
+  nrtime_t amended_duration = 0;
 
   if (nrunlikely(NULL == et)) {
     return 0;
@@ -177,8 +189,11 @@ nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et) {
     return 0;
   }
 
+  amended_stop_time = nr_segment_amend_stop_with_suspend_time(et->start_time, et->stop_time, et->suspend_time);
+  amended_duration = nr_time_duration(et->start_time, amended_stop_time);
+
   if (0 == et->transitions.used) {
-    return nr_time_duration(et->start_time, et->stop_time);
+    return amended_duration;
   }
 
   /*
@@ -196,7 +211,7 @@ nrtime_t nr_exclusive_time_calculate(nr_exclusive_time_t* et) {
    * was doing stuff. So we'll start by setting the exclusive time to be the
    * full duration of the segment.
    */
-  exclusive_time = nr_time_duration(et->start_time, et->stop_time);
+  exclusive_time = amended_duration;
 
   for (i = 0; i < et->transitions.used; i++) {
     const nrtime_t time = et->transitions.transitions[i].time;

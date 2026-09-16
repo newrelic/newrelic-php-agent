@@ -26,7 +26,7 @@ static void test_create_destroy(void) {
   /*
    * Test : Normal operation.
    */
-  et = nr_exclusive_time_create(10, 1, 2);
+  et = nr_exclusive_time_create(10, 1, 2, 0);
   tlib_pass_if_not_null("create should succeed", et);
   tlib_pass_if_time_equal("create should set the start time", 1,
                           et->start_time);
@@ -44,7 +44,7 @@ static void test_create_destroy(void) {
   /*
    * Test : No children.
    */
-  et = nr_exclusive_time_create(0, 1, 2);
+  et = nr_exclusive_time_create(0, 1, 2, 0);
   tlib_pass_if_not_null("create should succeed", et);
   tlib_pass_if_time_equal("create should set the start time", 1,
                           et->start_time);
@@ -67,7 +67,7 @@ static void test_ensure(void) {
    * Create a new exclusive time with capacity 3.
    */
   tlib_pass_if_bool_equal("ensure should succeed", true,
-                          nr_exclusive_time_ensure(&et, 3, 1, 2));
+                          nr_exclusive_time_ensure(&et, 3, 1, 2, 0));
   tlib_pass_if_not_null("ensure should succeed", et);
   tlib_pass_if_time_equal("ensure should set the start time", 1,
                           et->start_time);
@@ -82,9 +82,9 @@ static void test_ensure(void) {
    * Add 2 children.
    */
   tlib_pass_if_bool_equal("add first child", true,
-                          nr_exclusive_time_add_child(et, 1, 2));
+                          nr_exclusive_time_add_child(et, 1, 2, 0));
   tlib_pass_if_bool_equal("add second child", true,
-                          nr_exclusive_time_add_child(et, 1, 2));
+                          nr_exclusive_time_add_child(et, 1, 2, 0));
   tlib_pass_if_size_t_equal("ensure should ensure an empty transitions array",
                             4, et->transitions.used);
 
@@ -93,7 +93,7 @@ static void test_ensure(void) {
    * should enlarge the capacity to 5.
    */
   tlib_pass_if_bool_equal("ensure should succeed", true,
-                          nr_exclusive_time_ensure(&et, 3, 1, 9));
+                          nr_exclusive_time_ensure(&et, 3, 1, 9, 0));
   tlib_pass_if_not_null("ensure should succeed", et);
   tlib_pass_if_time_equal("ensure should set the start time", 1,
                           et->start_time);
@@ -115,36 +115,36 @@ static void test_add_child(void) {
   /*
    * Test : Bad parameters.
    */
-  et = nr_exclusive_time_create(3, 1, 4);
+  et = nr_exclusive_time_create(3, 1, 4, 0);
 
   tlib_pass_if_bool_equal("a child cannot be added to a NULL exclusive time",
-                          false, nr_exclusive_time_add_child(NULL, 1, 2));
+                          false, nr_exclusive_time_add_child(NULL, 1, 2, 0));
   tlib_pass_if_bool_equal(
       "a child cannot be added with a start time after its stop time", false,
-      nr_exclusive_time_add_child(et, 2, 1));
+      nr_exclusive_time_add_child(et, 2, 1, 0));
 
   nr_exclusive_time_destroy(&et);
 
   /*
    * Test : No children.
    */
-  et = nr_exclusive_time_create(0, 1, 4);
+  et = nr_exclusive_time_create(0, 1, 4, 0);
 
   tlib_pass_if_bool_equal(
       "a child cannot be added if there were no children defined", false,
-      nr_exclusive_time_add_child(et, 1, 2));
+      nr_exclusive_time_add_child(et, 1, 2, 0));
 
   nr_exclusive_time_destroy(&et);
 
   /*
    * Test : Normal operation.
    */
-  et = nr_exclusive_time_create(5, 1, 4);
+  et = nr_exclusive_time_create(5, 1, 4, 0);
 
   tlib_pass_if_bool_equal(
       "adding a child completely within the bounds of the parent should "
       "succeed",
-      true, nr_exclusive_time_add_child(et, 2, 3));
+      true, nr_exclusive_time_add_child(et, 2, 3, 0));
   tlib_pass_if_size_t_equal("adding a normal child should add two transitions",
                             2, et->transitions.used);
 
@@ -164,7 +164,7 @@ static void test_add_child(void) {
 
   tlib_pass_if_bool_equal(
       "adding a child with the exact bounds of the parent should succeed", true,
-      nr_exclusive_time_add_child(et, 1, 4));
+      nr_exclusive_time_add_child(et, 1, 4, 0));
   tlib_pass_if_size_t_equal("adding a normal child should add two transitions",
                             4, et->transitions.used);
 
@@ -184,7 +184,7 @@ static void test_add_child(void) {
 
   tlib_pass_if_bool_equal(
       "adding a child with the same start and stop time should succeed", true,
-      nr_exclusive_time_add_child(et, 1, 1));
+      nr_exclusive_time_add_child(et, 1, 1, 0));
   tlib_pass_if_size_t_equal("adding a normal child should add two transitions",
                             6, et->transitions.used);
 
@@ -203,12 +203,12 @@ static void test_add_child(void) {
                           trans->time);
 
   tlib_pass_if_bool_equal("adding a child before the parent should succeed",
-                          true, nr_exclusive_time_add_child(et, 0, 0));
+                          true, nr_exclusive_time_add_child(et, 0, 0, 0));
   tlib_pass_if_size_t_equal("adding a child before the parent should succeed",
                             8, et->transitions.used);
 
   tlib_pass_if_bool_equal("adding a child after the parent should succeed",
-                          true, nr_exclusive_time_add_child(et, 5, 5));
+                          true, nr_exclusive_time_add_child(et, 5, 5, 0));
   tlib_pass_if_size_t_equal("adding a child after the parent should succeed",
                             10, et->transitions.used);
 
@@ -227,7 +227,7 @@ static void test_calculate(void) {
   /*
    * Test : Exclusive time with start time after stop time.
    */
-  et = nr_exclusive_time_create(10, 50, 10);
+  et = nr_exclusive_time_create(10, 50, 10, 0);
 
   tlib_pass_if_time_equal(
       "start time after stop time should return an exclusive time of 0", 0,
@@ -238,7 +238,7 @@ static void test_calculate(void) {
   /*
    * Test : Empty exclusive time.
    */
-  et = nr_exclusive_time_create(10, 10, 50);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
 
   tlib_pass_if_time_equal(
       "a segment with no children should have its entire duration attributed "
@@ -256,9 +256,9 @@ static void test_calculate(void) {
    *                     Child----->
    *                                    Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 20, 30);
-  nr_exclusive_time_add_child(et, 35, 45);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 20, 30, 0);
+  nr_exclusive_time_add_child(et, 35, 45, 0);
 
   tlib_pass_if_time_equal("synchronous children", 20,
                           nr_exclusive_time_calculate(et));
@@ -274,9 +274,9 @@ static void test_calculate(void) {
    *                     Child----->
    *                               Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 20, 30);
-  nr_exclusive_time_add_child(et, 30, 40);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 20, 30, 0);
+  nr_exclusive_time_add_child(et, 30, 40, 0);
 
   tlib_pass_if_time_equal("synchronous children with separation anxiety", 20,
                           nr_exclusive_time_calculate(et));
@@ -291,9 +291,9 @@ static void test_calculate(void) {
    *                     C
    *                               C
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 20, 20);
-  nr_exclusive_time_add_child(et, 30, 30);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 20, 20, 0);
+  nr_exclusive_time_add_child(et, 30, 30, 0);
 
   tlib_pass_if_time_equal("wee bairns", 40, nr_exclusive_time_calculate(et));
 
@@ -308,9 +308,9 @@ static void test_calculate(void) {
    *                     Child----->
    *                          Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 20, 30);
-  nr_exclusive_time_add_child(et, 25, 35);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 20, 30, 0);
+  nr_exclusive_time_add_child(et, 25, 35, 0);
 
   tlib_pass_if_time_equal("asynchronous children", 25,
                           nr_exclusive_time_calculate(et));
@@ -327,9 +327,9 @@ static void test_calculate(void) {
    *      Child----->
    *           Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 5, 15);
-  nr_exclusive_time_add_child(et, 10, 20);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 5, 15, 0);
+  nr_exclusive_time_add_child(et, 10, 20, 0);
 
   tlib_pass_if_time_equal("asynchronous children who have partially left home",
                           30, nr_exclusive_time_calculate(et));
@@ -346,9 +346,9 @@ static void test_calculate(void) {
    *                                              Child----->
    *           Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 45, 55);
-  nr_exclusive_time_add_child(et, 10, 20);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 45, 55, 0);
+  nr_exclusive_time_add_child(et, 10, 20, 0);
 
   tlib_pass_if_time_equal("asynchronous children who have partially left home",
                           25, nr_exclusive_time_calculate(et));
@@ -362,8 +362,8 @@ static void test_calculate(void) {
    *           Parent---------------------------------->
    *      Child--------------------------------------------->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
-  nr_exclusive_time_add_child(et, 5, 55);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
+  nr_exclusive_time_add_child(et, 5, 55, 0);
 
   tlib_pass_if_time_equal("time travelling, long lived children", 0,
                           nr_exclusive_time_calculate(et));
@@ -378,7 +378,7 @@ static void test_calculate(void) {
    * Child>
    *                                                        Child----->
    */
-  et = nr_exclusive_time_create(10, 10, 50);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
 
   et->transitions.transitions[et->transitions.used++]
       = (nr_exclusive_time_transition_t){
@@ -412,7 +412,7 @@ static void test_calculate(void) {
   /*
    * Test : One CHILD_START only, which should be effectively ignored.
    */
-  et = nr_exclusive_time_create(10, 10, 50);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
 
   et->transitions.transitions[et->transitions.used++]
       = (nr_exclusive_time_transition_t){
@@ -428,7 +428,7 @@ static void test_calculate(void) {
   /*
    * Test : One CHILD_STOP only, which should be effectively ignored.
    */
-  et = nr_exclusive_time_create(10, 10, 50);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
 
   et->transitions.transitions[et->transitions.used++]
       = (nr_exclusive_time_transition_t){
@@ -449,7 +449,7 @@ static void test_calculate(void) {
    *        not a valid value within the enum. If we get weird behaviour when
    *        we port this to some weird mainframe, it's probably that.
    */
-  et = nr_exclusive_time_create(10, 10, 50);
+  et = nr_exclusive_time_create(10, 10, 50, 0);
 
   et->transitions.transitions[et->transitions.used++]
       = (nr_exclusive_time_transition_t){
@@ -459,6 +459,55 @@ static void test_calculate(void) {
 
   tlib_pass_if_time_equal("not a child at all; maybe a dog", 40,
                           nr_exclusive_time_calculate(et));
+
+  nr_exclusive_time_destroy(&et);
+
+  /*
+   * Test : suspend_time is excluded from a childless segment's exclusive
+   *        time, same as its duration.
+   *
+   * time ->   10                                        50
+   *           Parent----------------------------------->
+   *                                              ^suspended for 15
+   */
+  et = nr_exclusive_time_create(10, 10, 50, 15);
+
+  tlib_pass_if_time_equal(
+      "suspend_time should be excluded from a childless segment's "
+      "exclusive time",
+      25, nr_exclusive_time_calculate(et));
+
+  nr_exclusive_time_destroy(&et);
+
+  /*
+   * Test : suspend_time shrinks the base duration before children are
+   *        subtracted, but otherwise exclusive time is calculated as
+   *        normal.
+   */
+  et = nr_exclusive_time_create(10, 10, 50, 10);
+  nr_exclusive_time_add_child(et, 20, 30, 0);
+
+  tlib_pass_if_time_equal(
+      "suspend_time on the parent should reduce the base duration used for "
+      "exclusive time, before the child is subtracted",
+      20, nr_exclusive_time_calculate(et));
+
+  nr_exclusive_time_destroy(&et);
+
+  /*
+   * Test : a child larger than the parent's suspend-reduced exclusive time
+   *        budget clamps to 0 exclusive time (the "this should be
+   *        impossible" guard) rather than underflowing. This is what
+   *        happens if a segment's suspend_time is wrong for its actual
+   *        span - e.g. a fiber incorrectly marked as self-suspended.
+   */
+  et = nr_exclusive_time_create(10, 10, 50, 30);
+  nr_exclusive_time_add_child(et, 10, 50, 0);
+
+  tlib_pass_if_time_equal(
+      "a child larger than the suspend-reduced exclusive time budget "
+      "should clamp to 0",
+      0, nr_exclusive_time_calculate(et));
 
   nr_exclusive_time_destroy(&et);
 }

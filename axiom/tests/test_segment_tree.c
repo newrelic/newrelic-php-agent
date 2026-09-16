@@ -466,15 +466,19 @@ static void test_finalise_total_time(void) {
   a = nr_segment_start(&txn, root, "1");
   nr_segment_set_name(a, "a");
   nr_segment_set_timing(a, 10 * NR_TIME_DIVISOR_MS, 30 * NR_TIME_DIVISOR_MS);
+  a->consider_for_blocking = true;
   b = nr_segment_start(&txn, a, "1");
   nr_segment_set_name(b, "b");
   nr_segment_set_timing(b, 20 * NR_TIME_DIVISOR_MS, 20 * NR_TIME_DIVISOR_MS);
+  b->consider_for_blocking = true;
   c = nr_segment_start(&txn, root, "2");
   nr_segment_set_name(c, "c");
   nr_segment_set_timing(c, 10 * NR_TIME_DIVISOR_MS, 30 * NR_TIME_DIVISOR_MS);
+  c->consider_for_blocking = true;
   d = nr_segment_start(&txn, c, "2");
   nr_segment_set_name(d, "d");
   nr_segment_set_timing(d, 30 * NR_TIME_DIVISOR_MS, 20 * NR_TIME_DIVISOR_MS);
+  d->consider_for_blocking = true;
 
   nr_segment_end(&a);
   nr_segment_end(&b);
@@ -593,15 +597,19 @@ static void test_finalise_total_time_discounted_async(void) {
   a = nr_segment_start(&txn, root, "1");
   nr_segment_set_name(a, "a");
   nr_segment_set_timing(a, 10 * NR_TIME_DIVISOR_MS, 30 * NR_TIME_DIVISOR_MS);
+  a->consider_for_blocking = true;
   b = nr_segment_start(&txn, a, "1");
   nr_segment_set_name(b, "b");
   nr_segment_set_timing(b, 20 * NR_TIME_DIVISOR_MS, 20 * NR_TIME_DIVISOR_MS);
+  b->consider_for_blocking = true;
   c = nr_segment_start(&txn, root, "2");
   nr_segment_set_name(c, "c");
   nr_segment_set_timing(c, 10 * NR_TIME_DIVISOR_MS, 30 * NR_TIME_DIVISOR_MS);
+  c->consider_for_blocking = true;
   d = nr_segment_start(&txn, c, "2");
   nr_segment_set_name(d, "d");
   nr_segment_set_timing(d, 30 * NR_TIME_DIVISOR_MS, 20 * NR_TIME_DIVISOR_MS);
+  d->consider_for_blocking = true;
 
   nr_segment_end(&a);
   nr_segment_end(&b);
