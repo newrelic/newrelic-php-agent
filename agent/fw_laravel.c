@@ -533,8 +533,8 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
   if (NULL == function) {
     nrl_verbosedebug(NRL_FRAMEWORK, "cannot get function entry for %.*s::%.*s",
                      NRSAFELEN(nr_php_class_entry_name_length(ce)),
-                     nr_php_class_entry_name(ce), NRSAFELEN(method_len),
-                     method);
+                     NRSAFESTR(nr_php_class_entry_name(ce)),
+                     NRSAFELEN(method_len), NRSAFESTR(method));
     return;
   }
 
