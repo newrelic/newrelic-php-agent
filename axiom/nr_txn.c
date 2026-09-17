@@ -463,7 +463,7 @@ end:
  * directly to switch which effect size is being calibrated for a given
  * dispatch.
  */
-#define NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS 500000L /* ~25% of baseline CPE */
+#define NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS 40000L /* ~2% of baseline CPE */
 
 static void nr_test_burn_synthetic_cpu_overhead(void) {
   long target_ns = NR_TEST_SYNTHETIC_CPU_OVERHEAD_NS;
