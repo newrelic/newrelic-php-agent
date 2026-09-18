@@ -112,7 +112,9 @@ nr_segment_t* nr_guzzle_obj_add(const zval* obj,
   segment = nr_segment_start(NRPRG(txn),
                              nr_txn_get_current_segment_txn_context(NRPRG(txn)),
                              async_context);
-
+  if (NULL != segment) {
+    segment->consider_for_blocking = true;
+  }
   nr_free(async_context);
   NRTXN(current_async_context) = old_context;
 

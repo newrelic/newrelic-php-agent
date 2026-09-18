@@ -875,7 +875,7 @@ static void test_create_duration_metrics(void) {
   txn->segment_root = nr_segment_start(txn, NULL, NULL);
   txn->segment_root->start_time = 0;
   txn->segment_root->stop_time = duration;
-  txn->segment_root->exclusive_time = nr_exclusive_time_create(16, 0, duration);
+  txn->segment_root->exclusive_time = nr_exclusive_time_create(16, 0, duration, 0);
 
   /*
    * Test : Bad Params.  Should not blow up.
@@ -886,7 +886,7 @@ static void test_create_duration_metrics(void) {
   /*
    * Test : Web Transaction
    */
-  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 111);
+  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 111, 0);
   txn->unscoped_metrics = nrm_table_create(2);
   txn->name = "WebTransaction/Action/not_words";
   nr_txn_create_duration_metrics(txn, duration, total_time);
@@ -910,7 +910,7 @@ static void test_create_duration_metrics(void) {
   /*
    * Test : Web Transaction No Exclusive
    */
-  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 1000);
+  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 1000, 0);
   txn->unscoped_metrics = nrm_table_create(2);
   nr_txn_create_duration_metrics(txn, duration, total_time);
   test_txn_metric_is("web txn no exclusive", txn->unscoped_metrics, MET_FORCED,
@@ -955,8 +955,8 @@ static void test_create_duration_metrics(void) {
    * Background Task
    */
   nr_exclusive_time_destroy(&txn->segment_root->exclusive_time);
-  txn->segment_root->exclusive_time = nr_exclusive_time_create(16, 0, duration);
-  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 111);
+  txn->segment_root->exclusive_time = nr_exclusive_time_create(16, 0, duration, 0);
+  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 111, 0);
   txn->status.background = 1;
   txn->name = "WebTransaction/Action/not_words";
   txn->unscoped_metrics = nrm_table_create(2);
@@ -976,7 +976,7 @@ static void test_create_duration_metrics(void) {
   /*
    * Background Task No Exclusive
    */
-  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 1111);
+  nr_exclusive_time_add_child(txn->segment_root->exclusive_time, 0, 1111, 0);
   txn->status.background = 1;
   txn->unscoped_metrics = nrm_table_create(2);
   nr_txn_create_duration_metrics(txn, duration, total_time);
@@ -6193,7 +6193,7 @@ static void test_txn_accept_distributed_trace_payload_metrics(void) {
 
   txn.segment_slab = nr_slab_create(sizeof(nr_segment_t), 0);
   txn.segment_root = nr_segment_start(&txn, NULL, NULL);
-  txn.segment_root->exclusive_time = nr_exclusive_time_create(16, 0, 999);
+  txn.segment_root->exclusive_time = nr_exclusive_time_create(16, 0, 999, 0);
 
   txn.unscoped_metrics = nrm_table_create(2);
   txn.distributed_trace = nr_distributed_trace_create();

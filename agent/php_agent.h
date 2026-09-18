@@ -470,6 +470,17 @@ extern const zend_function* nr_php_get_caller(NR_EXECUTE_PROTO,
 extern zval* nr_php_get_active_php_variable(const char* name TSRMLS_DC);
 
 /*
+ * Purpose : Return a compiled PHP variable from the function.
+ *
+ * Params  : 1. The execute data for the current function.
+ *           2. The name of the variable.
+ *
+ * Returns : The variable, or NULL if the variable can't be found.
+ */
+extern zval* nr_get_func_cv_by_name(zend_execute_data* execute_data,
+                                    const char* target_name TSRMLS_DC);
+
+/*
  * Purpose : Silence errors, but save the previous state.
  *
  * Returns : The previous error reporting setting.

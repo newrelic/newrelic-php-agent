@@ -88,6 +88,7 @@ TEST_BINARIES = \
 	tests/test_fibers \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
+	tests/test_fw_laravel \
 	tests/test_fw_laravel_queue \
 	tests/test_fw_support \
 	tests/test_fw_wordpress \
@@ -109,6 +110,7 @@ TEST_BINARIES = \
         tests/test_php_error \
 	tests/test_php_execute \
 	tests/test_php_minit \
+	tests/test_php_observer \
 	tests/test_php_stack \
 	tests/test_php_stacked_segment \
 	tests/test_php_txn \
@@ -285,6 +287,8 @@ TEST_LDFLAGS := $(shell $(PHP_CONFIG) --ldflags) $(EXPORT_DYNAMIC)
 TEST_LDFLAGS += $(USER_LDFLAGS)
 CROSS_AGENT_DIR := $(CURDIR)/../axiom/tests/cross_agent_tests
 EXTRA_CFLAGS += -DCROSS_AGENT_TESTS_DIR="\"$(CROSS_AGENT_DIR)\""
+PHP_SCRIPTS_DIR := $(CURDIR)/tests/php_scripts
+EXTRA_CFLAGS += -DPHP_SCRIPTS_DIR="\"$(PHP_SCRIPTS_DIR)\""
 
 #
 # Implicit rule to build test object files with the appropriate flags.

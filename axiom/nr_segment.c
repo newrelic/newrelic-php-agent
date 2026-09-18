@@ -11,7 +11,6 @@
 #include "nr_segment.h"
 #include "nr_segment_traces.h"
 #include "nr_txn.h"
-#include "util_logging.h"
 #include "util_memory.h"
 #include "util_slab.h"
 #include "util_string_pool.h"
@@ -65,8 +64,10 @@ static void nr_segment_discard_merge_metrics(nr_segment_t* segment) {
   }
 
   metric_count = nr_vector_size(segment->metrics);
-  duration = nr_time_duration(segment->start_time, segment->stop_time);
-
+  duration = nr_time_duration(
+      segment->start_time,
+      nr_segment_amend_stop_with_suspend_time(
+          segment->start_time, segment->stop_time, segment->suspend_time));
   /*
    * In case a segment limit is set, calculating total time for metrics
    * of discarded segments is skipped.
@@ -108,14 +109,21 @@ static void nr_segment_discard_merge_metrics(nr_segment_t* segment) {
    */
   if (num_children) {
     nr_exclusive_time_ensure(&segment->exclusive_time, num_children,
-                             segment->start_time, segment->stop_time);
+                             segment->start_time, segment->stop_time,
+                             segment->suspend_time);
 
     for (size_t i = 0; i < num_children; i++) {
       nr_segment_t* child = nr_segment_children_get(&segment->children, i);
 
-      if (child && child->async_context == segment->async_context) {
+      /* Subtract child unless it's on a different async_context (fiber)
+       * AND explicitly opted out via consider_for_blocking=true (see
+       * nr_segment.h). Default false means fiber children are still
+       * subtracted like ordinary blocking children. */
+      if (child
+          && (child->async_context == segment->async_context
+              || (!child->consider_for_blocking))) {
         nr_exclusive_time_add_child(segment->exclusive_time, child->start_time,
-                                    child->stop_time);
+                                    child->stop_time, child->suspend_time);
       }
     }
   }
@@ -140,13 +148,14 @@ static void nr_segment_discard_merge_metrics(nr_segment_t* segment) {
    * added to the exclusive time data structure of the parent. The
    * exclusive time on the parent is initialized if necessary.
    */
-  if (segment->parent->async_context == segment->async_context) {
-    nr_exclusive_time_ensure(&parent->exclusive_time,
-                             nr_segment_children_size(&parent->children),
-                             parent->start_time, parent->stop_time);
+  if (segment->parent->async_context == segment->async_context
+      || (!segment->consider_for_blocking)) {
+    nr_exclusive_time_ensure(
+        &parent->exclusive_time, nr_segment_children_size(&parent->children),
+        parent->start_time, parent->stop_time, parent->suspend_time);
 
     nr_exclusive_time_add_child(parent->exclusive_time, segment->start_time,
-                                segment->stop_time);
+                                segment->stop_time, segment->suspend_time);
   }
 
   /*
@@ -228,6 +237,11 @@ bool nr_segment_init(nr_segment_t* segment,
   if (parent) {
     segment->parent = parent;
     nr_segment_children_add(&parent->children, segment);
+    /* consider_for_blocking is left at its default (false) here. It's set
+     * explicitly, per-call, only at the few instrumentation sites that need
+     * it (curl_multi, Guzzle, Predis - see nr_segment.h's
+     * consider_for_blocking comment), not generically on every
+     * explicit-parent segment. */
     /*
      * Special case: if the new async context stack does not exist and the async
      * context is not NULL, then this indicates that the new segment is the root
@@ -1058,10 +1072,21 @@ nr_minmax_heap_t* nr_segment_heap_create(ssize_t bound,
   return nr_minmax_heap_create(bound, comparator, NULL, NULL, NULL);
 }
 
+/*
+ * Post-order callback: computes this segment's exclusive time (suspend-time
+ * amended) and its metrics' duration/exclusive fields, and adds this
+ * segment's exclusive time into metadata->total_time, which becomes
+ * WebTransactionTotalTime. That sum is a plain accumulation across every
+ * segment in the tree - it relies on each segment's own suspend_time being
+ * correct (see nr_segment.h) to avoid double-counting; it does not merge
+ * overlapping spans across different branches on its own.
+ */
 static void nr_segment_stoh_post_iterator_callback(
     nr_segment_t* segment,
     nr_segment_tree_to_heap_metadata_t* metadata) {
-  nrtime_t exclusive_time;
+  nrtime_t exclusive_time = 0;
+  nrtime_t duration = 0;
+  nrtime_t amended_stop_time = 0;
   size_t i;
   size_t metric_count;
 
@@ -1070,7 +1095,11 @@ static void nr_segment_stoh_post_iterator_callback(
   }
 
   // Calculate the exclusive time.
+
   exclusive_time = nr_exclusive_time_calculate(segment->exclusive_time);
+  amended_stop_time = nr_segment_amend_stop_with_suspend_time(
+      segment->start_time, segment->stop_time, segment->suspend_time);
+  duration = nr_time_duration(segment->start_time, amended_stop_time);
 
   // Update the transaction total time.
   metadata->total_time += exclusive_time;
@@ -1083,9 +1112,7 @@ static void nr_segment_stoh_post_iterator_callback(
 
     nrm_add_ex(sm->scoped ? segment->txn->scoped_metrics
                           : segment->txn->unscoped_metrics,
-               sm->name,
-               nr_time_duration(segment->start_time, segment->stop_time),
-               exclusive_time);
+               sm->name, duration, exclusive_time);
   }
 
   /*
@@ -1121,15 +1148,18 @@ static nr_segment_iter_return_t nr_segment_stoh_iterator_callback(
   }
 
   /* Set up the exclusive time so that children can adjust it as necessary. */
-  nr_exclusive_time_ensure(&segment->exclusive_time,
-                           nr_segment_children_size(&segment->children),
-                           segment->start_time, segment->stop_time);
+
+  nr_exclusive_time_ensure(
+      &segment->exclusive_time, nr_segment_children_size(&segment->children),
+      segment->start_time, segment->stop_time, segment->suspend_time);
 
   /* Adjust the parent's exclusive time. */
   if (segment->parent
-      && segment->parent->async_context == segment->async_context) {
+      && (segment->parent->async_context == segment->async_context
+          || (!segment->consider_for_blocking))) {
     nr_exclusive_time_add_child(segment->parent->exclusive_time,
-                                segment->start_time, segment->stop_time);
+                                segment->start_time, segment->stop_time,
+                                segment->suspend_time);
   }
 
   /*
@@ -1141,9 +1171,10 @@ static nr_segment_iter_return_t nr_segment_stoh_iterator_callback(
    * need to add the segment to the main context exclusive time structure so the
    * blocking time can be calculated once the first pass is complete.
    */
-  if (segment->async_context && metadata->main_context) {
+  if (segment->async_context && segment->consider_for_blocking
+      && metadata->main_context) {
     nr_exclusive_time_add_child(metadata->main_context, segment->start_time,
-                                segment->stop_time);
+                                segment->stop_time, segment->suspend_time);
   }
 
   trace_heap = metadata->trace_heap;
