@@ -116,9 +116,11 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
   const char* this_klass = "MongoDB\\Operation\\Executable";
   zval* collection = NULL;
   zval* database = NULL;
+  zval* namespace = NULL;
   zval* server = NULL;
   zval* this_var = NULL;
   nr_segment_t* segment = NULL;
+  char* namespace_database_name = NULL;
   nr_datastore_instance_t instance = {
       .host = NULL,
       .port_path_or_id = NULL,
@@ -160,6 +162,34 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
     instance.database_name = Z_STRVAL_P(database);
   }
 
+  /*
+   * As of mongodb/mongodb 1.21.4 and 2.4.1, several Operation classes no longer
+   * store databaseName/collectionName as their own properties; the constructor
+   * only uses them to build a private $namespace string. Fall back to splitting
+   * that when the direct lookups above come up empty.
+   * MongoDB\create_namespace() forbids '.' in database names, so the first '.'
+   * unambiguously separates the two.
+   */
+  if ((NULL == params.collection) || (NULL == instance.database_name)) {
+    namespace
+        = nr_php_get_zval_object_property(this_var, "namespace" TSRMLS_CC);
+
+    if (nr_php_is_zval_valid_string(namespace)) {
+      char* value = Z_STRVAL_P(namespace);
+      char* dot = nr_strchr(value, '.');
+
+      if (NULL != dot) {
+        if (NULL == instance.database_name) {
+          namespace_database_name = nr_strndup(value, dot - value);
+          instance.database_name = namespace_database_name;
+        }
+        if ((NULL == params.collection) && !nr_strempty(dot + 1)) {
+          params.collection = dot + 1;
+        }
+      }
+    }
+  }
+
   server = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id TSRMLS_CC);
@@ -173,6 +203,7 @@ leave:
   nr_php_scope_release(&this_var);
   nr_free(instance.host);
   nr_free(instance.port_path_or_id);
+  nr_free(namespace_database_name);
   nr_free(params.operation);
 }
 NR_PHP_WRAPPER_END
@@ -192,8 +223,10 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   zval* collection = NULL;
   zval* database = NULL;
+  zval* namespace = NULL;
   zval* server = NULL;
   zval* this_var = NULL;
+  char* namespace_database_name = NULL;
   nr_datastore_instance_t instance = {
       .host = NULL,
       .port_path_or_id = NULL,
@@ -229,6 +262,33 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
     instance.database_name = Z_STRVAL_P(database);
   }
 
+  /*
+   * As of mongodb/mongodb 1.21.4 and 2.4.1, several Operation classes no longer
+   * store databaseName/collectionName as their own properties; the constructor
+   * only uses them to build a private $namespace string. Fall back to splitting
+   * that when the direct lookups above come up empty.
+   * MongoDB\create_namespace() forbids '.' in database names, so the first '.'
+   * unambiguously separates the two.
+   */
+  if ((NULL == params.collection) || (NULL == instance.database_name)) {
+    namespace = nr_php_get_zval_object_property(this_var, "namespace");
+
+    if (nr_php_is_zval_valid_string(namespace)) {
+      char* value = Z_STRVAL_P(namespace);
+      char* dot = nr_strchr(value, '.');
+
+      if (NULL != dot) {
+        if (NULL == instance.database_name) {
+          namespace_database_name = nr_strndup(value, dot - value);
+          instance.database_name = namespace_database_name;
+        }
+        if ((NULL == params.collection) && !nr_strempty(dot + 1)) {
+          params.collection = dot + 1;
+        }
+      }
+    }
+  }
+
   server = nr_php_arg_get(1, NR_EXECUTE_ORIG_ARGS);
   nr_mongodb_get_host_and_port_path_or_id(server, &instance.host,
                                           &instance.port_path_or_id);
@@ -238,6 +298,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   nr_php_scope_release(&this_var);
   nr_free(instance.host);
   nr_free(instance.port_path_or_id);
+  nr_free(namespace_database_name);
 }
 NR_PHP_WRAPPER_END
 
