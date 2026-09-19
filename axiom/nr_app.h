@@ -19,8 +19,10 @@
 #include <sys/types.h>
 
 #include "nr_app_harvest.h"
+#include "nr_php_packages.h"
 #include "nr_rules.h"
 #include "nr_segment_terms.h"
+#include "util_hashmap.h"
 #include "util_random.h"
 #include "util_threads.h"
 
@@ -97,7 +99,6 @@ typedef struct _nr_app_limits_t {
 
 typedef struct _nrapp_t {
   nr_app_info_t info;
-  nr_random_t* rnd;         /* Random number generator */
   int state;                /* Connection state */
   char* plicense;           /* Printable license (abbreviated for security) */
   char* agent_run_id;       /* The collector's agent run ID; assigned from the
@@ -121,7 +122,34 @@ typedef struct _nrapp_t {
   nrobj_t* security_policies; /* from Daemon - full security policies map
                                  obtained from Preconnect */
   nrthread_mutex_t app_lock;  /* Serialization lock */
-  nr_app_harvest_t harvest;   /* Harvest timing and sampling data */
+  nr_app_harvest_config_t adaptive_sampling_config; /* Adaptive sampling config
+                                                       from daemon; updated on
+                                                       every appinfo reply */
+
+  /*
+   * The following fields are per-thread state, keyed by (uint64_t)nr_gettid().
+   * Each holds one entry per thread that has touched this app.
+   *
+   * Concurrency contract:
+   *  - app_lock MUST be held around get-or-create (map insert) for all three —
+   *    the hashmap's internal structure is not thread-safe against concurrent
+   *    inserts of *different* keys by *different* threads.
+   *  - Reading/writing an already-fetched entry's VALUE is lock-free IFF no
+   *    code path ever mutates a different thread's entry:
+   *      - rnd_map: lock-free-safe. No cross-thread mutator exists.
+   *      - composer_map: lock-free-safe as of this writing. If a
+   *        reconnect-triggered reset is ever added for this field, this
+   *        breaks — re-audit every access site under app_lock at that point.
+   *      - harvest_map: NOT lock-free-safe. nr_app_update_harvest_config()
+   *        resets every thread's entry on connect/reconnect via
+   *        nr_hashmap_apply(), a cross-thread mutation. Do not add lock-free
+   *        value access for this field without accounting for that reset.
+   *  - Moral: don't copy the lock-free pattern from one field to another
+   *    without checking whether THAT field has a bulk cross-thread mutator.
+   */
+  nr_hashmap_t* harvest_map;
+  nr_hashmap_t* rnd_map;
+  nr_hashmap_t* composer_map;
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
@@ -207,6 +235,22 @@ extern nrapp_t* nr_agent_find_or_add_app(nrapplist_t* applist,
                                          nrtime_t timeout);
 
 /*
+ * Purpose : Search for an existing application matching the given app
+ *           info, without creating one if no match is found.
+ *
+ * Params  : 1. The application list unlocked.
+ *           2. The application information.
+ *
+ * Returns : A pointer to the locked matching application, or NULL if no
+ *           match was found or the parameters were invalid.
+ *
+ * Locking : Returns the application locked, if one is returned; the caller
+ *           must unlock it.
+ */
+extern nrapp_t* nr_app_find_locked(nrapplist_t* applist,
+                                   const nr_app_info_t* info);
+
+/*
  * Purpose : Create and return a sanitized/obfuscated version of the license
  *           for use in the phpinfo and log files.
  *
@@ -287,5 +331,149 @@ extern const char* nr_app_get_entity_guid(const nrapp_t* app);
  *           application.
  */
 extern const char* nr_app_get_host_name(const nrapp_t* app);
+
+/*
+ * Purpose : Destructor for nr_app_harvest_stats_t values stored in
+ *           harvest_map.  For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The stats pointer to free.
+ */
+extern void nr_app_harvest_stats_dtor(nr_app_harvest_stats_t* stats);
+
+/*
+ * Purpose : Update the harvest config from a daemon connect reply and, if
+ *           connect_timestamp or frequency changed, reset per-thread harvest
+ *           stats in harvest_map so next_harvest is recalculated.  Must be
+ *           called with app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The new connect timestamp.
+ *           3. The new harvest frequency.
+ *           4. The new sampling target.
+ */
+extern void nr_app_update_harvest_config(nrapp_t* app,
+                                          nrtime_t connect_timestamp,
+                                          nrtime_t frequency,
+                                          uint16_t sampling_target);
+
+/*
+ * Purpose : Return the harvest struct for the calling thread, creating an
+ *           entry if this thread has not been seen before.  Must be called
+ *           with app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ *
+ * Returns : Pointer to the per-thread harvest, or NULL on allocation failure.
+ */
+extern nr_app_harvest_stats_t* nr_app_get_or_create_thread_harvest(
+    nrapp_t* app,
+    uint64_t key);
+
+/*
+ * Purpose : Destructor for nr_random_t values stored in rnd_map.
+ *           For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The rnd pointer to free.
+ */
+extern void nr_app_rnd_dtor(nr_random_t* rnd);
+
+/*
+ * Purpose : Return the RNG for the calling thread, creating and seeding one
+ *           if this thread has not been seen before.  Must be called with
+ *           app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ *
+ * Returns : Pointer to the per-thread RNG, or NULL on allocation failure.
+ */
+extern nr_random_t* nr_app_get_or_create_thread_rnd(nrapp_t* app,
+                                                     uint64_t key);
+
+/*
+ * Composer package-detection status for a single (app, thread) attempt.
+ * Lives here (not nr_txn.h) because nr_txn.h includes nr_app.h, and this
+ * type is now embedded in nr_composer_thread_entry_t, returned by
+ * nr_app_get_or_create_thread_composer_entry() below.
+ */
+typedef enum {
+  NR_COMPOSER_API_STATUS_UNSET = 0,
+  NR_COMPOSER_API_STATUS_INVALID_USE = 1,
+  NR_COMPOSER_API_STATUS_INIT_FAILURE = 2,
+  NR_COMPOSER_API_STATUS_CALL_FAILURE = 3,
+  NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED = 4,
+  NR_COMPOSER_API_STATUS_INVALID_RESULT = 5,
+} nr_composer_api_status_t;
+
+/*
+ * Per-(app, thread) Composer detection state, stored in composer_map.
+ * status/packages/epoch/last_sent_epoch are only safe to mutate under
+ * app->app_lock. Three lock-free exceptions, all resting on the same
+ * same-owning-thread-only invariant (an entry is keyed by
+ * (uint64_t)nr_gettid(), so no thread other than the one that owns it ever
+ * touches it):
+ *   1. A txn's own read/mark-sent of its own entry's epoch/packages/
+ *      last_sent_epoch via nr_txn_pull_composer_packages()/
+ *      nr_txn_mark_composer_packages_sent() — see nr_txn.h for why that
+ *      path needs no lock.
+ *   2. The Composer-scan write in nr_composer_handle_autoload()
+ *      (agent/lib_composer.c), which mutates status/packages/epoch once it
+ *      has resolved the entry (with or without a txn) — see the comment at
+ *      that write site for why that path needs no lock either.
+ *   3. A discarded txn's advance of its own entry's last_sent_epoch via
+ *      nr_txn_discard_composer_packages() — see nr_txn.h for why that path
+ *      needs no lock either; same rationale as exception 1.
+ */
+typedef struct {
+  nr_composer_api_status_t status; /* unchanged semantics: gates whether a
+                                       scan is attempted at all */
+  nr_php_packages_t* packages;     /* latest known snapshot; NULL until
+                                       first successful scan; never
+                                       destroyed as part of send/consume,
+                                       only on rescan-overwrite or eviction */
+  uint64_t epoch;                  /* bumped every time `packages` is
+                                       overwritten by a scan */
+  uint64_t last_sent_epoch;        /* epoch as of the last txn that reached
+                                       the transmit call with this epoch
+                                       still current (i.e. no newer scan had
+                                       overwritten `packages` since that txn
+                                       pulled); bumped unconditionally at
+                                       that point regardless of transmit
+                                       success/failure -- NOT gated on
+                                       confirmed delivery */
+} nr_composer_thread_entry_t;
+
+/*
+ * Purpose : Destructor for nr_composer_thread_entry_t values stored in
+ *           composer_map. For use as nr_hashmap_create dtor argument.
+ *
+ * Params  : 1. The entry pointer to free.
+ */
+extern void nr_app_composer_entry_dtor(nr_composer_thread_entry_t* entry);
+
+/*
+ * Purpose : Return the Composer detection entry for the calling thread,
+ *           creating one initialized to NR_COMPOSER_API_STATUS_UNSET (with
+ *           no packages, epoch 0, last_sent_epoch 0) if this thread has not
+ *           been seen before. Must be called with app->app_lock held.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ *
+ * Returns : Pointer to the per-thread entry, or NULL on allocation failure.
+ */
+extern nr_composer_thread_entry_t* nr_app_get_or_create_thread_composer_entry(
+    nrapp_t* app,
+    uint64_t key);
+
+/*
+ * Purpose : Remove one thread's entry from harvest_map, rnd_map, and
+ *           composer_map. Call when a thread exits, under app->app_lock.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ */
+extern void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid);
 
 #endif /* NR_APP_HDR */

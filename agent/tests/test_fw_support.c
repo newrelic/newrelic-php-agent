@@ -215,6 +215,8 @@ static void test_fw_supportability_metrics_with_vm_enabled(void) {
 }
 
 void test_main(void* p NRUNUSED) {
+  tlib_php_engine_create("");
   test_fw_supportability_metrics_with_vm_disabled();
   test_fw_supportability_metrics_with_vm_enabled();
+  tlib_php_engine_destroy();
 }

@@ -221,6 +221,28 @@ extern nr_status_t nr_php_txn_begin(const char* appnames,
                                     const char* license TSRMLS_DC);
 
 /*
+ * Purpose : Populate the nr_app_info_t fields that identify an application
+ *           for matching/creation: the fields nr_app_info_valid() requires
+ *           to be non-NULL (appname, license, environment, lang, version,
+ *           redirect_collector), plus high_security and the
+ *           trace_observer_host/port fields nr_app_match() actually
+ *           compares. Any two calls with the same (appnames, license) pair
+ *           must resolve to the same identity fields, or nr_app_match()
+ *           will fail to match a search key against an app that should be
+ *           the same one.
+ *
+ * Params  : 1. Out parameter: the nr_app_info_t to populate. NOT zeroed by
+ *              this function -- caller must nr_memset() it first.
+ *           2. The requested application name(s) (may include rollups),
+ *              or NULL/empty to fall back to a configured default.
+ *           3. The requested license key, or NULL/empty to fall back to
+ *              a configured default (see nr_php_use_license()).
+ */
+extern void nr_php_txn_populate_app_info_identity(nr_app_info_t* info,
+                                                   const char* appnames,
+                                                   const char* license);
+
+/*
  * Purpose : Perform the transaction ending tasks that have to be performed at
  *           RSHUTDOWN: specifically, this includes setting parameters that
  *           depends on variables that will be shutdown before the
