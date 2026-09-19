@@ -546,24 +546,16 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
 #endif
 }
 
-NR_PHP_WRAPPER(nr_laravel_application_boot) {
-  zval* this_var = NULL;
+/*
+ * Wrap the global middleware and the exception handler, which requires a
+ * booted Application instance.
+ */
+static void nr_laravel_instrument_application(zval* app) {
   zval* exception_handler = NULL;
 
-  NR_UNUSED_SPECIALFN;
-  (void)wraprec;
+  NRPRG_SHARED(laravel_app_instrumented) = true;
 
-  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
-  if (0 == nr_php_is_zval_valid_object(this_var)) {
-    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
-                     __func__);
-    NR_PHP_WRAPPER_CALL;
-    goto end;
-  }
-
-  NR_PHP_WRAPPER_CALL;
-
-  nr_laravel_wrap_middleware(this_var TSRMLS_CC);
+  nr_laravel_wrap_middleware(app TSRMLS_CC);
 
   /*
    * Laravel has a known interface applications can implement to supplement or
@@ -573,7 +565,7 @@ NR_PHP_WRAPPER(nr_laravel_application_boot) {
    */
   if (!NRINI(ignore_framework_error_exception_handler)) {
     exception_handler = nr_php_call_offsetGet(
-        this_var, "Illuminate\\Contracts\\Debug\\ExceptionHandler" TSRMLS_CC);
+        app, "Illuminate\\Contracts\\Debug\\ExceptionHandler" TSRMLS_CC);
     if (nr_php_is_zval_valid_object(exception_handler)) {
       nr_laravel_add_callback_method(Z_OBJCE_P(exception_handler),
                                      NR_PSTR("render"),
@@ -588,9 +580,67 @@ NR_PHP_WRAPPER(nr_laravel_application_boot) {
     }
   }
 
-end:
   nr_php_zval_free(&exception_handler);
+}
+
+NR_PHP_WRAPPER(nr_laravel_application_boot) {
+  zval* this_var = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS TSRMLS_CC);
+  if (0 == nr_php_is_zval_valid_object(this_var)) {
+    nrl_verbosedebug(NRL_FRAMEWORK, "%s: Application object is invalid",
+                     __func__);
+    NR_PHP_WRAPPER_CALL;
+    goto end;
+  }
+
+  NR_PHP_WRAPPER_CALL;
+
+  nr_laravel_instrument_application(this_var);
+
+end:
   nr_php_scope_release(&this_var);
+}
+NR_PHP_WRAPPER_END
+
+/*
+ * Long-running workers can boot the application while no transaction is
+ * recording, in which case nr_laravel_application_boot() never runs. Wrap the
+ * application on the first recorded request instead, once it has booted:
+ * regular requests boot it from within handle().
+ */
+NR_PHP_WRAPPER(nr_laravel_kernel_handle) {
+  zval* this_var = NULL;
+  zval* app = NULL;
+  zval* booted = NULL;
+
+  NR_UNUSED_SPECIALFN;
+  (void)wraprec;
+
+  NR_PHP_WRAPPER_REQUIRE_FRAMEWORK(NR_FW_LARAVEL);
+
+  if (NRPRG_SHARED(laravel_app_instrumented)) {
+    NR_PHP_WRAPPER_LEAVE;
+  }
+
+  this_var = nr_php_scope_get(NR_EXECUTE_ORIG_ARGS);
+  app = nr_php_get_zval_object_property(this_var, "app");
+  if (nr_php_object_has_method(app, "isBooted")) {
+    booted = nr_php_call(app, "isBooted");
+    if (nr_php_is_zval_true(booted)) {
+      nrl_verbosedebug(NRL_FRAMEWORK, "%s: wrapping booted application",
+                       __func__);
+      nr_laravel_instrument_application(app);
+    }
+  }
+
+  nr_php_zval_free(&booted);
+  nr_php_scope_release(&this_var);
+
+  NR_PHP_WRAPPER_CALL;
 }
 NR_PHP_WRAPPER_END
 
@@ -669,24 +719,6 @@ NR_PHP_WRAPPER(nr_laravel_application_construct) {
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Foundation\\Application::boot"),
       nr_laravel_application_boot TSRMLS_CC);
-
-  /*
-   * If router filtering is disabled, then the filter installed by the previous
-   * callback will never fire. These callbacks attempt to mitigate that, but
-   * won't cover the (currently unsupported) case where the router service has
-   * been replaced and the normal Illuminate\Routing\Router methods aren't
-   * called.
-   *
-   * If router filtering is enabled, then we may set the transaction name
-   * multiple times. This isn't considered to be an issue, as the last one will
-   * win, and that's almost certain to be the correct one. If this turns out to
-   * cause more performance overhead than we're comfortable with, then the
-   * simple fix would be to check if filtering is enabled in
-   * nr_laravel_router_method_with_request.
-   */
-  nr_php_wrap_user_function(
-      NR_PSTR("Illuminate\\Routing\\Router::prepareResponse"),
-      nr_laravel_router_method_with_request TSRMLS_CC);
 
   NR_PHP_WRAPPER_CALL;
 
@@ -939,6 +971,37 @@ void nr_laravel_enable(TSRMLS_D) {
   nr_php_wrap_user_function(
       NR_PSTR("Illuminate\\Routing\\RouteCollection::getRouteForMethods"),
       nr_laravel_routes_get_route_for_methods TSRMLS_CC);
+
+  /*
+   * If router filtering is disabled, then the filter installed by the
+   * Application::boot() callback will never fire. These callbacks attempt to
+   * mitigate that, but won't cover the (currently unsupported) case where the
+   * router service has been replaced and the normal Illuminate\Routing\Router
+   * methods aren't called.
+   *
+   * If router filtering is enabled, then we may set the transaction name
+   * multiple times. This isn't considered to be an issue, as the last one will
+   * win, and that's almost certain to be the correct one. If this turns out to
+   * cause more performance overhead than we're comfortable with, then the
+   * simple fix would be to check if filtering is enabled in
+   * nr_laravel_router_method_with_request.
+   */
+  nr_php_wrap_user_function(
+      NR_PSTR("Illuminate\\Routing\\Router::prepareResponse"),
+      nr_laravel_router_method_with_request TSRMLS_CC);
+
+  /* Wraps the application if nr_laravel_application_boot() did not run. */
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
+    && !defined OVERWRITE_ZEND_EXECUTE_DATA
+  nr_php_wrap_user_function_before_after_clean(
+      NR_PSTR("Illuminate\\Foundation\\Http\\Kernel::handle"),
+      nr_laravel_kernel_handle, NULL, NULL);
+#else
+  nr_php_wrap_user_function(
+      NR_PSTR("Illuminate\\Foundation\\Http\\Kernel::handle"),
+      nr_laravel_kernel_handle);
+#endif
+
   /*
    * Listen for Artisan commands so we can name those appropriately.
    */
