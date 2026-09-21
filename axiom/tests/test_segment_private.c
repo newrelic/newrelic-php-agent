@@ -457,7 +457,7 @@ static void test_destroy_fields(void) {
   s.metrics = nr_vector_create(8, NULL, NULL);
   s.attributes = nr_attributes_create(NULL);
   s.type = NR_SEGMENT_CUSTOM;
-  s.exclusive_time = nr_exclusive_time_create(0, 1, 2);
+  s.exclusive_time = nr_exclusive_time_create(0, 1, 2, 0);
 
   nr_segment_destroy_fields(&s);
 }

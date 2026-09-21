@@ -522,8 +522,6 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
                                            const char* method,
                                            size_t method_len,
                                            nrspecialfn_t callback TSRMLS_DC) {
-  const char* class_name = NULL;
-  size_t class_name_len;
   zend_function* function = NULL;
 
   if (NULL == ce) {
@@ -531,29 +529,21 @@ static void nr_laravel_add_callback_method(const zend_class_entry* ce,
     return;
   }
 
-  class_name = nr_php_class_entry_name(ce);
-  class_name_len = nr_php_class_entry_name_length(ce);
-
   function = nr_php_find_class_method(ce, method);
   if (NULL == function) {
     nrl_verbosedebug(NRL_FRAMEWORK, "cannot get function entry for %.*s::%.*s",
-                     NRSAFELEN(class_name_len), class_name,
-                     NRSAFELEN(method_len), method);
+                     NRSAFELEN(nr_php_class_entry_name_length(ce)),
+                     NRSAFESTR(nr_php_class_entry_name(ce)),
+                     NRSAFELEN(method_len), NRSAFESTR(method));
     return;
   }
 
-  char* class_method = nr_formatf("%.*s::%.*s", NRSAFELEN(class_name_len),
-                                  class_name, NRSAFELEN(method_len), method);
-
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
-  nr_php_wrap_user_function_before_after_clean(
-      class_method, nr_strlen(class_method), callback, NULL, NULL);
+  nr_php_wrap_callable_before_after_clean(function, callback, NULL, NULL);
 #else
-  nr_php_wrap_user_function(class_method, nr_strlen(class_method),
-                            callback TSRMLS_CC);
+  nr_php_wrap_callable(function, callback);
 #endif
-  nr_free(class_method);
 }
 
 NR_PHP_WRAPPER(nr_laravel_application_boot) {

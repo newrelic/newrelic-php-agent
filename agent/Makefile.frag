@@ -88,6 +88,7 @@ TEST_BINARIES = \
 	tests/test_fibers \
 	tests/test_fw_codeigniter \
 	tests/test_fw_drupal \
+	tests/test_fw_laravel \
 	tests/test_fw_laravel_queue \
 	tests/test_fw_support \
 	tests/test_fw_wordpress \

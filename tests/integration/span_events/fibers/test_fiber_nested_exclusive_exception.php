@@ -5,8 +5,16 @@
  */
 
 /*DESCRIPTION
-Test should show proper exclusive time in metrics generated for fibers even when a 
+Test should show proper exclusive time in metrics generated for fibers even when a
 fiber throws an exception.
+
+total - exclusive for a segment is exactly the amount subtracted for its
+children; suspend_time shifts total and exclusive by the same amount, so it
+cancels out of their difference. fiber two has no nested custom-traced
+children, so its total and exclusive are always equal (diff 0). fiber one's
+diff instead reflects the one real, uninterrupted block of active work its
+child (fiber two) did before throwing - here fiber two's single
+un-suspended time_nanosleep(0.1s).
 */
 
 /*SKIPIF
@@ -85,12 +93,13 @@ $metrics = $txn->getScopedMetrics();
 tap_assert(isset($metrics["Custom/two"]), 'metric for fiber two exists');
 tap_assert(isset($metrics["Custom/one"]), 'metric for fiber one exists');
 
-// The diff should be approx equal to the time it's child spent sleeping (0.1); 
-// the time spent suspended (0.3) is not counted since the child threw an error that 
-// wasn't caught before the fiber one's suspend call so it didn't get called
+// The diff should be approx equal to the time its child spent sleeping (0.1);
+// fiber one's own Fiber::suspend() is never reached (the uncaught exception
+// unwinds one() before it gets there), and suspend_time cancels out of the
+// diff regardless, so this is purely fiber two's own amended total.
 $round_one = round($metrics["Custom/one"]->total - $metrics["Custom/one"]->exclusive, 1);
 tap_assert($round_one === 0.1, 'fiber one: total - exclusive diff is as expected');
 
-// The diff should be approx equal to the time spent suspended(0.1 + 0.1)
+// fiber two has no nested custom-traced children, so total == exclusive.
 $round_two = round($metrics["Custom/two"]->total - $metrics["Custom/two"]->exclusive, 1);
-tap_assert($round_two === 0.1 + 0.1, 'fiber two: total - exclusive diff is as expected');
+tap_assert($round_two === 0.0, 'fiber two: total - exclusive diff is as expected');

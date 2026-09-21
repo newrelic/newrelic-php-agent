@@ -13,3 +13,6 @@ php_agent.log
 
 # Dev artifacts
 .vscode
+.clangd
+.php-cs-fixer.*
+compile_commands.json
