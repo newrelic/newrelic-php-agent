@@ -57,7 +57,6 @@ var (
 	idTwo = AgentRunID("two")
 
 	data        = JSONString(`{"age":29}`)
-	encoded     = `"eJyqVkpMT1WyMrKsBQQAAP//EVgDDw=="`
 	sampleTrace = &TxnTrace{Data: data}
 
 	sampleCustomEvent = []byte("half birthday")
@@ -263,10 +262,25 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 
 	<-m.p.trackProgress // unblock processor after harvest
 
+	encoded, err := collector.CompressEncode(data)
+	if err != nil {
+		t.Fatal("failed to encode data: ", err)
+	}
+
+	decoded, err := collector.UncompressDecode(encoded)
+	if string(decoded) != string(data) {
+		t.Fatalf("expected: %s, got: %s", data, decoded)
+	}
+
+	encoded = `"` + encoded + `"`
+
 	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if string(cp.data) != toTest {
-		t.Error(string(append(cp.data, cp2.data...)))
+		t.Errorf("expected: %s, got: %s", toTest, string(cp.data))
 	}
 	time1 := strings.Split(string(cp2.data), ",")[1]
 	time2 := strings.Split(string(cp2.data), ",")[2]

@@ -6,6 +6,8 @@
 package newrelic
 
 import "testing"
+import "encoding/json"
+import "github.com/newrelic/newrelic-php-agent/daemon/internal/newrelic/collector"
 
 func sampleSlowSQL(id SQLId) *SlowSQL {
 	return &SlowSQL{
@@ -26,21 +28,27 @@ func TestSlowSQLs(t *testing.T) {
 	slows := NewSlowSQLs(10)
 	slows.Observe(sampleSlowSQL(123))
 
-	var json JSONString
+	var jsonResult JSONString
 	var err error
-	json, err = slows.CollectorJSON(false)
+	var res [][][]interface{}
+	jsonResult, err = slows.CollectorJSON(false)
 	if nil != err {
 		t.Fatal(err)
 	}
-	if string(json) != "[[[\"txn_name\",\"txn_url\",123,\"SELECT *\",\"metric_name\",4,10,2,3,{\"x\":1}]]]" {
-		t.Error(string(json))
+	if string(jsonResult) != "[[[\"txn_name\",\"txn_url\",123,\"SELECT *\",\"metric_name\",4,10,2,3,{\"x\":1}]]]" {
+		t.Error(string(jsonResult))
 	}
-	json, err = slows.CollectorJSON(true)
+	jsonResult, err = slows.CollectorJSON(true)
 	if nil != err {
 		t.Fatal(err)
 	}
-	if string(json) != "[[[\"txn_name\",\"txn_url\",123,\"SELECT *\",\"metric_name\",4,10,2,3,\"eJyqVqpQsjKsBQQAAP//CJ0CIA==\"]]]" {
-		t.Error(string(json))
+
+	json.Unmarshal(jsonResult, &res)
+	encoded := res[0][0][9]
+	decoded, err := collector.UncompressDecode(encoded.(string))
+
+	if string(decoded) != "{\"x\":1}" {
+		t.Fatal(string(decoded))
 	}
 }
 
