@@ -67,7 +67,7 @@ RUN apt-get install -y --no-install-recommends libpq-dev
 RUN docker-php-ext-install pgsql
 
 # install latest go to work with the daemon
-COPY --from=golang:1.26.6 /usr/local/go /usr/local/go
+COPY --from=golang:1.27.1 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:$PATH
 
 #
