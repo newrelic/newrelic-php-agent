@@ -437,9 +437,11 @@ static bool nr_txn_flush_span_batch(nr_span_encoding_result_t* encoded_batch,
     goto end;
   }
 
-  rv = (NR_SUCCESS
-        == nr_cmd_span_batch_tx(nr_get_daemon_fd(), agent_run_id,
-                                encoded_batch));
+  if (NR_SUCCESS != nr_agent_probe_daemon_connection()) {
+    goto end;
+  }
+
+  rv = (NR_SUCCESS == nr_cmd_span_batch_tx(agent_run_id, encoded_batch));
 
 end:
   nr_span_encoding_result_deinit(encoded_batch);

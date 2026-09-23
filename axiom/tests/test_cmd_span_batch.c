@@ -32,37 +32,37 @@ static void test_tx(void) {
   /*
    * Test : Bad parameters.
    */
+  nr_set_daemon_fd(-1);
   tlib_pass_if_status_failure("invalid daemon fd",
-                              nr_cmd_span_batch_tx(-1, agent_run_id, &encoded));
+                              nr_cmd_span_batch_tx(agent_run_id, &encoded));
+  nr_set_daemon_fd(socks[0]);
   tlib_pass_if_status_failure("NULL agent run ID",
-                              nr_cmd_span_batch_tx(socks[0], NULL, &encoded));
-  tlib_pass_if_status_failure(
-      "NULL span batch", nr_cmd_span_batch_tx(socks[0], agent_run_id, NULL));
+                              nr_cmd_span_batch_tx(NULL, &encoded));
+  tlib_pass_if_status_failure("NULL span batch",
+                              nr_cmd_span_batch_tx(agent_run_id, NULL));
 
   /*
    * Test : Empty batches.
    */
   tlib_pass_if_status_success(
-      "zero length batch", nr_cmd_span_batch_tx(socks[0], agent_run_id,
-                                                &((nr_span_encoding_result_t){
-                                                    .len = 0,
-                                                    .span_count = 1,
-                                                })));
+      "zero length batch",
+      nr_cmd_span_batch_tx(agent_run_id, &((nr_span_encoding_result_t){
+                                             .len = 0,
+                                             .span_count = 1,
+                                         })));
 
   tlib_pass_if_status_success(
       "zero span count batch",
-      nr_cmd_span_batch_tx(socks[0], agent_run_id,
-                           &((nr_span_encoding_result_t){
-                               .len = 1,
-                               .span_count = 0,
-                           })));
+      nr_cmd_span_batch_tx(agent_run_id, &((nr_span_encoding_result_t){
+                                             .len = 1,
+                                             .span_count = 0,
+                                         })));
 
   /*
    * Test : Normal operation.
    */
-  tlib_pass_if_status_success(
-      "valid span batch",
-      nr_cmd_span_batch_tx(socks[0], agent_run_id, &encoded));
+  tlib_pass_if_status_success("valid span batch",
+                              nr_cmd_span_batch_tx(agent_run_id, &encoded));
 
   // Read what was transmitted back and decode it.
   buf = nr_network_receive(socks[1], 100);

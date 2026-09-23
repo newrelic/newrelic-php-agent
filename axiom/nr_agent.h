@@ -146,22 +146,30 @@ nr_status_t nr_agent_reinitialize_daemon_tcp_connection_parameters(
 struct sockaddr* nr_get_agent_daemon_sa(void);
 
 /*
- * Purpose : Returns the file descriptor used to communicate with the daemon.
- *           If the daemon failed to initialize or the connection has been lost
- *           or closed, will return -1.
+ * Purpose : Get the file descriptor for the connection to the daemon.
  *
- * Returns : The daemon file descriptor or -1.
+ * Returns : The file descriptor for the daemon connection.
+ *
+ * Notes   : To ensure thread safety nr_agent_daemon_mutex must be locked
+ *           before calling this function.
+ */
+extern int nr_agent_get_daemon_fd_locked(void);
+
+/*
+ * Purpose : This call will attempt to ensure we are connected to the daemon.
+ *           It is non-blocking so it is pretty quick. If we had no connection
+ *           and the daemon has since been brought back up, this will start the
+ *           process of connecting to it.
+ *
+ * Returns : NR_SUCCESS if connection to the daemon is established.
+ *           NR_FAILURE otherwise.
  *
  * Notes   : After this function is called, this process must call
  *           nr_agent_close_daemon_connection before forking.  This must
- *           be done even if nr_get_daemon_fd does not return a valid
- *           fd, as the connection may be in progress.
- *
- *           This approach is unsafe for threaded processes:
- *           Any thread which gets a file descriptor using this function
- *           can not guarantee that another thread does not close the fd.
+ *           be done even if NR_FAILURE is returned, as the connection
+ *           may be in progress.
  */
-extern int nr_get_daemon_fd(void);
+extern nr_status_t nr_agent_probe_daemon_connection(void);
 
 /*
  * Purpose : Set the connection to use for daemon communication.
@@ -185,10 +193,10 @@ extern void nr_agent_close_daemon_connection(void);
 
 /*
  * Purpose : Determine if a connection to the daemon is possible by creating
- *           one.  This differs from nr_get_daemon_fd in two ways: If the
- *           connection attempt fails, no warning messages will be printed,
- *           and if the connection attempt fails then it will be retried
- *           after a time_limit_ms delay.
+ *           one.  This differs from nr_agent_probe_daemon_connection in two
+ *           ways: If the connection attempt fails, no warning messages will
+ *           be printed, and if the connection attempt fails then it will be
+ *           retried after a time_limit_ms delay.
  *
  * Returns : 1 if a connection to the daemon succeeded, and 0 otherwise.
  */
