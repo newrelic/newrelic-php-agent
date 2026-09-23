@@ -268,6 +268,10 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	}
 
 	decoded, err := collector.UncompressDecode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if string(decoded) != string(data) {
 		t.Fatalf("expected: %s, got: %s", data, decoded)
 	}
@@ -275,9 +279,6 @@ func TestProcessorHarvestDefaultData(t *testing.T) {
 	encoded = `"` + encoded + `"`
 
 	toTest := `["one",[[0,0,"","",` + encoded + `,"",null,false,null,null]]]`
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	if string(cp.data) != toTest {
 		t.Errorf("expected: %s, got: %s", toTest, string(cp.data))

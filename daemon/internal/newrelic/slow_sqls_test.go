@@ -46,6 +46,9 @@ func TestSlowSQLs(t *testing.T) {
 	json.Unmarshal(jsonResult, &res)
 	encoded := res[0][0][9]
 	decoded, err := collector.UncompressDecode(encoded.(string))
+	if nil != err {
+		t.Fatal(err)
+	}
 
 	if string(decoded) != "{\"x\":1}" {
 		t.Fatal(string(decoded))
