@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "cmd_txndata_transmit.c"
 #include "nr_axiom.h"
 #include "nr_agent.h"
 #include "nr_analytics_events.h"
@@ -25,6 +24,7 @@
 #include "util_buffer.h"
 #include "util_buffer.h"
 #include "util_cpu.h"
+#include "util_labels.h"
 #include "util_memory.h"
 #include "util_metrics.h"
 #include "util_network.h"
@@ -40,6 +40,16 @@
  * threads. */
 nrapplist_t* nr_agent_applist = 0;
 
+nrt_thread_local int nr_agent_daemon_fd = -1;
+
+void nr_set_daemon_fd(int fd NRUNUSED) {
+  nr_agent_daemon_fd = fd;
+}
+
+int nr_agent_get_daemon_fd_locked(void) {
+  return nr_agent_daemon_fd;
+}
+
 void nr_agent_close_daemon_connection(void) {}
 
 nr_status_t nr_agent_lock_daemon_mutex(void) {
@@ -50,8 +60,8 @@ nr_status_t nr_agent_unlock_daemon_mutex(void) {
   return NR_SUCCESS;
 }
 
-int nr_get_daemon_fd(void) {
-  return 0;
+nr_status_t nr_agent_probe_daemon_connection(void) {
+  return NR_SUCCESS;
 }
 
 static void test_encode_errors(void) {
@@ -1299,22 +1309,18 @@ static void test_bad_daemon_fd(void) {
   nrtxn_t txn;
   nr_status_t st;
 
+  nr_set_daemon_fd(-1);
   nr_memset(&txn, 0, sizeof(txn));
 
-  st = nr_cmd_txndata_tx(-1, &txn);
+  st = nr_cmd_txndata_tx(&txn);
   tlib_pass_if_status_failure(__func__, st);
 }
 
 static void test_null_txn(void) {
-  int socks[2];
   nr_status_t st;
 
-  nbsockpair(socks);
-  st = nr_cmd_txndata_tx(socks[0], NULL);
+  st = nr_cmd_txndata_tx(NULL);
   tlib_pass_if_status_failure(__func__, st);
-
-  nr_close(socks[0]);
-  nr_close(socks[1]);
 }
 
 static void test_empty_txn(void) {
@@ -1327,12 +1333,13 @@ static void test_empty_txn(void) {
   int tid;
 
   nbsockpair(socks);
+  nr_set_daemon_fd(socks[0]);
   nr_memset(&txn, 0, sizeof(txn));
 
   /*
    * Don't blow up!
    */
-  st = nr_cmd_txndata_tx(socks[0], &txn);
+  st = nr_cmd_txndata_tx(&txn);
   if (0 != tlib_pass_if_status_success(__func__, st)) {
     /* send failed, cannot continue */
     goto done;

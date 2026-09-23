@@ -121,8 +121,7 @@ static void test_php_cur_stack_depth(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-static nr_status_t mock_cmd_appinfo_unknown(int daemon_fd NRUNUSED,
-                                            nrapp_t* app) {
+static nr_status_t mock_cmd_appinfo_unknown(nrapp_t* app) {
   app->state = NR_APP_UNKNOWN;
   return NR_SUCCESS;
 }

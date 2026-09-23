@@ -486,9 +486,9 @@ int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
 }
 
 /* Hook for stubbing APPINFO messages during testing. */
-nr_status_t (*nr_cmd_appinfo_hook)(int daemon_fd, nrapp_t* app) = NULL;
+nr_status_t (*nr_cmd_appinfo_hook)(nrapp_t* app) = NULL;
 
-nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app) {
+nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
   nr_flatbuffer_t* query;
   nrbuf_t* buf = NULL;
   nrtime_t deadline;
@@ -496,19 +496,16 @@ nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app) {
   size_t querylen;
 
   if (nr_cmd_appinfo_hook) {
-    return nr_cmd_appinfo_hook(daemon_fd, app);
+    return nr_cmd_appinfo_hook(app);
   }
 
   if (NULL == app) {
     return NR_FAILURE;
   }
-  if (daemon_fd < 0) {
-    return NR_FAILURE;
-  }
 
   app->state = NR_APP_UNKNOWN;
-  nrl_verbosedebug(NRL_DAEMON, "querying app=" NRP_FMT " from parent=%d",
-                   NRP_APPNAME(app->info.appname), daemon_fd);
+  nrl_verbosedebug(NRL_DAEMON, "querying app=" NRP_FMT " from parent",
+                   NRP_APPNAME(app->info.appname));
 
   query
       = nr_appinfo_create_query(app->agent_run_id, app->host_name, &app->info);
@@ -525,6 +522,7 @@ nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app) {
 
   nr_agent_lock_daemon_mutex();
   {
+    int daemon_fd = nr_agent_get_daemon_fd_locked();
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(query), querylen,
                           deadline);
     if (NR_SUCCESS == st) {
