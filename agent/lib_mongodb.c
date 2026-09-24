@@ -165,8 +165,10 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
   /*
    * As of mongodb/mongodb 1.21.4 and 2.4.1, several Operation classes no longer
    * store databaseName/collectionName as their own properties; the constructor
-   * only uses them to build a private $namespace string. Fall back to splitting
-   * that when the direct lookups above come up empty.
+   * only uses them to build a private $namespace string. That string is always
+   * formatted as "<database>.<collection>" (see MongoDB\create_namespace(),
+   * which returns exactly `$databaseName . '.' . $collectionName`). Fall back
+   * to splitting that when the direct lookups above come up empty.
    * MongoDB\create_namespace() forbids '.' in database names, so the first '.'
    * unambiguously separates the two.
    */
@@ -265,8 +267,10 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   /*
    * As of mongodb/mongodb 1.21.4 and 2.4.1, several Operation classes no longer
    * store databaseName/collectionName as their own properties; the constructor
-   * only uses them to build a private $namespace string. Fall back to splitting
-   * that when the direct lookups above come up empty.
+   * only uses them to build a private $namespace string. That string is always
+   * formatted as "<database>.<collection>" (see MongoDB\create_namespace(),
+   * which returns exactly `$databaseName . '.' . $collectionName`). Fall back
+   * to splitting that when the direct lookups above come up empty.
    * MongoDB\create_namespace() forbids '.' in database names, so the first '.'
    * unambiguously separates the two.
    */
