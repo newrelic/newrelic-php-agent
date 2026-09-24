@@ -176,7 +176,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation) {
     namespace
         = nr_php_get_zval_object_property(this_var, "namespace" TSRMLS_CC);
 
-    if (nr_php_is_zval_valid_string(namespace)) {
+    if (nr_php_is_zval_non_empty_string(namespace)) {
       char* value = Z_STRVAL_P(namespace);
       char* dot = nr_strchr(value, '.');
 
@@ -277,7 +277,7 @@ NR_PHP_WRAPPER(nr_mongodb_operation_after) {
   if ((NULL == params.collection) || (NULL == instance.database_name)) {
     namespace = nr_php_get_zval_object_property(this_var, "namespace");
 
-    if (nr_php_is_zval_valid_string(namespace)) {
+    if (nr_php_is_zval_non_empty_string(namespace)) {
       char* value = Z_STRVAL_P(namespace);
       char* dot = nr_strchr(value, '.');
 
