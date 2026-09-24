@@ -18,6 +18,11 @@ type AggregaterInto interface {
 	AggregateInto(h *Harvest)
 }
 
+type pidKey struct {
+	pid      int
+	threadID uint64
+}
+
 type Harvest struct {
 	Metrics           *MetricTable
 	Errors            *ErrorHeap
@@ -30,7 +35,7 @@ type Harvest struct {
 	LogEvents         *LogEvents
 	PhpPackages       *PhpPackages
 	commandsProcessed int
-	pidSet            map[int]struct{}
+	pidSet            map[pidKey]struct{}
 	httpErrorSet      map[int]float64
 }
 
@@ -47,7 +52,7 @@ func NewHarvest(now time.Time, hl collector.EventConfigs) *Harvest {
 		LogEvents:         NewLogEvents(hl.LogEventConfig.Limit),
 		PhpPackages:       NewPhpPackages(),
 		commandsProcessed: 0,
-		pidSet:            make(map[int]struct{}),
+		pidSet:            make(map[pidKey]struct{}),
 		httpErrorSet:      make(map[int]float64),
 	}
 
