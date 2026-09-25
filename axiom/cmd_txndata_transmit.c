@@ -731,7 +731,7 @@ nr_status_t (*nr_cmd_txndata_hook)(const nrtxn_t* txn) = NULL;
 nr_status_t nr_cmd_txndata_tx(const nrtxn_t* txn) {
   nr_flatbuffer_t* msg;
   size_t msglen;
-  nr_status_t st;
+  nr_status_t st = NR_FAILURE;
 
   if (nr_cmd_txndata_hook) {
     return nr_cmd_txndata_hook(txn);
@@ -761,25 +761,18 @@ nr_status_t nr_cmd_txndata_tx(const nrtxn_t* txn) {
     return NR_FAILURE;
   }
 
-  nr_agent_lock_daemon_mutex();
-  {
-    nrtime_t deadline;
-    int daemon_fd = nr_agent_get_daemon_fd_locked();
-
-    deadline
+  NR_AGENT_WITH_DAEMON_FD("TXNDATA", st, {
+    nrtime_t deadline
         = nr_get_time() + (NR_TXNDATA_SEND_TIMEOUT_MSEC * NR_TIME_DIVISOR_MS);
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(msg), msglen,
                           deadline);
-  }
-  nr_agent_unlock_daemon_mutex();
+  });
   nr_flatbuffers_destroy(&msg);
 
   if (NR_SUCCESS != st) {
     nrl_error(NRL_DAEMON, "TXNDATA failure: len=%zu errno=%s", msglen,
               nr_errno(errno));
-    nr_agent_close_daemon_connection();
-    return NR_FAILURE;
   }
 
-  return NR_SUCCESS;
+  return st;
 }
