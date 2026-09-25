@@ -339,6 +339,7 @@ const nr_framework_table_t all_frameworks[] = {
     {"Yii", "yii", NR_PSTR("framework/yiilite.php"), 0, nr_yii1_enable,
      NR_FW_YII1},
     {"Yii2", "yii2", NR_PSTR("yii2/baseyii.php"), 0, nr_yii2_enable,
+    {"Yii3", "yii3", NR_PSTR("yiisoft/config/src/Config.php"), 0, nr_yii2_enable,
      NR_FW_YII2},
 };
 // clang-format: on
