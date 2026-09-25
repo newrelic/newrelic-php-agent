@@ -148,12 +148,14 @@ struct sockaddr* nr_get_agent_daemon_sa(void);
 /*
  * Purpose : Get the file descriptor for the connection to the daemon.
  *
- * Returns : The file descriptor for the daemon connection.
+ * Returns : NR_SUCCESS and sets the file descriptor for the daemon connection
+ *           in the provided pointer if successful.
+ *           NR_FAILURE otherwise.
  *
  * Notes   : To ensure thread safety nr_agent_daemon_mutex must be locked
  *           before calling this function.
  */
-extern int nr_agent_get_daemon_fd_locked(void);
+extern nr_status_t nr_agent_get_daemon_fd_locked(int* fdp);
 
 /*
  * Purpose : This call will attempt to ensure we are connected to the daemon.
@@ -192,6 +194,21 @@ extern void nr_set_daemon_fd(int fd);
 extern void nr_agent_close_daemon_connection(void);
 
 /*
+ * Purpose : Close the connection between an agent process and the daemon,
+ *           for a caller that already holds nr_agent_daemon_mutex.
+ *
+ * Params  : None.
+ *
+ * Returns : NR_SUCCESS, or NR_FAILURE if the calling thread does not hold
+ *           nr_agent_daemon_mutex.
+ *
+ * Notes   : Unlike nr_agent_close_daemon_connection, this does not lock
+ *           nr_agent_daemon_mutex itself. Calling it without already
+ *           holding the mutex (via nr_agent_lock_daemon_mutex) is an error.
+ */
+extern nr_status_t nr_agent_close_daemon_connection_locked(void);
+
+/*
  * Purpose : Determine if a connection to the daemon is possible by creating
  *           one.  This differs from nr_agent_probe_daemon_connection in two
  *           ways: If the connection attempt fails, no warning messages will
@@ -217,5 +234,53 @@ extern int nr_agent_try_daemon_connect(int time_limit_ms);
  */
 extern nr_status_t nr_agent_lock_daemon_mutex(void);
 extern nr_status_t nr_agent_unlock_daemon_mutex(void);
+
+/*
+ * Purpose : Bracket a block of code with the daemon mutex lock/unlock,
+ *           so callers that talk to the daemon don't have to repeat the
+ *           lock/unlock/close-on-failure sequence around their own
+ *           send/receive logic.
+ *
+ *           op_name is a short string (e.g. "APPINFO", "SPAN_BATCH",
+ *           "TXNDATA") used only to identify the caller in log messages
+ *           about lock/fd/unlock failures.
+ *
+ *           io_status reflects only the outcome of body: body is
+ *           responsible for setting it, and the macro never writes to it.
+ *           Callers must initialize io_status to a failure value before
+ *           the macro runs, since it is left untouched if body never runs
+ *           (i.e. locking or fetching the daemon fd failed).
+ *
+ *           If body runs and leaves io_status as a failure, the daemon
+ *           connection is closed while still holding the lock, avoiding a
+ *           race against a concurrent reconnect that a close performed
+ *           after unlocking could hit. Lock, fd-fetch, and unlock failures
+ *           are logged but are a distinct concern from io_status: e.g. an
+ *           unlock failure can happen after body already succeeded, and
+ *           does not by itself mean the connection is bad.
+ *
+ * Usage   : nr_status_t st = NR_FAILURE;
+ *           NR_AGENT_WITH_DAEMON_FD("APPINFO", st, {
+ *             st = nr_write_message(daemon_fd, ..., deadline);
+ *           });
+ */
+#define NR_AGENT_WITH_DAEMON_FD(op_name, io_status, body)                      \
+  do {                                                                         \
+    if (NR_SUCCESS != nr_agent_lock_daemon_mutex()) {                          \
+      nrl_error(NRL_DAEMON, "%s: failed to lock daemon mutex", (op_name));     \
+    } else {                                                                   \
+      int daemon_fd = -1;                                                      \
+      if (NR_SUCCESS != nr_agent_get_daemon_fd_locked(&daemon_fd)) {           \
+        nrl_error(NRL_DAEMON, "%s: failed to get daemon fd", (op_name));       \
+      } else {                                                                 \
+        body if (NR_SUCCESS != (io_status)) {                                  \
+          nr_agent_close_daemon_connection_locked();                           \
+        }                                                                      \
+      }                                                                        \
+      if (NR_SUCCESS != nr_agent_unlock_daemon_mutex()) {                      \
+        nrl_error(NRL_DAEMON, "%s: failed to unlock daemon mutex", (op_name)); \
+      }                                                                        \
+    }                                                                          \
+  } while (0)
 
 #endif /* NR_AGENT_HDR */
