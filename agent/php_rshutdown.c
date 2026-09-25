@@ -159,6 +159,7 @@ int nr_php_post_deactivate(void) {
   NRPRG_SHARED(cufa_callback) = NULL;
 
   NRPRG_SHARED(current_framework) = NR_FW_UNSET;
+  NRPRG_SHARED(laravel_app_instrumented) = false;
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   NRPRG_CTX(drupal_http_request_segment) = NULL;
