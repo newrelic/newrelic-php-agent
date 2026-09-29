@@ -38,20 +38,6 @@ static nrthread_mutex_t nr_agent_daemon_mutex = NRTHREAD_MUTEX_INITIALIZER;
 static nrt_thread_local bool nr_agent_daemon_mutex_held_by_self = false;
 static int nr_agent_daemon_fd = -1;
 
-nr_status_t nr_agent_get_daemon_fd_locked(int* fdp) {
-  if (!nr_agent_daemon_mutex_held_by_self) {
-    nrl_error(NRL_DAEMON,
-              "nr_agent_get_daemon_fd_locked called without holding "
-              "nr_agent_daemon_mutex");
-    return NR_FAILURE;
-  }
-  if (NULL == fdp) {
-    return NR_FAILURE;
-  }
-  *fdp = nr_agent_daemon_fd;
-  return NR_SUCCESS;
-}
-
 static struct sockaddr_in nr_agent_daemon_inaddr;
 static struct sockaddr_in6 nr_agent_daemon_inaddr6;
 static struct sockaddr_un nr_agent_daemon_unaddr;
@@ -573,6 +559,32 @@ static int nr_get_daemon_fd_internal(int log_warning_on_connect_failure) {
   nr_agent_daemon_fd = -1;
   nr_agent_connection_state = NR_AGENT_CONNECTION_STATE_START;
   return -1;
+}
+
+nr_status_t nr_agent_get_daemon_fd_locked(int* fdp) {
+  int fd;
+
+  if (!nr_agent_daemon_mutex_held_by_self) {
+    nrl_error(NRL_DAEMON,
+              "nr_agent_get_daemon_fd_locked called without holding "
+              "nr_agent_daemon_mutex");
+    return NR_FAILURE;
+  }
+  if (NULL == fdp) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * The caller is expected to have already probed the connection (which logs
+   * connect failures), so don't warn again here.
+   */
+  fd = nr_get_daemon_fd_internal(0);
+  if (-1 == fd) {
+    return NR_FAILURE;
+  }
+
+  *fdp = fd;
+  return NR_SUCCESS;
 }
 
 nr_status_t nr_agent_probe_daemon_connection(void) {

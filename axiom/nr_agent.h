@@ -146,11 +146,15 @@ nr_status_t nr_agent_reinitialize_daemon_tcp_connection_parameters(
 struct sockaddr* nr_get_agent_daemon_sa(void);
 
 /*
- * Purpose : Get the file descriptor for the connection to the daemon.
+ * Purpose : Get the file descriptor for a connected daemon socket, attempting
+ *           to (re)connect first if there is no established connection.
+ *           Connecting is non-blocking, so this never waits on the network.
  *
  * Returns : NR_SUCCESS and sets the file descriptor for the daemon connection
- *           in the provided pointer if successful.
- *           NR_FAILURE otherwise.
+ *           in the provided pointer if the connection is established.
+ *           NR_FAILURE if the calling thread does not hold
+ *           nr_agent_daemon_mutex, or if there is no established connection
+ *           (including a connection attempt that is still in progress).
  *
  * Notes   : To ensure thread safety nr_agent_daemon_mutex must be locked
  *           before calling this function.
@@ -249,7 +253,12 @@ extern nr_status_t nr_agent_unlock_daemon_mutex(void);
  *           responsible for setting it, and the macro never writes to it.
  *           Callers must initialize io_status to a failure value before
  *           the macro runs, since it is left untouched if body never runs
- *           (i.e. locking or fetching the daemon fd failed).
+ *           (i.e. locking failed, or there is no established daemon
+ *           connection and one could not be established without blocking).
+ *
+ *           If there is no established daemon connection, the macro makes a
+ *           non-blocking attempt to (re)connect before giving up; body only
+ *           runs with daemon_fd set to a connected socket, never -1.
  *
  *           If body runs and leaves io_status as a failure, the daemon
  *           connection is closed while still holding the lock, avoiding a
@@ -271,7 +280,7 @@ extern nr_status_t nr_agent_unlock_daemon_mutex(void);
     } else {                                                                   \
       int daemon_fd = -1;                                                      \
       if (NR_SUCCESS != nr_agent_get_daemon_fd_locked(&daemon_fd)) {           \
-        nrl_error(NRL_DAEMON, "%s: failed to get daemon fd", (op_name));       \
+        nrl_debug(NRL_DAEMON, "%s: no daemon connection", (op_name));          \
       } else {                                                                 \
         body if (NR_SUCCESS != (io_status)) {                                  \
           nr_agent_close_daemon_connection_locked();                           \
