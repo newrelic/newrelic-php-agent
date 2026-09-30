@@ -530,22 +530,19 @@ nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
         nrl_error(NRL_DAEMON, "APPINFO read failure: len=%zu errno=%s",
                   querylen, nr_errno(errno));
         st = NR_FAILURE;
+      } else {
+        st = nr_cmd_appinfo_process_reply((const uint8_t*)nr_buffer_cptr(buf),
+                                          nr_buffer_len(buf), app);
+        if (NR_SUCCESS != st) {
+          app->state = NR_APP_UNKNOWN;
+          nrl_error(NRL_DAEMON, "APPINFO parse failure: reply len=%d",
+                    nr_buffer_len(buf));
+        }
       }
     }
   });
 
   nr_flatbuffers_destroy(&query);
-
-  if (NR_SUCCESS == st) {
-    st = nr_cmd_appinfo_process_reply((const uint8_t*)nr_buffer_cptr(buf),
-                                      nr_buffer_len(buf), app);
-    if (NR_SUCCESS != st) {
-      app->state = NR_APP_UNKNOWN;
-      nrl_error(NRL_DAEMON, "APPINFO parse failure: reply len=%d",
-                nr_buffer_len(buf));
-      nr_agent_close_daemon_connection();
-    }
-  }
   nr_buffer_destroy(&buf);
 
   return st;
