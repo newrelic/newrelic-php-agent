@@ -28,9 +28,15 @@
  *   I10 With no connection but a reachable daemon, the call connects and
  *       sends on the new connection.
  *
- * The test "a failure never closes a newer connection" does not rely on thread
- * scheduling, so it also works under valgrind (which runs one thread at a
- * time): it holds a failing call in the window where the bug lives.
+ * The stress tests (connection churn, the stress version of "a failure never
+ * closes a newer connection", and fd reuse) can be run for longer with the
+ * environment variables NR_TEST_TRANSPORT_CHURN_ITERS,
+ * NR_TEST_TRANSPORT_FAILURE_STRESS_ITERS and NR_TEST_TRANSPORT_FD_REUSE_ITERS.
+ * They rely on real thread interleaving, so under valgrind (which runs one
+ * thread at a time) they can pass with the bug present. "A failure never
+ * closes a newer connection" therefore also has a deterministic version that
+ * holds a failing call in the window where the bug lives, and does not depend
+ * on scheduling.
  */
 
 #include "nr_axiom.h"
@@ -68,6 +74,7 @@
 #define MS ((nrtime_t)NR_TIME_DIVISOR_MS)
 #define A_LOAD(p) __atomic_load_n((p), __ATOMIC_SEQ_CST)
 #define A_STORE(p, v) __atomic_store_n((p), (v), __ATOMIC_SEQ_CST)
+#define A_ADD(p, v) __atomic_fetch_add((p), (v), __ATOMIC_SEQ_CST)
 
 static char tmpdir[32];
 static char live_path[64];
@@ -166,7 +173,8 @@ typedef struct {
   size_t rawlen;
   frame_t* frames;
   size_t nframes;
-  size_t partial; /* bytes of an incomplete trailing frame */
+  size_t partial;       /* bytes of an incomplete trailing frame */
+  uint32_t partial_len; /* body length its preamble declares, if present */
   bool eof;
   bool bad_format;
 } stream_t;
@@ -210,6 +218,7 @@ static void split_frames(stream_t* s) {
     }
     if (s->rawlen - off - 8 < len) {
       s->partial = s->rawlen - off;
+      s->partial_len = len;
       break;
     }
     s->frames = nr_realloc(s->frames, (s->nframes + 1) * sizeof(frame_t));
@@ -291,7 +300,7 @@ enum { FN_TXN = 0, FN_SPAN = 1 };
 static const char* const fn_name[] = {"txndata", "span_batch"};
 
 static size_t span_len(uint64_t seq) {
-  return 64 + (seq % 7) * 100;
+  return (seq > 0 && 0 == seq % 16) ? 128 * 1024 : 64 + (seq % 7) * 100;
 }
 
 static uint8_t span_fill(uint64_t tid, uint64_t seq) {
@@ -309,6 +318,35 @@ static void payload_make(nr_span_encoding_result_t* r,
   memcpy(r->data, &tid, 8);
   memcpy(r->data + 8, &seq, 8);
   memset(r->data + 16, span_fill(tid, seq), len - 16);
+}
+
+static bool payload_decode(const frame_t* f,
+                           uint64_t* tid,
+                           uint64_t* seq,
+                           size_t* len) {
+  nr_flatbuffers_table_t t, d;
+  const uint8_t* data;
+
+  /* A garbled frame must not send the decoder off the end of the buffer. */
+  if (f->len < 16 || le32(f->body) >= f->len) {
+    return false;
+  }
+  nr_flatbuffers_table_init_root(&t, f->body, f->len);
+  if (MESSAGE_BODY_SPAN_BATCH
+          != nr_flatbuffers_table_read_u8(&t, MESSAGE_FIELD_DATA_TYPE, 0)
+      || 0 == nr_flatbuffers_table_read_union(&d, &t, MESSAGE_FIELD_DATA)) {
+    return false;
+  }
+  *len = nr_flatbuffers_table_read_vector_len(&d, SPAN_BATCH_FIELD_ENCODED);
+  data = nr_flatbuffers_table_read_bytes(&d, SPAN_BATCH_FIELD_ENCODED);
+  if (NULL == data || *len < 16 || *len > f->len) {
+    return false;
+  }
+  memcpy(tid, data, 8);
+  memcpy(seq, data + 8, 8);
+  /* Every byte after the ids equals the fill byte. */
+  return data[16] == span_fill(*tid, *seq)
+         && (*len < 18 || 0 == memcmp(data + 16, data + 17, *len - 17));
 }
 
 static nr_status_t call_span(uint64_t tid, uint64_t seq, size_t len) {
@@ -849,6 +887,301 @@ static void test_connect_in_progress(void) {
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+/* Concurrency helpers                                                 */
+/* ------------------------------------------------------------------ */
+
+static int iterations(const char* name, int dflt) {
+  const char* v = getenv(name);
+
+  return (v && atoi(v) > 0) ? atoi(v) : dflt;
+}
+
+static void micro_sleep(unsigned max_us, unsigned* seed) {
+  if (max_us) {
+    usleep(rand_r(seed) % max_us);
+  }
+}
+
+typedef struct {
+  int fd;
+  bool accepted;
+  unsigned delay_ms;
+  stream_t s;
+  nrthread_t th;
+} conn_t;
+
+typedef struct {
+  nrthread_mutex_t mu;
+  conn_t** conns;
+  size_t n, cap;
+} registry_t;
+
+/* Reads a connection's whole stream (after an optional delay) until EOF. */
+static void* reader_thread(void* arg) {
+  conn_t* c = arg;
+
+  if (c->delay_ms) {
+    usleep(c->delay_ms * 1000);
+  }
+  read_stream(c->fd, in_ms(60000), &c->s);
+  close(c->fd);
+  return NULL;
+}
+
+static void registry_add(registry_t* r, int fd, bool accepted, unsigned delay) {
+  conn_t* c = nr_calloc(1, sizeof(*c));
+
+  c->fd = fd;
+  c->accepted = accepted;
+  c->delay_ms = delay;
+  nrt_mutex_lock(&r->mu);
+  if (r->n == r->cap) {
+    r->cap = r->cap ? r->cap * 2 : 64;
+    r->conns = nr_realloc(r->conns, r->cap * sizeof(*r->conns));
+  }
+  r->conns[r->n++] = c;
+  nrt_mutex_unlock(&r->mu);
+  nrt_create(&c->th, NULL, reader_thread, c);
+}
+
+/*
+ * Connection churn: frames stay whole while connections are replaced.
+ *
+ * Writers send TXNDATA and SPAN_BATCH frames while a chaos thread keeps
+ * swapping the connection (a fresh socketpair, or none, which forces a
+ * reconnect to the listener). Every so often the new pair has a tiny send
+ * buffer and a reader that starts late, and the writers send only big
+ * frames until one is stuck, so a write times out midway through a frame.
+ * Every stream must be frame* [partial] EOF; a partial frame followed by
+ * another writer's frame would show up as a garbled frame. Every span batch
+ * must decode to a (thread, sequence) pair seen exactly once, and every
+ * call that returned success must have arrived.
+ */
+#define CHURN_WRITERS 8
+#define CHURN_MAXSEQ (1u << 20)
+
+typedef struct {
+  int id;
+  int* stop;
+  int* big_only; /* while set, send only big span batches */
+  int* big_acks; /* writers that have switched to big-only mode */
+  uint8_t* ok;   /* ok[seq]: call returned success */
+} churn_writer_t;
+
+typedef struct {
+  int lfd;
+  int* stop;
+  registry_t* reg;
+} churn_acceptor_t;
+
+static void wait_until(int* counter, int want) {
+  nrtime_t deadline = in_ms(1000);
+
+  while (A_LOAD(counter) < want && nr_get_time() < deadline) {
+    usleep(200);
+  }
+}
+
+/* Peeks at the daemon's end until a frame too big for the pair has started. */
+static void wait_for_big_frame(int fd) {
+  nrtime_t deadline = in_ms(1000);
+  uint8_t buf[65536];
+
+  while (nr_get_time() < deadline) {
+    stream_t s = {.raw = buf};
+    ssize_t n = recv(fd, buf, sizeof(buf), MSG_PEEK);
+    bool big;
+
+    if (n > 0) {
+      s.rawlen = (size_t)n;
+      split_frames(&s);
+      big = s.partial_len >= span_len(16);
+      for (size_t k = 0; k < s.nframes; k++) {
+        big = big || s.frames[k].len >= span_len(16);
+      }
+      nr_free(s.frames);
+      if (big) {
+        return;
+      }
+    }
+    usleep(1000);
+  }
+}
+
+static void* churn_writer(void* arg) {
+  churn_writer_t* w = arg;
+  uint32_t seq;
+  bool acked = false;
+
+  for (seq = 1; seq < CHURN_MAXSEQ && !A_LOAD(w->stop); seq++) {
+    nrtxn_t txn;
+
+    if (A_LOAD(w->big_only)) {
+      if (!acked) {
+        A_ADD(w->big_acks, 1);
+        acked = true;
+      }
+      seq = (seq + 15) & ~15u; /* span_len() is big for multiples of 16 */
+    } else {
+      acked = false;
+      nr_memset(&txn, 0, sizeof(txn));
+      nr_cmd_txndata_tx(&txn);
+    }
+    if (NR_SUCCESS == call_span((uint64_t)w->id, seq, span_len(seq))) {
+      w->ok[seq] = 1;
+    }
+    usleep(20); /* don't starve the chaos thread of the daemon lock */
+  }
+  return NULL;
+}
+
+static void* churn_acceptor(void* arg) {
+  churn_acceptor_t* a = arg;
+  int fd;
+
+  while (!A_LOAD(a->stop)) {
+    fd = accept_within(a->lfd, in_ms(20));
+    if (fd >= 0) {
+      registry_add(a->reg, fd, true, 0);
+    }
+  }
+  while ((fd = accept_within(a->lfd, in_ms(50))) >= 0) {
+    registry_add(a->reg, fd, true, 0);
+  }
+  return NULL;
+}
+
+static void test_frames_stay_whole_under_churn(void) {
+  int iters = iterations("NR_TEST_TRANSPORT_CHURN_ITERS", 200);
+  int stall_every = iters / 2 > 0 ? iters / 2 : 1;
+  registry_t reg = {0};
+  int stop_writers = 0, stop_acceptor = 0, big_only = 0, big_acks = 0;
+  churn_writer_t writers[CHURN_WRITERS];
+  nrthread_t wth[CHURN_WRITERS], ath;
+  churn_acceptor_t acc;
+  unsigned seed = 1;
+  int lfd, i;
+  size_t k;
+  size_t frames = 0, accepted_frames = 0, partials = 0, span_frames = 0;
+  size_t violations = 0;
+  uint8_t* seen[CHURN_WRITERS];
+
+  begin_test();
+  nrt_mutex_init(&reg.mu, 0);
+  lfd = listen_live();
+  acc = (churn_acceptor_t){.lfd = lfd, .stop = &stop_acceptor, .reg = &reg};
+  nrt_create(&ath, NULL, churn_acceptor, &acc);
+
+  for (i = 0; i < CHURN_WRITERS; i++) {
+    seen[i] = nr_calloc(CHURN_MAXSEQ, 1);
+    writers[i] = (churn_writer_t){.id = i,
+                                  .stop = &stop_writers,
+                                  .big_only = &big_only,
+                                  .big_acks = &big_acks,
+                                  .ok = nr_calloc(CHURN_MAXSEQ, 1)};
+    nrt_create(&wth[i], NULL, churn_writer, &writers[i]);
+  }
+
+  for (i = 0; i < iters; i++) {
+    micro_sleep(1000, &seed);
+    if (i % stall_every == stall_every - 1 || rand_r(&seed) % 2) {
+      int socks[2];
+      unsigned delay = 0;
+
+      nbsockpair(socks);
+      if (i % stall_every == stall_every - 1) {
+        int one = 1;
+
+        setsockopt(socks[0], SOL_SOCKET, SO_SNDBUF, &one, sizeof(one));
+        setsockopt(socks[1], SOL_SOCKET, SO_RCVBUF, &one, sizeof(one));
+        delay = 700;
+      }
+      registry_add(&reg, socks[1], false, delay);
+      if (delay) {
+        /* Once every writer is past its last small frame, install. */
+        A_STORE(&big_acks, 0);
+        A_STORE(&big_only, 1);
+        wait_until(&big_acks, CHURN_WRITERS);
+      }
+      nr_set_daemon_fd(socks[0]);
+      if (delay) {
+        wait_for_big_frame(socks[1]);
+        A_STORE(&big_only, 0);
+      }
+    } else {
+      nr_set_daemon_fd(-1);
+    }
+  }
+
+  A_STORE(&stop_writers, 1);
+  for (i = 0; i < CHURN_WRITERS; i++) {
+    nrt_join(wth[i], NULL);
+  }
+  nr_set_daemon_fd(-1);
+  A_STORE(&stop_acceptor, 1);
+  nrt_join(ath, NULL);
+
+  for (k = 0; k < reg.n; k++) {
+    conn_t* c = reg.conns[k];
+    size_t f;
+
+    nrt_join(c->th, NULL);
+    if (c->s.bad_format || !c->s.eof) {
+      violations++;
+    }
+    partials += c->s.partial > 0;
+    for (f = 0; f < c->s.nframes; f++) {
+      const frame_t* fr = &c->s.frames[f];
+      uint64_t tid, seq;
+      size_t len;
+
+      frames++;
+      accepted_frames += c->accepted;
+      if (fr->len < 16 || le32(fr->body) >= fr->len) {
+        violations++;
+      } else if (MESSAGE_BODY_TXN == frame_body_type(fr)) {
+        continue;
+      } else if (!payload_decode(fr, &tid, &seq, &len) || tid >= CHURN_WRITERS
+                 || seq >= CHURN_MAXSEQ || len != span_len(seq)
+                 || seen[tid][seq]++) {
+        violations++;
+      } else {
+        span_frames++;
+      }
+    }
+    stream_free(&c->s);
+    nr_free(c);
+  }
+  nr_free(reg.conns);
+  nrt_mutex_destroy(&reg.mu);
+
+  for (i = 0; i < CHURN_WRITERS; i++) {
+    uint32_t seq;
+
+    for (seq = 1; seq < CHURN_MAXSEQ; seq++) {
+      if (writers[i].ok[seq] && !seen[i][seq]) {
+        violations++;
+      }
+    }
+    nr_free(writers[i].ok);
+    nr_free(seen[i]);
+  }
+
+  printf(
+      "churn: %zu frames (%zu span batches, %zu on accepted connections), "
+      "%zu partial\n",
+      frames, span_frames, accepted_frames, partials);
+  tlib_pass_if_size_t_equal("churn: stream violations", 0, violations);
+  tlib_pass_if_true("churn: reconnect path ran", accepted_frames > 0,
+                    "no frame arrived on an accepted connection");
+  tlib_pass_if_true("churn: a frame was cut short", partials > 0,
+                    "no partial frame: the timeout path was not exercised");
+
+  end_test();
+  stop_listening(lfd);
+}
+
 /*
  * A failure never closes a newer connection.
  *
@@ -932,6 +1265,233 @@ static void test_failure_spares_newer_connection(void) {
   close(b[1]);
 }
 
+/*
+ * A failure never closes a newer connection (stress): the same property
+ * under real interleaving, native runs only.
+ *
+ * Workers call APPINFO in a loop. The chaos thread alternates a "bad" pair
+ * (its peer answers with the wrong message type, so the call fails to parse
+ * the reply) with a "good" pair, installing the good one as soon as the bad
+ * peer has answered. A good peer that sees EOF before its pair was retired by
+ * the chaos thread was closed by somebody else. Also requires that bad peers
+ * answered, so a green run means the failure path ran.
+ */
+#define SPARE_WORKERS 4
+
+typedef struct {
+  int fd;
+  bool good;
+  int retiring;
+  int served;
+  int killed; /* good peer saw EOF it was not owed */
+  nrthread_t th;
+} spare_peer_t;
+
+typedef struct {
+  int* stop;
+  unsigned calls;
+} spare_worker_t;
+
+static void* spare_peer_thread(void* arg) {
+  spare_peer_t* p = arg;
+
+  for (;;) {
+    /* The deadline never expires in practice, so a failure here is a close. */
+    if (!read_frame(p->fd, in_ms(60000))) {
+      if (p->good && !A_LOAD(&p->retiring)) {
+        A_STORE(&p->killed, 1);
+      }
+      break;
+    }
+    send_reply(p->fd, p->good ? PEER_REPLY : PEER_WRONG_TYPE,
+               APP_STATUS_CONNECTED, 2);
+    A_ADD(&p->served, 1);
+  }
+  close(p->fd);
+  return NULL;
+}
+
+static void* spare_worker(void* arg) {
+  spare_worker_t* w = arg;
+  nrapp_t* app;
+
+  app = app_new();
+  while (!A_LOAD(w->stop)) {
+    nr_cmd_appinfo_tx(app);
+    w->calls++;
+    usleep(20); /* don't starve the chaos thread of the daemon lock */
+  }
+  app_destroy(&app);
+  return NULL;
+}
+
+static spare_peer_t* spare_install(bool good) {
+  spare_peer_t* p = nr_calloc(1, sizeof(*p));
+  int socks[2];
+
+  nbsockpair(socks);
+  p->fd = socks[1];
+  p->good = good;
+  nrt_create(&p->th, NULL, spare_peer_thread, p);
+  nr_set_daemon_fd(socks[0]);
+  return p;
+}
+
+static void test_failure_spares_newer_connection_stress(void) {
+  int iters = iterations("NR_TEST_TRANSPORT_FAILURE_STRESS_ITERS", 40);
+  uint64_t saved = nr_cmd_appinfo_timeout_us;
+  int stop = 0, i, killed = 0, bad_served = 0;
+  spare_worker_t workers[SPARE_WORKERS];
+  nrthread_t wth[SPARE_WORKERS];
+  spare_peer_t** peers = nr_calloc((size_t)iters * 2, sizeof(*peers));
+  size_t npeers = 0, k;
+  unsigned long calls = 0;
+
+  begin_test();
+  nr_cmd_appinfo_timeout_us = 1000 * MS;
+  for (i = 0; i < SPARE_WORKERS; i++) {
+    workers[i] = (spare_worker_t){.stop = &stop};
+    nrt_create(&wth[i], NULL, spare_worker, &workers[i]);
+  }
+
+  for (i = 0; i < iters; i++) {
+    spare_peer_t* bad;
+    spare_peer_t* good;
+    nrtime_t give_up = in_ms(5);
+
+    if (npeers && peers[npeers - 1]->good) {
+      A_STORE(&peers[npeers - 1]->retiring, 1);
+    }
+    bad = spare_install(false);
+    peers[npeers++] = bad;
+    while (0 == A_LOAD(&bad->served) && nr_get_time() < give_up) {
+      sched_yield();
+    }
+    good = spare_install(true);
+    peers[npeers++] = good;
+    usleep(200);
+  }
+
+  A_STORE(&peers[npeers - 1]->retiring, 1);
+  A_STORE(&stop, 1);
+  for (i = 0; i < SPARE_WORKERS; i++) {
+    nrt_join(wth[i], NULL);
+    calls += workers[i].calls;
+  }
+  nr_set_daemon_fd(-1);
+  for (k = 0; k < npeers; k++) {
+    nrt_join(peers[k]->th, NULL);
+    killed += A_LOAD(&peers[k]->killed);
+    bad_served += peers[k]->good ? 0 : A_LOAD(&peers[k]->served);
+    nr_free(peers[k]);
+  }
+  nr_free(peers);
+
+  printf(
+      "stress: %lu calls, %d failing replies, %d good connections "
+      "closed by another call's failure\n",
+      calls, bad_served, killed);
+  tlib_pass_if_int_equal(
+      "stress: good connections closed by a failure "
+      "elsewhere",
+      0, killed);
+  tlib_pass_if_true("stress: failure path ran", bad_served > 0,
+                    "no bad peer ever answered");
+
+  nr_cmd_appinfo_timeout_us = saved;
+  end_test();
+}
+
+/*
+ * fd reuse: no writes to a reused fd number.
+ *
+ * Writers send TXNDATA while the chaos thread closes the agent's connection
+ * (fd N) and right away makes a decoy pipe whose write end is fd N. The
+ * decoy must never receive a byte. The decoy is placed with F_DUPFD, which
+ * takes N only if it is free, so it never clobbers an fd a writer's failed
+ * reconnect attempt is holding. The test counts how often the decoy really
+ * got N, and fails if that never happened.
+ */
+#define REUSE_WRITERS 4
+
+static void* reuse_writer(void* arg) {
+  int* stop = arg;
+  nrtxn_t txn;
+
+  nr_memset(&txn, 0, sizeof(txn));
+  while (!A_LOAD(stop)) {
+    nr_cmd_txndata_tx(&txn);
+    usleep(20); /* don't starve the chaos thread of the daemon lock */
+  }
+  return NULL;
+}
+
+static void drain(int fd) {
+  char tmp[4096];
+
+  while (read(fd, tmp, sizeof(tmp)) > 0) {
+  }
+}
+
+static void test_no_write_to_reused_fd(void) {
+  int iters = iterations("NR_TEST_TRANSPORT_FD_REUSE_ITERS", 2000);
+  int stop = 0, i;
+  nrthread_t wth[REUSE_WRITERS];
+  int socks[2];
+  int hits = 0, bytes_seen = 0;
+
+  begin_test();
+  install_pair(socks);
+  for (i = 0; i < REUSE_WRITERS; i++) {
+    nrt_create(&wth[i], NULL, reuse_writer, &stop);
+  }
+
+  for (i = 0; i < iters; i++) {
+    int n = socks[0];
+    int p[2], dw;
+    char c;
+
+    nr_set_daemon_fd(-1); /* closes fd n */
+    if (0 != pipe(p)) {
+      break;
+    }
+    nr_network_set_non_blocking(p[0]);
+    if (p[1] == n) {
+      dw = p[1];
+    } else {
+      dw = fcntl(p[1], F_DUPFD, n);
+      close(p[1]);
+    }
+    hits += dw == n;
+    usleep(100);
+    if (dw >= 0) {
+      close(dw);
+    }
+    if (read(p[0], &c, 1) > 0) {
+      bytes_seen++;
+    }
+    close(p[0]);
+
+    drain(socks[1]);
+    close(socks[1]);
+    install_pair(socks);
+  }
+
+  A_STORE(&stop, 1);
+  for (i = 0; i < REUSE_WRITERS; i++) {
+    nrt_join(wth[i], NULL);
+  }
+  end_test();
+  close(socks[1]);
+
+  printf("fd reuse: decoy got the closed fd's number in %d of %d iterations\n",
+         hits, iters);
+  tlib_pass_if_int_equal("fd reuse: decoy pipes that received data", 0,
+                         bytes_seen);
+  tlib_pass_if_true("fd reuse: scenario was exercised", hits > 0,
+                    "the decoy never got the closed fd's number");
+}
+
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 1, .state_size = 0};
 
 void test_main(void* p NRUNUSED) {
@@ -960,6 +1520,9 @@ void test_main(void* p NRUNUSED) {
   test_reconnect_on_demand();
   test_daemon_drops_connection();
   test_connect_in_progress();
+  test_no_write_to_reused_fd();
+  test_frames_stay_whole_under_churn();
+  test_failure_spares_newer_connection_stress();
   /* Last: it changes the log level and file. */
   test_failure_spares_newer_connection();
 
