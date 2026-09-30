@@ -521,9 +521,14 @@ nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
     nrtime_t deadline = nr_get_time() + nr_cmd_appinfo_timeout_us;
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(query), querylen,
                           deadline);
-    if (NR_SUCCESS == st) {
+    if (NR_SUCCESS != st) {
+      nrl_error(NRL_DAEMON, "APPINFO write failure: len=%zu errno=%s", querylen,
+                nr_errno(errno));
+    } else {
       buf = nr_network_receive(daemon_fd, deadline);
       if (NULL == buf) {
+        nrl_error(NRL_DAEMON, "APPINFO read failure: len=%zu errno=%s",
+                  querylen, nr_errno(errno));
         st = NR_FAILURE;
       }
     }
@@ -531,11 +536,7 @@ nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
 
   nr_flatbuffers_destroy(&query);
 
-  if (NR_SUCCESS != st) {
-    app->state = NR_APP_UNKNOWN;
-    nrl_error(NRL_DAEMON, "APPINFO transport failure: len=%zu errno=%s",
-              querylen, nr_errno(errno));
-  } else {
+  if (NR_SUCCESS == st) {
     st = nr_cmd_appinfo_process_reply((const uint8_t*)nr_buffer_cptr(buf),
                                       nr_buffer_len(buf), app);
     if (NR_SUCCESS != st) {

@@ -766,13 +766,12 @@ nr_status_t nr_cmd_txndata_tx(const nrtxn_t* txn) {
         = nr_get_time() + (NR_TXNDATA_SEND_TIMEOUT_MSEC * NR_TIME_DIVISOR_MS);
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(msg), msglen,
                           deadline);
+    if (NR_SUCCESS != st) {
+      nrl_error(NRL_DAEMON, "TXNDATA failure: len=%zu errno=%s", msglen,
+                nr_errno(errno));
+    }
   });
   nr_flatbuffers_destroy(&msg);
-
-  if (NR_SUCCESS != st) {
-    nrl_error(NRL_DAEMON, "TXNDATA failure: len=%zu errno=%s", msglen,
-              nr_errno(errno));
-  }
 
   return st;
 }
