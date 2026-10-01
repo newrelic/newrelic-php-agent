@@ -799,7 +799,6 @@ static void test_daemon_drops_connection(void) {
  * succeed, and never break a frame.
  */
 static void test_connect_in_progress(void) {
-#ifdef __linux__
   struct sockaddr_in sa;
   socklen_t sl = sizeof(sa);
   char port[16];
@@ -846,7 +845,6 @@ static void test_connect_in_progress(void) {
   }
   end_test();
   close(lfd);
-#endif
 }
 
 /*
