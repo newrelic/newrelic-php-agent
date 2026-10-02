@@ -486,29 +486,25 @@ int nr_cmd_appinfo_process_get_harvest_limit(const nrobj_t* limits,
 }
 
 /* Hook for stubbing APPINFO messages during testing. */
-nr_status_t (*nr_cmd_appinfo_hook)(int daemon_fd, nrapp_t* app) = NULL;
+nr_status_t (*nr_cmd_appinfo_hook)(nrapp_t* app) = NULL;
 
-nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app) {
+nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
   nr_flatbuffer_t* query;
   nrbuf_t* buf = NULL;
-  nrtime_t deadline;
-  nr_status_t st;
+  nr_status_t st = NR_FAILURE;
   size_t querylen;
 
   if (nr_cmd_appinfo_hook) {
-    return nr_cmd_appinfo_hook(daemon_fd, app);
+    return nr_cmd_appinfo_hook(app);
   }
 
   if (NULL == app) {
     return NR_FAILURE;
   }
-  if (daemon_fd < 0) {
-    return NR_FAILURE;
-  }
 
   app->state = NR_APP_UNKNOWN;
-  nrl_verbosedebug(NRL_DAEMON, "querying app=" NRP_FMT " from parent=%d",
-                   NRP_APPNAME(app->info.appname), daemon_fd);
+  nrl_verbosedebug(NRL_DAEMON, "querying app=" NRP_FMT " from parent",
+                   NRP_APPNAME(app->info.appname));
 
   query
       = nr_appinfo_create_query(app->agent_run_id, app->host_name, &app->info);
@@ -521,29 +517,33 @@ nr_status_t nr_cmd_appinfo_tx(int daemon_fd, nrapp_t* app) {
     return NR_FAILURE;
   }
 
-  deadline = nr_get_time() + nr_cmd_appinfo_timeout_us;
-
-  nr_agent_lock_daemon_mutex();
-  {
+  NR_AGENT_WITH_DAEMON_FD("APPINFO", st, {
+    nrtime_t deadline = nr_get_time() + nr_cmd_appinfo_timeout_us;
     st = nr_write_message(daemon_fd, nr_flatbuffers_data(query), querylen,
                           deadline);
-    if (NR_SUCCESS == st) {
+    if (NR_SUCCESS != st) {
+      nrl_error(NRL_DAEMON, "APPINFO write failure: len=%zu errno=%s", querylen,
+                nr_errno(errno));
+    } else {
       buf = nr_network_receive(daemon_fd, deadline);
+      if (NULL == buf) {
+        nrl_error(NRL_DAEMON, "APPINFO read failure: len=%zu errno=%s",
+                  querylen, nr_errno(errno));
+        st = NR_FAILURE;
+      } else {
+        st = nr_cmd_appinfo_process_reply((const uint8_t*)nr_buffer_cptr(buf),
+                                          nr_buffer_len(buf), app);
+        if (NR_SUCCESS != st) {
+          app->state = NR_APP_UNKNOWN;
+          nrl_error(NRL_DAEMON, "APPINFO parse failure: reply len=%d",
+                    nr_buffer_len(buf));
+        }
+      }
     }
-  }
-  nr_agent_unlock_daemon_mutex();
+  });
 
   nr_flatbuffers_destroy(&query);
-  st = nr_cmd_appinfo_process_reply((const uint8_t*)nr_buffer_cptr(buf),
-                                    nr_buffer_len(buf), app);
   nr_buffer_destroy(&buf);
-
-  if (NR_SUCCESS != st) {
-    app->state = NR_APP_UNKNOWN;
-    nrl_error(NRL_DAEMON, "APPINFO failure: len=%zu errno=%s", querylen,
-              nr_errno(errno));
-    nr_agent_close_daemon_connection();
-  }
 
   return st;
 }

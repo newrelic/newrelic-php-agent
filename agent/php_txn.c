@@ -905,7 +905,6 @@ nr_status_t nr_php_txn_begin(const char* appnames,
                              const char* license TSRMLS_DC) {
   nrtxnopt_t opts;
   const char* lic_to_use;
-  int pfd;
   nrobj_t* log_forwarding_labels = NULL;
   nr_attribute_config_t* attribute_config;
   nr_app_info_t info;
@@ -921,20 +920,12 @@ nr_status_t nr_php_txn_begin(const char* appnames,
    */
   memset(&NRPRG(txn_globals), 0, sizeof(NRPRG(txn_globals)));
 
-  /*
-   * This call will attempt to ensure we are connected to the daemon. It is
-   * non-blocking so it is pretty quick. If we had no connection and the daemon
-   * has since been brought back up, this will start the process of connecting
-   * to it.
-   */
-  pfd = nr_get_daemon_fd();
-
 #if ZEND_MODULE_API_NO < ZEND_7_4_X_API_NO
   /* For PHP 7.4+ user instrumentation is reset at rshutdown. */
   nr_php_reset_user_instrumentation();
 #endif
 
-  if (pfd < 0) {
+  if (NR_SUCCESS != nr_agent_probe_daemon_connection()) {
     nrl_debug(NRL_INIT, "unable to begin transaction: no daemon connection");
     return NR_FAILURE;
   }
@@ -1373,10 +1364,14 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
       /*
        * Check status.ignore again in case it has changed during nr_txn_end.
        */
-      ret = nr_cmd_txndata_tx(nr_get_daemon_fd(), txn);
-      nr_txn_mark_composer_packages_sent(txn);
-      if (NR_FAILURE == ret) {
-        nrl_debug(NRL_TXN, "failed to send txn");
+      if (NR_SUCCESS != nr_agent_probe_daemon_connection()) {
+        nrl_debug(NRL_TXN, "%s - no daemon connection", __func__);
+      } else {
+        ret = nr_cmd_txndata_tx(txn);
+        nr_txn_mark_composer_packages_sent(txn);
+        if (NR_FAILURE == ret) {
+          nrl_debug(NRL_TXN, "failed to send txn");
+        }
       }
     }
   }

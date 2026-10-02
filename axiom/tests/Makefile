@@ -131,6 +131,7 @@ TESTS := \
   test_buffer \
   test_cmd_appinfo \
   test_cmd_span_batch \
+  test_cmd_transport \
   test_cmd_txndata \
   test_configstrings \
   test_custom_events \

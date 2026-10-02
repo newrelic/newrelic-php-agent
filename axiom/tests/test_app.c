@@ -34,8 +34,8 @@ typedef struct _test_app_state_t {
   bool last_daemon_query_reset;
 } test_app_state_t;
 
-int nr_get_daemon_fd(void) {
-  return 0;
+nr_status_t nr_agent_probe_daemon_connection(void) {
+  return NR_SUCCESS;
 }
 
 typedef struct _nrintharvest_t {
@@ -523,7 +523,7 @@ static void test_find_locked_high_security_mismatch(void) {
  */
 nrapptype_t nr_cmd_appinfo_tx_state = NR_APP_OK;
 
-nr_status_t nr_cmd_appinfo_tx(int daemon_fd NRUNUSED, nrapp_t* app) {
+nr_status_t nr_cmd_appinfo_tx(nrapp_t* app) {
   test_app_state_t* p = (test_app_state_t*)tlib_getspecific();
 
   p->cmd_appinfo_called += 1;
