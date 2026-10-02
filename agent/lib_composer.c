@@ -69,9 +69,34 @@ static int nr_execute_handle_autoload_composer_init(const char* vendor_path) {
   return NR_SUCCESS;
 }
 
+/*
+ * Purpose : Find (never create) the nrapp_t for the current (app, thread)
+ *           when no txn exists to supply one, by asking
+ *           nr_php_txn_populate_app_info_identity() to build the same
+ *           search-key fields nr_php_txn_begin() would have used with no
+ *           explicit appname/license override.
+ *
+ * Returns : The matching nrapp_t, with app->app_lock held (caller must
+ *           unlock), or NULL if no match exists yet.
+ */
+static nrapp_t* nr_composer_find_app_no_txn() {
+  nr_app_info_t info;
+  nrapp_t* app;
+
+  nr_memset(&info, 0, sizeof(info));
+
+  nr_php_txn_populate_app_info_identity(&info, NULL, NULL);
+
+  app = nr_app_find_locked(nr_agent_applist, &info);
+
+  nr_app_info_destroy_fields(&info);
+  return app; /* still locked if non-NULL */
+}
+
 static nr_composer_api_status_t
 nr_execute_handle_autoload_composer_get_packages_information(
-    const char* vendor_path) {
+    const char* vendor_path,
+    nr_php_packages_t* packages_out) {
   zval retval;  // This is used as a return value for zend_eval_string.
                 // It will only be set if the result of the eval is SUCCESS.
   int result = FAILURE;
@@ -152,9 +177,11 @@ nr_execute_handle_autoload_composer_get_packages_information(
         nrl_verbosedebug(NRL_INSTRUMENT, "package %s, version %s",
                          NRSAFESTR(ZSTR_VAL(package_name)),
                          NRSAFESTR(Z_STRVAL_P(package_version)));
-        nr_txn_add_php_package_from_source(NRPRG(txn), ZSTR_VAL(package_name),
-                                           Z_STRVAL_P(package_version),
-                                           NR_PHP_PACKAGE_SOURCE_COMPOSER);
+        nr_php_packages_add_package(
+            packages_out,
+            nr_php_package_create_with_source(ZSTR_VAL(package_name),
+                                              Z_STRVAL_P(package_version),
+                                              NR_PHP_PACKAGE_SOURCE_COMPOSER));
       }
     }
     ZEND_HASH_FOREACH_END();
@@ -234,6 +261,7 @@ void nr_composer_handle_autoload(const char* filename) {
 #define COMPOSER_MAGIC_FILE_3 "composer/installed.php"
 #define COMPOSER_MAGIC_FILE_3_LEN (sizeof(COMPOSER_MAGIC_FILE_3) - 1)
   char* vendor_path = NULL;  // result of dirname(filename)
+  nr_composer_thread_entry_t* entry = NULL;
 
   // nrunlikely because this should alredy be ensured by the caller
   if (nrunlikely(NULL == filename)) {
@@ -270,12 +298,72 @@ void nr_composer_handle_autoload(const char* filename) {
   }
 
   nrl_verbosedebug(NRL_FRAMEWORK, "detected composer");
-  NRPRG(txn)->composer_info.composer_detected = true;
-  nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
+  if (NULL != NRPRG(txn)) {
+    NRPRG(txn)->composer_info.composer_detected = true;
+    nr_fw_support_add_library_supportability_metric(NRPRG(txn), "Composer");
+  }
 
-  NRTXN(composer_info.api_status)
-      = nr_execute_handle_autoload_composer_get_packages_information(
-          vendor_path);
+  /* Step 1: resolve the per-(app,thread) entry — via the txn's cached
+   * pointer if one exists, or via a fresh find-only lookup if not. */
+  if (NULL != NRPRG(txn)) {
+    entry = NRPRG(txn)->composer_info.entry;
+  } else {
+    nrapp_t* app = nr_composer_find_app_no_txn();
+    if (NULL != app) {
+      entry = nr_app_get_or_create_thread_composer_entry(app,
+                                                         (uint64_t)nr_gettid());
+      /* entry pointer is now safe to use lock-free after this point, same
+       * as the with-txn case (see nr_app.h's per-map locking contract) —
+       * unlock immediately rather than holding through the write below. */
+      nrt_mutex_unlock(&app->app_lock);
+    }
+  }
+
+  if (NULL == entry) {
+    nrl_debug(NRL_FRAMEWORK,
+              "%s - no (app, thread) entry available for composer scan write; "
+              "skipping (expected-unreachable per design assumptions)",
+              __func__);
+    goto leave;
+  }
+
+  /* This write runs lock-free, on purpose: `entry` was resolved above
+   * either from NRPRG(txn)->composer_info.entry (itself fetched lock-free
+   * by this same thread at txn begin) or via a fresh lookup keyed by
+   * (uint64_t)nr_gettid() in the no-txn branch above, and no thread other
+   * than the one that owns an entry ever touches it -- the same
+   * same-owning-thread-only invariant that already justifies
+   * nr_txn_pull_composer_packages()/nr_txn_mark_composer_packages_sent()
+   * being lock-free in axiom/nr_txn.c. See the doc comment on
+   * nr_composer_thread_entry_t in axiom/nr_app.h for the full rationale. */
+  {
+    nr_php_packages_t* fresh_packages = nr_php_packages_create();
+    nr_composer_api_status_t result
+        = nr_execute_handle_autoload_composer_get_packages_information(
+            vendor_path, fresh_packages);
+
+    if (NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED == result) {
+      /* A successful rescan always replaces whatever was there before. */
+      if (NULL != entry->packages) {
+        nr_php_packages_destroy(&entry->packages);
+      }
+      entry->packages = fresh_packages;
+      entry->epoch += 1;
+      entry->status = result;
+    } else {
+      /* A failed rescan never touches entry->packages/epoch, regardless
+       * of what was there -- there's nothing worth installing. Only
+       * entry->status needs a decision: leave it alone if it's already
+       * PACKAGES_COLLECTED (protects existing good data's status
+       * invariant), otherwise record this attempt's failure code so the
+       * default gate still closes on a never-yet-successful entry,
+       * matching today's/main's give-up-after-failure behavior. */
+      nr_php_packages_destroy(&fresh_packages);
+      if (NR_COMPOSER_API_STATUS_PACKAGES_COLLECTED != entry->status) {
+        entry->status = result;
+      }
+    }
+  }
 leave:
   nr_free(vendor_path);
 }

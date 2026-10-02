@@ -6,7 +6,7 @@
 # Canonical list of supported PHP versions (ascending order).
 # This is the single source of truth — update this when adding
 # or removing PHP version support.
-PHP_VERSIONS := 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4 8.5
+PHP_VERSIONS := 7.2 7.3 7.4 8.0 8.1 8.2 8.2-zts 8.3 8.3-zts 8.4 8.4-zts 8.5 8.5-zts
 
 # PHP versions supported on arm64 (8.0+)
 PHP_VERSIONS_ARM64 := $(filter 8.%, $(PHP_VERSIONS))

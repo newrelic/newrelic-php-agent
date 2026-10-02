@@ -125,11 +125,13 @@ TESTS := \
   test_apdex \
   test_app \
   test_app_harvest \
+  test_app_harvest_threads \
   test_attributes \
   test_base64 \
   test_buffer \
   test_cmd_appinfo \
   test_cmd_span_batch \
+  test_cmd_transport \
   test_cmd_txndata \
   test_configstrings \
   test_custom_events \
