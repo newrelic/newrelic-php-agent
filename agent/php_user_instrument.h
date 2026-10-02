@@ -113,7 +113,7 @@ typedef struct _nruserfn_t {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   // Custom fcall_begin and fcall_end handlers. If set, they will be used
   // instead of the default ones: nr_php_observer_fcall_begin and
-  // nr_php_observer_fcall_begin. This allows the agent to execute custom
+  // nr_php_observer_fcall_end. This allows the agent to execute custom
   // logic for any user function without disrupting default behavior of
   // starting and stopping segments.
   zend_observer_fcall_handlers fcall_handlers;
