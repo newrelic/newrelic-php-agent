@@ -191,6 +191,10 @@ var (
 	txnPhpPackagesSample = AggregaterIntoFn(func(h *Harvest) {
 		h.PhpPackages.AddPhpPackagesFromData(samplePhpPackages)
 	})
+	txnMetricSample = AggregaterIntoFn(func(h *Harvest) {
+		h.Metrics.AddCount("WebTransaction/Uri/race", "", 1, 0)
+		h.Metrics.AddValue("WebTransactionTotalTime/Uri/race", "", 1, 0)
+	})
 	txnEventSample1Times = func(times int) AggregaterIntoFn {
 		return AggregaterIntoFn(func(h *Harvest) {
 			for range times {
@@ -1821,4 +1825,41 @@ func TestMissingAgentAndCollectorHarvestLimit(t *testing.T) {
 	}
 
 	m.p.quit()
+}
+
+func TestProcessorHarvestDefaultDataMetricRace(t *testing.T) {
+
+	m := NewMockedProcessor(500)
+
+	m.DoAppInfo(t, nil, AppStateUnknown)
+	m.DoConnect(t, &idOne)
+	m.DoAppInfo(t, nil, AppStateConnected)
+
+	ah := m.p.harvests[idOne]
+
+	// Pre-fill the client replies so that the harvest goroutines never have to
+	// synchronize with this goroutine while the race window is open.
+	for range 400 {
+		m.clientReturn <- ClientReturn{nil, nil, 202}
+	}
+
+	for range 20 {
+		m.TxnData(t, idOne, txnMetricSample)
+		m.TxnData(t, idOne, txnErrorEventSample)
+
+		m.processorHarvestChan <- ProcessorHarvest{
+			AppHarvest: ah,
+			ID:         idOne,
+			Type:       HarvestDefaultData,
+		}
+
+		// Do not wait for the harvest to finish: queue transaction data that
+		// the processor aggregates while the harvest goroutine is running.
+		m.p.IncomingTxnData(idOne, txnMetricSample)
+
+		<-m.p.trackProgress // harvest
+		<-m.p.trackProgress // txn data
+	}
+
+	m.QuitTestProcessor()
 }
