@@ -144,12 +144,11 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
   handlers.begin = nr_php_observer_fcall_begin;
   handlers.end = nr_php_observer_fcall_end;
 
-  // override default handlers with wraprec's custom handlers
-  if (NULL != wr) {
-    if (NULL != wr->fcall_handlers.begin)
-      handlers.begin = wr->fcall_handlers.begin;
-    if (NULL != wr->fcall_handlers.end)
-      handlers.end = wr->fcall_handlers.end;
+  // override default handlers with wraprec's custom handlers - all or nothing,
+  // because the default begin and end handlers work as a pair
+  if (NULL != wr && NULL != wr->fcall_handlers.begin && NULL != wr->fcall_handlers.end) {
+    handlers.begin = wr->fcall_handlers.begin;
+    handlers.end = wr->fcall_handlers.end;
   }
   return handlers;
   // clang-format on
