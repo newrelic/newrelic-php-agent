@@ -14,6 +14,7 @@ tlib_parallel_info_t parallel_info
 #include "php_execute.h"
 #include "php_globals.h"
 #include "php_user_instrument_wraprec_hashmap.h"
+#include "php_wrapper.h"
 #include "nr_php_packages.h"
 
 /*
@@ -305,6 +306,136 @@ static void test_register_handlers_enabled_and_recording(void) {
   tlib_php_request_end();
   tlib_php_engine_destroy();
 }
+
+/*
+ * Handler override contract: a wraprec's custom fcall_handlers replace the
+ * default Observer handlers only when both are set. The default begin and end
+ * handlers work as a pair (stack depth, segment), so they are never mixed with
+ * custom ones.
+ */
+static int custom_begin_calls = 0;
+static int custom_end_calls = 0;
+
+static void custom_fcall_begin(zend_execute_data* execute_data NRUNUSED) {
+  custom_begin_calls += 1;
+}
+
+static void custom_fcall_end(zend_execute_data* execute_data NRUNUSED,
+                             zval* return_value NRUNUSED) {
+  custom_end_calls += 1;
+}
+
+typedef struct {
+  int custom_begin_calls;
+  int custom_end_calls;
+  int default_begin_calls;
+  int stack_depth_delta;
+} override_result_t;
+
+/*
+ * Wraps o_target with the given custom handlers (optionally after calling it
+ * once), calls it, and reports which handlers ran.
+ */
+static override_result_t call_with_custom_handlers(
+    zend_observer_fcall_begin_handler begin,
+    zend_observer_fcall_end_handler end,
+    bool warm_up) {
+  override_result_t result = {0};
+  nruserfn_t* wr = NULL;
+  int execute_count = 0;
+  int depth = 0;
+
+  tlib_php_engine_create("");
+  tlib_php_request_start();
+
+  tlib_php_request_eval("function o_target() { return 1; }");
+  if (warm_up) {
+    tlib_php_request_eval("o_target();");
+  }
+
+  wr = nr_php_wrap_callable(nr_php_find_function("o_target"), NULL);
+  tlib_pass_if_not_null("o_target wrapped", wr);
+  if (NULL != wr) {
+    wr->fcall_handlers.begin = begin;
+    wr->fcall_handlers.end = end;
+  }
+
+  custom_begin_calls = 0;
+  custom_end_calls = 0;
+  execute_count = NRTXNGLOBAL(execute_count);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+
+  tlib_php_request_eval("o_target();");
+
+  result.custom_begin_calls = custom_begin_calls;
+  result.custom_end_calls = custom_end_calls;
+  result.default_begin_calls = NRTXNGLOBAL(execute_count) - execute_count;
+  result.stack_depth_delta = NRPRG_CTX(php_cur_stack_depth) - depth;
+
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+  return result;
+}
+
+static void test_override_both_handlers(void) {
+  override_result_t r
+      = call_with_custom_handlers(custom_fcall_begin, custom_fcall_end, false);
+
+  tlib_pass_if_int_equal("both custom handlers set: custom begin ran", 1,
+                         r.custom_begin_calls);
+  tlib_pass_if_int_equal("both custom handlers set: custom end ran", 1,
+                         r.custom_end_calls);
+  tlib_pass_if_int_equal("both custom handlers set: default begin did not run",
+                         0, r.default_begin_calls);
+  tlib_pass_if_int_equal("both custom handlers set: stack depth balanced", 0,
+                         r.stack_depth_delta);
+}
+
+static void test_override_begin_only_uses_defaults(void) {
+  override_result_t r
+      = call_with_custom_handlers(custom_fcall_begin, NULL, false);
+
+  tlib_pass_if_int_equal("only custom begin set: custom begin did not run", 0,
+                         r.custom_begin_calls);
+  tlib_pass_if_int_equal("only custom begin set: default begin ran", 1,
+                         r.default_begin_calls);
+  tlib_pass_if_int_equal("only custom begin set: stack depth balanced", 0,
+                         r.stack_depth_delta);
+}
+
+static void test_override_end_only_uses_defaults(void) {
+  override_result_t r
+      = call_with_custom_handlers(NULL, custom_fcall_end, false);
+
+  tlib_pass_if_int_equal("only custom end set: custom end did not run", 0,
+                         r.custom_end_calls);
+  tlib_pass_if_int_equal("only custom end set: default begin ran", 1,
+                         r.default_begin_calls);
+  tlib_pass_if_int_equal("only custom end set: stack depth balanced", 0,
+                         r.stack_depth_delta);
+}
+
+/*
+ * Zend installs Observer handlers once, on a function's first call, into its
+ * runtime cache. Custom handlers set after that are never used.
+ */
+static void test_override_after_first_call_has_no_effect(void) {
+  override_result_t r
+      = call_with_custom_handlers(custom_fcall_begin, custom_fcall_end, true);
+
+  tlib_pass_if_int_equal(
+      "custom handlers set after first call: custom begin did not run", 0,
+      r.custom_begin_calls);
+  tlib_pass_if_int_equal(
+      "custom handlers set after first call: custom end did not run", 0,
+      r.custom_end_calls);
+  tlib_pass_if_int_equal(
+      "custom handlers set after first call: default begin ran", 1,
+      r.default_begin_calls);
+  tlib_pass_if_int_equal(
+      "custom handlers set after first call: stack depth balanced", 0,
+      r.stack_depth_delta);
+}
 #endif
 
 void test_main(void* p NRUNUSED) {
@@ -314,5 +445,9 @@ void test_main(void* p NRUNUSED) {
   test_register_handlers_enabled_app_unknown();
   test_register_handlers_enabled_txn_ignored();
   test_register_handlers_enabled_and_recording();
+  test_override_both_handlers();
+  test_override_begin_only_uses_defaults();
+  test_override_end_only_uses_defaults();
+  test_override_after_first_call_has_no_effect();
 #endif
 }
