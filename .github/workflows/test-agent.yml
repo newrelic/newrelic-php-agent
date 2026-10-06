@@ -165,6 +165,72 @@ jobs:
           name: integration_runner-${{matrix.platform}}-${{matrix.arch}}
           path: php-agent/bin/integration_runner
 
+  daemon-race-tests-amd64:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-go
+      IMAGE_VERSION: ${{vars.MAKE_GO_VERSION}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [amd64]
+    steps:
+      - name: Checkot newrelic-php-agent code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          path: php-agent
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # 4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build daemon
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon
+      - name: Run daemon race tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_race
+
+  daemon-race-tests-arm64:
+    runs-on: ubuntu-24.04-arm
+    env:
+      IMAGE_NAME: newrelic/nr-php-agent-builder
+      IMAGE_TAG: make-go
+      IMAGE_VERSION: ${{vars.MAKE_GO_VERSION}}
+    strategy:
+      matrix:
+        platform: [gnu, musl]
+        arch: [arm64]
+    steps:
+      - name: Checkout newrelic-php-agent code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          path: php-agent
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # 4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build daemon
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          -e ACCOUNT_supportability=${{secrets.ACCOUNT_SUPPORTABILITY}}
+          -e APP_supportability=${{secrets.APP_SUPPORTABILITY}}
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon
+      - name: Run daemon race tests
+        run: >
+          docker run --rm --platform linux/${{matrix.arch}}
+          -v "${GITHUB_WORKSPACE}/php-agent":"/usr/local/src/newrelic-php-agent" 
+          $IMAGE_NAME:$IMAGE_TAG-${{ matrix.platform }}-$IMAGE_VERSION daemon_race
+
   agent-unit-test-amd64:
     needs: [get-php-versions-amd64]
     runs-on: ubuntu-latest
