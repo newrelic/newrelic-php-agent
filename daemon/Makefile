@@ -51,10 +51,6 @@ clean-bin:
 $(BINARIES): clean-bin
 	$(GO) install $(GOFLAGS) $(GO_MODULE)/cmd/$@
 
-# the -race flag enabled the integrated Go race detector. Output to stderr.
-race: clean-bin
-	$(GO) install -race $(GOFLAGS) $(GO_MODULE)/$@
-
 # Test targets
 .PHONY: bench
 bench:
@@ -75,3 +71,6 @@ integration:
 test:
 	$(GO) test $(GOFLAGS) ./...
 
+.PHONY: race
+race:
+	$(GO) test $(GOFLAGS) -race $(shell go list ./... | grep -v '/infinite_tracing')
