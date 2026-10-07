@@ -14,6 +14,7 @@
 #include "fw_hooks.h"
 #include "nr_agent.h"
 #include "nr_app.h"
+#include "nr_commands.h"
 #include "nr_php_packages.h"
 #include "util_syscalls.h"
 
@@ -1059,6 +1060,53 @@ static void test_no_txn_scan_finds_no_app() {
                              0, entry->epoch);
 }
 
+static nr_status_t failing_cmd_txndata_tx(const nrtxn_t* txn NRUNUSED) {
+  return NR_FAILURE;
+}
+
+/*
+ * A scan whose transaction send fails (after the daemon connection probe
+ * succeeded) must not be marked sent: last_sent_epoch stays behind, so the
+ * next transaction on the same thread pulls the packages again.
+ */
+static void test_failed_send_leaves_scan_unsent() {
+  char* filename;
+  nr_composer_thread_entry_t* entry;
+  nr_status_t (*saved_txndata_hook)(const nrtxn_t* txn);
+
+  /* Request 1: scan, then end it with the send failing. */
+  entry = start_fresh_request();
+  if (NULL == entry) {
+    return;
+  }
+
+  tlib_php_request_eval(one_package_stub);
+  filename = autoload_filename();
+  nr_composer_handle_autoload(filename);
+  nr_free(filename);
+
+  saved_txndata_hook = nr_cmd_txndata_hook;
+  nr_cmd_txndata_hook = failing_cmd_txndata_tx;
+  tlib_php_request_end();
+  nr_cmd_txndata_hook = saved_txndata_hook;
+
+  tlib_pass_if_uint64_t_equal("scan bumps epoch to 1", 1, entry->epoch);
+  tlib_pass_if_uint64_t_equal("failed send does not mark the scan sent", 0,
+                              entry->last_sent_epoch);
+  tlib_pass_if_not_null("packages survive the failed send", entry->packages);
+
+  /* Request 2: same thread, nothing new scanned, and the send succeeds. */
+  tlib_php_request_start();
+  tlib_pass_if_true("second request reuses the same composer entry",
+                    NRPRG(txn)->composer_info.entry == entry,
+                    "NRPRG(txn)->composer_info.entry == entry");
+  tlib_php_request_end();
+
+  tlib_pass_if_uint64_t_equal(
+      "next successful send marks the pending scan sent", 1,
+      entry->last_sent_epoch);
+}
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("");
   create_vendor_dir();
@@ -1074,6 +1122,7 @@ void test_main(void* p NRUNUSED) {
   test_set_appname_discards_unsent_scan();
   test_ignore_transaction_preserves_already_sent_scan();
   test_set_appname_preserves_already_sent_scan();
+  test_failed_send_leaves_scan_unsent();
 
   test_no_txn_scan_finds_app();
   test_no_txn_scan_finds_no_app();

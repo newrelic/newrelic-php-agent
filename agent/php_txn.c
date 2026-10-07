@@ -1368,8 +1368,9 @@ nr_status_t nr_php_txn_end(int ignoretxn, int in_post_deactivate TSRMLS_DC) {
         nrl_debug(NRL_TXN, "%s - no daemon connection", __func__);
       } else {
         ret = nr_cmd_txndata_tx(txn);
-        nr_txn_mark_composer_packages_sent(txn);
-        if (NR_FAILURE == ret) {
+        if (NR_SUCCESS == ret) {
+          nr_txn_mark_composer_packages_sent(txn);
+        } else {
           nrl_debug(NRL_TXN, "failed to send txn");
         }
       }
