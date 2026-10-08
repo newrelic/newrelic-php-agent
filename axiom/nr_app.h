@@ -131,9 +131,10 @@ typedef struct _nrapp_t {
    * Each holds one entry per thread that has touched this app.
    *
    * Concurrency contract:
-   *  - app_lock MUST be held around get-or-create (map insert) for all three —
-   *    the hashmap's internal structure is not thread-safe against concurrent
-   *    inserts of *different* keys by *different* threads.
+   *  - app_lock MUST be held around get-or-create (map insert, and any
+   *    eviction its owner check does) and around eviction, for all of these
+   *    maps — the hashmap's internal structure is not thread-safe against
+   *    concurrent changes of *different* keys by *different* threads.
    *  - Reading/writing an already-fetched entry's VALUE is lock-free IFF no
    *    code path ever mutates a different thread's entry:
    *      - rnd_map: lock-free-safe. No cross-thread mutator exists.
@@ -146,10 +147,18 @@ typedef struct _nrapp_t {
    *        value access for this field without accounting for that reset.
    *  - Moral: don't copy the lock-free pattern from one field to another
    *    without checking whether THAT field has a bulk cross-thread mutator.
+   *
+   * A tid can be reused by a new thread after the old one exits, and if the
+   * old thread's eviction never ran, its entries are still here. Each
+   * get-or-create first calls nr_app_tid_maps_check_owner(), which uses
+   * tid_owner_map to tell the two threads apart and evicts the old entries.
+   * tid_owner_map is only touched by that check, eviction and destroy, all
+   * under app_lock.
    */
   nr_hashmap_t* harvest_map;
   nr_hashmap_t* rnd_map;
   nr_hashmap_t* composer_map;
+  nr_hashmap_t* tid_owner_map; /* tid -> owning thread incarnation */
 
   /* The limits are set based on the event harvest configuration provided in
    * the connect reply. They do not reflect any agent side configuration.
@@ -361,6 +370,11 @@ extern void nr_app_update_harvest_config(nrapp_t* app,
  *           entry if this thread has not been seen before.  Must be called
  *           with app->app_lock held.
  *
+ *           The key must be the calling thread's own tid. Entries left under
+ *           it by an earlier thread with the same tid are evicted first (see
+ *           nr_app_tid_maps_check_owner()), so passing another live thread's
+ *           tid would evict entries that thread is using.
+ *
  * Params  : 1. The application.
  *           2. The thread key: (uint64_t)nr_gettid().
  *
@@ -382,6 +396,11 @@ extern void nr_app_rnd_dtor(nr_random_t* rnd);
  * Purpose : Return the RNG for the calling thread, creating and seeding one
  *           if this thread has not been seen before.  Must be called with
  *           app->app_lock held.
+ *
+ *           The key must be the calling thread's own tid. Entries left under
+ *           it by an earlier thread with the same tid are evicted first (see
+ *           nr_app_tid_maps_check_owner()), so passing another live thread's
+ *           tid would evict entries that thread is using.
  *
  * Params  : 1. The application.
  *           2. The thread key: (uint64_t)nr_gettid().
@@ -458,6 +477,11 @@ extern void nr_app_composer_entry_dtor(nr_composer_thread_entry_t* entry);
  *           no packages, epoch 0, last_sent_epoch 0) if this thread has not
  *           been seen before. Must be called with app->app_lock held.
  *
+ *           The key must be the calling thread's own tid. Entries left under
+ *           it by an earlier thread with the same tid are evicted first (see
+ *           nr_app_tid_maps_check_owner()), so passing another live thread's
+ *           tid would evict entries that thread is using.
+ *
  * Params  : 1. The application.
  *           2. The thread key: (uint64_t)nr_gettid().
  *
@@ -469,11 +493,30 @@ extern nr_composer_thread_entry_t* nr_app_get_or_create_thread_composer_entry(
 
 /*
  * Purpose : Remove one thread's entry from harvest_map, rnd_map, and
- *           composer_map. Call when a thread exits, under app->app_lock.
+ *           composer_map, and its tid_owner_map record. Called when a
+ *           thread exits, and by nr_app_tid_maps_check_owner() when it finds
+ *           a stale owner. Must be called with app->app_lock held.
+ *
+ *           The owning thread uses its entries without the lock, so the lock
+ *           alone doesn't make this safe: the owner must be either the
+ *           calling thread, with no entry pointers still in use, or a thread
+ *           that has already exited.
  *
  * Params  : 1. The application.
  *           2. The thread key: (uint64_t)nr_gettid().
  */
 extern void nr_app_tid_maps_evict(nrapp_t* app, uint64_t tid);
+
+/*
+ * Purpose : Make sure a tid's entries in the per-thread maps belong to the
+ *           calling thread. If an earlier thread with the same tid created
+ *           them and exited without evicting them, evict them now. Called at
+ *           the start of each get-or-create function. Must be called with
+ *           app->app_lock held. The tid must be the calling thread's own tid.
+ *
+ * Params  : 1. The application.
+ *           2. The thread key: (uint64_t)nr_gettid().
+ */
+extern void nr_app_tid_maps_check_owner(nrapp_t* app, uint64_t tid);
 
 #endif /* NR_APP_HDR */
