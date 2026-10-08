@@ -1437,11 +1437,14 @@ static void test_app_tid_maps_evict(void) {
   app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
   app.composer_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+  app.tid_owner_map = nr_hashmap_create(NULL);
 
   nr_app_get_or_create_thread_rnd(&app, 1);
   entry = nr_app_get_or_create_thread_composer_entry(&app, 1);
   entry->packages = nr_php_packages_create();
   nr_app_get_or_create_thread_harvest(&app, 1);
+  tlib_pass_if_not_null("owner recorded",
+                        nr_hashmap_index_get(app.tid_owner_map, 1));
 
   nr_app_tid_maps_evict(NULL, 1); /* must not crash */
 
@@ -1451,10 +1454,13 @@ static void test_app_tid_maps_evict(void) {
                     nr_hashmap_index_get(app.composer_map, 1));
   tlib_pass_if_null("harvest evicted",
                     nr_hashmap_index_get(app.harvest_map, 1));
+  tlib_pass_if_null("owner record evicted",
+                    nr_hashmap_index_get(app.tid_owner_map, 1));
 
   nr_hashmap_destroy(&app.harvest_map);
   nr_hashmap_destroy(&app.rnd_map);
   nr_hashmap_destroy(&app.composer_map);
+  nr_hashmap_destroy(&app.tid_owner_map);
   nrt_mutex_destroy(&app.app_lock);
 }
 
@@ -1466,6 +1472,7 @@ static void test_app_tid_maps_destroy(void) {
   app.rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
   app.composer_map
       = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+  app.tid_owner_map = nr_hashmap_create(NULL);
 
   nr_app_tid_maps_destroy(NULL); /* must not crash */
 
@@ -1473,6 +1480,7 @@ static void test_app_tid_maps_destroy(void) {
   tlib_pass_if_null("harvest_map nulled", app.harvest_map);
   tlib_pass_if_null("rnd_map nulled", app.rnd_map);
   tlib_pass_if_null("composer_map nulled", app.composer_map);
+  tlib_pass_if_null("tid_owner_map nulled", app.tid_owner_map);
 }
 
 static void test_composer_entry_cross_app_isolation(void) {
@@ -1528,6 +1536,223 @@ static void test_composer_entry_same_app_multi_thread_isolation(void) {
   nr_hashmap_destroy(&app.composer_map);
 }
 
+/*
+ * The tid owner map tests. Each per-thread map is keyed by tid, and a tid can
+ * be reused by a new thread after the old one exited without its GSHUTDOWN
+ * eviction. The owner map records which thread incarnation created a tid's
+ * entries, so a new thread on a reused tid starts from fresh entries.
+ */
+
+/*
+ * An owner value no live thread can have: incarnations are assigned from 1
+ * upwards, one per thread.
+ */
+#define TEST_STALE_OWNER ((void*)UINTPTR_MAX)
+
+static void test_tid_maps_create(nrapp_t* app) {
+  app->harvest_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_harvest_stats_dtor);
+  app->rnd_map = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_rnd_dtor);
+  app->composer_map
+      = nr_hashmap_create((nr_hashmap_dtor_func_t)nr_app_composer_entry_dtor);
+  app->tid_owner_map = nr_hashmap_create(NULL);
+}
+
+static void test_tid_maps_free(nrapp_t* app) {
+  nr_hashmap_destroy(&app->harvest_map);
+  nr_hashmap_destroy(&app->rnd_map);
+  nr_hashmap_destroy(&app->composer_map);
+  nr_hashmap_destroy(&app->tid_owner_map);
+}
+
+static void test_tid_owner_same_thread(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* e1;
+  nr_composer_thread_entry_t* e2;
+  void* owner;
+
+  test_tid_maps_create(&app);
+
+  e1 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  owner = nr_hashmap_index_get(app.tid_owner_map, 1);
+  tlib_pass_if_not_null("first getter call records an owner", owner);
+
+  e1->epoch = 7;
+  nr_app_get_or_create_thread_rnd(&app, 1);
+  nr_app_get_or_create_thread_harvest(&app, 1);
+  e2 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_true("same thread keeps its entry", e1 == e2, "e1=%p e2=%p",
+                    (void*)e1, (void*)e2);
+  tlib_pass_if_uint64_t_equal("same thread's state preserved", 7, e2->epoch);
+  tlib_pass_if_true("owner unchanged",
+                    owner == nr_hashmap_index_get(app.tid_owner_map, 1),
+                    "owner=%p", owner);
+
+  test_tid_maps_free(&app);
+}
+
+static void test_tid_owner_stale_evicts(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* entry;
+  nr_app_harvest_stats_t* ah;
+  void* owner;
+
+  /*
+   * Entries left under tid 1 by a thread that exited without its GSHUTDOWN
+   * eviction. They are created with no owner map so that no owner is
+   * recorded, and the owner is then set to one that isn't this thread.
+   */
+  test_tid_maps_create(&app);
+  nr_hashmap_destroy(&app.tid_owner_map);
+  entry = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  entry->epoch = 7;
+  ah = nr_app_get_or_create_thread_harvest(&app, 1);
+  ah->transactions_seen = 5;
+  nr_app_get_or_create_thread_rnd(&app, 1);
+  app.tid_owner_map = nr_hashmap_create(NULL);
+  nr_hashmap_index_update(app.tid_owner_map, 1, TEST_STALE_OWNER);
+
+  /* This thread's first access under tid 1 is through the rnd getter. */
+  tlib_pass_if_not_null("rnd returned",
+                        nr_app_get_or_create_thread_rnd(&app, 1));
+
+  tlib_pass_if_null("stale composer entry evicted",
+                    nr_hashmap_index_get(app.composer_map, 1));
+  tlib_pass_if_null("stale harvest entry evicted",
+                    nr_hashmap_index_get(app.harvest_map, 1));
+  owner = nr_hashmap_index_get(app.tid_owner_map, 1);
+  tlib_pass_if_true("owner record replaced",
+                    NULL != owner && TEST_STALE_OWNER != owner, "owner=%p",
+                    owner);
+
+  entry = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_uint64_t_equal("fresh composer entry", 0, entry->epoch);
+  ah = nr_app_get_or_create_thread_harvest(&app, 1);
+  tlib_pass_if_uint64_t_equal("fresh harvest entry", 0, ah->transactions_seen);
+
+  test_tid_maps_free(&app);
+}
+
+static void test_tid_owner_missing_record_keeps_entry(void) {
+  nrapp_t app = {0};
+  nr_random_t* rnd;
+
+  /*
+   * An entry put in the map directly, with no owner record, as some tests do.
+   * No getter has seen this tid, so the entry is kept.
+   */
+  test_tid_maps_create(&app);
+  rnd = nr_random_create();
+  nr_hashmap_index_set(app.rnd_map, 1, rnd);
+
+  tlib_pass_if_true("entry without an owner record is kept",
+                    rnd == nr_app_get_or_create_thread_rnd(&app, 1), "rnd=%p",
+                    (void*)rnd);
+  tlib_pass_if_not_null("owner recorded",
+                        nr_hashmap_index_get(app.tid_owner_map, 1));
+
+  test_tid_maps_free(&app);
+}
+
+typedef struct _test_tid_owner_thread_args_t {
+  nrapp_t* app;
+  uint64_t key;
+  nr_composer_thread_entry_t* entry;
+} test_tid_owner_thread_args_t;
+
+static void* test_tid_owner_first_thread(void* arg) {
+  test_tid_owner_thread_args_t* args = (test_tid_owner_thread_args_t*)arg;
+  nr_app_harvest_stats_t* ah;
+
+  args->entry
+      = nr_app_get_or_create_thread_composer_entry(args->app, args->key);
+  if (args->entry) {
+    args->entry->epoch = 7;
+  }
+  nr_app_get_or_create_thread_rnd(args->app, args->key);
+  ah = nr_app_get_or_create_thread_harvest(args->app, args->key);
+  if (ah) {
+    ah->transactions_seen = 5;
+  }
+
+  /* Exits without evicting, as if GSHUTDOWN never ran. */
+  return NULL;
+}
+
+static void* test_tid_owner_second_thread(void* arg) {
+  test_tid_owner_thread_args_t* args = (test_tid_owner_thread_args_t*)arg;
+
+  args->entry
+      = nr_app_get_or_create_thread_composer_entry(args->app, args->key);
+  return NULL;
+}
+
+static void test_tid_owner_reused_tid_new_thread(void) {
+  nrapp_t app = {0};
+  test_tid_owner_thread_args_t args = {.app = &app, .key = 77, .entry = NULL};
+  nrthread_t thread;
+  void* first_owner;
+  void* second_owner;
+
+  /*
+   * Two real threads in turn use the same key, which is how a reused tid
+   * looks to the maps. The second thread is new, so its incarnation must be
+   * new too.
+   */
+  test_tid_maps_create(&app);
+
+  tlib_pass_if_status_success(
+      "first thread created",
+      nrt_create(&thread, NULL, test_tid_owner_first_thread, &args));
+  nrt_join(thread, NULL);
+  first_owner = nr_hashmap_index_get(app.tid_owner_map, 77);
+  tlib_pass_if_not_null("first thread recorded an owner", first_owner);
+
+  args.entry = NULL;
+  tlib_pass_if_status_success(
+      "second thread created",
+      nrt_create(&thread, NULL, test_tid_owner_second_thread, &args));
+  nrt_join(thread, NULL);
+  second_owner = nr_hashmap_index_get(app.tid_owner_map, 77);
+
+  tlib_pass_if_true("new thread has a different incarnation",
+                    NULL != second_owner && first_owner != second_owner,
+                    "first_owner=%p second_owner=%p", first_owner,
+                    second_owner);
+  tlib_pass_if_not_null("new thread got an entry", args.entry);
+  if (args.entry) {
+    tlib_pass_if_uint64_t_equal("new thread does not inherit composer state", 0,
+                                args.entry->epoch);
+  }
+  tlib_pass_if_null("dead thread's harvest entry evicted",
+                    nr_hashmap_index_get(app.harvest_map, 77));
+  /* The second thread never called the rnd getter, so nothing replaced it. */
+  tlib_pass_if_null("dead thread's rnd entry evicted",
+                    nr_hashmap_index_get(app.rnd_map, 77));
+
+  test_tid_maps_free(&app);
+}
+
+static void test_tid_owner_map_null(void) {
+  nrapp_t app = {0};
+  nr_composer_thread_entry_t* e1;
+  nr_composer_thread_entry_t* e2;
+
+  /* Without an owner map the getters behave as before. */
+  test_tid_maps_create(&app);
+  nr_hashmap_destroy(&app.tid_owner_map);
+
+  e1 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_not_null("entry created", e1);
+  e1->epoch = 7;
+  e2 = nr_app_get_or_create_thread_composer_entry(&app, 1);
+  tlib_pass_if_true("same entry", e1 == e2, "e1=%p e2=%p", (void*)e1,
+                    (void*)e2);
+  tlib_pass_if_uint64_t_equal("state preserved", 7, e2->epoch);
+
+  test_tid_maps_free(&app);
+}
+
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = 4, .state_size = sizeof(test_app_state_t)};
 
@@ -1560,4 +1785,9 @@ void test_main(void* p NRUNUSED) {
   test_app_tid_maps_destroy();
   test_composer_entry_cross_app_isolation();
   test_composer_entry_same_app_multi_thread_isolation();
+  test_tid_owner_same_thread();
+  test_tid_owner_stale_evicts();
+  test_tid_owner_missing_record_keeps_entry();
+  test_tid_owner_reused_tid_new_thread();
+  test_tid_owner_map_null();
 }

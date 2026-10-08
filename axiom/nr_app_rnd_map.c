@@ -20,6 +20,8 @@ nr_random_t* nr_app_get_or_create_thread_rnd(nrapp_t* app, uint64_t key) {
     return NULL;
   }
 
+  nr_app_tid_maps_check_owner(app, key);
+
   rnd = (nr_random_t*)nr_hashmap_index_get(app->rnd_map, key);
   if (rnd) {
     return rnd;

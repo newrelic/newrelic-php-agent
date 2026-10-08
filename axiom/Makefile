@@ -91,6 +91,7 @@ OBJS := \
 	nr_app_harvest_map.o \
 	nr_app_rnd_map.o \
 	nr_app_composer_map.o \
+	nr_app_tid_owner_map.o \
 	nr_attributes.o \
 	nr_banner.o \
 	nr_configstrings.o \
