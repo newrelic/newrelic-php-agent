@@ -496,7 +496,8 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   };
   char* operation = NULL;
   nrtime_t duration;
-  nrtime_t* start = NULL;
+  nrtime_t start;
+  nrtime_t* saved_start = NULL;
 
   (void)wraprec;
 
@@ -517,12 +518,25 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    * hashmap.
    */
   index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  start = nr_hashmap_index_get(nr_predis_get_commands(TSRMLS_C), index);
-  if (NULL == start) {
+  saved_start = nr_hashmap_index_get(nr_predis_get_commands(TSRMLS_C), index);
+  if (NULL == saved_start) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: NULL start time", __func__);
     goto end;
   }
-  duration = nr_time_duration(*start, nr_txn_now_rel(NRPRG(txn)));
+
+  /*
+   * The start time is only valid for the response that pairs with the
+   * writeRequest() that stored it. Copy it, then remove the entry: PHP reuses
+   * the handle of a freed command object, and a later command object with the
+   * same handle that never went through writeRequest() (such as the handshake
+   * commands of Predis v3) would otherwise be timed from this stale start.
+   * Deleting the entry frees the stored value, so the copy must come first.
+   */
+  start = *saved_start;
+  nr_hashmap_index_delete(nr_predis_get_commands(TSRMLS_C), index);
+  saved_start = NULL;
+
+  duration = nr_time_duration(start, nr_txn_now_rel(NRPRG(txn)));
 
   params.instance = nr_predis_retrieve_datastore_instance(conn TSRMLS_CC);
   params.operation = operation;
@@ -562,7 +576,7 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   if (NULL != segment) {
     segment->consider_for_blocking = true;
   }
-  nr_segment_set_timing(segment, *start, duration);
+  nr_segment_set_timing(segment, start, duration);
   nr_segment_datastore_end(&segment, &params);
 
 end:
