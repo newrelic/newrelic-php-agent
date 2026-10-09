@@ -85,6 +85,46 @@ static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
   return NRPRG_CTX(predis_commands);
 }
 
+void nr_predis_command_start_save(uint64_t handle, nrtime_t start TSRMLS_DC) {
+  nr_hashmap_t* commands = nr_predis_get_commands(TSRMLS_C);
+  nrtime_t* saved = NULL;
+
+  if (NULL == commands) {
+    return;
+  }
+
+  saved = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
+  *saved = start;
+  nr_hashmap_index_update(commands, handle, saved);
+}
+
+bool nr_predis_command_start_take(uint64_t handle, nrtime_t* start TSRMLS_DC) {
+  nr_hashmap_t* commands = nr_predis_get_commands(TSRMLS_C);
+  nrtime_t* saved = NULL;
+
+  if ((NULL == commands) || (NULL == start)) {
+    return false;
+  }
+
+  saved = (nrtime_t*)nr_hashmap_index_get(commands, handle);
+  if (NULL == saved) {
+    return false;
+  }
+
+  /*
+   * The start time is only valid for the response that pairs with the
+   * writeRequest() that stored it. Copy it, then remove the entry: PHP reuses
+   * the handle of a freed command object, and a later command object with the
+   * same handle that never went through writeRequest() (such as the handshake
+   * commands of Predis v3) would otherwise be timed from this stale start.
+   * Deleting the entry frees the stored value, so the copy must come first.
+   */
+  *start = *saved;
+  nr_hashmap_index_delete(commands, handle);
+
+  return true;
+}
+
 static void nr_predis_instrument_connection(zval* conn TSRMLS_DC) {
   nr_php_wrap_callable(
       nr_php_find_class_method(Z_OBJCE_P(conn), "readresponse"),
@@ -497,7 +537,6 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
   char* operation = NULL;
   nrtime_t duration;
   nrtime_t start;
-  nrtime_t* saved_start = NULL;
 
   (void)wraprec;
 
@@ -518,23 +557,10 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    * hashmap.
    */
   index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  saved_start = nr_hashmap_index_get(nr_predis_get_commands(TSRMLS_C), index);
-  if (NULL == saved_start) {
+  if (!nr_predis_command_start_take(index, &start TSRMLS_CC)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: NULL start time", __func__);
     goto end;
   }
-
-  /*
-   * The start time is only valid for the response that pairs with the
-   * writeRequest() that stored it. Copy it, then remove the entry: PHP reuses
-   * the handle of a freed command object, and a later command object with the
-   * same handle that never went through writeRequest() (such as the handshake
-   * commands of Predis v3) would otherwise be timed from this stale start.
-   * Deleting the entry frees the stored value, so the copy must come first.
-   */
-  start = *saved_start;
-  nr_hashmap_index_delete(nr_predis_get_commands(TSRMLS_C), index);
-  saved_start = NULL;
 
   duration = nr_time_duration(start, nr_txn_now_rel(NRPRG(txn)));
 
@@ -590,7 +616,6 @@ NR_PHP_WRAPPER_END
 NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   zval* command = NULL;
   uint64_t index;
-  nrtime_t* start = NULL;
 
   (void)wraprec;
 
@@ -607,9 +632,7 @@ NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   }
 
   index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  start = (nrtime_t*)nr_malloc(sizeof(nrtime_t));
-  *start = nr_txn_now_rel(NRPRG(txn));
-  nr_hashmap_index_update(nr_predis_get_commands(TSRMLS_C), index, start);
+  nr_predis_command_start_save(index, nr_txn_now_rel(NRPRG(txn)) TSRMLS_CC);
 
 end:
   nr_php_arg_release(&command);
