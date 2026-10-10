@@ -34,6 +34,9 @@ typedef struct _nr_mysqli_metadata_t nr_mysqli_metadata_t;
  * value of the options that was set via mysqli_options() as a long), and
  * "value" (which is the string representation of the value). If the user never
  * called mysqli_options(), this array will exist but be empty.
+ *
+ * The ssl_* fields are the arguments of the last mysqli_ssl_set() call. Each
+ * may be NULL if it was omitted or null.
  */
 typedef struct _nr_mysqli_metadata_link_t {
   const char* host;
@@ -44,6 +47,11 @@ typedef struct _nr_mysqli_metadata_link_t {
   const char* socket;
   long flags;
   const nrobj_t* options;
+  const char* ssl_key;
+  const char* ssl_cert;
+  const char* ssl_ca;
+  const char* ssl_capath;
+  const char* ssl_cipher;
 } nr_mysqli_metadata_link_t;
 
 /*
@@ -131,6 +139,29 @@ extern nr_status_t nr_mysqli_metadata_set_option(
     nr_mysqli_metadata_link_handle_t handle,
     long option,
     const char* value);
+
+/*
+ * Purpose : Set the mysqli_ssl_set() arguments for a given link. A later call
+ *           replaces all of the earlier arguments, as it does in PHP.
+ *
+ * Params  : 1. The metadata repository.
+ *           2. The MySQLi link handle.
+ *           3. The key path, or NULL if omitted.
+ *           4. The certificate path, or NULL if omitted.
+ *           5. The CA certificate path, or NULL if omitted.
+ *           6. The CA directory path, or NULL if omitted.
+ *           7. The cipher list, or NULL if omitted.
+ *
+ * Returns : NR_SUCCESS or NR_FAILURE.
+ */
+extern nr_status_t nr_mysqli_metadata_set_ssl(
+    nr_mysqli_metadata_t* metadata,
+    nr_mysqli_metadata_link_handle_t handle,
+    const char* key,
+    const char* cert,
+    const char* ca,
+    const char* capath,
+    const char* cipher);
 
 /*
  * Purpose : Copy an existing metadata object.

@@ -47,6 +47,10 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
                                                  long option,
                                                  const char* value TSRMLS_DC);
 
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata TSRMLS_DC);
+
 /*
  * Purpose : Create a blank query metadata array.
  *
@@ -119,6 +123,11 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
         return NULL;
       }
     }
+  }
+
+  if (NR_FAILURE == nr_php_mysqli_link_set_ssl(dup, &metadata TSRMLS_CC)) {
+    nr_php_zval_free(&dup);
+    return NULL;
   }
 
   if (NR_FAILURE == nr_php_mysqli_link_real_connect(dup, &metadata TSRMLS_CC)) {
@@ -497,6 +506,53 @@ static nr_status_t nr_php_mysqli_link_set_option(zval* link,
   nr_php_zval_free(&option_zv);
   nr_php_zval_free(&retval);
   nr_php_zval_free(&value_zv);
+
+  return status;
+}
+
+static nr_status_t nr_php_mysqli_link_set_ssl(
+    zval* link,
+    const nr_mysqli_metadata_link_t* metadata TSRMLS_DC) {
+  const char* values[5];
+  zval* argv[5] = {0};
+  zval* retval = NULL;
+  nr_status_t status = NR_SUCCESS;
+  size_t i;
+
+  values[0] = metadata->ssl_key;
+  values[1] = metadata->ssl_cert;
+  values[2] = metadata->ssl_ca;
+  values[3] = metadata->ssl_capath;
+  values[4] = metadata->ssl_cipher;
+
+  /*
+   * The application never called mysqli_ssl_set(), or called it with no
+   * values, so there is nothing to replay.
+   */
+  if ((NULL == values[0]) && (NULL == values[1]) && (NULL == values[2])
+      && (NULL == values[3]) && (NULL == values[4])) {
+    return NR_SUCCESS;
+  }
+
+  for (i = 0; i < 5; i++) {
+    argv[i] = nr_php_zval_alloc();
+    if (values[i]) {
+      nr_php_zval_str(argv[i], values[i]);
+    } else {
+      ZVAL_NULL(argv[i]);
+    }
+  }
+
+  retval = nr_php_call(link, "ssl_set", argv[0], argv[1], argv[2], argv[3],
+                       argv[4]);
+  if (!nr_php_is_zval_true(retval)) {
+    status = NR_FAILURE;
+  }
+
+  for (i = 0; i < 5; i++) {
+    nr_php_zval_free(&argv[i]);
+  }
+  nr_php_zval_free(&retval);
 
   return status;
 }

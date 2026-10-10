@@ -771,6 +771,78 @@ NR_INNER_WRAPPER(mysqli_options) {
   }
 }
 
+/*
+ * Handle
+ *   bool mysqli_ssl_set ( object $link, ?string $key, ?string $certificate,
+ *                         ?string $ca_certificate, ?string $ca_path,
+ *                         ?string $cipher_algos )
+ *   bool mysqli::ssl_set ( ?string $key, ?string $certificate,
+ *                          ?string $ca_certificate, ?string $ca_path,
+ *                          ?string $cipher_algos )
+ *
+ * The settings are kept with the link metadata so they can be replayed on the
+ * connection that is opened to get an explain plan.
+ */
+NR_INNER_WRAPPER(mysqli_ssl_set) {
+  zval* mysqli_obj = NULL;
+  char* key = NULL;
+  nr_string_len_t key_len = 0;
+  char* cert = NULL;
+  nr_string_len_t cert_len = 0;
+  char* ca = NULL;
+  nr_string_len_t ca_len = 0;
+  char* capath = NULL;
+  nr_string_len_t capath_len = 0;
+  char* cipher = NULL;
+  nr_string_len_t cipher_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(
+          ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "os!s!s!s!s!",
+          &mysqli_obj, &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
+          &capath_len, &cipher, &cipher_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "s!s!s!s!s!",
+            &key, &key_len, &cert, &cert_len, &ca, &ca_len, &capath,
+            &capath_len, &cipher, &cipher_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_is_zval_true(return_value)) {
+    char* key_term = key ? nr_strndup(key, key_len) : NULL;
+    char* cert_term = cert ? nr_strndup(cert, cert_len) : NULL;
+    char* ca_term = ca ? nr_strndup(ca, ca_len) : NULL;
+    char* capath_term = capath ? nr_strndup(capath, capath_len) : NULL;
+    char* cipher_term = cipher ? nr_strndup(cipher, cipher_len) : NULL;
+
+    nr_mysqli_metadata_set_ssl(NRTXNGLOBAL(mysqli_links),
+                               Z_OBJ_HANDLE_P(mysqli_obj), key_term, cert_term,
+                               ca_term, capath_term, cipher_term);
+
+    nr_free(key_term);
+    nr_free(cert_term);
+    nr_free(ca_term);
+    nr_free(capath_term);
+    nr_free(cipher_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
 static void nr_php_instrument_datastore_operation_call(
     const nrinternalfn_t* nr_wrapper,
     nr_datastore_t datastore,
@@ -3171,6 +3243,7 @@ NR_OUTER_WRAPPER(mysqli_options)
 NR_OUTER_WRAPPER(mysqli_prepare)
 NR_OUTER_WRAPPER(mysqli_query)
 NR_OUTER_WRAPPER(mysqli_real_connect)
+NR_OUTER_WRAPPER(mysqli_ssl_set)
 NR_OUTER_WRAPPER(mysqli_real_query)
 NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
@@ -3182,6 +3255,7 @@ NR_OUTER_WRAPPER(mysqliC_options)
 NR_OUTER_WRAPPER(mysqliC_prepare)
 NR_OUTER_WRAPPER(mysqliC_query)
 NR_OUTER_WRAPPER(mysqliC_real_connect)
+NR_OUTER_WRAPPER(mysqliC_ssl_set)
 NR_OUTER_WRAPPER(mysqliC_real_query)
 NR_OUTER_WRAPPER(mysqliC_select_db)
 NR_OUTER_WRAPPER(mysqliC_stmt_init)
@@ -3668,6 +3742,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_real_connect", mysqli_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_ssl_set", mysqli_ssl_set, mysqli_ssl_set, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_select_db", mysqli_select_db, mysqli_select_db, 0,
                       0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
@@ -3685,6 +3760,7 @@ void nr_php_generate_internal_wrap_records(void) {
                       0)
   NR_INTERNAL_WRAPREC("mysqli::real_connect", mysqliC_real_connect,
                       mysqli_real_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::ssl_set", mysqliC_ssl_set, mysqli_ssl_set, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::real_query", mysqliC_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::select_db", mysqliC_select_db, mysqli_select_db,

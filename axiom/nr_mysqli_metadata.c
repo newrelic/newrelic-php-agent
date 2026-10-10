@@ -47,6 +47,7 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
                                    nr_mysqli_metadata_link_handle_t handle,
                                    nr_mysqli_metadata_link_t* link) {
   const nrobj_t* link_obj;
+  const nrobj_t* ssl_obj;
   char id[NR_MYSQLI_METADATA_ID_SIZE];
 
   if ((NULL == metadata) || (NULL == link)) {
@@ -67,6 +68,15 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
   link->port = (uint16_t)nro_get_hash_int(link_obj, "port", NULL);
   link->flags = (long)nro_get_hash_long(link_obj, "flags", NULL);
   link->options = nro_get_hash_value(link_obj, "options", NULL);
+
+  ssl_obj = nro_get_hash_hash(link_obj, "ssl", NULL);
+  link->ssl_key = ssl_obj ? nro_get_hash_string(ssl_obj, "key", NULL) : NULL;
+  link->ssl_cert = ssl_obj ? nro_get_hash_string(ssl_obj, "cert", NULL) : NULL;
+  link->ssl_ca = ssl_obj ? nro_get_hash_string(ssl_obj, "ca", NULL) : NULL;
+  link->ssl_capath
+      = ssl_obj ? nro_get_hash_string(ssl_obj, "capath", NULL) : NULL;
+  link->ssl_cipher
+      = ssl_obj ? nro_get_hash_string(ssl_obj, "cipher", NULL) : NULL;
 
   return NR_SUCCESS;
 }
@@ -164,6 +174,41 @@ nr_status_t nr_mysqli_metadata_set_option(
   nro_delete(link);
   nro_delete(option_hash);
   nro_delete(options_dup);
+
+  return NR_SUCCESS;
+}
+
+nr_status_t nr_mysqli_metadata_set_ssl(nr_mysqli_metadata_t* metadata,
+                                       nr_mysqli_metadata_link_handle_t handle,
+                                       const char* key,
+                                       const char* cert,
+                                       const char* ca,
+                                       const char* capath,
+                                       const char* cipher) {
+  nrobj_t* link;
+  nrobj_t* ssl;
+
+  link = nr_mysqli_metadata_create_or_get(metadata, handle);
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * A new hash replaces the previous one, so a later call that omits a value
+   * clears it, as mysqli_ssl_set() does.
+   */
+  ssl = nro_new_hash();
+  nr_mysqli_metadata_add_property(ssl, "key", key);
+  nr_mysqli_metadata_add_property(ssl, "cert", cert);
+  nr_mysqli_metadata_add_property(ssl, "ca", ca);
+  nr_mysqli_metadata_add_property(ssl, "capath", capath);
+  nr_mysqli_metadata_add_property(ssl, "cipher", cipher);
+  nro_set_hash(link, "ssl", ssl);
+
+  nr_mysqli_metadata_save(metadata, handle, link);
+
+  nro_delete(ssl);
+  nro_delete(link);
 
   return NR_SUCCESS;
 }
