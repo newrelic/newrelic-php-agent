@@ -394,7 +394,7 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
-static zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   if (NULL == dbh) {
     return NULL;
   }

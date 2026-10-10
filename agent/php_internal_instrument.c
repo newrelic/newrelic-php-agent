@@ -2268,6 +2268,54 @@ NR_INNER_WRAPPER(pdo_construct) {
   }
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+/*
+ * Handle
+ *   static PDO::connect (string $dsn, ?string $username = null,
+ *                        ?string $password = null, ?array $options = null)
+ *
+ * PDO::connect() and the connect() methods of the driver subclasses create the
+ * connection without calling the constructor, so the options have to be
+ * persisted here as well. Our interest is the same as in pdo_construct: the
+ * options are the only part of the connection metadata that the pdo_dbh_t
+ * structure does not hold.
+ */
+NR_INNER_WRAPPER(pdo_connect) {
+  char* dsn = NULL;
+  nr_string_len_t dsn_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  zval* options = NULL;
+  char* username = NULL;
+  nr_string_len_t username_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "s|s!s!a!", &dsn,
+                                  &dsn_len, &username, &username_len, &password,
+                                  &password_len, &options)) {
+    options = NULL;
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  /*
+   * The new connection is the return value. nr_php_pdo_options_save checks
+   * both the PDO object and the options array for validity.
+   */
+  if (0 == zcaught) {
+    nr_php_pdo_options_save(return_value, options TSRMLS_CC);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+#endif
+
 /*
  * Handle
  *   PDO::exec (string)
@@ -3505,6 +3553,9 @@ NR_OUTER_WRAPPER(sqlite3_querysingle)
 NR_OUTER_WRAPPER(sqlite3_exec)
 
 NR_OUTER_WRAPPER(pdo_construct)
+#if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
+NR_OUTER_WRAPPER(pdo_connect)
+#endif
 NR_OUTER_WRAPPER(pdo_query)
 NR_OUTER_WRAPPER(pdo_exec)
 NR_OUTER_WRAPPER(pdo_prepare)
@@ -4310,6 +4361,13 @@ void nr_php_generate_internal_wrap_records(void) {
                       0, 0)
   NR_INTERNAL_WRAPREC("pdo\\sqlite::__construct", pdo_construct, pdo_construct,
                       0, 0)
+
+  NR_INTERNAL_WRAPREC("pdo::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\firebird::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\mysql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\odbc::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\pgsql::connect", pdo_connect, pdo_connect, 0, 0)
+  NR_INTERNAL_WRAPREC("pdo\\sqlite::connect", pdo_connect, pdo_connect, 0, 0)
 #endif
   NR_INTERNAL_WRAPREC("pdo::query", pdo_query, pdo_query, 0, 0)
 #if ZEND_MODULE_API_NO >= ZEND_8_4_X_API_NO
