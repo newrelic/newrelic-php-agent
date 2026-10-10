@@ -15,3 +15,7 @@ GRANT ALL ON `database`.* TO 'tls_optional'@'%';
 GRANT ALL ON `database`.* TO 'tls_required'@'%';
 GRANT ALL ON `database`.* TO 'tls_clientcert'@'%';
 GRANT ALL ON `database`.* TO 'nr_one_conn'@'%';
+
+-- A table for the test that changes user and database with
+-- mysqli_change_user(); the test only reads it.
+CREATE TABLE IF NOT EXISTS `database`.nr_change_user_tmp (id INT);

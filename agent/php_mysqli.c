@@ -411,6 +411,9 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   zval* argv[7] = {0};
   zend_ulong i;
   zval* retval = NULL;
+  const char* host;
+  const char* user;
+  const char* password;
 
 #define ADD_IF_INT_SET(null_ok, args, argc, value) \
   if (value) {                                    \
@@ -434,10 +437,40 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     argc++;                                       \
   }
 
-  ADD_IF_STR_SET(false, argv, argc,
-                 nr_php_mysqli_strip_persistent_prefix(metadata->host));
-  ADD_IF_STR_SET(false, argv, argc, metadata->user);
-  ADD_IF_STR_SET(false, argv, argc, metadata->password);
+  /*
+   * The application may have left out a leading argument and relied on the
+   * mysqli.default_* ini setting. The arguments that follow are positional, so
+   * a missing one cannot just be skipped: the next argument would take its
+   * place. If any of host, user and password was given, fill in the missing
+   * ones from the ini settings.
+   */
+  host = nr_php_mysqli_strip_persistent_prefix(metadata->host);
+  user = metadata->user;
+  password = metadata->password;
+  if (host || user || password) {
+    if (NULL == host) {
+      host = nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0);
+    }
+    if (NULL == user) {
+      user = nr_php_zend_ini_string(NR_PSTR("mysqli.default_user"), 0);
+    }
+    if (NULL == password) {
+      password = nr_php_zend_ini_string(NR_PSTR("mysqli.default_pw"), 0);
+    }
+    if (NULL == host) {
+      host = "";
+    }
+    if (NULL == user) {
+      user = "";
+    }
+    if (NULL == password) {
+      password = "";
+    }
+  }
+
+  ADD_IF_STR_SET(false, argv, argc, host);
+  ADD_IF_STR_SET(false, argv, argc, user);
+  ADD_IF_STR_SET(false, argv, argc, password);
 
   /*
    * We can only add the remaining metadata fields if we already have three

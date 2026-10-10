@@ -136,6 +136,46 @@ nr_status_t nr_mysqli_metadata_set_database(
   return NR_SUCCESS;
 }
 
+nr_status_t nr_mysqli_metadata_set_user(nr_mysqli_metadata_t* metadata,
+                                        nr_mysqli_metadata_link_handle_t handle,
+                                        const char* user,
+                                        const char* password,
+                                        const char* database) {
+  nrobj_t* link;
+
+  if (NULL == user) {
+    return NR_FAILURE;
+  }
+
+  link = nr_mysqli_metadata_create_or_get(metadata, handle);
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  nr_mysqli_metadata_add_property(link, "user", user);
+  if (password) {
+    nro_set_hash_string(link, "password", password);
+  } else {
+    nro_set_hash_none(link, "password");
+  }
+
+  /*
+   * mysqli_change_user() selects the given database, or none if it is
+   * omitted, so a database from an earlier call must not be kept.
+   */
+  if (database) {
+    nro_set_hash_string(link, "database", database);
+  } else {
+    nro_set_hash_none(link, "database");
+  }
+
+  nr_mysqli_metadata_save(metadata, handle, link);
+
+  nro_delete(link);
+
+  return NR_SUCCESS;
+}
+
 nr_status_t nr_mysqli_metadata_set_option(
     nr_mysqli_metadata_t* metadata,
     nr_mysqli_metadata_link_handle_t handle,

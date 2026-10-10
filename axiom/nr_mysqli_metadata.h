@@ -125,6 +125,26 @@ extern nr_status_t nr_mysqli_metadata_set_database(
     const char* database);
 
 /*
+ * Purpose : Set the user, password and database for a given link, as
+ *           mysqli_change_user() does. The database is replaced even when it
+ *           is omitted, as the new session has none selected.
+ *
+ * Params  : 1. The metadata repository.
+ *           2. The MySQLi link handle.
+ *           3. The new user.
+ *           4. The new password, or NULL if omitted.
+ *           5. The new database, or NULL if omitted.
+ *
+ * Returns : NR_SUCCESS or NR_FAILURE.
+ */
+extern nr_status_t nr_mysqli_metadata_set_user(
+    nr_mysqli_metadata_t* metadata,
+    nr_mysqli_metadata_link_handle_t handle,
+    const char* user,
+    const char* password,
+    const char* database);
+
+/*
  * Purpose : Set a generic mysqli_options() option.
  *
  * Params  : 1. The metadata repository.

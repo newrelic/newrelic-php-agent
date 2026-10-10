@@ -731,18 +731,22 @@ NR_INNER_WRAPPER(mysqli_construct) {
 NR_INNER_WRAPPER(mysqli_options) {
   zval* mysqli_obj = NULL;
   zend_long option;
-  char* value = NULL;
-  nr_string_len_t value_len = 0;
+  zval* value_zv = NULL;
   int zcaught = 0;
 
+  /*
+   * The value is taken as a zval rather than a string: under strict_types=1 a
+   * string parameter rejects the integers and booleans that most options take,
+   * and the option would then never reach the explain connection.
+   */
   if (FAILURE
       == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                  ZEND_NUM_ARGS() TSRMLS_CC, "ols", &mysqli_obj,
-                                  &option, &value, &value_len)) {
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "olz", &mysqli_obj,
+                                  &option, &value_zv)) {
     if (FAILURE
         == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                    ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
-                                    &value, &value_len)) {
+                                    ZEND_NUM_ARGS() TSRMLS_CC, "lz", &option,
+                                    &value_zv)) {
       nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
       return;
     } else {
@@ -753,14 +757,26 @@ NR_INNER_WRAPPER(mysqli_options) {
   zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
                                      INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-  if (value && (0 == NRTXNGLOBAL(generating_explain_plan))
+  if (value_zv && (0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
       && nr_php_is_zval_true(return_value)) {
-    char* value_term = nr_strndup(value, value_len);
+    char* value_term = NULL;
 
-    nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
-                                  Z_OBJ_HANDLE_P(mysqli_obj), option,
-                                  value_term);
+    if (IS_STRING == Z_TYPE_P(value_zv)) {
+      value_term = nr_strndup(Z_STRVAL_P(value_zv), Z_STRLEN_P(value_zv));
+    } else if (IS_LONG == Z_TYPE_P(value_zv)) {
+      value_term = nr_formatf("%ld", (long)Z_LVAL_P(value_zv));
+    } else if (IS_TRUE == Z_TYPE_P(value_zv)) {
+      value_term = nr_strdup("1");
+    } else if (IS_FALSE == Z_TYPE_P(value_zv)) {
+      value_term = nr_strdup("0");
+    }
+
+    if (value_term) {
+      nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
+                                    Z_OBJ_HANDLE_P(mysqli_obj), option,
+                                    value_term);
+    }
 
     nr_free(value_term);
   }
@@ -1028,6 +1044,67 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
+/*
+ * Handle
+ *   bool mysqli_change_user ( object $link, string $user, string $password,
+ *                             ?string $database )
+ *   bool mysqli::change_user ( string $user, string $password,
+ *                              ?string $database )
+ *
+ * The explain connection has to log in as the user the application is
+ * currently using, so the stored credentials are replaced when it succeeds.
+ */
+NR_INNER_WRAPPER(mysqli_change_user) {
+  zval* mysqli_obj = NULL;
+  char* user = NULL;
+  nr_string_len_t user_len = 0;
+  char* password = NULL;
+  nr_string_len_t password_len = 0;
+  char* database = NULL;
+  nr_string_len_t database_len = 0;
+  int zcaught = 0;
+
+  if (FAILURE
+      == zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                  ZEND_NUM_ARGS() TSRMLS_CC, "oss|s!",
+                                  &mysqli_obj, &user, &user_len, &password,
+                                  &password_len, &database, &database_len)) {
+    if (FAILURE
+        == zend_parse_parameters_ex(
+            ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "ss|s!", &user,
+            &user_len, &password, &password_len, &database, &database_len)) {
+      nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+      return;
+    } else {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
+  }
+
+  zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                     INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if (user && (0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
+      && nr_php_is_zval_true(return_value)) {
+    char* user_term = nr_strndup(user, user_len);
+    char* password_term = nr_strndup(password, password_len);
+    char* database_term = database ? nr_strndup(database, database_len) : NULL;
+
+    nr_mysqli_metadata_set_user(NRTXNGLOBAL(mysqli_links),
+                                Z_OBJ_HANDLE_P(mysqli_obj), user_term,
+                                password_term, database_term);
+
+    nr_free(user_term);
+    nr_free(password_term);
+    nr_free(database_term);
   }
 
   if (zcaught) {
@@ -3244,6 +3321,8 @@ NR_OUTER_WRAPPER(mysqli_prepare)
 NR_OUTER_WRAPPER(mysqli_query)
 NR_OUTER_WRAPPER(mysqli_real_connect)
 NR_OUTER_WRAPPER(mysqli_ssl_set)
+NR_OUTER_WRAPPER(mysqli_change_user)
+NR_OUTER_WRAPPER(mysqli_set_opt)
 NR_OUTER_WRAPPER(mysqli_real_query)
 NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
@@ -3256,6 +3335,9 @@ NR_OUTER_WRAPPER(mysqliC_prepare)
 NR_OUTER_WRAPPER(mysqliC_query)
 NR_OUTER_WRAPPER(mysqliC_real_connect)
 NR_OUTER_WRAPPER(mysqliC_ssl_set)
+NR_OUTER_WRAPPER(mysqliC_change_user)
+NR_OUTER_WRAPPER(mysqliC_connect)
+NR_OUTER_WRAPPER(mysqliC_set_opt)
 NR_OUTER_WRAPPER(mysqliC_real_query)
 NR_OUTER_WRAPPER(mysqliC_select_db)
 NR_OUTER_WRAPPER(mysqliC_stmt_init)
@@ -3743,6 +3825,10 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli_real_connect", mysqli_real_connect,
                       mysqli_real_connect, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_ssl_set", mysqli_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_change_user", mysqli_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli_set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli_set_opt", mysqli_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_select_db", mysqli_select_db, mysqli_select_db, 0,
                       0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_init", mysqli_stmt_init, mysqli_stmt_init, 0,
@@ -3761,6 +3847,13 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysqli::real_connect", mysqliC_real_connect,
                       mysqli_real_connect, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::ssl_set", mysqliC_ssl_set, mysqli_ssl_set, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::change_user", mysqliC_change_user,
+                      mysqli_change_user, 0, 0)
+  /* mysqli::connect() is an alias of mysqli_connect(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::connect", mysqliC_connect, mysqli_construct, 0,
+                      0)
+  /* mysqli::set_opt() is an alias of mysqli_options(), with its own entry. */
+  NR_INTERNAL_WRAPREC("mysqli::set_opt", mysqliC_set_opt, mysqli_options, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::real_query", mysqliC_real_query,
                       mysqli_general_query, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli::select_db", mysqliC_select_db, mysqli_select_db,

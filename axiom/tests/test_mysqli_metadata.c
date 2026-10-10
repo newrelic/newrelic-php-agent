@@ -211,6 +211,53 @@ static void test_set_option(void) {
   nr_mysqli_metadata_destroy(&metadata);
 }
 
+static void test_set_user(void) {
+  nr_mysqli_metadata_link_t link;
+  nr_mysqli_metadata_t* metadata = NULL;
+
+  metadata = nr_mysqli_metadata_create();
+
+  /*
+   * Test : Bad parameters.
+   */
+  tlib_pass_if_status_failure(
+      "NULL metadata", nr_mysqli_metadata_set_user(NULL, 1, "u", "p", "d"));
+  tlib_pass_if_status_failure(
+      "NULL user", nr_mysqli_metadata_set_user(metadata, 1, NULL, "p", "d"));
+
+  /*
+   * Test : The user, password and database replace the connect values; the
+   * host, port and options are kept.
+   */
+  nr_mysqli_metadata_set_connect(metadata, 1, "db-host", "db-user",
+                                 "db-password", "db-database", 3306, NULL, 0);
+  nr_mysqli_metadata_set_option(metadata, 1, 7, "opt");
+  tlib_pass_if_status_success(
+      "set user", nr_mysqli_metadata_set_user(metadata, 1, "new-user",
+                                              "new-password", "new-database"));
+  tlib_pass_if_status_success("get",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_str_equal("user", "new-user", link.user);
+  tlib_pass_if_str_equal("password", "new-password", link.password);
+  tlib_pass_if_str_equal("database", "new-database", link.database);
+  tlib_pass_if_str_equal("host kept", "db-host", link.host);
+  tlib_pass_if_int_equal("port kept", 3306, link.port);
+  tlib_pass_if_not_null("options kept", link.options);
+
+  /*
+   * Test : An omitted password or database clears the earlier value.
+   */
+  tlib_pass_if_status_success(
+      "set user without password and database",
+      nr_mysqli_metadata_set_user(metadata, 1, "other-user", NULL, NULL));
+  nr_mysqli_metadata_get(metadata, 1, &link);
+  tlib_pass_if_str_equal("user", "other-user", link.user);
+  tlib_pass_if_null("password cleared", link.password);
+  tlib_pass_if_null("database cleared", link.database);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
 static void test_set_ssl(void) {
   nr_mysqli_metadata_link_t link;
   nr_mysqli_metadata_t* metadata = NULL;
@@ -351,6 +398,7 @@ void test_main(void* p NRUNUSED) {
   test_set_connect();
   test_set_database();
   test_set_option();
+  test_set_user();
   test_set_ssl();
   test_id();
   test_copy();
