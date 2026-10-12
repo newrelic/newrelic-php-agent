@@ -395,6 +395,99 @@ static void test_object_connections(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * The table is shared by all Fibers: it is the same table in every Fiber and
+ * in the main code, its entries survive a Fiber suspending and resuming, and
+ * the default connection is the one connected last whichever Fiber made it.
+ */
+static void test_fiber_shared_table(TSRMLS_D) {
+  nr_php_objtable_t* table;
+  zval* main_conn;
+  zval* fiber_conn;
+  nr_datastore_instance_t* expected_main = &((nr_datastore_instance_t){
+      .database_name = "kirk",
+      .host = "spock",
+      .port_path_or_id = "2345",
+  });
+  nr_datastore_instance_t* expected_fiber = &((nr_datastore_instance_t){
+      .database_name = "mccoy",
+      .host = "bones",
+      .port_path_or_id = "5432",
+  });
+
+  tlib_php_request_start();
+  table = NRPRG_SHARED(pgsql_instances);
+  tlib_pass_if_not_null("the table exists", table);
+
+  tlib_php_request_eval(
+      "$main_conn = new stdClass;"
+      "$fiber = new Fiber(function () {"
+      "  $fiber_conn = new stdClass;"
+      "  Fiber::suspend($fiber_conn);"
+      "  return 1;"
+      "});"
+      "$fiber_conn = $fiber->start();" TSRMLS_CC);
+  main_conn = tlib_php_request_eval_expr("$main_conn" TSRMLS_CC);
+  fiber_conn = tlib_php_request_eval_expr("$fiber_conn" TSRMLS_CC);
+
+  nr_php_pgsql_save_datastore_instance(
+      main_conn, "host=spock port=2345 dbname=kirk" TSRMLS_CC);
+  nr_php_pgsql_save_datastore_instance(
+      fiber_conn, "host=bones port=5432 dbname=mccoy" TSRMLS_CC);
+
+  /* The Fiber is suspended. Resume it and let it finish. */
+  tlib_php_request_eval("$fiber->resume();" TSRMLS_CC);
+  tlib_pass_if_ptr_equal("same table after the Fiber ran", table,
+                         NRPRG_SHARED(pgsql_instances));
+  assert_datastore_instance_equals(
+      "main connection after the Fiber ran", expected_main,
+      nr_php_pgsql_retrieve_datastore_instance(main_conn TSRMLS_CC));
+  assert_datastore_instance_equals(
+      "Fiber connection after the Fiber ran", expected_fiber,
+      nr_php_pgsql_retrieve_datastore_instance(fiber_conn TSRMLS_CC));
+  assert_datastore_instance_equals(
+      "the last connection is the one made in the Fiber", expected_fiber,
+      nr_php_pgsql_retrieve_datastore_instance(NULL TSRMLS_CC));
+  tlib_pass_if_size_t_equal("two entries", 2, nr_php_objtable_count(table));
+
+  nr_php_zval_free(&main_conn);
+  nr_php_zval_free(&fiber_conn);
+  tlib_php_request_eval("unset($main_conn, $fiber_conn, $fiber);" TSRMLS_CC);
+  tlib_pass_if_size_t_equal("freed with the objects", 0,
+                            nr_php_objtable_count(table));
+
+  tlib_php_request_end();
+}
+
+/* A connection made in a Fiber that is destroyed unfinished goes with it. */
+static void test_fiber_destroyed_unfinished(TSRMLS_D) {
+  zval* conn;
+
+  tlib_php_request_start();
+
+  tlib_php_request_eval(
+      "$fiber = new Fiber(function () {"
+      "  $conn = new stdClass;"
+      "  Fiber::suspend($conn);"
+      "});"
+      "$conn = $fiber->start();" TSRMLS_CC);
+  conn = tlib_php_request_eval_expr("$conn" TSRMLS_CC);
+  nr_php_pgsql_save_datastore_instance(
+      conn, "host=spock port=2345 dbname=kirk" TSRMLS_CC);
+  nr_php_zval_free(&conn);
+
+  tlib_php_request_eval("unset($conn);" TSRMLS_CC);
+  tlib_pass_if_size_t_equal(
+      "kept while the Fiber holds it", 1,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+  tlib_php_request_eval("unset($fiber);" TSRMLS_CC);
+  tlib_pass_if_size_t_equal(
+      "removed with the Fiber", 0,
+      nr_php_objtable_count(NRPRG_SHARED(pgsql_instances)));
+
+  tlib_php_request_end();
+}
+
 #endif
 
 void test_main(void* p NRUNUSED) {
@@ -407,6 +500,8 @@ void test_main(void* p NRUNUSED) {
     test_remove_datastore_instance(TSRMLS_C);
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
     test_object_connections(TSRMLS_C);
+    test_fiber_shared_table(TSRMLS_C);
+    test_fiber_destroyed_unfinished(TSRMLS_C);
 #endif
     test_create_datastore_instance();
   }
