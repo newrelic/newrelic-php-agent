@@ -624,9 +624,12 @@ void nr_php_error_cb(int type,
 #else
   /*
    * In PHP 8.0+, the type is OR'ed with the new E_DONT_BAIL error value. None
-   * of our existing routines can handle this addition so we remove it before
-   * proceeding.
+   * of our existing routines can handle this addition so we work on a copy
+   * with it removed. The original type must still be passed through to PHP's
+   * error handler, which bails out on a fatal error unless E_DONT_BAIL is set.
    */
+  int orig_type = type;
+
   type = type & ~E_DONT_BAIL;
   if (nr_php_should_record_error(type, ZSTR_VAL(message))) {
     msg = nr_strdup(ZSTR_VAL(message));
@@ -667,7 +670,7 @@ void nr_php_error_cb(int type,
     (type, error_filename, error_lineno, format, args);
 #else
     NR_PHP_PROCESS_GLOBALS(orig_error_cb)
-    (type, error_filename, error_lineno, message);
+    (orig_type, error_filename, error_lineno, message);
 #endif /* PHP < 8.0 */
   }
 }
