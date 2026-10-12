@@ -9,6 +9,7 @@
 #include "php_datastore.h"
 #include "php_execute.h"
 #include "php_hash.h"
+#include "php_objtable.h"
 #include "php_wrapper.h"
 #include "fw_hooks.h"
 #include "fw_support.h"
@@ -410,6 +411,71 @@ nr_predis_create_datastore_instance_from_connection_params(
                                                          NULL);
 }
 
+/*
+ * Create a datastore instance from what a node connection holds, with no PHP
+ * calls in the usual case: the connection keeps its parameters in a property of
+ * AbstractConnection, and the Parameters object keeps them in an array. If
+ * either is not where we expect (another connection class or an older Predis),
+ * fall back to asking the connection.
+ */
+static nr_datastore_instance_t* nr_predis_create_datastore_instance_from_node(
+    const zval* conn TSRMLS_DC) {
+  nr_datastore_instance_t* instance = NULL;
+  zend_class_entry* connection_ce = NULL;
+  zend_class_entry* parameters_ce = NULL;
+  zval* parameters = NULL;
+  zval* values = NULL;
+  zval* params = NULL;
+
+  if (!nr_predis_is_node_connection(conn TSRMLS_CC)) {
+    return NULL;
+  }
+
+  connection_ce
+      = nr_php_find_class("predis\\connection\\abstractconnection" TSRMLS_CC);
+  parameters_ce = nr_php_find_class("predis\\connection\\parameters" TSRMLS_CC);
+  if (connection_ce && parameters_ce) {
+    parameters = nr_php_get_zval_object_property_with_class(
+        (zval*)conn, connection_ce, "parameters" TSRMLS_CC);
+    if (nr_php_is_zval_valid_object(parameters)) {
+      values = nr_php_get_zval_object_property_with_class(
+          parameters, parameters_ce, "parameters" TSRMLS_CC);
+      if (nr_php_is_zval_valid_array(values)) {
+        return nr_predis_create_datastore_instance_from_array(values);
+      }
+    }
+  }
+
+  params = nr_php_call((zval*)conn, "getParameters");
+  instance = nr_predis_create_datastore_instance_from_connection_params(
+      params TSRMLS_CC);
+  nr_php_zval_free(&params);
+
+  return instance;
+}
+
+#ifndef NR_PHP_OBJTABLE_WEAK
+
+/*
+ * Before PHP 8.0 there is no way to find out when a node connection is freed,
+ * and PHP reuses its handle for a later one, so the saved instance can belong
+ * to an earlier node. Compare it with what the connection holds now.
+ */
+static int nr_predis_instance_matches(const nr_datastore_instance_t* a,
+                                      const nr_datastore_instance_t* b) {
+  return 0
+             == nr_strcmp(nr_datastore_instance_get_host(a),
+                          nr_datastore_instance_get_host(b))
+         && 0
+                == nr_strcmp(nr_datastore_instance_get_port_path_or_id(a),
+                             nr_datastore_instance_get_port_path_or_id(b))
+         && 0
+                == nr_strcmp(nr_datastore_instance_get_database_name(a),
+                             nr_datastore_instance_get_database_name(b));
+}
+
+#endif
+
 nr_datastore_instance_t* nr_predis_save_datastore_instance(const zval* conn,
                                                            zval* params
                                                                TSRMLS_DC) {
@@ -420,13 +486,25 @@ nr_datastore_instance_t* nr_predis_save_datastore_instance(const zval* conn,
     return NULL;
   }
 
-  key = nr_php_datastore_make_key(conn, "predis");
   instance = nr_predis_create_datastore_instance_from_connection_params(
       params TSRMLS_CC);
-  nr_php_datastore_instance_save(key, instance TSRMLS_CC);
 
+#ifdef NR_PHP_OBJTABLE_WEAK
+  if (NULL == NRPRG_SHARED(predis_instances) || NULL == instance
+      || !nr_php_is_zval_valid_object(conn)) {
+    nr_datastore_instance_destroy(&instance);
+    return NULL;
+  }
+
+  /* The table owns the instance; replacing an entry destroys the old one. */
+  nr_php_objtable_set(NRPRG_SHARED(predis_instances), conn, instance);
+  return instance;
+#else
+  key = nr_php_datastore_make_key(conn, "predis");
+  nr_php_datastore_instance_save(key, instance TSRMLS_CC);
   nr_free(key);
   return instance;
+#endif
 }
 
 nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
@@ -438,11 +516,45 @@ nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
     return NULL;
   }
 
-  key = nr_php_datastore_make_key(conn, "predis");
-  instance = nr_php_datastore_instance_retrieve(key TSRMLS_CC);
-
-  nr_free(key);
+#ifdef NR_PHP_OBJTABLE_WEAK
+  /*
+   * The table drops an entry when its node connection is freed, so an entry is
+   * always the object's own. A node that was not seen being built (for
+   * example, one made by an aggregate connection) has none yet: make it now.
+   */
+  instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
+  if (NULL == instance && nr_php_is_zval_valid_object(conn)) {
+    instance = nr_predis_create_datastore_instance_from_node(conn TSRMLS_CC);
+    if (instance && NRPRG_SHARED(predis_instances)) {
+      nr_php_objtable_set(NRPRG_SHARED(predis_instances), conn, instance);
+      instance = nr_php_objtable_get(NRPRG_SHARED(predis_instances), conn);
+    } else {
+      nr_datastore_instance_destroy(&instance);
+    }
+  }
   return instance;
+#else
+  {
+    nr_datastore_instance_t* current = NULL;
+
+    key = nr_php_datastore_make_key(conn, "predis");
+    instance = nr_php_datastore_instance_retrieve(key TSRMLS_CC);
+
+    /* A node connection is checked on every response; see above. */
+    current = nr_predis_create_datastore_instance_from_node(conn TSRMLS_CC);
+    if (current) {
+      if (NULL == instance || !nr_predis_instance_matches(instance, current)) {
+        nr_php_datastore_instance_save(key, current TSRMLS_CC);
+        instance = current;
+      } else {
+        nr_datastore_instance_destroy(&current);
+      }
+    }
+
+    nr_free(key);
+    return instance;
+  }
+#endif
 }
 
 zval* nr_predis_get_parameter(zval* params, const char* name TSRMLS_DC) {
@@ -672,23 +784,10 @@ NR_PHP_WRAPPER(nr_predis_aggregateconnection_getConnection) {
                      "NodeConnectionInterface",
                      __func__);
   } else {
-    char* key = nr_php_datastore_make_key(*retval_ptr, "predis");
-
-    /*
-     * Add the datastore instance metadata if it hasn't already happened.
-     */
-    if (!nr_php_datastore_has_conn(key TSRMLS_CC)) {
-      zval* params = nr_php_call(*retval_ptr, "getParameters");
-
-      (void)nr_predis_save_datastore_instance(*retval_ptr, params TSRMLS_CC);
-      nr_php_zval_free(&params);
-    }
-
     /*
      * Actually instrument the connection.
      */
     nr_predis_instrument_connection(*retval_ptr TSRMLS_CC);
-    nr_free(key);
   }
 }
 NR_PHP_WRAPPER_END
