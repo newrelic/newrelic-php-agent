@@ -104,6 +104,12 @@ extern void nr_php_objtable_mark_last(nr_php_objtable_t* table,
 extern void* nr_php_objtable_get_last(nr_php_objtable_t* table);
 
 /*
+ * Purpose : Remove the entry marked as the last one and destroy its value.
+ *           Does nothing if no entry is marked.
+ */
+extern void nr_php_objtable_del_last(nr_php_objtable_t* table);
+
+/*
  * Purpose : Return the number of entries in the table.
  */
 extern size_t nr_php_objtable_count(const nr_php_objtable_t* table);

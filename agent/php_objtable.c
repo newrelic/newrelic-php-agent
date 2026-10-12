@@ -219,3 +219,19 @@ void* nr_php_objtable_get_last(nr_php_objtable_t* table) {
 
   return table->last->value;
 }
+
+void nr_php_objtable_del_last(nr_php_objtable_t* table) {
+  nr_php_objtable_entry_t* entry;
+
+  if (NULL == table || NULL == table->last) {
+    return;
+  }
+  entry = table->last;
+
+#ifdef NR_PHP_OBJTABLE_WEAK
+  /* The entry exists, so its object is still alive. */
+  zend_weakrefs_hash_del(&table->weak, (zend_object*)(uintptr_t)entry->key);
+#else
+  nr_hashmap_index_delete(table->index, entry->key);
+#endif
+}

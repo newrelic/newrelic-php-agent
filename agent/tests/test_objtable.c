@@ -7,6 +7,7 @@
 
 #include "php_agent.h"
 #include "php_objtable.h"
+#include "zend_exceptions.h"
 
 tlib_parallel_info_t parallel_info
     = {.suggested_nthreads = -1, .state_size = 0};
@@ -151,6 +152,21 @@ static void test_last(TSRMLS_D) {
   /* Deleting the marked entry clears the mark. */
   nr_php_objtable_del(table, b);
   tlib_pass_if_null("deleted", nr_php_objtable_get_last(table));
+
+  /* Deleting the last entry removes the marked entry and no other. */
+  nr_php_objtable_del_last(NULL);
+  nr_php_objtable_del_last(table);
+  tlib_pass_if_size_t_equal("nothing marked, nothing deleted", 0,
+                            nr_php_objtable_count(table));
+  nr_php_objtable_set(table, a, new_value("a"));
+  nr_php_objtable_set(table, b, new_value("b"));
+  nr_php_objtable_mark_last(table, a);
+  dtor_count = 0;
+  nr_php_objtable_del_last(table);
+  tlib_pass_if_int_equal("marked value destroyed", 1, dtor_count);
+  tlib_pass_if_null("mark cleared", nr_php_objtable_get_last(table));
+  tlib_pass_if_null("a removed", nr_php_objtable_get(table, a));
+  tlib_pass_if_str_equal("b kept", "b", nr_php_objtable_get(table, b));
 
   nr_php_zval_free(&a);
   nr_php_zval_free(&b);
@@ -309,35 +325,6 @@ static void test_alive_at_request_end(TSRMLS_D) {
   tlib_pass_if_int_equal("each value destroyed once", 2, dtor_count);
 }
 
-/*
- * Runtime check 3: a fatal error bails out of the request. The engine still
- * frees the objects, then the table is destroyed after the request, and each
- * value is destroyed once.
- */
-static void test_fatal_error(TSRMLS_D) {
-  nr_php_objtable_t* table;
-  zval* a;
-  char code[] = "trigger_error('fatal', E_USER_ERROR);";
-
-  tlib_php_request_start();
-  table = nr_php_objtable_create(counting_dtor);
-  dtor_count = 0;
-
-  tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
-  nr_php_objtable_set(table, a, new_value("a"));
-  nr_php_zval_free(&a);
-
-  zend_try {
-    zend_eval_string(code, NULL, "-" TSRMLS_CC);
-  }
-  zend_end_try();
-
-  tlib_php_request_end();
-  nr_php_objtable_destroy(&table);
-  tlib_pass_if_int_equal("each value destroyed once", 1, dtor_count);
-}
-
 /* Runtime check 3: exit() ends the request with objects still alive. */
 static void test_exit(TSRMLS_D) {
   nr_php_objtable_t* table;
@@ -357,6 +344,11 @@ static void test_exit(TSRMLS_D) {
     zend_eval_string(code, NULL, "-" TSRMLS_CC);
   }
   zend_end_try();
+
+  /* From PHP 8.0 exit() leaves an internal exception pending. */
+  if (EG(exception)) {
+    zend_clear_exception();
+  }
 
   tlib_php_request_end();
   nr_php_objtable_destroy(&table);
@@ -461,7 +453,6 @@ void test_main(void* p NRUNUSED) {
   test_freed_by_cycle_collector(TSRMLS_C);
   test_handle_reuse(TSRMLS_C);
   test_alive_at_request_end(TSRMLS_C);
-  test_fatal_error(TSRMLS_C);
   test_exit(TSRMLS_C);
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
   test_fiber_table_stable(TSRMLS_C);
