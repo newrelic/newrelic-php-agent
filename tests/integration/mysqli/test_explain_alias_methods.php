@@ -85,7 +85,15 @@ require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 $link = new mysqli();
 tap_assert($link->set_opt(MYSQLI_INIT_COMMAND, 'CREATE TEMPORARY TABLE nr_alias_tmp (id INT)'), 'option set');
 $connected = $link->connect($MYSQL_TLS_HOST, 'tls_optional', 'tls_optional', $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT);
-tap_assert($connected, 'connection');
+/*
+ * Before PHP 8.1 mysqli::connect() returns NULL, so check the connection error
+ * number there.
+ */
+if (PHP_VERSION_ID < 80100) {
+  tap_assert(0 === $link->connect_errno, 'connection');
+} else {
+  tap_assert($connected, 'connection');
+}
 
 $result = $link->query('SELECT * FROM nr_alias_tmp WHERE id = 1');
 tap_assert(false !== $result, 'query succeeded');

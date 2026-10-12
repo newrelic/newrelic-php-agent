@@ -13,6 +13,10 @@ PHP uses mysqli.default_user. The arguments of the explain connection are
 positional. If the agent only passed the arguments the application gave, the
 password would take the place of the user and the login would be refused. The
 agent fills in the missing leading arguments from the mysqli.default_* settings.
+
+Before PHP 8.1 a null user is not replaced by mysqli.default_user, only an
+omitted argument is, so there the application gives only the host and PHP takes
+the user and password (and the port, set at run time) from the settings.
 The TLS test server is used for the users; the test is skipped without it and
 on PHP below 7.4.
 */
@@ -44,6 +48,7 @@ newrelic.transaction_tracer.record_sql = obfuscated
 newrelic.datastore_tracer.database_name_reporting.enabled = 0
 newrelic.datastore_tracer.instance_reporting.enabled = 0
 mysqli.default_user = tls_optional
+mysqli.default_pw = tls_optional
 */
 
 /*EXPECT
@@ -80,7 +85,12 @@ null
 require_once(realpath(dirname(__FILE__)) . '/../../include/tap.php');
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
 
-$link = mysqli_connect($MYSQL_TLS_HOST, null, 'tls_optional', $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT);
+if (PHP_VERSION_ID < 80100) {
+  ini_set('mysqli.default_port', (string)(int)$MYSQL_TLS_PORT);
+  $link = mysqli_connect($MYSQL_TLS_HOST);
+} else {
+  $link = mysqli_connect($MYSQL_TLS_HOST, null, 'tls_optional', $MYSQL_TLS_DB, (int)$MYSQL_TLS_PORT);
+}
 tap_assert($link instanceof mysqli, 'connection');
 
 $result = mysqli_query($link, 'SELECT 1 AS one');
