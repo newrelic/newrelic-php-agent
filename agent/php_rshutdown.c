@@ -59,7 +59,6 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
 
   nr_guzzle4_rshutdown(TSRMLS_C);
   nr_curl_rshutdown(TSRMLS_C);
-  nr_php_pdo_rshutdown();
   nr_php_mysqli_rshutdown();
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
@@ -140,6 +139,7 @@ int nr_php_post_deactivate(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   nr_php_objtable_destroy(&NRPRG_SHARED(predis_instances));
 #endif
+  nr_php_objtable_destroy(&NRPRG_SHARED(pdo_options));
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO \
     && !defined OVERWRITE_ZEND_EXECUTE_DATA
   /*

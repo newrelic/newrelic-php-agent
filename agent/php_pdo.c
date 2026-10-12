@@ -13,6 +13,7 @@
 #include "php_datastore.h"
 #include "php_explain.h"
 #include "php_hash.h"
+#include "php_objtable.h"
 #include "php_pdo.h"
 #include "php_pdo_mysql.h"
 #include "php_pdo_pgsql.h"
@@ -394,20 +395,159 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
+/*
+ * The options of a PDO connection, kept as plain C data. They outlive the
+ * transaction and are freed after the request's memory is gone, so they cannot
+ * hold PHP values; only scalar options are kept. The options the explain
+ * connection depends on (TLS file names, an init command, timeouts) are
+ * scalars; an option that holds an object, such as the statement class
+ * arguments, is dropped.
+ */
+typedef struct {
+  char* string_key; /* NULL for an integer key */
+  zend_ulong index_key;
+  int type; /* IS_NULL, IS_FALSE, IS_TRUE, IS_LONG, IS_DOUBLE or IS_STRING */
+  zend_long long_value;
+  double double_value;
+  char* string_value;
+  size_t string_length;
+} nr_php_pdo_option_t;
+
+typedef struct {
+  size_t count;
+  nr_php_pdo_option_t* options;
+} nr_php_pdo_saved_options_t;
+
+static void nr_php_pdo_saved_options_destroy(void* saved_options) {
+  nr_php_pdo_saved_options_t* saved = saved_options;
+  size_t i;
+
+  if (NULL == saved) {
+    return;
+  }
+  for (i = 0; i < saved->count; i++) {
+    nr_free(saved->options[i].string_key);
+    nr_free(saved->options[i].string_value);
+  }
+  nr_free(saved->options);
+  nr_free(saved);
+}
+
+static nr_php_pdo_saved_options_t* nr_php_pdo_saved_options_create(
+    const zval* options) {
+  nr_php_pdo_saved_options_t* saved
+      = nr_zalloc(sizeof(nr_php_pdo_saved_options_t));
+  zend_ulong num_key;
+  zend_string* string_key;
+  zval* value;
+
+  saved->options = nr_calloc(zend_hash_num_elements(Z_ARRVAL_P(options)),
+                             sizeof(nr_php_pdo_option_t));
+
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(options), num_key, string_key, value) {
+    nr_php_pdo_option_t* option = &saved->options[saved->count];
+
+    ZVAL_DEREF(value);
+    switch (Z_TYPE_P(value)) {
+      case IS_NULL:
+      case IS_FALSE:
+      case IS_TRUE:
+        break;
+      case IS_LONG:
+        option->long_value = Z_LVAL_P(value);
+        break;
+      case IS_DOUBLE:
+        option->double_value = Z_DVAL_P(value);
+        break;
+      case IS_STRING:
+        option->string_length = Z_STRLEN_P(value);
+        option->string_value = nr_strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
+        break;
+      default:
+        continue; /* arrays, objects and resources are not kept */
+    }
+
+    option->type = Z_TYPE_P(value);
+    if (string_key) {
+      option->string_key = nr_strndup(ZEND_STRING_VALUE(string_key),
+                                      ZEND_STRING_LEN(string_key));
+    } else {
+      option->index_key = num_key;
+    }
+    saved->count += 1;
+  }
+  ZEND_HASH_FOREACH_END();
+
+  return saved;
+}
+
+static zval* nr_php_pdo_saved_options_to_zval(
+    const nr_php_pdo_saved_options_t* saved) {
+  zval* result = nr_php_zval_alloc();
+  size_t i;
+
+  array_init(result);
+  for (i = 0; i < saved->count; i++) {
+    const nr_php_pdo_option_t* o = &saved->options[i];
+    const char* key = o->string_key;
+    size_t key_len = key ? nr_strlen(key) : 0;
+
+    switch (o->type) {
+      case IS_NULL:
+        key ? add_assoc_null_ex(result, key, key_len)
+            : add_index_null(result, o->index_key);
+        break;
+      case IS_FALSE:
+      case IS_TRUE:
+        key ? add_assoc_bool_ex(result, key, key_len, IS_TRUE == o->type)
+            : add_index_bool(result, o->index_key, IS_TRUE == o->type);
+        break;
+      case IS_LONG:
+        key ? add_assoc_long_ex(result, key, key_len, o->long_value)
+            : add_index_long(result, o->index_key, o->long_value);
+        break;
+      case IS_DOUBLE:
+        key ? add_assoc_double_ex(result, key, key_len, o->double_value)
+            : add_index_double(result, o->index_key, o->double_value);
+        break;
+      case IS_STRING:
+        key ? add_assoc_stringl_ex(result, key, key_len, o->string_value,
+                                   o->string_length)
+            : add_index_stringl(result, o->index_key, o->string_value,
+                                o->string_length);
+        break;
+      default:
+        break;
+    }
+  }
+
+  return result;
+}
+
+void nr_php_pdo_options_create_table(void) {
+  NRPRG_SHARED(pdo_options)
+      = nr_php_objtable_create(nr_php_pdo_saved_options_destroy);
+}
+
 zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+  zval object;
+  const nr_php_pdo_saved_options_t* saved;
+
   if (NULL == dbh) {
     return NULL;
   }
-  if (NULL == NRTXNGLOBAL(pdo_link_options)) {
+#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
+  ZVAL_OBJ(&object, dbh);
+#else
+  ZVAL_COPY_VALUE(&object, dbh);
+#endif
+
+  saved = nr_php_objtable_get(NRPRG_SHARED(pdo_options), &object);
+  if (NULL == saved) {
     return NULL;
   }
-#if ZEND_MODULE_API_NO >= ZEND_8_5_X_API_NO
-  return (zval*)nr_hashmap_index_get(NRTXNGLOBAL(pdo_link_options),
-                                     dbh->handle);
-#else
-  return (zval*)nr_hashmap_index_get(NRTXNGLOBAL(pdo_link_options),
-                                     Z_OBJ_HANDLE_P(dbh));
-#endif
+
+  return nr_php_pdo_saved_options_to_zval(saved);
 }
 
 zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
@@ -480,6 +620,7 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   options = nr_php_pdo_options_get(dbh TSRMLS_CC);
   if (options) {
     argv[3] = nr_php_pdo_disable_persistence(options TSRMLS_CC);
+    nr_php_zval_free(&options);
     argc++;
   }
 
@@ -505,12 +646,8 @@ zval* nr_php_pdo_duplicate(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   return dup;
 }
 
-static void free_options(zval* options) {
-  nr_php_zval_free(&options);
-}
-
 void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
-  zval* copy = NULL;
+  nr_php_pdo_saved_options_t* saved = NULL;
 
   if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
     return;
@@ -521,25 +658,16 @@ void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
    * connection that had the same handle.
    */
   if (0 == nr_php_is_zval_valid_array(options)) {
-    if (NRTXNGLOBAL(pdo_link_options)) {
-      nr_hashmap_index_delete(NRTXNGLOBAL(pdo_link_options),
-                              Z_OBJ_HANDLE_P(dbh));
-    }
+    nr_php_objtable_del(NRPRG_SHARED(pdo_options), dbh);
     return;
   }
 
-  /*
-   * Lazily create the link options hashmap if it isn't already created.
-   */
-  if (NULL == NRTXNGLOBAL(pdo_link_options)) {
-    NRTXNGLOBAL(pdo_link_options)
-        = nr_hashmap_create((nr_hashmap_dtor_func_t)free_options);
+  if (NULL == NRPRG_SHARED(pdo_options)) {
+    return;
   }
 
-  copy = nr_php_zval_alloc();
-  ZVAL_DUP(copy, options);
-  nr_hashmap_index_update(NRTXNGLOBAL(pdo_link_options), Z_OBJ_HANDLE_P(dbh),
-                          copy);
+  saved = nr_php_pdo_saved_options_create(options);
+  nr_php_objtable_set(NRPRG_SHARED(pdo_options), dbh, saved);
 }
 
 /*
@@ -681,29 +809,4 @@ zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC) {
 
   nr_php_zval_free(&persistent);
   return result;
-}
-
-void nr_php_pdo_rshutdown() {
-  /*
-   * This frees pdo metadata stored in the transaction.
-   *
-   * `pdo_link_options` contains duplicates of zvals. If
-   * `nr_php_txn_end` is called from the post-deactivate callback, request
-   * shutdown functions have already been called; and the Zend VM has already
-   * forcefully freed all dangling zvals that are not referenced by the global
-   * scope (regardless of their reference count), thus leaving the zvals stored
-   * in the pdo_link_options metadata in an "undefined" state. Consequently,
-   * freeing the zvals in `nr_php_txn_end` at this stage can result in undefined
-   * behavior.
-   *
-   * Calling this function during the RSHUTDOWN phase ensures that the zvals in
-   * `pdo_link_options` are cleaned up before Zend winds down the VM and
-   * forcefully frees zvals.
-   *
-   * If `nr_php_txn_end` is called outside the post-deactivate callback,
-   * it frees `pdo_link_options` by itself.
-   */
-  if (nrlikely(NRPRG(txn))) {
-    nr_hashmap_destroy(&NRTXNGLOBAL(pdo_link_options));
-  }
 }

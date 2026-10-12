@@ -160,8 +160,8 @@ extern zval* nr_php_pdo_disable_persistence(const zval* options TSRMLS_DC);
  * Params  : 1. The PDO object (a zend_object on PHP 8.5 and later, a zval
  *              before).
  *
- * Returns : The saved options array, which is NOT owned by the caller, or NULL
- *           if none were saved.
+ * Returns : A new array of the saved (scalar) options, which is owned by the
+ *           caller, or NULL if none were saved.
  */
 extern zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC);
 
