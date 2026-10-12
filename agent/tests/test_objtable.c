@@ -99,7 +99,92 @@ static void test_set_get_del_replace(TSRMLS_D) {
   tlib_pass_if_int_equal("destroy frees the rest", 3, dtor_count);
 }
 
+static void test_last(TSRMLS_D) {
+  nr_php_objtable_t* table;
+  zval* a;
+  zval* b;
+  zval* c;
+
+  tlib_php_request_start();
+  table = nr_php_objtable_create(counting_dtor);
+  dtor_count = 0;
+
+  tlib_php_request_eval(
+      "$a = new stdClass; $b = new stdClass; $c = new stdClass;" TSRMLS_CC);
+  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  b = tlib_php_request_eval_expr("$b" TSRMLS_CC);
+  c = tlib_php_request_eval_expr("$c" TSRMLS_CC);
+
+  /* Bad arguments and an empty table. */
+  nr_php_objtable_mark_last(NULL, a);
+  nr_php_objtable_mark_last(table, NULL);
+  tlib_pass_if_null("NULL table", nr_php_objtable_get_last(NULL));
+  tlib_pass_if_null("nothing marked", nr_php_objtable_get_last(table));
+
+  nr_php_objtable_set(table, a, new_value("a"));
+  nr_php_objtable_set(table, b, new_value("b"));
+
+  /* An object without an entry is not marked. */
+  nr_php_objtable_mark_last(table, c);
+  tlib_pass_if_null("no entry, nothing marked",
+                    nr_php_objtable_get_last(table));
+
+  nr_php_objtable_mark_last(table, a);
+  tlib_pass_if_str_equal("a is last", "a", nr_php_objtable_get_last(table));
+  nr_php_objtable_mark_last(table, b);
+  tlib_pass_if_str_equal("b is last", "b", nr_php_objtable_get_last(table));
+
+  /* Marking an object without an entry leaves the mark alone. */
+  nr_php_objtable_mark_last(table, c);
+  tlib_pass_if_str_equal("mark kept", "b", nr_php_objtable_get_last(table));
+
+  /* Deleting another entry leaves the mark alone. */
+  nr_php_objtable_del(table, a);
+  tlib_pass_if_str_equal("other delete", "b", nr_php_objtable_get_last(table));
+
+  /* Replacing the marked entry clears the mark until it is marked again. */
+  nr_php_objtable_set(table, b, new_value("b2"));
+  tlib_pass_if_null("replaced", nr_php_objtable_get_last(table));
+  nr_php_objtable_mark_last(table, b);
+  tlib_pass_if_str_equal("marked again", "b2", nr_php_objtable_get_last(table));
+
+  /* Deleting the marked entry clears the mark. */
+  nr_php_objtable_del(table, b);
+  tlib_pass_if_null("deleted", nr_php_objtable_get_last(table));
+
+  nr_php_zval_free(&a);
+  nr_php_zval_free(&b);
+  nr_php_zval_free(&c);
+  tlib_php_request_end();
+  nr_php_objtable_destroy(&table);
+}
+
 #ifdef NR_PHP_OBJTABLE_WEAK
+
+/* The mark is cleared when the marked object is freed. */
+static void test_last_freed(TSRMLS_D) {
+  nr_php_objtable_t* table;
+  zval* a;
+
+  tlib_php_request_start();
+  table = nr_php_objtable_create(counting_dtor);
+  dtor_count = 0;
+
+  tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
+  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  nr_php_objtable_set(table, a, new_value("a"));
+  nr_php_objtable_mark_last(table, a);
+  nr_php_zval_free(&a);
+  tlib_pass_if_str_equal("marked", "a", nr_php_objtable_get_last(table));
+
+  tlib_php_request_eval("unset($a);" TSRMLS_CC);
+  tlib_pass_if_null("cleared when freed", nr_php_objtable_get_last(table));
+  tlib_pass_if_int_equal("value destroyed", 1, dtor_count);
+
+  tlib_php_request_end();
+  nr_php_objtable_destroy(&table);
+  tlib_pass_if_int_equal("not destroyed twice", 1, dtor_count);
+}
 
 /* Runtime check 1: the entry goes when the object is freed by refcount. */
 static void test_freed_by_refcount(TSRMLS_D) {
@@ -369,7 +454,9 @@ void test_main(void* p NRUNUSED) {
 
   test_null_and_bad_args(TSRMLS_C);
   test_set_get_del_replace(TSRMLS_C);
+  test_last(TSRMLS_C);
 #ifdef NR_PHP_OBJTABLE_WEAK
+  test_last_freed(TSRMLS_C);
   test_freed_by_refcount(TSRMLS_C);
   test_freed_by_cycle_collector(TSRMLS_C);
   test_handle_reuse(TSRMLS_C);

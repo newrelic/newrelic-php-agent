@@ -32,6 +32,12 @@ struct _nr_php_objtable_t {
    */
   nr_hashmap_t* index;
 
+  /*
+   * The entry marked as the last one, or NULL. Not owned: it is cleared when
+   * the entry is freed, so it never dangles.
+   */
+  nr_php_objtable_entry_t* last;
+
 #ifdef NR_PHP_OBJTABLE_WEAK
   /*
    * Owns the entries and is registered with the engine, which removes an entry
@@ -45,6 +51,9 @@ struct _nr_php_objtable_t {
 static void nr_php_objtable_entry_free(nr_php_objtable_entry_t* entry) {
   if (NULL == entry) {
     return;
+  }
+  if (entry->table->last == entry) {
+    entry->table->last = NULL;
   }
   if (entry->table->dtor) {
     entry->table->dtor(entry->value);
@@ -188,4 +197,25 @@ size_t nr_php_objtable_count(const nr_php_objtable_t* table) {
   }
 
   return nr_hashmap_count(table->index);
+}
+
+void nr_php_objtable_mark_last(nr_php_objtable_t* table, const zval* obj) {
+  nr_php_objtable_entry_t* entry;
+
+  if (NULL == table || NULL == obj || IS_OBJECT != Z_TYPE_P(obj)) {
+    return;
+  }
+
+  entry = nr_hashmap_index_get(table->index, nr_php_objtable_key(obj));
+  if (entry) {
+    table->last = entry;
+  }
+}
+
+void* nr_php_objtable_get_last(nr_php_objtable_t* table) {
+  if (NULL == table || NULL == table->last) {
+    return NULL;
+  }
+
+  return table->last->value;
 }

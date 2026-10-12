@@ -86,6 +86,24 @@ extern void* nr_php_objtable_get(nr_php_objtable_t* table, const zval* obj);
 extern void nr_php_objtable_del(nr_php_objtable_t* table, const zval* obj);
 
 /*
+ * Purpose : Mark the entry of an object as the last one, for callers that use
+ *           the most recent object when none is given (a default link).
+ *
+ * Notes   : Does nothing if the object has no entry. The mark is not owned:
+ *           it is cleared when the entry is replaced, deleted or dropped.
+ */
+extern void nr_php_objtable_mark_last(nr_php_objtable_t* table,
+                                      const zval* obj);
+
+/*
+ * Purpose : Return the value of the entry marked as the last one.
+ *
+ * Returns : The value, which stays owned by the table, or NULL if no entry is
+ *           marked.
+ */
+extern void* nr_php_objtable_get_last(nr_php_objtable_t* table);
+
+/*
  * Purpose : Return the number of entries in the table.
  */
 extern size_t nr_php_objtable_count(const nr_php_objtable_t* table);
