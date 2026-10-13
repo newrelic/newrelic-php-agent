@@ -13,6 +13,7 @@
 #include "nr_mysqli_metadata_private.h"
 #include "util_memory.h"
 #include "util_object.h"
+#include "util_strings.h"
 
 static inline void nr_mysqli_metadata_add_property(nrobj_t* link,
                                                    const char* name,
@@ -251,6 +252,46 @@ nr_status_t nr_mysqli_metadata_set_ssl(nr_mysqli_metadata_t* metadata,
   nro_delete(link);
 
   return NR_SUCCESS;
+}
+
+typedef struct {
+  const char* skip;
+  nrobj_t* kept;
+} nr_mysqli_metadata_remove_state_t;
+
+static nr_status_t nr_mysqli_metadata_keep_other_links(const char* key,
+                                                       const nrobj_t* value,
+                                                       void* ptr) {
+  nr_mysqli_metadata_remove_state_t* state = ptr;
+
+  if (0 != nr_strcmp(key, state->skip)) {
+    nro_set_hash(state->kept, key, value);
+  }
+
+  return NR_SUCCESS;
+}
+
+void nr_mysqli_metadata_remove(nr_mysqli_metadata_t* metadata,
+                               nr_mysqli_metadata_link_handle_t handle) {
+  char id[NR_MYSQLI_METADATA_ID_SIZE];
+  nr_mysqli_metadata_remove_state_t state;
+
+  if (NULL == metadata) {
+    return;
+  }
+
+  nr_mysqli_metadata_id(handle, id);
+  if (NULL == nro_get_hash_hash(metadata->links, id, NULL)) {
+    return;
+  }
+
+  /* An object hash has no delete: copy the other links into a new one. */
+  state.skip = id;
+  state.kept = nro_new_hash();
+  nro_iteratehash(metadata->links, nr_mysqli_metadata_keep_other_links, &state);
+
+  nro_delete(metadata->links);
+  metadata->links = state.kept;
 }
 
 nrobj_t* nr_mysqli_metadata_create_or_get(

@@ -336,6 +336,43 @@ static void test_set_ssl(void) {
   nr_mysqli_metadata_destroy(&metadata);
 }
 
+static void test_remove(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+
+  /* Bad parameters do nothing. */
+  nr_mysqli_metadata_remove(NULL, 1);
+  nr_mysqli_metadata_remove(metadata, 1);
+  tlib_pass_if_status_failure("nothing to remove",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+
+  nr_mysqli_metadata_set_connect(metadata, 1, "db1", "u1", "secret1", "d1",
+                                 3306, NULL, 0);
+  nr_mysqli_metadata_set_connect(metadata, 2, "db2", "u2", "secret2", "d2",
+                                 3306, NULL, 0);
+
+  nr_mysqli_metadata_remove(metadata, 1);
+  tlib_pass_if_status_failure("link 1 is gone",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_status_success("link 2 is kept",
+                              nr_mysqli_metadata_get(metadata, 2, &link));
+  tlib_pass_if_str_equal("link 2 host", "db2", link.host);
+  tlib_pass_if_str_equal("link 2 password", "secret2", link.password);
+
+  /*
+   * A link on the same handle that omits the password must not inherit the
+   * earlier link's.
+   */
+  nr_mysqli_metadata_set_connect(metadata, 1, "db3", "u3", NULL, "d3", 3306,
+                                 NULL, 0);
+  tlib_pass_if_status_success("new link 1",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_str_equal("new link 1 host", "db3", link.host);
+  tlib_pass_if_null("new link 1 has no password", link.password);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
 static void test_id(void) {
   char id[NR_MYSQLI_METADATA_ID_SIZE];
 
@@ -400,6 +437,7 @@ void test_main(void* p NRUNUSED) {
   test_set_option();
   test_set_user();
   test_set_ssl();
+  test_remove();
   test_id();
   test_copy();
 }

@@ -111,6 +111,19 @@ extern nr_status_t nr_mysqli_metadata_set_connect(
     long flags);
 
 /*
+ * Purpose : Forget everything saved for a link.
+ *
+ * Params  : 1. The metadata repository.
+ *           2. The MySQLi link handle.
+ *
+ * Notes   : PHP reuses the handle of a freed object, so a new link must not
+ *           find what was saved for an earlier one. Call this when a link is
+ *           created or closed.
+ */
+extern void nr_mysqli_metadata_remove(nr_mysqli_metadata_t* metadata,
+                                      nr_mysqli_metadata_link_handle_t handle);
+
+/*
  * Purpose : Set the current database for a given link.
  *
  * Params  : 1. The metadata repository.

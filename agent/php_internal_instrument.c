@@ -615,6 +615,11 @@ NR_INNER_WRAPPER(mysqli_close) {
                                   ZEND_NUM_ARGS() TSRMLS_CC, "|o",
                                   &mysqli_obj)) {
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
+    if (nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
+      nr_mysqli_metadata_remove(
+          NRTXNGLOBAL(mysqli_links),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+    }
   }
 
   nr_wrapper->oldhandler(INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -704,6 +709,18 @@ NR_INNER_WRAPPER(mysqli_construct) {
     char* password_term = password ? nr_strndup(password, password_len) : NULL;
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
+
+    /*
+     * PHP reuses the handle of a freed object, so a new link must not inherit
+     * what was saved for an earlier one (its password, TLS settings and
+     * options). mysqli::connect() is called on a link that exists already and
+     * may have had options and TLS settings set, so it keeps them.
+     */
+    if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
+      nr_mysqli_metadata_remove(
+          NRTXNGLOBAL(mysqli_links),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+    }
 
     nr_mysqli_metadata_set_connect(
         NRTXNGLOBAL(mysqli_links),
@@ -1616,6 +1633,31 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
  *   object mysqli_stmt_init ( object $link )
  *   object mysqli::stmt_init ()
  */
+/*
+ * Handle
+ *   object mysqli_init ()
+ *
+ * Creates a link that has not connected yet: options and TLS settings are set
+ * on it before it does.
+ */
+NR_INNER_WRAPPER(mysqli_init) {
+  int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
+                                         INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+  if ((0 == NRTXNGLOBAL(generating_explain_plan))
+      && nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
+    /* A new link must not inherit what was saved for an earlier one. */
+    nr_mysqli_metadata_remove(
+        NRTXNGLOBAL(mysqli_links),
+        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(return_value));
+  }
+
+  if (zcaught) {
+    zend_bailout();
+    /* NOTREACHED */
+  }
+}
+
 NR_INNER_WRAPPER(mysqli_stmt_init) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;
@@ -3314,6 +3356,7 @@ NR_OUTER_WRAPPER(mysql_unbuffered_query)
 NR_OUTER_WRAPPER(mysql_db_query)
 
 NR_OUTER_WRAPPER(mysqli_close)
+NR_OUTER_WRAPPER(mysqli_init)
 NR_OUTER_WRAPPER(mysqli_connect)
 NR_OUTER_WRAPPER(mysqli_multi_query)
 NR_OUTER_WRAPPER(mysqli_options)
@@ -3814,6 +3857,7 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("mysql_db_query", mysql_db_query, mysql_db_query, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli_close", mysqli_close, mysqli_close, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli_init", mysqli_init, mysqli_init, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_connect", mysqli_connect, mysqli_construct, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_multi_query", mysqli_multi_query,
                       mysqli_general_query, 0, 0)

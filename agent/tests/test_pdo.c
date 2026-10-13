@@ -445,6 +445,16 @@ static void test_options_save(TSRMLS_D) {
   tlib_pass_if_zval_identical("second object", options,
                               saved_options(other TSRMLS_CC));
 
+  /*
+   * Test : A connection built without options removes what was saved for its
+   * handle, so a later connection with the same handle cannot inherit it.
+   */
+  nr_php_pdo_options_save(other, NULL TSRMLS_CC);
+  tlib_pass_if_null("no options removes the saved ones",
+                    saved_options(other TSRMLS_CC));
+  tlib_pass_if_size_t_equal("one entry again", 1,
+                            nr_hashmap_count(NRTXNGLOBAL(pdo_link_options)));
+
   nr_php_zval_free(&options);
   nr_php_zval_free(&not_pdo);
   nr_php_zval_free(&other);
@@ -454,7 +464,6 @@ static void test_options_save(TSRMLS_D) {
 }
 
 void test_main(void* p NRUNUSED) {
-
   tlib_php_engine_create("" PTSRMLS_CC);
 
   if (tlib_php_require_extension("PDO" TSRMLS_CC)) {

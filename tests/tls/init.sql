@@ -10,11 +10,14 @@ CREATE USER 'tls_optional'@'%' IDENTIFIED BY 'tls_optional';
 CREATE USER 'tls_required'@'%' IDENTIFIED BY 'tls_required' REQUIRE SSL;
 CREATE USER 'tls_clientcert'@'%' IDENTIFIED BY 'tls_clientcert' REQUIRE X509;
 CREATE USER 'nr_one_conn'@'%' IDENTIFIED BY 'nr_one_conn' WITH MAX_USER_CONNECTIONS 1;
+-- A user without a password.
+CREATE USER 'nr_nopass'@'%';
 
 GRANT ALL ON `database`.* TO 'tls_optional'@'%';
 GRANT ALL ON `database`.* TO 'tls_required'@'%';
 GRANT ALL ON `database`.* TO 'tls_clientcert'@'%';
 GRANT ALL ON `database`.* TO 'nr_one_conn'@'%';
+GRANT ALL ON `database`.* TO 'nr_nopass'@'%';
 
 -- A table for the test that changes user and database with
 -- mysqli_change_user(); the test only reads it.
