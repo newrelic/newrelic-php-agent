@@ -138,31 +138,31 @@ func (h *Harvest) createFinalMetrics(m *MetricTable, harvestLimits collector.Eve
 	customEventMetrics := metricsMap[collector.CommandCustomEvents]
 	m.AddCount("Supportability/Events/Customer/Seen", "", customEventMetrics.seen, Forced)
 	m.AddCount("Supportability/Events/Customer/Sent", "", customEventMetrics.sent, Forced)
-	h.createEndpointAttemptsMetric(m, h.CustomEvents.Cmd(), customEventMetrics.failed)
+	h.createEndpointAttemptsMetric(m, collector.CommandCustomEvents, customEventMetrics.failed)
 
 	// Transaction Events Supportability Metrics
 	transactionEventMetrics := metricsMap[collector.CommandTxnEvents]
 	m.AddCount("Supportability/AnalyticsEvents/TotalEventsSeen", "", transactionEventMetrics.seen, Forced)
 	m.AddCount("Supportability/AnalyticsEvents/TotalEventsSent", "", transactionEventMetrics.sent, Forced)
-	h.createEndpointAttemptsMetric(m, h.TxnEvents.Cmd(), transactionEventMetrics.failed)
+	h.createEndpointAttemptsMetric(m, collector.CommandTxnEvents, transactionEventMetrics.failed)
 
 	// Error Events Supportability Metrics
 	errorEventMetrics := metricsMap[collector.CommandErrorEvents]
 	m.AddCount("Supportability/Events/TransactionError/Seen", "", errorEventMetrics.seen, Forced)
 	m.AddCount("Supportability/Events/TransactionError/Sent", "", errorEventMetrics.sent, Forced)
-	h.createEndpointAttemptsMetric(m, h.ErrorEvents.Cmd(), errorEventMetrics.failed)
+	h.createEndpointAttemptsMetric(m, collector.CommandErrorEvents, errorEventMetrics.failed)
 
 	// Span Events Supportability Metrics
 	spanEventMetrics := metricsMap[collector.CommandSpanEvents]
 	m.AddCount("Supportability/SpanEvent/TotalEventsSeen", "", spanEventMetrics.seen, Forced)
 	m.AddCount("Supportability/SpanEvent/TotalEventsSent", "", spanEventMetrics.sent, Forced)
-	h.createEndpointAttemptsMetric(m, h.SpanEvents.Cmd(), spanEventMetrics.failed)
+	h.createEndpointAttemptsMetric(m, collector.CommandSpanEvents, spanEventMetrics.failed)
 
 	// Log Events Supportability Metrics
 	logEventMetrics := metricsMap[collector.CommandLogEvents]
 	m.AddCount("Supportability/Logging/Forwarding/Seen", "", logEventMetrics.seen, Forced)
 	m.AddCount("Supportability/Logging/Forwarding/Sent", "", logEventMetrics.sent, Forced)
-	h.createEndpointAttemptsMetric(m, h.LogEvents.Cmd(), logEventMetrics.failed)
+	h.createEndpointAttemptsMetric(m, collector.CommandLogEvents, logEventMetrics.failed)
 
 	// Harvest Limit and report period metrics
 	m.AddCount("Supportability/EventHarvest/ReportPeriod", "", float64(harvestLimits.ReportPeriod), Forced)
