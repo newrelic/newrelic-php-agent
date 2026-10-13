@@ -623,9 +623,7 @@ NR_INNER_WRAPPER(mysqli_close) {
     }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
     if (nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
-      nr_mysqli_metadata_remove(
-          NRTXNGLOBAL(mysqli_links),
-          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+      nr_php_mysqli_metadata_remove(mysqli_obj);
     }
   }
 
@@ -728,15 +726,12 @@ NR_INNER_WRAPPER(mysqli_construct) {
      * may have had options and TLS settings set, so it keeps them.
      */
     if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli::connect")) {
-      nr_mysqli_metadata_remove(
-          NRTXNGLOBAL(mysqli_links),
-          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj));
+      nr_php_mysqli_metadata_remove(mysqli_obj);
     }
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, 0);
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, 0);
 
     nr_free(host_term);
     nr_free(username_term);
@@ -791,9 +786,7 @@ NR_INNER_WRAPPER(mysqli_options) {
     char* value_term = nr_php_mysqli_option_to_string(value_zv);
 
     if (value_term) {
-      nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),
-                                    Z_OBJ_HANDLE_P(mysqli_obj), option,
-                                    value_term);
+      nr_php_mysqli_metadata_set_option(mysqli_obj, option, value_term);
     }
 
     nr_free(value_term);
@@ -860,9 +853,8 @@ NR_INNER_WRAPPER(mysqli_ssl_set) {
     char* capath_term = capath ? nr_strndup(capath, capath_len) : NULL;
     char* cipher_term = cipher ? nr_strndup(cipher, cipher_len) : NULL;
 
-    nr_mysqli_metadata_set_ssl(NRTXNGLOBAL(mysqli_links),
-                               Z_OBJ_HANDLE_P(mysqli_obj), key_term, cert_term,
-                               ca_term, capath_term, cipher_term);
+    nr_php_mysqli_metadata_set_ssl(mysqli_obj, key_term, cert_term, ca_term,
+                                   capath_term, cipher_term);
 
     nr_free(key_term);
     nr_free(cert_term);
@@ -1052,10 +1044,9 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
     char* socket_term = socket ? nr_strndup(socket, socket_len) : NULL;
 
-    nr_mysqli_metadata_set_connect(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(mysqli_obj), host_term,
-        username_term, password_term, database_term, port, socket_term, flags);
+    nr_php_mysqli_metadata_set_connect(mysqli_obj, host_term, username_term,
+                                       password_term, database_term, port,
+                                       socket_term, flags);
 
     nr_free(host_term);
     nr_free(username_term);
@@ -1116,9 +1107,8 @@ NR_INNER_WRAPPER(mysqli_change_user) {
     char* password_term = nr_strndup(password, password_len);
     char* database_term = database ? nr_strndup(database, database_len) : NULL;
 
-    nr_mysqli_metadata_set_user(NRTXNGLOBAL(mysqli_links),
-                                Z_OBJ_HANDLE_P(mysqli_obj), user_term,
-                                password_term, database_term);
+    nr_php_mysqli_metadata_set_user(mysqli_obj, user_term, password_term,
+                                    database_term);
 
     nr_free(user_term);
     nr_free(password_term);
@@ -1169,8 +1159,7 @@ NR_INNER_WRAPPER(mysqli_select_db) {
       && nr_php_is_zval_true(return_value)) {
     char* database_term = nr_strndup(database, database_len);
 
-    nr_mysqli_metadata_set_database(NRTXNGLOBAL(mysqli_links),
-                                    Z_OBJ_HANDLE_P(mysqli_obj), database_term);
+    nr_php_mysqli_metadata_set_database(mysqli_obj, database_term);
 
     nr_free(database_term);
   }
@@ -1648,9 +1637,7 @@ NR_INNER_WRAPPER(mysqli_init) {
   if ((0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
     /* A new link must not inherit what was saved for an earlier one. */
-    nr_mysqli_metadata_remove(
-        NRTXNGLOBAL(mysqli_links),
-        (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(return_value));
+    nr_php_mysqli_metadata_remove(return_value);
   }
 
   if (zcaught) {

@@ -19,6 +19,7 @@
 #include "php_mysqli_private.h"
 #include "fw_support.h"
 #include "nr_mysqli_metadata.h"
+#include "php_objtable.h"
 #include "util_memory.h"
 
 /*
@@ -78,6 +79,182 @@ static zval* nr_php_mysqli_query_find(nr_php_object_handle_t handle TSRMLS_DC);
 static zval* nr_php_mysqli_query_find_or_create(
     nr_php_object_handle_t handle TSRMLS_DC);
 
+nr_mysqli_metadata_t* nr_php_mysqli_links(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  return NRPRG_SHARED(mysqli_links);
+#else
+  return NRTXNGLOBAL(mysqli_links);
+#endif
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static void nr_php_mysqli_link_handle_dtor(void* value) {
+  nr_mysqli_metadata_link_handle_t* handle = value;
+
+  if (NULL == handle) {
+    return;
+  }
+
+  nr_mysqli_metadata_remove(NRPRG_SHARED(mysqli_links), *handle);
+  nr_free(handle);
+}
+#endif
+
+void nr_php_mysqli_links_create(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  NRPRG_SHARED(mysqli_links) = nr_mysqli_metadata_create();
+  NRPRG_SHARED(mysqli_link_handles)
+      = nr_php_objtable_create(nr_php_mysqli_link_handle_dtor);
+#endif
+}
+
+void nr_php_mysqli_links_destroy(void) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  /* The destructors of the handles still in the table use the metadata. */
+  nr_php_objtable_destroy(&NRPRG_SHARED(mysqli_link_handles));
+  nr_mysqli_metadata_destroy(&NRPRG_SHARED(mysqli_links));
+#endif
+}
+
+int nr_php_mysqli_metadata_wanted(void) {
+  const nrtxn_t* txn = NRPRG(txn);
+
+  /*
+   * The metadata is used only to open the explain connection, so it is not
+   * kept, and the password in particular is not, when no explain plan can be
+   * produced.
+   */
+  return txn && txn->options.ep_enabled
+         && NR_SQL_NONE != txn->options.tt_recordsql
+         && 0 != txn->options.tt_slowsql;
+}
+
+/*
+ * Tie the metadata of a link to the life of the link object, so that it is
+ * dropped when the object is freed and a new object that reuses the handle
+ * cannot find it.
+ */
+static void nr_php_mysqli_metadata_track(const zval* link) {
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_mysqli_metadata_link_handle_t* handle;
+
+  if ((NULL == NRPRG_SHARED(mysqli_link_handles))
+      || nr_php_objtable_get(NRPRG_SHARED(mysqli_link_handles), link)) {
+    return;
+  }
+
+  handle = (nr_mysqli_metadata_link_handle_t*)nr_malloc(sizeof(*handle));
+  *handle = (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link);
+  nr_php_objtable_set(NRPRG_SHARED(mysqli_link_handles), link, handle);
+#else
+  (void)link;
+#endif
+}
+
+static int nr_php_mysqli_metadata_begin(const zval* link) {
+  if (NULL == link || !nr_php_mysqli_metadata_wanted()) {
+    return 0;
+  }
+
+  nr_php_mysqli_metadata_track(link);
+  return 1;
+}
+
+void nr_php_mysqli_metadata_remove(const zval* link) {
+  if (NULL == link) {
+    return;
+  }
+
+  nr_mysqli_metadata_remove(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link));
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  nr_php_objtable_del(NRPRG_SHARED(mysqli_link_handles), link);
+#endif
+}
+
+nr_status_t nr_php_mysqli_metadata_get(const zval* link,
+                                       nr_mysqli_metadata_link_t* out) {
+  if (NULL == link) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_get(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), out);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
+                                               const char* host,
+                                               const char* user,
+                                               const char* password,
+                                               const char* database,
+                                               uint16_t port,
+                                               const char* socket,
+                                               long flags) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_connect(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), host, user,
+      password, database, port, socket, flags);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_database(const zval* link,
+                                                const char* database) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_database(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), database);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
+                                            const char* user,
+                                            const char* password,
+                                            const char* database) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_user(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), user, password,
+      database);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_option(const zval* link,
+                                              long option,
+                                              const char* value) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_option(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), option, value);
+}
+
+nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
+                                           const char* key,
+                                           const char* cert,
+                                           const char* ca,
+                                           const char* capath,
+                                           const char* cipher) {
+  if (!nr_php_mysqli_metadata_begin(link)) {
+    return NR_FAILURE;
+  }
+
+  return nr_mysqli_metadata_set_ssl(
+      nr_php_mysqli_links(),
+      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), key, cert, ca,
+      capath, cipher);
+}
+
 zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
   zval* dup = NULL;
   int i;
@@ -87,9 +264,7 @@ zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
     return NULL;
   }
 
-  if (NR_FAILURE
-      == nr_mysqli_metadata_get(NRTXNGLOBAL(mysqli_links), Z_OBJ_HANDLE_P(orig),
-                                &metadata)) {
+  if (NR_FAILURE == nr_php_mysqli_metadata_get(orig, &metadata)) {
     return NULL;
   }
 
@@ -416,25 +591,25 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   const char* password;
 
 #define ADD_IF_INT_SET(null_ok, args, argc, value) \
-  if (value) {                                    \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_LONG(args[argc], value);                 \
-    argc++;                                       \
-  } else if (true == null_ok) {                   \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_NULL(args[argc]);                        \
-    argc++;                                       \
+  if (value) {                                     \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_LONG(args[argc], value);                  \
+    argc++;                                        \
+  } else if (true == null_ok) {                    \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_NULL(args[argc]);                         \
+    argc++;                                        \
   }
 
 #define ADD_IF_STR_SET(null_ok, args, argc, value) \
-  if (value) {                                    \
-    args[argc] = nr_php_zval_alloc();             \
-    nr_php_zval_str(args[argc], value);           \
-    argc++;                                       \
-  } else if (true == null_ok) {                   \
-    args[argc] = nr_php_zval_alloc();             \
-    ZVAL_NULL(args[argc]);                        \
-    argc++;                                       \
+  if (value) {                                     \
+    args[argc] = nr_php_zval_alloc();              \
+    nr_php_zval_str(args[argc], value);            \
+    argc++;                                        \
+  } else if (true == null_ok) {                    \
+    args[argc] = nr_php_zval_alloc();              \
+    ZVAL_NULL(args[argc]);                         \
+    argc++;                                        \
   }
 
   /*
@@ -491,7 +666,8 @@ static nr_status_t nr_php_mysqli_link_real_connect(
     ADD_IF_INT_SET(true, argv, argc, metadata->port);
     ADD_IF_STR_SET(true, argv, argc, metadata->socket);
     ADD_IF_INT_SET(false, argv, argc, metadata->flags);
-  }  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
+  }
+  retval = nr_php_call_user_func(link, "real_connect", argc, argv TSRMLS_CC);
 
   for (i = 0; i < argc; i++) {
     nr_php_zval_free(&argv[i]);

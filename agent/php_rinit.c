@@ -11,6 +11,7 @@
 #include "php_error.h"
 #include "php_globals.h"
 #include "php_header.h"
+#include "php_mysqli.h"
 #include "php_user_instrument.h"
 #include "nr_datastore_instance.h"
 #include "php_datastore.h"
@@ -151,6 +152,7 @@ PHP_RINIT_FUNCTION(newrelic) {
       = nr_php_objtable_create(nr_php_datastore_instance_dtor);
 #endif
   nr_php_pdo_options_create_table();
+  nr_php_mysqli_links_create();
   NRPRG_CTX(datastore_connections) = nr_hashmap_create(
       (nr_hashmap_dtor_func_t)nr_php_datastore_instance_destroy);
   NRPRG_CTX(predis_commands)

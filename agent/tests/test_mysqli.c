@@ -11,6 +11,8 @@
 #include "php_datastore.h"
 #include "php_mysqli.h"
 #include "php_mysqli_private.h"
+#include "php_objtable.h"
+#include "php_txn.h"
 #include "php_agent.h"
 #include "util_system.h"
 
@@ -371,6 +373,159 @@ static void test_option_to_string(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * A stdClass stands in for a mysqli link: the functions under test use only
+ * the object handle.
+ */
+static void set_explain_options(nrtxn_t* txn,
+                                int ep_enabled,
+                                nr_tt_recordsql_t recordsql,
+                                int slowsql) {
+  txn->options.ep_enabled = ep_enabled;
+  txn->options.tt_recordsql = recordsql;
+  txn->options.tt_slowsql = slowsql;
+}
+
+static void test_link_metadata_gating(TSRMLS_D) {
+  zval* link;
+  nr_mysqli_metadata_link_t metadata;
+  nrtxn_t* txn;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+  tlib_php_request_eval("$link = new stdClass;" TSRMLS_CC);
+  link = tlib_php_request_eval_expr("$link" TSRMLS_CC);
+
+  /* Nothing is kept when no explain plan can be produced. */
+  set_explain_options(txn, 0, NR_SQL_OBFUSCATED, 1);
+  tlib_pass_if_int_equal("explain off", 0, nr_php_mysqli_metadata_wanted());
+  tlib_pass_if_status_failure("explain off: not saved",
+                              nr_php_mysqli_metadata_set_connect(
+                                  link, "h", "u", "pw", "d", 3306, NULL, 0));
+  tlib_pass_if_status_failure("explain off: nothing to get",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  set_explain_options(txn, 1, NR_SQL_NONE, 1);
+  tlib_pass_if_int_equal("record_sql off", 0, nr_php_mysqli_metadata_wanted());
+  tlib_pass_if_status_failure("record_sql off: not saved",
+                              nr_php_mysqli_metadata_set_connect(
+                                  link, "h", "u", "pw", "d", 3306, NULL, 0));
+
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 0);
+  tlib_pass_if_int_equal("slow sql off", 0, nr_php_mysqli_metadata_wanted());
+  tlib_pass_if_status_failure("slow sql off: not saved",
+                              nr_php_mysqli_metadata_set_connect(
+                                  link, "h", "u", "pw", "d", 3306, NULL, 0));
+  tlib_pass_if_status_failure("other setters: not saved",
+                              nr_php_mysqli_metadata_set_database(link, "x"));
+  tlib_pass_if_status_failure("nothing to get",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  set_explain_options(txn, 1, NR_SQL_RAW, 1);
+  tlib_pass_if_int_equal("raw", 1, nr_php_mysqli_metadata_wanted());
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
+  tlib_pass_if_int_equal("obfuscated", 1, nr_php_mysqli_metadata_wanted());
+  tlib_pass_if_status_success(
+      "saved", nr_php_mysqli_metadata_set_connect(link, "h", "u", "pw", "d",
+                                                  3306, NULL, 0));
+  tlib_pass_if_status_success("get",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+  tlib_pass_if_str_equal("host", "h", metadata.host);
+  tlib_pass_if_str_equal("user", "u", metadata.user);
+  tlib_pass_if_str_equal("password", "pw", metadata.password);
+
+  nr_php_mysqli_metadata_remove(link);
+  tlib_pass_if_status_failure("removed",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  nr_php_zval_free(&link);
+  tlib_php_request_end();
+}
+
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+
+/*
+ * On PHP 8.0 and later the metadata of a link lasts for the request, not the
+ * transaction, and goes away when the link object is freed. A new object that
+ * takes the freed object's handle finds nothing.
+ */
+static void test_link_metadata_lifetime(TSRMLS_D) {
+  zval* first;
+  zval* second;
+  nr_mysqli_metadata_link_t metadata;
+  nrtxn_t* txn;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
+
+  tlib_pass_if_not_null("the store exists", nr_php_mysqli_links());
+  tlib_pass_if_not_null("the table exists", NRPRG_SHARED(mysqli_link_handles));
+
+  tlib_php_request_eval(
+      "$first = new stdClass; $second = new stdClass;" TSRMLS_CC);
+  first = tlib_php_request_eval_expr("$first" TSRMLS_CC);
+  second = tlib_php_request_eval_expr("$second" TSRMLS_CC);
+
+  nr_php_mysqli_metadata_set_connect(first, "one", "u1", "pw1", NULL, 3306,
+                                     NULL, 0);
+  nr_php_mysqli_metadata_set_connect(second, "two", "u2", "pw2", NULL, 3306,
+                                     NULL, 0);
+  nr_php_mysqli_metadata_set_database(first, "db1");
+  tlib_pass_if_size_t_equal(
+      "one table entry per link, however often it is set", 2,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+
+  /* The store outlives the transaction. */
+  nr_php_txn_end(0, 0);
+  tlib_pass_if_status_success("kept after the transaction ended",
+                              nr_php_mysqli_metadata_get(first, &metadata));
+  tlib_pass_if_str_equal("password kept", "pw1", metadata.password);
+  tlib_pass_if_str_equal("database kept", "db1", metadata.database);
+
+  /* Closing a link removes its entry only. */
+  nr_php_mysqli_metadata_remove(second);
+  tlib_pass_if_status_failure("closed link",
+                              nr_php_mysqli_metadata_get(second, &metadata));
+  tlib_pass_if_status_success("other link kept",
+                              nr_php_mysqli_metadata_get(first, &metadata));
+  tlib_pass_if_size_t_equal(
+      "table entry removed with the link", 1,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+
+  /* Freeing a link removes its entry and a reused handle finds nothing. */
+  tlib_php_request_eval("unset($first);" TSRMLS_CC);
+  nr_php_zval_free(&first);
+  tlib_php_request_eval(
+      "$reuse = []; for ($i = 0; $i < 50; $i++) { $o = new stdClass; $reuse[] "
+      "= $o; }" TSRMLS_CC);
+  first = tlib_php_request_eval_expr("$reuse[0]" TSRMLS_CC);
+  tlib_pass_if_size_t_equal(
+      "the table is empty after the link was freed", 0,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+  {
+    zval* object;
+    int i;
+
+    for (i = 0; i < 50; i++) {
+      char expr[64];
+
+      snprintf(expr, sizeof(expr), "$reuse[%d]", i);
+      object = tlib_php_request_eval_expr(expr TSRMLS_CC);
+      tlib_pass_if_status_failure(
+          "no object finds the freed link's metadata",
+          nr_php_mysqli_metadata_get(object, &metadata));
+      nr_php_zval_free(&object);
+    }
+  }
+
+  nr_php_zval_free(&first);
+  nr_php_zval_free(&second);
+  tlib_php_request_end();
+}
+
+#endif /* PHP 8.0+ */
+
 static void test_strip_persistent_prefix(void) {
   tlib_pass_if_null("a NULL host should return NULL",
                     nr_php_mysqli_strip_persistent_prefix(NULL));
@@ -406,6 +561,10 @@ void test_main(void* p NRUNUSED) {
     test_get_host_and_port_path_or_id();
     test_create_datastore_instance();
     test_option_to_string(TSRMLS_C);
+    test_link_metadata_gating(TSRMLS_C);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+    test_link_metadata_lifetime(TSRMLS_C);
+#endif
   }
 
   tlib_php_engine_destroy(TSRMLS_C);

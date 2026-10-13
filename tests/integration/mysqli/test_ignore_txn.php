@@ -39,6 +39,7 @@ STATISTICS
       "?? min time",
       "?? max time",
       {
+        "explain_plan": "??",
         "backtrace": [
           " in mysqli_stmt_execute called at __FILE__ (??)",
           " in test_prepare called at __FILE__ (??)"

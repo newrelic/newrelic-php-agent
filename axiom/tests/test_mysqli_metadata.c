@@ -373,6 +373,31 @@ static void test_remove(void) {
   nr_mysqli_metadata_destroy(&metadata);
 }
 
+static void test_password_survives_updates(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+
+  /*
+   * Every setter works on a copy of the link and saves it again, which copies
+   * the password. It must come out unchanged.
+   */
+  nr_mysqli_metadata_set_connect(metadata, 1, "host", "user", "secret", "db",
+                                 3306, NULL, 0);
+  nr_mysqli_metadata_set_database(metadata, 1, "other-db");
+  nr_mysqli_metadata_set_option(metadata, 1, 7, "opt");
+  nr_mysqli_metadata_set_ssl(metadata, 1, "key", "cert", "ca", NULL, NULL);
+  nr_mysqli_metadata_set_connect(metadata, 2, "host2", "user2", "secret2",
+                                 "db2", 3306, NULL, 0);
+  nr_mysqli_metadata_remove(metadata, 2);
+
+  tlib_pass_if_status_success("get",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_str_equal("password", "secret", link.password);
+  tlib_pass_if_str_equal("database", "other-db", link.database);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
 static void test_id(void) {
   char id[NR_MYSQLI_METADATA_ID_SIZE];
 
@@ -438,6 +463,7 @@ void test_main(void* p NRUNUSED) {
   test_set_user();
   test_set_ssl();
   test_remove();
+  test_password_survives_updates();
   test_id();
   test_copy();
 }
