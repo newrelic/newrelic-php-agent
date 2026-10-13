@@ -441,13 +441,17 @@ static nr_status_t nr_php_mysqli_link_real_connect(
    * The application may have left out a leading argument and relied on the
    * mysqli.default_* ini setting. The arguments that follow are positional, so
    * a missing one cannot just be skipped: the next argument would take its
-   * place. If any of host, user and password was given, fill in the missing
-   * ones from the ini settings.
+   * place. If any of the arguments was given, fill in the missing host, user
+   * and password from the ini settings. This includes the case where the
+   * application left out all three and only gave a later one, such as the
+   * flags: without the three leading arguments the flags (for example
+   * MYSQLI_CLIENT_SSL) cannot be passed on.
    */
   host = nr_php_mysqli_strip_persistent_prefix(metadata->host);
   user = metadata->user;
   password = metadata->password;
-  if (host || user || password) {
+  if (host || user || password || metadata->database || metadata->port
+      || metadata->socket || metadata->flags) {
     if (NULL == host) {
       host = nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0);
     }
