@@ -684,8 +684,12 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
   if (nr_php_mysqli_zval_is_link(return_value TSRMLS_CC)) {
     mysqli_obj = return_value;
-  } else {
+  } else if (0 != nr_strcmp(nr_wrapper->full_name, "mysqli_connect")) {
     /*
+     * Not for the function mysqli_connect(): when it fails it returns false,
+     * and the object in scope is then whatever object called it, such as a
+     * mysqli subclass that is connected to another server.
+     *
      * We have to get the object instance the constructor has been called on,
      * but because of the way MySQLi object instantiation is handled (with a
      * custom create_object handler), the zval returned by
@@ -1630,15 +1634,15 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
 
 /*
  * Handle
- *   object mysqli_stmt_init ( object $link )
- *   object mysqli::stmt_init ()
- */
-/*
- * Handle
  *   object mysqli_init ()
  *
  * Creates a link that has not connected yet: options and TLS settings are set
  * on it before it does.
+ *
+ * The method mysqli::init() is not wrapped: it re-initializes an object that
+ * may already carry options and TLS settings, which real_connect() must keep.
+ * A subclass that never calls the parent constructor and reuses the handle of
+ * a freed link is a known gap.
  */
 NR_INNER_WRAPPER(mysqli_init) {
   int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,
@@ -1658,6 +1662,11 @@ NR_INNER_WRAPPER(mysqli_init) {
   }
 }
 
+/*
+ * Handle
+ *   object mysqli_stmt_init ( object $link )
+ *   object mysqli::stmt_init ()
+ */
 NR_INNER_WRAPPER(mysqli_stmt_init) {
   zval* mysqli_obj = NULL;
   int zcaught = 0;

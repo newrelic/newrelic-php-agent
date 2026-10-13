@@ -453,7 +453,9 @@ static nr_status_t nr_php_mysqli_link_real_connect(
   if (host || user || password || metadata->database || metadata->port
       || metadata->socket || metadata->flags) {
     if (NULL == host) {
-      host = nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0);
+      /* The ini value may carry the "p:" prefix too: no persistent link. */
+      host = nr_php_mysqli_strip_persistent_prefix(
+          nr_php_zend_ini_string(NR_PSTR("mysqli.default_host"), 0));
     }
     if (NULL == user) {
       user = nr_php_zend_ini_string(NR_PSTR("mysqli.default_user"), 0);
