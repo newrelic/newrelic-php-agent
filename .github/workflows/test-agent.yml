@@ -430,7 +430,7 @@ jobs:
           nr-php make gcov
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.codecov == 1 }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # 7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # 7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: ./php-agent
@@ -473,7 +473,7 @@ jobs:
           chmod 755 php-agent/bin/integration_runner
           chmod 755 php-agent/agent/modules/newrelic.so
       - name: Emable amd64 emulation
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # 4.2.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # 4.4.0
         with:
           image: tonistiigi/binfmt:${{vars.BINFMT_IMAGE_VERSION}}
           platforms: amd64
