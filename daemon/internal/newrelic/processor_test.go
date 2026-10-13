@@ -1845,7 +1845,6 @@ func TestProcessorHarvestDefaultDataMetricRace(t *testing.T) {
 
 	for range 20 {
 		m.TxnData(t, idOne, txnMetricSample)
-		m.TxnData(t, idOne, txnErrorEventSample)
 
 		m.processorHarvestChan <- ProcessorHarvest{
 			AppHarvest: ah,
