@@ -735,6 +735,7 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -1050,6 +1051,7 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
 
     nr_free(host_term);
     nr_free(username_term);
+    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -1111,6 +1113,7 @@ NR_INNER_WRAPPER(mysqli_change_user) {
                                     database_term);
 
     nr_free(user_term);
+    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
     nr_free(password_term);
     nr_free(database_term);
   }
