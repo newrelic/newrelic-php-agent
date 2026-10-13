@@ -29,6 +29,18 @@ void nr_realfree(void** oldptr) {
   *oldptr = 0;
 }
 
+void nr_secure_zero(void* ptr, size_t size) {
+  volatile unsigned char* p = (volatile unsigned char*)ptr;
+
+  if (NULL == p) {
+    return;
+  }
+
+  while (size--) {
+    *p++ = 0;
+  }
+}
+
 void* NRMALLOC NRMALLOCSZ(1) nr_malloc(size_t size) {
   void* ret;
 

@@ -72,6 +72,13 @@ extern nrobj_t* nro_new_ulong(uint64_t x);
 extern nrobj_t* nro_new_double(double x);
 extern nrobj_t* nro_new_string(const char* x);
 extern nrobj_t* nro_new_jstring(const char* x);
+
+/*
+ * Purpose : Create a string that holds a secret. Its memory is zeroed before
+ *           it is freed, whether the object is deleted, replaced in a hash or
+ *           array, or was a copy of another object (nro_copy keeps the flag).
+ */
+extern nrobj_t* nro_new_secret_string(const char* x);
 extern nrobj_t* nro_new_hash(void);
 extern nrobj_t* nro_new_array(void);
 
@@ -113,6 +120,11 @@ extern nr_status_t nro_set_hash_string(nrobj_t* obj,
 extern nr_status_t nro_set_hash_jstring(nrobj_t* obj,
                                         const char* key,
                                         const char* value);
+
+/* As nro_set_hash_string(), for a secret (see nro_new_secret_string). */
+extern nr_status_t nro_set_hash_secret_string(nrobj_t* obj,
+                                              const char* key,
+                                              const char* value);
 
 extern nr_status_t nro_set_array_none(nrobj_t* obj, int idx);
 extern nr_status_t nro_set_array_boolean(nrobj_t* obj, int idx, int value);

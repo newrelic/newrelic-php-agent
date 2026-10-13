@@ -2687,7 +2687,49 @@ static void test_to_json_buffer(void) {
 
 tlib_parallel_info_t parallel_info = {.suggested_nthreads = 2, .state_size = 0};
 
+static void test_secret_string(void) {
+  nrobj_t* obj;
+  nrobj_t* copy;
+  nrobj_t* hash;
+  const char* str;
+
+  obj = nro_new_secret_string("secret");
+  tlib_pass_if_int_equal("secret string type", NR_OBJECT_STRING, nro_type(obj));
+  tlib_pass_if_str_equal("secret string value", "secret",
+                         nro_get_string(obj, NULL));
+
+  /* A copy has its own memory and still holds the value. */
+  copy = nro_copy(obj);
+  tlib_pass_if_str_equal("copy value", "secret", nro_get_string(copy, NULL));
+  tlib_pass_if_true("copy has its own memory",
+                    nro_get_string(obj, NULL) != nro_get_string(copy, NULL),
+                    "same pointer");
+  nro_delete(obj);
+  tlib_pass_if_str_equal("copy survives the delete of the original", "secret",
+                         nro_get_string(copy, NULL));
+  nro_delete(copy);
+
+  /* Replacing a secret in a hash and reading the new value. */
+  hash = nro_new_hash();
+  tlib_pass_if_status_success(
+      "set secret", nro_set_hash_secret_string(hash, "password", "one"));
+  tlib_pass_if_status_success(
+      "replace secret", nro_set_hash_secret_string(hash, "password", "two"));
+  str = nro_get_hash_string(hash, "password", NULL);
+  tlib_pass_if_str_equal("replaced value", "two", str);
+  tlib_pass_if_status_success("replace by none",
+                              nro_set_hash_none(hash, "password"));
+  tlib_pass_if_null("no string after none",
+                    nro_get_hash_string(hash, "password", NULL));
+  nro_delete(hash);
+
+  /* NULL value is handled like nro_new_string(). */
+  obj = nro_new_secret_string(NULL);
+  nro_delete(obj);
+}
+
 void test_main(void* vp NRUNUSED) {
+  test_secret_string();
   test_basic_creation();
   test_create_objects();
 

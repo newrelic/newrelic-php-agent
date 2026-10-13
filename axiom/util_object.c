@@ -52,6 +52,7 @@ typedef struct _nrarray_t {
 
 typedef struct _nrintobj_t {
   nrotype_t type;
+  int secret; /* string only: zeroed before it is freed */
   union {
     int ival;       /* int */
     int64_t lval;   /* long */
@@ -204,6 +205,14 @@ nrobj_t* nro_new_string(const char* x) {
   return obj;
 }
 
+nrobj_t* nro_new_secret_string(const char* x) {
+  nrintobj_t* obj = nro_internal_new_and_construct(NR_OBJECT_STRING);
+
+  obj->secret = 1;
+  obj->u.sval = nr_strdup(x);
+  return obj;
+}
+
 nrobj_t* nro_new_jstring(const char* x) {
   nrobj_t* obj = nro_internal_new_and_construct(NR_OBJECT_JSTRING);
 
@@ -243,6 +252,9 @@ static void nro_internal_delete(nrintobj_t* op, int freebase) {
 
     case NR_OBJECT_STRING:
     case NR_OBJECT_JSTRING:
+      if (op->secret && op->u.sval) {
+        nr_secure_zero(op->u.sval, nr_strlen(op->u.sval));
+      }
       nr_free(op->u.sval);
       op->u.sval = 0;
       break;
@@ -558,6 +570,19 @@ nr_status_t nro_set_hash_string(nrobj_t* obj,
   return rv;
 }
 
+nr_status_t nro_set_hash_secret_string(nrobj_t* obj,
+                                       const char* key,
+                                       const char* value) {
+  nr_status_t rv;
+  nrobj_t* ob = nro_new_secret_string(value);
+
+  rv = nro_internal_setvalue_hash(obj, key, ob);
+  if (NR_SUCCESS != rv) {
+    nro_delete(ob);
+  }
+  return rv;
+}
+
 nr_status_t nro_set_hash_jstring(nrobj_t* obj,
                                  const char* key,
                                  const char* value) {
@@ -813,6 +838,7 @@ nrobj_t* nro_copy(const nrobj_t* obj) {
 
   np = (nrintobj_t*)nr_zalloc(sizeof(nrintobj_t));
   np->type = op->type;
+  np->secret = op->secret;
   switch (op->type) {
     case NR_OBJECT_INVALID:
     case NR_OBJECT_NONE:

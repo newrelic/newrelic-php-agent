@@ -101,7 +101,9 @@ nr_status_t nr_mysqli_metadata_set_connect(
 
   nr_mysqli_metadata_add_property(link, "host", host);
   nr_mysqli_metadata_add_property(link, "user", user);
-  nr_mysqli_metadata_add_property(link, "password", password);
+  if (password) {
+    nro_set_hash_secret_string(link, "password", password);
+  }
   nr_mysqli_metadata_add_property(link, "database", database);
   nr_mysqli_metadata_add_property(link, "socket", socket);
   nro_set_hash_int(link, "port", (int)port);
@@ -155,7 +157,7 @@ nr_status_t nr_mysqli_metadata_set_user(nr_mysqli_metadata_t* metadata,
 
   nr_mysqli_metadata_add_property(link, "user", user);
   if (password) {
-    nro_set_hash_string(link, "password", password);
+    nro_set_hash_secret_string(link, "password", password);
   } else {
     nro_set_hash_none(link, "password");
   }

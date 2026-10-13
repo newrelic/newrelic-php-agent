@@ -45,6 +45,12 @@
 extern void nr_realfree(void** oldptr);
 
 /*
+ * Semantics: set size bytes to 0 in a way the compiler cannot remove as a dead
+ * store, for buffers that held a secret. NULL is safe.
+ */
+extern void nr_secure_zero(void* ptr, size_t size);
+
+/*
  * Semantics: malloc(0) always succeeds. Memory is not initialized to 0.
  */
 extern void* nr_malloc(size_t size) NRMALLOC NRMALLOCSZ(1);
