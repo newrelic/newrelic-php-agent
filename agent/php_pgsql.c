@@ -44,8 +44,8 @@ void nr_php_pgsql_save_datastore_instance(const zval* pgsql_conn,
   /*
    * From PHP 8.1 a connection is an object, and PHP reuses an object's handle
    * once it is freed. The instance is kept in a table that drops it when the
-   * object is freed, and every connect replaces what is there, so a connection
-   * can never be reported against an earlier one's host.
+   * object is freed, and every connect replaces what is there, so a reused
+   * handle finds no entry.
    */
   if (nr_php_is_zval_valid_object(pgsql_conn)) {
     instance = nr_php_pgsql_create_datastore_instance(conn_info);

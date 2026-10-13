@@ -18,8 +18,8 @@
  *
  * - Handle map (PHP 7.x): there is no weak API, so entries are keyed by object
  *   handle and are replaced only by the next set() on the same handle. A stale
- *   entry cannot be told from a live one. Consumers that only read must not
- *   use this table on these versions.
+ *   entry cannot be told from a live one, so a consumer must set or remove its
+ *   entry whenever it creates an object.
  *
  * Rules:
  *

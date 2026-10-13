@@ -202,7 +202,7 @@ static void test_last_freed(TSRMLS_D) {
   tlib_pass_if_int_equal("not destroyed twice", 1, dtor_count);
 }
 
-/* Runtime check 1: the entry goes when the object is freed by refcount. */
+/* The entry goes when the object is freed by refcount. */
 static void test_freed_by_refcount(TSRMLS_D) {
   nr_php_objtable_t* table;
   zval* a;
@@ -226,7 +226,7 @@ static void test_freed_by_refcount(TSRMLS_D) {
   tlib_pass_if_int_equal("not destroyed twice", 1, dtor_count);
 }
 
-/* Runtime check 1: the entry goes when the cycle collector frees the object. */
+/* The entry goes when the cycle collector frees the object. */
 static void test_freed_by_cycle_collector(TSRMLS_D) {
   nr_php_objtable_t* table;
   zval* a;
@@ -253,7 +253,7 @@ static void test_freed_by_cycle_collector(TSRMLS_D) {
   tlib_pass_if_int_equal("not destroyed twice", 1, dtor_count);
 }
 
-/* Runtime check 2: a new object that reuses a freed handle finds no entry. */
+/* A new object that reuses a freed handle finds no entry. */
 static void test_handle_reuse(TSRMLS_D) {
   nr_php_objtable_t* table;
   zval* a;
@@ -299,7 +299,7 @@ static void test_handle_reuse(TSRMLS_D) {
 }
 
 /*
- * Runtime check 3: objects that are still alive at the end of the request. The
+ * Objects that are still alive at the end of the request. The
  * table is destroyed after the request, as it is in post-deactivate, and each
  * value is destroyed once.
  */
@@ -325,7 +325,7 @@ static void test_alive_at_request_end(TSRMLS_D) {
   tlib_pass_if_int_equal("each value destroyed once", 2, dtor_count);
 }
 
-/* Runtime check 3: exit() ends the request with objects still alive. */
+/* exit() ends the request with objects still alive. */
 static void test_exit(TSRMLS_D) {
   nr_php_objtable_t* table;
   zval* a;
@@ -358,7 +358,7 @@ static void test_exit(TSRMLS_D) {
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
 
 /*
- * Runtime check 5: the table and its entries are the same inside a Fiber, after
+ * The table and its entries are the same inside a Fiber, after
  * it suspends and after it resumes.
  */
 static void test_fiber_table_stable(TSRMLS_D) {
@@ -404,7 +404,7 @@ static void test_fiber_table_stable(TSRMLS_D) {
 }
 
 /*
- * Runtime check 5: an object created in a Fiber that is destroyed before it
+ * An object created in a Fiber that is destroyed before it
  * finishes is freed with the Fiber, and its entry goes with it.
  */
 static void test_fiber_destroyed_unfinished(TSRMLS_D) {
