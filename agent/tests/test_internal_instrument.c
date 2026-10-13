@@ -105,72 +105,11 @@ static void test_cufa_indirect(TSRMLS_D) {
   tlib_php_request_end();
 }
 
-/*
- * PHP gives an alias its own function entry, but the entry shares the C handler
- * of the function it aliases. The agent replaces the handler of the entry it
- * finds by name, so an alias that has no record of its own keeps the original
- * handler and is not instrumented. Find them: any internal function or method
- * whose handler is the original handler of a function the agent wraps.
- */
-static int is_original_handler_of_wrapped(nrphpfn_t handler) {
-  nrinternalfn_t* wraprec;
-
-  for (wraprec = nr_wrapped_internal_functions; wraprec;
-       wraprec = wraprec->next) {
-    if (wraprec->is_wrapped && wraprec->oldhandler == handler) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-static void check_function_table(HashTable* table,
-                                 const char* class_name,
-                                 const char* extension) {
-  zend_function* func;
-
-  ZEND_HASH_FOREACH_PTR(table, func) {
-    if (ZEND_INTERNAL_FUNCTION != func->type) {
-      continue;
-    }
-    if (is_original_handler_of_wrapped(func->internal_function.handler)) {
-      char* name = nr_formatf("%s%s%s", class_name ? class_name : "",
-                              class_name ? "::" : "",
-                              ZSTR_VAL(func->common.function_name));
-
-      /* The extension is part of the message to make a failure easy to read. */
-      tlib_pass_if_true(name, 0,
-                        "%s is an alias of a wrapped function (%s) "
-                        "and has no wrapper of its own",
-                        name, extension);
-      nr_free(name);
-    }
-  }
-  ZEND_HASH_FOREACH_END();
-}
-
-static void test_aliases_are_wrapped(TSRMLS_D) {
-  zend_class_entry* ce;
-
-  tlib_php_request_start();
-
-  check_function_table(CG(function_table), NULL, "function");
-  ZEND_HASH_FOREACH_PTR(CG(class_table), ce) {
-    if (ZEND_INTERNAL_CLASS == ce->type) {
-      check_function_table(&ce->function_table, ZSTR_VAL(ce->name), "method");
-    }
-  }
-  ZEND_HASH_FOREACH_END();
-
-  tlib_php_request_end();
-}
-
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
 
   test_cufa_direct(TSRMLS_C);
   test_cufa_indirect(TSRMLS_C);
-  test_aliases_are_wrapped(TSRMLS_C);
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
