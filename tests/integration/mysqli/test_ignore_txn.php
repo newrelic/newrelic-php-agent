@@ -5,12 +5,18 @@
  */
 
 /*DESCRIPTION
-Test that transaction globals are properly freed when using New Relic API
+Test that transaction globals are properly freed when using New Relic API.
+From PHP 8.0 the data kept for the link in the first transaction is still
+there, so the query in the second transaction gets an explain plan. Before 8.0
+see test_ignore_txn_php7.php.
 */
 
 /*SKIPIF
 <?php
 require("skipif.inc");
+if (PHP_VERSION_ID < 80000) {
+  die("skip: the link data is kept across transactions from PHP 8.0\n");
+}
 */
 
 /*INI

@@ -19,6 +19,9 @@ test server and on PHP below 7.4.
 <?php
 require("skipif.inc");
 require_once(realpath(dirname(__FILE__)) . '/../../include/config.php');
+if (PHP_VERSION_ID < 80000) {
+  die("skip: the link data is kept across transactions from PHP 8.0\n");
+}
 if (PHP_VERSION_ID < 70400) {
   die("skip: the TLS test users need PHP 7.4 or later\n");
 }

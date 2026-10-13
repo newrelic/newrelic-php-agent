@@ -14,6 +14,9 @@ connection at startup does.
 /*SKIPIF
 <?php
 require("skipif.inc");
+if (PHP_VERSION_ID < 80000) {
+  die("skip: the link data is kept across transactions from PHP 8.0\n");
+}
 */
 
 /*INI
