@@ -570,6 +570,34 @@ nr_status_t nro_set_hash_string(nrobj_t* obj,
   return rv;
 }
 
+nr_status_t nro_delete_hash_key(nrobj_t* obj, const char* key) {
+  int i;
+  int idx;
+
+  if (NULL == obj) {
+    return NR_FAILURE;
+  }
+
+  idx = nro_find_key_in_hash(obj, key);
+  if (idx < 0) {
+    return NR_FAILURE;
+  }
+
+  nr_free(obj->u.hval.keys[idx]);
+  nro_internal_delete(obj->u.hval.data[idx], 1);
+
+  for (i = idx; i < obj->u.hval.size - 1; i++) {
+    obj->u.hval.keys[i] = obj->u.hval.keys[i + 1];
+    obj->u.hval.data[i] = obj->u.hval.data[i + 1];
+  }
+
+  obj->u.hval.size -= 1;
+  obj->u.hval.keys[obj->u.hval.size] = NULL;
+  obj->u.hval.data[obj->u.hval.size] = NULL;
+
+  return NR_SUCCESS;
+}
+
 nr_status_t nro_set_hash_secret_string(nrobj_t* obj,
                                        const char* key,
                                        const char* value) {

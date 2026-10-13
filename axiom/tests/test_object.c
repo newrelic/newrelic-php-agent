@@ -2728,7 +2728,50 @@ static void test_secret_string(void) {
   nro_delete(obj);
 }
 
+static void test_delete_hash_key(void) {
+  nrobj_t* hash = nro_new_hash();
+  nrobj_t* array = nro_new_array();
+
+  tlib_pass_if_status_failure("NULL object", nro_delete_hash_key(NULL, "a"));
+  tlib_pass_if_status_failure("not a hash", nro_delete_hash_key(array, "a"));
+  tlib_pass_if_status_failure("NULL key", nro_delete_hash_key(hash, NULL));
+  tlib_pass_if_status_failure("empty key", nro_delete_hash_key(hash, ""));
+  tlib_pass_if_status_failure("empty hash", nro_delete_hash_key(hash, "a"));
+
+  nro_set_hash_string(hash, "a", "one");
+  nro_set_hash_secret_string(hash, "b", "two");
+  nro_set_hash_int(hash, "c", 3);
+  nro_set_hash_string(hash, "d", "four");
+
+  tlib_pass_if_status_failure("missing key", nro_delete_hash_key(hash, "x"));
+  tlib_pass_if_int_equal("size", 4, nro_getsize(hash));
+
+  /* Middle, first and last, each leaving the others as they were. */
+  tlib_pass_if_status_success("delete middle", nro_delete_hash_key(hash, "b"));
+  tlib_pass_if_int_equal("size after middle", 3, nro_getsize(hash));
+  tlib_pass_if_null("b gone", nro_get_hash_string(hash, "b", NULL));
+  tlib_pass_if_str_equal("a kept", "one", nro_get_hash_string(hash, "a", NULL));
+  tlib_pass_if_int_equal("c kept", 3, nro_get_hash_int(hash, "c", NULL));
+
+  tlib_pass_if_status_success("delete first", nro_delete_hash_key(hash, "a"));
+  tlib_pass_if_status_success("delete last", nro_delete_hash_key(hash, "d"));
+  tlib_pass_if_int_equal("size after", 1, nro_getsize(hash));
+  tlib_pass_if_int_equal("c still kept", 3, nro_get_hash_int(hash, "c", NULL));
+  tlib_pass_if_status_failure("deleted twice", nro_delete_hash_key(hash, "a"));
+
+  /* The hash can be used again, including with the key just deleted. */
+  tlib_pass_if_status_success("set again", nro_set_hash_string(hash, "b", "x"));
+  tlib_pass_if_str_equal("b again", "x", nro_get_hash_string(hash, "b", NULL));
+  tlib_pass_if_status_success("delete c", nro_delete_hash_key(hash, "c"));
+  tlib_pass_if_status_success("delete b", nro_delete_hash_key(hash, "b"));
+  tlib_pass_if_int_equal("empty", 0, nro_getsize(hash));
+
+  nro_delete(array);
+  nro_delete(hash);
+}
+
 void test_main(void* vp NRUNUSED) {
+  test_delete_hash_key();
   test_secret_string();
   test_basic_creation();
   test_create_objects();

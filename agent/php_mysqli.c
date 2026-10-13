@@ -79,6 +79,13 @@ static zval* nr_php_mysqli_query_find(nr_php_object_handle_t handle TSRMLS_DC);
 static zval* nr_php_mysqli_query_find_or_create(
     nr_php_object_handle_t handle TSRMLS_DC);
 
+/*
+ * PHP 8.0 and later: the store lives for the request and an entry is removed
+ * when its link is freed. PHP 7.x has no weak reference API: the store is per
+ * transaction, and a new link is kept from inheriting an old entry only by the
+ * reset when a link is created or closed. A subclass that never calls the
+ * parent constructor is a known gap there.
+ */
 nr_mysqli_metadata_t* nr_php_mysqli_links(void) {
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
   return NRPRG_SHARED(mysqli_links);
@@ -151,8 +158,21 @@ static void nr_php_mysqli_metadata_track(const zval* link) {
 #endif
 }
 
+/*
+ * Start a save for a link. Returns 0 if nothing is to be saved.
+ *
+ * When the transaction does not allow explain, the save is skipped and the
+ * link's entry is removed: the entry is now out of date, and an update that
+ * was dropped must not leave the old user or database for a later transaction
+ * to use.
+ */
 static int nr_php_mysqli_metadata_begin(const zval* link) {
-  if (NULL == link || !nr_php_mysqli_metadata_wanted()) {
+  if (NULL == link) {
+    return 0;
+  }
+
+  if (!nr_php_mysqli_metadata_wanted()) {
+    nr_php_mysqli_metadata_remove(link);
     return 0;
   }
 
@@ -179,9 +199,18 @@ nr_status_t nr_php_mysqli_metadata_get(const zval* link,
     return NR_FAILURE;
   }
 
-  return nr_mysqli_metadata_get(
-      nr_php_mysqli_links(),
-      (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), out);
+  if (NR_FAILURE
+      == nr_mysqli_metadata_get(
+          nr_php_mysqli_links(),
+          (nr_mysqli_metadata_link_handle_t)Z_OBJ_HANDLE_P(link), out)) {
+    return NR_FAILURE;
+  }
+
+  /*
+   * An entry made only by a setter, for a link the agent did not see connect,
+   * has no host or user: replaying it would connect to the ini defaults.
+   */
+  return out->complete ? NR_SUCCESS : NR_FAILURE;
 }
 
 nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
@@ -204,7 +233,7 @@ nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
 
 nr_status_t nr_php_mysqli_metadata_set_database(const zval* link,
                                                 const char* database) {
-  if (!nr_php_mysqli_metadata_begin(link)) {
+  if (NULL == database || !nr_php_mysqli_metadata_begin(link)) {
     return NR_FAILURE;
   }
 
@@ -217,7 +246,7 @@ nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
                                             const char* user,
                                             const char* password,
                                             const char* database) {
-  if (!nr_php_mysqli_metadata_begin(link)) {
+  if (NULL == user || !nr_php_mysqli_metadata_begin(link)) {
     return NR_FAILURE;
   }
 
@@ -230,7 +259,7 @@ nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
 nr_status_t nr_php_mysqli_metadata_set_option(const zval* link,
                                               long option,
                                               const char* value) {
-  if (!nr_php_mysqli_metadata_begin(link)) {
+  if (NULL == value || !nr_php_mysqli_metadata_begin(link)) {
     return NR_FAILURE;
   }
 
@@ -255,6 +284,12 @@ nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
       capath, cipher);
 }
 
+/*
+ * The metadata fields used below point into the store. PHP code runs while
+ * they are in use (the warnings of the connection calls can reach a user error
+ * handler), and a handler that closes or frees the original link would free
+ * them. That is a known limit; it is not guarded.
+ */
 zval* nr_php_mysqli_link_duplicate(zval* orig TSRMLS_DC) {
   zval* dup = NULL;
   int i;

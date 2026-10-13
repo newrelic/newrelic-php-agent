@@ -735,7 +735,7 @@ NR_INNER_WRAPPER(mysqli_construct) {
 
     nr_free(host_term);
     nr_free(username_term);
-    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
+    nr_secure_zero(password_term, password ? (size_t)password_len : 0);
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -1051,7 +1051,7 @@ NR_INNER_WRAPPER(mysqli_real_connect) {
 
     nr_free(host_term);
     nr_free(username_term);
-    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
+    nr_secure_zero(password_term, password ? (size_t)password_len : 0);
     nr_free(password_term);
     nr_free(database_term);
     nr_free(socket_term);
@@ -1113,7 +1113,7 @@ NR_INNER_WRAPPER(mysqli_change_user) {
                                     database_term);
 
     nr_free(user_term);
-    nr_secure_zero(password_term, password_term ? nr_strlen(password_term) : 0);
+    nr_secure_zero(password_term, password ? (size_t)password_len : 0);
     nr_free(password_term);
     nr_free(database_term);
   }
@@ -1631,7 +1631,8 @@ NR_INNER_WRAPPER(mysqli_stmt_construct) {
  * The method mysqli::init() is not wrapped: it re-initializes an object that
  * may already carry options and TLS settings, which real_connect() must keep.
  * A subclass that never calls the parent constructor and reuses the handle of
- * a freed link is a known gap.
+ * a freed link is a known gap before PHP 8.0; from 8.0 the saved data is
+ * dropped when the link is freed.
  */
 NR_INNER_WRAPPER(mysqli_init) {
   int zcaught = nr_zend_call_old_handler(nr_wrapper->oldhandler,

@@ -46,7 +46,8 @@ extern void nr_realfree(void** oldptr);
 
 /*
  * Semantics: set size bytes to 0 in a way the compiler cannot remove as a dead
- * store, for buffers that held a secret. NULL is safe.
+ * store, for buffers that held a secret. NULL is safe. Only the effect on a
+ * live buffer is tested: reading freed memory to check it would be undefined.
  */
 extern void nr_secure_zero(void* ptr, size_t size);
 

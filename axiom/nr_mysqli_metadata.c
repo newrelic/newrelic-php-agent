@@ -15,6 +15,17 @@
 #include "util_object.h"
 #include "util_strings.h"
 
+/* Set a property, or clear it when the value is NULL. */
+static inline void nr_mysqli_metadata_set_property(nrobj_t* link,
+                                                   const char* name,
+                                                   const char* value) {
+  if (value) {
+    nro_set_hash_string(link, name, value);
+  } else {
+    nro_set_hash_none(link, name);
+  }
+}
+
 static inline void nr_mysqli_metadata_add_property(nrobj_t* link,
                                                    const char* name,
                                                    const char* value) {
@@ -69,6 +80,7 @@ nr_status_t nr_mysqli_metadata_get(const nr_mysqli_metadata_t* metadata,
   link->port = (uint16_t)nro_get_hash_int(link_obj, "port", NULL);
   link->flags = (long)nro_get_hash_long(link_obj, "flags", NULL);
   link->options = nro_get_hash_value(link_obj, "options", NULL);
+  link->complete = (1 == nro_get_hash_boolean(link_obj, "complete", NULL));
 
   ssl_obj = nro_get_hash_hash(link_obj, "ssl", NULL);
   link->ssl_key = ssl_obj ? nro_get_hash_string(ssl_obj, "key", NULL) : NULL;
@@ -99,15 +111,24 @@ nr_status_t nr_mysqli_metadata_set_connect(
     return NR_FAILURE;
   }
 
-  nr_mysqli_metadata_add_property(link, "host", host);
-  nr_mysqli_metadata_add_property(link, "user", user);
+  /*
+   * A connect call replaces the connection parameters: one that omits a value
+   * clears what an earlier connect on the same link saved. The options and
+   * the TLS settings are not connection parameters: they are set before the
+   * connect and are kept.
+   */
+  nr_mysqli_metadata_set_property(link, "host", host);
+  nr_mysqli_metadata_set_property(link, "user", user);
   if (password) {
     nro_set_hash_secret_string(link, "password", password);
+  } else {
+    nro_set_hash_none(link, "password");
   }
-  nr_mysqli_metadata_add_property(link, "database", database);
-  nr_mysqli_metadata_add_property(link, "socket", socket);
+  nr_mysqli_metadata_set_property(link, "database", database);
+  nr_mysqli_metadata_set_property(link, "socket", socket);
   nro_set_hash_int(link, "port", (int)port);
   nro_set_hash_long(link, "flags", (int64_t)flags);
+  nro_set_hash_boolean(link, "complete", 1);
 
   nr_mysqli_metadata_save(metadata, handle, link);
 
@@ -207,7 +228,8 @@ nr_status_t nr_mysqli_metadata_set_option(
 
   option_hash = nro_new_hash();
   nro_set_hash_long(option_hash, "option", (int64_t)option);
-  nro_set_hash_string(option_hash, "value", value);
+  /* An option value, such as an init command, can hold a secret. */
+  nro_set_hash_secret_string(option_hash, "value", value);
 
   nro_set_array(options_dup, 0, option_hash);
   nro_set_hash(link, "options", options_dup);
@@ -256,44 +278,16 @@ nr_status_t nr_mysqli_metadata_set_ssl(nr_mysqli_metadata_t* metadata,
   return NR_SUCCESS;
 }
 
-typedef struct {
-  const char* skip;
-  nrobj_t* kept;
-} nr_mysqli_metadata_remove_state_t;
-
-static nr_status_t nr_mysqli_metadata_keep_other_links(const char* key,
-                                                       const nrobj_t* value,
-                                                       void* ptr) {
-  nr_mysqli_metadata_remove_state_t* state = ptr;
-
-  if (0 != nr_strcmp(key, state->skip)) {
-    nro_set_hash(state->kept, key, value);
-  }
-
-  return NR_SUCCESS;
-}
-
 void nr_mysqli_metadata_remove(nr_mysqli_metadata_t* metadata,
                                nr_mysqli_metadata_link_handle_t handle) {
   char id[NR_MYSQLI_METADATA_ID_SIZE];
-  nr_mysqli_metadata_remove_state_t state;
 
   if (NULL == metadata) {
     return;
   }
 
   nr_mysqli_metadata_id(handle, id);
-  if (NULL == nro_get_hash_hash(metadata->links, id, NULL)) {
-    return;
-  }
-
-  /* An object hash has no delete: copy the other links into a new one. */
-  state.skip = id;
-  state.kept = nro_new_hash();
-  nro_iteratehash(metadata->links, nr_mysqli_metadata_keep_other_links, &state);
-
-  nro_delete(metadata->links);
-  metadata->links = state.kept;
+  nro_delete_hash_key(metadata->links, id);
 }
 
 nrobj_t* nr_mysqli_metadata_create_or_get(

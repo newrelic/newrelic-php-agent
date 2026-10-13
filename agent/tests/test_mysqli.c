@@ -343,36 +343,6 @@ static void test_create_datastore_instance() {
                 }));
 }
 
-static void test_option_to_string(TSRMLS_D) {
-  struct {
-    const char* expr;
-    const char* expected; /* NULL: not captured */
-  } cases[] = {
-      {"'abc'", "abc"},       {"''", ""},     {"42", "42"},
-      {"true", "1"},          {"false", "0"}, {"1.5", "1.5"},
-      {"1.0", "1"},           {"null", ""},   {"[1]", NULL},
-      {"new stdClass", NULL},
-  };
-  size_t i;
-
-  tlib_pass_if_null("NULL value", nr_php_mysqli_option_to_string(NULL));
-
-  tlib_php_request_start();
-  for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-    zval* value = tlib_php_request_eval_expr(cases[i].expr TSRMLS_CC);
-    char* term = nr_php_mysqli_option_to_string(value);
-
-    if (cases[i].expected) {
-      tlib_pass_if_str_equal(cases[i].expr, cases[i].expected, term);
-    } else {
-      tlib_pass_if_null(cases[i].expr, term);
-    }
-    nr_free(term);
-    nr_php_zval_free(&value);
-  }
-  tlib_php_request_end();
-}
-
 /*
  * A stdClass stands in for a mysqli link: the functions under test use only
  * the object handle.
@@ -442,6 +412,104 @@ static void test_link_metadata_gating(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+/*
+ * An update dropped because the transaction does not allow explain must not
+ * leave the older entry behind: a later transaction would build the explain
+ * connection from the old user and database.
+ */
+static void test_link_metadata_unwanted_removes_entry(TSRMLS_D) {
+  zval* link;
+  nr_mysqli_metadata_link_t metadata;
+  nrtxn_t* txn;
+
+  tlib_php_request_start();
+  txn = NRPRG(txn);
+  tlib_php_request_eval("$link = new stdClass;" TSRMLS_CC);
+  link = tlib_php_request_eval_expr("$link" TSRMLS_CC);
+
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
+  nr_php_mysqli_metadata_set_connect(link, "h", "a", "pwa", "x", 3306, NULL, 0);
+  tlib_pass_if_status_success("saved",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  set_explain_options(txn, 0, NR_SQL_OBFUSCATED, 1);
+  tlib_pass_if_status_failure(
+      "change_user in a transaction that does not allow explain",
+      nr_php_mysqli_metadata_set_user(link, "b", "pwb", "y"));
+  set_explain_options(txn, 1, NR_SQL_OBFUSCATED, 1);
+  tlib_pass_if_status_failure("the old entry is gone",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  nr_php_zval_free(&link);
+  tlib_php_request_end();
+}
+
+/*
+ * A setter can make an entry for a link that was opened while the agent was
+ * not recording. Such an entry has no host or user and is not used. Options
+ * and TLS settings set before the connect, as mysqli_init() allows, are kept.
+ */
+static void test_link_metadata_complete(TSRMLS_D) {
+  zval* link;
+  zval* other;
+  nr_mysqli_metadata_link_t metadata;
+
+  tlib_php_request_start();
+  set_explain_options(NRPRG(txn), 1, NR_SQL_OBFUSCATED, 1);
+  tlib_php_request_eval(
+      "$link = new stdClass; $other = new stdClass;" TSRMLS_CC);
+  link = tlib_php_request_eval_expr("$link" TSRMLS_CC);
+  other = tlib_php_request_eval_expr("$other" TSRMLS_CC);
+
+  nr_php_mysqli_metadata_set_database(link, "db");
+  tlib_pass_if_status_failure("select_db only: not usable",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+  nr_php_mysqli_metadata_set_user(link, "u", "pw", "db");
+  tlib_pass_if_status_failure("change_user only: not usable",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+
+  nr_php_mysqli_metadata_set_option(other, 7, "opt");
+  nr_php_mysqli_metadata_set_ssl(other, "key", NULL, NULL, NULL, NULL);
+  tlib_pass_if_status_failure("options and TLS only: not usable",
+                              nr_php_mysqli_metadata_get(other, &metadata));
+  nr_php_mysqli_metadata_set_connect(other, "h", "u", "pw", "db", 3306, NULL,
+                                     0);
+  tlib_pass_if_status_success("connected: usable",
+                              nr_php_mysqli_metadata_get(other, &metadata));
+  tlib_pass_if_not_null("options kept", metadata.options);
+  tlib_pass_if_str_equal("ssl key kept", "key", metadata.ssl_key);
+
+  nr_php_zval_free(&link);
+  nr_php_zval_free(&other);
+  tlib_php_request_end();
+}
+
+/*
+ * A second connect on the same link replaces the connection parameters, so
+ * an omitted password or database does not keep the earlier one.
+ */
+static void test_link_metadata_reconnect(TSRMLS_D) {
+  zval* link;
+  nr_mysqli_metadata_link_t metadata;
+
+  tlib_php_request_start();
+  set_explain_options(NRPRG(txn), 1, NR_SQL_OBFUSCATED, 1);
+  tlib_php_request_eval("$link = new stdClass;" TSRMLS_CC);
+  link = tlib_php_request_eval_expr("$link" TSRMLS_CC);
+
+  nr_php_mysqli_metadata_set_connect(link, "h", "a", "pwa", "db1", 3306, NULL,
+                                     0);
+  nr_php_mysqli_metadata_set_connect(link, "h", "b", NULL, NULL, 3306, NULL, 0);
+  tlib_pass_if_status_success("get",
+                              nr_php_mysqli_metadata_get(link, &metadata));
+  tlib_pass_if_str_equal("user", "b", metadata.user);
+  tlib_pass_if_null("password", metadata.password);
+  tlib_pass_if_null("database", metadata.database);
+
+  nr_php_zval_free(&link);
+  tlib_php_request_end();
+}
+
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
 
 /*
@@ -474,6 +542,13 @@ static void test_link_metadata_lifetime(TSRMLS_D) {
   nr_php_mysqli_metadata_set_database(first, "db1");
   tlib_pass_if_size_t_equal(
       "one table entry per link, however often it is set", 2,
+      nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
+
+  /* A save that fails its arguments does not track the link. */
+  tlib_pass_if_status_failure(
+      "no database", nr_php_mysqli_metadata_set_database(second, NULL));
+  tlib_pass_if_size_t_equal(
+      "no table entry for a failed save", 2,
       nr_php_objtable_count(NRPRG_SHARED(mysqli_link_handles)));
 
   /* The store outlives the transaction. */
@@ -526,6 +601,36 @@ static void test_link_metadata_lifetime(TSRMLS_D) {
 
 #endif /* PHP 8.0+ */
 
+static void test_option_to_string(TSRMLS_D) {
+  struct {
+    const char* expr;
+    const char* expected; /* NULL: not captured */
+  } cases[] = {
+      {"'abc'", "abc"},       {"''", ""},     {"42", "42"},
+      {"true", "1"},          {"false", "0"}, {"1.5", "1.5"},
+      {"1.0", "1"},           {"null", ""},   {"[1]", NULL},
+      {"new stdClass", NULL},
+  };
+  size_t i;
+
+  tlib_pass_if_null("NULL value", nr_php_mysqli_option_to_string(NULL));
+
+  tlib_php_request_start();
+  for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+    zval* value = tlib_php_request_eval_expr(cases[i].expr TSRMLS_CC);
+    char* term = nr_php_mysqli_option_to_string(value);
+
+    if (cases[i].expected) {
+      tlib_pass_if_str_equal(cases[i].expr, cases[i].expected, term);
+    } else {
+      tlib_pass_if_null(cases[i].expr, term);
+    }
+    nr_free(term);
+    nr_php_zval_free(&value);
+  }
+  tlib_php_request_end();
+}
+
 static void test_strip_persistent_prefix(void) {
   tlib_pass_if_null("a NULL host should return NULL",
                     nr_php_mysqli_strip_persistent_prefix(NULL));
@@ -560,11 +665,14 @@ void test_main(void* p NRUNUSED) {
     test_default_port_host_and_socket();
     test_get_host_and_port_path_or_id();
     test_create_datastore_instance();
-    test_option_to_string(TSRMLS_C);
     test_link_metadata_gating(TSRMLS_C);
+    test_link_metadata_unwanted_removes_entry(TSRMLS_C);
+    test_link_metadata_complete(TSRMLS_C);
+    test_link_metadata_reconnect(TSRMLS_C);
 #if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
     test_link_metadata_lifetime(TSRMLS_C);
 #endif
+    test_option_to_string(TSRMLS_C);
   }
 
   tlib_php_engine_destroy(TSRMLS_C);

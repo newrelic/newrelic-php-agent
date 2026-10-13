@@ -6,6 +6,7 @@
 #include "nr_axiom.h"
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "nr_mysqli_metadata.h"
 #include "nr_mysqli_metadata_private.h"
@@ -398,6 +399,95 @@ static void test_password_survives_updates(void) {
   nr_mysqli_metadata_destroy(&metadata);
 }
 
+static void test_complete(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+
+  /* A setter can make an entry for a link that was never seen connecting. */
+  nr_mysqli_metadata_set_database(metadata, 1, "db");
+  tlib_pass_if_status_success("get",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_int_equal("database only is not complete", 0, link.complete);
+
+  /* Options and TLS settings set before the connect are part of the link. */
+  nr_mysqli_metadata_set_option(metadata, 2, 7, "opt");
+  nr_mysqli_metadata_set_ssl(metadata, 2, "key", NULL, NULL, NULL, NULL);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  tlib_pass_if_int_equal("options only is not complete", 0, link.complete);
+  nr_mysqli_metadata_set_connect(metadata, 2, "host", "user", "pw", "db", 3306,
+                                 NULL, 0);
+  nr_mysqli_metadata_get(metadata, 2, &link);
+  tlib_pass_if_int_equal("connect completes it", 1, link.complete);
+  tlib_pass_if_not_null("options kept", link.options);
+  tlib_pass_if_str_equal("ssl key kept", "key", link.ssl_key);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
+static void test_set_connect_replaces(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+
+  nr_mysqli_metadata_set_option(metadata, 1, 7, "opt");
+  nr_mysqli_metadata_set_ssl(metadata, 1, "key", "cert", NULL, NULL, NULL);
+  nr_mysqli_metadata_set_connect(metadata, 1, "host1", "user1", "pw1", "db1",
+                                 3306, "sock1", 5);
+
+  /* A second connect that omits values clears the earlier ones. */
+  nr_mysqli_metadata_set_connect(metadata, 1, "host2", "user2", NULL, NULL, 0,
+                                 NULL, 0);
+  tlib_pass_if_status_success("get",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_str_equal("host", "host2", link.host);
+  tlib_pass_if_str_equal("user", "user2", link.user);
+  tlib_pass_if_null("password cleared", link.password);
+  tlib_pass_if_null("database cleared", link.database);
+  tlib_pass_if_null("socket cleared", link.socket);
+  tlib_pass_if_int_equal("flags", 0, (int)link.flags);
+
+  /* The options and the TLS settings are not connection parameters. */
+  tlib_pass_if_not_null("options kept", link.options);
+  tlib_pass_if_str_equal("ssl key kept", "key", link.ssl_key);
+  tlib_pass_if_str_equal("ssl cert kept", "cert", link.ssl_cert);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
+static void test_remove_many(void) {
+  nr_mysqli_metadata_t* metadata = nr_mysqli_metadata_create();
+  nr_mysqli_metadata_link_t link;
+  int i;
+
+  for (i = 1; i <= 5; i++) {
+    char user[8];
+    char pw[8];
+
+    snprintf(user, sizeof(user), "u%d", i);
+    snprintf(pw, sizeof(pw), "pw%d", i);
+    nr_mysqli_metadata_set_connect(metadata, i, "host", user, pw, "db", 3306,
+                                   NULL, 0);
+  }
+
+  /* Middle, first and last. The others keep their data, password included. */
+  nr_mysqli_metadata_remove(metadata, 3);
+  nr_mysqli_metadata_remove(metadata, 1);
+  nr_mysqli_metadata_remove(metadata, 5);
+  tlib_pass_if_status_failure("1 gone",
+                              nr_mysqli_metadata_get(metadata, 1, &link));
+  tlib_pass_if_status_failure("3 gone",
+                              nr_mysqli_metadata_get(metadata, 3, &link));
+  tlib_pass_if_status_failure("5 gone",
+                              nr_mysqli_metadata_get(metadata, 5, &link));
+  tlib_pass_if_status_success("2 kept",
+                              nr_mysqli_metadata_get(metadata, 2, &link));
+  tlib_pass_if_str_equal("2 password", "pw2", link.password);
+  tlib_pass_if_status_success("4 kept",
+                              nr_mysqli_metadata_get(metadata, 4, &link));
+  tlib_pass_if_str_equal("4 password", "pw4", link.password);
+
+  nr_mysqli_metadata_destroy(&metadata);
+}
+
 static void test_id(void) {
   char id[NR_MYSQLI_METADATA_ID_SIZE];
 
@@ -464,6 +554,9 @@ void test_main(void* p NRUNUSED) {
   test_set_ssl();
   test_remove();
   test_password_survives_updates();
+  test_complete();
+  test_set_connect_replaces();
+  test_remove_many();
   test_id();
   test_copy();
 }
