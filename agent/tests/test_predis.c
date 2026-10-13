@@ -901,8 +901,7 @@ static void test_command_start(TSRMLS_D) {
   tlib_pass_if_time_equal("start time 3", 30, start);
 
   /*
-   * Test : An entry that is never taken is freed with the map (checked under
-   * valgrind when the request ends).
+   * Test : An entry that is never taken is freed with the map.
    */
   nr_predis_command_start_save(7, 70 TSRMLS_CC);
 
