@@ -280,7 +280,12 @@ PHP_FUNCTION(newrelic_exception_handler) {
    * if this handler wasn't installed. Happily, PHP exposes an API function
    * that we can use to do this, rather than having to replicate that logic
    * ourselves.
+   *
+   * zend_exception_error() releases the reference it is given. Our caller
+   * only lends us the exception and releases its own reference after we
+   * return, so add one for zend_exception_error() to release.
    */
+  Z_ADDREF_P(exception);
   zend_exception_error(Z_OBJ_P(exception), E_ERROR TSRMLS_CC);
 }
 
