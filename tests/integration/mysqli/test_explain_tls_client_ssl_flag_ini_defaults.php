@@ -17,7 +17,9 @@ can only pass them on if it also passes the three leading arguments. It fills
 those in from the mysqli.default_* settings.
 
 The arguments are null, which PHP replaces by the mysqli.default_* settings
-only from PHP 8.1, so the test is skipped before that. The TLS setup is in
+only from PHP 8.1, so the test is skipped before that. Before 8.1 a null reaches
+the agent as an empty string; only named arguments on PHP 8.0 leave the host
+out, and that case is not tested. The TLS setup is in
 tests/tls; the test is skipped without it and on PHP below 7.4.
 */
 
