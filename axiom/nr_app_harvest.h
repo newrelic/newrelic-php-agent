@@ -13,7 +13,8 @@
 #include "util_sampling.h"
 #include "util_time.h"
 
-typedef struct _nr_app_harvest_t {
+/* Read-only configuration received from the daemon at app connect time. */
+typedef struct _nr_app_harvest_config_t {
   /* Fields we get from the daemon. */
   nrtime_t connect_timestamp; /* From the daemon: the timestamp the application
                                was connected */
@@ -26,7 +27,10 @@ typedef struct _nr_app_harvest_t {
       target_transactions_per_cycle; /* From the daemon: sampling_target.
                                       * The number of transactions we should
                                       * try to sample per cycle */
+} nr_app_harvest_config_t;
 
+/* Mutable per-thread sampling stats, updated on every transaction. */
+typedef struct _nr_app_harvest_stats_t {
   /* Fields we calculate and update to estimate transaction volume and inform
    * sampling behaviour. */
   nrtime_t next_harvest; /* The timestamp of the next harvest, as best as the
@@ -39,34 +43,34 @@ typedef struct _nr_app_harvest_t {
                                  sampling period */
   uint64_t transactions_sampled; /* The number of transactions sampled in the
                                     current sampling period */
-} nr_app_harvest_t;
+} nr_app_harvest_stats_t;
 
 /*
- * Purpose : Initialise the fields within the nr_app_harvest_t structure.
+ * Purpose : Initialise a fresh per-thread harvest stats struct from the
+ *           current config.  Sets next_harvest and zeroes all counters.
+ *           Always initialises unconditionally.
  *
- * Params  : 1. A pointer to the app harvest.
- *           2. The connect timestamp.
- *           3. The harvest frequency.
- *           4. The sampling target.
+ * Params  : 1. A pointer to the harvest config.
+ *           2. A pointer to the harvest stats to initialise.
  */
-extern void nr_app_harvest_init(nr_app_harvest_t* ah,
-                                nrtime_t connect_timestamp,
-                                nrtime_t harvest_frequency,
-                                uint16_t sampling_target);
+extern void nr_app_harvest_stats_init(const nr_app_harvest_config_t* cfg,
+                                      nr_app_harvest_stats_t* ah);
 
 /*
  * Purpose : Check if the current transaction should be sampled.
  *
- * Params  : 1. A pointer to the app harvest.
- *           2. A pointer to a random number generator.
+ * Params  : 1. A pointer to the harvest config.
+ *           2. A pointer to the per-thread harvest stats.
+ *           3. A pointer to a random number generator.
  *
  * Returns : True if the transaction should be sampled; false otherwise.
  *
  * Note    : This function has side effects: the transaction counters in the
- *           app harvest struct will be incremented assuming that each
- *           transaction will call this function once, and once only.
+ *           harvest stats will be incremented assuming that each transaction
+ *           will call this function once, and once only.
  */
-extern bool nr_app_harvest_should_sample(nr_app_harvest_t* ah,
+extern bool nr_app_harvest_should_sample(const nr_app_harvest_config_t* cfg,
+                                         nr_app_harvest_stats_t* ah,
                                          nr_random_t* rnd);
 
 #endif /* NR_APP_HARVEST_HDR */

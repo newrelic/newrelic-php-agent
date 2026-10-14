@@ -931,6 +931,8 @@ set_daemon_location() {
 #   what we detect.
 # pi_php8
 #   True if PHP version is 8.0+
+# pi_php82
+#   True if PHP version is 8.2+
 # pi_mods_avail
 #   On Debian/Ubuntu systems, the path to the mods-available directory
 #   (e.g. /etc/php/8.4/mods-available). Empty if the system does not use
@@ -993,6 +995,7 @@ gather_info() {
   havebin=
   pi_bin=
   pi_php8=
+  pi_php82=
 
   #
   # Get the path to the binary.
@@ -1065,18 +1068,22 @@ for this copy of PHP. We apologize for the inconvenience.
 
     8.2.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;
 
     8.3.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;  
 
     8.4.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;          
 
     8.5.*)
       pi_php8="yes"
+      pi_php82="yes"
       ;;
 
     *)
@@ -1229,6 +1236,20 @@ for this copy of PHP. We apologize for the inconvenience.
     return 1
   fi
 
+  #
+  # PHP reports the extension directory via ini_get("extension_dir") even when
+  # that directory does not exist on disk yet. Some PHP packages (e.g. the
+  # henderkes static-php / FrankenPHP php-zts-cli / php-zts-embed packages)
+  # only create the module directory when an extension package is installed,
+  # so a base install reports a directory that is not present. Since this is
+  # exactly where PHP will look for the agent's newrelic.so, create it rather
+  # than skipping this PHP. This mirrors how the ini scan directory is handled
+  # above.
+  #
+  if [ ! -d "${pi_extdir}" ]; then
+    logcmd mkdir -p -m 0755 "${pi_extdir}"
+  fi
+
   if [ ! -d "${pi_extdir}" ]; then
     error "computed PHP extension directory:
     ${pi_extdir}
@@ -1305,8 +1326,8 @@ does not exist. This particular instance of PHP will be skipped.
   fi
   log "${pdir}: pi_zts=${pi_zts}"
 
-# zts installs are no longer supported
-  if [ "${pi_zts}" = "yes" ]; then
+# zts installs are only supported for PHPs 8.2+
+  if [ "${pi_zts}" = "yes" ] && [ "${pi_php82}" != "yes" ]; then
     msg=$(
     cat << EOF
 
@@ -1476,11 +1497,6 @@ install_agent_here() {
   istat=
   if [ "${pi_zts}" = "yes" ]; then
     zts="-zts"
-
-    # Force copy of zts files as it is EOL so this will
-    # prevent future eraseure of linked to file from
-    # leading to a dangling symlink
-    NR_INSTALL_USE_CP_NOT_LN=1
   fi
   srcf="${ilibdir}/agent/${pi_arch}/newrelic-${pi_modver}${zts}.so"
   destf="${pi_extdir}/newrelic.so"
