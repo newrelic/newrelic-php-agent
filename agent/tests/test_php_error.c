@@ -10,6 +10,7 @@
 #include "php_call.h"
 #include "php_globals.h"
 #include "php_error.h"
+#include "php_hooks.h"
 #include "php_newrelic.h"
 #include "util_memory.h"
 #include "util_object.h"
@@ -417,6 +418,62 @@ static void test_error_group_callback_passes_error_fields(TSRMLS_D) {
   tlib_php_request_end();
 }
 
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+static int stub_error_cb_type;
+static int stub_error_cb_calls;
+
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+static void stub_error_cb(int type,
+                          zend_string* error_filename NRUNUSED,
+                          uint error_lineno NRUNUSED,
+                          zend_string* message NRUNUSED) {
+#else
+static void stub_error_cb(int type,
+                          const char* error_filename NRUNUSED,
+                          uint error_lineno NRUNUSED,
+                          zend_string* message NRUNUSED) {
+#endif
+  stub_error_cb_type = type;
+  stub_error_cb_calls += 1;
+}
+
+static void test_error_cb_passes_dont_bail_through(TSRMLS_D) {
+  nrphperrfn_t saved_cb;
+  zend_string* filename;
+  zend_string* message;
+
+  tlib_php_request_start();
+
+  saved_cb = NR_PHP_PROCESS_GLOBALS(orig_error_cb);
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = stub_error_cb;
+  stub_error_cb_type = 0;
+  stub_error_cb_calls = 0;
+
+  filename = zend_string_init("test.php", sizeof("test.php") - 1, 0);
+  message = zend_string_init("boom", sizeof("boom") - 1, 0);
+
+  /*
+   * PHP's own handler only bails out on E_ERROR when E_DONT_BAIL is unset, so
+   * the agent must hand the type to it unchanged.
+   */
+#if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
+  nr_php_error_cb(E_ERROR | E_DONT_BAIL, filename, 1, message);
+#else
+  nr_php_error_cb(E_ERROR | E_DONT_BAIL, ZSTR_VAL(filename), 1, message);
+#endif
+
+  tlib_pass_if_int_equal("original handler called once", 1,
+                         stub_error_cb_calls);
+  tlib_pass_if_int_equal("E_DONT_BAIL is preserved for the original handler",
+                         E_ERROR | E_DONT_BAIL, stub_error_cb_type);
+
+  NR_PHP_PROCESS_GLOBALS(orig_error_cb) = saved_cb;
+  zend_string_release(filename);
+  zend_string_release(message);
+  tlib_php_request_end();
+}
+#endif /* PHP >= 8.0 */
+
 void test_main(void* p NRUNUSED) {
   tlib_php_engine_create("" PTSRMLS_CC);
 
@@ -431,6 +488,9 @@ void test_main(void* p NRUNUSED) {
   test_error_group_callback_truncates_long_string(TSRMLS_C);
   test_error_group_callback_null_request_uri(TSRMLS_C);
   test_error_group_callback_passes_error_fields(TSRMLS_C);
+#if ZEND_MODULE_API_NO >= ZEND_8_0_X_API_NO
+  test_error_cb_passes_dont_bail_through(TSRMLS_C);
+#endif
 
   tlib_php_engine_destroy(TSRMLS_C);
 }
