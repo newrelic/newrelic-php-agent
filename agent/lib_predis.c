@@ -85,6 +85,8 @@ static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
   return NRPRG_CTX(predis_commands);
 }
 
+// An entry for a command that is never read stays until its handle is written
+// again.
 void nr_predis_command_start_save(uint64_t handle, nrtime_t start TSRMLS_DC) {
   nr_hashmap_t* commands = nr_predis_get_commands(TSRMLS_C);
   nrtime_t* saved = NULL;
