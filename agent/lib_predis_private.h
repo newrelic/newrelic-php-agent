@@ -136,7 +136,7 @@ extern nr_datastore_instance_t* nr_predis_retrieve_datastore_instance(
  *           replaced.
  *
  * Params  : 1. The handle of the command object.
- *           2. The start time, relative to the start of the transaction.
+ *           2. The start time, as an absolute time.
  */
 extern void nr_predis_command_start_save(uint64_t handle,
                                          nrtime_t start TSRMLS_DC);
@@ -149,13 +149,17 @@ extern void nr_predis_command_start_save(uint64_t handle,
  *           connection.
  *
  * Params  : 1. The handle of the command object.
- *           2. A pointer to receive the start time. It is not modified if no
- *              start time is saved.
+ *           2. The start of the current transaction, as an absolute time.
+ *           3. A pointer to receive the start time, relative to the start of
+ *              the transaction. It is not modified if nothing is returned.
  *
- * Returns : true if a start time was saved (and is now removed); false if none
- *           was, or the output pointer is NULL.
+ * Returns : true if a start time was saved (and is now removed) and it is not
+ *           older than the transaction; false if none was, the request was
+ *           written before the transaction began (the entry is still
+ *           removed), or the output pointer is NULL.
  */
 extern bool nr_predis_command_start_take(uint64_t handle,
+                                         nrtime_t txn_start,
                                          nrtime_t* start TSRMLS_DC);
 
 /*
