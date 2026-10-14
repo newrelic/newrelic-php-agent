@@ -436,6 +436,53 @@ static void test_override_after_first_call_has_no_effect(void) {
       "custom handlers set after first call: stack depth balanced", 0,
       r.stack_depth_delta);
 }
+
+/*
+ * A wraprec in the op_array extension slot that fails the magic check is not
+ * used: its custom handlers are ignored and the default handlers are used. The
+ * slot is seeded before the function's first call, the same way
+ * nr_php_wraprec_lookup_set stores a wraprec.
+ */
+static void test_override_invalid_wraprec_uses_defaults(void) {
+  nruserfn_t invalid_wr = {0}; /* magic is 0, not NR_USERFN_T_MAGIC */
+  zend_function* zf = NULL;
+  int execute_count = 0;
+  int depth = 0;
+
+  tlib_php_engine_create("");
+  tlib_php_request_start();
+
+  tlib_php_request_eval("function o_target() { return 1; }");
+  zf = nr_php_find_function("o_target");
+  tlib_pass_if_not_null("o_target found", zf);
+  if (NULL != zf) {
+    invalid_wr.fcall_handlers.begin = custom_fcall_begin;
+    invalid_wr.fcall_handlers.end = custom_fcall_end;
+    zend_init_func_run_time_cache(&zf->op_array);
+    ZEND_OP_ARRAY_EXTENSION(&zf->op_array,
+                            NR_PHP_PROCESS_GLOBALS(op_array_extension_handle))
+        = &invalid_wr;
+  }
+
+  custom_begin_calls = 0;
+  custom_end_calls = 0;
+  execute_count = NRTXNGLOBAL(execute_count);
+  depth = NRPRG_CTX(php_cur_stack_depth);
+
+  tlib_php_request_eval("o_target();");
+
+  tlib_pass_if_int_equal("invalid wraprec: custom begin did not run", 0,
+                         custom_begin_calls);
+  tlib_pass_if_int_equal("invalid wraprec: custom end did not run", 0,
+                         custom_end_calls);
+  tlib_pass_if_int_equal("invalid wraprec: default begin ran", 1,
+                         NRTXNGLOBAL(execute_count) - execute_count);
+  tlib_pass_if_int_equal("invalid wraprec: stack depth balanced", 0,
+                         NRPRG_CTX(php_cur_stack_depth) - depth);
+
+  tlib_php_request_end();
+  tlib_php_engine_destroy();
+}
 #endif
 
 void test_main(void* p NRUNUSED) {
@@ -449,5 +496,6 @@ void test_main(void* p NRUNUSED) {
   test_override_begin_only_uses_defaults();
   test_override_end_only_uses_defaults();
   test_override_after_first_call_has_no_effect();
+  test_override_invalid_wraprec_uses_defaults();
 #endif
 }

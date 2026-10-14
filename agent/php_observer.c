@@ -134,10 +134,15 @@ static zend_observer_fcall_handlers nr_php_fcall_register_handlers(
     wr = nr_php_user_instrument_wraprec_hashmap_get(func_name, scope_name);
     // store the wraprec in the op_array extension for the duration of the request for later lookup
     ZEND_OP_ARRAY_EXTENSION(NR_OP_ARRAY, NR_PHP_PROCESS_GLOBALS(op_array_extension_handle)) = wr;
-  } else {
+  } else if (NR_USERFN_T_MAGIC == wr->magic) {
     if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
       nrl_verbosedebug(NRL_INSTRUMENT, "%s - wraprec already installed", __func__);
     }
+  } else {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - wraprec is invalid", __func__);
+    }
+    wr = NULL;
   }
 
   // use default handlers for all user functions
