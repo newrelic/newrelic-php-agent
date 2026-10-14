@@ -71,7 +71,7 @@ char* nr_sql_obfuscate(const char* raw) {
             break;
 
           case '$': /* checking for dollar quoted strings */
-            for (taglen = 1; '$' != p[taglen]; taglen++) {
+            for (taglen = 1; (0 != p[taglen]) && ('$' != p[taglen]); taglen++) {
               char c = p[taglen];
 
               if (nr_isalpha(c) || ('_' == c)) {
