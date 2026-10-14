@@ -614,6 +614,13 @@ NR_INNER_WRAPPER(mysqli_close) {
       != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
                                   ZEND_NUM_ARGS() TSRMLS_CC, "|o",
                                   &mysqli_obj)) {
+    /*
+     * mysqli::close() takes no argument: the connection being closed is the
+     * object the method is called on.
+     */
+    if (NULL == mysqli_obj) {
+      mysqli_obj = NR_PHP_INTERNAL_FN_THIS();
+    }
     nr_php_mysqli_remove_datastore_instance(mysqli_obj TSRMLS_CC);
     if (nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)) {
       nr_mysqli_metadata_remove(
@@ -3370,6 +3377,7 @@ NR_OUTER_WRAPPER(mysqli_select_db)
 NR_OUTER_WRAPPER(mysqli_stmt_init)
 NR_OUTER_WRAPPER(mysqli_commit)
 
+NR_OUTER_WRAPPER(mysqliC_close)
 NR_OUTER_WRAPPER(mysqliC_construct)
 NR_OUTER_WRAPPER(mysqliC_multi_query)
 NR_OUTER_WRAPPER(mysqliC_options)
@@ -3387,6 +3395,7 @@ NR_OUTER_WRAPPER(mysqliC_commit)
 
 NR_OUTER_WRAPPER(mysqli_stmt_bind_param)
 NR_OUTER_WRAPPER(mysqli_stmt_execute)
+NR_OUTER_WRAPPER(mysqli_execute)
 NR_OUTER_WRAPPER(mysqli_stmt_prepare)
 
 NR_OUTER_WRAPPER(mysqli_stmtC_construct)
@@ -3736,6 +3745,7 @@ NR_OUTER_WRAPPER(pg_pconnect)
 NR_OUTER_WRAPPER(pg_execute)
 NR_OUTER_WRAPPER(pg_prepare)
 NR_OUTER_WRAPPER(pg_query)
+NR_OUTER_WRAPPER(pg_exec)
 NR_OUTER_WRAPPER(pg_query_params)
 
 NR_OUTER_WRAPPER(sqlite_query)
@@ -3880,6 +3890,7 @@ void nr_php_generate_internal_wrap_records(void) {
 
   NR_INTERNAL_WRAPREC("mysqli::__construct", mysqliC_construct,
                       mysqli_construct, 0, 0)
+  NR_INTERNAL_WRAPREC("mysqli::close", mysqliC_close, mysqli_close, 0, 0)
 
   NR_INTERNAL_WRAPREC("mysqli::multi_query", mysqliC_multi_query,
                       mysqli_general_query, 0, 0)
@@ -3909,6 +3920,10 @@ void nr_php_generate_internal_wrap_records(void) {
                       mysqli_stmt_bind_param, 0, 0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_execute", mysqli_stmt_execute,
                       mysqli_stmt_execute, 0, 0)
+  /* mysqli_execute() is an alias of mysqli_stmt_execute(), with its own entry.
+   */
+  NR_INTERNAL_WRAPREC("mysqli_execute", mysqli_execute, mysqli_stmt_execute, 0,
+                      0)
   NR_INTERNAL_WRAPREC("mysqli_stmt_prepare", mysqli_stmt_prepare,
                       mysqli_stmt_prepare, 0, 0)
 
@@ -4541,6 +4556,8 @@ void nr_php_generate_internal_wrap_records(void) {
   NR_INTERNAL_WRAPREC("pg_execute", pg_execute, pg_execute, 0, 0)
   NR_INTERNAL_WRAPREC("pg_prepare", pg_prepare, pg_prepare, 0, 0)
   NR_INTERNAL_WRAPREC("pg_query", pg_query, pg_query, 0, 0)
+  /* pg_exec() is an alias of pg_query(), with its own entry. */
+  NR_INTERNAL_WRAPREC("pg_exec", pg_exec, pg_query, 0, 0)
   NR_INTERNAL_WRAPREC("pg_query_params", pg_query_params, pg_query_params, 0, 0)
 
   NR_INTERNAL_WRAPREC("sqlite_query", sqlite_query, sqlite_query_function, 0, 0)
