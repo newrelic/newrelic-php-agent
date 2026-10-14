@@ -394,7 +394,7 @@ void nr_php_pdo_end_segment_sql(nr_segment_t* segment,
   nr_explain_plan_destroy(&plan);
 }
 
-static zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
+zval* nr_php_pdo_options_get(NR_PHP_PDO_DBH dbh TSRMLS_DC) {
   if (NULL == dbh) {
     return NULL;
   }
@@ -512,11 +512,19 @@ static void free_options(zval* options) {
 void nr_php_pdo_options_save(zval* dbh, zval* options TSRMLS_DC) {
   zval* copy = NULL;
 
-  if (0 == nr_php_is_zval_valid_array(options)) {
+  if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
     return;
   }
 
-  if (0 == nr_php_object_instanceof_class(dbh, "PDO" TSRMLS_CC)) {
+  /*
+   * A connection built without options must not inherit those of an earlier
+   * connection that had the same handle.
+   */
+  if (0 == nr_php_is_zval_valid_array(options)) {
+    if (NRTXNGLOBAL(pdo_link_options)) {
+      nr_hashmap_index_delete(NRTXNGLOBAL(pdo_link_options),
+                              Z_OBJ_HANDLE_P(dbh));
+    }
     return;
   }
 

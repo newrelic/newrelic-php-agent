@@ -8,6 +8,7 @@
  * MySQLi queries.
  */
 #include "php_agent.h"
+#include "Zend/zend_exceptions.h"
 #include "php_call.h"
 #include "php_explain.h"
 #include "php_explain_mysqli.h"
@@ -325,6 +326,7 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   int error_reporting;
   zval* link_dup = NULL;
   nr_explain_plan_t* plan = NULL;
+  zend_object* previous_exception = EG(exception);
   zval* stmt = NULL;
 
   error_reporting = nr_php_silence_errors(TSRMLS_C);
@@ -353,6 +355,16 @@ static nr_explain_plan_t* nr_php_explain_mysqli_issue(
   plan = nr_php_explain_mysqli_fetch_plan(stmt TSRMLS_CC);
 
 end:
+  /*
+   * On PHP 8.1 and later mysqli throws mysqli_sql_exception when a call on
+   * the explain connection fails, for example when the connection is refused.
+   * That exception must not reach the application: clear any exception thrown
+   * while the plan was generated, and keep one that was already pending.
+   */
+  if ((NULL != EG(exception)) && (EG(exception) != previous_exception)) {
+    zend_clear_exception();
+  }
+
   /*
    * Destroying the duplicated link zval will take care of closing the
    * connection, as mysqli objects have a destructor that takes care of that,
