@@ -286,6 +286,49 @@ static void test_sql_obfuscate(void) {
       "SELECT * FROM test WHERE foo IN (?,?,?,?)");
 
   /*
+   * PostgreSQL dollar quoted string constants.
+   */
+  sql_obfuscate_testcase("untagged dollar quote",
+                         "SELECT * FROM test WHERE password = $$PASSWORD$$",
+                         "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase(
+      "tagged dollar quote",
+      "SELECT * FROM test WHERE password = $tag$PASSWORD$tag$",
+      "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase("dollar quote tag with digits and underscores",
+                         "SELECT $_t1$PASSWORD$_t1$", "SELECT ?");
+
+  sql_obfuscate_testcase("empty untagged dollar quote", "$$$$", "?");
+  sql_obfuscate_testcase("empty tagged dollar quote", "$t$$t$", "?");
+
+  sql_obfuscate_testcase("dollar quote with a mismatched closing tag",
+                         "SELECT $a$PASSWORD$b$", "SELECT ?");
+
+  sql_obfuscate_testcase("multiple dollar quotes",
+                         "SELECT $$PASSWORD$$, $t$PASSWORD$t$", "SELECT ?, ?");
+
+  sql_obfuscate_testcase("unterminated dollar quote",
+                         "SELECT * FROM test WHERE password = $$PASSWORD",
+                         "SELECT * FROM test WHERE password = ?");
+
+  sql_obfuscate_testcase("unterminated tagged dollar quote",
+                         "SELECT * FROM test WHERE password = $tag$PASSWORD",
+                         "SELECT * FROM test WHERE password = ?");
+
+  /*
+   * A dollar sign that does not open a string constant must be left alone.
+   */
+  sql_obfuscate_testcase("positional parameters",
+                         "SELECT * FROM test WHERE a = $1 AND b = $2",
+                         "SELECT * FROM test WHERE a = $? AND b = $?");
+
+  sql_obfuscate_testcase("dollar sign within an identifier",
+                         "SELECT a$b FROM test WHERE c$d = 1",
+                         "SELECT a$b FROM test WHERE c$d = ?");
+
+  /*
    * Monstrous integers don't cause us to topple over.
    */
   for (lg = 1; lg < 20; lg++) {
