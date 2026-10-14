@@ -6,8 +6,9 @@
 
 /*DESCRIPTION
 Test should show proper parentage of txns with fiber activity even when an unrecoverable error occurs.
-Fibers that led to the unrecoverable error should be named when the txn abruptly ends.
-Fibers that were otherwise open will be named "<unknown>" when the txn abruptly ends.
+Fibers that led to the unrecoverable error should be named when the txn ends.
+Fibers that were otherwise open are destroyed at shutdown, which unwinds their
+functions, so their spans are named after those functions too.
 Output should show that PHP functionality does not continue to work as expected and ends execution due 
 to the unrecoverable error.
 */
@@ -63,7 +64,7 @@ newrelic.special = show_fibers, show_executes
         "transactionId": "??",
         "sampled": true,
         "priority": "??",
-        "name": "<unknown>",
+        "name": "Custom\/a",
         "guid": "ENV[GUID_A]",
         "timestamp": "??",
         "duration": "??",

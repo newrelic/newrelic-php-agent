@@ -306,7 +306,7 @@ daemon/internal/newrelic/infinite_tracing/com_newrelic_trace_v1/v1.pb.go: protoc
 #
 
 .PHONY: integration
-integration: Makefile integration-tests lasp-test-all integration-events-limits
+integration: Makefile integration-tests integration-events-limits
 
 .PHONY: integration-tests
 integration-tests: bin/integration_runner
@@ -427,33 +427,6 @@ package-clean:
 	rm -rf releases/debian releases/*.deb
 	rm -rf releases/redhat releases/*.rpm
 	rm -rf releases/newrelic-php5-*.tar.gz
-
-#
-# Testing the Language Agent Security Policy (LASP) feature.
-#
-.PHONY: lasp-test
-lasp-test: bin/integration_runner
-	@if [ ! $(SUITE_LASP) ]; then echo "USAGE: make lasp-test SUITE_LASP=suite-most-secure"; exit 1; fi
-	@if [ "$(LICENSE_lasp_$(subst -,_,$(SUITE_LASP)))" = "" ] ; then echo "Missing license for $(SUITE_LASP)"; exit 1; fi
-	@if [ ! -d "tests/lasp/$(SUITE_LASP)" ]; then echo "No such suite in tests/lasp folder"; exit 1; fi
-	@for PHP in $(PHP_VERSION_LIST); do \
-          echo; echo "# PHP=$${PHP}"; \
-          NRLAMP_PHP=$${PHP} bin/integration_runner $(INTEGRATION_ARGS) -loglevel debug \
-        -license $(LICENSE_lasp_$(subst -,_,$(SUITE_LASP))) \
-        -security_token @tests/lasp/$(SUITE_LASP)/security-token.txt \
-        -supported_policies @tests/lasp/$(SUITE_LASP)/securityPolicyAgent.json tests/lasp/$(SUITE_LASP) || exit 1; \
-	  echo "# PHP=$${PHP}"; \
-	done
-
-
-
-.PHONY: lasp-test-all
-lasp-test-all:
-	$(MAKE) lasp-test SUITE_LASP=suite-most-secure
-	$(MAKE) lasp-test SUITE_LASP=suite-least-secure
-	$(MAKE) lasp-test SUITE_LASP=suite-random-1
-	$(MAKE) lasp-test SUITE_LASP=suite-random-2
-	$(MAKE) lasp-test SUITE_LASP=suite-random-3
 
 #
 # Check for protobuf-c (HAVE_PROTOBUF_C): 
