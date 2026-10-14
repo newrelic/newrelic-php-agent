@@ -70,7 +70,7 @@ char* nr_sql_obfuscate(const char* raw) {
             }
             break;
 
-          case '$':
+          case '$': /* checking for dollar quoted strings */
             for (taglen = 1; '$' != p[taglen]; taglen++) {
               char c = p[taglen];
 
