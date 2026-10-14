@@ -781,17 +781,7 @@ NR_INNER_WRAPPER(mysqli_options) {
   if (value_zv && (0 == NRTXNGLOBAL(generating_explain_plan))
       && nr_php_mysqli_zval_is_link(mysqli_obj TSRMLS_CC)
       && nr_php_is_zval_true(return_value)) {
-    char* value_term = NULL;
-
-    if (IS_STRING == Z_TYPE_P(value_zv)) {
-      value_term = nr_strndup(Z_STRVAL_P(value_zv), Z_STRLEN_P(value_zv));
-    } else if (IS_LONG == Z_TYPE_P(value_zv)) {
-      value_term = nr_formatf("%ld", (long)Z_LVAL_P(value_zv));
-    } else if (IS_TRUE == Z_TYPE_P(value_zv)) {
-      value_term = nr_strdup("1");
-    } else if (IS_FALSE == Z_TYPE_P(value_zv)) {
-      value_term = nr_strdup("0");
-    }
+    char* value_term = nr_php_mysqli_option_to_string(value_zv);
 
     if (value_term) {
       nr_mysqli_metadata_set_option(NRTXNGLOBAL(mysqli_links),

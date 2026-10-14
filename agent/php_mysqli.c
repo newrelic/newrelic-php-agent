@@ -442,7 +442,8 @@ static nr_status_t nr_php_mysqli_link_real_connect(
    * mysqli.default_* ini setting. The arguments that follow are positional, so
    * a missing one cannot just be skipped: the next argument would take its
    * place. If any of the arguments was given, fill in the missing host, user
-   * and password from the ini settings. This includes the case where the
+   * and password from the ini settings, read when the explain runs and not
+   * when the link connected. This includes the case where the
    * application left out all three and only gave a later one, such as the
    * flags: without the three leading arguments the flags (for example
    * MYSQLI_CLIENT_SSL) cannot be passed on.
@@ -774,6 +775,42 @@ void nr_php_mysqli_remove_datastore_instance(const zval* mysqli_obj TSRMLS_DC) {
   nr_php_datastore_instance_remove(key TSRMLS_CC);
 
   nr_free(key);
+}
+
+char* nr_php_mysqli_option_to_string(zval* value) {
+  zend_string* str;
+  char* term;
+
+  if (NULL == value) {
+    return NULL;
+  }
+
+  switch (Z_TYPE_P(value)) {
+    case IS_STRING:
+      return nr_strndup(Z_STRVAL_P(value), Z_STRLEN_P(value));
+    case IS_LONG:
+      return nr_formatf("%ld", (long)Z_LVAL_P(value));
+    case IS_TRUE:
+      return nr_strdup("1");
+    case IS_FALSE:
+      return nr_strdup("0");
+    case IS_DOUBLE:
+    case IS_NULL:
+      /*
+       * mysqli converts these the way PHP does, and converting them here runs
+       * no user code.
+       */
+      str = zval_get_string(value);
+      term = nr_strndup(ZSTR_VAL(str), ZSTR_LEN(str));
+      zend_string_release(str);
+      return term;
+    default:
+      /*
+       * mysqli refuses an array or a resource. An object's __toString() would
+       * run user code a second time, so an object is not captured.
+       */
+      return NULL;
+  }
 }
 
 const char* nr_php_mysqli_strip_persistent_prefix(const char* host) {

@@ -169,4 +169,15 @@ extern void nr_php_mysqli_remove_datastore_instance(
  */
 extern void nr_php_mysqli_rshutdown();
 
+/*
+ * Purpose : Turn the value of a mysqli_options() call into the string that is
+ *           replayed on the explain connection.
+ *
+ * Params  : 1. The value the application gave.
+ *
+ * Returns : A new string, or NULL for a value that is not captured (an array,
+ *           a resource or an object). The caller frees it.
+ */
+extern char* nr_php_mysqli_option_to_string(zval* value);
+
 #endif /* PHP_MYSQLI_HDR */
