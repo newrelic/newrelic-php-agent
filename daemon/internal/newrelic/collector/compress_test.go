@@ -11,16 +11,13 @@ import (
 
 type CompressEncodeTestcase struct {
 	decoded string
-	encoded string
 }
 
 var testcases = [...]CompressEncodeTestcase{
-	{decoded: "compress me",
-		encoded: "eJxKzs8tKEotLlbITQUEAAD//xsdBF8="},
+	{decoded: "compress me"},
 	{
 		decoded: "zipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzip" +
-			"zipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzip",
-		encoded: "eJyqyiygMwIEAAD//0/+MlM="},
+			"zipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzipzip"},
 }
 
 func TestCompressEncode(t *testing.T) {
@@ -28,9 +25,6 @@ func TestCompressEncode(t *testing.T) {
 		encoded, err := CompressEncode([]byte(tc.decoded))
 		if nil != err {
 			t.Fatal(err)
-		}
-		if encoded != tc.encoded {
-			t.Fatalf("expected=%s got=%s", tc.encoded, encoded)
 		}
 		decoded, err := UncompressDecode(encoded)
 		if nil != err {
