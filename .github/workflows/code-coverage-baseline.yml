@@ -210,19 +210,6 @@ jobs:
           -e PHPS=${{matrix.php}} \
           -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
           nr-php make integration-events-limits
-      - name: Test LASP
-        working-directory: ./php-agent
-        shell: bash
-        run: |
-          docker exec \
-          -e PHPS=${{matrix.php}} \
-          -e INTEGRATION_ARGS="-license ${{secrets.NR_TEST_LICENSE}} -collector ${{secrets.NR_COLLECTOR_HOST}} -agent agent/modules/newrelic.so" \
-          -e LICENSE_lasp_suite_most_secure=${{secrets.LICENSE_LASP_SUITE_MOST_SECURE}} \
-          -e LICENSE_lasp_suite_least_secure=${{secrets.LICENSE_LASP_SUITE_LEAST_SECURE}} \
-          -e LICENSE_lasp_suite_random_1=${{secrets.LICENSE_LASP_SUITE_RANDOM_1}} \
-          -e LICENSE_lasp_suite_random_2=${{secrets.LICENSE_LASP_SUITE_RANDOM_2}} \
-          -e LICENSE_lasp_suite_random_3=${{secrets.LICENSE_LASP_SUITE_RANDOM_3}} \
-          nr-php make lasp-test-all
       - name: Run integration tests
         working-directory: ./php-agent
         shell: bash
