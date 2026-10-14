@@ -27,7 +27,8 @@ static void nr_php_frankenphp_request_handler_fcall_end(
 
 void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   zval* function = NULL;
-  zend_function* zf;
+  zend_fcall_info_cache fcc = {0};
+  zend_function* zf = NULL;
   nruserfn_t* wr = NULL;
 
   // If recording, end current transaction and record it as FrankenPHP worker
@@ -48,9 +49,27 @@ void nr_php_frankenphp_handle_request(INTERNAL_FUNCTION_PARAMETERS) {
   // will start a new web transaction and fcall_end handler will end it.
   zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS(), "z",
                            &function);
-  zf = nr_php_zval_to_function(function);
+  if (NULL != function
+      && zend_is_callable_ex(function, NULL, 0, NULL, &fcc, NULL)) {
+    zf = fcc.function_handler;
+  }
 
-  wr = nr_php_wrap_callable(zf, NULL);
+  // A callable that resolves to __call or __callStatic gives a trampoline: a
+  // temporary function that the agent can't instrument, so don't wrap it.
+  if (NULL != zf && (zf->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)) {
+    if (nrl_should_print(NRL_VERBOSEDEBUG, NRL_INSTRUMENT)) {
+      char* name = nr_php_function_debug_name(zf);
+      nrl_verbosedebug(NRL_INSTRUMENT, "%s - %s is a trampoline function",
+                       __func__, NRSAFESTR(name));
+      nr_free(name);
+    }
+  } else {
+    wr = nr_php_wrap_callable(zf, NULL);
+  }
+  // Free the trampoline, if zend_is_callable_ex allocated one. Nothing keeps
+  // zf once nr_php_wrap_callable returns.
+  zend_release_fcall_info_cache(&fcc);
+
   if (NULL == wr) {
     nrl_verbosedebug(NRL_INSTRUMENT,
                      "Failed to create wraprec for frankenphp request handler");
