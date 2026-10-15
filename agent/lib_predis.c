@@ -89,8 +89,8 @@ static inline nr_hashmap_t* nr_predis_get_commands(TSRMLS_D) {
 // An entry for a command that is never read stays until its handle is written
 // again. The time is absolute, so that the transaction that reads the response
 // can tell whether the request was written before it started.
-void nr_predis_command_start_save(uint64_t handle, nrtime_t start TSRMLS_DC) {
-  nr_hashmap_t* commands = nr_predis_get_commands(TSRMLS_C);
+void nr_predis_command_start_save(uint64_t handle, nrtime_t start) {
+  nr_hashmap_t* commands = nr_predis_get_commands();
   nrtime_t* saved = NULL;
 
   if (NULL == commands) {
@@ -104,8 +104,8 @@ void nr_predis_command_start_save(uint64_t handle, nrtime_t start TSRMLS_DC) {
 
 bool nr_predis_command_start_take(uint64_t handle,
                                   nrtime_t txn_start,
-                                  nrtime_t* start TSRMLS_DC) {
-  nr_hashmap_t* commands = nr_predis_get_commands(TSRMLS_C);
+                                  nrtime_t* start) {
+  nr_hashmap_t* commands = nr_predis_get_commands();
   nrtime_t* saved = NULL;
   nrtime_t saved_start;
 
@@ -685,7 +685,7 @@ NR_PHP_WRAPPER(nr_predis_connection_readResponse) {
    */
   index = (uint64_t)Z_OBJ_HANDLE_P(command);
   if (!nr_predis_command_start_take(index, nr_txn_start_time(NRPRG(txn)),
-                                    &start TSRMLS_CC)) {
+                                    &start)) {
     nrl_verbosedebug(NRL_INSTRUMENT, "%s: NULL start time", __func__);
     goto end;
   }
@@ -760,7 +760,7 @@ NR_PHP_WRAPPER(nr_predis_connection_writeRequest) {
   }
 
   index = (uint64_t)Z_OBJ_HANDLE_P(command);
-  nr_predis_command_start_save(index, nr_get_time() TSRMLS_CC);
+  nr_predis_command_start_save(index, nr_get_time());
 
 end:
   nr_php_arg_release(&command);
