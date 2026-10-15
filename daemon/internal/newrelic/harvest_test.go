@@ -117,7 +117,7 @@ func TestCreateFinalMetricsWithLotsOfMetrics(t *testing.T) {
 	harvest.LogEvents.FailedHarvest(harvest)
 	mc.AddMetricData(collector.CommandLogEvents, 0, 0, harvest.LogEvents.NumFailedAttempts())
 
-	harvest.createFinalMetrics(limits, nil, mc)
+	harvest.createFinalMetrics(harvest.Metrics, limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,` +
 		`[[{"name":"Supportability/Agent/Collector/custom_event_data/Attempts"},[1,0,0,0,0,0]],` +
@@ -175,7 +175,7 @@ func TestCreateFinalMetricsWithNoMetrics(t *testing.T) {
 			},
 		},
 	}
-	harvest.createFinalMetrics(limits, nil, mc)
+	harvest.createFinalMetrics(harvest.Metrics, limits, nil, mc)
 
 	var expectedJSON = `["12345",1447203720,1417136520,[]]`
 
