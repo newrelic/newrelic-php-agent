@@ -52,6 +52,14 @@ typedef struct _nr_mysqli_metadata_link_t {
   const char* ssl_ca;
   const char* ssl_capath;
   const char* ssl_cipher;
+
+  /*
+   * Non-zero once nr_mysqli_metadata_set_connect() has run for the link. The
+   * other setters can create an entry for a link the agent did not see
+   * connect (one opened while not recording): such an entry lacks the host and
+   * the user and must not be used to open a connection.
+   */
+  int complete;
 } nr_mysqli_metadata_link_t;
 
 /*

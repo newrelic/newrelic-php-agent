@@ -15,8 +15,71 @@
 #include "php_agent.h"
 
 /*
- * Purpose : Duplicate a MySQLi link based on the metadata in
- *           NRPRG (mysqli_links).
+ * Purpose : The store of the metadata of the MySQLi links: kept for the
+ *           request on PHP 8.0 and later, per transaction before.
+ */
+extern nr_mysqli_metadata_t* nr_php_mysqli_links(void);
+
+/*
+ * Purpose : Create and destroy the request-lifetime store and the table that
+ *           drops an entry when its link is freed (PHP 8.0 and later; no-ops
+ *           before). Create in RINIT, destroy in post-deactivate after the
+ *           engine has freed its objects.
+ */
+extern void nr_php_mysqli_links_create(void);
+extern void nr_php_mysqli_links_destroy(void);
+
+/*
+ * Purpose : Whether link metadata is worth keeping in this transaction: only
+ *           when an explain plan can be produced.
+ */
+extern int nr_php_mysqli_metadata_wanted(void);
+
+/*
+ * Purpose : Save or read the metadata of a link, as the functions of
+ *           nr_mysqli_metadata.h do. The setters save nothing when
+ *           nr_php_mysqli_metadata_wanted() is false. remove() also drops the
+ *           link's entry in the table.
+ */
+extern void nr_php_mysqli_metadata_remove(const zval* link);
+
+/*
+ * Purpose : Whether the agent has saved metadata for this link object. A new
+ *           object that took the handle of a freed link is not known, because
+ *           the table drops an entry when its object is freed.
+ *
+ * Notes   : Always false before PHP 8.0, which cannot tell when a link is
+ *           freed.
+ */
+extern int nr_php_mysqli_metadata_known(const zval* link);
+extern nr_status_t nr_php_mysqli_metadata_get(const zval* link,
+                                              nr_mysqli_metadata_link_t* out);
+extern nr_status_t nr_php_mysqli_metadata_set_connect(const zval* link,
+                                                      const char* host,
+                                                      const char* user,
+                                                      const char* password,
+                                                      const char* database,
+                                                      uint16_t port,
+                                                      const char* socket,
+                                                      long flags);
+extern nr_status_t nr_php_mysqli_metadata_set_database(const zval* link,
+                                                       const char* database);
+extern nr_status_t nr_php_mysqli_metadata_set_user(const zval* link,
+                                                   const char* user,
+                                                   const char* password,
+                                                   const char* database);
+extern nr_status_t nr_php_mysqli_metadata_set_option(const zval* link,
+                                                     long option,
+                                                     const char* value);
+extern nr_status_t nr_php_mysqli_metadata_set_ssl(const zval* link,
+                                                  const char* key,
+                                                  const char* cert,
+                                                  const char* ca,
+                                                  const char* capath,
+                                                  const char* cipher);
+
+/*
+ * Purpose : Duplicate a MySQLi link based on the metadata saved for it.
  *
  * Params  : 1. The mysqli object to duplicate.
  *
@@ -94,7 +157,8 @@ extern nr_status_t nr_php_mysqli_query_set_link(
  *
  * Returns : NR_SUCCESS or NR_FAILURE.
  */
-extern nr_status_t nr_php_mysqli_query_clear_query(nr_php_object_handle_t handle);
+extern nr_status_t nr_php_mysqli_query_clear_query(
+    nr_php_object_handle_t handle);
 
 /*
  * Purpose : Save the SQL used to prepare a MySQLi statement.
