@@ -134,10 +134,14 @@ void nr_php_pgsql_remove_datastore_instance(const zval* pgsql_conn TSRMLS_DC) {
     return;
   }
 
-  /* With no connection given, PHP closes the one connected last. */
+  /*
+   * With no connection given, PHP releases its default link and leaves the
+   * connection open, so only the last mark goes. The entry goes with the
+   * object.
+   */
   if ((NULL == pgsql_conn)
       && nr_php_objtable_get_last(NRPRG_SHARED(pgsql_instances))) {
-    nr_php_objtable_del_last(NRPRG_SHARED(pgsql_instances));
+    nr_php_objtable_clear_last(NRPRG_SHARED(pgsql_instances));
     return;
   }
 #endif
