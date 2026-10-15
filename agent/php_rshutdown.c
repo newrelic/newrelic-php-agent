@@ -10,6 +10,7 @@
 #include "php_curl_md.h"
 #include "php_error.h"
 #include "php_fibers.h"
+#include "php_frankenphp.h"
 #include "php_globals.h"
 #include "php_user_instrument.h"
 #include "php_user_instrument_wraprec_hashmap.h"
@@ -62,6 +63,9 @@ PHP_RSHUTDOWN_FUNCTION(newrelic) {
   nr_curl_rshutdown(TSRMLS_C);
   nr_php_pdo_rshutdown();
   nr_php_mysqli_rshutdown();
+#ifdef ZTS
+  nr_php_frankenphp_rshutdown();
+#endif
 
   nrl_verbosedebug(NRL_INIT, "RSHUTDOWN processing done");
 
