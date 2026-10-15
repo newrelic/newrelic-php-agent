@@ -603,6 +603,168 @@ static void test_called_outside_worker_mode(void) {
   tlib_php_request_end();
   engine_destroy();
 }
+
+/*
+ * One transaction per call, ended before control returns to the real
+ * function. The callback returns a non-null value, which FrankenPHP v1.13.0
+ * forwards (frankenphp.c#L892-L899).
+ */
+static void test_one_transaction_per_call(void) {
+  int i;
+
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "$cb = function () { return ['status' => 200]; };"
+      "for ($i = 0; $i < 3; $i++) { frankenphp_handle_request($cb); }");
+
+  tlib_pass_if_int_equal("per-call: fake entered three times", 3, fake.entered);
+  tlib_pass_if_size_t_equal("per-call: bootstrap plus three requests", 4,
+                            captured_count);
+  tlib_pass_if_str_equal("per-call: first is the bootstrap", BOOTSTRAP_TXN_NAME,
+                         captured[0].name);
+  for (i = 0; i < 3; i++) {
+    tlib_fail_if_str_equal("per-call: request is not the bootstrap",
+                           BOOTSTRAP_TXN_NAME, captured[i + 1].name);
+    tlib_pass_if_true("per-call: no transaction after the call",
+                      fake.after_call[i].txn_is_null,
+                      "NRPRG(txn) was not NULL");
+    tlib_pass_if_size_t_equal("per-call: the call sent one transaction",
+                              fake.on_entry[i].captured + 1,
+                              fake.after_call[i].captured);
+    tlib_pass_if_false("per-call: no exception", fake.exception_after_call[i],
+                       "the callback threw");
+  }
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* User code in the worker loop between requests is not recorded. */
+static void test_user_code_between_requests_not_recorded(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "function between_requests() { return 1; }"
+      "$cb = function () { return 1; };"
+      "for ($i = 0; $i < 3; $i++) {"
+      "  frankenphp_handle_request($cb);"
+      "  between_requests();"
+      "}");
+
+  tlib_pass_if_size_t_equal(
+      "between requests: code between requests adds nothing", 4,
+      captured_count);
+  tlib_pass_if_null("between requests: no transaction after the loop",
+                    NRPRG(txn));
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/* Every wrapped callable type gets one transaction per call. */
+static void test_each_callable_type_gets_transactions(void) {
+  size_t i;
+
+  engine_create("");
+  for (i = 0; i < CASE_COUNT(wrapped_callables); i++) {
+    char* code = nr_formatf(
+        "$cb = %s; frankenphp_handle_request($cb); "
+        "frankenphp_handle_request($cb);",
+        wrapped_callables[i].expr);
+
+    request_start(FAKE_CALL);
+    tlib_php_request_eval(callable_setup);
+    tlib_php_request_eval(code);
+    tlib_pass_if_size_t_equal(wrapped_callables[i].label, 3, captured_count);
+    tlib_php_request_end();
+    nr_free(code);
+  }
+  engine_destroy();
+}
+
+/*
+ * A closure re-created on each loop pass shares one runtime cache (same
+ * declaration, same scope), so every pass is recorded, also when the loop is
+ * inside a method.
+ */
+static void test_closure_recreated_each_loop_pass(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "for ($i = 0; $i < 3; $i++) {"
+      "  frankenphp_handle_request(function () { return 1; });"
+      "}");
+  tlib_pass_if_size_t_equal("closure per pass: top-level loop", 4,
+                            captured_count);
+  tlib_php_request_end();
+  engine_destroy();
+
+  engine_create("");
+  request_start(FAKE_CALL);
+  tlib_php_request_eval(
+      "class LoopRunner {"
+      "  public function run() {"
+      "    for ($i = 0; $i < 3; $i++) {"
+      "      frankenphp_handle_request(function () { return $this; });"
+      "    }"
+      "  }"
+      "}"
+      "(new LoopRunner())->run();");
+  tlib_pass_if_size_t_equal("closure per pass: loop inside a method", 4,
+                            captured_count);
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * An assumption of the instrumentation, pinned. Zend installs Observer
+ * handlers on a function's first call, so a callable that ran before it was
+ * passed in keeps the default handlers and never gets per-request
+ * transactions. Real worker scripts (FrankenPHP's example, Laravel Octane,
+ * Symfony Runtime) pass a closure that only frankenphp_handle_request ever
+ * calls, so they never hit this.
+ */
+static void test_warm_up_call_prevents_transactions(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+
+  tlib_php_request_eval(
+      "$cb = function () { return 1; };"
+      "$cb();"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+  tlib_pass_if_size_t_equal("warmed-up closure: bootstrap only", 1,
+                            captured_count);
+
+  tlib_php_request_end();
+  engine_destroy();
+}
+
+/*
+ * FrankenPHP v1.13.0 passes the callback one argument when it has one
+ * (frankenphp.c#L889-L890).
+ */
+static void test_callback_with_a_parameter(void) {
+  engine_create("");
+  request_start(FAKE_CALL);
+  fake.pass_arg = true;
+
+  tlib_php_request_eval(
+      "$cb = function ($payload) { $GLOBALS['got_payload'] = $payload; };"
+      "frankenphp_handle_request($cb);"
+      "frankenphp_handle_request($cb);");
+
+  tlib_pass_if_size_t_equal("callback parameter: one transaction per call", 3,
+                            captured_count);
+  pass_if_php_string("callback parameter: the callback got the argument",
+                     "fake-arg", "$got_payload");
+
+  tlib_php_request_end();
+  engine_destroy();
+}
 #endif /* ZTS && PHP 8.0+ */
 
 void test_main(void* p NRUNUSED) {
@@ -618,5 +780,11 @@ void test_main(void* p NRUNUSED) {
   test_rejected_callable_types();
   test_invalid_argument();
   test_called_outside_worker_mode();
+  test_one_transaction_per_call();
+  test_user_code_between_requests_not_recorded();
+  test_each_callable_type_gets_transactions();
+  test_closure_recreated_each_loop_pass();
+  test_warm_up_call_prevents_transactions();
+  test_callback_with_a_parameter();
 #endif
 }
