@@ -24,14 +24,14 @@ static char* new_value(const char* s) {
   return nr_strdup(s);
 }
 
-static void test_null_and_bad_args(TSRMLS_D) {
+static void test_null_and_bad_args() {
   nr_php_objtable_t* table;
   zval* not_object;
 
   tlib_php_request_start();
 
   table = nr_php_objtable_create(counting_dtor);
-  not_object = tlib_php_request_eval_expr("42" TSRMLS_CC);
+  not_object = tlib_php_request_eval_expr("42");
   dtor_count = 0;
 
   /* NULL table and NULL object: quiet, and the caller keeps the value. */
@@ -57,7 +57,7 @@ static void test_null_and_bad_args(TSRMLS_D) {
   tlib_pass_if_null("destroy clears the pointer", table);
 }
 
-static void test_set_get_del_replace(TSRMLS_D) {
+static void test_set_get_del_replace() {
   nr_php_objtable_t* table;
   zval* a;
   zval* b;
@@ -66,9 +66,9 @@ static void test_set_get_del_replace(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass; $b = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
-  b = tlib_php_request_eval_expr("$b" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass; $b = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
+  b = tlib_php_request_eval_expr("$b");
 
   nr_php_objtable_set(table, a, new_value("a1"));
   nr_php_objtable_set(table, b, new_value("b1"));
@@ -100,7 +100,7 @@ static void test_set_get_del_replace(TSRMLS_D) {
   tlib_pass_if_int_equal("destroy frees the rest", 3, dtor_count);
 }
 
-static void test_last(TSRMLS_D) {
+static void test_last() {
   nr_php_objtable_t* table;
   zval* a;
   zval* b;
@@ -111,10 +111,10 @@ static void test_last(TSRMLS_D) {
   dtor_count = 0;
 
   tlib_php_request_eval(
-      "$a = new stdClass; $b = new stdClass; $c = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
-  b = tlib_php_request_eval_expr("$b" TSRMLS_CC);
-  c = tlib_php_request_eval_expr("$c" TSRMLS_CC);
+      "$a = new stdClass; $b = new stdClass; $c = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
+  b = tlib_php_request_eval_expr("$b");
+  c = tlib_php_request_eval_expr("$c");
 
   /* Bad arguments and an empty table. */
   nr_php_objtable_mark_last(NULL, a);
@@ -178,7 +178,7 @@ static void test_last(TSRMLS_D) {
 #ifdef NR_PHP_OBJTABLE_WEAK
 
 /* The mark is cleared when the marked object is freed. */
-static void test_last_freed(TSRMLS_D) {
+static void test_last_freed() {
   nr_php_objtable_t* table;
   zval* a;
 
@@ -186,14 +186,14 @@ static void test_last_freed(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_objtable_mark_last(table, a);
   nr_php_zval_free(&a);
   tlib_pass_if_str_equal("marked", "a", nr_php_objtable_get_last(table));
 
-  tlib_php_request_eval("unset($a);" TSRMLS_CC);
+  tlib_php_request_eval("unset($a);");
   tlib_pass_if_null("cleared when freed", nr_php_objtable_get_last(table));
   tlib_pass_if_int_equal("value destroyed", 1, dtor_count);
 
@@ -203,7 +203,7 @@ static void test_last_freed(TSRMLS_D) {
 }
 
 /* The entry goes when the object is freed by refcount. */
-static void test_freed_by_refcount(TSRMLS_D) {
+static void test_freed_by_refcount() {
   nr_php_objtable_t* table;
   zval* a;
 
@@ -211,13 +211,13 @@ static void test_freed_by_refcount(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_zval_free(&a);
 
   tlib_pass_if_int_equal("alive", 0, dtor_count);
-  tlib_php_request_eval("unset($a);" TSRMLS_CC);
+  tlib_php_request_eval("unset($a);");
   tlib_pass_if_int_equal("destroyed when freed", 1, dtor_count);
   tlib_pass_if_size_t_equal("entry removed", 0, nr_php_objtable_count(table));
 
@@ -227,7 +227,7 @@ static void test_freed_by_refcount(TSRMLS_D) {
 }
 
 /* The entry goes when the cycle collector frees the object. */
-static void test_freed_by_cycle_collector(TSRMLS_D) {
+static void test_freed_by_cycle_collector() {
   nr_php_objtable_t* table;
   zval* a;
 
@@ -235,16 +235,16 @@ static void test_freed_by_cycle_collector(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass; $a->self = $a;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass; $a->self = $a;");
+  a = tlib_php_request_eval_expr("$a");
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_zval_free(&a);
 
-  tlib_php_request_eval("unset($a);" TSRMLS_CC);
+  tlib_php_request_eval("unset($a);");
   tlib_pass_if_int_equal("a cycle is not freed yet", 0, dtor_count);
   tlib_pass_if_size_t_equal("entry kept", 1, nr_php_objtable_count(table));
 
-  tlib_php_request_eval("gc_collect_cycles();" TSRMLS_CC);
+  tlib_php_request_eval("gc_collect_cycles();");
   tlib_pass_if_int_equal("destroyed by the collector", 1, dtor_count);
   tlib_pass_if_size_t_equal("entry removed", 0, nr_php_objtable_count(table));
 
@@ -254,7 +254,7 @@ static void test_freed_by_cycle_collector(TSRMLS_D) {
 }
 
 /* A new object that reuses a freed handle finds no entry. */
-static void test_handle_reuse(TSRMLS_D) {
+static void test_handle_reuse() {
   nr_php_objtable_t* table;
   zval* a;
   zval* b;
@@ -269,15 +269,15 @@ static void test_handle_reuse(TSRMLS_D) {
     zval* handle_a;
     zval* handle_b;
 
-    tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
-    handle_a = tlib_php_request_eval_expr("spl_object_id($a)" TSRMLS_CC);
-    a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+    tlib_php_request_eval("$a = new stdClass;");
+    handle_a = tlib_php_request_eval_expr("spl_object_id($a)");
+    a = tlib_php_request_eval_expr("$a");
     nr_php_objtable_set(table, a, new_value("a"));
     nr_php_zval_free(&a);
-    tlib_php_request_eval("unset($a); $b = new stdClass;" TSRMLS_CC);
+    tlib_php_request_eval("unset($a); $b = new stdClass;");
 
-    handle_b = tlib_php_request_eval_expr("spl_object_id($b)" TSRMLS_CC);
-    b = tlib_php_request_eval_expr("$b" TSRMLS_CC);
+    handle_b = tlib_php_request_eval_expr("spl_object_id($b)");
+    b = tlib_php_request_eval_expr("$b");
     if (Z_LVAL_P(handle_a) == Z_LVAL_P(handle_b)) {
       reused += 1;
     }
@@ -287,7 +287,7 @@ static void test_handle_reuse(TSRMLS_D) {
     nr_php_zval_free(&b);
     nr_php_zval_free(&handle_a);
     nr_php_zval_free(&handle_b);
-    tlib_php_request_eval("unset($b);" TSRMLS_CC);
+    tlib_php_request_eval("unset($b);");
   }
 
   /* The point of the test is a reused handle, so make sure one happened. */
@@ -303,7 +303,7 @@ static void test_handle_reuse(TSRMLS_D) {
  * table is destroyed after the request, as it is in post-deactivate, and each
  * value is destroyed once.
  */
-static void test_alive_at_request_end(TSRMLS_D) {
+static void test_alive_at_request_end() {
   nr_php_objtable_t* table;
   zval* a;
   zval* b;
@@ -312,9 +312,9 @@ static void test_alive_at_request_end(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass; $b = new ArrayObject();" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
-  b = tlib_php_request_eval_expr("$b" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass; $b = new ArrayObject();");
+  a = tlib_php_request_eval_expr("$a");
+  b = tlib_php_request_eval_expr("$b");
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_objtable_set(table, b, new_value("b"));
   nr_php_zval_free(&a);
@@ -326,7 +326,7 @@ static void test_alive_at_request_end(TSRMLS_D) {
 }
 
 /* exit() ends the request with objects still alive. */
-static void test_exit(TSRMLS_D) {
+static void test_exit() {
   nr_php_objtable_t* table;
   zval* a;
   char code[] = "exit(0);";
@@ -335,13 +335,13 @@ static void test_exit(TSRMLS_D) {
   table = nr_php_objtable_create(counting_dtor);
   dtor_count = 0;
 
-  tlib_php_request_eval("$a = new stdClass;" TSRMLS_CC);
-  a = tlib_php_request_eval_expr("$a" TSRMLS_CC);
+  tlib_php_request_eval("$a = new stdClass;");
+  a = tlib_php_request_eval_expr("$a");
   nr_php_objtable_set(table, a, new_value("a"));
   nr_php_zval_free(&a);
 
   zend_try {
-    zend_eval_string(code, NULL, "-" TSRMLS_CC);
+    zend_eval_string(code, NULL, "-");
   }
   zend_end_try();
 
@@ -361,7 +361,7 @@ static void test_exit(TSRMLS_D) {
  * The table and its entries are the same inside a Fiber, after
  * it suspends and after it resumes.
  */
-static void test_fiber_table_stable(TSRMLS_D) {
+static void test_fiber_table_stable() {
   nr_php_objtable_t* table;
   zval* from_fiber;
   zval* from_main;
@@ -377,9 +377,9 @@ static void test_fiber_table_stable(TSRMLS_D) {
       "  Fiber::suspend($inner);"
       "  return 1;"
       "});"
-      "$inner = $fiber->start();" TSRMLS_CC);
-  from_main = tlib_php_request_eval_expr("$main" TSRMLS_CC);
-  from_fiber = tlib_php_request_eval_expr("$inner" TSRMLS_CC);
+      "$inner = $fiber->start();");
+  from_main = tlib_php_request_eval_expr("$main");
+  from_fiber = tlib_php_request_eval_expr("$inner");
 
   nr_php_objtable_set(table, from_main, new_value("main"));
   nr_php_objtable_set(table, from_fiber, new_value("fiber"));
@@ -389,7 +389,7 @@ static void test_fiber_table_stable(TSRMLS_D) {
                          nr_php_objtable_get(table, from_main));
   tlib_pass_if_str_equal("fiber before resume", "fiber",
                          nr_php_objtable_get(table, from_fiber));
-  tlib_php_request_eval("$fiber->resume();" TSRMLS_CC);
+  tlib_php_request_eval("$fiber->resume();");
   tlib_pass_if_str_equal("main after resume", "main",
                          nr_php_objtable_get(table, from_main));
   tlib_pass_if_str_equal("fiber after resume", "fiber",
@@ -407,7 +407,7 @@ static void test_fiber_table_stable(TSRMLS_D) {
  * An object created in a Fiber that is destroyed before it
  * finishes is freed with the Fiber, and its entry goes with it.
  */
-static void test_fiber_destroyed_unfinished(TSRMLS_D) {
+static void test_fiber_destroyed_unfinished() {
   nr_php_objtable_t* table;
   zval* inner;
 
@@ -420,15 +420,15 @@ static void test_fiber_destroyed_unfinished(TSRMLS_D) {
       "  $inner = new stdClass;"
       "  Fiber::suspend($inner);"
       "});"
-      "$inner = $fiber->start();" TSRMLS_CC);
-  inner = tlib_php_request_eval_expr("$inner" TSRMLS_CC);
+      "$inner = $fiber->start();");
+  inner = tlib_php_request_eval_expr("$inner");
   nr_php_objtable_set(table, inner, new_value("inner"));
   nr_php_zval_free(&inner);
 
   /* The suspended Fiber and our copy of the object are the only owners. */
-  tlib_php_request_eval("unset($inner);" TSRMLS_CC);
+  tlib_php_request_eval("unset($inner);");
   tlib_pass_if_int_equal("alive while the Fiber holds it", 0, dtor_count);
-  tlib_php_request_eval("unset($fiber);" TSRMLS_CC);
+  tlib_php_request_eval("unset($fiber);");
   tlib_pass_if_int_equal("destroyed with the Fiber", 1, dtor_count);
   tlib_pass_if_size_t_equal("entry removed", 0, nr_php_objtable_count(table));
 
@@ -442,23 +442,23 @@ static void test_fiber_destroyed_unfinished(TSRMLS_D) {
 #endif /* NR_PHP_OBJTABLE_WEAK */
 
 void test_main(void* p NRUNUSED) {
-  tlib_php_engine_create("" PTSRMLS_CC);
+  tlib_php_engine_create("");
 
-  test_null_and_bad_args(TSRMLS_C);
-  test_set_get_del_replace(TSRMLS_C);
-  test_last(TSRMLS_C);
+  test_null_and_bad_args();
+  test_set_get_del_replace();
+  test_last();
 #ifdef NR_PHP_OBJTABLE_WEAK
-  test_last_freed(TSRMLS_C);
-  test_freed_by_refcount(TSRMLS_C);
-  test_freed_by_cycle_collector(TSRMLS_C);
-  test_handle_reuse(TSRMLS_C);
-  test_alive_at_request_end(TSRMLS_C);
-  test_exit(TSRMLS_C);
+  test_last_freed();
+  test_freed_by_refcount();
+  test_freed_by_cycle_collector();
+  test_handle_reuse();
+  test_alive_at_request_end();
+  test_exit();
 #if ZEND_MODULE_API_NO >= ZEND_8_1_X_API_NO
-  test_fiber_table_stable(TSRMLS_C);
-  test_fiber_destroyed_unfinished(TSRMLS_C);
+  test_fiber_table_stable();
+  test_fiber_destroyed_unfinished();
 #endif
 #endif
 
-  tlib_php_engine_destroy(TSRMLS_C);
+  tlib_php_engine_destroy();
 }
